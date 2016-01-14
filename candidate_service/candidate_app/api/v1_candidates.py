@@ -1,5 +1,8 @@
 """
-This file entails Candidate-restful-services for CRUD operations
+This file entails Candidate-restful-services for CRUD operations.
+Notes:
+    i. "optional-input" indicates that the resource can handle
+    other specified inputs or no inputs (if not specified)
 """
 # Flask specific
 from flask import request
@@ -11,8 +14,8 @@ from candidate_service.common.models.db import db
 # Validators
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
-    does_candidate_belong_to_user, is_custom_field_authorized,
-    is_area_of_interest_authorized
+    does_candidate_belong_to_users_domain, is_custom_field_authorized,
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -21,7 +24,7 @@ from candidate_service.modules.json_schema import (
 from jsonschema import validate, FormatChecker
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
@@ -34,13 +37,14 @@ from candidate_service.common.models.candidate import (
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
 )
-from candidate_service.common.models.misc import AreaOfInterest, CustomField
+from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
-    create_or_update_candidate_from_params, fetch_candidate_edits
+    create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
+    add_candidate_view
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -50,15 +54,20 @@ from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
-        Endpoint:   GET /v1/candidates
-        :return     List of Candidate(s)
-        :rtype      [str]
+        Endpoint:  GET /v1/candidates
+        Optional-input:  {'candidate_ids': [int, int, int, ...]}
+
+        Function retrieves candidates via two ways:
+             i. Candidates from a list of candidate IDs, OR
+            ii. If nothing is provided, all of user's candidates will be returned
+
+        :return     [dict] -> list of candidate-dicts
         """
         # Authenticated user
         authed_user = request.user
-
         get_all_domain_candidates = False
 
         # Parse request body & validate data
@@ -87,6 +96,10 @@ class CandidatesResource(Resource):
         else:  # Retrieve via a list of candidate IDs
             candidate_ids = body_dict.get('candidate_ids')
 
+            # Candidate IDs must belong to user's domain
+            if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
+                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 candidate = Candidate.get_by_id(candidate_id=candidate_id)
@@ -99,26 +112,22 @@ class CandidatesResource(Resource):
                     raise NotFoundError(error_message='Candidate not found',
                                         error_code=custom_error.CANDIDATE_NOT_FOUND)
 
-                # Candidate ID must belong to user and its domain
-                if not does_candidate_belong_to_user(authed_user, candidate_id):
-                    raise ForbiddenError(error_message='Not authorized',
-                                         error_code=custom_error.CANDIDATE_FORBIDDEN)
-
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
         return {'candidates': retrieved_candidates}
 
+    # @require_all_roles('CAN_ADD_CANDIDATES')
     def post(self, **kwargs):
         """
-        POST /v1/candidates
-        input: {'candidates': [candidateObject1, candidateObject2, ...]}
+        Endpoint:  POST /v1/candidates
+        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
-        Creates new candidate(s).
+        Function Creates new candidate(s)
 
-        Takes a JSON dict containing:
-            - a candidates key and a list of candidate-object(s) as values
-        Function only accepts JSON dict.
-        JSON dict must contain candidate's email address(s).
+        Caveats:
+             i. Requires a JSON dict containing a 'candidates'-key
+                 and a-list-of-candidate-dict(s) as values
+            ii. JSON dict must contain at least one email-dict with an email-address.
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -133,62 +142,66 @@ class CandidatesResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        candidates = body_dict.get('candidates')
+
+        # Input validations
+        all_cf_ids, all_aoi_ids = [], []
+        for candidate in candidates:
+
+            # Emails' addresses must be properly formatted
+            if filter(lambda emails: not is_valid_email(emails['address']), candidate.get('emails')):
+                    raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
+
+            custom_fields = candidate.get('custom_fields') or []
+            for custom_field in custom_fields:  # Custom-fields validation
+                all_cf_ids.append(custom_field.get('custom_field_id'))
+
+            aois = candidate.get('areas_of_interest') or []
+            for aoi in aois:  # Areas-of-interest validation
+                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+
+        # Custom fields must belong to user's domain
+        if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+            raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+        # Areas of interest must belong to user's domain
+        if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+            raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
+
+        # Create candidate(s)
         created_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
 
             emails = [{'label': email.get('label'), 'address': email.get('address'),
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
 
-            # Validate email addresses' format
-            if filter(lambda email: not is_valid_email(email['address']), emails):
-                raise InvalidUsage(error_message="Invalid email address/format",
-                                   error_code=custom_error.INVALID_EMAIL)
-
-            # Prevent user from adding custom field(s) to other domains
-            custom_fields = candidate_dict.get('custom_fields') or []
-            custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
-            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
-                                                       user_domain_id=authed_user.domain_id)
-            if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized custom field IDs",
-                                     error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            # Prevent user from adding area(s) of interest to other domains
-            areas_of_interest = candidate_dict.get('areas_of_interest') or []
-            area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
-            is_authorized = is_area_of_interest_authorized(area_of_interest_ids=area_of_interest_ids,
-                                                           user_domain_id=authed_user.domain_id)
-            if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
-                                     error_code=custom_error.AOI_FORBIDDEN)
-
             resp_dict = create_or_update_candidate_from_params(
-                    user_id=authed_user.id,
-                    is_creating=True,
-                    first_name=candidate_dict.get('first_name'),
-                    middle_name=candidate_dict.get('middle_name'),
-                    last_name=candidate_dict.get('last_name'),
-                    formatted_name=candidate_dict.get('full_name'),
-                    status_id=candidate_dict.get('status_id'),
-                    emails=emails,
-                    phones=candidate_dict.get('phones'),
-                    addresses=candidate_dict.get('addresses'),
-                    educations=candidate_dict.get('educations'),
-                    military_services=candidate_dict.get('military_services'),
-                    areas_of_interest=areas_of_interest,
-                    custom_fields=custom_fields,
-                    social_networks=candidate_dict.get('social_networks'),
-                    work_experiences=candidate_dict.get('work_experiences'),
-                    work_preference=candidate_dict.get('work_preference'),
-                    preferred_locations=candidate_dict.get('preferred_locations'),
-                    skills=candidate_dict.get('skills'),
-                    dice_social_profile_id=candidate_dict.get('openweb_id'),
-                    dice_profile_id=candidate_dict.get('dice_profile_id'),
-                    added_time=candidate_dict.get('added_time'),
-                    source_id=candidate_dict.get('source_id'),
-                    objective=candidate_dict.get('objective'),
-                    summary=candidate_dict.get('summary'),
-                    talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
+                user_id=authed_user.id,
+                is_creating=True,
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
+                emails=emails,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
+                areas_of_interest=candidate_dict.get('areas_of_interest'),
+                custom_fields=candidate_dict.get('custom_fields'),
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -197,15 +210,20 @@ class CandidatesResource(Resource):
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
+    # @require_all_roles('CAN_UPDATE_CANDIDATES')
     def patch(self, **kwargs):
         """
-        PATCH /v1/candidates
-        Function can update candidate(s).
+        Endpoint:  PATCH /v1/candidates
+        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
-        Takes a JSON dict containing:
-            - a candidates key and a list of candidate-object(s) as values
-        Function only accepts JSON dict.
-        JSON dict must contain candidate's ID.
+        Function can update any of candidate(s)'s information.
+
+        Caveats:
+              i. Requires a JSON dict containing a 'candidates'-key
+                 and a-list-of-candidate-dict(s) as values
+             ii. Each JSON dict must contain candidate's ID
+            iii. To update any of candidate's fields, the field ID must be provided,
+                 otherwise a new record will be added to the candidate
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -220,70 +238,76 @@ class CandidatesResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        candidates = body_dict.get('candidates')
+
+        # Input validations
+        all_cf_ids, all_aoi_ids = [], []
+        for candidate in candidates:
+
+            # Emails' addresses must be properly formatted
+            for emails in candidate.get('emails') or []:
+                if emails.get('address'):
+                    if not is_valid_email(emails.get('address')):
+                        raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
+
+            for custom_field in candidate.get('custom_fields') or []:  # Custom-fields validation
+                all_cf_ids.append(custom_field.get('custom_field_id'))
+
+            for aoi in candidate.get('areas_of_interest') or []:  # Areas-of-interest validation
+                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+
+        # Custom fields must belong to user's domain
+        if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+            raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+        # Areas of interest must belong to user's domain
+        if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+            raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
+
+        # Candidates must belong to user's domain
+        candidates = body_dict.get('candidates')
+        list_of_candidate_ids = [candidate['id'] for candidate in candidates]
+        if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        # Update candidate(s)
         updated_candidate_ids = []
-        for candidate_dict in body_dict.get('candidates'):
+        for candidate_dict in candidates:
 
             emails = candidate_dict.get('emails')
             if emails:
-                emails = [{'id': email.get('id'), 'label': email.get('label'), 'address': email.get('address'),
-                           'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
-
-                # Validate email addresses' format
-                if filter(lambda email: not is_valid_email(email['address']), emails):
-                    raise InvalidUsage(error_message="Invalid email address/format",
-                                       error_code=custom_error.INVALID_EMAIL)
-
-            # Prevent user from updating custom field(s) from other domains
-            custom_fields = candidate_dict.get('custom_fields') or []
-            custom_field_ids = [custom_field.get('id') for custom_field in custom_fields]
-            is_authorized = is_custom_field_authorized(custom_field_ids=custom_field_ids,
-                                                       user_domain_id=authed_user.domain_id)
-            if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized custom field IDs",
-                                     error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            # Retrieve areas_of_interest
-            areas_of_interest = candidate_dict.get('areas_of_interest') or []
-            area_of_interest_ids = [area_of_interest.get('id') for area_of_interest in areas_of_interest]
-
-            # If AreaOfInterest ID is not provided, assume it needs to be created
-            if not any(area_of_interest_ids):
-                pass
-
-            # Prevent user from updating area(s) of interest from other domains
-            is_authorized = is_area_of_interest_authorized(authed_user.domain_id, area_of_interest_ids)
-            if not is_authorized:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
-                                     error_code=custom_error.AOI_FORBIDDEN)
+                emails = [{'id': email.get('id'), 'label': email.get('label'),
+                           'address': email.get('address'), 'is_default': email.get('is_default')}
+                          for email in candidate_dict.get('emails')]
 
             resp_dict = create_or_update_candidate_from_params(
-                    user_id=authed_user.id,
-                    is_updating=True,
-                    candidate_id=candidate_dict.get('id'),
-                    first_name=candidate_dict.get('first_name'),
-                    middle_name=candidate_dict.get('middle_name'),
-                    last_name=candidate_dict.get('last_name'),
-                    formatted_name=candidate_dict.get('full_name'),
-                    status_id=candidate_dict.get('status_id'),
-                    emails=emails,
-                    phones=candidate_dict.get('phones'),
-                    addresses=candidate_dict.get('addresses'),
-                    educations=candidate_dict.get('educations'),
-                    military_services=candidate_dict.get('military_services'),
-                    areas_of_interest=areas_of_interest,
-                    custom_fields=custom_fields,
-                    social_networks=candidate_dict.get('social_networks'),
-                    work_experiences=candidate_dict.get('work_experiences'),
-                    work_preference=candidate_dict.get('work_preference'),
-                    preferred_locations=candidate_dict.get('preferred_locations'),
-                    skills=candidate_dict.get('skills'),
-                    dice_social_profile_id=candidate_dict.get('openweb_id'),
-                    dice_profile_id=candidate_dict.get('dice_profile_id'),
-                    added_time=candidate_dict.get('added_time'),
-                    source_id=candidate_dict.get('source_id'),
-                    objective=candidate_dict.get('objective'),
-                    summary=candidate_dict.get('summary'),
-                    talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
+                user_id=authed_user.id,
+                is_updating=True,
+                candidate_id=candidate_dict.get('id'),
+                first_name=candidate_dict.get('first_name'),
+                middle_name=candidate_dict.get('middle_name'),
+                last_name=candidate_dict.get('last_name'),
+                formatted_name=candidate_dict.get('full_name'),
+                status_id=candidate_dict.get('status_id'),
+                emails=emails,
+                phones=candidate_dict.get('phones'),
+                addresses=candidate_dict.get('addresses'),
+                educations=candidate_dict.get('educations'),
+                military_services=candidate_dict.get('military_services'),
+                areas_of_interest=candidate_dict.get('areas_of_interest'),
+                custom_fields=candidate_dict.get('custom_fields'),
+                social_networks=candidate_dict.get('social_networks'),
+                work_experiences=candidate_dict.get('work_experiences'),
+                work_preference=candidate_dict.get('work_preference'),
+                preferred_locations=candidate_dict.get('preferred_locations'),
+                skills=candidate_dict.get('skills'),
+                dice_social_profile_id=candidate_dict.get('openweb_id'),
+                dice_profile_id=candidate_dict.get('dice_profile_id'),
+                added_time=candidate_dict.get('added_time'),
+                source_id=candidate_dict.get('source_id'),
+                objective=candidate_dict.get('objective'),
+                summary=candidate_dict.get('summary'),
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -297,13 +321,13 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
             1. Fetch a candidate via two methods:
                 I.  GET /v1/candidates/:id
-                    Takes an integer as candidate's ID, parsed from kwargs
-
+                    Takes an integer as candidate's ID, retrieve from kwargs
                 OR
                 II. GET /v1/candidates/:email
                     Takes a valid email address, parsed from kwargs
@@ -326,28 +350,28 @@ class CandidateResource(Resource):
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError(error_message='Candidate email not recognized',
-                                    error_code=custom_error.CANDIDATE_NOT_FOUND)
+                raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
 
         candidate = Candidate.get_by_id(candidate_id=candidate_id)
         if not candidate:
-            raise NotFoundError(error_message='Candidate email not recognized',
-                                error_code=custom_error.CANDIDATE_NOT_FOUND)
+            raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
 
         # If Candidate is web hidden, it is assumed "deleted"
         if candidate.is_web_hidden:
-            raise NotFoundError(error_message='Candidate not found',
-                                error_code=custom_error.CANDIDATE_IS_HIDDEN)
+            raise NotFoundError('Candidate not found', custom_error.CANDIDATE_IS_HIDDEN)
 
         # Candidate must belong to user, and must be in the same domain as the user's domain
-        if not does_candidate_belong_to_user(user_row=authed_user, candidate_id=candidate_id):
-            raise ForbiddenError(error_message="Not authorized",
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
+        # Add to CandidateView
+        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+
         return {'candidate': candidate_data_dict}
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -357,33 +381,27 @@ class CandidateResource(Resource):
                 II. DELETE /v1/candidates/:email
 
         Caveats:
-        - Only candidate's owner can hide the Candidate.
-        - Candidate must be in the same domain as authenticated user
+              i. Candidate will not be removed from db. It is set to "web_hidden"
+             ii. Only candidate's owner can hide the Candidate
+            iii. Candidate must be in the same domain as the authenticated-user
         """
         # Authenticate user
         authed_user = request.user
 
-        # candidate_id or candidate_email must be provided
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
-        if not candidate_id and not candidate_email:  # TODO: Flask already handles this, write test
-            raise InvalidUsage(error_message="Candidate's ID or candidate's email must be provided.")
-
         if candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                raise InvalidUsage(error_message="A valid email address is required",
-                                   error_code=custom_error.INVALID_EMAIL)
+                raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError(error_message='Candidate not found',
-                                    error_code=custom_error.CANDIDATE_NOT_FOUND)
+                raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message="Not authorized",
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         # Hide Candidate
         Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
@@ -396,6 +414,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -411,20 +430,17 @@ class CandidateAddressResource(Resource):
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message="Not authorized",
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         if address_id:  # Delete specified address
             candidate_address = CandidateAddress.get_by_id(_id=address_id)
             if not candidate_address:
-                raise NotFoundError(error_message='Candidate address not found',
-                                    error_code=custom_error.ADDRESS_NOT_FOUND)
+                raise NotFoundError('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
 
             # Address must belong to Candidate
             if candidate_address.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.ADDRESS_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.ADDRESS_FORBIDDEN)
 
             db.session.delete(candidate_address)
 
@@ -440,6 +456,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -455,15 +472,12 @@ class CandidateAreaOfInterestResource(Resource):
         candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         # Prevent user from deleting area_of_interest of candidates outside of its domain
-        is_authorized = is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id])
-        if not is_authorized:
-            raise ForbiddenError(error_message="Unauthorized area of interest IDs",
-                                 error_code=custom_error.AOI_FORBIDDEN)
+        if not is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id]):
+            raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         if area_of_interest_id:  # Delete specified area of interest
             # Area of interest must be associated with candidate's CandidateAreaOfInterest
@@ -477,7 +491,7 @@ class CandidateAreaOfInterestResource(Resource):
             db.session.delete(candidate_aoi)
 
         else:  # Delete all of Candidate's areas of interest
-            domain_aois = AreaOfInterest.get_domain_areas_of_interest(domain_id=authed_user.domain_id)
+            domain_aois = AreaOfInterest.get_domain_areas_of_interest(authed_user.domain_id)
             areas_of_interest_id = [aoi.id for aoi in domain_aois]
             for aoi_id in areas_of_interest_id:
                 candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, aoi_id)
@@ -494,6 +508,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -502,40 +517,29 @@ class CandidateCustomFieldResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         custom fields or just a single one.
         """
-        # Authenticated user
-        authed_user = request.user
-
-        # Get candidate_id and can_cf_id (candidate custom field ID, i.e. CandidateCustomField.id)
-        candidate_id, can_cf_id = kwargs.get('candidate_id'), kwargs.get('id')
+        # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
+        authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
-
-        # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, [can_cf_id]):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
             candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
             if not candidate_custom_field:
-                raise NotFoundError(error_message='Candidate custom field not found',
-                                    error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
+                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom fields must belong to user's domain
+            custom_field_id = candidate_custom_field.custom_field_id
+            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             db.session.delete(candidate_custom_field)
 
         else:  # Delete all of Candidate's custom fields
-            domain_custom_fields = CustomField.get_domain_custom_fields(domain_id=authed_user.domain_id)
-            custom_field_ids = [custom_field.id for custom_field in domain_custom_fields]
-            for cf_id in custom_field_ids:
-                candidate_custom_field = CandidateCustomField.get_custom_field(candidate_id, cf_id)
-                if not candidate_custom_field:
-                    raise NotFoundError(error_message='Candidate custom field not found',
-                                        error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
-
-                db.session.delete(candidate_custom_field)
+            for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id):
+                db.session.delete(ccf)
 
         db.session.commit()
         return '', 204
@@ -544,6 +548,7 @@ class CandidateCustomFieldResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -559,7 +564,7 @@ class CandidateEducationResource(Resource):
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -589,6 +594,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -605,7 +611,7 @@ class CandidateEducationDegreeResource(Resource):
         degree_id = kwargs.get('id')
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -642,6 +648,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -658,7 +665,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -708,6 +715,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateExperienceResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -723,7 +731,7 @@ class CandidateExperienceResource(Resource):
         candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -753,6 +761,7 @@ class CandidateExperienceResource(Resource):
 class CandidateExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -769,7 +778,7 @@ class CandidateExperienceBulletResource(Resource):
         bullet_id = kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -811,6 +820,7 @@ class CandidateExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -826,7 +836,7 @@ class CandidateEmailResource(Resource):
         candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -855,6 +865,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -870,7 +881,7 @@ class CandidateMilitaryServiceResource(Resource):
         candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -900,6 +911,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -915,7 +927,7 @@ class CandidatePhoneResource(Resource):
         candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -944,6 +956,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -959,7 +972,7 @@ class CandidatePreferredLocationResource(Resource):
         candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -989,6 +1002,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1004,7 +1018,7 @@ class CandidateSkillResource(Resource):
         candidate_id, skill_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1034,6 +1048,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1049,7 +1064,7 @@ class CandidateSocialNetworkResource(Resource):
         candidate_id, social_networks_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1081,6 +1096,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
@@ -1093,7 +1109,7 @@ class CandidateWorkPreferenceResource(Resource):
         candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
                                  error_code=custom_error.CANDIDATE_FORBIDDEN)
 
@@ -1115,6 +1131,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
+    # @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1124,9 +1141,8 @@ class CandidateEditResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_user(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'edits': [
@@ -1134,7 +1150,7 @@ class CandidateEditResource(Resource):
 
 
 class CandidateOpenWebResource(Resource):
-    decorators = [require_oauth]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -1146,8 +1162,27 @@ class CandidateOpenWebResource(Resource):
         url = request.args.get('url')
         find_candidate = find_candidate_from_openweb(url)
         if find_candidate:
-            candiate = fetch_candidate_info(find_candidate)
-            return {'candidate': candiate}
+            candidate = fetch_candidate_info(find_candidate)
+            return {'candidate': candidate}
         else:
-            raise NotFoundError(error_message="Candidate not found",
-                                error_code=custom_error.CANDIDATE_NOT_FOUND)
+            raise NotFoundError("Candidate not found", custom_error.CANDIDATE_NOT_FOUND)
+
+
+class CandidateViewResource(Resource):
+    decorators = [require_oauth()]
+
+    # @require_all_roles('CAN_GET_CANDIDATES')
+    def get(self, **kwargs):
+        """
+        Endpoint:  GET /v1/candidates/:id/views
+        Function will retrieve all view information pertaining to the requested Candidate
+        """
+        # Authenticated user & candidate_id
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        candidate_views = fetch_candidate_views(candidate_id=candidate_id)
+        return {'candidate_views': [candidate_view for candidate_view in candidate_views]}

@@ -1,14 +1,28 @@
 from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-from candidate_service.common.models.user import *
-from candidate_service.common.models import (
-    associations, candidate, candidate_edit, email_marketing, event, event_organizer,
-    language, misc, rsvp, talent_pools_pipelines, university, user, venue, widget
+from flask_common.common.models.db import db
+from flask_common.common.models import (
+    associations,
+    candidate,
+    candidate_edit,
+    email_marketing,
+    event,
+    event_organizer,
+    language,
+    misc,
+    rsvp,
+    smartlist,
+    talent_pools_pipelines,
+    university,
+    user,
+    venue,
+    widget
 )
+from flask_common.common.talent_config_manager import load_gettalent_config
 
 app = Flask(__name__)
-app.config.from_object('config')
+load_gettalent_config(app.config)
 
 db.init_app(app)
 db.app = app
@@ -21,27 +35,27 @@ manager.add_command('db', MigrateCommand)
 @manager.command
 def add_admin_roles_to_existing_users():
     # Create Admin roles if they didn't exist already in Database
-    if not DomainRole.get_by_name('ADMIN'):
-        DomainRole.save('ADMIN')
-    if not DomainRole.get_by_name('DOMAIN_ADMIN'):
-        DomainRole.save('DOMAIN_ADMIN')
+    if not user.DomainRole.get_by_name('ADMIN'):
+        user.DomainRole.save('ADMIN')
+    if not user.DomainRole.get_by_name('DOMAIN_ADMIN'):
+        user.DomainRole.save('DOMAIN_ADMIN')
 
-    customer_managers = WebAuthMembership.query.filter_by(group_id=1).all()   # Customer Managers have group_id = 1
-    user_managers = WebAuthMembership.query.filter_by(group_id=2).all()  # User Managers have group_id = 2
+    customer_managers = user.WebAuthMembership.query.filter_by(group_id=1).all()   # Customer Managers have group_id = 1
+    user_managers = user.WebAuthMembership.query.filter_by(group_id=2).all()  # User Managers have group_id = 2
 
-    customer_managers = User.query.filter(User.id.in_([customer_manager.user_id for customer_manager in customer_managers])).all()
-    user_managers = User.query.filter(User.id.in_([user_manager.user_id for user_manager in user_managers])).all()
+    customer_managers = user.User.query.filter(user.User.id.in_([customer_manager.user_id for customer_manager in customer_managers])).all()
+    user_managers = user.User.query.filter(user.User.id.in_([user_manager.user_id for user_manager in user_managers])).all()
 
     for user_manager in user_managers:
         try:
-            UserScopedRoles.add_roles(user_manager, True, ['DOMAIN_ADMIN'])
+            user.UserScopedRoles.add_roles(user_manager, ['DOMAIN_ADMIN'])
             print "Added role DOMAIN_ADMIN to user %s" % user_manager.id
         except Exception as e:
             print "Couldn't add role DOMAIN_ADMIN to user %s because: %s" % (user_manager.id, e.message)
 
     for customer_manager in customer_managers:
         try:
-            UserScopedRoles.add_roles(customer_manager, True, ['ADMIN'])
+            user.UserScopedRoles.add_roles(customer_manager, ['ADMIN'])
             print "Added role ADMIN to user %s" % customer_manager.id
         except Exception as e:
             print "Couldn't add role ADMIN to user %s because: %s" % (customer_manager.id, e.message)
