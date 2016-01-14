@@ -1,6 +1,6 @@
 FROM gettalent/base-service-container:latest
 
-# Add auth_service stuff
+# Add activity_service stuff
 WORKDIR /root/base_service_container
 ADD . activity_service
 WORKDIR /root/base_service_container/activity_service

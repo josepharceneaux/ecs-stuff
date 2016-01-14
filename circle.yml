@@ -13,7 +13,7 @@ dependencies:
 general:
   branches:
     ignore:
-      - jenkins-test # list of branches to ignore
+      - GET-713 # list of branches to ignore
 
 test:
   pre:
