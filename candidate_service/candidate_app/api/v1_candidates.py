@@ -15,7 +15,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, check_for_candidate
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -46,7 +46,8 @@ from candidate_service.common.models.email_marketing import Frequency
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
-    add_candidate_view, add_candidate_subscription_preference, fetch_candidate_subscription_preference
+    add_candidate_view, add_candidate_subscription_preference, fetch_candidate_subscription_preference,
+    add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -1189,11 +1190,11 @@ class CandidateViewResource(Resource):
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
 
-from candidate_service.modules.validators import check_for_candidate  # TODO, import on top
+
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_PREFERENCES')
+    @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1216,7 +1217,7 @@ class CandidatePreferenceResource(Resource):
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_roles('CAN_ADD_PREFERENCES')
+    @require_all_roles('CAN_ADD_CANDIDATES')
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/preferences
@@ -1251,7 +1252,7 @@ class CandidatePreferenceResource(Resource):
 
         return {'candidate': {'id': candidate_id}}, 201
 
-    @require_all_roles('CAN_EDIT_PREFERENCES')
+    @require_all_roles('CAN_EDIT_CANDIDATES')
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1274,13 +1275,23 @@ class CandidatePreferenceResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
         if not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
-        return {'candidate': {'id': candidate_id}}
+        # Candidate must already have a subscription preference
+        can_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+        if not can_subs_pref:
+            raise InvalidUsage('Candidate does not have a subscription preference.',
+                               custom_error.NO_PREFERENCES)
 
-    @require_all_roles('CAN_EDIT_PREFERENCES')
+        # Update candidate's subscription preference
+        add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
+
+        return '', 204
+
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpint:  DELETE /v1/candidates/:id/preferences
