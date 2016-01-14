@@ -15,7 +15,7 @@
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/migration/manager.py" />
-    <option name="PARAMETERS" value="db init" />
+    <option name="PARAMETERS" value="db migrate" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>
