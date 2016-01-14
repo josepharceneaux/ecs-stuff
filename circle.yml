@@ -14,7 +14,7 @@ general:
   branches:
     ignore:
       - GET-713 # list of branches to ignore
-
+      - test-jenkins
 test:
   pre:
     - sudo chown -R ubuntu /var/log:
