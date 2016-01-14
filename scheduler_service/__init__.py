@@ -52,3 +52,7 @@ celery_app.conf.update(accept_content)
 
 from scheduler_service.api.scheduler_api import scheduler_blueprint
 flask_app.register_blueprint(scheduler_blueprint)
+
+# Start APS Scheduler
+from scheduler_service.scheduler import scheduler
+scheduler.start()
