@@ -2,17 +2,73 @@
 Test cases for creating schedule job with and without token.
 """
 
+# Std imports
+import os
+
 # Third party imports
 import json
 import requests
 
 # Application imports
+import time
+
 from scheduler_service.common.routes import SchedulerApiUrl
 
 __author__ = 'saad'
 
 
 class TestSchedulerCreate(object):
+
+    def test_endpoint_job(self, auth_header, job_config_one_time_task):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct. Job will be one time and run after 10 seconds.
+        Then wait for job to hit our scheduler service dummy endpoint.
+        Dummy endpoint will write a file. In the test, check if that file exist
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        filename = '/tmp/temp.txt'
+        if os.path.isfile(filename):
+            os.remove(filename)
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        # Wait till job run
+        time.sleep(12)
+
+        # See if endpoint created a file
+        assert os.path.isfile(filename)
+
+        # No need of file now
+        os.remove(filename)
+
+    def test_single_scheduled_job(self, auth_header, job_config):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        # Let's delete jobs now
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
+                                          headers=auth_header)
+        assert response_remove.status_code == 200
 
     def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
         """
@@ -45,38 +101,6 @@ class TestSchedulerCreate(object):
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header_no_user)
-        assert response_remove.status_code == 200
-
-    def test_request_send_url(self, auth_header, job_config):
-        """
-        Test dummy endpoint SendRequest to test send_request method is working fine.
-        :param auth_header:
-        :param job_config:
-        :return:
-        """
-        response = requests.post(SchedulerApiUrl.TEST_TASK, data=json.dumps(job_config),
-                                 headers=auth_header)
-        assert response.status_code == 200
-
-    def test_single_scheduled_job(self, auth_header, job_config):
-        """
-        Create a job by hitting the endpoint and make sure response
-        is correct.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header)
-        assert response.status_code == 201
-        data = response.json()
-        assert data['id']
-
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
         assert response_remove.status_code == 200
 
     def test_multiple_scheduled_jobs(self, auth_header, job_config):

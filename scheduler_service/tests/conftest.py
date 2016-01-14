@@ -2,11 +2,13 @@
 Test cases for scheduling service
 """
 # Standard imports
+import json
 import os
 from datetime import timedelta
 
 # Application imports
 from scheduler_service import init_app
+from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
 # Application Specific
@@ -40,7 +42,7 @@ def job_config_one_time(request):
     return {
         'task_type': SchedulerUtils.ONE_TIME,
         "content_type": "application/json",
-        "url": "http://getTalent.com/email/send/",
+        "url": "http://getTalent.com/sms/send/",
         "run_datetime": "2017-05-05T08:00:00",
         "post_data": {
             "campaign_name": "Email Campaign",
@@ -99,6 +101,23 @@ def job_config(request, job_config_periodic):
     temp_job_config = job_config_periodic.copy()
     start_date = datetime.utcnow() + timedelta(minutes=15)
     end_date = start_date + timedelta(days=2)
+    temp_job_config['post_data'] = json.dumps(job_config_periodic['post_data'])
     temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
     temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    return temp_job_config
+
+
+@pytest.fixture(scope='function')
+def job_config_one_time_task(request, job_config_one_time):
+    """
+    Fixture job_config to set the start_date and end_date to current time
+    :param request:
+    :param job_config_periodic: fixture of hardcoded values used for testing
+    :return:
+    """
+    temp_job_config = job_config_one_time.copy()
+    run_datetime = datetime.utcnow() + timedelta(seconds=10)
+    temp_job_config['url'] = SchedulerApiUrl.TEST_TASK
+    temp_job_config['post_data'] = json.dumps(job_config_one_time['post_data'])
+    temp_job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
     return temp_job_config

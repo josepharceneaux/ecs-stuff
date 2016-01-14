@@ -21,7 +21,7 @@ from scheduler_service.run import celery, app
 
 
 @celery.task(name="send_request")
-def send_request(access_token, secret_key_id, url, content_type, kwargs):
+def send_request(access_token, secret_key_id, url, content_type, post_data, kwargs):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
@@ -39,7 +39,7 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
         if secret_key_id:
             headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
         # Send request to URL with job post data
-        response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
+        response = http_request(method_type='POST', url=url, data=post_data, headers=headers)
 
         try:
             return response.text

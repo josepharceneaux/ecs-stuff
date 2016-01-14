@@ -6,6 +6,7 @@ This API also checks for authentication token
 
 # Standard imports
 import json
+import os
 import types
 
 # Third party imports
@@ -723,9 +724,13 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
+        else:
+            with open('/tmp/temp.txt', 'w') as tmpfile:
+                tmpfile.write('EndpointHit=1')
+                tmpfile.close()
 
         run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
-                kwargs=task.get('post_data', dict()))
+                task.get('post_data', dict()))
 
         return dict(message="Request sent to url %s" % url)
 
