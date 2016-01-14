@@ -86,7 +86,7 @@ class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
     """
-    # Port Numbers of flask micro services
+    # Port Numbers of Flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
     RESUME_PARSING_SERVICE_PORT = 8003
