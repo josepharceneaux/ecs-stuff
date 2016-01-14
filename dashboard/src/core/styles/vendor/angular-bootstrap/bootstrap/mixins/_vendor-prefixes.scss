@@ -1,0 +1,222 @@
+// Vendor Prefixes
+//
+// All vendor mixins are deprecated as of v3.2.0 due to the introduction of
+// Autoprefixer in our Gruntfile. They have been removed in v4.
+
+// - Animations
+// - Backface visibility
+// - Box shadow
+// - Box sizing
+// - Content columns
+// - Hyphens
+// - Placeholder text
+// - Transformations
+// - Transitions
+// - User Select
+
+
+// Animations
+@mixin bs-animation($bs-animation) {
+  -webkit-animation: $bs-animation;
+       -o-animation: $bs-animation;
+          animation: $bs-animation;
+}
+@mixin bs-animation-name($bs-name) {
+  -webkit-animation-name: $bs-name;
+          animation-name: $bs-name;
+}
+@mixin bs-animation-duration($bs-duration) {
+  -webkit-animation-duration: $bs-duration;
+          animation-duration: $bs-duration;
+}
+@mixin bs-animation-timing-function($bs-timing-function) {
+  -webkit-animation-timing-function: $bs-timing-function;
+          animation-timing-function: $bs-timing-function;
+}
+@mixin bs-animation-delay($bs-delay) {
+  -webkit-animation-delay: $bs-delay;
+          animation-delay: $bs-delay;
+}
+@mixin bs-animation-iteration-count($bs-iteration-count) {
+  -webkit-animation-iteration-count: $bs-iteration-count;
+          animation-iteration-count: $bs-iteration-count;
+}
+@mixin bs-animation-direction($bs-direction) {
+  -webkit-animation-direction: $bs-direction;
+          animation-direction: $bs-direction;
+}
+@mixin bs-animation-fill-mode($bs-fill-mode) {
+  -webkit-animation-fill-mode: $bs-fill-mode;
+          animation-fill-mode: $bs-fill-mode;
+}
+
+// Backface visibility
+// Prevent browsers from flickering when using CSS 3D transforms.
+// Default value is `visible`, but can be changed to `hidden`
+
+@mixin bs-backface-visibility($bs-visibility) {
+  -webkit-backface-visibility: $bs-visibility;
+     -moz-backface-visibility: $bs-visibility;
+          backface-visibility: $bs-visibility;
+}
+
+// Drop shadows
+//
+// Note: Deprecated `.box-shadow()` as of v3.1.0 since all of Bootstrap's
+// supported browsers that have box shadow capabilities now support it.
+
+@mixin bs-box-shadow($bs-shadow...) {
+  -webkit-box-shadow: $bs-shadow; // iOS <4.3 & Android <4.1
+          box-shadow: $bs-shadow;
+}
+
+// Box sizing
+@mixin bs-box-sizing($bs-boxmodel) {
+  -webkit-box-sizing: $bs-boxmodel;
+     -moz-box-sizing: $bs-boxmodel;
+          box-sizing: $bs-boxmodel;
+}
+
+// CSS3 Content Columns
+@mixin bs-content-columns($bs-column-count, $bs-column-gap: $bs-grid-gutter-width) {
+  -webkit-column-count: $bs-column-count;
+     -moz-column-count: $bs-column-count;
+          column-count: $bs-column-count;
+  -webkit-column-gap: $bs-column-gap;
+     -moz-column-gap: $bs-column-gap;
+          column-gap: $bs-column-gap;
+}
+
+// Optional hyphenation
+@mixin bs-hyphens($bs-mode: auto) {
+  word-wrap: break-word;
+  -webkit-hyphens: $bs-mode;
+     -moz-hyphens: $bs-mode;
+      -ms-hyphens: $bs-mode; // IE10+
+       -o-hyphens: $bs-mode;
+          hyphens: $bs-mode;
+}
+
+// Placeholder text
+@mixin bs-placeholder($bs-color: $bs-input-color-placeholder) {
+  // Firefox
+  &::-moz-placeholder {
+    color: $bs-color;
+    opacity: 1; // Override Firefox's unusual default opacity; see https://github.com/twbs/bootstrap/pull/11526
+  }
+  &:-ms-input-placeholder { color: $bs-color; } // Internet Explorer 10+
+  &::-webkit-input-placeholder  { color: $bs-color; } // Safari and Chrome
+}
+
+// Transformations
+@mixin bs-scale($bs-ratio...) {
+  -webkit-transform: scale($bs-ratio);
+      -ms-transform: scale($bs-ratio); // IE9 only
+       -o-transform: scale($bs-ratio);
+          transform: scale($bs-ratio);
+}
+
+@mixin bs-scaleX($bs-ratio) {
+  -webkit-transform: scaleX($bs-ratio);
+      -ms-transform: scaleX($bs-ratio); // IE9 only
+       -o-transform: scaleX($bs-ratio);
+          transform: scaleX($bs-ratio);
+}
+@mixin bs-scaleY($bs-ratio) {
+  -webkit-transform: scaleY($bs-ratio);
+      -ms-transform: scaleY($bs-ratio); // IE9 only
+       -o-transform: scaleY($bs-ratio);
+          transform: scaleY($bs-ratio);
+}
+@mixin bs-skew($bs-x, $bs-y) {
+  -webkit-transform: skewX($bs-x) skewY($bs-y);
+      -ms-transform: skewX($bs-x) skewY($bs-y); // See https://github.com/twbs/bootstrap/issues/4885; IE9+
+       -o-transform: skewX($bs-x) skewY($bs-y);
+          transform: skewX($bs-x) skewY($bs-y);
+}
+@mixin bs-translate($bs-x, $bs-y) {
+  -webkit-transform: translate($bs-x, $bs-y);
+      -ms-transform: translate($bs-x, $bs-y); // IE9 only
+       -o-transform: translate($bs-x, $bs-y);
+          transform: translate($bs-x, $bs-y);
+}
+@mixin bs-translate3d($bs-x, $bs-y, $bs-z) {
+  -webkit-transform: translate3d($bs-x, $bs-y, $bs-z);
+          transform: translate3d($bs-x, $bs-y, $bs-z);
+}
+@mixin bs-rotate($bs-degrees) {
+  -webkit-transform: rotate($bs-degrees);
+      -ms-transform: rotate($bs-degrees); // IE9 only
+       -o-transform: rotate($bs-degrees);
+          transform: rotate($bs-degrees);
+}
+@mixin bs-rotateX($bs-degrees) {
+  -webkit-transform: rotateX($bs-degrees);
+      -ms-transform: rotateX($bs-degrees); // IE9 only
+       -o-transform: rotateX($bs-degrees);
+          transform: rotateX($bs-degrees);
+}
+@mixin bs-rotateY($bs-degrees) {
+  -webkit-transform: rotateY($bs-degrees);
+      -ms-transform: rotateY($bs-degrees); // IE9 only
+       -o-transform: rotateY($bs-degrees);
+          transform: rotateY($bs-degrees);
+}
+@mixin bs-perspective($bs-perspective) {
+  -webkit-perspective: $bs-perspective;
+     -moz-perspective: $bs-perspective;
+          perspective: $bs-perspective;
+}
+@mixin bs-perspective-origin($bs-perspective) {
+  -webkit-perspective-origin: $bs-perspective;
+     -moz-perspective-origin: $bs-perspective;
+          perspective-origin: $bs-perspective;
+}
+@mixin bs-transform-origin($bs-origin) {
+  -webkit-transform-origin: $bs-origin;
+     -moz-transform-origin: $bs-origin;
+      -ms-transform-origin: $bs-origin; // IE9 only
+          transform-origin: $bs-origin;
+}
+
+
+// Transitions
+
+@mixin bs-transition($bs-transition...) {
+  -webkit-transition: $bs-transition;
+       -o-transition: $bs-transition;
+          transition: $bs-transition;
+}
+@mixin bs-transition-property($bs-transition-property...) {
+  -webkit-transition-property: $bs-transition-property;
+          transition-property: $bs-transition-property;
+}
+@mixin bs-transition-delay($bs-transition-delay) {
+  -webkit-transition-delay: $bs-transition-delay;
+          transition-delay: $bs-transition-delay;
+}
+@mixin bs-transition-duration($bs-transition-duration...) {
+  -webkit-transition-duration: $bs-transition-duration;
+          transition-duration: $bs-transition-duration;
+}
+@mixin bs-transition-timing-function($bs-timing-function) {
+  -webkit-transition-timing-function: $bs-timing-function;
+          transition-timing-function: $bs-timing-function;
+}
+@mixin bs-transition-transform($bs-transition...) {
+  -webkit-transition: -webkit-transform $bs-transition;
+     -moz-transition: -moz-transform $bs-transition;
+       -o-transition: -o-transform $bs-transition;
+          transition: transform $bs-transition;
+}
+
+
+// User select
+// For selecting text on the page
+
+@mixin bs-user-select($bs-select) {
+  -webkit-user-select: $bs-select;
+     -moz-user-select: $bs-select;
+      -ms-user-select: $bs-select; // IE10+
+          user-select: $bs-select;
+}

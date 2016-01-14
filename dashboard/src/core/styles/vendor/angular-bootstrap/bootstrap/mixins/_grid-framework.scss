@@ -1,0 +1,81 @@
+// Framework grid generation
+//
+// Used only by Bootstrap to generate the correct number of grid classes given
+// any value of `$bs-grid-columns`.
+
+// [converter] This is defined recursively in LESS, but Sass supports real loops
+@mixin bs-make-grid-columns($bs-i: 1, $bs-list: ".col-xs-#{$bs-i}, .col-sm-#{$bs-i}, .col-md-#{$bs-i}, .col-lg-#{$bs-i}") {
+  @for $bs-i from (1 + 1) through $bs-grid-columns {
+    $bs-list: "#{$bs-list}, .col-xs-#{$bs-i}, .col-sm-#{$bs-i}, .col-md-#{$bs-i}, .col-lg-#{$bs-i}";
+  }
+  #{$bs-list} {
+    position: relative;
+    // Prevent columns from collapsing when empty
+    min-height: 1px;
+    // Inner gutter via padding
+    padding-left:  ceil(($bs-grid-gutter-width / 2));
+    padding-right: floor(($bs-grid-gutter-width / 2));
+  }
+}
+
+
+// [converter] This is defined recursively in LESS, but Sass supports real loops
+@mixin bs-float-grid-columns($bs-class, $bs-i: 1, $bs-list: ".col-#{$bs-class}-#{$bs-i}") {
+  @for $bs-i from (1 + 1) through $bs-grid-columns {
+    $bs-list: "#{$bs-list}, .col-#{$bs-class}-#{$bs-i}";
+  }
+  #{$bs-list} {
+    float: left;
+  }
+}
+
+
+@mixin bs-calc-grid-column($bs-index, $bs-class, $bs-type) {
+  @if ($bs-type == width) and ($bs-index > 0) {
+    .col-#{$bs-class}-#{$bs-index} {
+      width: percentage(($bs-index / $bs-grid-columns));
+    }
+  }
+  @if ($bs-type == push) and ($bs-index > 0) {
+    .col-#{$bs-class}-push-#{$bs-index} {
+      left: percentage(($bs-index / $bs-grid-columns));
+    }
+  }
+  @if ($bs-type == push) and ($bs-index == 0) {
+    .col-#{$bs-class}-push-0 {
+      left: auto;
+    }
+  }
+  @if ($bs-type == pull) and ($bs-index > 0) {
+    .col-#{$bs-class}-pull-#{$bs-index} {
+      right: percentage(($bs-index / $bs-grid-columns));
+    }
+  }
+  @if ($bs-type == pull) and ($bs-index == 0) {
+    .col-#{$bs-class}-pull-0 {
+      right: auto;
+    }
+  }
+  @if ($bs-type == offset) {
+    .col-#{$bs-class}-offset-#{$bs-index} {
+      margin-left: percentage(($bs-index / $bs-grid-columns));
+    }
+  }
+}
+
+// [converter] This is defined recursively in LESS, but Sass supports real loops
+@mixin bs-loop-grid-columns($bs-columns, $bs-class, $bs-type) {
+  @for $bs-i from 0 through $bs-columns {
+    @include bs-calc-grid-column($bs-i, $bs-class, $bs-type);
+  }
+}
+
+
+// Create grid for specific class
+@mixin bs-make-grid($bs-class) {
+  @include bs-float-grid-columns($bs-class);
+  @include bs-loop-grid-columns($bs-grid-columns, $bs-class, width);
+  @include bs-loop-grid-columns($bs-grid-columns, $bs-class, pull);
+  @include bs-loop-grid-columns($bs-grid-columns, $bs-class, push);
+  @include bs-loop-grid-columns($bs-grid-columns, $bs-class, offset);
+}
