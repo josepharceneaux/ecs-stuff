@@ -8,6 +8,7 @@ from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.models.email_marketing import EmailCampaign
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignEndpoints
+from ...email_campaign_app import logger
 
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 
@@ -56,18 +57,22 @@ class EmailCampaignApi(Resource):
 def send_campaign_emails():
     """
     Sends campaign emails to the candidates present in smartlists of campaign.
-    Scheduler service will call this and to send emails to candidates.
+    Scheduler service will call this to send emails to candidates.
     """
     data = request.get_json(silent=True)
     if not data:
+        logger.exception("Received empty request body while sending campaign emails")
         raise InvalidUsage("Received empty request body")
     campaign_id = data.get('campaign_id')
     if not campaign_id:
+        logger.exception("No campaign_id is provided for sending campaign emails")
         raise InvalidUsage("`campaign_id` is required")
     if not is_number(campaign_id):
+        logger.exception("campaign_id should be numeric value.")
         raise InvalidUsage("`campaign_id` is expected to be a numeric value")
     campaign = EmailCampaign.query.get(campaign_id)
     if not campaign:
+        logger.exception("Given campaign_id does not exists.")
         raise NotFoundError("Given `campaign_id` does not exists")
     # remove oauth_token instead use trusted server to server calls
     oauth_token = request.oauth_token

@@ -8,7 +8,7 @@ from ..routes import ActivityApiUrl
 from ..utils.talent_reporting import email_error_to_admins
 
 
-def add_activity(user_id, access_token, activity_type, source_table, source_id=None, params=None):
+def add_activity(user_id, oauth_token, activity_type, source_table, source_id=None, params=None):
     """
     Adds activity in system using Activity service
     This function fails silently, because in case of any activity error i.e. it will be some sort of programming error
@@ -35,7 +35,7 @@ def add_activity(user_id, access_token, activity_type, source_table, source_id=N
         return
     # TODO: Remove bearer token because system should create activity not the user.
     headers = {'content-type': 'application/json',
-               'Authorization': 'Bearer %s' % access_token}
+               'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token}
     # call (POST) to activity_service to create activity
     try:
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,
@@ -47,7 +47,7 @@ def add_activity(user_id, access_token, activity_type, source_table, source_id=N
         email_body = """Exception occurred while adding activity (POST API). <br/>
         The exception was: <em> {exception}. <br/><br/>
         Traceback: <br/>
-        <pre> {traceback} </pre>""".format({'exception': ex, 'traceback': tb})
+        <pre> {traceback} </pre>""".format(exception=ex, traceback=tb)
 
         email_error_to_admins(body=email_body, subject="Activity Service Error: Calling POST API of activity service")
         return

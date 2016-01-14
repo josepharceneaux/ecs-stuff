@@ -575,7 +575,7 @@ class EmailCampaignEndpoints(object):
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     EMAIL_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns'
     EMAIL_CAMPAIGN = RELATIVE_VERSION % 'email-campaigns/<int:id>'
-    SEND_CAMPAIGNS = RELATIVE_VERSION % 'send-campaign-emails'
+    SEND_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns/send'
 
 
 class EmailCampaignUrl(object):

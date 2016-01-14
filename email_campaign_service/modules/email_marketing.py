@@ -72,7 +72,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     # Add activity
     add_activity(user_id=user_id,
-                 access_token=oauth_token,
+                 oauth_token=oauth_token,
                  activity_type=ActivityTypes.CAMPAIGN_CREATE,
                  source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
                  params=dict(id=email_campaign.id, name=email_campaign_name))
@@ -93,11 +93,11 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     # Schedule the sending of emails & update email_campaign scheduler fields
     schedule_task_params = {
         "url": EmailCampaignUrl.SEND_CAMPAIGNS,
+        "content_type": "application/json",
         "post_data": {
             "campaign_id": email_campaign.id,
             "list_ids": list_ids,
             "email_client_id": email_client_id
-
         }
     }
     if frequency_obj:
@@ -107,7 +107,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["end_datetime"] = stop_time
     else:
         schedule_task_params["task_type"] = "one_time"
-        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow(), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is really needed.
+        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=10), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is really needed.
 
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
@@ -155,7 +155,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
 
         # Add activity
         add_activity(user_id=user.id,
-                     access_token=oauth_token,
+                     oauth_token=oauth_token,
                      activity_type=ActivityTypes.CAMPAIGN_SEND,
                      source_id=campaign.id, source_table=EmailCampaign.__tablename__,
                      params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
