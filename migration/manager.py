@@ -19,9 +19,10 @@ from flask_common.common.models import (
     venue,
     widget
 )
+from flask_common.common.talent_config_manager import load_gettalent_config
 
 app = Flask(__name__)
-app.config.from_object('config')
+load_gettalent_config(app.config)
 
 db.init_app(app)
 db.app = app
