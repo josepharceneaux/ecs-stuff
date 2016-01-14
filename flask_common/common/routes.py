@@ -41,9 +41,11 @@ def _get_host_name(service_name, port_number):
     :return:
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ['dev', 'jenkins']:
+    if env == 'dev':
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
+    elif env == 'jenkins':
+        return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == 'qa':
         # This looks like https://auth-service-webdev.gettalent.com (for auth service)
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
