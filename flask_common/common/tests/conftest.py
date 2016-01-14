@@ -17,6 +17,7 @@ from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
 
+
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
 USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
@@ -91,76 +92,76 @@ def revoke_token(user_logout_credentials):
     return
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def sample_user(test_domain, request):
-    user_attrs = dict(
-        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
-
-    def fin():
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    def tear_down():
         try:
             db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
+    request.addfinalizer(tear_down)
     return user
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def sample_user_2(test_domain, request):
-    user_attrs = dict(
-        domain_id=test_domain.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
-
-    def fin():
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    def tear_down():
         try:
             db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
+    request.addfinalizer(tear_down)
     return user
 
 
-@pytest.fixture(autouse=True)
-def test_domain(test_org, test_culture, request):
-    domain_attrs = dict(
-        name=randomword(10).format(), usage_limitation=-1, added_time=datetime.today(),
-        organization_id=test_org.id, is_fair_check_on=0, is_active=1,
-        default_culture_id=test_culture.id, expiration=datetime(2050, 4, 26)
-    )
-    test_domain, created = get_or_create(session=db.session, model=Domain, defaults=None, **domain_attrs)
-    if created:
-        db.session.add(test_domain)
-        db.session.commit()
+@pytest.fixture()
+def user_from_different_domain(test_domain_2, request):
+    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
 
-    def fin():
+    def tear_down():
         try:
-            db.session.delete(test_domain)
+            db.session.delete(user)
             db.session.commit()
         except Exception:
             db.session.rollback()
-            pass
+    request.addfinalizer(tear_down)
+    return user
 
-    request.addfinalizer(fin)
-    return test_domain
+
+@pytest.fixture()
+def test_domain(request):
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return domain
+
+
+@pytest.fixture()
+def test_domain_2(request):
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return domain
 
 
 @pytest.fixture(autouse=True)
@@ -221,7 +222,7 @@ def custom_field_for_domain(domain_id):
     """
     Function will add CustomField to user's domain
     :type user: User
-    :rtype  [CustomField]
+    :rtype:  [CustomField]
     """
     import datetime
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]

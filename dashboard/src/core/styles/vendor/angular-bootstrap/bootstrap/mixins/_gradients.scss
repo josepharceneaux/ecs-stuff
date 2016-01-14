@@ -1,0 +1,58 @@
+// Gradients
+
+
+
+// Horizontal gradient, from left to right
+//
+// Creates two color stops, start and end, by specifying a color and position for each color stop.
+// Color stops are not available in IE9 and below.
+@mixin bs-gradient-horizontal($bs-start-color: #555, $bs-end-color: #333, $bs-start-percent: 0%, $bs-end-percent: 100%) {
+  background-image: -webkit-linear-gradient(left, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent); // Safari 5.1-6, Chrome 10+
+  background-image: -o-linear-gradient(left, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent); // Opera 12
+  background-image: linear-gradient(to right, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent); // Standard, IE10, Firefox 16+, Opera 12.10+, Safari 7+, Chrome 26+
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#{ie-hex-str($bs-start-color)}', endColorstr='#{ie-hex-str($bs-end-color)}', GradientType=1); // IE9 and down
+}
+
+// Vertical gradient, from top to bottom
+//
+// Creates two color stops, start and end, by specifying a color and position for each color stop.
+// Color stops are not available in IE9 and below.
+@mixin bs-gradient-vertical($bs-start-color: #555, $bs-end-color: #333, $bs-start-percent: 0%, $bs-end-percent: 100%) {
+  background-image: -webkit-linear-gradient(top, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent);  // Safari 5.1-6, Chrome 10+
+  background-image: -o-linear-gradient(top, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent);  // Opera 12
+  background-image: linear-gradient(to bottom, $bs-start-color $bs-start-percent, $bs-end-color $bs-end-percent); // Standard, IE10, Firefox 16+, Opera 12.10+, Safari 7+, Chrome 26+
+  background-repeat: repeat-x;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#{ie-hex-str($bs-start-color)}', endColorstr='#{ie-hex-str($bs-end-color)}', GradientType=0); // IE9 and down
+}
+
+@mixin bs-gradient-directional($bs-start-color: #555, $bs-end-color: #333, $bs-deg: 45deg) {
+  background-repeat: repeat-x;
+  background-image: -webkit-linear-gradient($bs-deg, $bs-start-color, $bs-end-color); // Safari 5.1-6, Chrome 10+
+  background-image: -o-linear-gradient($bs-deg, $bs-start-color, $bs-end-color); // Opera 12
+  background-image: linear-gradient($bs-deg, $bs-start-color, $bs-end-color); // Standard, IE10, Firefox 16+, Opera 12.10+, Safari 7+, Chrome 26+
+}
+@mixin bs-gradient-horizontal-three-colors($bs-start-color: #00b3ee, $bs-mid-color: #7a43b6, $bs-color-stop: 50%, $bs-end-color: #c3325f) {
+  background-image: -webkit-linear-gradient(left, $bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-image: -o-linear-gradient(left, $bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-image: linear-gradient(to right, $bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-repeat: no-repeat;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#{ie-hex-str($bs-start-color)}', endColorstr='#{ie-hex-str($bs-end-color)}', GradientType=1); // IE9 and down, gets no color-stop at all for proper fallback
+}
+@mixin bs-gradient-vertical-three-colors($bs-start-color: #00b3ee, $bs-mid-color: #7a43b6, $bs-color-stop: 50%, $bs-end-color: #c3325f) {
+  background-image: -webkit-linear-gradient($bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-image: -o-linear-gradient($bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-image: linear-gradient($bs-start-color, $bs-mid-color $bs-color-stop, $bs-end-color);
+  background-repeat: no-repeat;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#{ie-hex-str($bs-start-color)}', endColorstr='#{ie-hex-str($bs-end-color)}', GradientType=0); // IE9 and down, gets no color-stop at all for proper fallback
+}
+@mixin bs-gradient-radial($bs-inner-color: #555, $bs-outer-color: #333) {
+  background-image: -webkit-radial-gradient(circle, $bs-inner-color, $bs-outer-color);
+  background-image: radial-gradient(circle, $bs-inner-color, $bs-outer-color);
+  background-repeat: no-repeat;
+}
+@mixin bs-gradient-striped($bs-color: rgba(255,255,255,.15), $bs-angle: 45deg) {
+  background-image: -webkit-linear-gradient($bs-angle, $bs-color 25%, transparent 25%, transparent 50%, $bs-color 50%, $bs-color 75%, transparent 75%, transparent);
+  background-image: -o-linear-gradient($bs-angle, $bs-color 25%, transparent 25%, transparent 50%, $bs-color 50%, $bs-color 75%, transparent 75%, transparent);
+  background-image: linear-gradient($bs-angle, $bs-color 25%, transparent 25%, transparent 50%, $bs-color 50%, $bs-color 75%, transparent 75%, transparent);
+}

@@ -2,7 +2,7 @@
     'use strict';
 
     angular
-        .module('app.forgot-password')
+        .module('app.forgotPassword')
         .directive('gtForgotPassword', directiveFunction)
         .controller('ForgotPasswordController', ControllerFunction);
 

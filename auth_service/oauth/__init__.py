@@ -5,6 +5,7 @@ from flask import Flask
 from flask_oauthlib.provider import OAuth2Provider
 from auth_service.common.routes import HEALTH_CHECK
 from auth_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from auth_service.common.migrate import db_create_all
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
@@ -33,8 +34,7 @@ try:
 
     import views
 
-    db.create_all()
-    db.session.commit()
+    db_create_all()
 
     logger.info("Starting auth_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

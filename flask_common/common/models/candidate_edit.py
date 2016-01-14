@@ -160,3 +160,23 @@ class CandidateEdit(db.Model):
             for column_name in cls.field_dict[table_name].keys():
                 if cls.field_dict[table_name][column_name] == field_id:
                     return table_name, column_name
+
+
+class CandidateView(db.Model):
+    __tablename__ = 'candidate_view'
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    view_type = db.Column(TINYINT)
+    view_datetime = db.Column(db.DateTime)
+
+    def __repr__(self):
+        return "<CandidateView (candidate_id = %r)>" % self.candidate_id
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
+    def get_all(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).all()
