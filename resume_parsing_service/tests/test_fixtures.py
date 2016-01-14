@@ -17,7 +17,7 @@ from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.models.user import User
 from resume_parsing_service.common.utils.db_utils import get_or_create
 from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.resume_parsing_app import db
+from resume_parsing_service.app import db
 
 
 def require_integrity(func):

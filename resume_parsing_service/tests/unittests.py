@@ -13,13 +13,13 @@ from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
 # Modules being tested.
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_addresses
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_educations
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_emails
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_experiences
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_name
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_phones
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_candidate_skills
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_emails
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_experiences
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 
 
 EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')

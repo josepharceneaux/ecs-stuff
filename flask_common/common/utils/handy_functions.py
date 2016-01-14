@@ -1,30 +1,20 @@
 """Misc functions that have no logical grouping to a module."""
 __author__ = 'erikfarmer'
-<<<<<<< HEAD
-=======
-
 import json
 import requests
 from flask import current_app
 from requests.packages.urllib3.connection import ConnectionError
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
->>>>>>> a223ba445e999d15bf3260fd049ec831b5988ed1
 import re
 import random
 import string
 from itertools import izip_longest
 from ..models.user import User, UserScopedRoles, DomainRole
-# from user_service.common.models.db import db
-# import user_service.user_app
 
 
 def random_word(length):
-<<<<<<< HEAD
     """Creates a random lowercase string, usefull for testing data."""
-=======
-    # Creates a random lowercase string, useful for testing data.
->>>>>>> a223ba445e999d15bf3260fd049ec831b5988ed1
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 
@@ -66,7 +56,6 @@ def camel_case_to_snake_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
 
-<<<<<<< HEAD
 def grouper(iterable, group_size, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks
@@ -78,7 +67,8 @@ def grouper(iterable, group_size, fillvalue=None):
     """
     args = [iter(iterable)] * group_size
     return izip_longest(*args, fillvalue=fillvalue)
-=======
+
+
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
@@ -162,4 +152,3 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         logger.error('http_request: Unknown Method type %s ' % method_type)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
->>>>>>> a223ba445e999d15bf3260fd049ec831b5988ed1

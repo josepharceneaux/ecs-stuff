@@ -7,9 +7,9 @@ from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.resume_parsing_app.views.batch_lib import _process_batch_item
-from resume_parsing_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
-from resume_parsing_service.resume_parsing_app.views.parse_lib import process_resume
+from resume_parsing_service.app.views.batch_lib import _process_batch_item
+from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.app.views.parse_lib import process_resume
 from resume_parsing_service.common.utils.auth_utils import require_oauth
 from resume_parsing_service.common.routes import ResumeApi
 

@@ -2,7 +2,7 @@
 __author__ = 'erikfarmer'
 import json
 import requests
-from resume_service.common.routes import CandidateApiUrl
+from resume_parsing_service.common.routes import CandidateApiUrl
 
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """

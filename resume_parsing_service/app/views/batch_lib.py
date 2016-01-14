@@ -11,8 +11,8 @@ import requests
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_parsing_service.common.utils.handy_functions import grouper
-from resume_parsing_service.resume_parsing_app import redis_store
-from resume_parsing_service.resume_parsing_app.views.parse_lib import process_resume
+from resume_parsing_service.app import redis_store
+from resume_parsing_service.app.views.parse_lib import process_resume
 from resume_parsing_service.common.error_handling import TalentError
 
 

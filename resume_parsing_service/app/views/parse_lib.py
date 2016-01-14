@@ -25,8 +25,8 @@ from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
+from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_json
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
