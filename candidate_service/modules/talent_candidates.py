@@ -568,6 +568,24 @@ def fetch_candidate_subscription_preference(candidate_id):
     return {'id': candidate_subs_pref.id, 'frequency_id': candidate_subs_pref.frequency_id}
 
 
+def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=False):
+    """
+    Function adds or updates candidate's subs preference
+    :type candidate_id: int|long
+    :type frequency_id: int|long
+    :type is_update: bool
+    """
+    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
+    can_subs_pref_query = CandidateSubscriptionPreference.query.filter_by(candidate_id=candidate_id)
+    if is_update:  # Update
+        can_subs_pref_query.update(frequency_id=frequency_id)
+    else:  # Add
+        db.session.add(CandidateSubscriptionPreference(
+            candidate_id=candidate_id, frequency_id=frequency_id
+        ))
+    db.session.commit()
+
+
 def add_candidate_subscription_preference(candidate_id, frequency_id):
     """
     :type candidate_id: int|long
