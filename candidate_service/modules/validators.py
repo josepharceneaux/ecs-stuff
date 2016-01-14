@@ -30,6 +30,7 @@ def check_for_candidate(candidate_id):
     if candidate.is_web_hidden:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
+    return candidate
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
