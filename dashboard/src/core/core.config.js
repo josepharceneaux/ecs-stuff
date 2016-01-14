@@ -14,12 +14,12 @@
     // Configure the app
     core.config(configFunction);
 
-    configFunction.$inject = ['$compileProvider', '$logProvider', 'exceptionHandlerProvider',
+    configFunction.$inject = ['$provide', '$compileProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
         'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider'];
 
     /* @ngInject */
-    function configFunction($compileProvider, $logProvider, exceptionHandlerProvider,
+    function configFunction($provide, $compileProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
                             tagsInputConfigProvider, authInfo, $uibTooltipProvider) {
 
@@ -69,5 +69,40 @@
             appendToBody: true,
             placement: 'auto'
         });
+
+        $provide.decorator('hljsDirective', HljsDecorator);
+    }
+
+    // Decorate the hjls directive so that we can assign classes to the <code> element
+    HljsDecorator.$inject = ['$delegate'];
+
+    /* @ngInject */
+    function HljsDecorator($delegate) {
+        var directive = $delegate[0];
+        var compile = directive.compile;
+        directive.compile = function newCompile(tElement, tAttrs, transclude) {
+            var link = compile.apply(this, arguments);
+            var isLinkObject = typeof link === 'object';
+            var newPostLink = function ($scope, $element, $attrs, $controllerDirective, $transcludeFunc) {
+                var $codeEl;
+                if (isLinkObject) {
+                    link.post.apply(this, arguments);
+                } else {
+                    link.apply(this, arguments);
+                }
+                if ($attrs.codeClass) {
+                    $codeEl = $element.find('code');
+                    $codeEl.addClass($attrs.codeClass);
+                }
+            };
+            if (isLinkObject) {
+                newPostLink = {
+                    pre: link.pre,
+                    post: newPostLink
+                }
+            }
+            return newPostLink;
+        };
+        return $delegate;
     }
 })();

@@ -275,6 +275,10 @@ class CandidateEmail(db.Model):
         for email in cls.query.filter_by(candidate_id=candidate_id).all():
             email.is_default = False
 
+    @classmethod
+    def get_by_address(cls, email_address):
+        return cls.query.filter_by(address=email_address).first()
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
@@ -887,6 +891,10 @@ class CandidateCustomField(db.Model):
     def get_custom_field(cls, candidate_id, custom_field_id):
         return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
                                         CandidateCustomField.custom_field_id == custom_field_id)).first()
+
+    @classmethod
+    def get_candidate_custom_fields(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class ClassificationType(db.Model):

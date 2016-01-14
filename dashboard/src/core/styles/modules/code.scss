@@ -21,19 +21,13 @@ pre {
 }
 
 .code__wrap {
-  &,
-  pre code {
-    white-space: pre-wrap;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-  }
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 .code__scrollable {
-  &,
-  pre code {
-    max-height: 350px;
-    overflow-x: auto;
-  }
+  max-height: 350px;
+  overflow-y: auto;
 }

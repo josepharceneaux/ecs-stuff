@@ -14,6 +14,7 @@ from ..talent_config_manager import TalentConfigKeys
 from ..models.user import User, UserScopedRoles, DomainRole
 from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
 
+
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
@@ -34,9 +35,12 @@ def add_role_to_test_user(test_user, role_names):
     :param list[str] role_names: List of role names
     :return:
     """
+    # db.session.commit()  #  TODO We add these commits here because DomainRoles were being added by 2 different tests when running in parallel, raising a MySQL exception.  We should be able to insert DomainRoles atomically but we can't do that without adding additional test infra like Redis.
     for role_name in role_names:
         if not DomainRole.get_by_name(role_name):
             DomainRole.save(role_name)
+            # db.session.commit()
+
     UserScopedRoles.add_roles(test_user, role_names)
 
 

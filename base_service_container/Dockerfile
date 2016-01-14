@@ -33,7 +33,6 @@ ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
 RUN touch /etc/rsyslog.d/21-nginx-loggly.conf
 ADD nginx_loggly.conf /etc/rsyslog.d/21-nginx-loggly.conf
 
-
 # Install python pyenv and 2.7.9
 RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
 ENV HOME /root
@@ -51,12 +50,5 @@ RUN pip install -r /root/base_service_container/requirements.txt
 ## Install nginx stuff
 RUN rm /etc/nginx/sites-enabled/default
 ADD talent-nginx.conf /etc/nginx/conf.d/
-
-# ADD DigiCertCA.crt /usr/local/etc/ssl/DigiCertCA.crt
-# ADD star_gettalent_com.crt /usr/local/etc/ssl/star_gettalent_com.crt
-# ADD star_gettalent_com.key /usr/local/etc/ssl/star_gettalent_com.key
-# ADD DigiCertCA.crt /etc/nginx/ssl/DigiCertCA.crt
-# ADD star_gettalent_com.crt /etc/nginx/ssl/star_gettalent_com.crt
-# ADD star_gettalent_com.key /etc/nginx/ssl/star_gettalent_com.key
 
 WORKDIR /root/base_service_container
