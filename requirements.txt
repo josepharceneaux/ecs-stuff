@@ -69,3 +69,7 @@ APScheduler==3.0.4
 celery==3.1.19
 flower==0.8.3
 redis==2.10.5
+
+jsonschema==2.5.1
+functools32
+strict-rfc3339==0.6

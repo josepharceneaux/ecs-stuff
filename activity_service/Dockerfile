@@ -1,24 +1,27 @@
 FROM gettalent/base-service-container:latest
 
-# Install nginx stuff
-RUN rm /etc/nginx/sites-enabled/default
-ADD talent-nginx.conf /etc/nginx/conf.d/
-
-# Add auth service stuff
+# Add files
 WORKDIR /root/base_service_container
 ADD . activity_service
 WORKDIR /root/base_service_container/activity_service
 
+# Replace app name in config Loggly and NewRelic config files
+RUN sed -i -e 's/APP_NAME/activity_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
+
 EXPOSE 80
 
-# Set DB connection string`
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
+# Set PYTHON PATH
+ENV PYTHONPATH ../
 
 CMD\
     eval "$(pyenv init -)" && \
 
+    sed -i -e s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g /etc/rsyslog.d/*loggly.conf && \
+
+    /etc/init.d/rsyslog start && \
+
     /etc/init.d/nginx restart && \
 
-    export PYTHONPATH=../ && \
+    export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
+    newrelic-admin run-program uwsgi --ini ./talent-uwsgi.ini

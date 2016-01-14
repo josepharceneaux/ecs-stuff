@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.forgot-password', [
+    angular.module('app.forgotPassword', [
         'app.core'
     ]);
 })();

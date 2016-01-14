@@ -8,6 +8,8 @@ from flask import request
 from flask.ext.cors import CORS
 from . import logger
 from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
+from spreadsheet_import_service.common.error_handling import InvalidUsage
+from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_roles
 from spreadsheet_import_service.common.utils.talent_s3 import *
 
@@ -24,7 +26,7 @@ CORS(mod, resources={
 HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 
-@mod.route('/parse_spreadsheet/convert_to_table/', methods=['GET'])
+@mod.route(SpreadsheetImportApi.CONVERT_TO_TABLE, methods=['GET'])
 @require_oauth()
 @require_all_roles('CAN_ADD_CANDIDATES')
 def spreadsheet_to_table():
@@ -49,7 +51,7 @@ def spreadsheet_to_table():
     return jsonify(dict(table=first_rows))
 
 
-@mod.route('/parse_spreadsheet/import_candidates', methods=['POST'])
+@mod.route(SpreadsheetImportApi.IMPORT_CANDIDATES, methods=['POST'])
 @require_oauth()
 @require_all_roles('CAN_ADD_CANDIDATES')
 def import_from_table():

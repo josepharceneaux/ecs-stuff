@@ -15,7 +15,7 @@ from candidate_service.common.utils.validators import is_number
 from datetime import datetime
 
 
-def does_candidate_belong_to_user(user_row, candidate_id):
+def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     Function checks if:
         1. Candidate belongs to user AND
@@ -26,38 +26,48 @@ def does_candidate_belong_to_user(user_row, candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
-        Candidate.id == candidate_id, Candidate.user_id == user_row.id,
-        User.domain_id == user_row.domain_id
+            Candidate.id == candidate_id, Candidate.user_id == user_row.id,
+            User.domain_id == user_row.domain_id
     ).first()
 
     return True if candidate_row else False
 
 
-def do_candidates_belong_to_user(user_row, candidate_ids):
-    """
-    Function checks if:
-        1. Candidates belong to user AND
-        2. Candidates are in the same domain as the user
-    :type user_row:         User
-    :type candidate_ids:    list
-    :rtype  bool
+def do_candidates_belong_to_users_domain(user_row, candidate_ids):
+    """Checks if provided candidate-IDs belong to the user's domain
+    :type user:  User
+    :param candidate_ids:  [int]
+    :rtype:  bool
     """
     assert isinstance(candidate_ids, list)
-    exists = db.session.query(Candidate).join(User).\
+    exists = db.session.query(Candidate).join(User). \
                  filter(Candidate.id.in_(candidate_ids),
                         User.domain_id != user_row.domain_id).count() == 0
     return exists
+
+
+def does_candidate_belong_to_users_domain(user, candidate_id):
+    """Checks if requested candidate ID belongs to the user's domain
+    :type   user:           User
+    :type  candidate_id:   Candidate.id
+    :rtype: bool
+    """
+    assert isinstance(candidate_id, (int, long))
+    exist = db.session.query(Candidate).join(User).filter(Candidate.id == candidate_id) \
+        .filter(User.domain_id == user.domain_id).first()
+
+    return True if exist else False
 
 
 def is_custom_field_authorized(user_domain_id, custom_field_ids):
     """
     Function checks if custom_field_ids belong to the logged-in-user's domain
     :type   user_domain_id:   int
-    :type   custom_field_ids: [int]
+    :type   custom_field_ids: list
     :rtype: bool
     """
     assert isinstance(custom_field_ids, list)
-    exists = db.session.query(CustomField).\
+    exists = db.session.query(CustomField). \
                  filter(CustomField.id.in_(custom_field_ids),
                         CustomField.domain_id != user_domain_id).count() == 0
     return exists
@@ -71,7 +81,7 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     :rtype: bool
     """
     assert isinstance(area_of_interest_ids, list)
-    exists = db.session.query(AreaOfInterest).\
+    exists = db.session.query(AreaOfInterest). \
                  filter(AreaOfInterest.id.in_(area_of_interest_ids),
                         AreaOfInterest.domain_id != user_domain_id).count() == 0
     return exists
@@ -83,7 +93,7 @@ def does_email_campaign_belong_to_domain(user):
     :rtype: bool
     """
     assert isinstance(user, User)
-    email_campaign_rows = db.session.query(EmailCampaign).join(User).\
+    email_campaign_rows = db.session.query(EmailCampaign).join(User). \
         filter(User.domain_id == user.domain_id).first()
 
     return True if email_campaign_rows else False
@@ -101,7 +111,6 @@ def validate_is_number(key, value):
 
 
 def validate_id_list(key, values):
-
     if ',' in values or isinstance(values, list):
         values = values.split(',') if ',' in values else values
         for value in values:
@@ -196,7 +205,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     # Id of a talent_pool from where to search candidates
     "talent_pool_id": 'digit',
     # List of ids of dumb_lists (For Internal TalentPipeline Search Only)
-    "dumb_list_ids":  'id_list',
+    "dumb_list_ids": 'id_list',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }

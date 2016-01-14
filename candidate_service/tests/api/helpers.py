@@ -79,6 +79,9 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
 def request_to_candidates_resource(access_token, request, data=None):
     """
     Function sends a get request to CandidatesResource NOT CandidateResource
+    :type access_token: str
+    :type request: str
+    :type data: dict
     """
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
@@ -335,6 +338,15 @@ def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
     :param request: get
     """
     url = CandidateApiUrl.CANDIDATE_EDIT % candidate_id
+    return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_view_resource(access_token, request, candidate_id=''):
+    """
+    :type access_token: str
+    :type request: get  str
+    """
+    url = CandidateApiUrl.CANDIDATE_VIEW % candidate_id
     return define_and_send_request(access_token, request, url)
 
 

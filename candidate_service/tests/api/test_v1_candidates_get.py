@@ -40,6 +40,7 @@ def test_get_candidate_without_authed_user(sample_user, user_auth):
     resp = get_from_candidate_resource(access_token=None, candidate_id=candidate_id)
     print response_info(resp)
     assert resp.status_code == 401
+    assert resp.json()['error']['code'] == 11 # Bearer token not found
 
 
 def test_get_candidate_without_id_or_email(sample_user, user_auth):
@@ -64,7 +65,7 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
     assert len(resp.json()['candidates']) == 1
 
 
-def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
+def test_get_candidate_from_forbidden_domain(sample_user, user_auth, user_from_different_domain):
     """
     Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
@@ -81,7 +82,7 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     print response_info(resp)
 
     # Get access token for sample_user_2
-    token_2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
+    token_2 = user_auth.get_auth_token(user_from_different_domain, True)['access_token']
 
     # Retrieve candidate from a different domain
     candidate_id = resp_dict['candidates'][0]['id']

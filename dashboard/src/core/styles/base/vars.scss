@@ -113,8 +113,9 @@ $border-width--medium: .2em;
 // Border Radius
 // -----
 
-$border-radius--button: 5px;
-$border-radius--container: 5px;
+$border-radius--base: 5px;
+$border-radius--button: $border-radius--base;
+$border-radius--container: $border-radius--base;
 
 // -----
 // Opacity
@@ -155,5 +156,4 @@ $easing--slow:   .5s ease;
 // Misc
 // -----
 
-$misc--headerHeight: 5.25em;
-$misc--sidebarWidth: 20em;
+//$misc--xxx: 20em;

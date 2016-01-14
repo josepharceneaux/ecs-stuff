@@ -1,6 +1,6 @@
 from sqlalchemy import and_
 from db import db
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 import datetime
 from sqlalchemy.dialects.mysql import TINYINT
 
@@ -189,6 +189,9 @@ class CandidatePhone(db.Model):
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
+    # Relationships
+    candidate = relationship('Candidate', backref='candidate_phone')
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -247,6 +250,10 @@ class CandidateEmail(db.Model):
     def set_is_default_to_false(cls, candidate_id):
         for email in cls.query.filter_by(candidate_id=candidate_id).all():
             email.is_default = False
+
+    @classmethod
+    def get_by_address(cls, email_address):
+        return cls.query.filter_by(address=email_address).first()
 
 
 class CandidatePhoto(db.Model):
@@ -714,9 +721,12 @@ class CandidateEducationDegree(db.Model):
     end_time = db.Column('EndTime', db.DateTime)
 
     # Relationships
-    candidate_education_degree_bullets = relationship('CandidateEducationDegreeBullet',
-                                                      cascade='all, delete-orphan',
-                                                      passive_deletes=True)
+    candidate_education = relationship('CandidateEducation', backref=backref(
+        'candidate_education_degree', cascade='all, delete-orphan', passive_deletes=True
+    ))
+    candidate_education_degree_bullets = relationship(
+            'CandidateEducationDegreeBullet', cascade='all, delete-orphan', passive_deletes=True
+    )
 
     def __repr__(self):
         return "<CandidateEducationDegree (candidate_education_id=' %r')>" % self.candidate_education_id
@@ -731,6 +741,11 @@ class CandidateEducationDegreeBullet(db.Model):
     comments = db.Column('Comments', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    candidate_education_degree = relationship('CandidateEducationDegree', backref=backref(
+        'candidate_education_degree_bullet', cascade='all, delete-orphan', passive_deletes=True
+    ))
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
@@ -759,8 +774,12 @@ class CandidateExperience(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
-    candidate_experience_bullets = relationship('CandidateExperienceBullet',
-                                                cascade='all, delete-orphan', passive_deletes=True)
+    candidate = relationship('Candidate', backref=backref(
+        'candidate_experience', cascade='all, delete-orphan', passive_deletes=True
+    ))
+    candidate_experience_bullets = relationship(
+            'CandidateExperienceBullet', cascade='all, delete-orphan', passive_deletes=True
+    )
 
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
@@ -784,6 +803,11 @@ class CandidateExperienceBullet(db.Model):
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationship
+    candidate_experience = relationship('CandidateExperience', backref=backref(
+            'candidate_experience_bullet', cascade='all, delete-orphan', passive_deletes=True
+    ))
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
@@ -844,6 +868,10 @@ class CandidateCustomField(db.Model):
     def get_custom_field(cls, candidate_id, custom_field_id):
         return cls.query.filter(db.and_(CandidateCustomField.candidate_id == candidate_id,
                                         CandidateCustomField.custom_field_id == custom_field_id)).first()
+
+    @classmethod
+    def get_candidate_custom_fields(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class ClassificationType(db.Model):

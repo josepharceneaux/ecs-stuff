@@ -19,6 +19,7 @@ from spreadsheet_import_service.common.models.user import User
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
+from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.error_handling import InternalServerError
 from spreadsheet_import_service.common.routes import CandidateApiUrl, SchedulerApiUrl, SpreadsheetImportApiUrl
 
@@ -165,7 +166,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                     else:
                         logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
                 elif column_name == 'candidate_experience.organization':
-                    prepare_candidate_data(work_experiences, 'company', column)
+                    prepare_candidate_data(work_experiences, 'organization', column)
                 elif column_name == 'candidate_experience.position':
                     prepare_candidate_data(work_experiences, 'position', column)
                 elif column_name == 'candidate_education.schoolName':

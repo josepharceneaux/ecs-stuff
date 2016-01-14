@@ -13,7 +13,6 @@ def is_number(s):
 def is_valid_email(email):
     """
     According to: http://www.w3.org/TR/html5/forms.html#valid-e-mail-address
-
     :type email: str
     """
     regex = """^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
@@ -23,8 +22,8 @@ def is_valid_email(email):
 def format_phone_number(phone_number, country_code='US'):
     """
     Format US/Canada phone numbers in +1 (123) 456-7899 format
-    :return: Formatted phone numbers
-    :rtype: str
+    :return: {"formatted_number": "+118006952635" , "extension": "165"}
+    :rtype: dict
     """
     try:
         import phonenumbers
@@ -41,14 +40,13 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number), region=country_code)
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return formatted_number
+            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
-            raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" % (phone_number,
-                                                                                                           country_code))
-
+            raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
+                                             (phone_number, country_code))
     except:
-        raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" % (phone_number,
-                                                                                                    country_code))
+        raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
+                                         (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -64,4 +62,18 @@ def sanitize_zip_code(zip_code):
             return (zip_code[:5] + ' ' + zip_code[5:]).strip()
     # logger.info("[%s] is not a valid US Zip Code", zip_code)
     return None
+
+
+def is_valid_url(url):
+    """
+    Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
+    """
+    regex = re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    return url is not None and regex.search(url)
 

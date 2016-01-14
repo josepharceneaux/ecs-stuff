@@ -1,7 +1,8 @@
 __author__ = 'ufarooqi'
 from flask import render_template
 from user_service.common.utils.amazon_ses import send_email
-from user_service.common.models.user import db, Domain, User, UserScopedRoles
+from user_service.common.error_handling import InvalidUsage
+from user_service.common.models.user import db, Domain, User
 from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
 from werkzeug.security import generate_password_hash, gen_salt
 
@@ -54,7 +55,10 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
     from dateutil import parser
     expiration = None
     if expiration_date:
-        expiration = parser.parse(expiration_date)
+        try:
+            expiration = parser.parse(expiration_date)
+        except Exception as e:
+            raise InvalidUsage(error_message="Expiration date %s is invalid because: %s" % (expiration_date, e.message))
 
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,

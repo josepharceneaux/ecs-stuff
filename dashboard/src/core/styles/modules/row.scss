@@ -33,6 +33,7 @@
     width: 100%;
     display: table;
     border-collapse: separate;
+    table-layout: fixed;
 
     &:after { display: none; }
   }

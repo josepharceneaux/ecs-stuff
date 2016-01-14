@@ -6,7 +6,6 @@
         * test_health_check: It'll test either the service is up
 """
 
-from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *
@@ -38,7 +37,6 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first):
 
 
 def test_import_candidates_from_spreadsheet(access_token_first, user_first):
-
     candidate_data = candidate_test_data()
 
     # Logged-in user trying to import 15 candidates from a csv spreadsheet without appropriate roles
@@ -51,7 +49,6 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
     # Logged-in user trying to import 15 candidates from a csv spreadsheet
     response, status_code = import_spreadsheet_candidates(access_token_first, candidate_data=candidate_data,
                                                           import_candidates=True)
-
     assert status_code == 201
     assert response.get('count') == len(candidate_data)
     assert response.get('status') == 'complete'
@@ -66,5 +63,5 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first):
 
 
 def test_health_check():
-    response = requests.get(HEALTH_ENDPOINT)
+    response = requests.get(SpreadsheetImportApiUrl.HEALTH_CHECK)
     assert response.status_code == 200

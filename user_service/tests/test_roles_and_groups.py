@@ -8,7 +8,7 @@ from common_functions import *
 def test_user_scoped_roles_get(access_token_first, access_token_second, user_first, user_second, domain_roles, domain_first):
 
     # Logged-in user getting roles of a non-existing user
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 100)
+    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000)
     assert status_code == 404
 
     # Logged-in user getting roles of a user of different domain
@@ -58,7 +58,7 @@ def test_user_scoped_roles_post(access_token_first, user_first, user_second, dom
     add_role_to_test_user(user_first, ['CAN_ADD_USER_ROLES'])
 
     # Logged-in user trying to add roles to a non-existing user
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 100, action='POST',
+    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000, action='POST',
                                               test_roles=domain_roles['test_roles'])
     assert status_code == 404
 
@@ -91,7 +91,7 @@ def test_user_scoped_roles_delete(access_token_first, user_first, user_second, d
     add_role_to_test_user(user_first, ['CAN_DELETE_USER_ROLES'])
 
     # Logged-in user trying to remove roles from a non-existing user
-    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 100, action='DELETE',
+    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000, action='DELETE',
                                               test_roles=domain_roles['test_roles'])
     assert status_code == 404
 
@@ -125,7 +125,7 @@ def test_user_groups_get(access_token_first, user_first, first_group, second_gro
     add_role_to_test_user(user_first, ['CAN_GET_GROUP_USERS'])
 
     # Logged-in user getting all users of a non-existing user_group
-    response, status_code = user_groups(access_token_first, first_group.id + 100)
+    response, status_code = user_groups(access_token_first, first_group.id + 1000)
     assert status_code == 404
 
     # Logged-in user getting all users of a user_group belonging to different domain
@@ -148,7 +148,7 @@ def test_user_groups_get(access_token_first, user_first, first_group, second_gro
     add_role_to_test_user(user_first, ['CAN_GET_GROUP_USERS'])
 
     # Logged-in user getting all users of a non-existing user_group
-    response, status_code = user_groups(access_token_first, first_group.id + 100)
+    response, status_code = user_groups(access_token_first, first_group.id + 1000)
     assert status_code == 404
 
     # Logged-in user getting all users of a user_group belonging to different domain
@@ -176,7 +176,7 @@ def test_user_groups_post(access_token_first, user_first, user_second, first_gro
     add_role_to_test_user(user_first, ['CAN_ADD_GROUP_USERS'])
 
     # Logged-in user adding a user to non-existing user group
-    response, status_code = user_groups(access_token_first, first_group.id + 100, user_ids=[user_first.id], action='POST')
+    response, status_code = user_groups(access_token_first, first_group.id + 1000, user_ids=[user_first.id], action='POST')
     assert status_code == 404
 
     # Logged-in user of different domain adding a user to a user group of different domain
@@ -214,7 +214,7 @@ def test_get_all_roles_of_domain(access_token_first, user_first, user_second, do
     add_role_to_test_user(user_first, ['CAN_GET_DOMAIN_ROLES'])
 
     # Getting all roles of a non-existing domain
-    response, status_code = get_roles_of_domain(access_token_first, domain_first.id + 100)
+    response, status_code = get_roles_of_domain(access_token_first, domain_first.id + 1000)
     assert status_code == 400
 
     # Getting all roles of a different domain
@@ -245,7 +245,7 @@ def test_domain_groups_api_get(access_token_first, first_group, user_first, user
     add_role_to_test_user(user_first, ['CAN_GET_DOMAIN_GROUPS'])
 
     # Logged in user trying to get groups of a non-existing domain
-    response, status_code = domain_groups(access_token_first, user_first.domain_id + 100)
+    response, status_code = domain_groups(access_token_first, user_first.domain_id + 1000)
     assert status_code == 404
 
     # Logged in user of different domain trying to get groups of a domain
@@ -280,7 +280,7 @@ def test_domain_groups_api_post(access_token_first, first_group, user_first, use
     add_role_to_test_user(user_first, ['CAN_ADD_DOMAIN_GROUPS'])
 
     # Logged in user trying to add groups to non-existing domain
-    response, status_code = domain_groups(access_token_first, user_first.domain_id + 100, data=data, action='POST')
+    response, status_code = domain_groups(access_token_first, user_first.domain_id + 1000, data=data, action='POST')
     assert status_code == 404
 
     # Logged in user of different domain trying to add groups to given domain
@@ -316,7 +316,7 @@ def test_domain_groups_api_delete(access_token_first, first_group, second_group,
     add_role_to_test_user(user_first, ['CAN_DELETE_DOMAIN_GROUPS'])
 
     # Logged in user trying to delete groups from a non-existing domain
-    response, status_code = domain_groups(access_token_first, user_first.domain_id + 100, data=data, action='DELETE')
+    response, status_code = domain_groups(access_token_first, user_first.domain_id + 1000, data=data, action='DELETE')
     assert status_code == 404
 
     # Logged in user of different domain trying to delete groups from a domain
@@ -357,7 +357,7 @@ def test_domain_groups_api_put(access_token_first, first_group, second_group, us
     add_role_to_test_user(user_first, ['CAN_EDIT_DOMAIN_GROUPS'])
 
     # Logged in user trying to edit non-existing group
-    response, status_code = domain_groups(access_token_first, data=data, group_id=first_group.id + 100, action='PUT')
+    response, status_code = domain_groups(access_token_first, data=data, group_id=first_group.id + 1000, action='PUT')
     assert status_code == 404
 
     # Logged in user trying to edit group of different domain
@@ -382,5 +382,5 @@ def test_domain_groups_api_put(access_token_first, first_group, second_group, us
 
 def test_health_check():
     import requests
-    response = requests.get('http://127.0.0.1:8004/healthcheck')
+    response = requests.get(UserServiceApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
