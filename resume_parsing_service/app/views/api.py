@@ -69,6 +69,7 @@ def post_files_to_queue():
     :return: Error/Success Response.
     """
     user_id = request.user.id
+    # oauth_token is in format "bearer foo".
     oauth = request.oauth_token
     request_json = request.get_json()
     if not request_json:
@@ -76,7 +77,7 @@ def post_files_to_queue():
     filepicker_keys = request_json.get('filenames')
     if filepicker_keys:
         queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
-        return queue_details, 201
+        return jsonify(**queue_details), 201
     else:
         raise InvalidUsage("No filenames provided to /batch")
 

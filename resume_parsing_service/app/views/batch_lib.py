@@ -18,7 +18,7 @@ from resume_parsing_service.common.error_handling import TalentError
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 
-def add_fp_keys_to_queue(filepicker_keys, user_id, token):
+def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
     """
     Adds filename to redis list. The redis key is formed using the user_id.
     :param list filepicker_keys:
@@ -28,19 +28,22 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token):
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     list_length = redis_store.rpush(queue_string, *filepicker_keys)
     batches = grouper(filepicker_keys, 100)
-    scheduled = datetime.now() + timedelta(seconds=15)
+    scheduled = datetime.utcnow() + timedelta(seconds=15)
     for batch in batches:
-        for unused_iter in batch:
+        for file_name in batch:
+            if not file_name:
+                break
             payload = json.dumps({
                 "task_type": "one_time",
                 "run_datetime": scheduled.strftime(DATE_FORMAT),
                 "url": "{}/{}".format(ResumeApiUrl.BATCH_URL, user_id),
             })
             scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
-                                              headers={'Authorization': 'bearer {}'.format(token),
+                                              headers={'Authorization': token_str,
                                                        'Content-Type': 'application/json'})
             if scheduler_request.status_code != 201:
-                raise TalentError("Issue scheduling resume parsing")
+                raise TalentError("Issue scheduling resume parsing {}".format(
+                    scheduler_request.content))
         scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length}

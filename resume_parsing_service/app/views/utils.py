@@ -11,8 +11,9 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     :param str formatted_token_str: string in format 'Bearer foo'.
     :return requests.response
     """
-    payload = json.dumps({'candidates': [candidate_dict]})
-    candidate_response = requests.post(CandidateApiUrl.CANDIDATES, data=payload,
-                                       headers={'Authorization': formatted_token_str})
+    candidate_response = requests.post(CandidateApiUrl.CANDIDATES,
+                                       data=json.dumps({'candidates': [candidate_dict]}),
+                                       headers={'Authorization': formatted_token_str,
+                                                'Content-Type': 'application/json'})
     response_body = candidate_response.content
     return response_body

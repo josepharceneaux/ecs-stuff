@@ -9,8 +9,8 @@ import random
 import requests
 # Module Specific.
 from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.resume_parsing_app import redis_store
-from resume_parsing_service.resume_parsing_app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.app import redis_store
+from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -135,23 +135,41 @@ def test_batch_processing(user_fixture, token_fixture):
     assert 'candidate' in response, "Candidate should be in response content"
 
 
+# Unittest Style - located here due to conversion to flask redis which requires app context.
 def test_add_single_queue_item(token_fixture):
     """Test adding a single item to a users queue stored in Redis"""
     user_id = random_word(6)
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    response = add_fp_keys_to_queue(['file1'], user_id, token_fixture.access_token)
+    response = add_fp_keys_to_queue(['file1'], user_id, 'bearer {}'.format(
+        token_fixture.access_token))
     redis_store.expire(queue_string, 20)
     assert response == {'redis_key': queue_string, 'quantity': 1}, ('Improperly Formatted redis '
                                                                     'post response for single item')
 
 
+# Integration test of the above.
+def test_integration_add_single_item(user_fixture, token_fixture):
+    """Test adding a single item via end point."""
+    queue_string = 'batch:{}:fp_keys'.format(user_fixture.id)
+    response = requests.post(ResumeApiUrl.BATCH_URL,
+                             headers={'Authorization': 'bearer {}'.format(
+                                 token_fixture.access_token),
+                                      'Content-Type': 'application/json'},
+                             data=json.dumps({'filenames': ['file1']})
+                            )
+    assert response.status_code == 201
+    assert json.loads(response.content) == {'redis_key': queue_string, 'quantity': 1}, (
+        'Improperly Formatted redis post response for single item')
+
+
 def test_add_multiple_queue_items(token_fixture):
-    """Tests adding n+1 items to a users queue stored in Redis"""
+    """Tests adding n-100 items to a users queue stored in Redis"""
     user_id = random_word(6)
     file_count = random.randrange(1, 100)
     filenames = ['file{}'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    queue_status = add_fp_keys_to_queue(filenames, user_id, token_fixture.access_token)
+    queue_status = add_fp_keys_to_queue(filenames, user_id,
+                                        'bearer {}'.format(token_fixture.access_token))
     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     assert queue_status == {'redis_key': queue_string, 'quantity': file_count}, (
         'Improperly Formatted redis post response for multiple items')

@@ -22,10 +22,10 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_pho
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 
 
-EDUCATIONS_KEYS = ('city', 'degrees', 'state', 'country', 'school_name')
-WORK_EXPERIENCES_KEYS = ('city', 'state', 'end_date', 'country', 'company', 'role', 'is_current',
-                         'start_date', 'work_experience_bullets')
-ADDRESS_KEYS = ('city', 'country', 'state', 'address_line_1', 'zip_code')
+EDUCATIONS_KEYS = ('bullets', 'city', 'country', 'degrees', 'state', 'school_name')
+WORK_EXPERIENCES_KEYS = ('bullets', 'city', 'country', 'end_month', 'end_year', 'is_current',
+                         'organization', 'position', 'start_month', 'start_year', 'state')
+ADDRESS_KEYS = ('address_line_1', 'city', 'country', 'state', 'zip_code')
 
 XML_MAPS = [
     {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1,
@@ -101,6 +101,10 @@ def test_experience_parsing():
         for experience in experiences:
             # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
             assert all(k in experience for k in WORK_EXPERIENCES_KEYS if experience)
+            # Check nested dicts in bullets
+            if experience['bullets']:
+                for bullet in experience['bullets']:
+                    assert 'description' in bullet
     # Tests against specific KeyError reported in JIRA (GET-626)
     xml_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
     processed_experiences_a = parse_candidate_experiences(xml_experiences_a)

@@ -16,6 +16,8 @@ from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.utils.validators import format_phone_number
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
+ISO8601_DT_FORMAT = "%Y-%m-%d"
+
 
 def fetch_optic_response(resume):
     """
@@ -52,17 +54,17 @@ def fetch_optic_response(resume):
     unescaped = html_parser.unescape(unquoted)
     return unescaped
 
-def parse_optic_json(resume_xml_string):
+def parse_optic_json(resume_xml_unicode):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param str resume_xml_string: An XML tree represented in string format. It is a slightly
+    :param str resume_xml_unicode: An XML tree represented in unicode format. It is a slightly
                                   processed response from the Burning Glass API.
     :return dict candidate: Results of various parsing functions on the input xml string.
     """
-    contact_xml_list = bs4(resume_xml_string, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml_string, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml_string, 'lxml').findAll('education')
-    skill_xml_list = bs4(resume_xml_string, 'lxml').findAll('canonskill')
+    contact_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
+    skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -113,7 +115,7 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email = e.text.strip()
+            email = str(e.text.strip())
             output.append({'address': email})
     return output
 
@@ -131,7 +133,7 @@ def parse_candidate_phones(bs_contact_xml_list):
         for p in phones:
             # CanidateService currently extractas extensions so we do not need to invoke that
             # validator as long as we send a 'sane' string.
-            raw_phone = p.text.strip()
+            raw_phone = str(p.text.strip())
             if raw_phone:
                 output.append({'value': raw_phone})
 
@@ -155,18 +157,30 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Position title
             position_title = _tag_text(employement, 'title')
             # Start date
-            experience_start_date = get_date_from_date_tag(employement, 'start')
+            start_date_str = get_date_from_date_tag(employement, 'start')
+            start_month, start_year = '', ''
+            if start_date_str:
+                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DT_FORMAT)
+                start_year = start_datetime.year
+                start_month = start_datetime.month
+
             is_current_job = False
             # End date
-            experience_end_date = get_date_from_date_tag(employement, 'end')
+            end_date_str = get_date_from_date_tag(employement, 'end')
+            end_month, end_year = '', ''
+            if end_date_str:
+                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DT_FORMAT)
+                end_month = end_datetime.month
+                end_year = end_datetime.year
+
             try:
                 today_date = datetime.date.today().isoformat()
-                is_current_job = True if today_date == experience_end_date else False
+                is_current_job = True if today_date == end_date_str else False
             except ValueError:
                 pass
                 # current_app.logger.error(
                 #     "parse_xml: Received exception getting date for candidate end_date %s",
-                #      experience_end_date)
+                #      end_date_str)
             # Company's address
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
@@ -176,8 +190,10 @@ def parse_candidate_experiences(bg_experience_xml_list):
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
                                                                           position_title or '',
-                                                                          experience_start_date,
-                                                                          experience_end_date)
+                                                                          start_month,
+                                                                          start_year,
+                                                                          end_month,
+                                                                          end_year)
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employement, 'description', remove_questions=True) or ''
@@ -186,25 +202,27 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     existing_experience_description = output[existing_experience_list_order - 1][
-                        'work_experience_bullets']
+                        'bullets']
                     existing_experience_description.append(dict(
-                        text=bullet_description
+                        description=str(bullet_description)
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
-                        text=bullet_description
+                        description=str(bullet_description)
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
-                    city=company_city,
-                    state=company_state,
-                    end_date=experience_end_date,
-                    country=company_country,
-                    company=organization,
-                    role=position_title,
+                    bullets=candidate_experience_bullets,
+                    city=str(company_city),
+                    country=str(company_country),
+                    end_month=str(end_month),
+                    end_year=str(end_year),
                     is_current=is_current_job,
-                    start_date=experience_start_date,
-                    work_experience_bullets=candidate_experience_bullets
+                    organization=str(organization),
+                    position=str(position_title),
+                    start_month=str(start_month),
+                    start_year=str(start_year),
+                    state=str(company_state),
                 ))
     return output
 
@@ -246,7 +264,7 @@ def parse_candidate_educations(bg_educations_xml_list):
                     {
                         'type': _tag_text(school, 'degree'),
                         'title': _tag_text(school, 'major'),
-                        'degree_bullets': []
+                        'bullets': []
                     }
                 ],
             ))
@@ -321,7 +339,8 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             if capwords:
                 text = string.capwords(text)
             text = text.encode('utf-8')
-            return bs4(text, 'lxml').text
+            # CandidateService enforces Strings over Unicode.
+            return str(bs4(text, 'lxml').text)
     return None
 
 
@@ -341,13 +360,15 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
     return None
 
 
-def is_experience_already_exists(candidate_experiences, organization, position_title, start_date,
-                                 end_date):
+def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,
+                                 start_year, end_month, end_year):
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['company'] or '') == organization and\
-                        (experience['role'] or '') == position_title and\
-                        (experience['start_date'] == start_date and
-                         experience['end_date'] == end_date):
+        if (experience['organization'] or '') == organization and\
+                        (experience['position'] or '') == position_title and\
+                        (experience['start_month'] == start_month and
+                         experience['start_year'] == start_year and
+                         experience['end_month'] == end_month and
+                         experience['end_year'] == end_year):
             return i + 1
     return False

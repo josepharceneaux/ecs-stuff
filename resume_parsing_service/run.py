@@ -1,5 +1,5 @@
 """Local run file."""
-from resume_parsing_app import app
+from resume_parsing_service.app import app
 from resume_parsing_service.common.routes import GTApis
 
 

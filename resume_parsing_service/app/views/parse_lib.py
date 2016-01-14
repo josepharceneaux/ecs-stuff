@@ -58,6 +58,7 @@ def process_resume(parse_params):
     if create_candidate and email_present:
         candidate_response = create_parsed_resume_candidate(result_dict,
                                                             parse_params.get('oauth'))
+        # TODO: Check for good response code!
         response_dict = json.loads(candidate_response)
         if 'error' in candidate_response:
             raise InvalidUsage(response_dict['error']['message'])
