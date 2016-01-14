@@ -578,7 +578,7 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
     assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
     can_subs_pref_query = CandidateSubscriptionPreference.query.filter_by(candidate_id=candidate_id)
     if is_update:  # Update
-        can_subs_pref_query.update(frequency_id=frequency_id)
+        can_subs_pref_query.update(dict(frequency_id=frequency_id))
     else:  # Add
         db.session.add(CandidateSubscriptionPreference(
             candidate_id=candidate_id, frequency_id=frequency_id

@@ -20,15 +20,6 @@ from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
     request_to_candidate_preference_resource
 )
-
-# Sample data
-from candidate_sample_data import (
-    generate_single_candidate_data, candidate_educations, candidate_experience,
-    candidate_work_preference, candidate_phones, candidate_military_service,
-    candidate_preferred_locations, candidate_skills, candidate_social_network,
-    candidate_areas_of_interest, candidate_custom_fields, reset_all_data_except_param,
-    complete_candidate_data_for_posting
-)
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
@@ -108,7 +99,7 @@ def test_update_non_existing_candidate_preference(sample_user, user_auth):
     assert resp.json()['error']['code'] == 3142
 
 
-def test_update_candidate_pref_without_providing_adequate_date(sample_user, user_auth):
+def test_update_candidate_pref_without_providing_adequate_data(sample_user, user_auth):
     """
     Test: Attempt to update candidate's subs pref with missing data
     Expect: 400
@@ -161,7 +152,9 @@ def test_update_subs_pref_of_candidate(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES, CAN_GET_CANDIDATES, CAN_EDIT_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
 
     # Create candidate and candidate's subscription preference
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -169,15 +162,40 @@ def test_update_subs_pref_of_candidate(sample_user, user_auth):
 
     # Update candidate's subscription preference
     resp = request_to_candidate_preference_resource(token, 'put', candidate_id, {'frequency_id': 2})
-    print response_info(resp)
     assert resp.status_code == 204
 
     # Retrieve candidate's subscription preference
     resp = request_to_candidate_preference_resource(token, 'get', candidate_id)
     print response_info(resp)
     assert resp.status_code == 200
+    assert resp.json()['candidate']['id'] == candidate_id
+    assert resp.json()['candidate']['subscription_preference']['frequency_id'] == 2
 
 #######################
 # Test cases for DELETE
 #######################
+def test_delete_candidate_preference(sample_user, user_auth):
+    """
+    Test: Delete candidate's subscription preference
+    Expect: 204
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_DELETE_CANDIDATES'])
 
+    # Create candidate and candidate's subscription preference
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    request_to_candidate_preference_resource(token, 'post', candidate_id, {'frequency_id': 1})
+
+    # Update candidate's subscription preference
+    resp = request_to_candidate_preference_resource(token, 'delete', candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 204
+
+    # Retrieve candidate's subscription preference
+    resp = request_to_candidate_preference_resource(token, 'get', candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3142
