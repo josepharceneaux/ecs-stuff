@@ -21,7 +21,10 @@ It also contains private methods for this module as
 """
 
 # Standard Library
-from datetime import datetime
+from datetime import datetime, timedelta
+
+# Third party
+from dateutil.relativedelta import relativedelta
 
 # Database Models
 from sms_campaign_service.common.models.db import db
@@ -46,7 +49,8 @@ from sms_campaign_service.sms_campaign_app import celery_app, app, logger
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (sign_redirect_url, CampaignType, processing_after_campaign_sent)
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text,
-                                                     validate_urls_in_body_text)
+                                                     validate_urls_in_body_text,
+                                                     get_formatted_phone_number)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
                                                                      TWILIO_TEST_NUMBER)
@@ -229,7 +233,9 @@ class SmsCampaignBase(CampaignBase):
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user.id,
                                                                  phone_label_id)
         if len(user_phone) == 1:
-            if user_phone[0].value:
+            user_phone_value = user_phone[0].value
+            if user_phone_value:
+                get_formatted_phone_number(user_phone_value)
                 return user_phone[0]
         elif len(user_phone) > 1:
             raise MultipleTwilioNumbersFoundForUser(
@@ -570,9 +576,10 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
         # Celery app is not configured with flask app, so need to use app.app_context() here
-        # so that Celery tasks know the config of flask app,
+        # so that Celery tasks know the config of flask app.
         with app.app_context():
             candidate, candidate_phone_value = candidate_and_phone
+            candidate_phone_value = get_formatted_phone_number(candidate_phone_value)
             try:
                 modified_body_text, url_conversion_ids = \
                     self.process_urls_in_sms_body_text(candidate.id)
@@ -581,8 +588,6 @@ class SmsCampaignBase(CampaignBase):
                 return False
             # send SMS
             try:
-                # format the number
-                candidate_phone_value = format_phone_number(candidate_phone_value)
                 message_sent_datetime = self.send_sms(str(candidate_phone_value),
                                                       modified_body_text)
             except TwilioAPIError or InvalidUsage:
@@ -712,7 +717,7 @@ class SmsCampaignBase(CampaignBase):
             # http://127.0.0.1:8012/redirect/1
             redirect_url = str(app_redirect_url % url_conversion_id)
             # sign the redirect URL
-            long_url = sign_redirect_url(redirect_url, self.campaign.end_datetime)
+            long_url = sign_redirect_url(redirect_url, datetime.now() + relativedelta(years=+1))
             # long_url looks like
             # http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
@@ -834,7 +839,9 @@ class SmsCampaignBase(CampaignBase):
         if app.config[TalentConfigKeys.IS_DEV]:
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
+            candidate_phone_value = TWILIO_TEST_NUMBER
         else:
+            # format phone number of user and candidate
             sender_phone = format_phone_number(self.user_phone.value)
         twilio_obj = TwilioSMS()
         message_response = twilio_obj.send_sms(body_text=message_body,

@@ -50,8 +50,9 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 
 def generate_campaign_schedule_data():
     return {"frequency_id": FrequencyIds.ONCE,
-            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(seconds=SLEEP_TIME)),
+            "start_datetime": to_utc_str(datetime.utcnow()),
             "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
+
 
 def remove_any_user_phone_record_with_twilio_test_number():
     """
@@ -70,6 +71,9 @@ def remove_any_user_phone_record_with_twilio_test_number():
         candidate_phones += CandidatePhone.get_by_phone_value(test_number)
     map(CandidatePhone.delete, candidate_phones)
 
+
+def remove_url_conversion_records_having_test_urls():
+    pass
 
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
@@ -105,7 +109,7 @@ def user_phone_1(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, TWILIO_TEST_NUMBER)
+    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -122,7 +126,7 @@ def user_phone_2(request, sample_user):
     :param sample_user: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, TWILIO_INVALID_TEST_NUMBER)
+    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -138,7 +142,7 @@ def user_phone_3(request, sample_user_2):
     :param sample_user_2:
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user_2, TWILIO_TEST_NUMBER)
+    user_phone = _create_user_twilio_phone(sample_user_2, fake.phone_number())
 
     def tear_down():
         UserPhone.delete(user_phone)
@@ -323,7 +327,7 @@ def candidate_phone_1(request, candidate_first):
     :param candidate_first:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_first, TWILIO_TEST_NUMBER)
+    candidate_phone = _create_candidate_mobile_phone(candidate_first, fake.phone_number())
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -339,7 +343,7 @@ def candidate_phone_2(request, candidate_second):
     :param candidate_second:
     :return:
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_PAID_NUMBER_1)
+    candidate_phone = _create_candidate_mobile_phone(candidate_second, fake.phone_number())
 
     def tear_down():
         CandidatePhone.delete(candidate_phone)
@@ -371,8 +375,9 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     :param candidate_second:
     :return:
     """
-    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, TWILIO_TEST_NUMBER)
-    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, TWILIO_TEST_NUMBER)
+    common_phone = fake.phone_number()
+    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, common_phone)
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_second, common_phone)
 
     def tear_down():
         CandidatePhone.delete(cand_phone_1)
@@ -387,8 +392,9 @@ def users_with_same_phone(request, sample_user, sample_user_2):
     """
     This associates same number to sample_user and sample_user_2
     """
-    user_1 = _create_user_twilio_phone(sample_user, TWILIO_TEST_NUMBER)
-    user_2 = _create_user_twilio_phone(sample_user_2, TWILIO_TEST_NUMBER)
+    common_phone = fake.phone_number()
+    user_1 = _create_user_twilio_phone(sample_user, common_phone)
+    user_2 = _create_user_twilio_phone(sample_user_2, common_phone)
 
     def tear_down():
         UserPhone.delete(user_1)
@@ -410,12 +416,6 @@ def process_send_sms_campaign(sample_user, auth_token,
     This sends campaign to one candidate.
     :return:
     """
-
-    # campaign_obj = SmsCampaignBase(sample_user.id)
-    # # send campaign to candidates, which will be sent by a Celery task
-    # with app.app_context():
-    #     campaign_obj.process_send(scheduled_sms_campaign_of_current_user)
-    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     response_post = requests.post(SmsCampaignApiUrl.SEND
                                   % scheduled_sms_campaign_of_current_user.id,
                                   headers=dict(Authorization='Bearer %s' % auth_token))

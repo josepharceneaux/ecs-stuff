@@ -7,7 +7,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
-from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException, MultipleCandidatesFound
+from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
+                                                            MultipleCandidatesFound)
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,

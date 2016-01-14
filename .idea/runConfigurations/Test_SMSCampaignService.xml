@@ -19,7 +19,7 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="" />
+    <option name="params" value="-k test_pre_process_celery_task_with_two_candidates_having_same_phone" />
     <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />

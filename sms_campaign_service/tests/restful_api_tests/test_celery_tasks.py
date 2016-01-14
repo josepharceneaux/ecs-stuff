@@ -21,7 +21,7 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.handy_functions import to_utc_str
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
@@ -39,7 +39,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 
 # Service Specific
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.tests.conftest import app
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
@@ -75,25 +75,27 @@ class TestCeleryTasks(object):
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 2, str(scheduled_sms_campaign_of_current_user.id))
 
-    def test_campaign_send_with_two_candidates_with_valid_and_invalid_phones(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1,
-            candidate_invalid_phone):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. One candidate has invalid phone number associated, other has valid phone number
-        associated. So, total sends should be 1.
-        :return:
-        """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
-        # as one phone number is invalid, so only one record should be enter in sms_campaign_send
-        # and sms_campaign_blast.sends should be equal to 1.
-        # Expected send is 1.
-        assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+    # def test_campaign_send_with_two_candidates_with_valid_and_invalid_phones(
+    #         self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+    #         sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1,
+    #         candidate_invalid_phone):
+    #     """
+    #     User auth token is valid, campaign has one smart list associated. Smartlist has two
+    #     candidates. One candidate has invalid phone number associated, other has valid phone number
+    #     associated. So, total sends should be 1.
+    #     :return:
+    #     """
+    #     app.config[TalentConfigKeys.IS_DEV] = False
+    #     response_post = requests.post(
+    #         SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
+    #         headers=dict(Authorization='Bearer %s' % auth_token))
+    #     assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+    #     # as one phone number is invalid, so only one record should be enter in sms_campaign_send
+    #     # and sms_campaign_blast.sends should be equal to 1.
+    #     # Expected send is 1.
+    #     assert_on_blasts_sends_url_conversion_and_activity(
+    #         sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+    #     app.config[TalentConfigKeys.IS_DEV] = True
 
     def test_campaign_send_with_two_candidates_with_one_phone(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
@@ -211,25 +213,44 @@ class TestCampaignSchedule(object):
     per send time.
     """
 
-    def test_campaign_schedule_and_validate_one_time_task_run(
+    # def test_campaign_schedule_and_validate_one_time_task_run(
+    #         self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
+    #         sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+    #     """
+    #     This is test to schedule SMS campaign with all valid parameters. This should get OK
+    #      response
+    #     """
+    #     response = requests.post(
+    #         SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+    #         headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
+    #     task_id = assert_campaign_schedule(response, sample_user.id,
+    #                                        scheduled_sms_campaign_of_current_user.id)
+    #     time.sleep(SLEEP_TIME)
+    #     assert_on_blasts_sends_url_conversion_and_activity(
+    #         sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+    #     _delete_scheduled_task(task_id, valid_header)
+
+    def test_campaign_periodic_schedule_and_validate_run(
             self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
         """
         This is test to schedule SMS campaign with all valid parameters. This should get OK
          response
         """
+        data = generate_campaign_schedule_data().copy()
+        data['frequency_id'] = FrequencyIds.CUSTOM
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-            headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
+            headers=valid_header, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, sample_user.id,
                                            scheduled_sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+        time.sleep(SLEEP_TIME)
+        assert_on_blasts_sends_url_conversion_and_activity(
+            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
         _delete_scheduled_task(task_id, valid_header)
-
-
-# TODO: add test for periodic job as well when we have configurable frequency in scheduler_service
 
 
 def _delete_scheduled_task(task_id, headers):

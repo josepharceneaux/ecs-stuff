@@ -28,6 +28,7 @@ from ..models.email_marketing import EmailCampaign
 # Common Utils
 from ..routes import SchedulerApiUrl
 from ..utils.handy_functions import http_request
+from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
@@ -90,7 +91,8 @@ def frequency_id_to_seconds(frequency_id):
         FrequencyIds.WEEKLY: 7 * 24 * 3600,
         FrequencyIds.BIWEEKLY: 14 * 24 * 3600,
         FrequencyIds.MONTHLY: 30 * 24 * 3600,
-        FrequencyIds.YEARLY: 365 * 24 * 3600
+        FrequencyIds.YEARLY: 365 * 24 * 3600,
+        FrequencyIds.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
     }
     seconds = seconds_from_frequency_id.get(frequency_id)
     if not seconds and seconds != 0:

@@ -31,7 +31,6 @@ def assert_url_conversion(sms_campaign_sends):
     So we will verify whether source_url has same format as above URL.
 
     :param sms_campaign_sends: sends of campaign
-    :param campaign_id: id of SMS campaign
     :return:
     """
     campaign_send_url_conversions = []

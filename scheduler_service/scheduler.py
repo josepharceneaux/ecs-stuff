@@ -40,14 +40,6 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.add_jobstore(job_store)
 
-# Set the minimum frequency in seconds
-if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'circle']:
-    MIN_ALLOWED_FREQUENCY = 4
-else:
-    # For qa and production minimum frequency would be one hour
-    MIN_ALLOWED_FREQUENCY = 3600
-
-
 # Request timeout is 30 seconds.
 REQUEST_TIMEOUT = 30
 
@@ -121,9 +113,9 @@ def validate_periodic_job(data):
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < MIN_ALLOWED_FREQUENCY:
-        raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                         'be greater than or equal to %s' % MIN_ALLOWED_FREQUENCY)
+    if int(frequency) < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
+        raise InvalidUsage('Invalid value of frequency. Value should be greater than or equal to '
+                           '%s' % SchedulerUtils.MIN_ALLOWED_FREQUENCY)
 
     frequency = int(frequency)
     valid_data.update({'frequency': frequency})
