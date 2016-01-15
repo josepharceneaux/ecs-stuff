@@ -40,7 +40,7 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import Frequency
+from candidate_service.common.models.misc import Frequency
 
 # Module
 from candidate_service.modules.talent_candidates import (

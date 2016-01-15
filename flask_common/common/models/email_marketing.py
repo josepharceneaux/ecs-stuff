@@ -74,23 +74,6 @@ class EmailCampaignSend(db.Model):
         return "<EmailCampaignSend (id = %r)>" % self.id
 
 
-class Frequency(db.Model):
-    __tablename__ = 'frequency'
-    id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(10))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    email_campaings = relationship('EmailCampaign', backref='frequency')
-
-    def __repr__(self):
-        return "<Frequency (id = %r)>" % self.id
-
-    @classmethod
-    def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
-
-
 class EmailClient(db.Model):
     __tablename__ = 'email_client'
     id = db.Column(db.Integer, primary_key=True)

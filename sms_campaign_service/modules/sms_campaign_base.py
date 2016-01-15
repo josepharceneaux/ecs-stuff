@@ -267,7 +267,7 @@ class SmsCampaignBase(CampaignBase):
             raise InvalidUsage('phone_label_id must be an integer.')
         twilio_obj = TwilioSMS()
         if app.config[TalentConfigKeys.IS_DEV]:
-            # Buy Twilio TEST number so that we won't be charged
+            # Buy Twilio TEST number so that we won't be charged in case of dev, jenkins and QA
             number_to_buy = TWILIO_TEST_NUMBER
         else:
             logger.debug('buy_twilio_mobile_number: Going to buy Twilio number for '
