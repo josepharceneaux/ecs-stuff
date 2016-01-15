@@ -217,6 +217,7 @@ class CandidatePhone(db.Model):
         assert candidate_id, 'Candidate id not given'
         return cls.query.filter_by(candidate_id=candidate_id, value=phone_value, ).first()
 
+    @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
