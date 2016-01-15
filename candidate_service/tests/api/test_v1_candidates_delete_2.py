@@ -462,22 +462,6 @@ def test_delete_candidate_email_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_emails_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's email without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's emails without candidate_id
-    updated_resp = request_to_candidate_email_resource(token, 'delete', all_emails=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_emails(sample_user, user_auth):
     """
     Test:   Remove Candidate's emails from db
@@ -789,22 +773,6 @@ def test_delete_candidate_phone_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's phones without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_phone_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_phones_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's phone without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's phones without an id
-    updated_resp = request_to_candidate_phone_resource(token, 'delete', all_phones=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
@@ -1125,22 +1093,6 @@ def test_delete_candidate_skill_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_skills_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's skills without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's skills without candidate_id
-    updated_resp = request_to_candidate_skill_resource(token, 'delete', all_skills=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_skills(sample_user, user_auth):
     """
     Test:   Remove Candidate's skills from db
@@ -1453,22 +1405,6 @@ def test_delete_candidate_work_preference_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's work preference without work preference ID
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_work_preference_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_work_preferences_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's work preference without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's work preference without candidate ID
-    updated_resp = request_to_candidate_work_preference_resource(token, 'delete')
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
