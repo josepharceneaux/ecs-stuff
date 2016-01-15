@@ -69,6 +69,7 @@ def load_gettalent_config(app_config):
 def _set_environment_specific_configurations(app_config):
 
     environment = app_config.get(TalentConfigKeys.ENV_KEY)
+    app_config['DEBUG'] = False
 
     if environment == 'dev':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
@@ -76,12 +77,10 @@ def _set_environment_specific_configurations(app_config):
         app_config['LOGGER'] = logging.getLogger("flask_service.dev")
         app_config['DEBUG'] = True
         app_config['IS_DEV'] = True
-    elif environment == 'circle':
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west' \
-                                                     '-1.rds.amazonaws.com/talent_ci'
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.ci")
-        app_config['DEBUG'] = True
+    elif environment == 'jenkins':
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.jenkins")
         app_config['IS_DEV'] = True
     elif environment == 'qa':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
@@ -89,7 +88,7 @@ def _set_environment_specific_configurations(app_config):
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
                                                                         'amazonaws.com:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.qa")
-        app_config['IS_DEV'] = False
+        app_config['IS_DEV'] = True
     elif environment == 'prod':
         app_config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_STRING')
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \

@@ -18,7 +18,7 @@ static_tables = ['candidate_status', 'classification_type', 'country', 'culture'
 app = Flask(__name__)
 load_gettalent_config(app.config)
 
-if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'circle']:
+if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     print "You can reset your database and CloudSearch domain only in 'dev' or 'circle' environment"
     raise SystemExit(0)
 

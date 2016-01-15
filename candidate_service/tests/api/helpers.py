@@ -20,10 +20,11 @@ def define_and_send_request(access_token, request, url, data=None):
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
-    if not data:
+    if data is None:
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
-        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token},
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
                       data=json.dumps(data))
 
 
@@ -56,7 +57,7 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
 
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
@@ -93,7 +94,7 @@ def patch_to_candidate_resource(access_token, data):
     """
     resp = requests.patch(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
@@ -291,7 +292,6 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
         url = CandidateApiUrl.PREFERRED_LOCATIONS % candidate_id
     else:
         url = CandidateApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
-
     return define_and_send_request(access_token, request, url)
 
 
@@ -323,7 +323,8 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_work_preference_resource(access_token, request, candidate_id='', work_preference_id=''):
+def request_to_candidate_work_preference_resource(access_token, request, candidate_id='',
+                                                  work_preference_id=''):
     """
     Function sends a request to CandidateWorkPreferenceResource
     :param request: delete
@@ -348,6 +349,17 @@ def request_to_candidate_view_resource(access_token, request, candidate_id=''):
     """
     url = CandidateApiUrl.CANDIDATE_VIEW % candidate_id
     return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_preference_resource(token, request, candidate_id='', data=None):
+    """
+    Function sends request to CandidatePreferenceResource
+    :type token:  str
+    :type request: str
+    :type url: str
+    """
+    url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
+    return define_and_send_request(token, request, url, data)
 
 
 def create_same_candidate(access_token):
