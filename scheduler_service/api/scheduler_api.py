@@ -18,9 +18,9 @@ from flask.ext.cors import CORS
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app
+from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token
+from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
@@ -235,6 +235,7 @@ class Tasks(Resource):
         # check if tasks_ids list is not empty
         removed = remove_tasks(task_ids, user_id=user_id)
         if len(removed) == len(task_ids):
+            logger.info('Job with ids %s removed successfully.' % task_ids)
             return dict(
                 message='%s Tasks removed successfully' % len(removed))
 
@@ -243,6 +244,7 @@ class Tasks(Resource):
         removed_jobs = map(lambda job: job[1], removed)
         not_removed = list(set(task_ids) - set(removed_jobs))
         if not_removed:
+            logger.info('Job with ids %s removed successfully and unable to remove jobs %s' % (task_ids, not_removed))
             return dict(message='Unable to remove %s tasks' % len(not_removed),
                         removed=removed,
                         not_removed=not_removed), 207
@@ -599,6 +601,7 @@ class TaskById(Resource):
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
+            logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
 
@@ -697,6 +700,7 @@ class SendRequestTest(Resource):
     """
     decorators = [require_oauth()]
 
+    @property
     def post(self):
 
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
@@ -724,13 +728,14 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
-        else:
-            with open('/tmp/temp.txt', 'w') as tmpfile:
-                tmpfile.write('EndpointHit=1')
-                tmpfile.close()
 
-        run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+            run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
                 task.get('post_data', dict()))
+        else:
+            db.db.session.commit()
+            test_user_id = task['test_user_id']
+            test_user = User.query.filter_by(id=test_user_id).first()
+            test_user.delete()
 
         return dict(message="Request sent to url %s" % url)
 

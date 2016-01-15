@@ -2,9 +2,6 @@
 Test cases for creating schedule job with and without token.
 """
 
-# Std imports
-import os
-
 # Third party imports
 import json
 import requests
@@ -12,7 +9,10 @@ import requests
 # Application imports
 import time
 
+from scheduler_service import db
+from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.auth_utilities import create_test_user
 
 __author__ = 'saad'
 
@@ -22,18 +22,27 @@ class TestSchedulerCreate(object):
     def test_endpoint_job(self, auth_header, job_config_one_time_task):
         """
         Create a job by hitting the endpoint and make sure response
-        is correct. Job will be one time and run after 10 seconds.
+        is correct. Job will be one time and run after 16 seconds.
         Then wait for job to hit our scheduler service dummy endpoint.
-        Dummy endpoint will write a file. In the test, check if that file exist
+        Create a test user and pass its id to post_data
+        Dummy endpoint will delete test user. In the test, check if that test user exist
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        filename = '/tmp/temp.txt'
-        if os.path.isfile(filename):
-            os.remove(filename)
+        email = 'saad@test.com'
+
+        # Delete old user if exist
+        test_user = User.query.filter_by(email=email).first()
+        if test_user:
+            test_user.delete()
+
+        # Create a new test user
+        test_user = create_test_user(db.session, 1, "@sdqscheo!amcs")
+        user_id = test_user.id
+        job_config_one_time_task['post_data'].update({'test_user_id': test_user.id})
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
                                  headers=auth_header)
         assert response.status_code == 201
@@ -41,13 +50,12 @@ class TestSchedulerCreate(object):
         assert data['id']
 
         # Wait till job run
-        time.sleep(12)
+        time.sleep(16)
 
-        # See if endpoint created a file
-        assert os.path.isfile(filename)
-
-        # No need of file now
-        os.remove(filename)
+        # Scheduler endpoint should delete test user
+        db.session.commit()
+        test_user = User.query.filter_by(id=user_id).first()
+        assert not test_user
 
     def test_single_scheduled_job(self, auth_header, job_config):
         """

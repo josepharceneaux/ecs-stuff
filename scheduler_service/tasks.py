@@ -16,12 +16,14 @@ For Scheduler Service, celery flower is =>
 
 """
 # Application imports
+import json
+
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service import celery_app as celery, flask_app as app
 
 
 @celery.task(name="send_request")
-def send_request(access_token, secret_key_id, url, content_type, post_data, kwargs):
+def send_request(access_token, secret_key_id, url, content_type, post_data):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
@@ -31,11 +33,14 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, kwar
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
+    print "Celery running...."
     with app.app_context():
         headers = {
             'Content-Type': content_type,
             'Authorization': access_token
         }
+        if content_type == 'application/json':
+            post_data = json.dumps(post_data)
         if secret_key_id:
             headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
         # Send request to URL with job post data
