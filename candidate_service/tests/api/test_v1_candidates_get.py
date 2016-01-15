@@ -15,7 +15,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource, check_for_id,
-    request_to_candidates_resource
+    request_to_candidates_resource, request_to_candidate_resource
 )
 
 ######################## Candidate ########################
@@ -65,7 +65,7 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
     assert len(resp.json()['candidates']) == 1
 
 
-def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
+def test_get_candidate_from_forbidden_domain(sample_user, user_auth, user_from_different_domain):
     """
     Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
@@ -82,7 +82,7 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     print response_info(resp)
 
     # Get access token for sample_user_2
-    token_2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
+    token_2 = user_auth.get_auth_token(user_from_different_domain, True)['access_token']
 
     # Retrieve candidate from a different domain
     candidate_id = resp_dict['candidates'][0]['id']
@@ -165,3 +165,27 @@ def test_get_candidates_via_list_of_ids(sample_user, user_auth):
     print response_info(resp)
     assert resp.status_code == 200
     assert len(resp.json()['candidates']) == 2
+
+
+def test_get_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Retrieve non existing candidate
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+    resp = get_from_candidate_resource(token, non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
+
+    # Create Candidate and hide it
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    request_to_candidate_resource(token, 'delete', candidate_id)
+    # Retrieve web-hidden candidate
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden

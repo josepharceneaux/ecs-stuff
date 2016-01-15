@@ -102,10 +102,11 @@ class TestSmartlistStatsUpdateApi(object):
         response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id,
                                                                   {'from_date': from_date, 'to_date': to_date})
 
-        assert status_code == 200
-        assert len(response.get('smartlist_data')) == 1
-        assert response.get('smartlist_data')[0].get('total_number_of_candidates') == 10
-        assert response.get('smartlist_data')[0].get('number_of_candidates_removed_or_added') == 3
+        assert len(response.get('smartlist_data')) >= 1
+        assert 10 in [smartlist_data. get('total_number_of_candidates') for smartlist_data in
+                      response.get('smartlist_data')]
+        assert 3 in [smartlist_data. get('number_of_candidates_removed_or_added') for smartlist_data in
+                     response.get('smartlist_data')]
 
 
 class TestSmartlistResource(object):
