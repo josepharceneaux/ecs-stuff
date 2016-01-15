@@ -999,21 +999,19 @@ def _search_with_location(location, radius):
     # if no radius is given set default distance to 80.47 (50 miles)
     distance_in_km = float(radius)/0.62137 if radius else 80.47
     coords_dict = get_geocoordinates_bounding(location, distance_in_km)
-    if coords_dict and coords_dict.get('point'):
-        if coords_dict['point']:
-            # If coordinates found, then only perform location search
-            filter_queries.append("coordinates:['%s,%s','%s,%s']" % (coords_dict['top_left'][0],
-                                                                     coords_dict['top_left'][1],
-                                                                     coords_dict['bottom_right'][0],
-                                                                     coords_dict['bottom_right'][1]))
+    if coords_dict and coords_dict.get('point', ''):
+        # If coordinates found, then only perform location search
+        filter_queries.append("coordinates:['%s,%s','%s,%s']" % (coords_dict['top_left'][0],
+                                                                 coords_dict['top_left'][1],
+                                                                 coords_dict['bottom_right'][0],
+                                                                 coords_dict['bottom_right'][1]))
+        coordinates.extend(list(coords_dict['point']))
     elif is_zipcode:
 
         """If coodinates were not found with given location and if location is type of zipcode,
         then search based on zipcode"""
 
         filter_queries.append("(term field=zip_code '%s')" % location)
-
-    coordinates.extend(list(coords_dict['point']))
 
     return filter_queries
 

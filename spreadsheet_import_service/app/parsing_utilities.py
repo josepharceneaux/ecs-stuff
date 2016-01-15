@@ -303,7 +303,7 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict):
     """
     try:
         r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
-                          headers={'Authorization': request.oauth_token})
+                          headers={'Authorization': request.oauth_token, 'content-type': 'application/json'})
 
         return r.status_code, r.json()
     except Exception as e:

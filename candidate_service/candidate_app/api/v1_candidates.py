@@ -15,11 +15,11 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, check_for_candidate
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
-    candidates_resource_schema_get
+    candidates_resource_schema_get, resource_schema_preferences
 )
 from jsonschema import validate, FormatChecker
 
@@ -35,16 +35,19 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
+    CandidateSubscriptionPreference
 )
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.email_marketing import Frequency
 
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
-    add_candidate_view
+    add_candidate_view, add_candidate_subscription_preference, fetch_candidate_subscription_preference,
+    add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -133,7 +136,7 @@ class CandidatesResource(Resource):
         """
         # Authenticate user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:
@@ -229,7 +232,7 @@ class CandidatesResource(Resource):
         """
         # Authenticated user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:
@@ -1186,3 +1189,137 @@ class CandidateViewResource(Resource):
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
+
+
+class CandidatePreferenceResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles('CAN_GET_CANDIDATES')
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/preferences
+        Function will return requested candidate's preference(s)
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure Candidate exists & is not web-hidden
+        check_for_candidate(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if not CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
+            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id),
+                                custom_error.NO_PREFERENCES)
+
+        candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
+        return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
+
+    @require_all_roles('CAN_ADD_CANDIDATES')
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/preferences
+        Function will create candidate's preference(s)
+        input: {'candidates': [{'id': 1,'frequency_id': 1}]}
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        check_for_candidate(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = request.get_json()
+        try:
+            validate(instance=body_dict, schema=resource_schema_preferences)
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        frequency_id = body_dict.get('frequency_id')
+        if not Frequency.get_by_id(_id=frequency_id):
+            raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
+
+        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
+            raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
+                               custom_error.PREFERENCE_EXISTS)
+
+        add_candidate_subscription_preference(candidate_id, frequency_id)
+
+        return {'candidate': {'id': candidate_id}}, 201
+
+    @require_all_roles('CAN_EDIT_CANDIDATES')
+    def put(self, **kwargs):
+        """
+        Endpoint:  PATCH /v1/candidates/:id/preferences
+        Function will update candidate's subscription preference
+        Input: {'frequency_id': 1}
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        check_for_candidate(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = request.get_json()
+        try:
+            validate(instance=body_dict, schema=resource_schema_preferences)
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        # Frequency ID must be recognized
+        frequency_id = body_dict.get('frequency_id')
+        if not Frequency.get_by_id(_id=frequency_id):
+            raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
+
+        # Candidate must already have a subscription preference
+        can_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+        if not can_subs_pref:
+            raise InvalidUsage('Candidate does not have a subscription preference.',
+                               custom_error.NO_PREFERENCES)
+
+        # Update candidate's subscription preference
+        add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
+
+        return '', 204
+
+    @require_all_roles('CAN_DELETE_CANDIDATES')
+    def delete(self, **kwargs):
+        """
+        Endpint:  DELETE /v1/candidates/:id/preferences
+        Function will delete candidate's subscription preference
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        check_for_candidate(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorize', custom_error.CANDIDATE_FORBIDDEN)
+
+        candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+        if not candidate_subs_pref:
+            raise NotFoundError(error_message='Candidate has no subscription preference',
+                                error_code=custom_error.PREFERENCE_NOT_FOUND)
+
+        db.session.delete(candidate_subs_pref)
+        db.session.commit()
+        return '', 204
+
+
+
+
+
+
+
+
