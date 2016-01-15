@@ -6,7 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import CandidateCustomField
+from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -24,6 +24,31 @@ from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 ######################## Candidate ########################
+def test_delete_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to delete a candidate that isn't recognized via ID or Email
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+
+    # Delete non existing candidate via ID
+    resp = request_to_candidate_resource(token, 'delete', non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010
+
+    # Delete non existing candidate via Email
+    bogus_email = '{}_{}'.format(fake.word(), fake.safe_email())
+    assert CandidateEmail.get_by_address(email_address=bogus_email) is None
+
+    resp = request_to_candidate_resource(token, 'delete', bogus_email)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
+
+
 def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     """
     Test:   "Delete" a Candidate by setting is_web_hidden to True, and then retrieve Candidate
@@ -103,8 +128,7 @@ def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email='email_not_found_45623@simple.com')
     print response_info(resp)
-    assert resp.status_code == 404
-    assert resp.json()['error']['code'] == 3010
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
 
 
 def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):

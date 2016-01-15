@@ -391,7 +391,7 @@ class CandidateResource(Resource):
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
+                raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
 
         # Check for candidate's existence and web-hidden status
         check_for_candidate(candidate_id=candidate_id)
