@@ -139,7 +139,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, **kwargs):
+def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -176,7 +176,7 @@ def run_job(user_id, access_token, url, content_type, **kwargs):
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, kwargs],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, kwargs],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE)
 
@@ -255,51 +255,6 @@ def schedule_job(data, user_id=None, access_token=None):
         raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 
-<<<<<<< HEAD
-def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
-    """
-    Function callback to run when job time comes, this method is called by APScheduler
-    :param user_id:
-    :param access_token: Bearer token for Authorization when sending request to url
-    :param url: url to send post request
-    :param content_type: format of post data
-    :param kwargs: post data like campaign name, smartlist ids etc
-    :return:
-    """
-    # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
-    # created because frequency can be set to minimum of 1 hour.
-    secret_key_id = None
-    if not access_token:
-        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
-    else:
-        headers = {'content-type': 'application/x-www-form-urlencoded'}
-        token = Token.get_token(access_token=access_token.split(' ')[1])
-        # If token has expired we refresh it
-        past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
-        if token and past_datetime < datetime.datetime.utcnow():
-            data = {
-                'client_id': token.client_id,
-                'client_secret': token.client.client_secret,
-                'refresh_token': token.refresh_token,
-                'grant_type': u'refresh_token'
-            }
-            # We need to refresh token if token is expired. For that send request to auth service and request a
-            # refresh token.
-            with flask_app.app_context():
-                resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=headers,
-                                    data=urlencode(data))
-                logger.info('Token refreshed %s' % resp.json()['expires_at'])
-                access_token = "Bearer " + resp.json()['access_token']
-
-    logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
-    # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, kwargs],
-                             serializer='json',
-                             queue=SchedulerUtils.QUEUE)
-
-
-=======
->>>>>>> 49daefd709b63c964d4deb68bb3ce31fd171e4c0
 def remove_tasks(ids, user_id):
     """
     Remove jobs from APScheduler redisStore
