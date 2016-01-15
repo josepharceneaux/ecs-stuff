@@ -119,22 +119,6 @@ def test_delete_candidate_experience_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_experiences_without_can_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's experiences without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's experiences without candidate_id
-    updated_resp = request_to_candidate_experience_resource(token, 'delete', all_experiences=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_experiences(sample_user, user_auth):
     """
     Test:   Remove all of candidate's experiences from db
