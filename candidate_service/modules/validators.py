@@ -19,7 +19,8 @@ from datetime import datetime
 def check_for_candidate(candidate_id):
     """
     Function checks to see if candidate exists in the database and is not web-hidden
-    If candidate is hidden, or is not found, the appropriate exception will be raised.
+    If candidate is hidden, or is not found, the appropriate exception will be raised,
+    otherwise the Candidate query object will be returned
     :type candidate_id: int
     """
     assert isinstance(candidate_id, (int, long))
