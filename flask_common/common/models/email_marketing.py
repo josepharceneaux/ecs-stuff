@@ -80,6 +80,10 @@ class EmailCampaignBlast(db.Model):
     sent_time = db.Column('SentTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
 
 class EmailClient(db.Model):
     __tablename__ = 'email_client'

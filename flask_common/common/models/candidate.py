@@ -908,3 +908,6 @@ class CandidateSubscriptionPreference(db.Model):
     def __repr__(self):
         return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
 
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).first()

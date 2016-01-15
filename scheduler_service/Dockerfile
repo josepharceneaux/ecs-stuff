@@ -1,12 +1,12 @@
 FROM gettalent/base-service-container:latest
 
-# Add user_service stuff
+# Add scheduler_service stuff
 WORKDIR /root/base_service_container
-ADD . user_service
-WORKDIR /root/base_service_container/user_service
+ADD . scheduler_service
+WORKDIR /root/base_service_container/scheduler_service
 
 # Replace app name in config Loggly and NewRelic config files
-RUN sed -i -e 's/APP_NAME/user_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
+RUN sed -i -e 's/APP_NAME/scheduler_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
 

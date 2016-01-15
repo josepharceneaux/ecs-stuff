@@ -17,7 +17,7 @@ For Scheduler Service, celery flower is =>
 """
 # Application imports
 from scheduler_service.common.utils.handy_functions import http_request
-from scheduler_service.run import celery, app
+from scheduler_service import celery_app as celery, flask_app as app
 
 
 @celery.task(name="send_request")

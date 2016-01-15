@@ -15,7 +15,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource, check_for_id,
-    request_to_candidates_resource
+    request_to_candidates_resource, request_to_candidate_resource
 )
 
 ######################## Candidate ########################
@@ -165,3 +165,27 @@ def test_get_candidates_via_list_of_ids(sample_user, user_auth):
     print response_info(resp)
     assert resp.status_code == 200
     assert len(resp.json()['candidates']) == 2
+
+
+def test_get_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Retrieve non existing candidate
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+    resp = get_from_candidate_resource(token, non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
+
+    # Create Candidate and hide it
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    request_to_candidate_resource(token, 'delete', candidate_id)
+    # Retrieve web-hidden candidate
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden

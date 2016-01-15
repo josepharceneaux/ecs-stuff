@@ -14,7 +14,7 @@ Jinja2==2.8
 mysql-python==1.2.5
 oauthlib==1.0.3
 pytest==2.8.2
-pytest-circleci
+pytest-xdist==1.13.1
 requests-oauthlib==0.5.0
 requests==2.7.0
 SQLAlchemy==1.0.8
@@ -70,7 +70,6 @@ APScheduler==3.0.4
 celery==3.1.19
 flower==0.8.3
 redis==2.10.5
-
 jsonschema==2.5.1
 functools32
 strict-rfc3339==0.6

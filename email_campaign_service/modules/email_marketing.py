@@ -1,23 +1,26 @@
-import datetime
+import os
 import re
-import requests
 import json
+import datetime
+import requests
 
 from flask import current_app
 from sqlalchemy import and_
 from sqlalchemy import desc
+from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
+                                                  get_candidates_of_smartlist)
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList, EmailCampaignBlast, \
-    EmailCampaignSend
+from email_campaign_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSmartList,
+                                                                  EmailCampaignBlast, EmailCampaignSend)
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.amazon_ses import send_email
-from email_campaign_service.modules.utils import create_email_campaign_url_conversions, do_mergetag_replacements, get_candidates_of_smartlist
 from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity, ActivityTypes
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 
 __author__ = 'jitesh'
 
@@ -305,7 +308,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
     # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
-    if current_app.config['GT_ENVIRONMENT'] in ['dev', 'qa', 'circle']:
+    if os.getenv(TalentConfigKeys.ENV_KEY) in ['dev', 'qa', 'circle']:
         domain = Domain.query.get(user.domain_id)
         if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
             to_addresses = user.email
