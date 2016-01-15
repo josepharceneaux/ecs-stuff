@@ -9,6 +9,7 @@ from datetime import timedelta
 
 # Initialize app
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+
 app, _ = init_sms_campaign_app_and_celery_app()
 
 # Application Specific
@@ -19,7 +20,8 @@ from sms_campaign_service.common.tests.conftest import *
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.tests.modules.common_functions import assert_api_send_response
+from sms_campaign_service.tests.modules.common_functions import assert_api_send_response, \
+    assert_campaign_schedule, delete_test_scheduled_task
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER,
@@ -45,12 +47,15 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "body_text": "Hi all, we have few openings at http://www.abc.com",
                         "smartlist_ids": ""
                         }
+
+
 # This is data to schedule an SMS campaign
 
 
 def generate_campaign_schedule_data():
     return {"frequency_id": FrequencyIds.ONCE,
-            "start_datetime": to_utc_str(datetime.utcnow()),
+            # TODO: remove timedelta from start_datetime after scheduler_service update
+            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
             "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
 
 
@@ -70,6 +75,7 @@ def remove_any_user_phone_record_with_twilio_test_number():
     for test_number in test_numbers:
         candidate_phones += CandidatePhone.get_by_phone_value(test_number)
     map(CandidatePhone.delete, candidate_phones)
+
 
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
@@ -222,7 +228,8 @@ def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
+def scheduled_sms_campaign_of_current_user(request, valid_header, sample_user,
+                                           campaign_valid_data, user_phone_1):
     """
     This creates the SMS campaign for sample_user using valid data.
     :param campaign_valid_data:
@@ -230,8 +237,18 @@ def scheduled_sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
     :return:
     """
     campaign_data = campaign_valid_data.copy()
-    campaign_data.update(generate_campaign_schedule_data())
-    return _create_sms_campaign(campaign_data, user_phone_1)
+    campaign = _create_sms_campaign(campaign_data, user_phone_1)
+    response = requests.post(
+        SmsCampaignApiUrl.SCHEDULE % campaign.id,
+        headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
+    task_id = assert_campaign_schedule(response, sample_user.id, campaign.id)
+
+    def delete_scheduled_task():
+        delete_test_scheduled_task(task_id, valid_header)
+
+    request.addfinalizer(delete_scheduled_task)
+
+    return campaign
 
 
 @pytest.fixture()
@@ -264,11 +281,11 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
     :return:
     """
     SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
-                                                                         candidate_first.id,
-                                                                         datetime.now())
+                                                       candidate_first.id,
+                                                       datetime.now())
     SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
-                                                                         candidate_second.id,
-                                                                         datetime.now())
+                                                       candidate_second.id,
+                                                       datetime.now())
 
 
 @pytest.fixture()

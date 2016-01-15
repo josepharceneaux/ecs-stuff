@@ -21,14 +21,12 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed, InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import (FrequencyIds,
-                                                                          delete_scheduled_task)
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
@@ -45,7 +43,7 @@ from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity, get_reply_text,
-     assert_api_send_response, assert_campaign_schedule, SLEEP_TIME)
+     assert_api_send_response, assert_campaign_schedule, SLEEP_TIME, delete_test_scheduled_task)
 
 
 class TestCeleryTasks(object):
@@ -228,18 +226,7 @@ class TestCampaignSchedule(object):
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
             sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
-        _delete_scheduled_task(task_id, valid_header)
-
-
-def _delete_scheduled_task(task_id, headers):
-    """
-    This deletes the scheduled task from scheduler_service
-    :param task_id:
-    :param headers:
-    :return:
-    """
-    with app.app_context():
-        delete_scheduled_task(task_id, headers)
+        delete_test_scheduled_task(task_id, valid_header)
 
 
 class TestSmsCampaignURLRedirection(object):
