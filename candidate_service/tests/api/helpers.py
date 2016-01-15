@@ -30,17 +30,19 @@ def define_and_send_request(access_token, request, url, data=None):
 
 def response_info(response):
     """
-    Function returns the following information about the request:
-        1. Request, 2. Response dict, and 3. Response status
+    Function returns the following response information:
+        1. Url, 2. Request 3.Response dict, and 4. Response status code
     """
+    url = response.url
     request = response.request
+    status_code = response.status_code
     try:
         _json = response.json()
     except Exception:
         _json = None
 
-    status_code = response.status_code
-    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % (request, _json, status_code)
+    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+    return content.format(url, request, status_code, _json)
 
 
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
