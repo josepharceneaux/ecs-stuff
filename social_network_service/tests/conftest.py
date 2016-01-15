@@ -31,17 +31,17 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.utilities import process_event
 from social_network_service.utilities import delete_events
 from social_network_service.utilities import get_random_word
-from social_network_service.common.routes import AuthApiUrl
+from social_network_service.common.routes import AuthApiUrl, SocialNetworkApiUrl
 
 db_session = db.session
 
 TESTDB = 'test_project.db'
 TESTDB_PATH = "/tmp/{}".format(TESTDB)
 TEST_DATABASE_URI = 'sqlite:///' + TESTDB_PATH
-APP_URL = app.config['APP_URL']
+APP_URL = SocialNetworkApiUrl.API_URL
 
-OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
-TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
+OAUTH_ENDPOINT = AuthApiUrl.HOST_NAME
+TOKEN_URL = AuthApiUrl.TOKEN_CREATE
 
 OAUTH_SERVER = AuthApiUrl.AUTHORIZE
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
