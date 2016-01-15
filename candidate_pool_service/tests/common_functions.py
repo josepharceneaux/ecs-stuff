@@ -188,9 +188,10 @@ def create_candidates_from_candidate_api(access_token, data):
     Returns: list of created candidate ids
     """
     resp = requests.post(
-        url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token},
-        data=json.dumps(data)
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': access_token if 'Bearer' in access_token else 'Bearer %s' % access_token,
+                     'content-type': 'application/json'},
+            data=json.dumps(data)
     )
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]

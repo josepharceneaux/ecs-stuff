@@ -6,6 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
+from candidate_service.common.models.candidate import CandidateEmail
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -14,8 +15,9 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    patch_to_candidate_resource
+    patch_to_candidate_resource, request_to_candidates_resource
 )
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 # Candidate sample data
 from candidate_sample_data import (
@@ -26,6 +28,30 @@ from candidate_sample_data import (
 
 
 ######################## Candidate ########################
+def test_update_candidate_outside_of_domain(sample_user, user_auth, user_from_different_domain):
+    """
+    Test: User attempts to update a candidate from a different domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:  User
+    """
+    # Get access tokens
+    sample_user_token = user_auth.get_auth_token(sample_user, True)['access_token']
+    user_from_other_domain_token = user_auth.\
+        get_auth_token(user_from_different_domain, True)['access_token']
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(sample_user_token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # User from different domain to update candidate
+    data = {'candidates': [{'id': candidate_id, 'first_name': 'moron'}]}
+    update_resp = patch_to_candidate_resource(user_from_other_domain_token, data)
+    print response_info(update_resp)
+    assert update_resp.status_code == 403
+
+
 def test_update_existing_candidate(sample_user, user_auth):
     """
     Test:   Update an existing Candidate
@@ -155,6 +181,47 @@ def test_update_candidate_names(sample_user, user_auth):
     m_name = data['candidates'][0]['middle_name']
     full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
     assert candidate_dict['candidate']['full_name'] == full_name_from_data
+
+
+def test_update_candidates_in_bulk_with_one_erroneous_data(sample_user, user_auth):
+    """
+    Test: Attempt to update few candidates, one of which will have bad data
+    Expect: 400; no record should be added to the db
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+
+    # Create Candidate + candidate's emails
+    email_1, email_2 = fake.safe_email(), fake.safe_email()
+    data = {'candidates': [
+        {'emails': [{'label': None, 'address': email_1}]},
+        {'emails': [{'label': None, 'address': email_2}]}
+    ]}
+    create_resp = post_to_candidate_resource(token, data).json()
+    candidate_ids = [candidate['id'] for candidate in create_resp['candidates']]
+
+    # Retrieve both candidates
+    get_candidates_resp = request_to_candidates_resource(
+            token, 'get', data={'candidate_ids': candidate_ids}
+    ).json()['candidates']
+
+    # Update candidates' email address, one will be an invalid email address
+    candidate_1_id, candidate_2_id = get_candidates_resp[0]['id'], get_candidates_resp[1]['id']
+    email_1_id = get_candidates_resp[0]['emails'][0]['id']
+    email_2_id = get_candidates_resp[1]['emails'][0]['id']
+    update_data = {'candidates': [
+        {'id': candidate_1_id, 'emails': [{'id': email_1_id, 'address': fake.safe_email()}]},
+        {'id': candidate_2_id, 'emails': [{'id': email_2_id, 'address': 'bad_email_.com'}]}
+    ]}
+    update_resp = patch_to_candidate_resource(token, update_data)
+    db.session.commit()
+    print response_info(update_resp)
+
+    # Candidates' emails must remain unchanged
+    assert update_resp.status_code == 400
+    assert CandidateEmail.get_by_id(_id=email_1_id).address == email_1
+    assert CandidateEmail.get_by_id(_id=email_2_id).address == email_2
 
 
 ######################## CandidateAddress ########################

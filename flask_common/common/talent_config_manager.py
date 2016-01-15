@@ -70,11 +70,10 @@ def _set_environment_specific_configurations(app_config):
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.dev")
         app_config['DEBUG'] = True
-    elif environment == 'circle':
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west' \
-                                                     '-1.rds.amazonaws.com/talent_ci'
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.ci")
+    elif environment == 'jenkins':
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
+        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
+        app_config['LOGGER'] = logging.getLogger("flask_service.jenkins")
         app_config['DEBUG'] = True
     elif environment == 'qa':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
@@ -91,8 +90,3 @@ def _set_environment_specific_configurations(app_config):
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 
     app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
-
-
-
-
-

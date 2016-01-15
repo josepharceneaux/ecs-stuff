@@ -97,7 +97,7 @@ def schedule_candidate_daily_stats_update():
 
     env = app.config[TalentConfigKeys.ENV_KEY]
 
-    if not redis_store.get('IS_CANDIDATE_STAT_API_REGISTERED') and env != 'circle':
+    if not redis_store.get('IS_CANDIDATE_STAT_API_REGISTERED') and env != 'jenkins':
 
         data = {
             "frequency": 3600 * 24,  # Daily
