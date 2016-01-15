@@ -74,7 +74,6 @@ def _set_environment_specific_configurations(app_config):
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.jenkins")
-        app_config['DEBUG'] = True
     elif environment == 'qa':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
                                                      'com/talent_staging'
