@@ -63,8 +63,8 @@ def load_gettalent_config(app_config):
 def _set_environment_specific_configurations(app_config):
 
     environment = app_config.get(TalentConfigKeys.ENV_KEY)
-    app_config['PROPAGATE_EXCEPTIONS'] = True
-    
+    app_config['DEBUG'] = False
+
     if environment == 'dev':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
         app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
