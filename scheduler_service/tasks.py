@@ -46,4 +46,3 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, kwar
         except Exception as e:
             # This exception will be caught by flower
             return {'message': e.message, 'status_code': response.status_code}
-

@@ -41,7 +41,7 @@ class TestSchedulerCreate(object):
         assert data['id']
 
         # Wait till job run
-        time.sleep(12)
+        time.sleep(20)
 
         # See if endpoint created a file
         assert os.path.isfile(filename)

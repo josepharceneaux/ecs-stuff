@@ -17,6 +17,10 @@ Resume Service
 [README](resume_service/README.md)
 
 
+Scheduler Service
+-------------
+[README](scheduler_service/README.md)
+
 Event Service
 -------------
 [README](event_service/README.md)

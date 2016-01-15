@@ -43,7 +43,7 @@ APP_URL = app.config['APP_URL']
 OAUTH_ENDPOINT = 'http://127.0.0.1:8001/%s'
 TOKEN_URL = OAUTH_ENDPOINT % 'oauth2/token'
 
-OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
+OAUTH_SERVER = AuthApiUrl.AUTHORIZE
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # This is common data for creating test events

@@ -99,7 +99,7 @@ def job_config(request, job_config_periodic):
     :return:
     """
     temp_job_config = job_config_periodic.copy()
-    start_date = datetime.utcnow() + timedelta(minutes=15)
+    start_date = datetime.utcnow() + timedelta(seconds=20)
     end_date = start_date + timedelta(days=2)
     temp_job_config['post_data'] = json.dumps(job_config_periodic['post_data'])
     temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')

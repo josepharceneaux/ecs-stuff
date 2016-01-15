@@ -1,4 +1,4 @@
-  # Standard Library
+# Standard Library
 from datetime import datetime
 import random, string, uuid
 
@@ -107,7 +107,7 @@ def sample_user(test_domain, request):
         try:
             db.session.delete(user)
             db.session.commit()
-        except Exception:
+        except Exception as e:
             db.session.rollback()
             pass
 
