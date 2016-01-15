@@ -7,14 +7,11 @@ import os
 from datetime import timedelta
 
 # Application imports
-from scheduler_service import init_app
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service import flask_app as APP, celery_app as celery
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
-# Application Specific
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
-
-APP, celery = init_app()
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 

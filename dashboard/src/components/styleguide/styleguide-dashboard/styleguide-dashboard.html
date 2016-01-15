@@ -1023,16 +1023,129 @@
                 <div class="col--medium-6 form__col">
                     <h4>Button Code</h4>
 
-                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
+                    <div hljs no-escape language="html" code-class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
                 </div>
                 <div class="col--medium-6 form__col">
                     <h4>Widget Code</h4>
 
-                    <div hljs no-escape language="html" class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
+                    <div hljs no-escape language="html" code-class="code__wrap">&lt;object width=&quot;420&quot; height=&quot;315&quot; data=&quot;http://www.youtube.com/embed/XGSy3_Czz8k&quot;&gt;&lt;/object&gt;</div>
 
                     <a class="button--blue" href="#">Preview</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Principals</h2>
+            </header>
+
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h3>Creating, naming, and extending:</h3>
+                    <ol class="list">
+                        <li>Every component should be abstracted into its most basic function (<code>.box</code>, <code>.table</code>, etc)</li>
+                        <li>Components can be extended into different styles/flavors using modifier naming (<code>.box--green</code>, <code>.figure--circle</code>)</li>
+                        <li>Component's descendants can be branched off of their parent's "namespace" using the <code>__</code> syntax (<code>.box__header</code>, <code>.table__row</code>)</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Important Variables</h2>
+            </header>
+
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h3>Breakpoints</h3>
+                    <ul class="list">
+                        <li><code>$breakpoint--full</code>: 80em;</li>
+                        <li><code>$breakpoint--large</code>: 56.25em;</li>
+                        <li><code>$breakpoint--medium</code>: 48em;</li>
+                        <li><code>$breakpoint--small</code>: 37.5em;</li>
+                        <li><code>$breakpoint--tiny</code>: 30em;</li>
+                        <li><code>$breakpoint--teeny</code>: 20em;</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Rows</h2>
+            </header>
+
+            <p>Rows operate as wrappers for floating columns in order to make responsive layouts. All columns must be wrapped within rows in order to preserve floats.</p>
+
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h3>Styles</h3>
+                    <ul class="list">
+                        <li><code>.row</code>: Has a max-width of the full breakpoint with a small amount of padding on the left/right.</li>
+                        <li><code>.row--skinny</code>: Has a max-width of the small breakpoint with a small amount of padding on the left/right.</li>
+                        <li><code>.row--expanded</code>: Completely fluid with no max-width. No padding or margin.</li>
+                        <li><code>.row--widget</code>: For containing widget columns (columns that will uniformly size in height).</li>
+                        <li><code>.row--blue</code>: Extends <code>.row</code> and has a blue background.</li>
+                        <li><code>.row--green</code>: Extends <code>.row</code> and has a green background.</li>
+                        <li><code>.row--table</code>: Extends <code>.row</code> and displays as a table.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="box__header">
+                <h2>Columns</h2>
+            </header>
+
+            <p>Columns are layout blocks used for sectioning out horizontal space within a row.</p>
+
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h3>Styles</h3>
+                    <ul class="list">
+                        <li><code>.col--{viewport}-{1 - 12}</code>: A block which will span X columns once the screen has reached Y viewport in min-width. (e.g <code>.col--small-6</code> will be 100% until the <em>small<em> viewport is reached at which point it will fit 50% of the screen.)</li>
+                        <li><code>.col--{viewport}-{1 - 12}--cell</code>: Extends the regular column but behaves as a table-cell. Cell columns are good for content that can should be vertically aligned.</li>
+                        <li><code>.col--vmiddle</code>: Aligns cell column content to the middle (vertically).</li>
+                        <li><code>.col--right</code>: Right-floating column.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h4>Styles</h4>
+                    <p>Below is an example of how you would create a row of widgets.</p>
+                    <div hljs code-class="code__scrollable" no-escape language="html">&lt;!-- Create the row container --&gt;
+&lt;section class="row--widget"&gt;
+    &lt;!-- A 1/2 column box at the large viewport --&gt;
+    &lt;div class="col--large-6 box"&gt;
+        &lt;h3&gt;I am a widget!&lt;/h3&gt;
+    &lt;/div&gt;
+    &lt;!-- Another 1/2 column box at the large viewport --&gt;
+    div class="col--large-6 box"&gt;
+        &lt;!-- Create a nested row within this column --&gt;
+        &lt;header class="row--expanded"&gt;
+            &lt;div class="col--small-9"&gt;
+                &lt;h3&gt;1/2&lt;/h3&gt;
+            &lt;/div&gt;
+            &lt;div class="col--small-3"&gt;
+                &lt;h3&gt;1/2&lt;/h3&gt;
+            &lt;/div&gt;
+        &lt;/header&gt;
+    &lt;/div&gt;
+&lt;/section&gt;</div>
                 </div>
             </div>
         </div>
@@ -1044,26 +1157,26 @@
                 <h2>Tooltips</h2>
             </header>
 
-            <div class="form__fieldset row--expanded">
-                <div class="col--medium-12 form__col">
-                    <h4>Examples</h4>
+            <div class="row--expanded">
+                <div class="col--medium-12">
+                    <h3>Examples</h3>
                 </div>
             </div>
 
-            <div class="form__fieldset row--expanded">
-                <div class="col--medium-12 form__col" ng-include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'"></div>
+            <div class="row--expanded">
+                <div class="col--medium-12" ng-include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'"></div>
             </div>
 
             <hr>
 
-            <div class="form__fieldset row--expanded">
-                <div class="col--medium-12 form__col">
+            <div class="row--expanded">
+                <div class="col--medium-12">
                     <gt-tabs>
                         <gt-pane title="Markup">
-                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'" language="html"></div>
+                            <div hljs code-class="code__scrollable" include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltips.html'" language="html"></div>
                         </gt-pane>
                         <gt-pane title="JavaScript">
-                            <div class="code__scrollable" hljs include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltip-demo.controller.js.html'" language="js"></div>
+                            <div hljs code-class="code__scrollable" include="'components/styleguide/styleguide-dashboard/demos/tooltips/tooltip-demo.controller.js.html'" language="js"></div>
                         </div>
                     </gt-tabs>
                 </div>

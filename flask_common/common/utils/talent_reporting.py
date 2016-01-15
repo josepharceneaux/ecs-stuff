@@ -20,8 +20,8 @@ def email_notification_to_admins(body, subject=""):
 def email_admins(body, prefix, subject):
 
     env = app.config[TalentConfigKeys.ENV_KEY]
-    # For development and circle ci do not send email notification to getTalent admins.
-    if env == 'dev' or env == 'circle':
+    # For development and jenkins do not send email notification to getTalent admins.
+    if env == 'dev' or env == 'jenkins':
         return
 
     server_type = "Stage" if env == 'qa' else "Production"

@@ -30,9 +30,9 @@ def _get_host_name(service_name, port_number):
         http://127.0.0.1:8001%s
 
     For QA:
-            auth-service-staging.gettalent.com (for auth service)
+            http://auth-service-staging.gettalent.com (for auth service)
     For PROD:
-            auth-service.gettalent.com (for auth service)
+            http://auth-service.gettalent.com (for auth service)
 
     :param service_name: Name of service
     :param port_number: Port number of service
@@ -41,18 +41,19 @@ def _get_host_name(service_name, port_number):
     :return:
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ['dev', 'circle']:
+    if env == 'dev':
+        # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
+    elif env == 'jenkins':
+        return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like auth-service-webdev.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return service_name + '-staging' + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like auth-service.gettalent.com (for auth service)
-        # TODO: Verify this URL after deployment
-        return service_name + TALENT_DOMAIN + '%s'
+        # This looks like https://auth-service.gettalent.com (for auth service)
+        return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
 
 
 def _get_api_relative_version(api_version):
@@ -85,10 +86,10 @@ class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
     """
-    # Port Numbers of flask micro services
+    # Port Numbers of Flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
-    RESUME_SERVICE_PORT = 8003
+    RESUME_PARSING_SERVICE_PORT = 8003
     USER_SERVICE_PORT = 8004
     CANDIDATE_SERVICE_PORT = 8005
     WIDGET_SERVICE_PORT = 8006
@@ -102,7 +103,7 @@ class GTApis(object):
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
     ACTIVITY_SERVICE_NAME = 'activity-service'
-    RESUME_SERVICE_NAME = 'resume-service'
+    RESUME_PARSING_SERVICE_NAME = 'resume-parsing-service'
     USER_SERVICE_NAME = 'user-service'
     CANDIDATE_SERVICE_NAME = 'candidate-service'
     WIDGET_SERVICE_NAME = 'widget-service'
@@ -162,7 +163,7 @@ class ActivityApiUrl(object):
 
 class ResumeApi(object):
     """
-    API relative URLs for resume_service. e.g. /v1/parse_resume
+    API relative URLs for resume_parsing_service. e.g. /v1/parse_resume
     """
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
@@ -172,10 +173,10 @@ class ResumeApi(object):
 
 class ResumeApiUrl(object):
     """
-    Rest URLs of resume_service
+    Rest URLs of resume_parsing_service
     """
-    HOST_NAME = _get_host_name(GTApis.RESUME_SERVICE_NAME,
-                               GTApis.RESUME_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME,
+                               GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
@@ -397,6 +398,8 @@ class CandidateApiWords(object):
     SEARCH = "/search"
     DOCUMENTS = "/documents"
     OPENWEB = '/openweb'
+    VIEWS = "/views"
+    PREFERENCE = "/preferences"
 
 
 class CandidateApi(object):
@@ -463,6 +466,8 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
+    CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
 
 
 class CandidateApiUrl(object):
@@ -523,6 +528,8 @@ class CandidateApiUrl(object):
 
     WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
+    CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
+    CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
 
 
 class SchedulerApi(object):

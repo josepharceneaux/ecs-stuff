@@ -41,7 +41,7 @@ scheduler.configure(job_defaults=job_defaults)
 scheduler.add_jobstore(job_store)
 
 # Set the minimum frequency in seconds
-if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'circle']:
+if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'jenkins']:
     MIN_ALLOWED_FREQUENCY = 4
 else:
     # For qa and production minimum frequency would be one hour
@@ -138,81 +138,6 @@ def validate_periodic_job(data):
 
     return valid_data
 
-
-def schedule_job(data, user_id=None, access_token=None):
-    """
-    Schedule job using POST data and add it to APScheduler. Which calls the callback method when job time comes
-    :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
-    for creating job of APScheduler
-    :param user_id: the user_id of user who is creating job
-    :param access_token: CSRF access token for the sending post request to url with post_data
-    :return:
-    """
-    job_config = dict()
-    job_config['post_data'] = data.get('post_data', dict())
-    content_type = data.get('content_type', 'application/json')
-    job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
-    job_config['url'] = get_valid_url_from_dict(data, 'url')
-
-    # Server to Server call. We check if a job with a certain 'task_name'
-    # is already running as we only allow one such task to run at a time.
-    # If there is already such task we raise an exception.
-    if user_id is None:
-        job_config['task_name'] = get_valid_task_name_from_dict(data, 'task_name')
-        jobs = scheduler.get_jobs()
-        jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
-        # There should be a unique task named job. If a job already exist then it should raise error
-        if jobs and len(jobs) == 1:
-            raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
-    else:
-        job_config['task_name'] = None
-
-    trigger = str(job_config['task_type']).lower().strip()
-
-    if trigger == SchedulerUtils.PERIODIC:
-        valid_data = validate_periodic_job(data)
-
-        try:
-            job = scheduler.add_job(run_job,
-                                    name=job_config['task_name'],
-                                    trigger='interval',
-                                    seconds=valid_data['frequency'],
-                                    start_date=valid_data['start_datetime'],
-                                    end_date=valid_data['end_datetime'],
-                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
-                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']],
-                                    )
-
-            current_datetime = datetime.datetime.utcnow()
-            current_datetime = current_datetime.replace(tzinfo=tzutc())
-            job_start_time = valid_data['start_datetime']
-
-            # Due to request timeout delay, there will be a delay in scheduling job sometimes.
-            # And if start time is passed due to this request delay, then job should be run
-            if job_start_time < current_datetime:
-                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'])
-            logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
-        except Exception:
-            raise JobNotCreatedError("Unable to create the job.")
-        return job.id
-    elif trigger == SchedulerUtils.ONE_TIME:
-        valid_data = validate_one_time_job(data)
-        try:
-            job = scheduler.add_job(run_job,
-                                    name=job_config['task_name'],
-                                    trigger='date',
-                                    run_date=valid_data['run_datetime'],
-                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
-                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']]
-                                    )
-            logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
-            return job.id
-        except Exception:
-            raise JobNotCreatedError("Unable to create job. Invalid data given")
-    else:
-        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
-
-
 def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
@@ -253,6 +178,81 @@ def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
     send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, kwargs],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE)
+
+
+
+def schedule_job(data, user_id=None, access_token=None):
+    """
+    Schedule job using POST data and add it to APScheduler. Which calls the callback method when job time comes
+    :param data: the data like url, frequency, post_data, start_datetime and end_datetime of job which is required
+    for creating job of APScheduler
+    :param user_id: the user_id of user who is creating job
+    :param access_token: CSRF access token for the sending post request to url with post_data
+    :return:
+    """
+    job_config = dict()
+    job_config['post_data'] = data.get('post_data', dict())
+    content_type = data.get('content_type', 'application/json')
+    job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
+    job_config['url'] = get_valid_url_from_dict(data, 'url')
+
+    # Server to Server call. We check if a job with a certain 'task_name'
+    # is already running as we only allow one such task to run at a time.
+    # If there is already such task we raise an exception.
+    if user_id is None:
+        job_config['task_name'] = get_valid_task_name_from_dict(data, 'task_name')
+        jobs = scheduler.get_jobs()
+        jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
+        # There should be a unique task named job. If a job already exist then it should raise error
+        if jobs and len(jobs) == 1:
+            raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
+    else:
+        job_config['task_name'] = None
+
+    trigger = str(job_config['task_type']).lower().strip()
+
+    if trigger == SchedulerUtils.PERIODIC:
+        valid_data = validate_periodic_job(data)
+
+        try:
+            job = scheduler.add_job('scheduler:run_job',
+                                    name=job_config['task_name'],
+                                    trigger='interval',
+                                    seconds=valid_data['frequency'],
+                                    start_date=valid_data['start_datetime'],
+                                    end_date=valid_data['end_datetime'],
+                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
+                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']],
+                                    )
+
+            current_datetime = datetime.datetime.utcnow()
+            current_datetime = current_datetime.replace(tzinfo=tzutc())
+            job_start_time = valid_data['start_datetime']
+
+            # Due to request timeout delay, there will be a delay in scheduling job sometimes.
+            # And if start time is passed due to this request delay, then job should be run
+            if job_start_time < current_datetime:
+                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'])
+            logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
+        except Exception as e:
+            raise JobNotCreatedError("Unable to create the job.")
+        return job.id
+    elif trigger == SchedulerUtils.ONE_TIME:
+        valid_data = validate_one_time_job(data)
+        try:
+            job = scheduler.add_job('scheduler:run_job',
+                                    name=job_config['task_name'],
+                                    trigger='date',
+                                    run_date=valid_data['run_datetime'],
+                                    misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
+                                    args=[user_id, access_token, job_config['url'], content_type, job_config['post_data']]
+                                    )
+            logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
+            return job.id
+        except Exception as e:
+            raise JobNotCreatedError("Unable to create job. Invalid data given")
+    else:
+        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 
 def remove_tasks(ids, user_id):

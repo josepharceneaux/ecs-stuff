@@ -1266,3 +1266,17 @@ candidates_resource_schema_get = {
         }
     }
 }
+
+resource_schema_preferences = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    # "id": "http://jsonschema.net",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["frequency_id"],
+    "properties": {
+        "frequency_id": {
+            # "id": "http://jsonschema.net/frequency_id",
+            "type": "integer",
+        }
+    }
+}

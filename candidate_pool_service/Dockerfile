@@ -1,16 +1,12 @@
 FROM gettalent/base-service-container:latest
 
-# Add auth service stuff
+# Add files
 WORKDIR /root/base_service_container
 ADD . candidate_pool_service
-
-# Use appropriate tag name according to flask app
-RUN sed -i -e 's/TAG/CandidatePoolService/g' /etc/syslog-ng/syslog-ng.conf
-
 WORKDIR /root/base_service_container/candidate_pool_service
 
-# Replace FLASK_APP_NAME with CandidatePoolService in newrelic.ini
-RUN sed -i -e 's/FLASK_APP_NAME/CandidatePoolService/g' newrelic.ini
+# Replace app name in config Loggly and NewRelic config files
+RUN sed -i -e 's/APP_NAME/candidate_pool_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
 
@@ -23,10 +19,13 @@ ENV PYTHONPATH ../
 CMD\
     eval "$(pyenv init -)" && \
 
-    /etc/init.d/nginx restart && \
+    sed -i -e "s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g" /etc/rsyslog.d/*loggly.conf && \
 
-    /etc/init.d/syslog-ng restart && \
+    /etc/init.d/rsyslog start && \
+
+    /etc/init.d/nginx restart && \
 
     export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    newrelic-admin run-program uwsgi --env GT_ENVIRONMENT=$GT_ENVIRONMENT --env DB_STRING=$DB_STRING --ini ./talent-uwsgi.ini
+    if [[ "${GT_ENVIRONMENT}" -eq "jenkins" ]]; then uwsgi --lazy --ini ./talent-uwsgi.ini; else newrelic-admin \
+    run-program uwsgi --lazy --ini ./talent-uwsgi.ini; fi
