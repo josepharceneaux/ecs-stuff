@@ -86,6 +86,10 @@ class Frequency(db.Model):
     def __repr__(self):
         return "<Frequency (id = %r)>" % self.id
 
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
 
 class EmailClient(db.Model):
     __tablename__ = 'email_client'
