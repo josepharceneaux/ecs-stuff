@@ -296,22 +296,6 @@ def test_delete_candidate_exp_bullets_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_exp_bullets_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's exp-bullets without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's exp-bullets without candidate_id
-    updated_resp = request_to_candidate_experience_bullet_resource(token, 'delete', experience_id=5, bullet_id=5)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_experience_bullets(sample_user, user_auth):
     """
     Test:   Remove all of Candidate's experience-bullets from db
@@ -652,21 +636,6 @@ def test_delete_candidate_military_service_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_military_services_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's military_services without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's military_services without candidate_id
-    updated_resp = request_to_candidate_military_service(token, 'delete', all_military_services=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
 
 def test_delete_candidate_military_services(sample_user, user_auth):
     """
@@ -999,22 +968,6 @@ def test_delete_candidate_preferred_location_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_preferred_locations_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's preferred locations without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's preferred locations without an id
-    updated_resp = request_to_candidate_preferred_location_resource(token, 'delete', all_preferred_locations=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_preferred_locations(sample_user, user_auth):
     """
     Test:   Remove Candidate's preferred locations from db
@@ -1340,22 +1293,6 @@ def test_delete_candidate_social_network_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's social network without social network ID
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_social_network_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_social_networks_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's social network without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's social networks without candidate ID
-    updated_resp = request_to_candidate_social_network_resource(token, 'delete', all_sn=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 

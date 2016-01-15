@@ -372,7 +372,7 @@ def _assert_results(candidate_ids, response):
 
 def get_response_from_authorized_user(auth_user, owner_user, arguments_to_url):
     # wait for cloudsearch to update the candidates.
-    time.sleep(20)
+    time.sleep(25)
     auth_token = auth_user.get_auth_token(owner_user, get_bearer_token=True)
     response = requests.get(
         url=SEARCH_URI + arguments_to_url,
