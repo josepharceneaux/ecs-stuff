@@ -67,9 +67,11 @@ def test_get_talent_pool_stats(access_token_first, access_token_second, talent_p
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
                                                                                        'to_date': to_date})
     assert status_code == 200
-    assert len(response.get('talent_pool_data')) == 1
-    assert response.get('talent_pool_data')[0].get('total_number_of_candidates') == 10
-    assert response.get('talent_pool_data')[0].get('number_of_candidates_removed_or_added') == 3
+    assert len(response.get('talent_pool_data')) >= 1
+    assert 10 in [talent_pool_data. get('total_number_of_candidates') for talent_pool_data in
+                  response.get('talent_pool_data')]
+    assert 3 in [talent_pool_data. get('number_of_candidates_removed_or_added') for talent_pool_data in
+                 response.get('talent_pool_data')]
 
 
 def test_talent_pool_api_post(access_token_first, user_first):

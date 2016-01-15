@@ -41,9 +41,11 @@ def _get_host_name(service_name, port_number):
     :return:
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ['dev', 'circle']:
+    if env == 'dev':
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
+    elif env == 'jenkins':
+        return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == 'qa':
         # This looks like https://auth-service-webdev.gettalent.com (for auth service)
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
@@ -51,7 +53,7 @@ def _get_host_name(service_name, port_number):
         # This looks like https://auth-service.gettalent.com (for auth service)
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, circle, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
 
 
 def _get_api_relative_version(api_version):
@@ -84,7 +86,7 @@ class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
     """
-    # Port Numbers of flask micro services
+    # Port Numbers of Flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
     RESUME_PARSING_SERVICE_PORT = 8003

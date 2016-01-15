@@ -291,7 +291,6 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
         url = CandidateApiUrl.PREFERRED_LOCATIONS % candidate_id
     else:
         url = CandidateApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
-
     return define_and_send_request(access_token, request, url)
 
 

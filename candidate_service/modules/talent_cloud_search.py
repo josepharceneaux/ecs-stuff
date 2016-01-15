@@ -446,7 +446,7 @@ def delete_all_candidate_documents():
 
     """
     env = app.config[TalentConfigKeys.ENV_KEY]
-    if env not in ['dev', 'circle']:
+    if env not in ['dev', 'jenkins']:
         raise Exception("Can't call delete_all_candidate_documents() in prod! Use the console instead")
 
     # Get all candidate ids by searching for everything except a nonsense string

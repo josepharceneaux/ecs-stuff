@@ -17,7 +17,7 @@ if GT_ENVIRONMENT == 'dev':
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     LOGGER = logging.getLogger("social_network_service.dev")
     DEBUG = True
-elif GT_ENVIRONMENT == 'circle':
+elif GT_ENVIRONMENT == 'jenkins':
     APP_URL = 'http://0.0.0.0:8006'
     WEBHOOK_REDIRECT_URL = 'http://4ddd1621.ngrok.io'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
