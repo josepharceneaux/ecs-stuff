@@ -31,10 +31,10 @@
 
 .view--pipelines {
   @extend .view;
+}
 
-  @include helper--media($breakpoint--large) {
-    //
-  }
+.view--user {
+  @extend .view--pipelines;
 }
 
 // -----
@@ -56,12 +56,27 @@
   vertical-align: middle;
 }
 
+.view__main--pipelines {
+  @extend .view__main;
+
+  position: static;
+  overflow: visible;
+}
+
+.view__main--user {
+  @extend .view__main--pipelines;
+}
+
 .view__wrapper--pipelines-nav {
   @include helper--media($breakpoint--large) {
     display: table-cell;
     height: 100%;
     vertical-align: top;
   }
+}
+
+.view__wrapper--user-nav {
+  @extend .view__wrapper--pipelines-nav;
 }
 
 .view__wrapper--pipelines {
@@ -76,11 +91,8 @@
   }
 }
 
-.view__main--pipelines {
-  @extend .view__main;
-
-  position: static;
-  overflow: visible;
+.view__wrapper--user {
+  @extend .view__wrapper--pipelines;
 }
 
 // -----
