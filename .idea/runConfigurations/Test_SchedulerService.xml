@@ -17,7 +17,7 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests/api/test_scheduler_exceptions.py::TestSchedulerExceptions::test_invalid_task_type_exception" />
+    <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests" />
     <option name="keywords" value="" />
     <option name="params" value="" />
     <option name="USE_PARAM" value="false" />

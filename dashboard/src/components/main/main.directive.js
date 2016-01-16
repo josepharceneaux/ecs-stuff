@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/main/main.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'MainController',
             controllerAs: 'vm'
         };
@@ -31,7 +30,6 @@
     /* @ngInject */
     function ControllerFunction($state, OAuthToken) {
         var vm = this;
-        vm.isCollapsed = true;
         vm.logout = logout;
 
         function logout() {

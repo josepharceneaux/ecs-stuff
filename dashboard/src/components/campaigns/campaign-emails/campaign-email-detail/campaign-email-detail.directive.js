@@ -14,8 +14,8 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/campaigns/campaign-emails/campaign-email-detail/campaign-email-detail.html',
-            scope: {
-            },
+            replace: true,
+            scope: {},
             controller: 'CampaignEmailDetailController',
             controllerAs: 'vm'
         };

@@ -15,6 +15,8 @@
         $urlRouterProvider.otherwise('/dashboard');
 
         $stateProvider
+
+            // Login
             .state('login', {
                 url: '/login',
                 views: {
@@ -23,6 +25,8 @@
                     }
                 }
             })
+
+            // Forgot Password
             .state('forgotPassword', {
                 url: '/forgot-password',
                 views: {
@@ -31,6 +35,18 @@
                     }
                 }
             })
+
+            // Reset Password
+            .state('resetPassword', {
+                url: '/reset-password/:key',
+                views: {
+                    content: {
+                        template: '<gt-reset-password></gt-reset-password>'
+                    }
+                }
+            })
+
+            // Site (Login Required Pages)
             .state('site', {
                 abstract: true,
                 views: {
@@ -48,6 +64,63 @@
                     loginRequired: true
                 }
             })
+
+            // Admin
+            .state('admin', {
+                parent: 'site',
+                url: '/admin',
+                redirectTo: 'admin.dashboard'
+            })
+            .state('admin.dashboard', {
+                url: '',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-dashboard></gt-dashboard>'
+                    }
+                }
+            })
+            .state('admin.settings', {
+                url: '/settings',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-settings></gt-admin-settings>'
+                    }
+                }
+            })
+            .state('admin.systemAlerts', {
+                url: '/system-alerts',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-system-alerts></gt-admin-system-alerts>'
+                    }
+                }
+            })
+            .state('admin.styleguide', {
+                url: '/styleguide',
+                redirectTo: 'styleguide.dashboard',
+                data: {
+                    loginRequired: false,
+                    demoModeRequired: true
+                }
+            })
+            .state('admin.styleguide.dashboard', {
+                url: '/dashboard',
+                views: {
+                    '@site': {
+                        template: '<gt-styleguide-dashboard></gt-styleguide-dashboard>'
+                    }
+                }
+            })
+            .state('admin.styleguide.colors', {
+                url: '/colors',
+                views: {
+                    '@site': {
+                        template: '<gt-styleguide-colors></gt-styleguide-colors>'
+                    }
+                }
+            })
+
+            // Dashboard
             .state('dashboard', {
                 parent: 'site',
                 url: '/dashboard',
@@ -69,141 +142,8 @@
                     }
                 }
             })
-            .state('pipelines', {
-                parent: 'site',
-                url: '/pipelines',
-                redirectTo: 'pipelines.overview'
-            })
-            .state('pipelines.overview', {
-                url: '',
-                views: {
-                    '@site': {
-                        template: '<gt-pipelines-overview></gt-pipelines-overview>'
-                    }
-                }
-            })
-            .state('pipelines.manage', {
-                url: '/manage',
-                views: {
-                    '@site': {
-                        template: '<gt-pipelines-manage></gt-pipelines-manage>'
-                    }
-                }
-            })
-            .state('pipelines.create', {
-                url: '/create',
-                views: {
-                    '@site': {
-                        template: '<gt-pipeline-create></gt-pipeline-create>'
-                    }
-                }
-            })
-            .state('pipelines.detail', {
-                url: '/:pipelineId',
-                views: {
-                    '@site': {
-                        template: '<gt-pipeline-detail></gt-pipeline-detail>'
-                    }
-                }
-            })
-            .state('pipelines.detail.settings', {
-                url: '/settings',
-                views: {
-                    '@site': {
-                        template: '<gt-pipeline-settings></gt-pipeline-settings>'
-                    }
-                }
-            })
-            .state('pipelines.detail.team', {
-                url: '/team',
-                views: {
-                    '@site': {
-                        template: '<gt-pipeline-team></gt-pipeline-team>'
-                    }
-                }
-            })
-            .state('pipelines.detail.smartLists', {
-                url: '/smart-lists',
-                views: {
-                    '@site': {
-                        template: '<gt-smart-lists></gt-smart-lists>'
-                    }
-                }
-            })
-            .state('pipelines.detail.smartLists.create', {
-                url: '/create',
-                views: {
-                    '@site': {
-                        template: '<gt-smart-list-create></gt-smart-list-create>'
-                    }
-                }
-            })
-            .state('pipelines.detail.smartLists.detail', {
-                url: '/:smartListId',
-                views: {
-                    '@site': {
-                        template: '<gt-smart-list-details></gt-smart-list-details>'
-                    }
-                }
-            })
-            .state('candidates', {
-                parent: 'site',
-                url: '/candidates',
-                redirectTo: 'candidates.overview'
-            })
-            .state('candidates.overview', {
-                url: '',
-                views: {
-                    '@site': {
-                        template: '<gt-candidates-overview></gt-candidates-overview>'
-                    }
-                }
-            })
-            .state('candidates.add', {
-                url: '/add',
-                views: {
-                    '@site': {
-                        template: '<gt-candidate-add></gt-candidate-add>'
-                    }
-                }
-            })
-            .state('candidates.manage', {
-                url: '/manage',
-                views: {
-                    '@site': {
-                        template: '<gt-candidates-manage></gt-candidate-manage>'
-                    }
-                }
-            })
-            .state('candidates.profile', {
-                url: '/profile/:profileId',
-                views: {
-                    '@site': {
-                        template: '<gt-candidate-profile></gt-candidate-profile>'
-                    }
-                }
-            })
-            .state('talentPools', {
-                parent: 'site',
-                url: '/talent-pools',
-                redirectTo: 'talentPools.manage'
-            })
-            .state('talentPools.manage', {
-                url: '',
-                views: {
-                    '@site': {
-                        template: '<gt-talent-pools-manage></gt-talent-pools-manage>'
-                    }
-                }
-            })
-            .state('talentPools.create', {
-                url: '/create',
-                views: {
-                    '@site': {
-                        template: '<gt-talent-pools-create></gt-talent-pools-create>'
-                    }
-                }
-            })
+
+            // Campaigns
             .state('campaigns', {
                 parent: 'site',
                 url: '/campaigns',
@@ -289,6 +229,197 @@
                     }
                 }
             })
+
+            // Candidates
+            .state('candidates', {
+                parent: 'site',
+                url: '/candidates',
+                redirectTo: 'candidates.overview'
+            })
+            .state('candidates.overview', {
+                url: '',
+                views: {
+                    '@site': {
+                        template: '<gt-candidates-overview></gt-candidates-overview>'
+                    }
+                }
+            })
+            .state('candidates.add', {
+                url: '/add',
+                views: {
+                    '@site': {
+                        template: '<gt-candidate-add></gt-candidate-add>'
+                    }
+                }
+            })
+            .state('candidates.manage', {
+                url: '/manage',
+                views: {
+                    '@site': {
+                        template: '<gt-candidates-manage></gt-candidate-manage>'
+                    }
+                }
+            })
+            .state('candidates.profile', {
+                url: '/profile/:profileId',
+                views: {
+                    '@site': {
+                        template: '<gt-candidate-profile></gt-candidate-profile>'
+                    }
+                }
+            })
+
+            // FAQ
+            .state('faq', {
+                parent: 'site',
+                url: '/faq',
+                views: {
+                    '@site': {
+                        template: '<gt-faq></gt-faq>'
+                    }
+                }
+            })
+
+            // Onboard
+            .state('onboard', {
+                parent: 'site',
+                url: '/onboard',
+                redirectTo: 'onboard.welcome'
+            })
+            .state('onboard.welcome', {
+                url: '/welcome',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-welcome></gt-onboard-welcome>'
+                    }
+                }
+            })
+            .state('onboard.build', {
+                url: '/build',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-build></gt-onboard-build>'
+                    }
+                }
+            })
+            .state('onboard.organize', {
+                url: '/organize',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-organize></gt-onboard-organize>'
+                    }
+                }
+            })
+            .state('onboard.engage', {
+                url: '/engage',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-engage></gt-onboard-engage>'
+                    }
+                }
+            })
+            .state('onboard.getStarted', {
+                url: '/get-started',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-get-started></gt-onboard-get-started>'
+                    }
+                }
+            })
+            .state('onboard.noData', {
+                url: '/no-data',
+                views: {
+                    '@site': {
+                        template: '<gt-onboard-no-data></gt-onboard-no-data>'
+                    }
+                }
+            })
+
+            // Pipelines
+            .state('pipelines', {
+                abstract: true,
+                parent: 'site',
+                url: '/pipelines',
+                views: {
+                    '@site': {
+                        template: '<gt-pipelines></gt-pipelines>'
+                    }
+                }
+            })
+            .state('pipelines.overview', {
+                url: '',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipelines-overview></gt-pipelines-overview>'
+                    }
+                }
+            })
+            .state('pipelines.manage', {
+                url: '/manage',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipelines-manage></gt-pipelines-manage>'
+                    }
+                }
+            })
+            .state('pipelines.create', {
+                url: '/create',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipeline-create></gt-pipeline-create>'
+                    }
+                }
+            })
+            .state('pipelines.detail', {
+                url: '/:pipelineId',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipeline-detail></gt-pipeline-detail>'
+                    }
+                }
+            })
+            .state('pipelines.detail.settings', {
+                url: '/settings',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipeline-settings></gt-pipeline-settings>'
+                    }
+                }
+            })
+            .state('pipelines.detail.team', {
+                url: '/team',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-pipeline-team></gt-pipeline-team>'
+                    }
+                }
+            })
+            .state('pipelines.detail.smartLists', {
+                url: '/smart-lists',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-smart-lists></gt-smart-lists>'
+                    }
+                }
+            })
+            .state('pipelines.detail.smartLists.create', {
+                url: '/create',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-smart-list-create></gt-smart-list-create>'
+                    }
+                }
+            })
+            .state('pipelines.detail.smartLists.detail', {
+                url: '/:smartListId',
+                views: {
+                    '@pipelines': {
+                        template: '<gt-smart-list-details></gt-smart-list-details>'
+                    }
+                }
+            })
+
+            // Search
             .state('search', {
                 parent: 'site',
                 url: '/search',
@@ -298,56 +429,102 @@
                     }
                 }
             })
-            .state('admin', {
+
+            // User
+            .state('user', {
+                abstract: true,
                 parent: 'site',
-                url: '/admin',
-                redirectTo: 'admin.dashboard'
+                url: '/user',
+                views: {
+                    '@site': {
+                        template: '<gt-user></gt-user>'
+                    }
+                }
             })
-            .state('admin.dashboard', {
+            .state('user.profile', {
+                url: '/profile',
+                views: {
+                    '@user': {
+                        template: '<gt-user-profile></gt-user-profile>'
+                    }
+                }
+            })
+            .state('user.account', {
+                url: '/account',
+                views: {
+                    '@user': {
+                        template: '<gt-user-account></gt-user-account>'
+                    }
+                }
+            })
+            .state('user.permissions', {
+                url: '/permissions',
+                views: {
+                    '@user': {
+                        template: '<gt-user-permissions></gt-user-permissions>'
+                    }
+                }
+            })
+            .state('user.customFields', {
+                url: '/custom-fields',
+                views: {
+                    '@user': {
+                        template: '<gt-custom-fields></gt-custom-fields>'
+                    }
+                }
+            })
+            .state('user.emailMarketing', {
+                url: '/email-marketing',
+                views: {
+                    '@user': {
+                        template: '<gt-email-marketing></gt-email-marketing>'
+                    }
+                }
+            })
+            .state('user.organization', {
+                url: '/organization',
+                views: {
+                    '@user': {
+                        template: '<gt-organization></gt-organization>'
+                    }
+                }
+            })
+            .state('user.settings', {
+                url: '/settings',
+                views: {
+                    '@user': {
+                        template: '<gt-settings></gt-settings>'
+                    }
+                }
+            })
+            .state('user.widgetOptions', {
+                url: '/widget-options',
+                views: {
+                    '@user': {
+                        template: '<gt-widget-options></gt-widget-options>'
+                    }
+                }
+            })
+
+            // Talent Pools
+            .state('talentPools', {
+                parent: 'site',
+                url: '/talent-pools',
+                redirectTo: 'talentPools.manage'
+            })
+            .state('talentPools.manage', {
                 url: '',
                 views: {
                     '@site': {
-                        template: '<gt-admin-dashboard></gt-dashboard>'
+                        template: '<gt-talent-pools-manage></gt-talent-pools-manage>'
                     }
                 }
             })
-            .state('admin.settings', {
-                url: '/settings',
+            .state('talentPools.create', {
+                url: '/create',
                 views: {
                     '@site': {
-                        template: '<gt-admin-settings></gt-admin-settings>'
-                    }
-                }
-            })
-            .state('admin.systemAlerts', {
-                url: '/system-alerts',
-                views: {
-                    '@site': {
-                        template: '<gt-admin-system-alerts></gt-admin-system-alerts>'
-                    }
-                }
-            })
-            .state('admin.styleguide', {
-                url: '/styleguide',
-                redirectTo: 'styleguide.dashboard',
-                data: {
-                    loginRequired: false,
-                    demoModeRequired: true
-                }
-            })
-            .state('admin.styleguide.dashboard', {
-                url: '/dashboard',
-                views: {
-                    '@site': {
-                        template: '<gt-styleguide-dashboard></gt-styleguide-dashboard>'
-                    }
-                }
-            })
-            .state('admin.styleguide.colors', {
-                url: '/colors',
-                views: {
-                    '@site': {
-                        template: '<gt-styleguide-colors></gt-styleguide-colors>'
+                        template: '<gt-talent-pools-create></gt-talent-pools-create>'
                     }
                 }
             });

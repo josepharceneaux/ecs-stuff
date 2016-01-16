@@ -1,0 +1,36 @@
+<!-- Sidebar -->
+<section class="view__sidebar">
+
+    <nav class="view__sidebar__nav row--expanded">
+        <div class="js--nav view__sidebar__navParent">
+            <a href="" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-dashboard" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                <div class="view__sidebar__navIcon">
+                    <span class="icon--pipelines"></span>
+                </div>
+            </a>
+            <a href="" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-user" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                <div class="view__sidebar__navIcon">
+                    <span class="icon--campaigns"></span>
+                </div>
+            </a>
+            <a href="" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-campaigns" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                <div class="view__sidebar__navIcon">
+                    <span class="icon--tools"></span>
+                </div>
+            </a>
+            <a href="" ui-sref-active="active" class="js--navItem view__sidebar__navItem row--table" data-target="js--subnav-admin" ng-click="vm.isCollapsed = !vm.isCollapsed">
+                <div class="view__sidebar__navIcon">
+                    <span class="icon--overview"></span>
+                </div>
+            </a>
+        </div>
+
+        <div class="view__sidebar__navChild">
+            <div class="js--subnav-{{menu}} view__sidebar__subNav" ng-repeat="(menu, subMenus) in vm.menuItems">
+                <a ui-sref-active="active" href="" ng-repeat="(subMenu, menuTitle) in subMenus">{{menuTitle}}</a>
+            </div>
+        </div>
+
+    </nav>
+</section>
+<!-- End Sidebar -->
