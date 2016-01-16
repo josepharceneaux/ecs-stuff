@@ -11,16 +11,20 @@
         'app.campaigns',
         'app.candidates',
         'app.dashboard',
+        'app.faq',
         'app.footer',
         'app.forgotPassword',
         'app.login',
         'app.main',
+        'app.onboard',
         'app.pipelines',
+        'app.resetPassword',
         'app.search',
         'app.sidenav',
         'app.smartLists',
         'app.styleguide',
         'app.talentPools',
-        'app.topnav'
+        'app.topnav',
+        'app.user'
     ]);
 })();
