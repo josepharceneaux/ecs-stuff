@@ -20,53 +20,53 @@ __author__ = 'saad'
 
 class TestSchedulerMisc(object):
 
-    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
-        """
-        Schedule a job 12 seconds from now and then set token expiry after 5 seconds.
-        So that after 5 seconds token will expire and job will be in running state after 8 seconds.
-        When job time comes, endpoint will call run_job method and which will refresh the expired token.
-        Then check the new expiry time of expired token in test which should be in future
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-
-        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-
-        auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
-                       'Content-Type': 'application/json'}
-
-        current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=12)
-        job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        # Set the expiry after 5 seconds and update token expiry in db
-        expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=5)
-        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
-
-        _update_token_expiry_(auth_token_row['user_id'], expiry)
-
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header)
-
-        assert response.status_code == 201
-        data = response.json()
-        assert data['id']
-
-        # Sleep for 25 seconds till the job start and refresh oauth token
-        sleep(25)
-
-        # After running the job first time. Token should be refreshed
-        db.db.session.commit()
-        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
-        assert token.expires > datetime.datetime.utcnow()
-
-        # Delete the created job
-        auth_header['Authorization'] = 'Bearer ' + token.access_token
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+    # def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
+    #     """
+    #     Schedule a job 12 seconds from now and then set token expiry after 5 seconds.
+    #     So that after 5 seconds token will expire and job will be in running state after 8 seconds.
+    #     When job time comes, endpoint will call run_job method and which will refresh the expired token.
+    #     Then check the new expiry time of expired token in test which should be in future
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #     :return:
+    #     """
+    #
+    #     auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    #
+    #     auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
+    #                    'Content-Type': 'application/json'}
+    #
+    #     current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=12)
+    #     job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+    #
+    #     # Set the expiry after 5 seconds and update token expiry in db
+    #     expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=5)
+    #     expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+    #
+    #     _update_token_expiry_(auth_token_row['user_id'], expiry)
+    #
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header)
+    #
+    #     assert response.status_code == 201
+    #     data = response.json()
+    #     assert data['id']
+    #
+    #     # Sleep for 25 seconds till the job start and refresh oauth token
+    #     sleep(25)
+    #
+    #     # After running the job first time. Token should be refreshed
+    #     db.db.session.commit()
+    #     token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+    #     assert token.expires > datetime.datetime.utcnow()
+    #
+    #     # Delete the created job
+    #     auth_header['Authorization'] = 'Bearer ' + token.access_token
+    #     response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
+    #                                       headers=auth_header)
+    #     assert response_remove.status_code == 200
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
