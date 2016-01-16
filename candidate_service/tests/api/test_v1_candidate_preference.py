@@ -18,7 +18,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_preference_resource
+    request_to_candidate_preference_resource, TestUserRoles
 )
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
@@ -35,7 +35,7 @@ def test_add_subs_preference_to_candidate_without_providing_any_data(sample_user
     :type user_auth:  UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
+    TestUserRoles.add(user=sample_user)
 
     # Create candidate and candidate subscription preference
     create_resp = post_to_candidate_resource(token)
@@ -176,9 +176,7 @@ def test_update_subs_pref_of_candidate(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
+    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES', 'CAN_EDIT_CANDIDATES', 'CAN_GET_CANDIDATES'])
 
     # Create candidate and candidate's subscription preference
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
