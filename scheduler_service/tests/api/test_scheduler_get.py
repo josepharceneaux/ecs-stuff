@@ -55,32 +55,32 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_single_job_without_user(self, auth_header_no_user, job_config):
-        """
-        Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
-        response.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom_General_Named_Task'
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header_no_user)
-        assert response.status_code == 201
-        data = response.json()
-        assert data['id']
-
-        # Now get the job
-        response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
-                                    headers=auth_header_no_user)
-        assert response_get.status_code == 200
-
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header_no_user)
+    # def test_single_job_without_user(self, auth_header_no_user, job_config):
+    #     """
+    #     Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
+    #     response.
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #     :return:
+    #     """
+    #     # Assign task_name in job post data (general task)
+    #     job_config['task_name'] = 'Custom_General_Named_Task'
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header_no_user)
+    #     assert response.status_code == 201
+    #     data = response.json()
+    #     assert data['id']
+    #
+    #     # Now get the job
+    #     response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
+    #                                 headers=auth_header_no_user)
+    #     assert response_get.status_code == 200
+    #
+    #     # Let's delete jobs now
+    #     response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
+    #                                       headers=auth_header_no_user)
         assert response_remove.status_code == 200
 
     def test_job_without_user(self, auth_header_no_user, job_config):

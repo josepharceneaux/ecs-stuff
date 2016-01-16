@@ -15,7 +15,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, check_for_candidate
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -107,7 +107,7 @@ class CandidatesResource(Resource):
             for candidate_id in candidate_ids:
 
                 # Check for candidate's existence and web-hidden status
-                candidate = check_for_candidate(candidate_id=candidate_id)
+                candidate = get_candidate_if_exists(candidate_id=candidate_id)
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
         return {'candidates': retrieved_candidates}
@@ -242,7 +242,7 @@ class CandidatesResource(Resource):
 
             # Check for candidate's existence and web-hidden status
             candidate_id = _candidate_dict.get('id')
-            check_for_candidate(candidate_id=candidate_id)
+            get_candidate_if_exists(candidate_id=candidate_id)
 
             # Emails' addresses must be properly formatted
             for emails in _candidate_dict.get('emails') or []:
@@ -352,7 +352,7 @@ class CandidateResource(Resource):
                 raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user, and must be in the same domain as the user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -394,7 +394,7 @@ class CandidateResource(Resource):
                 raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -427,7 +427,7 @@ class CandidateAddressResource(Resource):
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -471,7 +471,7 @@ class CandidateAreaOfInterestResource(Resource):
         candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -523,7 +523,7 @@ class CandidateCustomFieldResource(Resource):
         authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -569,7 +569,7 @@ class CandidateEducationResource(Resource):
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -618,7 +618,7 @@ class CandidateEducationDegreeResource(Resource):
         degree_id = kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -672,7 +672,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -741,7 +741,7 @@ class CandidateExperienceResource(Resource):
         candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -789,7 +789,7 @@ class CandidateExperienceBulletResource(Resource):
         bullet_id = kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -849,7 +849,7 @@ class CandidateEmailResource(Resource):
         candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -867,8 +867,7 @@ class CandidateEmailResource(Resource):
             db.session.delete(email)
 
         else:  # Delete all of Candidate's emails
-            for email in candidate.candidate_emails:
-                db.session.delete(email)
+            map(db.session.delete, candidate.candidate_emails)
 
         db.session.commit()
         return '', 204
@@ -893,7 +892,7 @@ class CandidateMilitaryServiceResource(Resource):
         candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -937,7 +936,7 @@ class CandidatePhoneResource(Resource):
         candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -981,7 +980,7 @@ class CandidatePreferredLocationResource(Resource):
         candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1026,7 +1025,7 @@ class CandidateSkillResource(Resource):
         candidate_id, skill_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1071,7 +1070,7 @@ class CandidateSocialNetworkResource(Resource):
         candidate_id, social_networks_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = check_for_candidate(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1115,7 +1114,7 @@ class CandidateWorkPreferenceResource(Resource):
         candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1147,7 +1146,7 @@ class CandidateEditResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1190,7 +1189,7 @@ class CandidateViewResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1213,7 +1212,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure Candidate exists & is not web-hidden
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1229,15 +1228,15 @@ class CandidatePreferenceResource(Resource):
     @require_all_roles('CAN_ADD_CANDIDATES')
     def post(self, **kwargs):
         """
-        Endpoint:  POST /v1/candidates/preferences
+        Endpoint:  POST /v1/candidates/:id/preferences
         Function will create candidate's preference(s)
-        input: {'candidates': [{'id': 1,'frequency_id': 1}]}
+        input: {'frequency_id': 1}
         """
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1259,7 +1258,7 @@ class CandidatePreferenceResource(Resource):
 
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
 
-        return {'candidate': {'id': candidate_id}}, 201
+        return '', 204
 
     @require_all_roles('CAN_EDIT_CANDIDATES')
     def put(self, **kwargs):
@@ -1272,7 +1271,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1310,7 +1309,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        check_for_candidate(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):

@@ -357,8 +357,8 @@ def request_to_candidate_preference_resource(token, request, candidate_id='', da
     """
     Function sends request to CandidatePreferenceResource
     :type token:  str
-    :type request: str
-    :type url: str
+    :type candidate_id: int|long
+    :type data: dict
     """
     url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
     return define_and_send_request(token, request, url, data)
