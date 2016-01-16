@@ -7,9 +7,35 @@ import json
 
 # Candidate's sample data
 from candidate_sample_data import generate_single_candidate_data
-
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
+
+
+class TestUserRoles(object):
+    """
+    Class entails functions that will help add specific roles to test-user
+    """
+    @staticmethod
+    def get(user):
+        return add_role_to_test_user(user, ['CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+
+    @staticmethod
+    def edit(user):
+        return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
+
+    @staticmethod
+    def delete(self, user):
+        return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def all_roles(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
 
 
 def define_and_send_request(access_token, request, url, data=None):

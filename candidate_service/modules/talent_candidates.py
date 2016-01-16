@@ -48,7 +48,7 @@ from candidate_service.common.geo_services.geo_coordinates import get_coordinate
 def fetch_candidate_info(candidate, fields=None):
     """
     Fetch Candidate and candidate related objects via Candidate's id
-    :type       candidate_id: int
+    :type       candidate: Candidate
     :type       fields: None | str
 
     :return:    Candidate dict
@@ -474,7 +474,11 @@ def date_of_employment(year, month, day=1):
 
 def get_candidate_id_from_candidate_email(candidate_email):
     """
+    Function will get the candidate associated with candidate_email and return its ID,
+    If candidate is not found, None will be returned
+    :type candidate_email: str
     """
+    assert isinstance(candidate_email, basestring)
     can_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
     if not can_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
@@ -544,6 +548,8 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
+    :type user_id: int|long
+    :type candidate_id: int|long
     """
     db.session.add(CandidateView(
         user_id=user_id,
@@ -635,7 +641,7 @@ def create_or_update_candidate_from_params(
         CandidateMilitaryService, CandidatePreferredLocation,
         CandidateSkill, CandidateSocialNetwork
 
-    :type user_id:                  int
+    :type user_id:                  int|long
     :type is_creating:              bool
     :type is_updating:              bool
     :type candidate_id:             int
