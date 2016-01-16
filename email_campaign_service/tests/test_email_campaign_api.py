@@ -4,15 +4,11 @@ import imaplib
 import time
 import email
 
-from faker import Faker
-from email_campaign_service.common.tests.conftest import UserAuthentication
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.tests.sample_data import generate_single_candidate_data
 from email_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from email_campaign_service.common.routes import CandidateApiUrl
 __author__ = 'jitesh'
-
-fake = Faker()
 
 EMAIL_CAMPAIGN_URI = "http://127.0.0.1:8014/email_campaign"
 CANDIDATE_SERVICE_BASE_URI = "http://127.0.0.1:8005/v1/"

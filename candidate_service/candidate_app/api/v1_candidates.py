@@ -38,9 +38,8 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateSubscriptionPreference
 )
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import Frequency
 
 # Module
 from candidate_service.modules.talent_candidates import (

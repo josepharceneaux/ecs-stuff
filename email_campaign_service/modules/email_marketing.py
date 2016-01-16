@@ -4,11 +4,11 @@ import json
 import datetime
 import requests
 
-from flask import current_app
 from sqlalchemy import and_
 from sqlalchemy import desc
 from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
                                                   get_candidates_of_smartlist)
+from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSmartList,
                                                                   EmailCampaignBlast, EmailCampaignSend)
@@ -21,6 +21,7 @@ from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity, ActivityTypes
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 
 __author__ = 'jitesh'
 
@@ -103,21 +104,27 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
             "email_client_id": email_client_id
         }
     }
-    if frequency_obj:
+    if frequency_obj and frequency_obj.name != 'once':
         schedule_task_params["frequency"] = frequency_obj.in_seconds()
-        schedule_task_params["task_type"] = "periodic"  # Change task_type to periodic
+        schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
+    elif frequency_obj and frequency_obj.name == 'once':
+        schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
+        schedule_task_params["start_datetime"] = send_time
+        schedule_task_params["end_datetime"] = send_time
     else:
-        schedule_task_params["task_type"] = "one_time"
-        schedule_task_params["run_datetime"] = datetime.datetime.strftime(datetime.datetime.utcnow() + datetime.timedelta(seconds=10), "%Y-%m-%d %H:%M:%S")   # TODO: Check if this is really needed.
+        schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
+        schedule_task_params["run_datetime"] = datetime.datetime.strftime(
+            datetime.datetime.utcnow() + datetime.timedelta(seconds=10),
+            "%Y-%m-%d %H:%M:%S")
 
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
     try:
         scheduler_response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(schedule_task_params))
     except Exception as ex:
-        current_app.logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
+        logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
         raise
     if scheduler_response.status_code != 201:
         raise InternalServerError("Error occurred while scheduling email campaign. Status Code: %s, Response: %s" % (scheduler_response.status_code, scheduler_response.json()))
@@ -152,7 +159,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                     campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
                 )
         )
-        current_app.logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
+        logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
                                 "new_candidates_only=%s, address list size=%s" % (
                                     campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)))
 
@@ -189,7 +196,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                 emails_sent += 1
 
             db.session.commit()
-    current_app.logger.info(
+    logger.info(
             "Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
             emails_sent, campaign.name, user.email, new_candidates_only)
 
@@ -208,52 +215,55 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
         # Get smartlists of this campaign
         list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id, smartlist_ids_only=True)
     # Get candidate ids
-    candidate_ids_dict = dict()  # Store in hash to avoid duplicate candidate ids
+    all_candidate_ids = []
     for list_id in list_ids:
+        # Get candidates present in smartlist
+        smartlist_candidate_ids = get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=True)
+        # gather all candidates from various smartlists
+        all_candidate_ids.extend(smartlist_candidate_ids)
+
+    all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+
+    if campaign.is_subscription:
         # If the campaign is a subscription campaign,
         # only get candidates subscribed to the campaign's frequency
-        if campaign.is_subscription:
-            campaign_frequency_id = campaign.frequency_id
-            subscribed_candidate_id_rows = db.session.query(Candidate.id) \
-                .join(CandidateSubscriptionPreference, Candidate.id == CandidateSubscriptionPreference.candidate_id) \
-                .join(User, Candidate.user_id == User.id) \
-                .filter(and_(CandidateSubscriptionPreference.frequency_id == campaign_frequency_id,
-                             User.domain_id == user.domain_id)).all()
-            candidate_ids = [row.id for row in subscribed_candidate_id_rows]
-            if not candidate_ids:
-                current_app.logger.error("No candidates in subscription campaign %s", campaign)
-        else:
-            # Otherwise, just filter out unsubscribed candidates:
-            # their subscription preference's frequencyId is NULL, which means 'Never'
-            candidate_ids = get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=True)
-            current_app.logger.debug("candidate_ids: %s" % candidate_ids)
-            unsubscribed_candidate_ids = []
-            for candidate_id in candidate_ids:
-                campaign_subscription_preference = get_subscription_preference(candidate_id)
-                current_app.logger.debug("campaign_subscription_preference: %s" % campaign_subscription_preference)
-                if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
-                    unsubscribed_candidate_ids.append(candidate_id)
-            for unsubscribed_candidate_id in unsubscribed_candidate_ids:
-                if unsubscribed_candidate_id in candidate_ids:
-                    candidate_ids.remove(unsubscribed_candidate_id)
-        # If only getting candidates that haven't been emailed before...
-        if new_candidates_only:
-            emailed_candidate_ids = db.session.query(EmailCampaignSend).filter(
-                    EmailCampaignSend.email_campaign_id == campaign.id).group_by(EmailCampaignSend.candidate_id).all()
-            emailed_candidate_ids_dict = dict(emailed_candidate_ids)
-            for candidate_id in candidate_ids:
-                if not candidate_ids_dict.get(candidate_id) and not emailed_candidate_ids_dict.get(candidate_id):
-                    candidate_ids_dict[candidate_id] = True
-        else:
-            for candidate_id in candidate_ids:
-                if not candidate_ids_dict.get(candidate_id):
-                    candidate_ids_dict[candidate_id] = True
-    unique_candidate_ids = candidate_ids_dict.keys()
+        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
+            CandidateSubscriptionPreference.candidate_id).filter(
+            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
+                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
+        subscribed_candidate_ids = [row.candidate_id for row in subscribed_candidates_rows]  # Subscribed candidate ids
+        if not subscribed_candidate_ids:
+            logger.error("No candidates in subscription campaign %s", campaign)
+
+    else:
+        # Otherwise, just filter out unsubscribed candidates:
+        # their subscription preference's frequencyId is NULL, which means 'Never'
+        unsubscribed_candidate_ids = []
+        for candidate_id in all_candidate_ids:
+            # TODO: Verify this code with Osman
+            campaign_subscription_preference = get_subscription_preference(candidate_id)
+            logger.debug("campaign_subscription_preference: %s" % campaign_subscription_preference)
+            if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
+                unsubscribed_candidate_ids.append(candidate_id)
+        # Remove unsubscribed candidates
+        subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
+
+    # If only getting candidates that haven't been emailed before...
+    if new_candidates_only:
+        already_emailed_candidates = EmailCampaignSend.query.with_entities(
+            EmailCampaignSend.candidate_id).filter_by(email_campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+
+        # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
+        new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
+        # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
+        subscribed_candidate_ids = new_candidate_ids
+
     # Get emails
-    candidate_email_rows = db.session.query(CandidateEmail.candidate_id, CandidateEmail.address) \
-        .filter(CandidateEmail.candidate_id.in_(unique_candidate_ids)) \
+    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id, CandidateEmail.address) \
+        .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
         .group_by(CandidateEmail.address)
-    # array of (candidate id, email address) tuples
+    # list of tuples (candidate id, email address)
     return [(row.candidate_id, row.address) for row in candidate_email_rows]
 
 
@@ -271,8 +281,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         email_campaign_blast = EmailCampaignBlast.query.filter(
             EmailCampaignBlast.email_campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
         if not email_campaign_blast:
-            current_app.logger.error(
-                    "send_campaign_emails_to_candidate: Must have a previous email_campaign_blast that belongs to this campaign if you don't pass in the email_campaign_blast_id param")
+            logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
+             that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
             return 0
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sentTime
@@ -308,7 +318,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
     # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
-    if os.getenv(TalentConfigKeys.ENV_KEY) in ['dev', 'qa', 'circle']:
+    if os.getenv(TalentConfigKeys.ENV_KEY) in ['dev', 'qa', 'jenkins']:
         domain = Domain.query.get(user.domain_id)
         if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
             to_addresses = user.email
@@ -318,8 +328,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         to_addresses = candidate_address
     # Do not send mail if email_client_id is provided
     if email_client_id:
-        current_app.logger.info("Marketing email added through client %s", email_client_id)
-        # TODO: Add activity
+        logger.info("Marketing email added through client %s", email_client_id)
         return new_html, new_text
     else:
         try:
@@ -339,13 +348,17 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
             _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, e)
             return 0
         # Save SES message ID & request ID
-        current_app.logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
+        logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
         message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
         email_campaign_send.ses_message_id = message_id
         email_campaign_send.ses_request_id = request_id
         db.session.commit()
-    # TODO: Add activity
+        # Add activity
+        add_activity(user_id=user.id, oauth_token='?', activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
+                     source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
+                     params=dict(candidateId=candidate.id, campaign_name=campaign.name,
+                                 candidate_name=candidate.formatted_name))
 
     # Update blast
     blast_params['sends'] += 1
@@ -373,7 +386,7 @@ def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_para
     email_campaign_blast.bounces = blast_params['bounces']
     db.session.commit()
     # Send failure message to email marketing admin, just to notify for verification
-    current_app.logger.exception(
+    logger.exception(
             "Failed to send marketing email to candidate_id=%s, to_addresses=%s" % (candidate.id, to_addresses))
 
 
@@ -399,7 +412,7 @@ def get_subscription_preference(candidate_id):
     if non_custom_pref:
         all_other_prefs = email_prefs.filter(CandidateSubscriptionPreference.id != non_custom_pref.id)
         all_other_prefs_ids = [row.id for row in all_other_prefs]
-        current_app.logger.info("get_subscription_preference: Deleting non-custom prefs for candidate %s: %s",
+        logger.info("get_subscription_preference: Deleting non-custom prefs for candidate %s: %s",
                                 candidate_id, all_other_prefs_ids)
         db.session.query(CandidateSubscriptionPreference) \
             .filter(CandidateSubscriptionPreference.id.in_(all_other_prefs_ids)).delete(synchronize_session='fetch')
@@ -407,14 +420,14 @@ def get_subscription_preference(candidate_id):
     elif null_pref:
         non_null_prefs = email_prefs.filter(CandidateSubscriptionPreference.id != null_pref.id)
         non_null_prefs_ids = [row.id for row in non_null_prefs]
-        current_app.logger.info("get_subscription_preference: Deleting non-null prefs for candidate %s: %s",
+        logger.info("get_subscription_preference: Deleting non-null prefs for candidate %s: %s",
                                 candidate_id, non_null_prefs_ids)
         db.session.query(CandidateSubscriptionPreference).filter(
                 CandidateSubscriptionPreference.id.in_(non_null_prefs_ids)).delete(synchronize_session='fetch')
         return null_pref
     elif custom_pref:
         email_prefs_ids = [row.id for row in email_prefs]
-        current_app.logger.info("get_subscription_preference: Deleting all prefs for candidate %s: %s", candidate_id,
+        logger.info("get_subscription_preference: Deleting all prefs for candidate %s: %s", candidate_id,
                                 email_prefs_ids)
         db.session.query(CandidateSubscriptionPreference).filter(
                 CandidateSubscriptionPreference.id.in_(email_prefs_ids)).delete(synchronize_session='fetch')

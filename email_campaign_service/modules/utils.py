@@ -3,19 +3,18 @@ import requests
 
 from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
-from flask import current_app
 from BeautifulSoup import BeautifulSoup, Tag
+from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
-
+from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
+TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
 HTML_CLICK_URL_TYPE = 2
 TRACKING_URL_TYPE = 0
-# Candidate service URLs
-SMARTLIST_CANDIDATES_URI = "http://localhost:8008/v1/smartlists/%d/candidates"
 
 
 def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
@@ -25,15 +24,13 @@ def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
     :param list_id: smartlist id.
     :return:
     """
-    query_params = {}
-    if candidate_ids_only:
-        query_params = {'return': 'candidate_ids_only'}
-    r = requests.get(SMARTLIST_CANDIDATES_URI % list_id, params=query_params,
+    params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
+    r = requests.get(CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id, params=params,
                      headers={'Authorization': oauth_token})
     response_body = json.loads(r.content)
     candidates = response_body['candidates']
     if candidate_ids_only:
-        return [candidate['id'] for candidate in candidates]
+        return [long(candidate['id']) for candidate in candidates]
     return candidates
 
 
@@ -41,7 +38,7 @@ def do_mergetag_replacements(texts, candidate=None):
     """
     If no candidate, name is "John Doe"
     Replace MergeTags with candidate's first name, last name
-    Replace preferences url with (....)?
+    Replace preferences url
     """
     first_name = "John"
     last_name = "Doe"
@@ -67,8 +64,7 @@ def do_mergetag_replacements(texts, candidate=None):
 
 
 def do_prefs_url_replacement(text, candidate_id):
-    unsubscribe_url = 'http://localhost:8007/unsubscribe'
-    # TODO: check for unsubscribe url
+    unsubscribe_url = CandidateApiUrl.CANDIDATE_PREFERENCE
     # unsubscribe_url = current.HOST_NAME + URL(scheme=False, host=False, a='web',
     #                                           c='candidate', f='prefs',
     #                                           args=[candidate_id],
@@ -145,8 +141,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
 
         # If no images found, add a tracking pixel
         if not num_conversions:
-            # image_url = URL('static', 'images/pixel.png', host=True)
-            image_url = "http://localhost:8014/static/images/pixel.png"  # TODO
+            image_url = TRACKING_PIXEL_URL
             new_image_url = create_email_campaign_url_conversion(image_url, email_campaign_send_id, TRACKING_URL_TYPE)
             new_image_tag = Tag(soup, "img", [("src", new_image_url)])
             soup.insert(0, new_image_tag)
@@ -185,9 +180,9 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             custom_html_soup = BeautifulSoup(custom_html)
             body_tag.insert(0, custom_html_soup)
         else:
-            current_app.logger.error("Email campaign HTML did not have a body or html tag, "
-                                     "so couldn't insert custom_html! email_campaign_send_id=%s",
-                                     email_campaign_send_id)
+            logger.error("Email campaign HTML did not have a body or html tag, "
+                         "so couldn't insert custom_html! email_campaign_send_id=%s",
+                         email_campaign_send_id)
 
     # Convert soup object into new HTML
     if new_html and soup:
