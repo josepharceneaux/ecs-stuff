@@ -187,7 +187,6 @@ def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
                              queue=SchedulerUtils.QUEUE)
 
 
-
 def schedule_job(data, user_id=None, access_token=None):
     """
     Schedule job using POST data and add it to APScheduler. Which calls the callback method when job time comes

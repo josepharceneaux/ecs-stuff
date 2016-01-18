@@ -2,9 +2,6 @@
 Test cases for creating schedule job with and without token.
 """
 
-# Std imports
-import os
-
 # Third party imports
 import json
 import requests
