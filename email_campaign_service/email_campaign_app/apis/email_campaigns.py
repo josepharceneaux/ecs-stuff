@@ -48,22 +48,22 @@ class EmailCampaignApi(Resource):
             raise InvalidUsage("Received empty request body")
         data = validate_and_format_request_data(data, user_id)
 
-        campaign_id = create_email_campaign(user_id=user_id,
-                                            oauth_token=request.oauth_token,
-                                            email_campaign_name=data['campaign_name'],
-                                            email_subject=data['email_subject'],
-                                            email_from=data['email_from'],
-                                            email_reply_to=data['reply_to'],
-                                            email_body_html=data['email_body_html'],
-                                            email_body_text=data['email_body_text'],
-                                            list_ids=data['list_ids'],
-                                            email_client_id=data['email_client_id'],
-                                            template_id=data['template_id'],
-                                            send_time=data['send_datetime'],
-                                            stop_time=data['stop_datetime'],
-                                            frequency=data['frequency'])
+        campaign = create_email_campaign(user_id=user_id,
+                                         oauth_token=request.oauth_token,
+                                         email_campaign_name=data['campaign_name'],
+                                         email_subject=data['email_subject'],
+                                         email_from=data['email_from'],
+                                         email_reply_to=data['reply_to'],
+                                         email_body_html=data['email_body_html'],
+                                         email_body_text=data['email_body_text'],
+                                         list_ids=data['list_ids'],
+                                         email_client_id=data['email_client_id'],
+                                         template_id=data['template_id'],
+                                         send_time=data['send_datetime'],
+                                         stop_time=data['stop_datetime'],
+                                         frequency=data['frequency'])
 
-        return {'campaign': {'id': campaign_id}}
+        return {'campaign': campaign}
 
 
 @email_campaign_blueprint.route(EmailCampaignEndpoints.SEND_CAMPAIGN, methods=['POST'])
@@ -104,12 +104,9 @@ def url_redirect(url_conversion_id):
 
     if destination_url == '#':
         # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
-        # TODO: redirect to dashboard url?
-        # redirect('/')
-        destination_url = 'gettalent.com'
-    # else:
-    redirect(destination_url)
-    #return json.dumps({'redirect_url': destination_url})
+        destination_url = 'http://www.gettalent.com/'  # Todo
+    # return redirect(destination_url)  # TODO: redirecting is giving error, check for alternate
+    return json.dumps({'redirect_url': destination_url})
 
 
 api = TalentApi(email_campaign_blueprint)

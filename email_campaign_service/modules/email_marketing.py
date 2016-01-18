@@ -93,7 +93,9 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         email_campaign.isTrackHtmlClicks = 1
         email_campaign.isTrackTextClicks = 1
         db.session.commit()
-        return dict(id=email_campaign.id)
+        new_html, new_text = send_emails_to_campaign(oauth_token=oauth_token, campaign=email_campaign,
+                                                     list_ids=list_ids, email_client_id=email_client_id)
+        return {'id': email_campaign.id, 'new_html': new_html, 'new_text': new_text}
 
     # Schedule the sending of emails & update email_campaign scheduler fields
     schedule_task_params = {
@@ -129,15 +131,19 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     email_campaign.scheduler_task_id = scheduler_id
     db.session.commit()
 
-    return email_campaign.id
+    return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates_only=False, email_client_id=None):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
 
     :param campaign:    email campaign object
+    :param list_ids: list associated with email campaign if given it will take the ids provided else extract out from email campaign object
+    :param new_candidates_only: If emails need to be sent to new candidates only i.e. to those candidates whom emails were not sent previously
+    :param email_client_id: email_client id if email is sent from email_client.
+        If email is sent from client it will not send the actual emails and returns the new html (with url conversions and other replacements)
     :return:            number of emails sent
     """
     user = campaign.user
@@ -188,7 +194,11 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                 blast_datetime=blast_datetime,
                 email_client_id=campaign.email_client_id
             )
-            # db.session.commit()
+
+            # if email_client_id is present then we only return new html
+            if email_client_id:
+                return was_send
+
             if was_send:
                 emails_sent += 1
 
@@ -237,8 +247,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
         # their subscription preference's frequencyId is NULL, which means 'Never'
         unsubscribed_candidate_ids = []
         for candidate_id in all_candidate_ids:
-            # TODO: Verify this code with Osman
-            # Candidate subs prerfs api
+            # Candidate subscription preference
             campaign_subscription_preference = get_subscription_preference(candidate_id)
             logger.debug("campaign_subscription_preference: %s" % campaign_subscription_preference)
             if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
@@ -406,15 +415,8 @@ def update_hit_count(url_conversion):
         db.session.commit()
         email_campaign_send_url_conversion = EmailCampaignSendUrlConversion.query.filter_by(url_conversion_id=url_conversion.id).first()
         email_campaign_send = email_campaign_send_url_conversion.email_campaign_send
-        # email_campaign_send = EmailCampaignSend.query.filter_by(email_campaign_send_url_conversion.email_campaign_send_id).first()
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
-        # row = db(db.email_campaign_send.id == db.email_campaign_send_url_conversion.emailCampaignSendId)(
-        #     db.email_campaign_send_url_conversion.urlConversionId == url_conversion_id).select(
-        #     ).first()
-        # email_campaign_send, email_campaign_send_url_conversion = row.email_campaign_send, row.email_campaign_send_url_conversion
-        # email_campaign = db(db.email_campaign.id == email_campaign_send.emailCampaignId).select().first()
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
-        # candidate = db(db.candidate.id == email_campaign_send.candidateId).select().first()
         if candidate:  # If candidate has been deleted, don't make the activity
             # Add activity
             add_activity(user_id="?", oauth_token="?",
@@ -428,7 +430,6 @@ def update_hit_count(url_conversion):
 
         # Update email_campaign_blast entry only if it's a new hit
         if new_hit_count == 1:
-            # email_campaign_blast = db(db.email_campaign_blast.sentTime == email_campaign_send.sentTime).select().first()
             email_campaign_blast = EmailCampaignBlast.query.filter_by(and_(send_time=email_campaign_send.send_time,
                                                                            email_campaign_id=email_campaign_send.email_campaign_id)).first()
             if email_campaign_blast:
