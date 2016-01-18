@@ -50,6 +50,30 @@ def test_add_subs_preference_to_candidate_without_providing_any_data(sample_user
     assert create_subs_pref.json()['error']['code'] == 3000
 
 
+def test_add_candidate_subs_preference(sample_user, user_auth):
+    """
+    Test: Add subscription preference for the candidate
+    Expect: 204
+    :type sample_user: User
+    :type user_auth:   UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+
+    # Create candidate and candidate subscription preference
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    data = {'frequency_id': 1}
+    resp = request_to_candidate_preference_resource(token, 'post', candidate_id, data)
+    print response_info(resp)
+    assert resp.status_code == 204
+
+    # Retrieve Candidate's subscription preference
+    resp = request_to_candidate_preference_resource(token, 'get', candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 200
+    assert resp.json()['candidate']['subscription_preference']['frequency_id'] == 1
+
+
 ####################
 # Test cases for GET
 ####################

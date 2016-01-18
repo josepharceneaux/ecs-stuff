@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/login/login.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'LoginController',
             controllerAs: 'vm'
         };

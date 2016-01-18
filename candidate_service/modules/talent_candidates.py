@@ -475,14 +475,13 @@ def date_of_employment(year, month, day=1):
 def get_candidate_id_from_candidate_email(candidate_email):
     """
     """
-    candidate_email_row = db.session.query(CandidateEmail). \
-        filter_by(address=candidate_email).first()
-    if not candidate_email_row:
+    can_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
+    if not can_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
                     candidate_email)
         return None
 
-    return candidate_email_row.candidate_id
+    return can_email_row.candidate_id
 
 
 # TODO: move function to Email Marketing Service
@@ -583,18 +582,6 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
         db.session.add(CandidateSubscriptionPreference(
             candidate_id=candidate_id, frequency_id=frequency_id
         ))
-    db.session.commit()
-
-
-def add_candidate_subscription_preference(candidate_id, frequency_id):
-    """
-    :type candidate_id: int|long
-    :type frequency_id: int|long
-    """
-    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
-    db.session.add(CandidateSubscriptionPreference(
-            candidate_id=candidate_id, frequency_id=frequency_id
-    ))
     db.session.commit()
 
 

@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/admin/admin-dashboard/admin-dashboard.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'AdminDashboardController',
             controllerAs: 'vm'
         };
