@@ -1391,7 +1391,7 @@ def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(sample_u
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
     AddUserRoles.add_and_get(user=sample_user)
-    AddUserRoles.delete(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
