@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/sidenav/sidenav.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'SidenavController',
             controllerAs: 'vm',
             link: linkFunction

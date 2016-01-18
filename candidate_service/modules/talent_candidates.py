@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
     CandidateExperienceBullet, ClassificationType
 )
-from candidate_service.common.models.candidate import EmailLabel
+from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
@@ -475,14 +475,13 @@ def date_of_employment(year, month, day=1):
 def get_candidate_id_from_candidate_email(candidate_email):
     """
     """
-    candidate_email_row = db.session.query(CandidateEmail). \
-        filter_by(address=candidate_email).first()
-    if not candidate_email_row:
+    can_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
+    if not can_email_row:
         logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
                     candidate_email)
         return None
 
-    return candidate_email_row.candidate_id
+    return can_email_row.candidate_id
 
 
 # TODO: move function to Email Marketing Service
@@ -502,9 +501,9 @@ def retrieve_email_campaign_send(email_campaign, candidate_id):
              } for email_campaign_send_row in email_campaign_send_rows]
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Edits
-#################################################
+######################################
+# Helper Functions For Candidate Edits
+######################################
 def fetch_candidate_edits(candidate_id):
     assert isinstance(candidate_id, (int, long))
     all_edits = []
@@ -523,9 +522,9 @@ def fetch_candidate_edits(candidate_id):
     return all_edits
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Views
-#################################################
+######################################
+# Helper Functions For Candidate Views
+######################################
 def fetch_candidate_views(candidate_id):
     """
     :return: list of candidate view information
@@ -555,9 +554,40 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.commit()
 
 
-#########################################
-# Helper Functions For Creating Candidate
-#########################################
+########################################################
+# Helper Functions For Candidate Subscription Preference
+########################################################
+def fetch_candidate_subscription_preference(candidate_id):
+    """
+    :type candidate_id: int|long
+    :return:
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+    return {'id': candidate_subs_pref.id, 'frequency_id': candidate_subs_pref.frequency_id}
+
+
+def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=False):
+    """
+    Function adds or updates candidate's subs preference
+    :type candidate_id: int|long
+    :type frequency_id: int|long
+    :type is_update: bool
+    """
+    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
+    can_subs_pref_query = CandidateSubscriptionPreference.query.filter_by(candidate_id=candidate_id)
+    if is_update:  # Update
+        can_subs_pref_query.update(dict(frequency_id=frequency_id))
+    else:  # Add
+        db.session.add(CandidateSubscriptionPreference(
+            candidate_id=candidate_id, frequency_id=frequency_id
+        ))
+    db.session.commit()
+
+
+######################################################
+# Helper Functions For Creating and Updating Candidate
+######################################################
 def create_or_update_candidate_from_params(
         user_id,
         is_creating=False,

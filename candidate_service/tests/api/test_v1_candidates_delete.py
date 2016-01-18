@@ -6,7 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import CandidateCustomField
+from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -24,6 +24,31 @@ from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 ######################## Candidate ########################
+def test_delete_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to delete a candidate that isn't recognized via ID or Email
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+
+    # Delete non existing candidate via ID
+    resp = request_to_candidate_resource(token, 'delete', non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010
+
+    # Delete non existing candidate via Email
+    bogus_email = '{}_{}'.format(fake.word(), fake.safe_email())
+    assert CandidateEmail.get_by_address(email_address=bogus_email) is None
+
+    resp = request_to_candidate_resource(token, 'delete', bogus_email)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
+
+
 def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     """
     Test:   "Delete" a Candidate by setting is_web_hidden to True, and then retrieve Candidate
@@ -103,8 +128,7 @@ def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email='email_not_found_45623@simple.com')
     print response_info(resp)
-    assert resp.status_code == 404
-    assert resp.json()['error']['code'] == 3010
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
 
 
 def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
@@ -229,22 +253,6 @@ def test_delete_candidate_address_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's addresses without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's address without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's addresses without an id
-    updated_resp = request_to_candidate_address_resource(token, 'delete', all_addresses=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
@@ -375,22 +383,6 @@ def test_delete_candidate_aoi_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's areas of interest without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_aois_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's areas of interest without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's areas of interest without an id
-    updated_resp = request_to_candidate_aoi_resource(token, 'delete', all_aois=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
@@ -528,22 +520,6 @@ def test_delete_candidate_custom_fields_with_no_id(sample_user, user_auth):
     # Remove one of Candidate's custom fields without a custom_field_id
     candidate_id = 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_custom_fields_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's custom fields without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's custom fields without candidate_id
-    updated_resp = request_to_candidate_custom_field_resource(token, 'delete', all_custom_fields=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
@@ -711,22 +687,6 @@ def test_delete_candidate_education_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_educations_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's educations without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's educations without an id
-    updated_resp = request_to_candidate_education_resource(token, 'delete', all_educations=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_educations(sample_user, user_auth):
     """
     Test:   Remove all of candidate's educations from db
@@ -886,21 +846,6 @@ def test_delete_candidate_edu_degree_with_no_id(sample_user, user_auth):
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
-
-def test_delete_can_edu_degree_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's education-degrees without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's education degrees without an id
-    updated_resp = request_to_candidate_education_degree_resource(token, 'delete', all_degrees=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
 
 
 def test_delete_candidate_education_degrees(sample_user, user_auth):
@@ -1078,22 +1023,6 @@ def test_delete_candidate_edu_degree_bullet_with_no_id(sample_user, user_auth):
     candidate_id, education_id, degree_id = 5, 5, 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_education_degree_bullet_resource(token, 'delete', candidate_id,
                                                                          education_id, degree_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_degree_bullets_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's degree-bullets without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's degree-bullets without providing candidate_id
-    updated_resp = request_to_candidate_education_degree_bullet_resource(token, 'delete', all_bullets=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 

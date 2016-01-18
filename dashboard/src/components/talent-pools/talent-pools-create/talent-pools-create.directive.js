@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/talent-pools/talent-pools-create/talent-pools-create.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TalentPoolsCreateController',
             controllerAs: 'vm'
         };

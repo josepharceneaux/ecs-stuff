@@ -15,11 +15,11 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import (is_valid_email)
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
-    candidates_resource_schema_get
+    candidates_resource_schema_get, resource_schema_preferences
 )
 from jsonschema import validate, FormatChecker
 
@@ -35,16 +35,19 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
+    CandidateSubscriptionPreference
 )
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.email_marketing import Frequency
 
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_candidate_email,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
-    add_candidate_view
+    add_candidate_view, fetch_candidate_subscription_preference,
+    add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 
@@ -102,16 +105,9 @@ class CandidatesResource(Resource):
 
             retrieved_candidates = []
             for candidate_id in candidate_ids:
-                candidate = Candidate.get_by_id(candidate_id=candidate_id)
-                if not candidate:
-                    raise NotFoundError(error_message='Candidate not found',
-                                        error_code=custom_error.CANDIDATE_NOT_FOUND)
 
-                # If Candidate is web hidden, it is assumed "deleted"
-                if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found',
-                                        error_code=custom_error.CANDIDATE_NOT_FOUND)
-
+                # Check for candidate's existence and web-hidden status
+                candidate = get_candidate_if_exists(candidate_id=candidate_id)
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
         return {'candidates': retrieved_candidates}
@@ -133,7 +129,7 @@ class CandidatesResource(Resource):
         """
         # Authenticate user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:
@@ -146,17 +142,17 @@ class CandidatesResource(Resource):
 
         # Input validations
         all_cf_ids, all_aoi_ids = [], []
-        for candidate in candidates:
+        for _candidate_dict in candidates:
 
             # Emails' addresses must be properly formatted
-            if filter(lambda emails: not is_valid_email(emails['address']), candidate.get('emails')):
+            if filter(lambda emails: not is_valid_email(emails['address']), _candidate_dict.get('emails')):
                     raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            custom_fields = candidate.get('custom_fields') or []
+            custom_fields = _candidate_dict.get('custom_fields') or []
             for custom_field in custom_fields:  # Custom-fields validation
                 all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            aois = candidate.get('areas_of_interest') or []
+            aois = _candidate_dict.get('areas_of_interest') or []
             for aoi in aois:  # Areas-of-interest validation
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
@@ -229,7 +225,7 @@ class CandidatesResource(Resource):
         """
         # Authenticated user
         authed_user = request.user
-        body_dict = request.get_json(force=True)
+        body_dict = request.get_json()
 
         # Validate json data
         try:
@@ -242,18 +238,22 @@ class CandidatesResource(Resource):
 
         # Input validations
         all_cf_ids, all_aoi_ids = [], []
-        for candidate in candidates:
+        for _candidate_dict in candidates:
+
+            # Check for candidate's existence and web-hidden status
+            candidate_id = _candidate_dict.get('id')
+            get_candidate_if_exists(candidate_id=candidate_id)
 
             # Emails' addresses must be properly formatted
-            for emails in candidate.get('emails') or []:
+            for emails in _candidate_dict.get('emails') or []:
                 if emails.get('address'):
                     if not is_valid_email(emails.get('address')):
                         raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            for custom_field in candidate.get('custom_fields') or []:  # Custom-fields validation
+            for custom_field in _candidate_dict.get('custom_fields') or []:  # Custom-fields validation
                 all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            for aoi in candidate.get('areas_of_interest') or []:  # Areas-of-interest validation
+            for aoi in _candidate_dict.get('areas_of_interest') or []:  # Areas-of-interest validation
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
         # Custom fields must belong to user's domain
@@ -265,8 +265,7 @@ class CandidatesResource(Resource):
             raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Candidates must belong to user's domain
-        candidates = body_dict.get('candidates')
-        list_of_candidate_ids = [candidate['id'] for candidate in candidates]
+        list_of_candidate_ids = [_candidate_dict['id'] for _candidate_dict in candidates]
         if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
@@ -348,17 +347,12 @@ class CandidateResource(Resource):
                                    error_code=custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
+            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
             if not candidate_id:
                 raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
 
-        candidate = Candidate.get_by_id(candidate_id=candidate_id)
-        if not candidate:
-            raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
-
-        # If Candidate is web hidden, it is assumed "deleted"
-        if candidate.is_web_hidden:
-            raise NotFoundError('Candidate not found', custom_error.CANDIDATE_IS_HIDDEN)
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user, and must be in the same domain as the user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -387,8 +381,8 @@ class CandidateResource(Resource):
         """
         # Authenticate user
         authed_user = request.user
-
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
+
         if candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
@@ -397,7 +391,10 @@ class CandidateResource(Resource):
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email)
             if not candidate_id:
-                raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
+                raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -429,6 +426,9 @@ class CandidateAddressResource(Resource):
         # Get candidate_id and address_id
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
@@ -445,7 +445,6 @@ class CandidateAddressResource(Resource):
             db.session.delete(candidate_address)
 
         else:  # Delete all of candidate's addresses
-            candidate = Candidate.get_by_id(candidate_id)
             for address in candidate.candidate_addresses:
                 db.session.delete(address)
 
@@ -470,6 +469,9 @@ class CandidateAreaOfInterestResource(Resource):
 
         # Get candidate_id and area_of_interest_id
         candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -520,6 +522,9 @@ class CandidateCustomFieldResource(Resource):
         # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
         authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
@@ -563,6 +568,9 @@ class CandidateEducationResource(Resource):
         # Get candidate_id and education_id
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
@@ -582,8 +590,7 @@ class CandidateEducationResource(Resource):
             db.session.delete(can_education)
 
         else:  # Delete all of Candidate's educations
-            can_educations = db.session.query(CandidateEducation). \
-                filter_by(candidate_id=candidate_id).all()
+            can_educations = candidate.candidate_educations
             for can_education in can_educations:
                 db.session.delete(can_education)
 
@@ -610,10 +617,12 @@ class CandidateEducationDegreeResource(Resource):
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('education_id')
         degree_id = kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if degree_id:  # Delete specified degree
             # Verify that degree belongs to education, and education belongs to candidate
@@ -621,16 +630,14 @@ class CandidateEducationDegreeResource(Resource):
                 filter(CandidateEducation.candidate_id == candidate_id). \
                 filter(CandidateEducationDegree.id == degree_id).first()
             if not candidate_degree:
-                raise NotFoundError(error_message='Education degree not found',
-                                    error_code=custom_error.DEGREE_NOT_FOUND)
+                raise NotFoundError('Education degree not found', custom_error.DEGREE_NOT_FOUND)
 
             db.session.delete(candidate_degree)
 
         else:  # Delete all degrees
             education = CandidateEducation.get_by_id(_id=education_id)
             if not education:
-                raise NotFoundError(error_message='Education not found',
-                                    error_code=custom_error.EDUCATION_NOT_FOUND)
+                raise NotFoundError('Education not found', custom_error.EDUCATION_NOT_FOUND)
 
             # Education must belong to candidate
             if education.candidate_id != candidate_id:
@@ -663,6 +670,9 @@ class CandidateEducationDegreeBulletResource(Resource):
         # Get required IDs
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('education_id')
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -730,6 +740,9 @@ class CandidateExperienceResource(Resource):
         # Get candidate_id and experience_id
         candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError(error_message='Not authorized',
@@ -749,9 +762,7 @@ class CandidateExperienceResource(Resource):
             db.session.delete(experience)
 
         else:  # Delete all experiences
-            experiences = db.session.query(CandidateExperience). \
-                filter_by(candidate_id=candidate_id).all()
-            for experience in experiences:
+            for experience in candidate.candidate_experiences:
                 db.session.delete(experience)
 
         db.session.commit()
@@ -776,6 +787,9 @@ class CandidateExperienceBulletResource(Resource):
         # Get required IDs
         candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('experience_id')
         bullet_id = kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -802,8 +816,7 @@ class CandidateExperienceBulletResource(Resource):
 
             # Experience must belong to Candidate
             if experience.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.EXPERIENCE_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
             bullets = experience.candidate_experience_bullets
             if not bullets:
@@ -835,28 +848,26 @@ class CandidateEmailResource(Resource):
         # Get candidate_id and email_id
         candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if email_id:  # Delete specified email
             email = CandidateEmail.get_by_id(_id=email_id)
             if not email:
-                raise NotFoundError(error_message='Candidate email not found',
-                                    error_code=custom_error.EMAIL_NOT_FOUND)
+                raise NotFoundError('Candidate email not found', custom_error.EMAIL_NOT_FOUND)
 
             # Email must belong to candidate
             if email.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.EMAIL_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.EMAIL_FORBIDDEN)
 
             db.session.delete(email)
 
         else:  # Delete all of Candidate's emails
-            emails = db.session.query(CandidateEmail).filter_by(candidate_id=candidate_id).all()
-            for email in emails:
-                db.session.delete(email)
+            map(db.session.delete, candidate.candidate_emails)
 
         db.session.commit()
         return '', 204
@@ -880,28 +891,26 @@ class CandidateMilitaryServiceResource(Resource):
         # Get candidate_id and military_service_id
         candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if military_service_id:  # Delete specified military-service
             military_service = CandidateMilitaryService.get_by_id(_id=military_service_id)
             if not military_service:
-                raise NotFoundError(error_message='Candidate military service not found',
-                                    error_code=custom_error.MILITARY_NOT_FOUND)
+                raise NotFoundError('Candidate military service not found', custom_error.MILITARY_NOT_FOUND)
 
             # CandidateMilitaryService must belong to Candidate
             if military_service.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.MILITARY_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.MILITARY_FORBIDDEN)
 
             db.session.delete(military_service)
 
         else:  # Delete all of Candidate's military services
-            military_services = db.session.query(CandidateMilitaryService). \
-                filter_by(candidate_id=candidate_id).all()
-            for military_service in military_services:
+            for military_service in candidate.candidate_military_services:
                 db.session.delete(military_service)
 
         db.session.commit()
@@ -926,27 +935,26 @@ class CandidatePhoneResource(Resource):
         # Get candidate_id and phone_id
         candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if phone_id:  # Delete specified phone
             phone = CandidatePhone.get_by_id(_id=phone_id)
             if not phone:
-                raise NotFoundError(error_message='Candidate phone not found',
-                                    error_code=custom_error.PHONE_NOT_FOUND)
+                raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
 
             # Phone must belong to Candidate
             if phone.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.PHONE_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.PHONE_FORBIDDEN)
 
             db.session.delete(phone)
 
         else:  # Delete all of Candidate's phones
-            phones = db.session.query(CandidatePhone).filter_by(candidate_id=candidate_id).all()
-            for phone in phones:
+            for phone in candidate.candidate_phones:
                 db.session.delete(phone)
 
         db.session.commit()
@@ -971,10 +979,12 @@ class CandidatePreferredLocationResource(Resource):
         # Get candidate_id and preferred_location_id
         candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if preferred_location_id:  # Delete specified preferred location
             preferred_location = CandidatePreferredLocation.get_by_id(_id=preferred_location_id)
@@ -984,15 +994,12 @@ class CandidatePreferredLocationResource(Resource):
 
             # Preferred location must belong to Candidate
             if preferred_location.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.PREFERRED_LOCATION_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.PREFERRED_LOCATION_FORBIDDEN)
 
             db.session.delete(preferred_location)
 
         else:  # Delete all of Candidate's preferred locations
-            preferred_locations = db.session.query(CandidatePreferredLocation). \
-                filter_by(candidate_id=candidate_id).all()
-            for preferred_location in preferred_locations:
+            for preferred_location in candidate.candidate_preferred_locations:
                 db.session.delete(preferred_location)
 
         db.session.commit()
@@ -1017,28 +1024,27 @@ class CandidateSkillResource(Resource):
         # Get candidate_id and work_preference_id
         candidate_id, skill_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if skill_id:  # Delete specified skill
             # skill = CandidateSkill.get_by_id(_id=skill_id)
             skill = db.session.query(CandidateSkill).get(skill_id)
             if not skill:
-                raise NotFoundError(error_message='Candidate skill not found',
-                                    error_code=custom_error.SKILL_NOT_FOUND)
+                raise NotFoundError('Candidate skill not found', custom_error.SKILL_NOT_FOUND)
 
             # Skill must belong to Candidate
             if skill.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.SKILL_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.SKILL_FORBIDDEN)
 
             db.session.delete(skill)
 
         else:  # Delete all of Candidate's skills
-            skills = db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).all()
-            for skill in skills:
+            for skill in candidate.candidate_skills:
                 db.session.delete(skill)
 
         db.session.commit()
@@ -1063,30 +1069,29 @@ class CandidateSocialNetworkResource(Resource):
         # Get candidate_id and work_preference_id
         candidate_id, social_networks_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if social_networks_id:  # Delete specified social network
             # social_network = CandidateSocialNetwork.get_by_id(_id=social_networks_id)
             social_network = db.session.query(CandidateSocialNetwork).get(social_networks_id)
 
             if not social_network:
-                raise NotFoundError(error_message='Candidate social network not found',
-                                    error_code=custom_error.SOCIAL_NETWORK_NOT_FOUND)
+                raise NotFoundError('Candidate social network not found',
+                                    custom_error.SOCIAL_NETWORK_NOT_FOUND)
 
             # Social network must belong to Candidate
             if social_network.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             db.session.delete(social_network)
 
         else:  # Delete all of Candidate's social networks
-            social_networks = db.session.query(CandidateSocialNetwork). \
-                filter_by(candidate_id=candidate_id).all()
-            for social_network in social_networks:
+            for social_network in candidate.candidate_social_networks:
                 db.session.delete(social_network)
 
         db.session.commit()
@@ -1108,20 +1113,20 @@ class CandidateWorkPreferenceResource(Resource):
         # Get candidate_id and work_preference_id
         candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
         if not work_preference:
-            raise NotFoundError(error_message='Candidate work preference not found',
-                                error_code=custom_error.WORK_PREF_NOT_FOUND)
+            raise NotFoundError('Candidate work preference not found', custom_error.WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if work_preference.candidate_id != candidate_id:
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.WORK_PREF_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.WORK_PREF_FORBIDDEN)
 
         db.session.delete(work_preference)
         db.session.commit()
@@ -1139,6 +1144,9 @@ class CandidateEditResource(Resource):
         """
         # Authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1180,9 +1188,138 @@ class CandidateViewResource(Resource):
         # Authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs.get('id')
 
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id=candidate_id)
+
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
+
+
+class CandidatePreferenceResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles('CAN_GET_CANDIDATES')
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/preferences
+        Function will return requested candidate's preference(s)
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure Candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if not CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
+            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id),
+                                custom_error.NO_PREFERENCES)
+
+        candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
+        return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
+
+    @require_all_roles('CAN_ADD_CANDIDATES')
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/preferences
+        Function will create candidate's preference(s)
+        input: {'frequency_id': 1}
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = request.get_json()
+        try:
+            validate(instance=body_dict, schema=resource_schema_preferences)
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        frequency_id = body_dict.get('frequency_id')
+        if not Frequency.get_by_id(_id=frequency_id):
+            raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
+
+        if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
+            raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
+                               custom_error.PREFERENCE_EXISTS)
+
+        add_or_update_candidate_subs_preference(candidate_id, frequency_id)
+
+        return '', 204
+
+    @require_all_roles('CAN_EDIT_CANDIDATES')
+    def put(self, **kwargs):
+        """
+        Endpoint:  PATCH /v1/candidates/:id/preferences
+        Function will update candidate's subscription preference
+        Input: {'frequency_id': 1}
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = request.get_json()
+        try:
+            validate(instance=body_dict, schema=resource_schema_preferences)
+        except Exception as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        # Frequency ID must be recognized
+        frequency_id = body_dict.get('frequency_id')
+        if not Frequency.get_by_id(_id=frequency_id):
+            raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
+
+        # Candidate must already have a subscription preference
+        can_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+        if not can_subs_pref:
+            raise InvalidUsage('Candidate does not have a subscription preference.',
+                               custom_error.NO_PREFERENCES)
+
+        # Update candidate's subscription preference
+        add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
+
+        return '', 204
+
+    @require_all_roles('CAN_DELETE_CANDIDATES')
+    def delete(self, **kwargs):
+        """
+        Endpint:  DELETE /v1/candidates/:id/preferences
+        Function will delete candidate's subscription preference
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorize', custom_error.CANDIDATE_FORBIDDEN)
+
+        candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+        if not candidate_subs_pref:
+            raise NotFoundError(error_message='Candidate has no subscription preference',
+                                error_code=custom_error.PREFERENCE_NOT_FOUND)
+
+        db.session.delete(candidate_subs_pref)
+        db.session.commit()
+        return '', 204

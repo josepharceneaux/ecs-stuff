@@ -126,28 +126,23 @@ def test_data_validations(sample_user, user_auth):
 
     data = {'candidate': [{}]}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': {}}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': [{}]}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': [{'id': 5, 'phones': [{}]}]}
     resp = patch_to_candidate_resource(token, data)
+    print response_info(resp)
     assert resp.status_code == 400
-    print response_info(resp)
-
-    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None, 'is_default': False}]}]}
-    resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 403
-    print response_info(resp)
 
 
 def test_update_candidate_names(sample_user, user_auth):
@@ -444,16 +439,18 @@ def test_update_education_of_a_diff_candidate(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
-    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve Candidate
-    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    candidate_dict = get_from_candidate_resource(token, candidate_1_id).json()['candidate']
 
     # Update existing CandidateEducation of a different Candidate
-    data = candidate_educations(7, candidate_dict['educations'][0]['id'])
+    data = candidate_educations(candidate_2_id, candidate_dict['educations'][0]['id'])
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == 3050, "Education Forbidden"
 
 
 def test_update_education_primary_info(sample_user, user_auth):

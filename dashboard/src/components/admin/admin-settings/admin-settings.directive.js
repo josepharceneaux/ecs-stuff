@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/admin/admin-settings/admin-settings.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'AdminSettingsController',
             controllerAs: 'vm'
         };

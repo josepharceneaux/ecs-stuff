@@ -10,9 +10,28 @@ from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError
+from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+
+
+def get_candidate_if_exists(candidate_id):
+    """
+    Function checks to see if candidate exists in the database and is not web-hidden
+    If candidate is hidden, or is not found, the appropriate exception will be raised,
+    otherwise the Candidate query object will be returned
+    :type candidate_id: int|long
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    if not candidate:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_NOT_FOUND)
+    if candidate.is_web_hidden:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+    return candidate
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
@@ -20,7 +39,7 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     Function checks if:
         1. Candidate belongs to user AND
         2. Candidate is in the same domain as the user
-    :type   candidate_id: int
+    :type   candidate_id: int|long
     :type   user_row: User
     :rtype: bool
     """
@@ -36,7 +55,7 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
 def do_candidates_belong_to_users_domain(user_row, candidate_ids):
     """Checks if provided candidate-IDs belong to the user's domain
     :type user:  User
-    :param candidate_ids:  [int]
+    :param candidate_ids:  [int|long]
     :rtype:  bool
     """
     assert isinstance(candidate_ids, list)
@@ -62,7 +81,7 @@ def does_candidate_belong_to_users_domain(user, candidate_id):
 def is_custom_field_authorized(user_domain_id, custom_field_ids):
     """
     Function checks if custom_field_ids belong to the logged-in-user's domain
-    :type   user_domain_id:   int
+    :type   user_domain_id:   int|long
     :type   custom_field_ids: list
     :rtype: bool
     """
@@ -76,7 +95,7 @@ def is_custom_field_authorized(user_domain_id, custom_field_ids):
 def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     """
     Function checks if area_of_interest_ids belong to the logged-in-user's domain
-    :type   user_domain_id:       int
+    :type   user_domain_id:       int|long
     :type   area_of_interest_ids: [int]
     :rtype: bool
     """

@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/styleguide/styleguide-colors/styleguide-colors.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'StyleguideColorsController',
             controllerAs: 'vm'
         };
