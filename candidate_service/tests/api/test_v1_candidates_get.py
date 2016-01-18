@@ -77,7 +77,8 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, user_from_d
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.get(user=user_from_diff_domain)
 
     # Create Candidate
     resp = post_to_candidate_resource(token)
@@ -129,7 +130,7 @@ def test_get_can_via_id_and_email(sample_user, user_auth):
 
     # Candidate ID & Email
     candidate_id = resp_dict['candidates'][0]['id']
-    candidate_email = db.session.query(Candidate).get(candidate_id).candidate_emails[0].address
+    candidate_email = Candidate.get_by_id(candidate_id).emails[0].address
 
     # Get candidate via Candidate ID
     resp = get_from_candidate_resource(access_token=token, candidate_id=candidate_id)
@@ -180,7 +181,7 @@ def test_get_non_existing_candidate(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.all_roles(user=sample_user)
 
     # Retrieve non existing candidate
     last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()

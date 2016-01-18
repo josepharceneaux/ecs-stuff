@@ -785,7 +785,8 @@ def test_delete_candidate_education_degrees_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2,
+                                                                   user_auth):
     """
     Test:   Attempt to delete the education-degrees of a Candidate that belongs to a different user
     Expect: 403, deletion must be prevented
@@ -796,17 +797,21 @@ def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, 
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
 
     # Retrieve candidate_1
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-    can_1_edu_id = get_from_candidate_resource(token_1, candidate_1_id).json()['candidate']['educations'][0]['id']
+    can_1_edu_id = get_from_candidate_resource(token_1, candidate_1_id).\
+        json()['candidate']['educations'][0]['id']
 
     # Delete candidate_1's education degree with sample_user_2 logged in
-    updated_resp = request_to_candidate_education_degree_resource(token_2, 'delete', candidate_1_id,
-                                                                  education_id=can_1_edu_id, all_degrees=True)
+    updated_resp = request_to_candidate_education_degree_resource(
+            token_2, 'delete', candidate_1_id,
+            education_id=can_1_edu_id, all_degrees=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 204
 
@@ -820,17 +825,20 @@ def test_delete_education_degree_of_a_different_candidate(sample_user, user_auth
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
     candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve candidate_2's education degrees
-    can_2_educations = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['educations']
+    can_2_educations = get_from_candidate_resource(token, candidate_2_id).\
+        json()['candidate']['educations']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_education_degree_resource(token, 'delete', candidate_1_id,
-                                                                  can_2_educations[0]['id'], all_degrees=True)
+    updated_resp = request_to_candidate_education_degree_resource(
+            token, 'delete', candidate_1_id,
+            can_2_educations[0]['id'], all_degrees=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 

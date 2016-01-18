@@ -838,7 +838,7 @@ class CandidateEmailResource(Resource):
             db.session.delete(email)
 
         else:  # Delete all of Candidate's emails
-            map(db.session.delete, candidate.candidate_emails)
+            map(db.session.delete, candidate.emails)
 
         db.session.commit()
         return '', 204

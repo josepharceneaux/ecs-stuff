@@ -448,6 +448,7 @@ def test_update_education_of_a_diff_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
