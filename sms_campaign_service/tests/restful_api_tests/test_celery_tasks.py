@@ -26,7 +26,7 @@ from sms_campaign_service.common.error_handling import (ResourceNotFound,
                                                         InternalServerError,
                                                         MethodNotAllowed, InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
+from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds, to_utc_str
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
@@ -188,44 +188,48 @@ class TestCampaignSchedule(object):
     This is the test for scheduling a campaign ans verify it is sent to candidate as
     per send time.
     """
-    # TODO: scheduler_service need to be updated
-    # def test_campaign_schedule_and_validate_one_time_task_run(
-    #         self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-    #         sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
-    #     """
-    #     This is test to schedule SMS campaign with all valid parameters. This should get OK
-    #      response
-    #     """
-    #     response = requests.post(
-    #         SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
-    #         headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
-    #     task_id = assert_campaign_schedule(response, sample_user.id,
-    #                                        scheduled_sms_campaign_of_current_user.id)
-    #     time.sleep(SLEEP_TIME)
-    #     assert_on_blasts_sends_url_conversion_and_activity(
-    #         sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
-    #     _delete_scheduled_task(task_id, valid_header)
+    def test_one_time_campaign_schedule_and_validate_task_run(
+            self, valid_header, sample_user, sms_campaign_of_current_user,
+            smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates, candidate_phone_1):
+        """
+        Here we schedule SMS campaign one time with all valid parameters. Then we check
+        that task is run fine and assert the blast, sends and activity have been created
+        in database.
+        """
+        data = generate_campaign_schedule_data()
+        data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=5))
+        response = requests.post(
+            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+            headers=valid_header, data=json.dumps(data))
+        task_id = assert_campaign_schedule(response, sample_user.id,
+                                           sms_campaign_of_current_user.id)
+        time.sleep(2*SLEEP_TIME)
+        assert_on_blasts_sends_url_conversion_and_activity(
+            sample_user.id, 1, str(sms_campaign_of_current_user.id))
+        delete_test_scheduled_task(task_id, valid_header)
 
-    def test_campaign_periodic_schedule_and_validate_run(
-            self, valid_header, sample_user, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+    def test_periodic_campaign_schedule_and_validate_run(
+            self, valid_header, sample_user, sms_campaign_of_current_user,
+            smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
+            candidate_phone_1):
         """
         This is test to schedule SMS campaign with all valid parameters. This should get OK
          response
         """
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = FrequencyIds.CUSTOM
+        data['start_datetime'] = to_utc_str(datetime.utcnow())
         response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % scheduled_sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, sample_user.id,
-                                           scheduled_sms_campaign_of_current_user.id)
+                                           sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 1, str(sms_campaign_of_current_user.id))
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 1, str(sms_campaign_of_current_user.id))
         delete_test_scheduled_task(task_id, valid_header)
 
 

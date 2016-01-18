@@ -158,17 +158,15 @@ class TestSendSmsCampaign(object):
         except MultipleCandidatesFound as error:
             assert error.error_code == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
 
-    def test_pre_process_celery_task_with_no_auth_token(
-            self, sample_user, sms_campaign_smartlist, sample_sms_campaign_candidates,
-            candidates_with_same_phone, candidate_first, candidate_second):
+    def test_pre_process_celery_task_with_valid_data(
+            self, sample_user, sms_campaign_of_current_user,candidate_first, candidate_second,
+            sms_campaign_smartlist, sample_sms_campaign_candidates,candidate_phone_1,
+            candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have same phone numbers. It should return Internal server error.
-        Error code should be 5008 (MultipleCandidatesFound)
+        candidates. Both candidates have different phone numbers. It should not get any error.
         :return:
         """
-        try:
-            obj = SmsCampaignBase(sample_user.id)
-            obj.pre_process_celery_task([candidate_first, candidate_second])
-        except ResourceNotFound as error:
-            assert error.status_code == ResourceNotFound.http_status_code()
+        obj = SmsCampaignBase(sample_user.id)
+        obj.campaign = sms_campaign_of_current_user
+        assert obj.pre_process_celery_task([candidate_first, candidate_second])

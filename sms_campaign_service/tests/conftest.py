@@ -7,7 +7,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import time
 from datetime import timedelta
 
+# Third Party
+from dateutil.relativedelta import relativedelta
+
 # Initialize app
+from sqlalchemy.orm.exc import ObjectDeletedError
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
 
 app, _ = init_sms_campaign_app_and_celery_app()
@@ -50,13 +54,11 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 
 
 # This is data to schedule an SMS campaign
-
-
 def generate_campaign_schedule_data():
     return {"frequency_id": FrequencyIds.ONCE,
             # TODO: remove timedelta from start_datetime after scheduler_service update
             "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
-            "end_datetime": to_utc_str(datetime.utcnow() + timedelta(hours=1))}
+            "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
 
 
 def remove_any_user_phone_record_with_twilio_test_number():
@@ -93,12 +95,34 @@ def auth_token(user_auth, sample_user):
 
 
 @pytest.fixture()
+def auth_token_2(user_auth, sample_user_2):
+    """
+    returns the access token using pytest fixture defined in common/tests/conftest.py
+    :param user_auth: fixture in common/tests/conftest.py
+    :param sample_user: fixture in common/tests/conftest.py
+    """
+    auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
+    return auth_token_obj['access_token']
+
+
+@pytest.fixture()
 def valid_header(auth_token):
     """
     Returns the header containing access token and content-type to make POST/DELETE requests.
     :param auth_token: fixture to get access token of user
     """
     auth_header = {'Authorization': 'Bearer %s' % auth_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header
+
+
+@pytest.fixture()
+def valid_header_2(auth_token_2):
+    """
+    Returns the header containing access token and content-type to make POST/DELETE requests.
+    :param auth_token: fixture to get access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % auth_token_2}
     auth_header.update(JSON_CONTENT_TYPE_HEADER)
     return auth_header
 
@@ -227,27 +251,54 @@ def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
     return _create_sms_campaign(campaign_valid_data, user_phone_1)
 
 
+@pytest.fixture(params=[FrequencyIds.ONCE, FrequencyIds.DAILY])
+def one_time_and_periodic(request, valid_header):
+    """
+    This returns data to schedule a campaign one time and periodically.
+    """
+    data = generate_campaign_schedule_data()
+
+    def fin():
+        if 'task_id' in data:
+            delete_test_scheduled_task(data['task_id'], valid_header)
+
+    if request.param == FrequencyIds.ONCE:
+        request.addfinalizer(fin)
+        return data
+    else:
+        request.addfinalizer(fin)
+        data['frequency_id'] = request.param
+    return data
+
+
 @pytest.fixture()
-def scheduled_sms_campaign_of_current_user(request, valid_header, sample_user,
-                                           campaign_valid_data, user_phone_1):
+def scheduled_sms_campaign_of_current_user(request, sample_user, valid_header,
+                                           sms_campaign_of_current_user):
     """
     This creates the SMS campaign for sample_user using valid data.
-    :param campaign_valid_data:
-    :param user_phone_1:
-    :return:
     """
-    campaign_data = campaign_valid_data.copy()
-    campaign = _create_sms_campaign(campaign_data, user_phone_1)
-    response = requests.post(
-        SmsCampaignApiUrl.SCHEDULE % campaign.id,
-        headers=valid_header, data=json.dumps(generate_campaign_schedule_data()))
-    task_id = assert_campaign_schedule(response, sample_user.id, campaign.id)
+    campaign = _get_scheduled_campaign(sample_user, sms_campaign_of_current_user, valid_header)
 
     def delete_scheduled_task():
-        delete_test_scheduled_task(task_id, valid_header)
+        _unschedule_campaign(campaign, valid_header)
 
     request.addfinalizer(delete_scheduled_task)
+    return campaign
 
+
+@pytest.fixture()
+def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
+                                         sms_campaign_of_other_user):
+    """
+    This creates the SMS campaign for sample_user_2 using valid data.
+    :return:
+    """
+    campaign = _get_scheduled_campaign(sample_user_2, sms_campaign_of_other_user, valid_header_2)
+
+    def delete_scheduled_task():
+        _unschedule_campaign(campaign, valid_header_2)
+
+    request.addfinalizer(delete_scheduled_task)
     return campaign
 
 
@@ -306,17 +357,24 @@ def sample_smartlist_2(request, sample_user):
 
 
 @pytest.fixture()
-def sms_campaign_smartlist(sample_smartlist, scheduled_sms_campaign_of_current_user):
+def sms_campaign_smartlist(scheduled_sms_campaign_of_current_user, sample_smartlist):
     """
     This associates sample_smartlist with the scheduled_sms_campaign_of_current_user
     :param sample_smartlist:
     :param scheduled_sms_campaign_of_current_user:
     :return:
     """
-    sms_campaign_smartlist = SmsCampaignSmartlist(
-        smartlist_id=sample_smartlist.id, sms_campaign_id=scheduled_sms_campaign_of_current_user.id)
-    SmsCampaignSmartlist.save(sms_campaign_smartlist)
-    return sms_campaign_smartlist
+    return _create_sms_campaign_smartlist(scheduled_sms_campaign_of_current_user, sample_smartlist)
+
+
+@pytest.fixture()
+def smartlist_for_not_scheduled_campaign(sms_campaign_of_current_user, sample_smartlist):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    :param sample_smartlist:
+    :return:
+    """
+    return _create_sms_campaign_smartlist(sms_campaign_of_current_user, sample_smartlist)
 
 
 @pytest.fixture()
@@ -528,3 +586,41 @@ def _create_smartlist(test_user):
     smartlist = Smartlist(name=gen_salt(20), user_id=test_user.id)
     Smartlist.save(smartlist)
     return smartlist
+
+
+def _get_scheduled_campaign(user, campaign, auth_header):
+    """
+    This schedules the given campaign and return it.
+    :param user:
+    :param campaign:
+    :return:
+    """
+    response = requests.post(
+        SmsCampaignApiUrl.SCHEDULE % campaign.id, headers=auth_header,
+        data=json.dumps(generate_campaign_schedule_data()))
+    assert_campaign_schedule(response, user.id, campaign.id)
+    return campaign
+
+
+def _unschedule_campaign(campaign, headers):
+    """
+    This un schedules the given campaign from scheduler_service
+    :param headers:
+    :return:
+    """
+    try:
+        delete_test_scheduled_task(campaign.scheduler_task_id, headers)
+    except ObjectDeletedError:  # campaign may have been deleted in case of DELETE request
+        pass
+
+
+def _create_sms_campaign_smartlist(campaign, smartlist):
+    """
+    This creates a smartlist for given campaign
+    :param campaign:
+    :return:
+    """
+    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=smartlist.id,
+                                                  sms_campaign_id=campaign.id)
+    SmsCampaignSmartlist.save(sms_campaign_smartlist)
+    return sms_campaign_smartlist
