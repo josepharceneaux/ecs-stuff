@@ -28,7 +28,7 @@ PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
 
 
-class UserAuthentication():
+class UserAuthentication:
     def __init__(self, db):
         self.db = db
         self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string
@@ -119,7 +119,7 @@ def sample_user_2(test_domain, request):
 
 
 @pytest.fixture()
-def user_from_different_domain(test_domain_2, request):
+def user_from_diff_domain(test_domain_2, request):
     user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
 
     def tear_down():
