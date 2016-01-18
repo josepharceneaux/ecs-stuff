@@ -702,6 +702,8 @@ class SendRequestTest(Resource):
 
     def post(self):
 
+        scheduler.remove_all_jobs()
+
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
         if not (env_key == 'dev' or env_key == 'jenkins'):
             raise ForbiddenError("You are not authorized to access this endpoint.")

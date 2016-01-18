@@ -6,17 +6,12 @@ import os
 from datetime import timedelta
 
 # Application imports
-from redis import Redis
-
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
-r = Redis(host='localhost', port=6379, db=0)
-r.flushdb()
 
 @pytest.fixture(scope='session')
 def job_config_periodic(request):
