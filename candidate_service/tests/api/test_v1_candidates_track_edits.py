@@ -1,5 +1,5 @@
 """
-Test cases for keeping track of changes made to a Candidate
+Test cases pertaining to CandidateEditResource
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
@@ -15,9 +15,8 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    patch_to_candidate_resource, request_to_candidate_edit_resource
+    patch_to_candidate_resource, request_to_candidate_edit_resource, AddUserRoles
 )
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 def test_edit_candidate_primary_info(sample_user, user_auth):
@@ -29,6 +28,7 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -47,7 +47,6 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
     new_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -66,6 +65,7 @@ def test_edit_candidate_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -86,7 +86,6 @@ def test_edit_candidate_address(sample_user, user_auth):
     new_address_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['addresses'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -106,6 +105,7 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -129,7 +129,6 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
         json()['candidate']['custom_fields'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -139,7 +138,7 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_custom_field_dict['value']
 
 
-def test_edit_cand_education(sample_user, user_auth):
+def test_edit_candidate_education(sample_user, user_auth):
     """
     Test:   Change Candidate's education records
     Expect: 200
@@ -148,6 +147,7 @@ def test_edit_cand_education(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -168,7 +168,6 @@ def test_edit_cand_education(sample_user, user_auth):
     new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -188,6 +187,7 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -210,7 +210,6 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
     new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -233,6 +232,7 @@ def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -259,7 +259,6 @@ def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
     new_degree_bullet_dict = new_education_dict['degrees'][0]['bullets'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -279,6 +278,7 @@ def test_edit_candidate_experience(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -299,7 +299,6 @@ def test_edit_candidate_experience(sample_user, user_auth):
     new_experience_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -322,6 +321,7 @@ def test_edit_candidate_experience_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -346,7 +346,6 @@ def test_edit_candidate_experience_bullet(sample_user, user_auth):
     new_experience_bullet_dict = new_experience_dict['bullets'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -365,6 +364,7 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -385,7 +385,6 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
     new_work_pref_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_preference']
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -406,6 +405,7 @@ def test_edit_candidate_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -424,7 +424,6 @@ def test_edit_candidate_email(sample_user, user_auth):
     new_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -443,6 +442,7 @@ def test_edit_candidate_phone(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -461,7 +461,6 @@ def test_edit_candidate_phone(sample_user, user_auth):
     new_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -480,6 +479,7 @@ def test_edit_candidate_military_service(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -500,7 +500,6 @@ def test_edit_candidate_military_service(sample_user, user_auth):
         json()['candidate']['military_services'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -519,6 +518,7 @@ def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -541,7 +541,6 @@ def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
         json()['candidate']['preferred_locations'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -560,6 +559,7 @@ def test_edit_candidate_skill_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -580,7 +580,6 @@ def test_edit_candidate_skill_edits(sample_user, user_auth):
     new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 
@@ -599,6 +598,7 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -619,7 +619,6 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
     new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks'][0]
 
     # Retrieve Candidate Edits
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
     print response_info(edit_resp)
 

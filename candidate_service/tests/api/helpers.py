@@ -1,5 +1,5 @@
 """
-Helper functions for tests pertaining to candidate_service's restful services
+Helper functions for tests written for the candidate_service
 """
 # Standard library
 import requests
@@ -37,7 +37,11 @@ class AddUserRoles(object):
         return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
 
     @staticmethod
-    def add_get_update(user):
+    def add_and_delete(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_get_edit(user):
         return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
                                             'CAN_EDIT_CANDIDATES'])
 
@@ -66,7 +70,8 @@ def define_and_send_request(access_token, request, url, data=None):
 def response_info(response):
     """
     Function returns the following response information:
-        1. Url, 2. Request 3.Response dict, and 4. Response status code
+        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+    :type response: requests.models.Response
     """
     url = response.url
     request = response.request
@@ -100,9 +105,12 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
     return resp
 
 
-def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
+def get_from_candidate_resource(access_token, candidate_id=None, candidate_email=None):
     """
     Function sends a get request to CandidateResource/get()
+    :type access_token:     basestring
+    :type candidate_id:     int|long
+    :type candidate_email:  basestring
     """
     url = CandidateApiUrl.CANDIDATES
     if candidate_id:

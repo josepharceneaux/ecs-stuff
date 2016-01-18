@@ -17,10 +17,9 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_preference_resource, AddUserRoles
+    response_info, post_to_candidate_resource, request_to_candidate_preference_resource,
+    AddUserRoles
 )
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 #####################
@@ -109,7 +108,7 @@ def test_update_non_existing_candidate_preference(sample_user, user_auth):
     :type user_auth:   UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_get_update(user=sample_user)
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create candidate
     create_resp = post_to_candidate_resource(token)
@@ -131,7 +130,7 @@ def test_update_candidate_pref_without_providing_adequate_data(sample_user, user
     :type user_auth:  UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_get_update(user=sample_user)
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create candidate
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']

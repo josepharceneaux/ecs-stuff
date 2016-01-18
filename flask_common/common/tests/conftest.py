@@ -119,7 +119,7 @@ def sample_user_2(test_domain, request):
 
 
 @pytest.fixture()
-def user_from_different_domain(test_domain_2, request):
+def user_from_diff_domain(test_domain_2, request):
     user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
 
     def tear_down():
