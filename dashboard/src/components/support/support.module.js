@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.faq', [
+    angular.module('app.support', [
         'app.core'
     ]);
 })();
