@@ -6,12 +6,11 @@ This API also checks for authentication token
 
 # Standard imports
 import json
-import os
 import types
 
 # Third party imports
 from datetime import timedelta, datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
@@ -21,7 +20,7 @@ from werkzeug.exceptions import BadRequest
 from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
-from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
+from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -98,6 +97,7 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
+        scheduler.remove_all_jobs()
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
@@ -701,8 +701,6 @@ class SendRequestTest(Resource):
     decorators = [require_oauth()]
 
     def post(self):
-
-        scheduler.remove_all_jobs()
 
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
         if not (env_key == 'dev' or env_key == 'jenkins'):
