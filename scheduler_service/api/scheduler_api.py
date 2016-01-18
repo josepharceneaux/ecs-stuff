@@ -11,7 +11,7 @@ import types
 
 # Third party imports
 from datetime import timedelta, datetime
-from flask import Blueprint, request
+from flask import Blueprint, request, jsonify
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
@@ -700,7 +700,6 @@ class SendRequestTest(Resource):
     """
     decorators = [require_oauth()]
 
-    @property
     def post(self):
 
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
@@ -728,13 +727,15 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
+            run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+                task.get('post_data', dict()))
         else:
             db.db.session.commit()
             test_user_id = task['test_user_id']
             test_user = User.query.filter_by(id=test_user_id).first()
             test_user.delete()
 
-        return dict(message="Request sent to url %s" % url)
+        return dict(message='Dummy Endpoint called')
 
 
 def check_if_scheduler_is_running():
