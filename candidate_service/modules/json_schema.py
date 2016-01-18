@@ -75,7 +75,7 @@ candidates_resource_schema_post = {
                         "items": {
                             # "id": "http://jsonschema.net/emails/0",
                             "type": "object",
-                            # "required": ["address"],
+                            "required": ["address"],
                             "additionalProperties": False,
                             "properties": {
                                 "label": {
@@ -85,7 +85,7 @@ candidates_resource_schema_post = {
                                 },
                                 "address": {
                                     # "id": "http://jsonschema.net/emails/0/address",
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 255
                                 },
                                 "is_default": {

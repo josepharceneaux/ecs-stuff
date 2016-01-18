@@ -183,7 +183,7 @@ def candidate_emails(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    emails = candidate.candidate_emails
+    emails = candidate.emails
     return [{'id': email.id,
              'label': email.email_label.description,
              'address': email.address,
@@ -197,7 +197,7 @@ def candidate_phones(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    phones = candidate.candidate_phones
+    phones = candidate.phones
     return [{'id': phone.id,
              'label': phone.phone_label.description,
              'value': phone.value,
@@ -259,7 +259,7 @@ def _candidate_experience_bullets(experience):
     :rtype              [dict]
     """
     assert isinstance(experience, CandidateExperience)
-    experience_bullets = experience.candidate_experience_bullets
+    experience_bullets = experience.bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
              'added_time': str(experience_bullet.added_time)
@@ -272,7 +272,7 @@ def candidate_work_preference(candidate):
     :rtype              dict
     """
     assert isinstance(candidate, Candidate)
-    work_preference = candidate.candidate_work_preferences
+    work_preference = candidate.work_preferences
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
             'employment_type': work_preference[0].tax_terms,
@@ -292,7 +292,7 @@ def candidate_preferred_locations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    preferred_locations = candidate.candidate_preferred_locations
+    preferred_locations = candidate.preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
@@ -307,7 +307,7 @@ def candidate_educations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    educations = candidate.candidate_educations
+    educations = candidate.educations
     return [{'id': education.id,
              'school_name': education.school_name,
              'school_type': education.school_type,
@@ -326,7 +326,7 @@ def _candidate_degrees(education):
     :rtype              [dict]
     """
     assert isinstance(education, CandidateEducation)
-    degrees = education.candidate_education_degrees
+    degrees = education.degrees
     return [{'id': degree.id,
              'type': degree.degree_type,
              'title': degree.degree_title,
@@ -347,7 +347,7 @@ def _candidate_degree_bullets(degree):
     :rtype          [dict]
     """
     assert isinstance(degree, CandidateEducationDegree)
-    degree_bullets = degree.candidate_education_degree_bullets
+    degree_bullets = degree.bullets
     return [{'id': degree_bullet.id,
              'major': degree_bullet.concentration_type,
              'comments': degree_bullet.comments,
@@ -423,7 +423,7 @@ def candidate_social_networks(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    social_networks = candidate.candidate_social_networks
+    social_networks = candidate.social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
              'profile_url': soc_net.social_profile_url
@@ -449,8 +449,7 @@ def candidate_contact_history(candidate):
     timeline = []
 
     # Campaign sends & campaigns
-    email_campaign_sends = candidate.email_campaign_sends
-    for email_campaign_send in email_campaign_sends:
+    for email_campaign_send in candidate.email_campaign_sends:
         if not email_campaign_send.email_campaign_id:
             logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
             continue

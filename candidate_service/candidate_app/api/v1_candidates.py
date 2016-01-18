@@ -140,7 +140,8 @@ class CandidatesResource(Resource):
         for _candidate_dict in candidates:
 
             # Emails' addresses must be properly formatted
-            if filter(lambda emails: not is_valid_email(emails['address']), _candidate_dict.get('emails')):
+            emails = _candidate_dict.get('emails') or []
+            if filter(lambda emails: not is_valid_email(emails.get('address')), emails):
                     raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
@@ -162,7 +163,7 @@ class CandidatesResource(Resource):
         for candidate_dict in body_dict.get('candidates'):
 
             emails = [{'label': email.get('label'), 'address': email.get('address'),
-                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
+                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
