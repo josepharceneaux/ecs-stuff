@@ -28,7 +28,7 @@ PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
 
 
-class UserAuthentication():
+class UserAuthentication:
     def __init__(self, db):
         self.db = db
         self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string

@@ -12,7 +12,7 @@ from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
-class TestUserRoles(object):
+class AddUserRoles(object):
     """
     Class entails functions that will help add specific roles to test-user
     """
@@ -29,8 +29,17 @@ class TestUserRoles(object):
         return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
 
     @staticmethod
-    def delete(self, user):
+    def delete(user):
         return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_and_get(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add_get_update(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES'])
 
     @staticmethod
     def all_roles(user):
