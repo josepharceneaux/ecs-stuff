@@ -97,7 +97,6 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
-        scheduler.remove_all_jobs()
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
