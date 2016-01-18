@@ -23,4 +23,14 @@
         'app.talentPools',
         'app.topnav'
     ]);
+    angular.module('myApp', ['ngMaterial'])
+        .config(function($mdThemingProvider) {
+            $mdThemingProvider.theme('altTheme')
+                .primaryPalette('purple') // specify primary color, all
+            // other color intentions will be inherited
+            // from default
+        });
 })();
+
+
+
