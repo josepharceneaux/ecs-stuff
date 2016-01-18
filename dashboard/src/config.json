@@ -9,7 +9,7 @@
   },
   "development": {
     "authInfo": {
-      "baseUrl": "http://secure-webdev.gettalent.com",
+      "baseUrl": "https://auth-service-staging.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
@@ -17,7 +17,7 @@
   },
   "production": {
     "authInfo": {
-      "baseUrl": "https://webdev.gettalent.com",
+      "baseUrl": "https://auth-service.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
