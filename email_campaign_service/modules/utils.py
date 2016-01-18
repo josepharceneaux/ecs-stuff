@@ -1,21 +1,20 @@
 import json
 import requests
-
 from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
+from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
 TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.png"
-HTML_CLICK_URL_TYPE = 2
 TRACKING_URL_TYPE = 0
-
+TEXT_CLICK_URL_TYPE = 1
+HTML_CLICK_URL_TYPE = 2
 
 def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
     """
@@ -111,14 +110,21 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
     if destination_url_custom_params:
         destination_url = set_query_parameters(destination_url, destination_url_custom_params)
 
-    # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect', args=url_conversion_id, hmac_key=current.HMAC_KEY))
-    source_url = 'http://localhost:8007/source_url'  # TODO
-    url_conversion = UrlConversion(destination_url=destination_url, source_url=source_url)
+    url_conversion = UrlConversion(destination_url=destination_url, source_url='')
     db.session.add(url_conversion)
     db.session.commit()
+
+    # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect', args=url_conversion_id, hmac_key=current.HMAC_KEY))
+    source_url = EmailCampaignUrl.URL_REDIRECT % url_conversion.id
+    # Update source url
+    url_conversion.source_url = source_url
+    db.session.commit()
+
     # Insert email_campaign_send_url_conversion
-    EmailCampaignSendUrlConversion(email_campaign_send_id=email_campaign_send_id, url_conversion_id=url_conversion.id,
-                                   type=type_)
+    email_campaign_send_url_conversion = EmailCampaignSendUrlConversion(email_campaign_send_id=email_campaign_send_id,
+                                                                        url_conversion_id=url_conversion.id, type=type_)
+    db.session.add(email_campaign_send_url_conversion)
+    db.session.commit()
     return source_url
 
 

@@ -582,8 +582,9 @@ class EmailCampaignEndpoints(object):
     VERSION = 'v1'
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     EMAIL_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns'
-    EMAIL_CAMPAIGN = RELATIVE_VERSION % 'email-campaigns/<int:id>'
-    SEND_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns/send'
+    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS +'/<int:id>'
+    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + '/<int:campaign_id>/send'
+    URL_REDIRECT = EMAIL_CAMPAIGNS + '/redirect/<int:url_conversion_id>'
 
 
 class EmailCampaignUrl(object):
@@ -591,5 +592,6 @@ class EmailCampaignUrl(object):
     HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
                                GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     EMAIL_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS
-    EMAIL_CAMPAIGN = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS + "/%s"
-    SEND_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.SEND_CAMPAIGNS
+    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s"
+    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s/send"
+    URL_REDIRECT = EMAIL_CAMPAIGNS + "/redirect/%s"

@@ -47,3 +47,25 @@ def update_candidates_on_cloudsearch(access_token, candidate_ids):
 
     if response.status_code != 204:
         raise InternalServerError("Error occurred while uplaoding candidates on cloudsearch. Status Code: %s Response: %s" % (response.status_code, response.json()))
+
+
+def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids_only=False):
+    """
+    Function sends a request to CandidateResource/post()
+    :param oauth_token: Oauth token
+    :param data: Candidates object data to create candidate
+    :param return_candidate_ids_only: If true it will only return the created candidate ids
+    else it will return the created candidate response json object
+    Returns: list of created candidate ids
+    """
+    resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                     'content-type': 'application/json'},
+            data=json.dumps(data)
+    )
+    assert resp.status_code == 201
+    if return_candidate_ids_only:
+        return [candidate['id'] for candidate in resp.json()['candidates']]
+    return resp.json()
+

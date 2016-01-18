@@ -20,9 +20,9 @@ class EmailCampaign(db.Model):
     email_body_text = db.Column('EmailBodyText', db.Text(65535))
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
-    is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=False)
-    is_track_html_clicks = db.Column('isTrackHtmlClicks', db.Boolean, default=False)
-    is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=False)
+    is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=True)
+    is_track_html_clicks = db.Column('isTrackHtmlClicks', db.Boolean, default=True)
+    is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=True)
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
     scheduler_task_id = db.Column('SchedulerTaskIds', db.String(255))
@@ -65,6 +65,7 @@ class EmailCampaignSend(db.Model):
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
 
 class EmailCampaignBlast(db.Model):
@@ -110,4 +111,4 @@ class EmailCampaignSendUrlConversion(db.Model):
     email_campaign_send_id = db.Column('emailCampaignSendId', db.Integer, db.ForeignKey('email_campaign_send.id', ondelete='CASCADE'))
     url_conversion_id = db.Column('urlConversionId', db.Integer, db.ForeignKey('url_conversion.id', ondelete='CASCADE'))
     type = db.Column('type', db.Integer, default=0)  # 0 = TRACKING, 1 = TEXT, 2 = HTML
-
+    email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")

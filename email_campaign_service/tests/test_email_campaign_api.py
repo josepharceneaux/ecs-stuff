@@ -3,17 +3,70 @@ import uuid
 import imaplib
 import time
 import email
-
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.tests.sample_data import generate_single_candidate_data
 from email_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
-from email_campaign_service.common.routes import CandidateApiUrl
+from email_campaign_service.common.routes import CandidateApiUrl, EmailCampaignUrl, CandidatePoolApiUrl
+from email_campaign_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api
+from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
+from email_campaign_service.common.models.email_marketing import EmailCampaign
+from email_campaign_service.modules.email_marketing import create_email_campaign_smart_lists
+
 __author__ = 'jitesh'
 
 EMAIL_CAMPAIGN_URI = "http://127.0.0.1:8014/email_campaign"
 CANDIDATE_SERVICE_BASE_URI = "http://127.0.0.1:8005/v1/"
 CREATE_CANDIDATE_URI = CandidateApiUrl.CANDIDATES
 CREATE_SMARTLIST_URI = CANDIDATE_SERVICE_BASE_URI + "smartlist"
+
+
+def test_get_all_email_campaigns(user_first, access_token_first):
+    """
+
+    :param sample_user:
+    :param user_auth:
+    :return:
+    """
+    # create candidate
+    data = FakeCandidatesData.create(count=5)
+    candidate_ids = create_candidates_from_candidate_api(access_token_first, data, return_candidate_ids_only=True)
+    name = fake.word()
+    smartlist_data = {'name': name,
+                      'candidate_ids': candidate_ids}
+    smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token_first)
+    smartlist_id = smartlists['smartlist']['id']
+    email_campaign_name = fake.name()
+    reply_to_name = fake.name()
+    email_campaign_subject= fake.sentence()
+    campaign_body_html="<html><body>Email campaign test</body></html>"
+    email_campaign = EmailCampaign(name=email_campaign_name,
+                                   user_id=user_first.id,
+                                   is_hidden=0,
+                                   email_subject=email_campaign_subject,
+                                   email_from=fake.safe_email(),
+                                   email_reply_to=reply_to_name,
+                                   email_body_html=campaign_body_html,
+                                   email_body_text="Email campaign test"
+                                   )
+    db.session.add(email_campaign)
+    db.session.commit()
+    create_email_campaign_smart_lists(smart_list_ids=[smartlist_id],
+                                      email_campaign_id=email_campaign.id)
+    # Test GET api of email campaign
+    response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+                 headers={'Authorization': 'Bearer %s' % access_token_first})
+    assert response.status_code == 200
+    resp = response.json()
+    assert 'email_campaigns' in resp
+    email_campaigns = resp['email_campaigns']
+    for email_campaign in email_campaigns:
+        assert 'id' in email_campaign
+        assert resp['email_campaigns']
+
+
+
 
 
 def test_create_email_campaign(sample_user, user_auth):
