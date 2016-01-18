@@ -11,7 +11,6 @@
         'app.campaigns',
         'app.candidates',
         'app.dashboard',
-        'app.faq',
         'app.footer',
         'app.forgotPassword',
         'app.login',
@@ -23,6 +22,7 @@
         'app.sidenav',
         'app.smartLists',
         'app.styleguide',
+        'app.support',
         'app.talentPools',
         'app.topnav',
         'app.user'
