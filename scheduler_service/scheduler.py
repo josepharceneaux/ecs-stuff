@@ -134,9 +134,12 @@ def validate_periodic_job(data):
     # If job is not in 0-30 seconds in past or greater than current datetime.
     past_datetime = current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)
     future_datetime = end_datetime - datetime.timedelta(seconds=frequency)
-    if not past_datetime < start_datetime < future_datetime:
+    if not past_datetime < start_datetime:
         raise InvalidUsage(
-            "start_datetime and end_datetime should be in future. Also frequency should be lesser than end_datetime")
+            "start_datetime and end_datetime should be in future.")
+    elif not start_datetime < future_datetime:
+        raise InvalidUsage(
+            "start_datetime should be greater than (end_datetime - frequency)")
 
     return valid_data
 

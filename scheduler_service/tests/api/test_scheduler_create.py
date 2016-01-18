@@ -97,7 +97,7 @@ class TestSchedulerCreate(object):
         assert response.status_code == 400
 
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom_General_Named_Task'
+        job_config['task_name'] = 'General_Named_Task'
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
