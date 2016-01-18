@@ -474,26 +474,26 @@ candidates_resource_schema_post = {
                                     "maxLength": 100
                                 },
                                 "start_year": {
-                                    # "id": "http://jsonschema.net/work_experiences/0/start_date",
-                                    "type": ["integer", "null"],
+                                    # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
+                                    "type": ["integer", "string", "null"],
                                     "maxLength": 4,
                                     "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
-                                    "type": ["integer", "null"],
+                                    "type": ["integer", "string", "null"],
                                     "maxLength": 4,
                                     "minimum": 1900, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
-                                    "type": ["integer", "null"],
+                                    "type": ["integer", "string", "null"],
                                     "maxLength": 2,
                                     "minimum": 1, "maximum": 12
                                 },
                                 "end_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
-                                    "type": ["integer", "null"],
+                                    "type": ["integer", "string", "null"],
                                     "maxLength": 2,
                                     "minimum": 1, "maximum": 12
                                 },

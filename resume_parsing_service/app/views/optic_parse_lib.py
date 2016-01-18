@@ -115,7 +115,7 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email = str(e.text.strip())
+            email = e.text.strip()
             output.append({'address': email})
     return output
 
@@ -131,9 +131,9 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
-            # CanidateService currently extractas extensions so we do not need to invoke that
+            # CanidateService currently extracts extensions so we do not need to invoke that
             # validator as long as we send a 'sane' string.
-            raw_phone = str(p.text.strip())
+            raw_phone = p.text.strip()
             if raw_phone:
                 output.append({'value': raw_phone})
 
@@ -158,7 +158,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             position_title = _tag_text(employement, 'title')
             # Start date
             start_date_str = get_date_from_date_tag(employement, 'start')
-            start_month, start_year = '', ''
+            start_month, start_year = None, None
             if start_date_str:
                 start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DT_FORMAT)
                 start_year = start_datetime.year
@@ -167,7 +167,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             is_current_job = False
             # End date
             end_date_str = get_date_from_date_tag(employement, 'end')
-            end_month, end_year = '', ''
+            end_month, end_year = None, None
             if end_date_str:
                 end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DT_FORMAT)
                 end_month = end_datetime.month
@@ -204,25 +204,25 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     existing_experience_description = output[existing_experience_list_order - 1][
                         'bullets']
                     existing_experience_description.append(dict(
-                        description=str(bullet_description)
+                        description=bullet_description
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
-                        description=str(bullet_description)
+                        description=bullet_description
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
                     bullets=candidate_experience_bullets,
-                    city=str(company_city),
-                    country=str(company_country),
-                    end_month=str(end_month),
-                    end_year=str(end_year),
+                    city=company_city,
+                    country=company_country,
+                    end_month=end_month,
+                    end_year=end_year,
                     is_current=is_current_job,
-                    organization=str(organization),
-                    position=str(position_title),
-                    start_month=str(start_month),
-                    start_year=str(start_year),
-                    state=str(company_state),
+                    organization=organization,
+                    position=position_title,
+                    start_month=start_month,
+                    start_year=start_year,
+                    state=company_state,
                 ))
     return output
 
@@ -339,8 +339,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             if capwords:
                 text = string.capwords(text)
             text = text.encode('utf-8')
-            # CandidateService enforces Strings over Unicode.
-            return str(bs4(text, 'lxml').text)
+            return bs4(text, 'lxml').text
     return None
 
 
