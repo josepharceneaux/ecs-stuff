@@ -591,3 +591,34 @@ class SchedulerApiUrl(object):
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING = '--port=5511'
+
+
+class SocialNetworkApi(object):
+    """
+    Rest URLs for social_network_service
+    """
+    VERSION = 'v1'
+    # URLs, in case of API
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    EVENTS = RELATIVE_VERSION % 'events'
+    EVENT = RELATIVE_VERSION % 'events/<int:id>'
+    SOCIAL_NETWORKS = RELATIVE_VERSION % 'social_networks'
+    MEETUP_GROUPS = RELATIVE_VERSION % 'social_networks/meetup/groups'
+    TOKEN_VALIDITY = RELATIVE_VERSION % 'social_networks/<int:id>/token/validity'
+    TOKEN_REFRESH = RELATIVE_VERSION % 'social_networks/<int:id>/token/refresh'
+    USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % 'social_networks/<int:id>/user/credentials'
+    VENUES = RELATIVE_VERSION % 'venues'
+    VENUE = RELATIVE_VERSION % 'venues/<int:id>'
+    EVENT_ORGANIZERS = RELATIVE_VERSION % 'event_organizers'
+    EVENT_ORGANIZER = RELATIVE_VERSION % 'event_organizers/<int:id>'
+    TIMEZONES = RELATIVE_VERSION % 'data/timezones'
+
+
+class SocialNetworkApiUrl(object):
+    """
+    API relative URLs for social_network_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+

@@ -3,7 +3,6 @@ This module contains api endpoint which are very much Events App specific.
 It contains endpoint for timezones which returns a list of all timezones.
 """
 import pytz
-import json
 import types
 from datetime import datetime
 
@@ -11,8 +10,10 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
-from social_network_service.app.app_utils import api_route, SocialNetworkApiResponse
+from social_network_service.app.app_utils import api_route
 from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.routes import SocialNetworkApi
 
 data_blueprint = Blueprint('data_api', __name__)
 api = TalentApi()
@@ -22,14 +23,14 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(data_blueprint, resources={
-    r'/data/*': {
+    r'/%s/data/*' % SocialNetworkApi.VERSION: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route('/data/timezones/')
+@api.route(SocialNetworkApi.TIMEZONES)
 class TimeZones(Resource):
     """
         This resource returns a list of timezones
@@ -81,9 +82,8 @@ class TimeZones(Resource):
         try:
             timezones = get_timezones()
         except Exception as e:
-            return SocialNetworkApiResponse(json.dumps(dict(error=dict(messsage='APIError: Unable to get timezones.'))),
-                                            status=500)
-        return SocialNetworkApiResponse(json.dumps(dict(timezones=timezones)), status=200)
+            raise InternalServerError('APIError: Unable to get timezones.')
+        return dict(timezones=timezones), 200
 
 
 def get_timezones():

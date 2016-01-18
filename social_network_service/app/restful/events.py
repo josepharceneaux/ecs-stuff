@@ -1,18 +1,24 @@
 """
 This file contains list of all API endpoints related to events.
 """
+# Standard imports
 import types
+
+# 3rd party imports
+from flask.ext.cors import CORS
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-from flask.ext.cors import CORS
-from social_network_service.app.app_utils import api_route, authenticate, SocialNetworkApiResponse
-from social_network_service.common.routes import SocialNetworkApi
-from social_network_service.utilities import process_event, delete_events
-from social_network_service.common.talent_api import TalentApi
-from social_network_service.common.models.event import Event
-from social_network_service.utilities import add_organizer_venue_data
+
+# Application specific imports
 from social_network_service.common.error_handling import *
-from social_network_service.custom_exceptions import *
+from social_network_service.common.models.event import Event
+from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.routes import SocialNetworkApi
+from social_network_service.utilities import add_organizer_venue_data
+from social_network_service.common.utils.auth_utils import require_oauth
+from social_network_service.utilities import process_event, delete_events
+from social_network_service.common.utils.api_utils import api_route, ApiResponse
+from social_network_service.common.utils.handy_functions import get_valid_json_data
 
 
 events_blueprint = Blueprint('events_api', __name__)
@@ -23,7 +29,7 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(events_blueprint, resources={
-    r'/(events|venues|organizers)/*': {
+    r'/%s/events/*' % SocialNetworkApi.VERSION: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -35,12 +41,11 @@ class Events(Resource):
     """
         This resource returns a list of events or it can be used to create event using POST.
     """
-    @authenticate
-    def get(self, **kwargs):
+    decorators = [require_oauth()]
+
+    def get(self):
         """
         This action returns a list of user events and their count
-        :keyword user_id: user_id of events owner
-        :type user_id: int
         :return events_data: a dictionary containing list of events and their count
         :rtype json
 
@@ -81,14 +86,13 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        events = map(add_organizer_venue_data, Event.query.filter_by(user_id=kwargs['user_id']).all())
+        events = map(add_organizer_venue_data, request.user.events.all())
         if events:
-            return SocialNetworkApiResponse(json.dumps(dict(events=events, count=len(events))))
+            return dict(events=events, count=len(events)), 200
         else:
-            return SocialNetworkApiResponse(json.dumps(dict(events=[], count=0)))
+            return dict(events=[], count=0), 200
 
-    @authenticate
-    def post(self, **kwargs):
+    def post(self):
         """
         This method takes data to create event in local database as well as on corresponding social network.
 
@@ -149,16 +153,14 @@ class Events(Resource):
         :return: id of created event
         """
         # get json post request data
-        event_data = request.get_json(force=True)
-        gt_event_id = process_event(event_data, kwargs['user_id'])
-        headers = {'Location': '/events/%s' % gt_event_id}
-        return SocialNetworkApiResponse(json.dumps(dict(id=gt_event_id)), status=201, headers=headers)
+        event_data = get_valid_json_data(request)
+        gt_event_id = process_event(event_data, request.user.id)
+        headers = {'Location': '/%s/events/%s' % (SocialNetworkApi.VERSION, gt_event_id)}
+        return ApiResponse(dict(id=gt_event_id), status=201, headers=headers)
 
-    @authenticate
-    def delete(self, **kwargs):
+    def delete(self):
         """
         Deletes multiple event whose ids are given in list in request data.
-        :param kwargs:
         :return:
 
         :Example:
@@ -187,22 +189,19 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
         # get event_ids for events to be deleted
-        req_data = request.get_json(force=True)
+        req_data = get_valid_json_data(request)
         event_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # check if event_ids list is not empty
         if event_ids:
-            deleted, not_deleted = delete_events(user_id, event_ids)
+            deleted, not_deleted = delete_events(request.user.id, event_ids)
             if len(not_deleted) == 0:
-                return SocialNetworkApiResponse(json.dumps(dict(
-                    message='%s Events deleted successfully' % len(deleted))),
-                    status=200)
+                return dict(message='%s Events deleted successfully' % len(deleted)), 200
 
-            return SocialNetworkApiResponse(json.dumps(dict(message='Unable to delete %s events' % len(not_deleted),
-                                               deleted=deleted,
-                                               not_deleted=not_deleted)), status=207)
-        raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
+            return dict(message='Unable to delete %s events' % len(not_deleted),
+                        deleted=deleted,
+                        not_deleted=not_deleted), 207
+        raise InvalidUsage('Bad request, include event_ids as list data')
 
 
 @api.route(SocialNetworkApi.EVENT)
@@ -210,12 +209,12 @@ class EventById(Resource):
     """
     This resource handles event related task for a specific event specified by id
     """
+    decorators = [require_oauth()]
 
-    @authenticate
-    def get(self, event_id, **kwargs):
+    def get(self, id):
         """
         Returns event object with required id
-
+        :param id: (Integer) unique id in Event table on GT database.
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -255,18 +254,16 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        user_id = kwargs['user_id']
-        event = Event.get_by_user_and_event_id(user_id, event_id)
+        event = Event.get_by_user_and_event_id(request.user.id, id)
         if event:
             event_data = add_organizer_venue_data(event)
             return dict(event=event_data), 200
-        raise ResourceNotFound('Event does not exist with id %s' % event_id, error_code=404)
+        raise ResourceNotFound('Event does not exist with id %s' % id)
 
-    @authenticate
-    def post(self, event_id, **kwargs):
+    def put(self, id):
         """
         Updates event in getTalent's database and on corresponding social network.
-        :param event_id: id of event on getTalent database
+        :param id: id of event on getTalent database
 
         :Example:
 
@@ -325,18 +322,16 @@ class EventById(Resource):
                     4066 (Access token for Social Network has expired)
 
         """
-        user_id = kwargs['user_id']
         event_data = request.get_json(force=True)
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
-            user_id, event_id, event_data['social_network_event_id'])
+            request.user.id, id, event_data['social_network_event_id'])
         if event:
-            process_event(event_data, user_id, method='Update')
-            return SocialNetworkApiResponse(json.dumps(dict(message='Event updated successfully')), status=200)
-        raise ResourceNotFound('Event not found', error_code=404)
+            process_event(event_data, request.user.id, method='Update')
+            return dict(message='Event updated successfully'), 200
+        raise ResourceNotFound('Event not found')
 
-    @authenticate
-    def delete(self, event_id, **kwargs):
+    def delete(self, id):
         """
         Removes a single event from getTalent's database and from social network as well.
         :param id: (Integer) unique id in Event table on GT database.
@@ -361,9 +356,8 @@ class EventById(Resource):
                     403 (Forbidden: event not found for this user)
                     500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
-        deleted, not_deleted = delete_events(user_id, [event_id])
+        deleted, not_deleted = delete_events(request.user.id, [id])
         if len(deleted) == 1:
-            return SocialNetworkApiResponse(json.dumps(dict(message='Event deleted successfully')), status=200)
-        raise ForbiddenError('Forbidden: Unable to delete event', error_code=403)
+            return dict(message='Event deleted successfully'), 200
+        raise ForbiddenError('Forbidden: Unable to delete event')
 

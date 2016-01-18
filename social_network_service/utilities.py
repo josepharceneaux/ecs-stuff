@@ -113,27 +113,6 @@ def milliseconds_since_epoch_to_dt(epoch, tz=timezone('UTC')):
     return datetime.fromtimestamp(epoch / 1000.0, tz=tz)
 
 
-def authenticate_user(request):
-    """
-    :rtype: gluon.dal.objects.Row | None
-    """
-    auth_token = request.headers.get('Authorization')
-    if auth_token and isinstance(auth_token, basestring):
-        auth_token = auth_token.lower().replace('bearer ', '')
-        try:
-            remote = OAuth2Session(token={'access_token': auth_token})
-            response = remote.get(OAUTH_SERVER)
-            if response.status_code == 200:
-                user_id = response.json().get('user_id') or ''
-                return User.get_by_id(user_id) if user_id else None
-            else:
-                return None
-        except:
-            return None
-    else:
-        return None
-
-
 def get_callee_data(app_name=None):
     """
     This is used to get the data of callee, i.e. the function where

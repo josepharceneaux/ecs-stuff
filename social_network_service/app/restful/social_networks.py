@@ -1,59 +1,65 @@
 """
 This file contains API endpoints related to social network.
     Following is a list of API endpoints:
-        - Social Networks:  /social_networks/
+        - Social Networks:  /social_networks
             GET     : Get all social networks
             POST    : Create a social network
             DELETE  : Delete a social network
 
-        - Meetup Groups: /social_networks/groups/
+        - Meetup Groups: /social_networks/meetup/groups
             GET     : get Meetup groups owned by user.
 
-        - Get Token Validity: /social_networks/token_validity/<int:social_network_id>
+        - Get Token Validity: /social_networks/<int:id>/token/validity'
             GET     : Get user access_token validity status for specified social network.
 
-        - Refresh Access Token: /social_network/refresh_token/<int:social_network_id>
+        - Refresh Access Token: /social_network/<int:id>/token/refresh
             GET: This resource refreshes access token for given social network for given user.
 
-        - Venues: /venues/
+        - Venues: /venues
             GET     : Get all venues created by the user
             POST    : Create a venue
             DELETE  : Delete one or more venues from getTalent database.
 
-        - VenueById: /venues/<int:venue_id>
+        - VenueById: /venues/<int:id>
             GET     : Get a venue with specific id
             POST    : Update an existing venue
             DELETE  : Delete a venue from getTalent database
 
-        - Organizers: /organizers/
+        - Organizers: /event_organizers
             GET     : Get all organizers created by the user
             POST    : Create an organizer
             DELETE  : Delete one or more organizers
 
-        - OrganizerById: /organizers/<int: organizer_id>
+        - OrganizerById: /event_organizers/<int: id>
             GET     : Get an organizer
             POST    : Update an existing organizer
             DELETE  : Delete a single organizer
 
 """
-import json
+# Standard imports
 import types
 
+# 3rd party imports
 from flask.ext.cors import CORS
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
+# application specific imports
 from social_network_service import logger
 from social_network_service.meetup import Meetup
-from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.venue import Venue
-from social_network_service.common.models.user import UserSocialNetworkCredential, User
-from social_network_service.common.models.candidate import SocialNetwork
-
-from social_network_service.common.talent_api import TalentApi
-from social_network_service.app.app_utils import authenticate, api_route, SocialNetworkApiResponse
-from social_network_service.common.error_handling import *
 from social_network_service.utilities import get_class
+from social_network_service.common.error_handling import *
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.routes import SocialNetworkApi
+from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.utils.api_utils import api_route, ApiResponse
+from social_network_service.common.utils.auth_utils import require_oauth
+from social_network_service.common.utils.handy_functions import get_valid_json_data
+
+
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = TalentApi()
 api.init_app(social_network_blueprint)
@@ -62,25 +68,25 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(social_network_blueprint, resources={
-    r'/(social_networks|venues|organizers)/*': {
+    r'/%s/(social_networks|venues|event_organizers)/*' % SocialNetworkApi.VERSION:  {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
 
 
-@api.route('/social_networks/')
+@api.route(SocialNetworkApi.SOCIAL_NETWORKS)
 class SocialNetworksResource(Resource):
     """
         This resource returns a list of social networks.
     """
+    decorators = [require_oauth()]
 
     def set_is_subscribed(self, dicts, value=False):
         for dict in dicts:
             dict['is_subscribed'] = value
         return dicts
 
-    @authenticate
     def post(self, **kwargs):
         """
         This method takes data to create social network in database.
@@ -119,15 +125,15 @@ class SocialNetworksResource(Resource):
         :return: id of created event
         """
         # get json post request data
-        sn_data = request.get_json(force=True)
+        sn_data = get_valid_json_data(request)
         social_network = SocialNetwork(**sn_data)
         SocialNetwork.save(social_network)
-        headers = {'Location': '/social_network/%s' % social_network.id}
-        response = SocialNetworkApiResponse(json.dumps(dict(id=social_network.id)), status=201, headers=headers)
+        headers = {'Location': '/%s/social_network/%s' % (SocialNetworkApi.VERSION,
+                                                          social_network.id)}
+        response = ApiResponse(dict(id=social_network.id), status=201, headers=headers)
         return response
 
-    @authenticate
-    def delete(self, **kwargs):
+    def delete(self):
         """
         Deletes multiple social network whose ids are given in list in request data.
         :param kwargs:
@@ -160,11 +166,11 @@ class SocialNetworksResource(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
         # get event_ids for events to be deleted
-        req_data = request.get_json(force=True)
+        req_data = get_valid_json_data(request)
         social_network_ids = req_data['social_network_ids'] \
-            if 'social_network_ids' in req_data and isinstance(req_data['social_network_ids'], list) else []
+            if 'social_network_ids' in req_data and isinstance(
+            req_data['social_network_ids'], list) else []
         total_deleted = 0
         total_not_deleted = 0
         if social_network_ids:
@@ -175,19 +181,18 @@ class SocialNetworksResource(Resource):
                         total_deleted += 1
                 except Exception as e:
                     total_not_deleted += 1
-                    logger.debug('Unable to delete social network with ID: %s\nError: %s' % (sn_id, e.message))
+                    logger.debug('Unable to delete social network with ID: '
+                                 '%s\nError: %s' % (sn_id, e.message))
 
         if total_not_deleted:
-            return SocialNetworkApiResponse(json.dumps(dict(message='Unable to delete %s social networks' % total_not_deleted,
-                                                            deleted=total_deleted,
-                                                            not_deleted=total_not_deleted)), status=207)
+            return dict(message='Unable to delete %s social networks' % total_not_deleted,
+                        deleted=total_deleted,
+                        not_deleted=total_not_deleted), 207
         elif total_deleted:
-                return SocialNetworkApiResponse(json.dumps(dict(
-                    message='%s social networks deleted successfully' % total_deleted)), status=200)
+                return dict(message='%s social networks deleted successfully' % total_deleted), 200
         raise InvalidUsage('Bad request, include social work ids as list data', error_code=400)
 
-    @authenticate
-    def get(self, *args, **kwargs):
+    def get(self):
         """
         This action returns a list of user social networks.
 
@@ -239,8 +244,7 @@ class SocialNetworksResource(Resource):
         .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
-        user_id = kwargs.get('user_id')
-        assert user_id
+        user_id = request.user.id
         # Get list of networks user is subscribed to from UserSocialNetworkCredential table
         subscribed_networks = None
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
@@ -272,18 +276,18 @@ class SocialNetworksResource(Resource):
         if all_networks:
             for sn in all_networks:
                 del sn['secret_key']
-            return SocialNetworkApiResponse(json.dumps({'social_networks': all_networks, 'count': len(all_networks)}))
+            return dict(social_networks=all_networks, count=len(all_networks))
         else:
-            return {'social_networks': [], 'count': 0}
+            return dict(social_networks= [], count=0)
 
 
-@api.route('/social_networks/meetup/groups/')
+@api.route(SocialNetworkApi.MEETUP_GROUPS)
 class MeetupGroupsResource(Resource):
     """
         This resource returns a list of user's admin groups for Meetup.
     """
+    decorators = [require_oauth()]
 
-    @authenticate
     def get(self, *args, **kwargs):
         """
         This action returns a list of user events. In the response, we return fields
@@ -361,20 +365,20 @@ class MeetupGroupsResource(Resource):
         .. HTTP Status:: 200 (OK)
                     500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
+        user_id = request.user.id
         try:
             meetup = Meetup(user_id=user_id)
             groups = meetup.get_groups()
-            resp = json.dumps(dict(groups=groups,
-                                   count=len(groups)))
+            response = dict(groups=groups, count=len(groups))
         except Exception as e:
             raise InternalServerError(e.message)
-        return SocialNetworkApiResponse(resp, status=200)
+        return response, 200
 
 
-@api.route('/social_networks/<int:id>/token/validity')
+@api.route(SocialNetworkApi.TOKEN_VALIDITY)
 class GetTokenValidityResource(Resource):
-    @authenticate
+    decorators = [require_oauth()]
+
     def get(self, id, **kwargs):
         """
         Get user access_token validity status for specified social network.
@@ -408,7 +412,7 @@ class GetTokenValidityResource(Resource):
 
 
         """
-        user_id = kwargs['user_id']
+        user_id = request.user.id
         # Get social network specified by social_network_id
         social_network = SocialNetwork.get_by_id(id)
         if social_network:
@@ -421,21 +425,22 @@ class GetTokenValidityResource(Resource):
                 sn = social_network_class(user_id=user_id,
                                           social_network=social_network
                                           )
-                return SocialNetworkApiResponse(dict(status=sn.access_token_status))
+                return dict(status=sn.access_token_status), 200
         else:
-            raise ResourceNotFound("Invalid social network id given", error_code=404)
+            raise ResourceNotFound("Invalid social network id given")
 
 
-@api.route('/social_networks/<int:id>/token/refresh')
+@api.route(SocialNetworkApi.TOKEN_REFRESH)
 class RefreshTokenResource(Resource):
     """
         This resource refreshes access token for given social network for given user.
     """
 
-    @authenticate
-    def get(self, id, **kwargs):
+    decorators = [require_oauth()]
+
+    def put(self, id):
         """
-        Gets a fresh token for specified user and social network.
+        Update access token for specified user and social network.
         :return:
 
         :Example:
@@ -460,7 +465,7 @@ class RefreshTokenResource(Resource):
                          403 (Failed to refresh token)
                          500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
+        user_id = request.user.id
         try:
             social_network = SocialNetwork.get_by_id(id)
             if not social_network:
@@ -470,22 +475,24 @@ class RefreshTokenResource(Resource):
             sn = social_network_class(user_id=user_id)
             status = sn.refresh_access_token()
         except Exception:
-            raise InternalServerError("Couldn't get fresh token for specified user and social network", error_code=500)
+            raise InternalServerError("Couldn't get fresh token for specified user "
+                                      "and social network")
         if status:
-            return SocialNetworkApiResponse(json.dumps(dict(messsage='Access token has been refreshed',
-                                                            status=True)), status=200)
+            return dict(messsage='Access token has been refreshed',
+                        status=True), 200
         else:
             raise ForbiddenError("Unable to refresh access token")
 
 
-@api.route('/venues/')
+@api.route(SocialNetworkApi.VENUES)
 class VenuesResource(Resource):
     """
         This resource returns a list of user's created venues.
     """
 
-    @authenticate
-    def get(self, *args, **kwargs):
+    decorators = [require_oauth()]
+
+    def get(self):
         """
         This action returns a list of user venues.
         :return: json for venues
@@ -519,14 +526,12 @@ class VenuesResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
-        venues = Venue.get_by_user_id(user_id)
+        venues = request.user.venues.all()
         venues = map(lambda venue: venue.to_json(), venues)
-        resp = json.dumps(dict(venues=venues, count=len(venues)))
-        return SocialNetworkApiResponse(resp, status=200)
+        response = dict(venues=venues, count=len(venues))
+        return response, 200
 
-    @authenticate
-    def post(self, *args, **kwargs):
+    def post(self):
         """
         Creates a venue for this user
         :return:
@@ -567,18 +572,17 @@ class VenuesResource(Resource):
                     500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
-        venue_data = request.get_json(force=True)
+        user_id = request.user.id
+        venue_data = get_valid_json_data(request)
         venue_data['user_id'] = user_id
         venue = Venue(**venue_data)
         Venue.save(venue)
-        headers = {'Location': '/venues/%s' % venue.id}
-        return SocialNetworkApiResponse(json.dumps(dict(message='Venue created successfully', id=venue.id)),
-                                        status=201,
-                                        headers=headers)
+        headers = {'Location': '/%s/venues/%s' % (SocialNetworkApi.VERSION, venue.id)}
+        return ApiResponse(dict(message='Venue created successfully', id=venue.id),
+                           status=201,
+                           headers=headers)
 
-    @authenticate
-    def delete(self, **kwargs):
+    def delete(self):
         """
         This endpoint deletes venues specified in list in request data.
 
@@ -608,9 +612,9 @@ class VenuesResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
+        user_id = request.user.id
         deleted, not_deleted = [], []
-        req_data = request.get_json(force=True)
+        req_data = get_valid_json_data(request)
         venue_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         if venue_ids:
             for _id in venue_ids:
@@ -622,25 +626,24 @@ class VenuesResource(Resource):
                     not_deleted.append(_id)
 
             if len(not_deleted) == 0:
-                return SocialNetworkApiResponse(json.dumps(dict(
-                                                message='%s Venue/s deleted successfully' % len(deleted))),
-                                                status=200)
+                return dict(message='%s Venue/s deleted successfully' % len(deleted)), 200
 
-            return SocialNetworkApiResponse(json.dumps(dict(message='Unable to delete %s venue/s' % len(not_deleted),
-                                                            deleted=deleted,
-                                                            not_deleted=not_deleted)), status=207)
+            return dict(message='Unable to delete %s venue/s' % len(not_deleted),
+                        deleted=deleted,
+                        not_deleted=not_deleted), 207
         else:
-            raise InvalidUsage('Bad request, include ids as list data', error_code=400)
+            raise InvalidUsage('Bad request, include ids as list data')
 
 
-@api.route('/venues/<int:venue_id>')
+@api.route(SocialNetworkApi.VENUE)
 class VenueByIdResource(Resource):
     """
         This resource handles venue CRUD operations for a single venue given by venue_id
     """
 
-    @authenticate
-    def get(self, venue_id, **kwargs):
+    decorators = [require_oauth()]
+
+    def get(self, id):
         """
         This action returns a venue (given by id) created by current user.
         :param venue_id: id of venue to be returned
@@ -676,17 +679,15 @@ class VenueByIdResource(Resource):
                          404 (Resource not found)
                          500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
-        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        user_id = request.user.id
+        venue = Venue.get_by_user_id_venue_id(user_id, id)
         if venue:
             venue = venue.to_json()
-            resp = json.dumps({'venue': venue})
-            return SocialNetworkApiResponse(resp, status=200)
+            return dict(venue=venue), 200
         else:
-            raise ResourceNotFound('Venue not found', error_code=404)
+            raise ResourceNotFound('Venue not found')
 
-    @authenticate
-    def post(self, venue_id, **kwargs):
+    def put(self, id):
         """
         Updates a venue for current user
         :param venue_id: id of the requested venue
@@ -729,21 +730,20 @@ class VenueByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
-        venue_data = request.get_json(force=True)
-        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        user_id = request.user.id
+        venue_data = get_valid_json_data(request)
+        venue = Venue.get_by_user_id_venue_id(user_id, id)
         if venue:
             venue_data['user_id'] = user_id
             venue.update(**venue_data)
-            return SocialNetworkApiResponse(json.dumps(dict(message='Venue updated successfully')), status=200)
+            return dict(message='Venue updated successfully'), 200
         else:
-            raise ResourceNotFound('Venue not found', error_code=404)
+            raise ResourceNotFound('Venue not found')
 
-    @authenticate
-    def delete(self, venue_id, **kwargs):
+    def delete(self, id):
         """
         This endpoint deletes one venue owned by this user.
-        :param venue_id: id of venue on getTalent database to be deleted
+        :param id: id of venue on getTalent database to be deleted
         :return:
 
         :Example:
@@ -766,25 +766,22 @@ class VenueByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        # Get user_id
-        user_id = kwargs['user_id']
-        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
+        venue = Venue.get_by_user_id_venue_id(request.user.id, id)
         if venue:
-            Venue.delete(venue_id)
-            resp = json.dumps(dict(message='Venue has been deleted successfully'))
-            return SocialNetworkApiResponse(resp, status=200)
+            Venue.delete(venue)
+            return dict(message='Venue has been deleted successfully'), 200
         else:
-            raise ResourceNotFound('Venue not found', error_code=404)
+            raise ResourceNotFound('Venue not found')
 
 
-@api.route('/event_organizers/')
+@api.route(SocialNetworkApi.EVENT_ORGANIZERS)
 class EventOrganizersResource(Resource):
     """
         This resource handles event organizer CRUD operations.
     """
+    decorators = [require_oauth()]
 
-    @authenticate
-    def get(self, *args, **kwargs):
+    def get(self):
         """
         This action returns a list of event organizers created by current user.
         :keyword user_id: id of organizer owner (user who created organizer)
@@ -811,13 +808,12 @@ class EventOrganizersResource(Resource):
         .. HTTP Status:: 200 (OK)
                          500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
-        organizers = map(lambda organizer: organizer.to_json(), EventOrganizer.get_by_user_id(user_id))
-        resp = json.dumps({'event_organizers': organizers, 'count': len(organizers)})
-        return SocialNetworkApiResponse(resp, status=200)
+        event_organizers = request.user.event_organizers.all()
+        organizers = map(lambda organizer: organizer.to_json(), event_organizers)
+        response = dict(event_organizers=organizers, count=len(organizers))
+        return response, 200
 
-    @authenticate
-    def post(self, *args, **kwargs):
+    def post(self):
         """
         Creates an event organizer for this user.
         :return:
@@ -852,17 +848,16 @@ class EventOrganizersResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
-        organizer_data = request.get_json(force=True)
-        organizer_data['user_id'] = user_id
+        organizer_data = get_valid_json_data(request)
+        organizer_data['user_id'] = request.user.id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
-        headers = {'Location': '/event_organizers/%s' % organizer.id}
-        return SocialNetworkApiResponse(json.dumps(dict(messsage='Event organizer created successfully', id=organizer.id)),
-                                        status=201, headers=headers)
+        headers = {'Location': '/%s/event_organizers/%s' % (SocialNetworkApi.VERSION, organizer.id)}
+        return ApiResponse(dict(messsage='Event organizer created successfully',
+                                id=organizer.id),
+                           status=201, headers=headers)
 
-    @authenticate
-    def delete(self, **kwargs):
+    def delete(self):
         """
         This endpoint deletes one or more organizer owned by this user.
         :param kwargs:
@@ -894,16 +889,14 @@ class EventOrganizersResource(Resource):
                          500 (Internal Server Error)
 
         """
-        # Get user_id
-        user_id = kwargs['user_id']
         deleted, not_deleted = [], []
         # Get json data from request
-        req_data = request.get_json(force=True)
+        req_data = get_valid_json_data(request)
         organizer_ids = req_data['ids'] if 'ids' in req_data and isinstance(req_data['ids'], list) else []
         # If no organizer id is given, return 400 (Bad request)
         if organizer_ids:
             for _id in organizer_ids:
-                organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, _id)
+                organizer = EventOrganizer.get_by_user_id_organizer_id(request.user.id, _id)
                 if organizer:
                     EventOrganizer.delete(_id)
                     deleted.append(_id)
@@ -911,25 +904,23 @@ class EventOrganizersResource(Resource):
                     not_deleted.append(_id)
 
             if len(not_deleted) == 0:
-                return SocialNetworkApiResponse(json.dumps(dict(
-                    message='%s event organizer/s deleted successfully' % len(deleted))),
-                    status=200)
+                return dict(message='%s event organizer/s deleted successfully' % len(deleted)), 200
 
-            return SocialNetworkApiResponse(json.dumps(dict(message='Unable to delete %s event organizer/s' % len(not_deleted),
-                                                            deleted=deleted,
-                                                            not_deleted=not_deleted)), status=207)
+            return dict(message='Unable to delete %s event organizer/s' % len(not_deleted),
+                        deleted=deleted,
+                        not_deleted=not_deleted), 207
         else:
             raise InvalidUsage('Bad request, include ids as list data', error_code=400)
 
 
-@api.route('/event_organizers/<int:organizer_id>')
+@api.route(SocialNetworkApi.EVENT_ORGANIZER)
 class EventOrganizerByIdResource(Resource):
     """
         This resource handles event organizer CRUD operations for a single organizer given by organizer_id.
     """
+    decorators = [require_oauth()]
 
-    @authenticate
-    def get(self, organizer_id, **kwargs):
+    def get(self, id):
         """
         This action returns an organizer (given by id) created by current user.
         :param organizer_id: id of organizer to be returned
@@ -959,17 +950,15 @@ class EventOrganizerByIdResource(Resource):
                          404 (Resource not found)
                          500 (Internal Server Error)
         """
-        user_id = kwargs['user_id']
-        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        user_id = request.user.id
+        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, id)
         if event_organizer:
             event_organizer = event_organizer.to_json()
-            resp = json.dumps({'event_organizer': event_organizer})
-            return SocialNetworkApiResponse(resp, status=200)
+            return dict(event_organizer=event_organizer), 200
         else:
-            raise ResourceNotFound('Event organizer not found', error_code=404)
+            raise ResourceNotFound('Event organizer not found')
 
-    @authenticate
-    def post(self, organizer_id, **kwargs):
+    def post(self, id):
         """
         Updates an event organizer for current user.
         :return:
@@ -1004,18 +993,17 @@ class EventOrganizerByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
-        organizer_data = request.get_json(force=True)
-        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        user_id = request.user.id
+        organizer_data = get_valid_json_data(request)
+        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, id)
         if event_organizer:
             organizer_data['user_id'] = user_id
             event_organizer.update(**organizer_data)
-            return SocialNetworkApiResponse(json.dumps(dict(message='Organizer updated successfully')), status=200)
+            return ApiResponse(dict(message='Organizer updated successfully')), 200
         else:
-            raise ResourceNotFound("Organizer not found", error_code=404)
+            raise ResourceNotFound("Organizer not found")
 
-    @authenticate
-    def delete(self, organizer_id, **kwargs):
+    def delete(self, id):
         """
         This endpoint deletes one organizer owned by this user.
         :param kwargs:
@@ -1041,26 +1029,24 @@ class EventOrganizerByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        # Get user_id
-        user_id = kwargs['user_id']
-        organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, organizer_id)
+        organizer = EventOrganizer.get_by_user_id_organizer_id(request.user.id, id)
         if organizer:
-            EventOrganizer.delete(organizer_id)
-            resp = json.dumps(dict(message='Organizer has been deleted successfully'))
-            return SocialNetworkApiResponse(resp, status=200)
+            EventOrganizer.delete(organizer)
+            return dict(message='Organizer has been deleted successfully'), 200
         else:
             raise ResourceNotFound("Organizer not found", error_code=404)
 
 
-@api.route('/social_networks/<int:id>/user/credentials')
+@api.route(SocialNetworkApi.USER_SOCIAL_NETWORK_CREDENTIALS)
 class ProcessAccessTokenResource(Resource):
     """
     This resource adds user credentials for given user and social network.
     This resource takes access token 'code' and social network id for which we
     want to add credentials.
     """
-    @authenticate
-    def post(self, id, **kwargs):
+    decorators = [require_oauth()]
+
+    def post(self, id):
         """
         Adds credentials for user for given social network.
         Gets data from POST request which contains 'code' and 'social_credentials'
@@ -1096,9 +1082,9 @@ class ProcessAccessTokenResource(Resource):
                          500 (Internal Server Error)
 
         """
-        user_id = kwargs['user_id']
+        user_id = request.user.id
         # Get json request data
-        req_data = request.get_json(force=True)
+        req_data = get_valid_json_data(request)
         code = req_data['code']
         social_network = SocialNetwork.get_by_id(id)
         # if social network does not exists, send failure message
@@ -1113,8 +1099,8 @@ class ProcessAccessTokenResource(Resource):
                                          access_token=access_token,
                                          refresh_token=refresh_token)
             social_network_class.save_user_credentials_in_db(user_credentials_dict)
-            return SocialNetworkApiResponse(dict(message='User credentials added successfully'), status=201)
+            return dict(message='User credentials added successfully'), 201
         else:
-            raise ResourceNotFound('Social Network not found', error_code=404)
+            raise ResourceNotFound('Social Network not found')
 
 
