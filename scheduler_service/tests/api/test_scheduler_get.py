@@ -67,6 +67,17 @@ class TestSchedulerGet(object):
         """
         # Assign task_name in job post data (general task)
         job_config['task_name'] = 'General_Named_Task'
+
+        # Get the job using correct task name
+        response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                    headers=auth_header_no_user)
+
+        # If task with the same name already exist
+        if response_get.status_code == 400:
+            response_delete = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                              headers=auth_header_no_user)
+            assert response_delete.status_code == 200
+
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
