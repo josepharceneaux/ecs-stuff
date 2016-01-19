@@ -2,7 +2,92 @@
 
     <div layout-padding layout="row">
         <div flex layout-margin layout-padding class="module">
-            <div class="mod-header">Talent Pool Create</div>
+            <div class="mod-header">My Pipelines</div>
+        </div>
+    </div>
+
+    <b>Barebones layout - Makes no assumptions about styles that will be applied</b>
+    <div>
+        Candidate Growth
+    </div>
+
+    <div layout>
+        <div flex>Total Pipelines</div>
+        <div flex>Total Candidates in Pipelines</div>
+        <div flex>Unique Candidates</div>
+        <div flex>Candidates Added Today</div>
+    </div>
+
+    <div layout>
+        <div flex="60">
+            Table Section
+        </div>
+        <div flex>
+            <div layout="column">
+                <div>Current Candidate Usage</div>
+                <div>Top Performing Campaigns</div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <b>Minimum Styling layout - Applies module class to easily visualize rows/columns</b>
+    <div class="module">
+        Candidate Growth
+    </div>
+
+    <div layout>
+        <div flex class="module">Total Pipelines</div>
+        <div flex class="module">Total Candidates in Pipelines</div>
+        <div flex class="module">Unique Candidates</div>
+        <div flex class="module">Candidates Added Today</div>
+    </div>
+
+    <div layout>
+        <div flex="60" class="module">
+            Table Section
+        </div>
+        <div flex>
+            <div layout="column">
+                <div class="module">Current Candidate Usage</div>
+                <div class="module">Top Performing Campaigns</div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <b>With layout-padding, layout-margin, and module class to elements.</b>
+    <!--Chart Section-->
+    <div layout-padding layout="row">
+        <div flex layout-margin layout-padding class="module">
+            Candidate Growth
+        </div>
+    </div>
+
+    <!--Pipelines Overview Data-->
+    <div layout-padding layout="row">
+        <div flex layout-padding>
+            <div flex class="module">Total Pipelines</div>
+        </div>
+        <div flex layout-padding>
+            <div flex class="module">Total Candidates in Pipelines</div>
+        </div>
+        <div flex layout-padding>
+            <div flex class="module">Unique Candidates</div>
+        </div>
+        <div flex layout-padding>
+            <div flex class="module">Candidates Added Today</div>
+        </div>
+    </div>
+
+    <!--Tables and Charts-->
+    <div layout-padding layout="row">
+        <div flex="60" layout-padding>
+            <div flex class="module">Tables</div>
+        </div>
+        <div flex>
+            <div layout="column">
+                <div class="module">Current Candidate Useage</div>
+                <div class="module">Top Performing Campaigns</div>
+            </div>
         </div>
     </div>
 
