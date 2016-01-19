@@ -1,5 +1,29 @@
 /** Temporary global override during setup / remove v2 from all styles after **/
 
+/** Angular Material Overrides **/
+
+body {
+    color:#555;
+}
+
+.layout-padding {
+    padding:20px;
+}
+
+/** UiX Base **/
+
+/** UiX Grid **/
+
+/** UiX Utility **/
+
+
+
+
+
+.v2-infotip {
+
+}
+
 .v2-font {
     &__sm {
         font-size:.8em;
@@ -11,7 +35,7 @@
         font-size: 1.2em;
     }
     &__xlg {
-        font-size: 1.4em;
+        font-size: 1.6em;
     }
     &__xxlg {
         font-size: 2.9em;
@@ -19,8 +43,13 @@
     }
 }
 
-.v2-left {
-    float:left;
+.v2-float {
+    &__left {
+        float:left;
+    }
+    &__right {
+        float:right;
+    }
 }
 
 .v2-clear-fix:after {
@@ -33,6 +62,18 @@
     &__center {
         text-align:center;
     }
+    &__right {
+        text-align:right;
+    }
+    &__vertical {
+        display:table;
+        width:100%;
+        > div {
+            display:table-cell;
+            vertical-align: middle;
+            height:80px;
+        }
+    }
 }
 
 .v2-margin {
@@ -41,10 +82,25 @@
             margin-right:20px;
         }
     }
+    &-horizontal {
+        &__10 {
+
+        }
+    }
 }
 
-.layout-padding {
-    padding:20px;
+.v2-padding {
+    &-right {
+        &__20 {
+            margin-right:20px;
+        }
+    }
+}
+
+.v2-line-height {
+    &__1-6 {
+        line-height:2;
+    }
 }
 
 .module {
@@ -67,9 +123,19 @@
     }
 }
 
-.page-title-icon {
-    background:#333;
-    border-radius:50px;
-    width: 80px;
-    height: 80px;
+/** UiX Styles **/
+
+.v2-page-header {
+
 }
+
+.page-title-icon {
+    width: 95px;
+    img {
+        background:#333;
+        border-radius:50px;
+        width: 80px;
+        height: 80px;
+    }
+}
+
