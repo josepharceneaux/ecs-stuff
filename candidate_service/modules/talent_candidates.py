@@ -1454,7 +1454,10 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            if CandidateEmail.get_by_address(email_dict['address']) is None: # TODO: change to preventing duplicate emails for the same candidate in the same domain
+            email = get_candidate_email_from_domain_if_exists(candidate_id, user_id,
+                                                              email_dict['address'])
+            # Prevent duplicate email address for the same candidate in the same domain
+            if email is None:
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 
@@ -2109,3 +2112,18 @@ def _track_candidate_social_network_edits(sn_dict, candidate_social_network, can
             new_value=new_value,
             edit_datetime=edit_time
         ))
+
+
+def get_candidate_email_from_domain_if_exists(candidate_id, user_id, email_address):
+    """
+    Function will retrieve CandidateEmail belonging to the requested candidate
+    in the same domain if found.
+    :type candidate_id:  int|long
+    :type user_id:       int|long
+    :type email_address: basestring
+    :rtype: CandidateEmail|None
+    """
+    user_domain_id = User.get_domain_id(_id=user_id)
+    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+    return candidate_email if candidate_email else None
