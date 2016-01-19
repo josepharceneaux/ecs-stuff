@@ -2,8 +2,8 @@
     'use strict';
 
     angular.module('app.admin')
-        .directive('gtAdminAddUser', directiveFunction)
-        .controller('AdminAddUserController', ControllerFunction);
+        .directive('gtAdminUserAdd', directiveFunction)
+        .controller('AdminUserAddController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/admin/admin-add-user/admin-add-user.html',
+            templateUrl: 'components/admin/admin-users/admin-user-add/admin-user-add.html',
             replace: true,
             scope: {},
-            controller: 'AdminAddUserController',
+            controller: 'AdminUserAddController',
             controllerAs: 'vm'
         };
 
@@ -33,7 +33,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Admin Add User View');
+            logger.log('Activated Admin User Add View');
         }
     }
 })();

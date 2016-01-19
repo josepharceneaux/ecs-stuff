@@ -18,6 +18,7 @@
         'ngMaterial',
         'ngTagsInput',
         'pickadate',
+        'restangular',
         'toastr',
         'ui.bootstrap',
         'ui.router'

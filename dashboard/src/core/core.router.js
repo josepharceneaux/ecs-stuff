@@ -79,19 +79,31 @@
                     }
                 }
             })
-            .state('admin.addUser', {
-                url: '/add-user',
+            .state('admin.users', {
+                url: '/users',
                 views: {
                     '@site': {
-                        template: '<gt-admin-add-user></gt-admin-add-user>'
+                        template: '<gt-admin-users></gt-admin-users>'
                     }
                 }
             })
-            .state('admin.emulate', {
-                url: '/emulate',
+            .state('admin.users.add', {
+                url: '/add',
                 views: {
                     '@site': {
-                        template: '<gt-admin-emulate></gt-admin-emulate>'
+                        template: '<gt-admin-user-add></gt-admin-user-add>'
+                    }
+                }
+            })
+            .state('admin.users.user', {
+                url: '/:userId',
+                redirectTo: 'admin.users.user.edit'
+            })
+            .state('admin.users.user.edit', {
+                url: '/edit',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-user-edit></gt-admin-user-edit>'
                     }
                 }
             })
@@ -445,15 +457,19 @@
                     }
                 }
             })
-            .state('pipelines.detail', {
+            .state('pipelines.pipeline', {
                 url: '/:pipelineId',
+                redirectTo: 'pipelines.pipeline.detail'
+            })
+            .state('pipelines.pipeline.detail', {
+                url: '',
                 views: {
                     '@pipelines': {
                         template: '<gt-pipeline-detail></gt-pipeline-detail>'
                     }
                 }
             })
-            .state('pipelines.detail.settings', {
+            .state('pipelines.pipeline.settings', {
                 url: '/settings',
                 views: {
                     '@pipelines': {
@@ -461,7 +477,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.team', {
+            .state('pipelines.pipeline.team', {
                 url: '/team',
                 views: {
                     '@pipelines': {
@@ -469,7 +485,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists', {
+            .state('pipelines.pipeline.smartLists', {
                 url: '/smart-lists',
                 views: {
                     '@pipelines': {
@@ -477,7 +493,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists.create', {
+            .state('pipelines.pipeline.smartLists.create', {
                 url: '/create',
                 views: {
                     '@pipelines': {
@@ -485,8 +501,12 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists.detail', {
-                url: '/:smartListId',
+            .state('pipelines.pipeline.smartLists.smartList', {
+                url: '/:pipelineId',
+                redirectTo: 'pipelines.pipeline.smartLists.smartList.detail'
+            })
+            .state('pipelines.pipeline.smartLists.smartList.detail', {
+                url: '',
                 views: {
                     '@pipelines': {
                         template: '<gt-smart-list-details></gt-smart-list-details>'
@@ -588,6 +608,30 @@
                     }
                 }
             })
+            .state('user.widgets', {
+                abstract: true,
+                url: '/widgets'
+            })
+            .state('user.widgets.add', {
+                url: '/add',
+                views: {
+                    '@user': {
+                        template: '<gt-widget-add></gt-widget-add>'
+                    }
+                }
+            })
+            .state('user.widgets.widget', {
+                url: '/:widgetId',
+                redirectTo: 'user.widgets.widget.edit'
+            })
+            .state('user.widgets.widget.edit', {
+                url: '/edit',
+                views: {
+                    '@user': {
+                        template: '<gt-widget-edit></gt-widget-edit>'
+                    }
+                }
+            })
 
             // Talent Pools
             .state('talentPools', {
@@ -611,8 +655,12 @@
                     }
                 }
             })
-            .state('talentPools.detail', {
-                url: '/:poolId',
+            .state('talentPools.talentPool', {
+                url: '/:pipelineId',
+                redirectTo: 'talentPools.talentPool.detail'
+            })
+            .state('talentPools.talentPool.detail', {
+                url: '',
                 views: {
                     '@site': {
                         template: '<gt-talent-pool-detail></gt-talent-pool-detail>'
