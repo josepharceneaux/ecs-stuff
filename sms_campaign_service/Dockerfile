@@ -1,10 +1,6 @@
-############################################################
-# Dockerfile to build GetTalent SMS Campaign Service
-############################################################
-
 FROM gettalent/base-service-container:latest
 
-# Add sms_campaign_service stuff
+# Add sms campaign service stuff
 WORKDIR /root/base_service_container
 ADD . sms_campaign_service
 WORKDIR /root/base_service_container/sms_campaign_service
