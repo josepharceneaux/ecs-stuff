@@ -13,7 +13,7 @@ import requests
 # We have to import the Facebook page in the following way because we
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
-from social_network_service import logger
+from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import import_from_dist_packages
 
 facebook = import_from_dist_packages('facebook')

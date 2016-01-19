@@ -86,7 +86,12 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-        events = map(add_organizer_venue_data, request.user.events.all())
+        data = request.values
+        limit = data.get('limit', 30)
+        offset = data.get('offset', 0)
+        events = request.user.events.order_by(Event.start_datetime.desc())\
+            .limit(limit).offset(offset).all()
+        events = map(add_organizer_venue_data, events)
         if events:
             return dict(events=events, count=len(events)), 200
         else:

@@ -622,3 +622,18 @@ class SocialNetworkApiUrl(object):
                                GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
+    UI_APP_URL = 'http://localhost:3000'
+    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
+    EVENTS = API_URL % 'events'
+    EVENT = API_URL % 'events/%s'
+    SOCIAL_NETWORKS = API_URL % 'social_networks'
+    VENUES = API_URL % 'venues'
+    VENUE = API_URL % 'venues/%s'
+    EVENT_ORIGANIZERS = API_URL % 'event_organizers'
+    EVENT_ORIGANIZER = API_URL % 'event_organizers/%s'
+    TIMEZONES = API_URL % 'data/timezones'
+    MEETUP_GROUPS = API_URL % 'social_networks/meetup/groups'
+    TOKEN_VALIDITY = API_URL % 'social_networks/%s/token/validity'
+    TOKEN_REFRESH = API_URL % 'social_networks/%s/token/refresh'
+    USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % 'social_networks/%s/user/credentials'
+

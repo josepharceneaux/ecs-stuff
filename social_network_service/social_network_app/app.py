@@ -7,28 +7,29 @@
 import json
 import traceback
 
-import flask
-# init APP
-# This line should come before any imports from models
-from social_network_service import init_app, logger
-app = init_app()
-
 # 3rd party imports
-from flask import request
+import flask
 from flask.ext.cors import CORS
+from flask import request, redirect
 
 # Application specific imports
-from social_network_service.app.restful.v1_data import data_blueprint
-from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
+from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
+from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.talent_config_manager import TalentConfigKeys
+from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
+
 
 # Register Blueprints for different APIs
-app.register_blueprint(social_network_blueprint)
-app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
+app.register_blueprint(events_blueprint)
+app.register_blueprint(social_network_blueprint)
+
 api = TalentApi(app)
 
 # Enable CORS
@@ -41,8 +42,7 @@ CORS(app, resources={
 
 
 @app.route('/')
-def hello_world():
-    # return 'Hello World!', 404
+def index():
     try:
         from social_network_service.common.models.candidate import Candidate
         from social_network_service.common.models.event import Event
@@ -52,6 +52,18 @@ def hello_world():
         import traceback
         return traceback.format_exc()
     return 'Hello World! %s, %s' % (candidate.first_name, event.title)
+
+
+@app.route('/code')
+def authorize():
+    code = request.args.get('code')
+    url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
+    if 'state' in request.args:
+        social_network = SocialNetwork.get_by_name('Meetup')
+    else:
+        social_network = SocialNetwork.get_by_name('Eventbrite')
+    url += '&id=%s' % social_network.id
+    return redirect(url)
 
 
 @app.route('/rsvp', methods=['GET', 'POST'])

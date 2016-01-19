@@ -9,7 +9,8 @@ class Event(db.Model):
     title = db.Column(db.String(500))
     description = db.Column(db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'),
+                        nullable=False)
     organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('event_organizer.id'), nullable=False)
     venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.id'), nullable=False)
     social_network_group_id = db.Column('socialNetworkGroupId', db.String(100))

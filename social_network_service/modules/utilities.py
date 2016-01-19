@@ -4,28 +4,25 @@ or consumed by various programs.
 """
 
 # Standard Library
-import imp
-import importlib
-import inspect
-import random
 import re
-import string
+import imp
 import sys
+import random
+import string
+import inspect
+import importlib
 import traceback
 from datetime import datetime
+
 # Third Party
 import pytz
 import requests
 from pytz import timezone
 # Application Specific Imports
+from social_network_service.social_network_app import logger
+from social_network_service.modules.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service import logger
-from social_network_service.modules.custom_exceptions import *
-from scheduler_service.common.routes import AuthApiUrl
-
-
-OAUTH_SERVER = AuthApiUrl.AUTHORIZE
 
 
 class Attendee(object):
@@ -282,10 +279,10 @@ def get_class(social_network_name, category, user_credentials=None):
     :param category:
     :return: import the required class and return it
     """
-    if category == 'social_network':
-        module_name = 'social_network_service.' + social_network_name.lower()
-    else:
-        module_name = 'social_network_service.' + category + '.' + social_network_name.lower()
+    # if category == 'social_network':
+    #     module_name = 'social_network_service.modules.social_networks' + social_network_name.lower()
+    # else:
+    module_name = 'social_network_service.modules.' + category + '.' + social_network_name.lower()
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, social_network_name.title())
@@ -631,5 +628,5 @@ def get_random_word(length):
     :param length: int or long
     :return:
     """
-    return ''.join(random.choice(string.lowercase) for i in xrange(length))
+    return ''.join(random.choice(string.lowercase) for _ in xrange(length))
 

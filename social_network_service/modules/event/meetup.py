@@ -13,7 +13,7 @@ from datetime import timedelta
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service import logger
+from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.event.base import EventBase
 from social_network_service.modules.utilities import http_request

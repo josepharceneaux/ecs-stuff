@@ -11,7 +11,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
-from social_network_service import logger
+from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import ProductNotFound
 from social_network_service.modules.custom_exceptions import UserCredentialsNotFound
 from social_network_service.common.models.rsvp import RSVP

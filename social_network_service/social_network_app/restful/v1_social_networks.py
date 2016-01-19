@@ -45,8 +45,8 @@ from flask import Blueprint, request
 from flask.ext.restful import Resource
 
 # application specific imports
-from social_network_service import logger
-from social_network_service.modules.social_networks.meetup import Meetup
+from social_network_service.social_network_app import logger
+from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.modules.utilities import get_class
 
 from social_network_service.common.error_handling import *

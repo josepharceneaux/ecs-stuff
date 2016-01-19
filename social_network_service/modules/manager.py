@@ -9,7 +9,7 @@ gevent.monkey.patch_all()
 from gevent.pool import Pool
 
 # App Settings
-from social_network_service.app.app import init_app
+from social_network_service.social_network_app.app import init_app
 init_app()
 
 # Application Specific

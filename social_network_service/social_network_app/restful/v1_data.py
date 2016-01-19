@@ -10,7 +10,7 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 
-from social_network_service.app.app_utils import api_route
+from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApi

@@ -1,4 +1,7 @@
+from flask import current_app
 from flask.ext.restful import Api
+from utils.api_utils import ApiResponse
+from talent_config_manager import TalentConfigKeys
 
 
 class TalentApi(Api):
@@ -18,10 +21,14 @@ class TalentApi(Api):
         # in required format
 
         # check whether this exception is some child class of TalentError base class.
-        # if isinstance(e, TalentError): # isinstance does not work well due to different import styles
         bases = [cls.__name__ for cls in e.__class__.__mro__]
         if 'TalentError' in bases:
             raise
         else:
             # if it is not a custom exception then let the Api class handle it.
-            return super(TalentApi, self).handle_error(e)
+            logger = current_app.config[TalentConfigKeys.LOGGER]
+            logger.exception('Unknown exception occurred: %s' % e)
+            # Api user should not see this error because it is an unexpected error
+            # that was not handled by the API.
+            return ApiResponse(dict(message='Some Internal Server Error Occurred.',
+                                    code=500), status=500)

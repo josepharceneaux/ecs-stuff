@@ -4,7 +4,7 @@ class. Facebook contains method validate_token() for now.
 """
 
 # Application Specific
-from social_network_service.modules.social_networks.base import SocialNetworkBase
+from social_network_service.modules.social_network.base import SocialNetworkBase
 
 
 class Facebook(SocialNetworkBase):
