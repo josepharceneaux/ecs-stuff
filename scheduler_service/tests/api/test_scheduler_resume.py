@@ -122,7 +122,7 @@ class TestSchedulerResume(object):
 
         # Delete all jobs
         job_cleanup['header'] = auth_header
-        job_cleanup['job_ids'] = [jobs_id]
+        job_cleanup['job_ids'] = jobs_id
 
     def test_single_resume_job_without_token(self, auth_header, job_config):
         """

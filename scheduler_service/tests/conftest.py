@@ -8,8 +8,6 @@ from datetime import timedelta
 
 # Application imports
 import requests
-
-from scheduler_service import flask_app
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
@@ -171,7 +169,7 @@ def job_cleanup(request):
 
                 assert response_remove_job.status_code == 200
         except Exception as e:
-            flask_app.logger.exception('fin: %s' % e.message)
+            print 'fin: %s' % e.message
     request.addfinalizer(fin)
 
     return data

@@ -3,20 +3,22 @@ Test cases for getting already scheduled job with or without id. Also it should 
 using bearer token
 """
 
-# Third party imports
+# Std imports
 import json
+
+# Third party imports
 import requests
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
-
+from scheduler_service.common.utils.handy_functions import random_word
 
 __author__ = 'saad'
 
 
 class TestSchedulerGet(object):
 
-    def test_single_job(self, auth_header, job_config, job_cleanup):
+    def test_single_job(self, auth_header, job_config):
         """
         Get job using id and then delete it. Again try to get that job using id should give 404 status code
         Args:
@@ -141,9 +143,10 @@ class TestSchedulerGet(object):
         :return:
         """
         jobs_id = []
+        word = random_word(5)
         # Create tasks
         for i in range(10):
-            job_config['task_name'] = 'Custom_General_Named_Task_%s' % i
+            job_config['task_name'] = word + str(i)
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header_no_user)
             assert response.status_code == 201
@@ -190,7 +193,7 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_scheduled_get_job_without_token(self, auth_header, job_config, job_cleanup):
+    def test_scheduled_get_job_without_token(self, auth_header, job_config):
         """
         Get job without using bearer token it should return 401 status code
         Args:
