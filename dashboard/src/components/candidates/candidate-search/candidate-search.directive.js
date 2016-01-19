@@ -1,9 +1,9 @@
 (function () {
     'use strict';
 
-    angular.module('app.talentPools')
-        .directive('gtTalentPoolsCreate', directiveFunction)
-        .controller('TalentPoolsCreateController', ControllerFunction);
+    angular.module('app.candidates')
+        .directive('gtCandidateSearch', directiveFunction)
+        .controller('CandidateSearchController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/talent-pools/talent-pools-create/talent-pools-create.html',
+            templateUrl: 'components/candidates/candidate-search/candidate-search.html',
             replace: true,
             scope: {},
-            controller: 'TalentPoolsCreateController',
+            controller: 'CandidateSearchController',
             controllerAs: 'vm'
         };
 
@@ -34,7 +34,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Talent Pools Create View');
+            logger.log('Activated Candidate Search View');
         }
 
         function init() {

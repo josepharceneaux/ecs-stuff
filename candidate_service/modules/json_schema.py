@@ -17,7 +17,7 @@ candidates_resource_schema_post = {
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
-                "required": ["emails"],
+                # "required": ["emails"],
                 "additionalProperties": False,
                 "properties": {
                     "first_name": {
@@ -70,8 +70,8 @@ candidates_resource_schema_post = {
                     },
                     "emails": {
                         # "id": "http://jsonschema.net/emails",
-                        "type": "array",
-                        "minItems": 1,
+                        "type": ["array", "null"],
+                        # "minItems": 1,
                         "items": {
                             # "id": "http://jsonschema.net/emails/0",
                             "type": "object",
@@ -85,7 +85,7 @@ candidates_resource_schema_post = {
                                 },
                                 "address": {
                                     # "id": "http://jsonschema.net/emails/0/address",
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 255
                                 },
                                 "is_default": {

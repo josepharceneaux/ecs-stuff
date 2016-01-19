@@ -57,21 +57,20 @@ from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates
         Optional-input:  {'candidate_ids': [int, int, int, ...]}
 
-        Function retrieves candidates via two ways:
+        Function retrieves candidates via two methods:
              i. Candidates from a list of candidate IDs, OR
             ii. If nothing is provided, all of user's candidates will be returned
 
         :return     [dict] -> list of candidate-dicts
         """
         # Authenticated user
-        authed_user = request.user
-        get_all_domain_candidates = False
+        authed_user= request.user
 
         # Parse request body & validate data
         body_dict = request.get_json()
@@ -80,9 +79,7 @@ class CandidatesResource(Resource):
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
-        if not body_dict:
-            get_all_domain_candidates = True
-
+        get_all_domain_candidates = True if not body_dict else False
         if get_all_domain_candidates:  # Retrieve user's candidates
             candidates = authed_user.candidates
 
@@ -91,8 +88,7 @@ class CandidatesResource(Resource):
 
                 # If Candidate is web hidden, it is assumed "deleted"
                 if candidate.is_web_hidden:
-                    raise NotFoundError(error_message='Candidate not found',
-                                        error_code=custom_error.CANDIDATE_IS_HIDDEN)
+                    raise NotFoundError('Candidate not found', custom_error.CANDIDATE_IS_HIDDEN)
 
                 retrieved_candidates.append(fetch_candidate_info(candidate))
 
@@ -112,24 +108,23 @@ class CandidatesResource(Resource):
 
         return {'candidates': retrieved_candidates}
 
-    # @require_all_roles('CAN_ADD_CANDIDATES')
+    @require_all_roles('CAN_ADD_CANDIDATES')
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
-        Function Creates new candidate(s)
+        Function Creates new candidate(s).
 
         Caveats:
              i. Requires a JSON dict containing a 'candidates'-key
                  and a-list-of-candidate-dict(s) as values
-            ii. JSON dict must contain at least one email-dict with an email-address.
+            ii. JSON dict must contain at least one CandidateObject.
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
-        authed_user = request.user
-        body_dict = request.get_json()
+        authed_user, body_dict = request.user, request.get_json()
 
         # Validate json data
         try:
@@ -145,15 +140,14 @@ class CandidatesResource(Resource):
         for _candidate_dict in candidates:
 
             # Emails' addresses must be properly formatted
-            if filter(lambda emails: not is_valid_email(emails['address']), _candidate_dict.get('emails')):
+            emails = _candidate_dict.get('emails') or []
+            if filter(lambda emails: not is_valid_email(emails.get('address')), emails):
                     raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            custom_fields = _candidate_dict.get('custom_fields') or []
-            for custom_field in custom_fields:  # Custom-fields validation
+            for custom_field in _candidate_dict.get('custom_fields') or []:
                 all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            aois = _candidate_dict.get('areas_of_interest') or []
-            for aoi in aois:  # Areas-of-interest validation
+            for aoi in _candidate_dict.get('areas_of_interest') or []:
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
         # Custom fields must belong to user's domain
@@ -169,7 +163,7 @@ class CandidatesResource(Resource):
         for candidate_dict in body_dict.get('candidates'):
 
             emails = [{'label': email.get('label'), 'address': email.get('address'),
-                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails')]
+                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
@@ -179,7 +173,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails,
+                emails=emails, # TODO: Parsing to be done in the module
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -206,7 +200,7 @@ class CandidatesResource(Resource):
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    # @require_all_roles('CAN_UPDATE_CANDIDATES')
+    @require_all_roles('CAN_EDIT_CANDIDATES')
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates
@@ -219,13 +213,12 @@ class CandidatesResource(Resource):
                  and a-list-of-candidate-dict(s) as values
              ii. Each JSON dict must contain candidate's ID
             iii. To update any of candidate's fields, the field ID must be provided,
-                 otherwise a new record will be added to the candidate
+                 otherwise a new record will be added to the specified candidate
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticated user
-        authed_user = request.user
-        body_dict = request.get_json()
+        authed_user, body_dict = request.user, request.get_json()
 
         # Validate json data
         try:
@@ -242,6 +235,8 @@ class CandidatesResource(Resource):
 
             # Check for candidate's existence and web-hidden status
             candidate_id = _candidate_dict.get('id')
+
+            # Check if candidate exists and is not web-hidden
             get_candidate_if_exists(candidate_id=candidate_id)
 
             # Emails' addresses must be properly formatted
@@ -250,10 +245,10 @@ class CandidatesResource(Resource):
                     if not is_valid_email(emails.get('address')):
                         raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            for custom_field in _candidate_dict.get('custom_fields') or []:  # Custom-fields validation
+            for custom_field in _candidate_dict.get('custom_fields') or []:
                 all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            for aoi in _candidate_dict.get('areas_of_interest') or []:  # Areas-of-interest validation
+            for aoi in _candidate_dict.get('areas_of_interest') or []:
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
         # Custom fields must belong to user's domain
@@ -288,7 +283,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails,
+                emails=emails, # TODO: Parsing to be done in module
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -320,11 +315,11 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
-            1. Fetch a candidate via two methods:
+            1. Fetch and return a candidate via two methods:
                 I.  GET /v1/candidates/:id
                     Takes an integer as candidate's ID, retrieve from kwargs
                 OR
@@ -332,7 +327,6 @@ class CandidateResource(Resource):
                     Takes a valid email address, parsed from kwargs
 
         :return:    A dict of candidate info
-                    404 status if candidate is not found
         """
         # Authenticated user
         authed_user = request.user
@@ -343,8 +337,7 @@ class CandidateResource(Resource):
         if candidate_email:
             # Email address must be valid
             if not is_valid_email(candidate_email):
-                raise InvalidUsage(error_message="A valid email address is required",
-                                   error_code=custom_error.INVALID_EMAIL)
+                raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
             candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
@@ -365,7 +358,7 @@ class CandidateResource(Resource):
 
         return {'candidate': candidate_data_dict}
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -375,7 +368,7 @@ class CandidateResource(Resource):
                 II. DELETE /v1/candidates/:email
 
         Caveats:
-              i. Candidate will not be removed from db. It is set to "web_hidden"
+              i. Candidate will not be removed from db. It is set to "web_hidden".
              ii. Only candidate's owner can hide the Candidate
             iii. Candidate must be in the same domain as the authenticated-user
         """
@@ -405,13 +398,13 @@ class CandidateResource(Resource):
 
         # Delete candidate from cloud search
         delete_candidate_documents([candidate_id])
-        return
+        return '', 204
 
 
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -445,8 +438,7 @@ class CandidateAddressResource(Resource):
             db.session.delete(candidate_address)
 
         else:  # Delete all of candidate's addresses
-            for address in candidate.candidate_addresses:
-                db.session.delete(address)
+            map(db.session.delete, candidate.addresses)
 
         db.session.commit()
         return '', 204
@@ -455,7 +447,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -486,8 +478,7 @@ class CandidateAreaOfInterestResource(Resource):
             candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id,
                                                                           area_of_interest_id)
             if not candidate_aoi:
-                raise ForbiddenError(error_message="Unauthorized area of interest IDs",
-                                     error_code=custom_error.AOI_FORBIDDEN)
+                raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
             # Delete CandidateAreaOfInterest
             db.session.delete(candidate_aoi)
@@ -510,7 +501,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -553,7 +544,7 @@ class CandidateCustomFieldResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -573,26 +564,21 @@ class CandidateEducationResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if education_id:  # Delete specified Candidate's education
             can_education = CandidateEducation.get_by_id(_id=education_id)
             if not can_education:
-                raise NotFoundError(error_message='Education not found',
-                                    error_code=custom_error.EDUCATION_NOT_FOUND)
+                raise NotFoundError('Education not found', custom_error.EDUCATION_NOT_FOUND)
 
             # Education must belong to Candidate
             if can_education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.EDUCATION_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.EDUCATION_FORBIDDEN)
 
             db.session.delete(can_education)
 
         else:  # Delete all of Candidate's educations
-            can_educations = candidate.candidate_educations
-            for can_education in can_educations:
-                db.session.delete(can_education)
+            map(db.session.delete, candidate.educations)
 
         db.session.commit()
         return '', 204
@@ -601,7 +587,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -641,12 +627,9 @@ class CandidateEducationDegreeResource(Resource):
 
             # Education must belong to candidate
             if education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not Authorized',
-                                     error_code=custom_error.EDUCATION_FORBIDDEN)
+                raise ForbiddenError('Not Authorized', custom_error.EDUCATION_FORBIDDEN)
 
-            degrees = education.candidate_education_degrees
-            for degree in degrees:
-                db.session.delete(degree)
+            map(db.session.delete, education.degrees)
 
         db.session.commit()
         return '', 204
@@ -655,7 +638,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -689,34 +672,29 @@ class CandidateEducationDegreeBulletResource(Resource):
                 filter(CandidateEducationDegree.id == degree_id). \
                 filter(CandidateEducationDegreeBullet.id == bullet_id).first()
             if not candidate_degree_bullet:
-                raise NotFoundError(error_message='Degree bullet not found',
-                                    error_code=custom_error.DEGREE_NOT_FOUND)
+                raise NotFoundError('Degree bullet not found', custom_error.DEGREE_NOT_FOUND)
 
             db.session.delete(candidate_degree_bullet)
 
         else:  # Delete all bullets
             education = CandidateEducation.get_by_id(_id=education_id)
             if not education:
-                raise NotFoundError(error_message='Candidate education not found',
-                                    error_code=custom_error.EDUCATION_NOT_FOUND)
+                raise NotFoundError('Candidate education not found', custom_error.EDUCATION_NOT_FOUND)
 
             # Education must belong to Candidate
             if education.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.EDUCATION_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.EDUCATION_FORBIDDEN)
 
             degree = db.session.query(CandidateEducationDegree).get(degree_id)
             if not degree:
-                raise NotFoundError(error_message='Candidate education degree not found',
-                                    error_code=custom_error.DEGREE_NOT_FOUND)
+                raise NotFoundError('Candidate education degree not found', custom_error.DEGREE_NOT_FOUND)
 
-            degree_bullets = degree.candidate_education_degree_bullets
+            degree_bullets = degree.bullets
             if not degree_bullets:
                 raise NotFoundError(error_message='Candidate education degree bullet not found',
                                     error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
 
-            for degree_bullet in degree_bullets:
-                db.session.delete(degree_bullet)
+            map(db.session.delete, degree_bullets)
 
         db.session.commit()
         return '', 204
@@ -725,7 +703,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateExperienceResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -745,25 +723,21 @@ class CandidateExperienceResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if experience_id:  # Delete specified experience
             experience = CandidateExperience.get_by_id(_id=experience_id)
             if not experience:
-                raise NotFoundError(error_message='Candidate experience not found',
-                                    error_code=custom_error.EXPERIENCE_NOT_FOUND)
+                raise NotFoundError('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
             # Experience must belong to Candidate
             if experience.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Not authorized',
-                                     error_code=custom_error.EXPERIENCE_FORBIDDEN)
+                raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
             db.session.delete(experience)
 
         else:  # Delete all experiences
-            for experience in candidate.candidate_experiences:
-                db.session.delete(experience)
+            map(db.session.delete, candidate.experiences)
 
         db.session.commit()
         return '', 204
@@ -772,7 +746,7 @@ class CandidateExperienceResource(Resource):
 class CandidateExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -793,8 +767,7 @@ class CandidateExperienceBulletResource(Resource):
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if bullet_id:
             # Experience must belong to Candidate and bullet must belong to CandidateExperience
@@ -811,20 +784,18 @@ class CandidateExperienceBulletResource(Resource):
         else:  # Delete all bullets
             experience = CandidateExperience.get_by_id(_id=experience_id)
             if not experience:
-                raise NotFoundError(error_message='Candidate experience not found',
-                                    error_code=custom_error.EXPERIENCE_NOT_FOUND)
+                raise NotFoundError('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
             # Experience must belong to Candidate
             if experience.candidate_id != candidate_id:
                 raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
-            bullets = experience.candidate_experience_bullets
+            bullets = experience.bullets
             if not bullets:
                 raise NotFoundError(error_message='Candidate experience bullet not found',
                                     error_code=custom_error.EXPERIENCE_BULLET_NOT_FOUND)
 
-            for bullet in bullets:
-                db.session.delete(bullet)
+            map(db.session.delete, bullets)
 
         db.session.commit()
         return '', 204
@@ -833,7 +804,7 @@ class CandidateExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -867,7 +838,7 @@ class CandidateEmailResource(Resource):
             db.session.delete(email)
 
         else:  # Delete all of Candidate's emails
-            map(db.session.delete, candidate.candidate_emails)
+            map(db.session.delete, candidate.emails)
 
         db.session.commit()
         return '', 204
@@ -876,7 +847,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -910,8 +881,7 @@ class CandidateMilitaryServiceResource(Resource):
             db.session.delete(military_service)
 
         else:  # Delete all of Candidate's military services
-            for military_service in candidate.candidate_military_services:
-                db.session.delete(military_service)
+            map(db.session.delete, candidate.military_services)
 
         db.session.commit()
         return '', 204
@@ -920,7 +890,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -954,8 +924,7 @@ class CandidatePhoneResource(Resource):
             db.session.delete(phone)
 
         else:  # Delete all of Candidate's phones
-            for phone in candidate.candidate_phones:
-                db.session.delete(phone)
+            map(db.session.delete, candidate.phones)
 
         db.session.commit()
         return '', 204
@@ -964,7 +933,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -999,8 +968,7 @@ class CandidatePreferredLocationResource(Resource):
             db.session.delete(preferred_location)
 
         else:  # Delete all of Candidate's preferred locations
-            for preferred_location in candidate.candidate_preferred_locations:
-                db.session.delete(preferred_location)
+            map(db.session.delete, candidate.preferred_locations)
 
         db.session.commit()
         return '', 204
@@ -1009,7 +977,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1044,8 +1012,7 @@ class CandidateSkillResource(Resource):
             db.session.delete(skill)
 
         else:  # Delete all of Candidate's skills
-            for skill in candidate.candidate_skills:
-                db.session.delete(skill)
+            map(db.session.delete, candidate.skills)
 
         db.session.commit()
         return '', 204
@@ -1054,7 +1021,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1091,8 +1058,7 @@ class CandidateSocialNetworkResource(Resource):
             db.session.delete(social_network)
 
         else:  # Delete all of Candidate's social networks
-            for social_network in candidate.candidate_social_networks:
-                db.session.delete(social_network)
+            map(db.session.delete, candidate.social_networks)
 
         db.session.commit()
         return '', 204
@@ -1101,7 +1067,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles('CAN_DELETE_CANDIDATES')
     def delete(self, **kwargs):
         """
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
@@ -1136,7 +1102,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1179,7 +1145,7 @@ class CandidateOpenWebResource(Resource):
 class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
-    # @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles('CAN_GET_CANDIDATES')
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:id/views
@@ -1256,8 +1222,8 @@ class CandidatePreferenceResource(Resource):
             raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
                                custom_error.PREFERENCE_EXISTS)
 
+        # Add candidate subscription preference
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
-
         return '', 204
 
     @require_all_roles('CAN_EDIT_CANDIDATES')

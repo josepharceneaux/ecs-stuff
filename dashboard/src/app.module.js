@@ -11,7 +11,6 @@
         'app.campaigns',
         'app.candidates',
         'app.dashboard',
-        'app.faq',
         'app.footer',
         'app.forgotPassword',
         'app.login',
@@ -23,8 +22,19 @@
         'app.sidenav',
         'app.smartLists',
         'app.styleguide',
+        'app.support',
         'app.talentPools',
         'app.topnav',
         'app.user'
     ]);
+    angular.module('myApp', ['ngMaterial'])
+        .config(function($mdThemingProvider) {
+            $mdThemingProvider.theme('altTheme')
+                .primaryPalette('purple') // specify primary color, all
+            // other color intentions will be inherited
+            // from default
+        });
 })();
+
+
+
