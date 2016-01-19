@@ -21,7 +21,7 @@ __author__ = 'saad'
 
 class TestSchedulerCreate(object):
 
-    def test_single_scheduled_job(self, auth_header, job_config, job_cleanup, clean_redis_db):
+    def test_single_scheduled_job(self, auth_header, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint and make sure response
         is correct.
