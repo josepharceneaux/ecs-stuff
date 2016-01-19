@@ -21,7 +21,7 @@
                             </a>
                             <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
                                 <li ng-repeat="pool in vm.talentPools">
-                                    <a ng-click="vm.selectedTalentPool = pool" href="">{{pool.name}}</a>
+                                    <a ng-click="vm.selectedTalentPool = pool" ui-sref="talentPools.talentPool.detail({ poolId: pool.id })">{{pool.name}}</a>
                                 </li>
                                 <li><a ui-sref="talentPools.create">Create Talent Pool</a></li>
                             </ul>
@@ -38,7 +38,7 @@
                             <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
                                 <li><a ui-sref="pipelines.create">Add Pipeline</a></li>
                                 <li ng-repeat="pipeline in vm.pipelines">
-                                    <a ui-sref="pipelines.detail({ pipelineId: pipeline.id })">{{pipeline.name}}</a>
+                                    <a ui-sref="pipelines.pipeline.detail({ pipelineId: pipeline.id })">{{pipeline.name}}</a>
                                 </li>
                                 <li><a href="/pipelines">All Pipelines</a></li>
                                 <li><a ui-sref="pipelines.manage">Manage Pipelines</a></li>
@@ -53,7 +53,7 @@
                             <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
                                 <li><a ui-sref="campaigns.create">Add Campaign</a></li>
                                 <li ng-repeat="campaign in vm.campaigns">
-                                    <a ui-sref="campaigns.detail({ campaignId: campaign.id })">{{campaign.name}}</a>
+                                    <a ui-sref="campaigns.campaign.detail({ campaignId: campaign.id })">{{campaign.name}}</a>
                                 </li>
                                 <li><a ui-sref="campaigns.manage">Manage Campaigns</a></li>
                             </ul>

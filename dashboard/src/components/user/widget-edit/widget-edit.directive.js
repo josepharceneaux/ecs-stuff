@@ -1,9 +1,9 @@
 (function () {
     'use strict';
 
-    angular.module('app.candidates')
-        .directive('gtCandidatesManage', directiveFunction)
-        .controller('CandidatesManageController', ControllerFunction);
+    angular.module('app.user')
+        .directive('gtWidgetEdit', directiveFunction)
+        .controller('WidgetEditController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/candidates/candidates-manage/candidates-manage.html',
+            templateUrl: 'components/user/widget-edit/widget-edit.html',
             replace: true,
             scope: {},
-            controller: 'CandidatesManageController',
+            controller: 'WidgetEditController',
             controllerAs: 'vm'
         };
 
@@ -34,7 +34,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Candidates Manage View');
+            logger.log('Activated Widget Edit View');
         }
 
         function init() {
