@@ -10,10 +10,6 @@ body {
     color:#555;
 }
 
-.layout-padding {
-    padding:20px;
-}
-
 .md-icon {
 
 }
@@ -37,30 +33,6 @@ body {
         &__blue {
             background: #999;
         }
-    }
-}
-
-
-.v2-infotip {
-    display:inline-block;
-    background:#ccc;
-    color:white;
-    text-align:center;
-    padding:0px;
-    border-radius:10px;
-    font-style: normal ;
-    font-weight:bold;
-    font-size:12px;
-    width:13px;
-    height:13px;
-    line-height:1.3;
-    position:relative;
-    top:-4px;
-    font-family: "Times New Roman";
-    margin-left:4px;
-    &:hover {
-        background:#999;
-        cursor:pointer;
     }
 }
 
@@ -123,6 +95,11 @@ body {
 }
 
 .v2-margin {
+    &-top {
+        &__20 {
+            margin-top:20px;
+        }
+    }
     &-right {
         &__20 {
             margin-right:20px;
@@ -185,8 +162,24 @@ body {
 
 /** UiX Styles **/
 
-.v2-page-header {
+.fa-info-circle {
+    color:#ccc;
+    font-size:14px;
+    position:relative;
+    top:-7px;
+    &:hover {
+        color:#888;
+        cursor:pointer;
+    }
+}
 
+.fa-sort-desc {
+    font-size:14px;
+    position:relative;
+    top:-2px;
+    &:hover {
+        cursor:pointer;
+    }
 }
 
 .page-title-icon {
