@@ -18,7 +18,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    create_same_candidate, check_for_id, AddUserRoles
+    create_same_candidate, check_for_id, AddUserRoles, request_to_candidate_resource
 )
 
 # Sample data
@@ -174,6 +174,47 @@ def test_create_candidates_in_bulk_with_one_erroneous_data(sample_user, user_aut
     assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
     assert CandidateEmail.get_by_address(email_address=email_1) is None
     assert CandidateEmail.get_by_address(email_address=email_2) is None
+
+
+def test_create_hidden_candidate(sample_user, user_auth):
+    """
+    Test: Create a candidate that is web-hidden
+    Expect: 201, candidate should no longer be web hidden.
+            No duplicate records should be in the database
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+
+    # Create candidate
+    create_resp = post_to_candidate_resource(token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    db.session.commit()
+    print response_info(response=create_resp)
+
+    # Retrieve candidate's email
+    get_resp = get_from_candidate_resource(token, candidate_id)
+    first_can_email = get_resp.json()['candidate']['emails'][0]
+
+    # Delete (hide) candidate
+    del_resp = request_to_candidate_resource(token, 'delete', candidate_id)
+    db.session.commit()
+    print response_info(response=del_resp)
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate_emails_count = len(candidate.emails)
+    assert del_resp.status_code == 204
+    assert candidate.is_web_hidden == 1
+
+    # Create previously delete candidate
+    data = {'candidates': [{'emails': [{'address': first_can_email['address']}]}]}
+    create_resp = post_to_candidate_resource(access_token=token, data=data)
+    db.session.commit()
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 201
+    assert candidate.is_web_hidden == 0
+    assert CandidateEmail.get_by_address(first_can_email['address']).id == first_can_email['id']
+    assert len(candidate.emails) == candidate_emails_count
 
 
 ######################## CandidateAddress ########################

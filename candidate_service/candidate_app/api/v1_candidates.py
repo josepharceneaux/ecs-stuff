@@ -136,13 +136,28 @@ class CandidatesResource(Resource):
         candidates = body_dict.get('candidates')
 
         # Input validations
+        is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
         for _candidate_dict in candidates:
 
-            # Emails' addresses must be properly formatted
-            emails = _candidate_dict.get('emails') or []
-            if filter(lambda emails: not is_valid_email(emails.get('address')), emails):
-                    raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
+            # Email addresses must be properly formatted
+            for email in _candidate_dict.get('emails') or []:
+                email_address = email['address']
+                if not is_valid_email(email=email_address):
+                    raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
+                                       error_code=custom_error.INVALID_EMAIL)
+
+                # If candidate is web-hidden, un-hide it
+                can_email_query_obj = CandidateEmail.get_by_address(email_address=email_address)
+                if can_email_query_obj:
+                    candidate = Candidate.get_by_id(candidate_id=can_email_query_obj.candidate_id)
+                    if candidate.is_web_hidden:
+                        candidate.is_web_hidden = False
+                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        is_creating, is_updating, candidate_id = False, True, candidate.id
+                    else:
+                        raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
+                                           custom_error.CANDIDATE_ALREADY_EXISTS)
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
                 all_cf_ids.append(custom_field.get('custom_field_id'))
@@ -162,12 +177,14 @@ class CandidatesResource(Resource):
         created_candidate_ids = []
         for candidate_dict in body_dict.get('candidates'):
 
-            emails = [{'label': email.get('label'), 'address': email.get('address'),
+            emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
-                is_creating=True,
+                is_creating=is_creating,
+                is_updating=is_updating,
+                candidate_id=candidate_id,
                 first_name=candidate_dict.get('first_name'),
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
