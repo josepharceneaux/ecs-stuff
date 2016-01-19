@@ -1,8 +1,5 @@
 #!/bin/bash
 
-
-echo $GIT_BRANCH
-
 # Merge develop to each new branch before starting build
 if [ $GIT_BRANCH != "origin/master" ]; then git pull origin develop; fi
 
