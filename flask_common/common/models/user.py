@@ -114,6 +114,11 @@ class User(db.Model):
         """
         return User.query.filter_by(domain_id=domain_id).all()
 
+    @classmethod
+    def get_domain_id(cls, _id):
+        user = cls.query.filter_by(id=_id).first()
+        return user.domain_id if user else None
+
     # ***** Below function to be used for testing only *****
     @staticmethod
     def add_test_user(session, domain_id, password):
