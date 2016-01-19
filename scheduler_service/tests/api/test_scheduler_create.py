@@ -61,7 +61,7 @@ class TestSchedulerCreate(object):
             test_user.delete()
 
         # Create a new test user
-        test_user = create_test_user(db.session, 1, "@sdqscheo!amcs")
+        test_user = create_test_user(db.session, None, "@sdqscheo!amcs")
         user_id = test_user.id
         job_config_one_time_task['post_data'].update({'test_user_id': test_user.id})
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),

@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/smart-lists/smart-list-details/smart-list-details.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'SmartListDetailsController',
             controllerAs: 'vm'
         };

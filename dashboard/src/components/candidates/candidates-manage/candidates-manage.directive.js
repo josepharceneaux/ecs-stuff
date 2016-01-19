@@ -2,8 +2,8 @@
     'use strict';
 
     angular.module('app.candidates')
-        .directive('gtCandidateManage', directiveFunction)
-        .controller('CandidateManageController', ControllerFunction);
+        .directive('gtCandidatesManage', directiveFunction)
+        .controller('CandidatesManageController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,11 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/candidates/candidate-manage/candidate-manage.html',
+            templateUrl: 'components/candidates/candidates-manage/candidates-manage.html',
             replace: true,
-            scope: {
-            },
-            controller: 'CandidateManageController',
+            scope: {},
+            controller: 'CandidatesManageController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +34,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Candidate Manage View');
+            logger.log('Activated Candidates Manage View');
         }
 
         function init() {

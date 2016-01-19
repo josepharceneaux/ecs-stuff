@@ -45,6 +45,20 @@
             }
         });
 
+        $rootScope.$on('$stateChangeError', function (event, toState, toParams, fromState, fromParams, error) {
+            // TODO: handle state change errors caused by failure to resolve dependencies
+            // possible reasons for failure:
+            //   1) timeout or server failure,
+            //   2) user's access token and/or refresh token have expired
+            //     (need to check if OAuthToken will automatically detect for expired access token
+            //      based on a failed api call. More likely not, and will need to configure
+            //      gt-restangular to attempt to refresh token. Failing that,
+            //      throw exception via exception service, and have core lib handle,
+            //      e.g. display error message and/or take user to login page
+
+            event.preventDefault();
+        });
+
         $rootScope.$on('oauth:error', function (event, rejection) {
             // Ignore `invalid_grant` error - should be catched on `LoginController`.
             if ('invalid_grant' === rejection.data.error) {

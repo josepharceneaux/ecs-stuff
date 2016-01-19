@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/topnav/topnav.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TopnavController',
             controllerAs: 'vm'
         };

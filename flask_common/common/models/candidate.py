@@ -39,28 +39,28 @@ class Candidate(db.Model):
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
 
     # Relationships
-    candidate_achievements = relationship('CandidateAchievement', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_addresses = relationship('CandidateAddress', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_associations = relationship('CandidateAssociation', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_custom_fields = relationship('CandidateCustomField', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_documents = relationship('CandidateDocument', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_languages = relationship('CandidateLanguage', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_military_services = relationship('CandidateMilitaryService', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_patent_histories = relationship('CandidatePatentHistory', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_photos = relationship('CandidatePhoto', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_publications = relationship('CandidatePublication', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_preferred_locations = relationship('CandidatePreferredLocation', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_references = relationship('CandidateReference', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
-    candidate_unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
+    achievements = relationship('CandidateAchievement', cascade='all, delete-orphan', passive_deletes=True)
+    addresses = relationship('CandidateAddress', cascade='all, delete-orphan', passive_deletes=True)
+    associations = relationship('CandidateAssociation', cascade='all, delete-orphan', passive_deletes=True)
+    custom_fields = relationship('CandidateCustomField', cascade='all, delete-orphan', passive_deletes=True)
+    documents = relationship('CandidateDocument', cascade='all, delete-orphan', passive_deletes=True)
+    educations = relationship('CandidateEducation', cascade='all, delete-orphan', passive_deletes=True)
+    emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True)
+    experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
+    languages = relationship('CandidateLanguage', cascade='all, delete-orphan', passive_deletes=True)
+    license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan', passive_deletes=True)
+    military_services = relationship('CandidateMilitaryService', cascade='all, delete-orphan', passive_deletes=True)
+    patent_histories = relationship('CandidatePatentHistory', cascade='all, delete-orphan', passive_deletes=True)
+    phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True)
+    photos = relationship('CandidatePhoto', cascade='all, delete-orphan', passive_deletes=True)
+    publications = relationship('CandidatePublication', cascade='all, delete-orphan', passive_deletes=True)
+    preferred_locations = relationship('CandidatePreferredLocation', cascade='all, delete-orphan', passive_deletes=True)
+    references = relationship('CandidateReference', cascade='all, delete-orphan', passive_deletes=True)
+    skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
+    social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
+    text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
+    work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
+    unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
 
@@ -227,7 +227,6 @@ class EmailLabel(db.Model):
             if email_label_row:
                 return email_label_row.id
         return 4
-
 
 
 class CandidateEmail(db.Model):
@@ -684,9 +683,7 @@ class CandidateEducation(db.Model):
     resume_id = db.Column('ResumeId', db.BigInteger, nullable=True)
 
     # Relationships
-    candidate_education_degrees = relationship(
-        'CandidateEducationDegree', cascade='all, delete-orphan', passive_deletes=True
-    )
+    degrees = relationship('CandidateEducationDegree', cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<CandidateEducation (candidate_id = %r)>" % self.candidate_id
@@ -724,9 +721,8 @@ class CandidateEducationDegree(db.Model):
     candidate_education = relationship('CandidateEducation', backref=backref(
         'candidate_education_degree', cascade='all, delete-orphan', passive_deletes=True
     ))
-    candidate_education_degree_bullets = relationship(
-            'CandidateEducationDegreeBullet', cascade='all, delete-orphan', passive_deletes=True
-    )
+    bullets = relationship('CandidateEducationDegreeBullet',
+                           cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
         return "<CandidateEducationDegree (candidate_education_id=' %r')>" % self.candidate_education_id
@@ -777,9 +773,8 @@ class CandidateExperience(db.Model):
     candidate = relationship('Candidate', backref=backref(
         'candidate_experience', cascade='all, delete-orphan', passive_deletes=True
     ))
-    candidate_experience_bullets = relationship(
-            'CandidateExperienceBullet', cascade='all, delete-orphan', passive_deletes=True
-    )
+    bullets = relationship('CandidateExperienceBullet', cascade='all, delete-orphan',
+                           passive_deletes=True)
 
     def __repr__(self):
         return "<CandidateExperience (candidate_id=' %r)>" % self.candidate_id
