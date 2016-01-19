@@ -25,7 +25,7 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
 # Flush redis-cache
 from common.redis_cache import redis_store
 redis_store.init_app(app)
-redis_store.flushdb()
+redis_store.flushall()
 
 from common.models.db import db
 db.init_app(app)
