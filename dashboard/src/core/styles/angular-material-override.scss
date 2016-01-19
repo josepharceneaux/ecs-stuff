@@ -1,0 +1,75 @@
+/** Temporary global override during setup / remove v2 from all styles after **/
+
+.v2-font {
+    &__sm {
+        font-size:.8em;
+    }
+    &__med {
+        font-size:.9em;
+    }
+    &__lg {
+        font-size: 1.2em;
+    }
+    &__xlg {
+        font-size: 1.4em;
+    }
+    &__xxlg {
+        font-size: 2.9em;
+        line-height: 1.5;
+    }
+}
+
+.v2-left {
+    float:left;
+}
+
+.v2-clear-fix:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.v2-align{
+    &__center {
+        text-align:center;
+    }
+}
+
+.v2-margin {
+    &-right {
+        &__20 {
+            margin-right:20px;
+        }
+    }
+}
+
+.layout-padding {
+    padding:20px;
+}
+
+.module {
+    box-sizing: border-box;
+    border-right: 1px solid #e3e3e3;
+    border-bottom: 1px solid #e3e3e3;
+    background: #ffffff;
+    & > div {
+        border-radius: 3px;
+        padding: 20px;
+        &:after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+    }
+    .module-title {
+        font-size:1.5em;
+
+    }
+}
+
+.page-title-icon {
+    background:#333;
+    border-radius:50px;
+    width: 80px;
+    height: 80px;
+}
