@@ -676,7 +676,6 @@ def create_or_update_candidate_from_params(
     # Format inputs
     added_time = added_time or datetime.datetime.now()
     status_id = status_id or 1
-    is_update = False
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
@@ -692,24 +691,21 @@ def create_or_update_candidate_from_params(
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
-    if not candidate_id:
-        candidate_id = does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails)
+    if is_creating:
+        candidate_id = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id,
+                                                 domain_id, emails)
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
         raise InvalidUsage(error_message='Candidate already exists, creation failed.',
                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS)
 
-    # Update if an update is requested and candidate_id is provided/found
-    elif candidate_id and is_updating:
-        is_update = True
-
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
         raise InvalidUsage(error_message='Candidate ID is required for updating',
                            error_code=custom_error.MISSING_INPUT)
 
-    if is_update:  # Update Candidate
+    if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
                                          formatted_name, objective, summary,
                                          candidate_id, user_id, edit_time)
@@ -826,9 +822,13 @@ def domain_id_from_user_id(user_id):
     return user.domain_id
 
 
-def does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails):
+def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id, emails):
     """
     Function will search the db for a candidate with the same parameter(s) as provided
+    :type dice_social_profile_id: int|long
+    :type dice_profile_id: int|long
+    :type domain_id: int|long
+    :type emails: list
     :return candidate_id if found, otherwise None
     """
     candidate = None
@@ -1454,8 +1454,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email_dict.update(dict(candidate_id=candidate_id))
-            db.session.add(CandidateEmail(**email_dict))
+            email = get_candidate_email_from_domain_if_exists(candidate_id, user_id,
+                                                              email_dict['address'])
+            # Prevent duplicate email address for the same candidate in the same domain
+            if email is None:
+                email_dict.update(dict(candidate_id=candidate_id))
+                db.session.add(CandidateEmail(**email_dict))
 
 
 def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
@@ -2108,3 +2112,18 @@ def _track_candidate_social_network_edits(sn_dict, candidate_social_network, can
             new_value=new_value,
             edit_datetime=edit_time
         ))
+
+
+def get_candidate_email_from_domain_if_exists(candidate_id, user_id, email_address):
+    """
+    Function will retrieve CandidateEmail belonging to the requested candidate
+    in the same domain if found.
+    :type candidate_id:  int|long
+    :type user_id:       int|long
+    :type email_address: basestring
+    :rtype: CandidateEmail|None
+    """
+    user_domain_id = User.get_domain_id(_id=user_id)
+    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+    return candidate_email if candidate_email else None
