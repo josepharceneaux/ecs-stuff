@@ -51,4 +51,4 @@ done
 
 sleep 10
 
-py.test -n 24 scheduler_service/tests/ auth_service/tests/ user_service/tests activity_service/tests/ resume_parsing_service/tests candidate_pool_service/tests/ candidate_service/tests spreadsheet_import_service/tests/
+py.test -n 1 scheduler_service/tests/ auth_service/tests/ user_service/tests activity_service/tests/ resume_parsing_service/tests candidate_pool_service/tests/ candidate_service/tests spreadsheet_import_service/tests/
