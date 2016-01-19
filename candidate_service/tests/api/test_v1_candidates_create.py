@@ -206,7 +206,7 @@ def test_create_hidden_candidate(sample_user, user_auth):
     assert del_resp.status_code == 204
     assert candidate.is_web_hidden == 1
 
-    # Create previously deleted candidate
+    # Create previously delete candidate
     data = {'candidates': [{'emails': [{'address': first_can_email['address']}]}]}
     create_resp = post_to_candidate_resource(access_token=token, data=data)
     db.session.commit()
