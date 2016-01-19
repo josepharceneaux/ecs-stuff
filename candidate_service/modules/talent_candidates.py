@@ -1454,7 +1454,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            if CandidateEmail.get_by_address(email_dict['address']) is None:
+            if CandidateEmail.get_by_address(email_dict['address']) is None: # TODO: change to preventing duplicate emails for the same candidate in the same domain
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 

@@ -234,7 +234,7 @@ class CandidateEmail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), nullable=False)
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
-    address = db.Column('Address', db.String(100), unique=True, nullable=False)
+    address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 

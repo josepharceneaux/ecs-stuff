@@ -175,7 +175,7 @@ class CandidatesResource(Resource):
 
         # Create candidate(s)
         created_candidate_ids = []
-        for candidate_dict in body_dict.get('candidates'):
+        for candidate_dict in candidates:
 
             emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
