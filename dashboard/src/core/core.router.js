@@ -323,7 +323,7 @@
                 url: '/manage',
                 views: {
                     '@site': {
-                        template: '<gt-candidates-manage></gt-candidate-manage>'
+                        template: '<gt-candidates-manage></gt-candidates-manage>'
                     }
                 }
             })
