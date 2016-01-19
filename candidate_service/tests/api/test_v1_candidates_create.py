@@ -217,7 +217,7 @@ def test_create_hidden_candidate(sample_user, user_auth):
     assert len(candidate.emails) == candidate_emails_count
 
 
-def test_create_hidden_candidate_2(sample_user, user_auth):
+def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(sample_user, user_auth):
     """
     Test: Create a candidate that is currently web-hidden
     :type sample_user:  User
