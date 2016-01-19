@@ -115,6 +115,8 @@ class TestSchedulerMisc(object):
         jobs = []
         # Check with 800 jobs
         load_number = 800
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(minutes=20)
+        job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         # Schedule some jobs and remove all of them
         for i in range(load_number):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
