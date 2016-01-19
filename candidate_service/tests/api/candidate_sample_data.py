@@ -36,7 +36,7 @@ def generate_single_candidate_data(domain_id=None):
                 'middle_name': fake.first_name(),
                 'last_name': fake.last_name(),
                 'emails': [
-                    {'label': 'Primary', 'address': fake.email(), 'is_default': True},
+                    {'label': 'Primary', 'address': fake.safe_email(), 'is_default': True},
                     {'label': 'work', 'address': fake.company_email(), 'is_default': False}
                 ],
                 'phones': [
