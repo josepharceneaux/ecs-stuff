@@ -2,8 +2,10 @@
 Test cases for creating schedule job with and without token.
 """
 
-# Third party imports
+# Std imports
 import json
+
+# Third party imports
 import requests
 
 # Application imports
@@ -19,7 +21,7 @@ __author__ = 'saad'
 
 class TestSchedulerCreate(object):
 
-    def test_single_scheduled_job(self, auth_header, job_config, job_cleanup):
+    def test_single_scheduled_job(self, auth_header, job_config, job_cleanup, clean_redis_db):
         """
         Create a job by hitting the endpoint and make sure response
         is correct.

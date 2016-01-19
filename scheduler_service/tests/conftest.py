@@ -173,3 +173,16 @@ def job_cleanup(request):
     request.addfinalizer(fin)
 
     return data
+
+
+@pytest.fixture(scope='function')
+def clean_redis_db(request, auth_token, job_config):
+
+    header = {'Authorization': 'Bearer ' + auth_token,
+              'Content-Type': 'application/json'}
+
+    job_config['delete_all'] = True
+
+    response = requests.post(SchedulerApiUrl.TEST_TASK, data=json.dumps(job_config),
+                             headers=header)
+    assert response.status_code == 200
