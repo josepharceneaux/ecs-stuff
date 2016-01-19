@@ -1,5 +1,9 @@
 /** Temporary global override during setup / remove v2 from all styles after **/
 
+/** Cosmic Overrides **/
+
+
+
 /** Angular Material Overrides **/
 
 body {
@@ -10,21 +14,63 @@ body {
     padding:20px;
 }
 
+.md-icon {
+
+}
+
 /** UiX Base **/
 
 /** UiX Grid **/
 
+.v2-module-header {
+    font-size:1.4em;
+}
+
 /** UiX Utility **/
 
 
-
+.v2-btn {
+    display:inline-block;
+    padding:30px;
+    &-rnd {
+        border-radius:50px;
+        &__blue {
+            background: #999;
+        }
+    }
+}
 
 
 .v2-infotip {
-
+    display:inline-block;
+    background:#ccc;
+    color:white;
+    text-align:center;
+    padding:0px;
+    border-radius:10px;
+    font-style: normal ;
+    font-weight:bold;
+    font-size:12px;
+    width:13px;
+    height:13px;
+    line-height:1.3;
+    position:relative;
+    top:-4px;
+    font-family: "Times New Roman";
+    margin-left:4px;
+    &:hover {
+        background:#999;
+        cursor:pointer;
+    }
 }
 
 .v2-font {
+    &__xxs {
+        font-size:.5em;
+    }
+    &__xs {
+        font-size:.6em;
+    }
     &__sm {
         font-size:.8em;
     }
@@ -82,6 +128,14 @@ body {
             margin-right:20px;
         }
     }
+    &-bottom {
+        &__5 {
+            margin-bottom:5px;
+        }
+        &__20 {
+            margin-bottom:20px;
+        }
+    }
     &-horizontal {
         &__10 {
 
@@ -98,7 +152,13 @@ body {
 }
 
 .v2-line-height {
+    &__1-4 {
+        line-height:1.4;
+    }
     &__1-6 {
+        line-height:1.6;
+    }
+    &__2 {
         line-height:2;
     }
 }
@@ -110,7 +170,7 @@ body {
     background: #ffffff;
     & > div {
         border-radius: 3px;
-        padding: 20px;
+        padding: 30px;
         &:after {
             content: "";
             display: table;
