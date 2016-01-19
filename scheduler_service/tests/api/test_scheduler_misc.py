@@ -119,11 +119,8 @@ class TestSchedulerMisc(object):
         for i in range(load_number):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
-            try:
-                assert response.status_code == 201
-                jobs.append(response.json()['id'])
-            except Exception as e:
-                print e.message
+            assert response.status_code == 201
+            jobs.append(response.json()['id'])
 
         time.sleep(10)
         chunk_size = 200
