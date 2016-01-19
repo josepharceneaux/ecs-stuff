@@ -19,6 +19,25 @@ __author__ = 'saad'
 
 class TestSchedulerCreate(object):
 
+    def test_single_scheduled_job(self, auth_header, job_config, job_cleanup):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
+
     def test_endpoint_job(self, auth_header, job_config_one_time_task):
         """
         Create a job by hitting the endpoint and make sure response
@@ -57,28 +76,7 @@ class TestSchedulerCreate(object):
         test_user = User.query.filter_by(id=user_id).first()
         assert not test_user
 
-    def test_single_scheduled_job(self, auth_header, job_config):
-        """
-        Create a job by hitting the endpoint and make sure response
-        is correct.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header)
-        assert response.status_code == 201
-        data = response.json()
-        assert data['id']
-
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
-
-    def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config):
+    def test_single_scheduled_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
         response.
@@ -106,12 +104,10 @@ class TestSchedulerCreate(object):
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
-    def test_multiple_scheduled_jobs(self, auth_header, job_config):
+    def test_multiple_scheduled_jobs(self, auth_header, job_config, job_cleanup):
         """
         Create multiple jobs. Then schedule jobs and finally remove all jobs.
          Args:
@@ -129,11 +125,8 @@ class TestSchedulerCreate(object):
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
-        response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
-                                               data=json.dumps(dict(ids=jobs)),
-                                               headers=auth_header)
-
-        assert response_remove_jobs.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs
 
     def test_single_scheduled_job_without_token(self, job_config):
         """

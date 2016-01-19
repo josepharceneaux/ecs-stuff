@@ -75,7 +75,7 @@ class TestSchedulerExceptions(object):
         assert response.status_code == 500 and \
                response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
 
-    def test_invalid_frequency(self, auth_header, job_config):
+    def test_invalid_frequency(self, auth_header, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with invalid frequency and we will get a 400. Then we
         create a job with correct data and it should be created just fine, finally we delete the
@@ -100,10 +100,9 @@ class TestSchedulerExceptions(object):
 
         data = response.json()
         assert data['id']
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
 
     def test_already_passed_time_exception(self, auth_header, job_config_one_time):
         """
@@ -125,7 +124,7 @@ class TestSchedulerExceptions(object):
         # Invalid usage exception. run_datetime cannot be in past
         assert response.status_code == 400
 
-    def test_schedule_job_with_wrong_taskname_without_user(self, auth_header_no_user, job_config):
+    def test_schedule_job_with_wrong_taskname_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
         response.
@@ -153,9 +152,8 @@ class TestSchedulerExceptions(object):
         assert data['id']
 
         # Let's delete job now using name
-        response_remove = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
     def test_invalid_job_time_interval_exception(self, auth_header, job_config):
         """

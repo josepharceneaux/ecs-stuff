@@ -16,7 +16,7 @@ __author__ = 'saad'
 
 class TestSchedulerGet(object):
 
-    def test_single_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config, job_cleanup):
         """
         Get job using id and then delete it. Again try to get that job using id should give 404 status code
         Args:
@@ -55,7 +55,7 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_single_job_without_user(self, auth_header_no_user, job_config):
+    def test_single_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
         response.
@@ -89,12 +89,10 @@ class TestSchedulerGet(object):
                                     headers=auth_header_no_user)
         assert response_get.status_code == 200
 
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
-    def test_job_without_user(self, auth_header_no_user, job_config):
+    def test_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
         response. Also try to get task using 'invalid_name' string which shouldn't be in apscheduler. So, it should
@@ -128,11 +126,10 @@ class TestSchedulerGet(object):
         assert job_data['task_name'] == job_config['task_name']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
-    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
+    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
         Then check if the jobs created are in the tasks of user. If yes, then show status code 200.
@@ -162,12 +159,10 @@ class TestSchedulerGet(object):
             assert job in get_jobs_id
 
         # Delete all jobs
-        for job_id in jobs_id:
-            response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
-                                              headers=auth_header_no_user)
-            assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = jobs_id
 
-    def test_multiple_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user.
         Then check if the jobs created are in the tasks of user. If yes, then show status code 200
@@ -192,11 +187,10 @@ class TestSchedulerGet(object):
         for job in jobs_id:
             assert job in get_jobs_id
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id
 
-    def test_scheduled_get_job_without_token(self, auth_header, job_config):
+    def test_scheduled_get_job_without_token(self, auth_header, job_config, job_cleanup):
         """
         Get job without using bearer token it should return 401 status code
         Args:
@@ -222,6 +216,7 @@ class TestSchedulerGet(object):
                                     headers=invalid_header)
 
         assert response_get.status_code == 401
+
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)

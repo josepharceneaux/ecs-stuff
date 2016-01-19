@@ -2,10 +2,14 @@
 Test cases for scheduling service
 """
 # Standard imports
+import json
 import os
 from datetime import timedelta
 
 # Application imports
+import requests
+
+from scheduler_service import flask_app
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
     test_org, test_culture
@@ -102,6 +106,31 @@ def job_config(request, job_config_periodic):
     return temp_job_config
 
 
+@pytest.fixture(scope="session")
+def finalizer():
+    return Finalizer()
+
+
+class Finalizer(object):
+
+    def __init__(self):
+        self.cleanup_methods = []
+
+    def add_cleanup_method(self, method):
+        self.cleanup_methods.append(method)
+
+    def remove_cleanup_method(self, method):
+        try:
+            self.cleanup_methods.remove(method)
+        except:
+            pass
+
+    def execute(self):
+        for method in reversed(self.cleanup_methods):
+            method()
+        self.cleanup_methods = []
+
+
 @pytest.fixture(scope='function')
 def job_config_one_time_task(request, job_config_one_time):
     """
@@ -116,3 +145,33 @@ def job_config_one_time_task(request, job_config_one_time):
     temp_job_config['post_data'] = job_config_one_time['post_data']
     temp_job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
     return temp_job_config
+
+
+@pytest.fixture(scope='function')
+def job_cleanup(request):
+    """
+    Cleanup fixture to delete single or multiple jobs
+    :param request:
+    :param job_ids:
+    :return:
+    """
+    data = dict(job_ids=[], header={})
+
+    def fin():
+        try:
+            if len(data.get('job_ids')) > 1:
+                response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
+                                                       data=json.dumps(dict(ids=data['job_ids'])),
+                                                       headers=data['header'])
+
+                assert response_remove_jobs.status_code == 200
+            elif len(data.get('job_ids')) == 1:
+                response_remove_job = requests.delete(SchedulerApiUrl.TASK % data['job_ids'][0],
+                                                      headers=data['header'])
+
+                assert response_remove_job.status_code == 200
+        except Exception as e:
+            flask_app.logger.exception('fin: %s' % e.message)
+    request.addfinalizer(fin)
+
+    return data

@@ -2,15 +2,18 @@
 Test cases for monitoring that whether the job is running or not.
 Also test bulk tests for jobs
 """
+# Std imports
+import time
+
+
 # Third party imports
 import json
-
 import datetime
 from time import sleep
-
 import requests
 
 # Application imports
+from scheduler_service import flask_app
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
@@ -20,7 +23,7 @@ __author__ = 'saad'
 
 class TestSchedulerMisc(object):
 
-    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config):
+    def test_scheduled_job_with_expired_token(self, sample_user, user_auth, job_config, job_cleanup):
         """
         Schedule a job 12 seconds from now and then set token expiry after 5 seconds.
         So that after 5 seconds token will expire and job will be in running state after 8 seconds.
@@ -64,9 +67,8 @@ class TestSchedulerMisc(object):
 
         # Delete the created job
         auth_header['Authorization'] = 'Bearer ' + token.access_token
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """
@@ -101,7 +103,7 @@ class TestSchedulerMisc(object):
         assert token
         assert token.expires > datetime.datetime.utcnow()
 
-    def test_bulk_schedule_jobs(self, auth_header, job_config):
+    def test_bulk_schedule_jobs(self, auth_header, job_config, job_cleanup):
         """
         For load testing and scalability, we need to add jobs in bulk and check if they are
         scheduled correctly and then delete them afterwards
@@ -121,20 +123,22 @@ class TestSchedulerMisc(object):
             assert response.status_code == 201
             jobs.append(response.json()['id'])
 
-        import time
-        time.sleep(40)
+        time.sleep(10)
         chunk_size = 200
 
         # Delete all created jobs in chunks specified above
         for i in range(0, load_number, chunk_size):
             jobs_chunk = jobs[i:i + chunk_size]
-            response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
-                                                   data=json.dumps(dict(ids=jobs_chunk)),
-                                                   headers=auth_header)
 
-            assert response_remove_jobs.status_code == 200
+            try:
+                response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
+                                                       data=json.dumps(dict(ids=jobs_chunk)),
+                                                       headers=auth_header)
+                assert response_remove_jobs.status_code == 200
+            except Exception as e:
+                flask_app.logger.exception('test_bulk_schedule_jobs: %s' % e.message)
 
-    def test_start_datetime_in_past(self, auth_header, job_config):
+    def test_start_datetime_in_past(self, auth_header, job_config, job_cleanup):
         """
         If job's start time is in past and within past 0-30 seconds we should schedule it, otherwise
         an exception should be thrown.
@@ -151,10 +155,9 @@ class TestSchedulerMisc(object):
         data = response.json()
         assert data['id']
 
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        # Let's delete job now
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
 
         start_datetime = datetime.datetime.utcnow() - datetime.timedelta(seconds=31)
         job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
