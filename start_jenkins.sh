@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Merge develop to each new branch before starting build
-if [ $GIT_BRANCH != "origin/master" ]; then git pull origin develop; fi
-
 # Install Requirements
 pip install -r requirements.txt
 
