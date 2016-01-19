@@ -114,7 +114,7 @@ class TestSchedulerMisc(object):
         """
         jobs = []
         # Check with 800 jobs
-        load_number = 400
+        load_number = 800
         # Schedule some jobs and remove all of them
         for i in range(load_number):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
