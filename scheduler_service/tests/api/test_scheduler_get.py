@@ -75,7 +75,7 @@ class TestSchedulerGet(object):
                                     headers=auth_header_no_user)
 
         # If task with the same name already exist
-        if response_get.status_code == 400:
+        if response_get.status_code == 200:
             response_delete = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
                                               headers=auth_header_no_user)
             assert response_delete.status_code == 200

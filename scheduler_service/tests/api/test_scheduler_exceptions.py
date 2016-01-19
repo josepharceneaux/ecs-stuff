@@ -145,6 +145,13 @@ class TestSchedulerExceptions(object):
 
         # Schedule a general job
         job_config['task_name'] = 'General_Named_Task'
+        response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                    headers=auth_header_no_user)
+        if response_get.status_code == 200:
+            response = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                       headers=auth_header_no_user)
+            assert response.status_code == 200
+
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
