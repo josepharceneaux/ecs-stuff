@@ -37,7 +37,9 @@ from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSma
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
-from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
+from custom_errors import (CampaignException, EmptyDestinationUrl)
+from ..utils.handy_functions import (http_request, find_missing_items,
+                                     JSON_CONTENT_TYPE_HEADER,
                                      snake_case_to_pascal_case)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
@@ -45,7 +47,7 @@ from campaign_utils import (get_model, validate_signed_url, delete_scheduled_tas
                             get_candidate_url_conversion_campaign_send_and_blast_obj,
                             get_activity_message_name, get_activity_message_id_from_name,
                             FrequencyIds, get_campaign_type_prefix)
-from validators import (validate_header, validate_datetime_format, validate_form_data,
+from validators import (validate_datetime_format, validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db)
 
@@ -545,11 +547,11 @@ class CampaignBase(object):
         Here we have common functionality for scheduling/re-scheduling a campaign.
         Before making HTTP POST/GET call on scheduler_service, we do the following:
 
-        1- Check if request has valid JSON content-type header
-        2- Check if current user is an owner of given campaign_id
-        3- Check if given campaign is already scheduled or not
-        4- If campaign is already scheduled and requested method is POST, we raise Forbidden error
+        1- Check if current user is an owner of given campaign_id
+        2- Check if given campaign is already scheduled or not
+        3- If campaign is already scheduled and requested method is POST, we raise Forbidden error
             because updating already scheduled campaign should be through PUT request
+        4- Check if request has valid JSON content-type header
         5- Get JSON data from request and raise Invalid Usage exception if no data is found or
             data is not JSON serializable.
         6- If start datetime is not provide/given in invalid format/is in past, we raise Invalid
@@ -571,7 +573,6 @@ class CampaignBase(object):
         **See Also**
         .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
         """
-        validate_header(request)
         # get campaign obj, scheduled task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id)
@@ -871,14 +872,108 @@ class CampaignBase(object):
                 'Task(id:%s) is already scheduled with given data.' % scheduled_task['id'])
             return scheduled_task['id']
 
-    @abstractmethod
     def process_send(self, campaign):
         """
-        This will be used to do the processing to send campaign to candidates
-        according to specific campaign. Child classes will implement this.
-        :return:
+        :param campaign: SMS campaign obj or push campaign etc
+        :type campaign: SmsCampaign
+        :exception: InvalidUsage
+
+        ..Error Codes:: 5101 (EMPTY_BODY_TEXT)
+                        5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+                        5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+
+        This does the following steps to send campaign to candidates.
+
+        1- Get body_text from campaign obj e,g sms_campaign obj. If body_text is found empty,
+            we raise Invalid usage error with custom error code to be EMPTY_BODY_TEXT
+        2- Get selected smartlists for the campaign to be sent from campaign_smartlist obj e.g.
+            sms_campaign_smartlist obj.
+            If no smartlist is found, we raise Invalid usage error with custom error code
+            NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN.
+        3- Loop over all the smartlists and get candidates from candidate_pool_service and
+            candidate_service.
+        If no candidate is found associated to all smartlists we raise Invalid usage error
+        with custom error code NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST.
+
+        4- Create SMS campaign blast
+        5- Call send_campaign_to_candidates() to send the campaign to candidates via Celery
+            task.
+
+        :Example:
+
+            1- Create class object
+                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
+                camp_obj = SmsCampaignBase(1)
+
+            2- Get SMS campaign to send
+                from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+                campaign = SmsCampaign.get(1)
+
+            3- Call method process_send
+                camp_obj.process_send(campaign)
+
+        **See Also**
+        .. see also:: send_campaign_to_candidates() method in CampaignBase class.
+
+        **See Also**
+        .. see also:: callback_campaign_sent() method in CampaignBase class.
+
         """
-        pass
+        if not isinstance(campaign, SmsCampaign):
+            raise InvalidUsage('campaign should be instance of SmsCampaign/PushCampaign model')
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        self.campaign = campaign
+        logger.debug('process_send: SMS Campaign(id:%s) is being sent. User(id:%s)'
+                     % (campaign.id, self.user.id))
+        if not self.campaign.body_text:
+            # body_text is empty
+            raise InvalidUsage('SMS Body text is empty for Campaign(id:%s)'
+                               % campaign.id, error_code=CampaignException.EMPTY_BODY_TEXT)
+        self.body_text = self.campaign.body_text.strip()
+        # Get smartlists associated to this campaign
+        smartlists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
+        if not smartlists:
+            raise InvalidUsage(
+                'No smartlist is associated with %s(id:%s). (User(id:%s))'
+                % (campaign.__tablename__, campaign.id, self.user.id),
+                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        # get candidates from search_service and filter the None records
+        candidates = sum(filter(None, map(self.get_smartlist_candidates, smartlists)), [])
+        if not candidates:
+            raise InvalidUsage(
+                'No candidate is associated with smartlist(s). %s(id:%s). '
+                'smartlist ids are %s' % (campaign.__tablename__, campaign.id, smartlists),
+                error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        # create SMS campaign blast
+        self.campaign_blast_id = self.create_campaign_blast(self.campaign)
+        self.send_campaign_to_candidates(candidates)
+
+    @staticmethod
+    def create_campaign_blast(campaign):
+        """
+        - Here we create blast record for a campaign. We also use this to update
+            record with every new send. This gives the statistics about a campaign.
+        - This method is called from process_send() inside CampaignBase.
+        This is also called from send_campaign_to_candidate() method of class SmsCampaignBase inside
+            sms_campaign_service/sms_campaign_base.py.
+
+        :param campaign: SMS campaign or some other campaign object
+        :type campaign: SmsCampaign | PushCampaign etc.
+        :return: id of "campaign_blast" record
+        :rtype: int
+
+        **See Also**
+        .. see also:: process_send() method in SmsCampaignBase class.
+
+        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
+        """
+        if not isinstance(campaign, SmsCampaign):
+            raise InvalidUsage('campaign should be instance of SmsCampaign/PushCampaign model')
+        campaign_type = campaign.__tablename__
+        blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+        blast_obj = blast_model(campaign_id=campaign.id)
+        blast_model.save(blast_obj)
+        return blast_obj.id
 
     def get_smartlist_candidates(self, campaign_smartlist):
         """
@@ -1170,8 +1265,8 @@ class CampaignBase(object):
                                                                      candidate_obj,
                                                                      url_conversion_obj)
         if not url_conversion_obj.destination_url:
-            raise InvalidUsage('process_url_redirect: Destination_url is empty for '
-                               'url_conversion(id:%s)' % url_conversion_obj.id)
+            raise EmptyDestinationUrl('process_url_redirect: Destination_url is empty for '
+                                      'url_conversion(id:%s)' % url_conversion_obj.id)
         # Update hit_count, number of clicks and create activity
         cls.update_stats_and_create_click_activity(campaign_blast_obj, candidate_obj,
                                                    url_conversion_obj, campaign_obj)

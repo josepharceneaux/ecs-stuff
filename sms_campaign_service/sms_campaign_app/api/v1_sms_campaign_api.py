@@ -63,7 +63,7 @@ from flask.ext.restful import Resource
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.modules.custom_exceptions import ErrorDeletingSMSCampaign
+from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.modules.handy_functions import request_from_google_shorten_url_api
 
 # Common Utils
@@ -73,8 +73,8 @@ from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.validators import validate_header
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignType
+from sms_campaign_service.common.campaign_services.validators import get_valid_json_data
 
 # Database Models
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignBlast, SmsCampaignSend)
@@ -88,7 +88,7 @@ api.route = types.MethodType(api_route, api)
 
 # Enable CORS
 CORS(sms_campaign_blueprint, resources={
-    r'%s/*' + SmsCampaignApi.CAMPAIGNS + '/(campaigns)/*': {
+    r'%s/*' + SmsCampaignApi.CAMPAIGNS: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }
@@ -111,7 +111,7 @@ class SMSCampaigns(Resource):
         This action returns a list of all Campaigns for logged-in user.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
-        :rtype json
+        :rtype JSON
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -161,7 +161,7 @@ class SMSCampaigns(Resource):
         """
         This method takes data to create SMS campaign in database.
         :return: id of created campaign
-        :type: json
+        :type: JSON
 
         :Example:
 
@@ -182,7 +182,6 @@ class SMSCampaigns(Resource):
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
 
             {
@@ -196,18 +195,11 @@ class SMSCampaigns(Resource):
 
         ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
                         5003 (TwilioApiError)
-                        5017 (InvalidUrl)
+                        5017 (INVALID_URL_FORMAT)
         """
-        validate_header(request)
-        # get json post request data
-        try:
-            data_from_ui = request.get_json()
-        except BadRequest:
-            raise InvalidUsage('Given data is not JSON serializable')
-        if not data_from_ui:
-            raise InvalidUsage('No data provided to create SMS campaign')
+        data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id,invalid_smartlist_ids, not_found_smartlist_ids = \
+        campaign_id, invalid_smartlist_ids, not_found_smartlist_ids = \
             campaign_obj.process_save_or_update(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
@@ -253,12 +245,7 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
         """
-        validate_header(request)
-        # get campaign_ids for campaigns to be deleted
-        try:
-            req_data = request.get_json()
-        except Exception:
-            raise InvalidUsage('id(s) of campaign should be in a list')
+        req_data = get_valid_json_data(request)
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
         if not isinstance(req_data['ids'], list):
             raise InvalidUsage('Bad request, include campaign_ids as list data',
@@ -493,7 +480,7 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: json for required campaign
+        :return: JSON for required campaign
         """
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id)
         return dict(campaign=campaign.to_json()), 200
@@ -538,15 +525,9 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
 
         .. Error codes::
-                        5017 (InvalidUrl)
+                    5017 (INVALID_URL_FORMAT)
         """
-        validate_header(request)
-        try:
-            campaign_data = request.get_json()
-        except BadRequest:
-            raise InvalidUsage('Given data should be in dict format')
-        if not campaign_data:
-            raise InvalidUsage('No data provided to update SMS campaign')
+        campaign_data = get_valid_json_data(request)
         camp_obj = SmsCampaignBase(request.user.id)
         _, invalid_smartlist_ids, not_found_smartlist_ids = \
             camp_obj.create_or_update_campaign(campaign_data, campaign_id=campaign_id)
@@ -585,7 +566,7 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
 
         ..Error codes::
-                    5010 (ErrorDeletingSMSCampaign)
+                    5010 (ERROR_DELETING_SMS_CAMPAIGN)
         """
         campaign_deleted = SmsCampaignBase.process_delete_campaign(
             campaign_id=campaign_id, current_user=request.user,
@@ -593,7 +574,9 @@ class CampaignById(Resource):
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully' % campaign_id), 200
         else:
-            raise ErrorDeletingSMSCampaign('Campaign(id:%s) was not deleted.' % campaign_id)
+            raise InternalServerError(
+                'Campaign(id:%s) was not deleted.' % campaign_id,
+                error_code=SmsCampaignApiException.ERROR_DELETING_SMS_CAMPAIGN)
 
 
 @api.route(SmsCampaignApi.SENDS)

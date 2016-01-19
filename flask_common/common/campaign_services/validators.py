@@ -36,7 +36,29 @@ def validate_header(request):
     :return:
     """
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
-        raise InvalidUsage('Invalid header provided')
+        raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
+                           'and application/json content-type header')
+
+
+def get_valid_json_data(req):
+    """
+    This first verifies that request has proper JSON content-type header and raise invalid
+    usage error in case it doesn't has
+    From given request, we get the JSON data from it. If data is not JSON serializable, we log
+    the error and raise it.
+    :param req:
+    :return:
+    """
+    validate_header(req)
+    try:
+        data = req.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable.')
+    if not isinstance(data, dict):
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
+    if not data:
+        raise InvalidUsage('No data provided.')
+    return data
 
 
 def validate_datetime_format(str_datetime):
@@ -137,10 +159,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     :return: data_to_schedule
     :rtype: dict
     """
-    try:
-        data_to_schedule_campaign = request.get_json()
-    except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable.')
+    data_to_schedule_campaign = get_valid_json_data(request)
     if not data_to_schedule_campaign:
         raise InvalidUsage('No data provided to schedule %s (id:%s)'
                            % (campaign_obj.__tablename__, campaign_obj.id))

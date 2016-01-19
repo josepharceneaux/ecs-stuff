@@ -5,9 +5,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 """
 # Service Specific
 from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.modules.custom_exceptions import InvalidUrl
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
+from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 
 # Common stuff
 from sms_campaign_service.sms_campaign_app import app, logger
@@ -22,11 +22,12 @@ def validate_url_format(url):
     This validates if given URL is valid or not
     :param url: URL to be validate
     :type url: str
-    :exception: InvalidUrl if URL is in improper format
+    :exception: Invalid usage if URL is in improper format
     :return:
     """
     if not is_valid_url_format(url):
-        raise InvalidUrl('Given URL (%s) is not valid.' % url)
+        raise InvalidUsage('Given URL (%s) is not valid.' % url,
+                           error_code=SmsCampaignApiException.INVALID_URL_FORMAT)
     return True
 
 

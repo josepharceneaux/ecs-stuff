@@ -320,7 +320,7 @@ def create_sms_campaign_blast(sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    return SmsCampaignBase.create_sms_campaign_blast(sms_campaign_of_current_user.id)
+    return SmsCampaignBase.create_campaign_blast(sms_campaign_of_current_user.id)
 
 
 @pytest.fixture()
@@ -477,9 +477,9 @@ def users_with_same_phone(request, sample_user, sample_user_2):
 
 @pytest.fixture()
 def process_send_sms_campaign(sample_user, auth_token,
-                              scheduled_sms_campaign_of_current_user,
+                              sms_campaign_of_current_user,
                               sample_sms_campaign_candidates,
-                              sms_campaign_smartlist,
+                              smartlist_for_not_scheduled_campaign,
                               candidate_phone_1,
                               ):
     """
@@ -488,15 +488,15 @@ def process_send_sms_campaign(sample_user, auth_token,
     :return:
     """
     response_post = requests.post(SmsCampaignApiUrl.SEND
-                                  % scheduled_sms_campaign_of_current_user.id,
+                                  % sms_campaign_of_current_user.id,
                                   headers=dict(Authorization='Bearer %s' % auth_token))
-    assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+    assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
 
 @pytest.fixture()
 def url_conversion_by_send_test_sms_campaign(request,
-                                             scheduled_sms_campaign_of_current_user,
+                                             sms_campaign_of_current_user,
                                              process_send_sms_campaign):
     """
     This sends SMS campaign (using process_send_sms_campaign fixture)
@@ -509,7 +509,7 @@ def url_conversion_by_send_test_sms_campaign(request,
     db.session.commit()
     # get campaign blast
     sms_campaign_blast = \
-        SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
+        SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
     # get campaign sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
     # get if of record of sms_campaign_send_url_conversion for this campaign

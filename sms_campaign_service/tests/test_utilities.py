@@ -10,14 +10,14 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
-from sms_campaign_service.modules.sms_campaign_app_constants import TWILIO_TEST_NUMBER, \
-    TWILIO_INVALID_TEST_NUMBER
 from sms_campaign_service.sms_campaign_app import app
-from sms_campaign_service.modules.handy_functions import search_urls_in_text, TwilioSMS
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
                                                      validate_url_format)
-from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, SmsCampaignApiException,
+from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
                                                             TwilioApiError)
+from sms_campaign_service.modules.handy_functions import search_urls_in_text, TwilioSMS
+from sms_campaign_service.modules.sms_campaign_app_constants import  (TWILIO_TEST_NUMBER,
+                                                                      TWILIO_INVALID_TEST_NUMBER)
 
 # Common Utils
 from sms_campaign_service.common.tests.conftest import fake
@@ -142,8 +142,8 @@ class TestValidUrlFormat(object):
     def _assert_validate_url_format(self, url):
         try:
             assert validate_url_format(url)
-        except InvalidUrl as e:
-            assert e.error_code == SmsCampaignApiException.INVALID_URL_FORMAT
+        except InvalidUsage as error:
+            assert error.status_code == SmsCampaignApiException.INVALID_URL_FORMAT
 
 
 class TestValidUrlByHTTPRequest(object):

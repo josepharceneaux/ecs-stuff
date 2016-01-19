@@ -16,23 +16,19 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     This class contains custom error codes for SMS campaign service.
     """
     error_code = 5000
-    EMPTY_SMS_BODY = 5001
-    MULTIPLE_TWILIO_NUMBERS = 5002
-    TWILIO_API_ERROR = 5003
-    GOOGLE_SHORTEN_URL_API_ERROR = 5004
-    EMPTY_DESTINATION_URL = 5005
-    MISSING_REQUIRED_FIELD = 5006
-    MULTIPLE_USERS_FOUND = 5007
-    MULTIPLE_CANDIDATES_FOUND = 5008
-    ERROR_SAVING_SMS_CAMPAIGN = 5009
-    ERROR_DELETING_SMS_CAMPAIGN = 5010
-    NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = 5011
-    NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST = 5012
-    NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5013
-    ERROR_UPDATING_BODY_TEXT = 5014
-    NO_CANDIDATE_FOR_PHONE_NUMBER = 5015
-    NO_USER_FOR_PHONE_NUMBER = 5016
-    INVALID_URL_FORMAT = 5017
+    # only used as error codes
+    ERROR_DELETING_SMS_CAMPAIGN = 5001
+    INVALID_URL_FORMAT = 5002
+
+    # used as custom exceptions
+    MULTIPLE_TWILIO_NUMBERS = 5003
+    TWILIO_API_ERROR = 5004
+    GOOGLE_SHORTEN_URL_API_ERROR = 5005
+    MULTIPLE_USERS_FOUND = 5006
+    NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5007
+    ERROR_UPDATING_BODY_TEXT = 5008
+    NO_CANDIDATE_FOR_PHONE_NUMBER = 5009
+    NO_USER_FOR_PHONE_NUMBER = 5010
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()
@@ -43,17 +39,6 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
         error_dict = super(SmsCampaignApiException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return json.dumps(error_dict)
-
-
-class EmptySmsBody(SmsCampaignApiException):
-    """
-    If SMS body text is empty at the time of sending SMS campaign to candidates,
-    we raise this exception.
-
-    **Usage**
-        .. see also:: process_send() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.EMPTY_SMS_BODY
 
 
 class MultipleTwilioNumbersFoundForUser(SmsCampaignApiException):
@@ -88,18 +73,6 @@ class GoogleShortenUrlAPIError(SmsCampaignApiException):
     error_code = SmsCampaignApiException.GOOGLE_SHORTEN_URL_API_ERROR
 
 
-class EmptyDestinationUrl(SmsCampaignApiException):
-    """
-    When candidate clicks on a URL present in SMS body text, this exception is raised if
-    destination URL is empty in database (This URL was provided by getTalent user at time of
-    creating campaign.
-
-    **Usage**
-        .. see also:: process_url_redirect() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.EMPTY_DESTINATION_URL
-
-
 class MultipleUsersFound(SmsCampaignApiException):
     """
     If getTalent user has multiple Twilio numbers associated with it, we raise this error.
@@ -108,49 +81,6 @@ class MultipleUsersFound(SmsCampaignApiException):
         .. see also:: process_candidate_reply() method of SmsCampaignBase class.
     """
     error_code = SmsCampaignApiException.MULTIPLE_USERS_FOUND
-
-
-class MultipleCandidatesFound(SmsCampaignApiException):
-    """
-    If multiple candidates are found for a given phone number, we raise this exception.
-
-    **Usage**
-        .. see also:: process_candidate_reply() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
-
-
-class ErrorDeletingSMSCampaign(SmsCampaignApiException):
-    """
-    If we encounter a problem while deleting SMS campaign from database table sms_campaign.
-    we raise this exception.
-
-    **Usage**
-        .. see also:: SMSCampaigns() class's DELETE method inside v1_sms_campaign_api.py
-    """
-    error_code = SmsCampaignApiException.ERROR_DELETING_SMS_CAMPAIGN
-
-
-class NoSmartlistAssociatedWithCampaign(SmsCampaignApiException):
-    """
-    If we are about to send SMS campaign to candidates, and no smartlist is associated with
-    SMS campaign, we raise this exception.
-
-    **Usage**
-        .. see also:: process_send() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-
-
-class NoCandidateAssociatedWithSmartlist(SmsCampaignApiException):
-    """
-    If we are sending SMS campaign to candidates, and no candidate is found with
-    associated smartlist(s), we raise this exception.
-
-    **Usage**
-        .. see also:: process_send() method of SmsCampaignBase class.
-    """
-    error_code = SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
 
 
 class NoSMSCampaignSentToCandidate(SmsCampaignApiException):
@@ -195,14 +125,3 @@ class NoUserFoundForPhoneNumber(SmsCampaignApiException):
         .. see also:: process_candidate_reply() method of SmsCampaignBase class.
     """
     error_code = SmsCampaignApiException.NO_USER_FOR_PHONE_NUMBER
-
-
-class InvalidUrl(SmsCampaignApiException):
-    """
-    If we are searching URLs in SMS body text, we also check if those URLs are in valid format.
-    If any of the URL is not valid, we raise this exception.
-    **Usage**
-        .. see also:: validate_form_data() function in modules/handy_functions.py
-    """
-    error_code = SmsCampaignApiException.INVALID_URL_FORMAT
-

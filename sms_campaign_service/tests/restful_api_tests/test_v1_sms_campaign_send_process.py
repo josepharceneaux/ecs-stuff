@@ -7,17 +7,17 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
-from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
-                                                            MultipleCandidatesFound)
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,
      assert_api_send_response)
+from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
+                                                                         MultipleCandidatesFound)
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
-                                                        ForbiddenError, InternalServerError)
+                                                        ForbiddenError, InvalidUsage)
 
 
 class TestSendSmsCampaign(object):
@@ -96,40 +96,40 @@ class TestSendSmsCampaign(object):
         User auth token is valid but given SMS campaign has no associated smartlist with it. So
         up til this point we only have created a user and SMS campaign of that user (using fixtures
         passed in as params).
-        It should get internal server error. Custom error should be
+        It should get Invalid usage error. Custom error should be
         NoSmartlistAssociatedWithCampaign.
         :return:
         """
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == InternalServerError.http_status_code(), \
-            'It should be internal server error (500)'
+        assert response_post.status_code == InvalidUsage.http_status_code(), \
+            'It should be invalid usage error(400)'
         assert response_post.json()['error']['code'] == \
-               SmsCampaignApiException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+               CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_no_smartlist_candidate(self, auth_token,
-                                              scheduled_sms_campaign_of_current_user,
-                                              sms_campaign_smartlist):
+                                              sms_campaign_of_current_user,
+                                              smartlist_for_not_scheduled_campaign):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get internal server error.
+        no candidate associated with it. It should get invalid usage error.
         Custom error should be NoCandidateAssociatedWithSmartlist .
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert response_post.status_code == InternalServerError.http_status_code(), \
-            'It should be internal server error (500)'
+        assert response_post.status_code == InvalidUsage.http_status_code(), \
+            'It should be invalid usage error (400)'
         assert response_post.json()['error']['code'] == \
-               SmsCampaignApiException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
+               CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist,
+            self, auth_token, sample_user, sms_campaign_of_current_user,
+            smartlist_for_not_scheduled_campaign,
             sample_sms_campaign_candidates):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -137,31 +137,33 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 0, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 0, str(sms_campaign_of_current_user.id))
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, auth_token, sample_user, sms_campaign_smartlist, sample_sms_campaign_candidates,
-            candidates_with_same_phone, candidate_first, candidate_second):
+            self, auth_token, sample_user, smartlist_for_not_scheduled_campaign,
+            sample_sms_campaign_candidates, candidates_with_same_phone, candidate_first,
+            candidate_second):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have same phone numbers. It should return Internal server error.
-        Error code should be 5008 (MultipleCandidatesFound)
+        candidates. Both candidates have same phone numbers. It should raise custom exception
+        MultipleCandidatesFound.
         :return:
         """
         try:
             obj = SmsCampaignBase(sample_user.id)
             obj.pre_process_celery_task([candidate_first, candidate_second])
+            assert None, 'MultipleCandidatesFound exception should be raised.'
         except MultipleCandidatesFound as error:
-            assert error.error_code == SmsCampaignApiException.MULTIPLE_CANDIDATES_FOUND
+            assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
 
     def test_pre_process_celery_task_with_valid_data(
-            self, sample_user, sms_campaign_of_current_user,candidate_first, candidate_second,
-            sms_campaign_smartlist, sample_sms_campaign_candidates,candidate_phone_1,
-            candidate_phone_2):
+            self, sample_user, auth_token, sms_campaign_of_current_user,
+            candidate_first, candidate_second, smartlist_for_not_scheduled_campaign,
+            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have different phone numbers. It should not get any error.

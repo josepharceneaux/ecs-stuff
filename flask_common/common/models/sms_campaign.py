@@ -37,11 +37,11 @@ class SmsCampaign(db.Model):
 class SmsCampaignBlast(db.Model):
     __tablename__ = 'sms_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_id = db.Column(db.Integer, db.ForeignKey('sms_campaign.id', ondelete='CASCADE'))
+    campaign_id = db.Column(db.Integer, db.ForeignKey('sms_campaign.id', ondelete='CASCADE'))
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     replies = db.Column(db.Integer, default=0)
-    sent_datetime = db.Column(db.DateTime)
+    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -56,7 +56,7 @@ class SmsCampaignBlast(db.Model):
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
         assert campaign_id, 'No campaign_id given'
-        return cls.query.filter(cls.sms_campaign_id == campaign_id).first()
+        return cls.query.filter(cls.campaign_id == campaign_id).first()
 
 
 class SmsCampaignSend(db.Model):
