@@ -717,7 +717,7 @@ class SendRequestTest(Resource):
         # Delete all jobs: test purpose only
         delete_all_jobs = task.get('delete_all', False)
         if delete_all_jobs:
-            scheduler.remove_all_jobs()
+            # scheduler.remove_all_jobs()
             return dict(message='All jobs deleted')
         url = task.get('url', '')
 
