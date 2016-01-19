@@ -23,6 +23,7 @@ from email_campaign_service.common.inter_service_calls.activity_service_calls im
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
+from email_campaign_service.common.utils.candidate_service_calls import get_candidate_subscription_preference
 
 __author__ = 'jitesh'
 
@@ -247,10 +248,11 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, lis
         # their subscription preference's frequencyId is NULL, which means 'Never'
         unsubscribed_candidate_ids = []
         for candidate_id in all_candidate_ids:
-            # Candidate subscription preference
-            campaign_subscription_preference = get_subscription_preference(candidate_id)
-            logger.debug("campaign_subscription_preference: %s" % campaign_subscription_preference)
-            if campaign_subscription_preference and not campaign_subscription_preference.frequency_id:
+            # Call candidate API to get candidate's subscription preference.
+            subscription_preference = get_candidate_subscription_preference(oauth_token, candidate_id)
+            # campaign_subscription_preference = get_subscription_preference(candidate_id)
+            logger.debug("subscription_preference: %s" % subscription_preference)
+            if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
         # Remove unsubscribed candidates
         subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
@@ -454,8 +456,8 @@ def get_subscription_preference(candidate_id):
     Otherwise, if any one is NULL, keep it and delete the rest.
     Otherwise, if any one is 7, delete all of them.
     """
-    # TODO: Ask about this function? Can this be modified and create other script to delete legacy data on all domains.
-    # email_prefs = db(db.candidate_subscription_preference.candidateId == candidate_id).select()
+    # Not used but keeping it because same function was somewhere else in other service but using hardcoded ids.
+    # So this one can be used to replace the old function.
     email_prefs = db.session.query(CandidateSubscriptionPreference).filter_by(candidate_id=candidate_id)
     non_custom_frequencies = db.session.query(Frequency.id).filter(
         Frequency.name.in_(Frequency.standard_frequencies().keys())).all()

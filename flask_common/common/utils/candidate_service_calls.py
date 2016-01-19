@@ -69,3 +69,12 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
         return [candidate['id'] for candidate in resp.json()['candidates']]
     return resp.json()
 
+
+def get_candidate_subscription_preference(oauth_token, candidate_id):
+    resp = requests.get(CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
+                        headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                                 'content-type': 'application/json'})
+    assert resp.status_code == 200
+    response = resp.json()
+    # return candidate's subscription_preference
+    return response['candidate']['subscription_preference']
