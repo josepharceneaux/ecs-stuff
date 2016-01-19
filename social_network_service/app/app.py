@@ -6,8 +6,8 @@
 # Standard imports
 import json
 import traceback
-import flask
 
+import flask
 # init APP
 # This line should come before any imports from models
 from social_network_service import init_app, logger
@@ -18,11 +18,11 @@ from flask import request
 from flask.ext.cors import CORS
 
 # Application specific imports
-from social_network_service.app.restful.data import data_blueprint
-from social_network_service.rsvp.eventbrite import Eventbrite as EventbriteRsvp
-from restful.events import events_blueprint
-from social_network_service.utilities import get_class
-from restful.social_networks import social_network_blueprint
+from social_network_service.app.restful.v1_data import data_blueprint
+from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
+from restful.v1_events import events_blueprint
+from social_network_service.modules.utilities import get_class
+from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
 
 # Register Blueprints for different APIs

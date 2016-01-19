@@ -11,18 +11,18 @@ from datetime import timedelta
 
 # Application specific
 from social_network_service import flask_app as app
-from social_network_service.utilities import logger
-from social_network_service.utilities import log_error
-from social_network_service.utilities import get_class
-from social_network_service.event.base import EventBase
-from social_network_service.utilities import http_request
-from social_network_service.utilities import get_utc_datetime
-from social_network_service.custom_exceptions import VenueNotFound
-from social_network_service.custom_exceptions import EventNotCreated
-from social_network_service.custom_exceptions import TicketsNotCreated
-from social_network_service.custom_exceptions import EventNotPublished
-from social_network_service.custom_exceptions import EventInputMissing
-from social_network_service.custom_exceptions import EventLocationNotCreated
+from social_network_service.modules.utilities import logger
+from social_network_service.modules.utilities import log_error
+from social_network_service.modules.utilities import get_class
+from social_network_service.modules.event.base import EventBase
+from social_network_service.modules.utilities import http_request
+from social_network_service.modules.utilities import get_utc_datetime
+from social_network_service.modules.custom_exceptions import VenueNotFound
+from social_network_service.modules.custom_exceptions import EventNotCreated
+from social_network_service.modules.custom_exceptions import TicketsNotCreated
+from social_network_service.modules.custom_exceptions import EventNotPublished
+from social_network_service.modules.custom_exceptions import EventInputMissing
+from social_network_service.modules.custom_exceptions import EventLocationNotCreated
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer

@@ -5,9 +5,9 @@ class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 
 # Application Specific
 from base import SocialNetworkBase
-from utilities import http_request
 from social_network_service import flask_app as app, logger
-from social_network_service.custom_exceptions import *
+from social_network_service.modules.custom_exceptions import *
+from social_network_service.modules.utilities import http_request
 
 WEBHOOK_REDIRECT_URL = app.config['WEBHOOK_REDIRECT_URL']
 

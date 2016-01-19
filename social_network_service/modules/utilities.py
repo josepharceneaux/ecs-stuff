@@ -4,30 +4,24 @@ or consumed by various programs.
 """
 
 # Standard Library
-import re
 import imp
-import sys
-import json
-import string
-import random
-import inspect
-import traceback
 import importlib
+import inspect
+import random
+import re
+import string
+import sys
+import traceback
 from datetime import datetime
-
 # Third Party
 import pytz
 import requests
 from pytz import timezone
-from requests_oauthlib import OAuth2Session
-
 # Application Specific Imports
-from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service import logger
-from social_network_service import flask_app as app
-from social_network_service.custom_exceptions import *
+from social_network_service.modules.custom_exceptions import *
 from scheduler_service.common.routes import AuthApiUrl
 
 

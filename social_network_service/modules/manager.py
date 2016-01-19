@@ -1,8 +1,7 @@
 # Standard Library
-import sys
 import argparse
+import sys
 import traceback
-
 # Third Party
 import gevent
 from gevent import monkey
@@ -14,7 +13,7 @@ from social_network_service.app.app import init_app
 init_app()
 
 # Application Specific
-from utilities import get_class
+from social_network_service.modules.utilities import get_class
 from social_network_service import logger
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.candidate import SocialNetwork

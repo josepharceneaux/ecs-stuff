@@ -14,7 +14,7 @@ import requests
 # want to avoid name conflicts that arise due to name of the package and
 # name of the files in which package is being used.
 from social_network_service import logger
-from social_network_service.utilities import import_from_dist_packages
+from social_network_service.modules.utilities import import_from_dist_packages
 
 facebook = import_from_dist_packages('facebook')
 
@@ -22,7 +22,7 @@ facebook = import_from_dist_packages('facebook')
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.event.base import EventBase
+from social_network_service.modules.event.base import EventBase
 
 
 class Facebook(EventBase):

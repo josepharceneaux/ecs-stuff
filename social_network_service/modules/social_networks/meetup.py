@@ -7,8 +7,8 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 import json
 
 # Application Specific
-from utilities import logger
-from utilities import http_request
+from social_network_service.modules.utilities import logger
+from social_network_service.modules.utilities import http_request
 from base import SocialNetworkBase
 
 

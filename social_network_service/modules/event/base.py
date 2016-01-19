@@ -95,10 +95,9 @@ To add another social network for events management, following are steps:
 """
 
 # Standard Library
+import re
 from abc import ABCMeta
 from abc import abstractmethod
-import re
-
 # Application Specific
 from dateutil.parser import parse
 from social_network_service.common.models.event_organizer import EventOrganizer
@@ -107,14 +106,14 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service import logger
 from social_network_service.common.models.venue import Venue
-from social_network_service.utilities import log_error
-from social_network_service.utilities import get_class
-from social_network_service.utilities import http_request
-from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
-from social_network_service.custom_exceptions import InvalidDatetime
-from social_network_service.custom_exceptions import EventNotSaveInDb
-from social_network_service.custom_exceptions import EventNotUnpublished
-from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.modules.utilities import log_error
+from social_network_service.modules.utilities import get_class
+from social_network_service.modules.utilities import http_request
+from social_network_service.modules.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
+from social_network_service.modules.custom_exceptions import InvalidDatetime
+from social_network_service.modules.custom_exceptions import EventNotSaveInDb
+from social_network_service.modules.custom_exceptions import EventNotUnpublished
+from social_network_service.modules.custom_exceptions import UserCredentialsNotFound
 
 
 class EventBase(object):

@@ -14,9 +14,9 @@ from social_network_service.common.error_handling import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
-from social_network_service.utilities import add_organizer_venue_data
+from social_network_service.modules.utilities import add_organizer_venue_data
 from social_network_service.common.utils.auth_utils import require_oauth
-from social_network_service.utilities import process_event, delete_events
+from social_network_service.modules.utilities import process_event, delete_events
 from social_network_service.common.utils.api_utils import api_route, ApiResponse
 from social_network_service.common.utils.handy_functions import get_valid_json_data
 

@@ -1,7 +1,7 @@
 # Standard Library
 import os
-import requests
 
+import requests
 # Third Party
 import pytest
 
@@ -28,9 +28,9 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.misc import Organization
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.utilities import process_event
-from social_network_service.utilities import delete_events
-from social_network_service.utilities import get_random_word
+from social_network_service.modules.utilities import process_event
+from social_network_service.modules.utilities import delete_events
+from social_network_service.modules.utilities import get_random_word
 from social_network_service.common.routes import AuthApiUrl, SocialNetworkApiUrl
 
 db_session = db.session

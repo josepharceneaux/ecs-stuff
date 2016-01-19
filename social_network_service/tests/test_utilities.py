@@ -10,17 +10,16 @@ from dateutil.parser import parse
 from pytz import timezone
 
 # Application Specific
-from social_network_service.utilities import unix_time
-from social_network_service.utilities import snake_case_to_camel_case
-from social_network_service.utilities import camel_case_to_title_case
-from social_network_service.utilities import camel_case_to_snake_case
-from social_network_service.utilities import convert_keys_to_snake_case
-from social_network_service.utilities import convert_keys_to_camel_case
-from social_network_service.utilities import get_utc_datetime
-from social_network_service.utilities import import_from_dist_packages
-from social_network_service.utilities import milliseconds_since_epoch
-from social_network_service.utilities import milliseconds_since_epoch_to_dt
-from social_network_service.utilities import milliseconds_since_epoch_local_time
+from social_network_service.modules.utilities import unix_time
+from social_network_service.modules.utilities import snake_case_to_camel_case
+from social_network_service.modules.utilities import camel_case_to_title_case
+from social_network_service.modules.utilities import camel_case_to_snake_case
+from social_network_service.modules.utilities import convert_keys_to_snake_case
+from social_network_service.modules.utilities import convert_keys_to_camel_case
+from social_network_service.modules.utilities import get_utc_datetime
+from social_network_service.modules.utilities import import_from_dist_packages
+from social_network_service.modules.utilities import milliseconds_since_epoch
+from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
