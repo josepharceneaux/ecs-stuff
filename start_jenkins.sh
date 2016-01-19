@@ -1,11 +1,7 @@
 #!/bin/bash
 
-export BRANCH=$(git symbolic-ref --short HEAD)
-
-echo $BRANCH
-
 # Merge develop to each new branch before starting build
-if [ "$BRANCH" != "master" ]; then git pull origin develop; fi
+if [ $GIT_BRANCH != "origin/master" ]; then git pull origin develop; fi
 
 # Install Requirements
 pip install -r requirements.txt
