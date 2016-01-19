@@ -131,7 +131,7 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
-    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config, job_cleanup):
+    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
         Then check if the jobs created are in the tasks of user. If yes, then show status code 200.
@@ -162,8 +162,11 @@ class TestSchedulerGet(object):
             assert job in get_jobs_id
 
         # Delete all jobs
-        job_cleanup['header'] = auth_header_no_user
-        job_cleanup['job_ids'] = jobs_id
+        for job_id in jobs_id:
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % job_id,
+                                                  headers=auth_header_no_user)
+
+            assert response_remove_job.status_code == 200
 
     def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """

@@ -156,20 +156,17 @@ def job_cleanup(request):
     data = dict(job_ids=[], header={})
 
     def fin():
-        try:
-            if len(data.get('job_ids')) > 1:
-                response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
-                                                       data=json.dumps(dict(ids=data['job_ids'])),
-                                                       headers=data['header'])
+        if len(data.get('job_ids')) > 1:
+            response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
+                                                   data=json.dumps(dict(ids=data['job_ids'])),
+                                                   headers=data['header'])
 
-                assert response_remove_jobs.status_code == 200
-            elif len(data.get('job_ids')) == 1:
-                response_remove_job = requests.delete(SchedulerApiUrl.TASK % data['job_ids'][0],
-                                                      headers=data['header'])
+            assert response_remove_jobs.status_code == 200
+        elif len(data.get('job_ids')) == 1:
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % data['job_ids'][0],
+                                                  headers=data['header'])
 
-                assert response_remove_job.status_code == 200
-        except Exception as e:
-            print 'fin: %s' % e.message
+            assert response_remove_job.status_code == 200
     request.addfinalizer(fin)
 
     return data
