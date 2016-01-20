@@ -246,7 +246,7 @@ def validate_form_data(form_data, required_fields):
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
         raise InvalidUsage(
-            'Required fields are empty to save '
+            'Required fields not provided to save '
             'sms_campaign. Empty fields are %s' % missing_field_values)
 
     # validate smartlist ids are in a list

@@ -104,7 +104,7 @@ class CampaignBase(object):
 
     * process_delete_campaign(cls, **kwargs)
         This is a class method used to delete a campaign. If that campaign was scheduled,
-        it first un schedules the campaign from scheduler_service and then deletes campaign
+        it first un-schedules the campaign from scheduler_service and then deletes campaign
         from database.
 
     * pre_process_schedule(cls,request, campaign_id):
