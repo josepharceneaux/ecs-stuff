@@ -221,7 +221,7 @@ def domain_aoi(domain_first):
 
 
 @pytest.fixture()
-def custom_field_for_domain(domain_first):
+def domain_custom_fields(domain_first):
     """Function will add custom fields to domain
     :rtype:  list[CustomField]
     """
