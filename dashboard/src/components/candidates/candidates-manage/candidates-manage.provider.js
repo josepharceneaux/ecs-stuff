@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('candidatesManageService', providerFunction)
+        .provider('candidatesManageService', providerFunction);
 
     /**
      * @return {[type]}

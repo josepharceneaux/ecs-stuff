@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('authorizationInterceptor', providerFunction)
+        .provider('authorizationInterceptor', providerFunction);
 
     /**
      * @return {[type]}
