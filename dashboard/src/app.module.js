@@ -23,6 +23,7 @@
         'app.smartLists',
         'app.styleguide',
         'app.support',
+        'app.systemAlerts',
         'app.talentPools',
         'app.topnav',
         'app.user'
