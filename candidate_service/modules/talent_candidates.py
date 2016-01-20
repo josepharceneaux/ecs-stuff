@@ -644,10 +644,10 @@ def create_or_update_candidate_from_params(
     :type is_creating:              bool
     :type is_updating:              bool
     :type candidate_id:             int
-    :type first_name:               str
-    :type last_name:                str
-    :type middle_name:              str
-    :type formatted_name:           str
+    :type first_name:               basestring
+    :type last_name:                basestring
+    :type middle_name:              basestring
+    :type formatted_name:           basestring
     :type status_id:                int
     :type emails:                   list
     :type phones:                   list
@@ -664,11 +664,9 @@ def create_or_update_candidate_from_params(
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
     :type added_time:               date
-    :type domain_can_read:          bool
-    :type domain_can_write:         bool
     :type source_id:                int
-    :type objective:                str
-    :type summary:                  str
+    :type objective:                basestring
+    :type summary:                  basestring
     :type talent_pool_ids:          list
     :type delete_talent_pools:      bool
     :rtype                          dict
@@ -1713,27 +1711,23 @@ def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_crea
     talent_pools_to_be_deleted = talent_pool_ids.get('delete')
 
     for talent_pool_id in talent_pools_to_be_added:
+        talent_pool = TalentPool.query.get(int(talent_pool_id))
+        if not talent_pool:
+            raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
-        if not is_number(talent_pool_id):
-            raise InvalidUsage(error_message="TalentPool id should be an integer")
-        else:
-            talent_pool = TalentPool.query.get(int(talent_pool_id))
-            if not talent_pool:
-                raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+        if talent_pool.domain_id != request.user.domain_id:
+            raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
 
-            if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+        if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
+                                               talent_pool_id=talent_pool_id).first():
+            raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                                  "user" % (talent_pool_id, request.user.user_group_id))
 
-            if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                   talent_pool_id=talent_pool_id).first():
-                raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                      "user" % (talent_pool_id, request.user.user_group_id))
+        if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
+            raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
 
-            if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
-                raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
-
-            talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
-            db.session.add(talent_pool_candidate)
+        talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
+        db.session.add(talent_pool_candidate)
 
     if not is_creating:
         for talent_pool_id in talent_pools_to_be_deleted:

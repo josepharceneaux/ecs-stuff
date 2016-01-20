@@ -28,6 +28,10 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @classmethod
+    def get_domain_pools(cls, domain_id):
+        return cls.query.filter_by(domain_id=domain_id).all()
+
 
 class TalentPoolCandidate(db.Model):
 

@@ -93,34 +93,9 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture()
-def sample_user(test_domain, request):
+def sample_user(test_domain, test_group, request):
     user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def sample_user_2(test_domain, request):
-    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def user_from_diff_domain(test_domain_2, request):
-    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+    UserGroup.add_users_to_group(user_group=test_group, user_ids=[user.id])
 
     def tear_down():
         try:
@@ -132,39 +107,80 @@ def user_from_diff_domain(test_domain_2, request):
     return user
 
 
-@pytest.fixture()
-def test_domain(request):
-    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
-    db.session.add(domain)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return domain
-
-
-@pytest.fixture()
-def test_domain_2(request):
-    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
-    db.session.add(domain)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return domain
+# @pytest.fixture()
+# def sample_user_2(test_domain, request):
+#     user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+#     UserGroup.add_users_to_group(user_group=test_group, user_ids=[user.id])
+#
+#     def tear_down():
+#         try:
+#             db.session.delete(user)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#     request.addfinalizer(tear_down)
+#     return user
+#
+#
+# @pytest.fixture()
+# def user_from_diff_domain(test_domain_2, request):
+#     user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+#
+#     def tear_down():
+#         try:
+#             db.session.delete(user)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#     request.addfinalizer(tear_down)
+#     return user
 
 
 @pytest.fixture(autouse=True)
+def test_domain(request):
+    domain = Domain.add_test_domain(session=db.session)
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return domain
+
+
+@pytest.fixture()
+def test_group(request, test_domain):
+    user_group = UserGroup.add_group(session=db.session, domain_id=test_domain.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user_group)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user_group
+
+
+# @pytest.fixture()
+# def test_domain_2(request):
+#     domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+#     db.session.add(domain)
+#     db.session.commit()
+#
+#     def tear_down():
+#         try:
+#             db.session.delete(domain)
+#             db.session.commit()
+#         except Exception:
+#             db.session.rollback()
+#     request.addfinalizer(tear_down)
+#     return domain
+
+
+@pytest.fixture()
 def test_culture(request):
     culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
     test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
@@ -184,7 +200,7 @@ def test_culture(request):
     return test_culture
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
     test_org, created = get_or_create(session=db.session, model=Organization, **org_attrs)
