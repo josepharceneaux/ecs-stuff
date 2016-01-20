@@ -20,7 +20,7 @@ module.exports = function (config) {
         };
         log(msg);
         notify(msg);
-        //serve(true /*isDev*/);
+        serve(true /*isDev*/);
         startBrowserSync(true /*isDev*/);
     });
 
