@@ -24,11 +24,18 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['logger', 'candidatesManageService'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, candidatesManageService) {
         var vm = this;
+
+        vm.itemsPerPageOptions = [
+            { value: 5, name: '5 per page' },
+            { value: 10, name: '10 per page' },
+            { value: 15, name: '15 per page' }
+        ];
+        vm.candidatesPerPage = vm.itemsPerPageOptions[0].value;
 
         init();
         activate();
@@ -38,7 +45,9 @@
         }
 
         function init() {
-            //
+            candidatesManageService.getCandidates().then(function (candidates) {
+                vm.candidates = candidates;
+            });
         }
     }
 })();
