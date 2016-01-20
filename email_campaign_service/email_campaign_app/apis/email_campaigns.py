@@ -63,7 +63,7 @@ class EmailCampaignApi(Resource):
                                          stop_time=data['stop_datetime'],
                                          frequency=data['frequency'])
 
-        return {'campaign': campaign}
+        return {'campaign': campaign}, 201
 
 
 @email_campaign_blueprint.route(EmailCampaignEndpoints.SEND_CAMPAIGN, methods=['POST'])

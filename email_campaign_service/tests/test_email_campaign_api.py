@@ -5,7 +5,6 @@ import time
 import email
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.tests.sample_data import generate_single_candidate_data
 from email_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from email_campaign_service.common.routes import CandidateApiUrl, EmailCampaignUrl, CandidatePoolApiUrl
 from email_campaign_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
@@ -13,6 +12,7 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.models.email_marketing import EmailCampaign
 from email_campaign_service.modules.email_marketing import create_email_campaign_smart_lists
+from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
 
 __author__ = 'jitesh'
 
@@ -30,13 +30,7 @@ def test_get_all_email_campaigns(user_first, access_token_first):
     :return:
     """
     # create candidate
-    data = FakeCandidatesData.create(count=5)
-    candidate_ids = create_candidates_from_candidate_api(access_token_first, data, return_candidate_ids_only=True)
-    name = fake.word()
-    smartlist_data = {'name': name,
-                      'candidate_ids': candidate_ids}
-    smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token_first)
-    smartlist_id = smartlists['smartlist']['id']
+    smartlist_id = create_smartlist(user_first, access_token_first)
     email_campaign_name = fake.name()
     reply_to_name = fake.name()
     email_campaign_subject= fake.sentence()
@@ -66,9 +60,10 @@ def test_get_all_email_campaigns(user_first, access_token_first):
         assert resp['email_campaigns']
 
 
-def create_smartlist(access_token):
+def create_smartlist(user, access_token):
     # create candidate
     data = FakeCandidatesData.create(count=1)
+    add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
     candidate_ids = create_candidates_from_candidate_api(access_token, data, return_candidate_ids_only=True)
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids}
@@ -78,15 +73,13 @@ def create_smartlist(access_token):
 
 
 def _test_create_email_campaign(user_first, access_token_first):
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    smartlist_id = create_smartlist()
     email_campaign_name = fake.name()
     email_subject = uuid.uuid4().__str__()[0:8] + ' test_email_campaign_api::test_create_email_campaign'
     email_from = fake.name()
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    smartlist_id = create_smartlist(auth_token_row)
+    smartlist_id = create_smartlist(user_first, access_token_first)
     data = {
         "email_campaign_name": email_campaign_name,
         "email_subject": email_subject,
@@ -99,12 +92,15 @@ def _test_create_email_campaign(user_first, access_token_first):
     }
     r = requests.post(
         url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
-        data=data,
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+        data=json.dumps(data),
+        headers={'Authorization': 'Bearer %s' % access_token_first,
+                 'content-type': 'application/json'}
     )
+    assert r.status_code == 201
     resp_object = r.json()
     assert 'campaign' in resp_object
     # Wait for 10 seconds for scheduler to execute it and then assert mail.
+    time.sleep(10)
     assert_mail(email_subject)
 
 
@@ -127,7 +123,7 @@ def _test_create_email_campaign_invalid_campaign_name(sample_user, user_auth):
             }
     r = requests.post(
         url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
-        data=data,
+        data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
     )
     resp_object = r.json()
