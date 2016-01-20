@@ -48,7 +48,8 @@ class UserApi(Resource):
                         'phone': requested_user.phone,
                         'registration_id': requested_user.registration_id,
                         'dice_user_id': requested_user.dice_user_id,
-                        'last_read_datetime': requested_user.last_read_datetime.isoformat()
+                        'last_read_datetime': requested_user.last_read_datetime.isoformat(),
+                        'thumbnail_url': requested_user.thumbnail_url
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -103,13 +104,13 @@ class UserApi(Resource):
             first_name = user_dict.get('first_name', "").strip()
             last_name = user_dict.get('last_name', "").strip()
             email = user_dict.get('email', "").strip()
-            # TODO: Phone numbers formatting should be done on client side using country information for user
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
             domain_id = request.user.domain_id
+            thumbnail_url = posted_data.get('thumbnail_url', '').strip()
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
-                                              domain_id=domain_id, dice_user_id=dice_user_id)
+                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
             user_ids.append(user_id)
 
         return {'users': user_ids}
@@ -185,6 +186,7 @@ class UserApi(Resource):
         last_name = posted_data.get('last_name', '').strip()
         email = posted_data.get('email', '').strip()
         phone = posted_data.get('phone', '').strip()
+        thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
         try:
             last_read_datetime = parser.parse(last_read_datetime)
@@ -203,6 +205,7 @@ class UserApi(Resource):
             'last_name': last_name,
             'email': email,
             'phone': phone,
+            'thumbnail_url': thumbnail_url,
             'last_read_datetime': last_read_datetime
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)

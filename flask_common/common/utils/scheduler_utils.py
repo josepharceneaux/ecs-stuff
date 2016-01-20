@@ -19,3 +19,5 @@ class SchedulerUtils(object):
     else:
         # For qa and production minimum frequency would be one hour
         MIN_ALLOWED_FREQUENCY = 3600
+
+    MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds

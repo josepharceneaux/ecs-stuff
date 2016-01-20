@@ -16,7 +16,7 @@ __author__ = 'saad'
 
 class TestSchedulerResume(object):
 
-    def test_single_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config, job_cleanup):
         """
         Create and pause a job using service endpoints and then after it is paused, resume the job and check its
         next_run_datetime is not None (Running Job has next_run_datetime equal to next running datetime)
@@ -77,11 +77,10 @@ class TestSchedulerResume(object):
                    response_get.json()['task']['next_run_datetime']
 
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs
 
-    def test_multiple_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
         Create and pause 10 job using service endpoints and then after they are paused, resume all jobs and check their
         next_run_datetime which should not be None (Running Job has next_run_datetime equal to next running datetime)
@@ -122,9 +121,8 @@ class TestSchedulerResume(object):
             assert next_run_datetime is not 'None'
 
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id
 
     def test_single_resume_job_without_token(self, auth_header, job_config):
         """
@@ -166,7 +164,7 @@ class TestSchedulerResume(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_resume_jobs_without_token(self, auth_header, job_config):
+    def test_multiple_resume_jobs_without_token(self, auth_header, job_config, job_cleanup):
         """
         Resume multiple jobs using ids as a list of job_ids that were created using service endpoints.
         Then pause them and resume them without using bearer token, it should give 401 status code
@@ -213,6 +211,5 @@ class TestSchedulerResume(object):
             assert next_run_datetime is None
 
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id

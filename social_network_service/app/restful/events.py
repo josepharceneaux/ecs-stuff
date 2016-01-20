@@ -6,6 +6,7 @@ from flask import Blueprint, request
 from flask.ext.restful import Resource
 from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, SocialNetworkApiResponse
+from social_network_service.common.routes import SocialNetworkApi
 from social_network_service.utilities import process_event, delete_events
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.event import Event
@@ -29,7 +30,7 @@ CORS(events_blueprint, resources={
 })
 
 
-@api.route('/events/')
+@api.route(SocialNetworkApi.EVENTS)
 class Events(Resource):
     """
         This resource returns a list of events or it can be used to create event using POST.
@@ -204,7 +205,7 @@ class Events(Resource):
         raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
 
 
-@api.route('/events/<int:event_id>')
+@api.route(SocialNetworkApi.EVENT)
 class EventById(Resource):
     """
     This resource handles event related task for a specific event specified by id

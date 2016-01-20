@@ -3,8 +3,9 @@ import datetime
 import requests
 from social_network_service import flask_app as app
 from social_network_service.common.models.event import Event
+from social_network_service.common.routes import SocialNetworkApiUrl
 
-API_URL = app.config['APP_URL']
+API_URL = SocialNetworkApiUrl.API_URL
 
 # TODO comment all tests , on the top and each method
 
@@ -12,20 +13,20 @@ API_URL = app.config['APP_URL']
 class TestResourceEvents:
 
     def test_get_with_invalid_token(self):
-        response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
-    def test_events_get_with_valid_token(self, auth_data):
+    def test_event_get_with_valid_token(self, auth_data):
 
-        response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) == 0, 'There should be some events for test user'
 
     def test_events_get_with_valid_token(self, auth_data, event_in_db):
 
-        response = requests.get(API_URL + '/events/', headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) > 0, 'There should be some events for test user'
@@ -123,13 +124,6 @@ class TestResourceEvents:
         event_id = response.json()['id']
         meetup_event_data['id'] = event_id
 
-    def test_meetup_with_valid_address(self, auth_data, meetup_event_data):
-        event_data = meetup_event_data
-        response = send_post_request('/events/', event_data, auth_data['access_token'])
-        assert response.status_code == 201, 'Event should be created, address is valid'
-        event_id = response.json()['id']
-        meetup_event_data['id'] = event_id
-
     def test_meetup_with_invalid_address(self, auth_data, meetup_event_data):
         event_data = meetup_event_data
         event_data['venue_id'] = 2
@@ -150,7 +144,7 @@ class TestEventById:
     def test_get_with_valid_token(self, auth_data, event_in_db):
         event = event_in_db
 
-        response = requests.get(API_URL + '/events/' + str(event.id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        response = requests.get(SocialNetworkApiUrl.EVENTS + str(event.id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
         results = response.json()
         assert 'event' in results
@@ -217,21 +211,19 @@ class TestEventById:
         assert event['end_datetime'] == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
             'end_datetime is modified'
 
-
-
     def test_delete_with_invalid_token(self, event_in_db):
-        response = requests.delete(API_URL + '/events/' + str(event_in_db.id), headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        response = requests.delete(SocialNetworkApiUrl.EVENTS + str(event_in_db.id), headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
     def test_delete_with_valid_token(self, auth_data, event_in_db):
         event_id = event_in_db.id
-        response = requests.delete(API_URL + '/events/' + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        response = requests.delete(SocialNetworkApiUrl.EVENTS + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 200, 'Status should be Ok (200)'
-        response = requests.delete(API_URL + '/events/' + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
+        response = requests.delete(SocialNetworkApiUrl.EVENTS + str(event_id), headers=dict(Authorization='Bearer %s' % auth_data['access_token']))
         assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
 
 
 def send_post_request(relative_url, data, access_token):
-    return requests.post(API_URL + relative_url, data=json.dumps(data),
+    return requests.post(API_URL % relative_url, data=json.dumps(data),
                          headers={'Authorization': 'Bearer %s' % access_token,
                                   'Content-Type': 'application/json'})

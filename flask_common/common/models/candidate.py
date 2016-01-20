@@ -254,7 +254,6 @@ class EmailLabel(db.Model):
         return 4
 
 
-
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column(db.Integer, primary_key=True)
