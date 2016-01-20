@@ -85,17 +85,19 @@ def response_info(response):
     return content.format(url, request, status_code, _json)
 
 
-def post_to_candidate_resource(access_token, data=None, domain_id=None, user_id=None):
+def post_to_candidate_resource(access_token, data=None, talent_pool_ids=None, domain_id=None):
     """
     Function sends a request to CandidateResource/post()
     If domain_id is provided, data will include candidate aoi & custom fields
+    :type access_token:  basestring
+    :type talent_pool_ids:  list[int]
     """
     if not data and domain_id:
-        data = generate_single_candidate_data(domain_id=domain_id, user_id=user_id)
+        data = generate_single_candidate_data(domain_id=domain_id)
     elif data and not domain_id:
         data = data
     else:
-        data = generate_single_candidate_data()
+        data = generate_single_candidate_data(talent_pool_ids=talent_pool_ids)
 
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,

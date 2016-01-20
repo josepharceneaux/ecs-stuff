@@ -21,16 +21,15 @@ class TalentPool(db.Model):
     domain = db.relationship('Domain', backref=db.backref('talent_pool', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('talent_pool', cascade="all, delete-orphan"))
 
+    def __repr__(self):
+        return "<TalentPool (id = %r)>" % self.id
+
     def get_id(self):
         return unicode(self.id)
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
-
-    @classmethod
-    def get_domain_pools(cls, domain_id):
-        return cls.query.filter_by(domain_id=domain_id).all()
 
 
 class TalentPoolCandidate(db.Model):

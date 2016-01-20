@@ -6,9 +6,7 @@ import random
 from random import randrange
 
 # Conftest
-from candidate_service.common.tests.conftest import (
-    areas_of_interest_for_domain, custom_field_for_domain
-)
+# from candidate_service.common.tests.conftest import (custom_field_for_domain)
 
 # Models
 from candidate_service.candidate_app import app
@@ -21,36 +19,22 @@ from faker import Faker
 fake = Faker()
 
 
-def talent_pools_for_domain(domain_id, user_id):
-    """
-    Function will add TalentPool to user's domain
-    :type domain_id:  int|long
-    :rtype: list[TalentPool]
-    """
-    talent_pools = [{'name': fake.word(), 'description': fake.sentence()}]
-    for talent_pool in talent_pools:
-        db.session.add(TalentPool(domain_id=domain_id, owner_user_id=user_id,
-                                  name=talent_pool['name'],
-                                  description=talent_pool['description']))
-    db.session.commit()
-    return TalentPool.get_domain_pools(domain_id=domain_id)
-
-
-def generate_single_candidate_data(domain_id=None, user_id=None):
+def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None):
     """
     Function creates a sample data for Candidate and all of candidate's related objects.
     If domain_id is provided, areas_of_interest and custom_fields will also be created. This is
     because areas_of_interest and custom_fields must be created for user's domain first before
     they can be used for candidate's sample data.
-    :type domain_id:  int|long
-    :type user_id:  int|long
+    :type talent_pool_ids:      list[int]
+    :type areas_of_interest:    list[int]
+    :type custom_fields:        list[int]
     :rtype: dict
     """
-    areas_of_interest, custom_fields = [], []
-    if domain_id:
-        areas_of_interest = areas_of_interest_for_domain(domain_id=domain_id)
-        custom_fields = custom_field_for_domain(domain_id=domain_id)
-        talent_pools = talent_pools_for_domain(domain_id=domain_id, user_id=user_id)
+    aois, cfs = [], []
+    if areas_of_interest:
+        aois = areas_of_interest
+    if custom_fields:
+        cfs = custom_fields
 
     data = {'candidates':
         [
@@ -150,10 +134,10 @@ def generate_single_candidate_data(domain_id=None, user_id=None):
                     {'profile_url': 'https://twitter.com/dmcnulla', 'name': 'twitter'}
                 ],
                 'areas_of_interest': [{'area_of_interest_id': area_of_interest.id}
-                                      for area_of_interest in areas_of_interest],
+                                      for area_of_interest in aois],
                 'custom_fields': [{'custom_field_id': custom_field.id, 'value': custom_field.name}
-                                  for custom_field in custom_fields],
-                'talent_pool_ids': {'add': [talent_pool.id] for talent_pool in talent_pools} # TODO: this is a required field, talent_pools shouldn't be in the if-clause
+                                  for custom_field in cfs],
+                'talent_pool_ids': {'add': talent_pool_ids}
             }
         ]
     }
