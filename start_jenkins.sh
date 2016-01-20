@@ -26,7 +26,7 @@ python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("CLOUD_SEARCH_DOMAIN" "CLOUD_SEARCH_REGION" "S3_BUCKET_NAME" "S3_FILEPICKER_BUCKET_NAME" "S3_BUCKET_REGION" "EMAIL" "GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "SECRET_KEY" "TWILIO_AUTH_TOKEN" "TWILIO_ACCOUNT_SID" "TWILIO_TEST_AUTH_TOKEN" "TWILIO_TEST_ACCOUNT_SID" "GOOGLE_URL_SHORTENER_API_KEY")
 
-FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service")
+FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service")
 
 FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8008" "8009" "8011" "8012")
 
