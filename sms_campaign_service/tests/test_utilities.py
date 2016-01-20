@@ -182,9 +182,8 @@ class TestUrlConversion(object):
         """
         try:
             url_conversion({"url": TEST_DATA['valid_url']})
-        except Exception as error:
-            assert error.status_code == InvalidUsage.http_status_code(), \
-                'Should be bad request(400)'
+        except InvalidUsage as error:
+            assert error.message, 'Invalid usage error should be raised'
 
     def test_with_invalid_url(self):
         """
@@ -217,7 +216,8 @@ class TestTwilioSMS(object):
         """
         try:
             self._send_sms(TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
-            assert None, 'Custom exception should be thrown that receiver phone is invalid'
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that receiver phone is invalid'
         except TwilioApiError as error:
             assert error.message
 
@@ -228,7 +228,8 @@ class TestTwilioSMS(object):
         """
         try:
             self._send_sms(TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
-            assert None, 'Custom exception should be thrown that sender phone is invalid'
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that sender phone is invalid'
         except TwilioApiError as error:
             assert error.message
 
@@ -248,7 +249,8 @@ class TestTwilioSMS(object):
         """
         try:
             self._purchase_number(TWILIO_INVALID_TEST_NUMBER)
-            assert None, 'Custom exception should be thrown that phone number is invalid'
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that phone number is invalid'
         except TwilioApiError as error:
             assert error.message
 

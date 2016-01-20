@@ -1008,7 +1008,7 @@ class CampaignBase(object):
         try:
             candidate_ids = [candidate['id'] for candidate in response.json()['candidates']]
             candidates = [Candidate.get_by_id(_id) for _id in candidate_ids]
-        except Exception:
+        except KeyError:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
             raise
@@ -1487,14 +1487,10 @@ class CampaignBase(object):
             raise InvalidUsage('params should be dictionary.')
         if not isinstance(headers, dict) or not headers:
             raise InvalidUsage('headers should be dictionary and cannot be empty.')
-        try:
-            json_data = json.dumps({'source_table': source_table,
-                                    'source_id': source_id,
-                                    'type': _type,
-                                    'params': params})
-        except Exception as error:
-            raise ForbiddenError('Error while serializing activity params '
-                                 'into JSON. Error is: %s' % error.message)
+        json_data = json.dumps({'source_table': source_table,
+                                'source_id': source_id,
+                                'type': _type,
+                                'params': params})
         headers.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,

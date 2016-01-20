@@ -256,8 +256,8 @@ def validate_signed_url(request_args):
                                         secret_key=current_app.config[TalentConfigKeys.SECRET_KEY])
 
 
-def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_type, blast_id,
-                                   oauth_header):
+def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_type, blast_id,
+                                  oauth_header):
     """
     Once SMS campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we
@@ -284,27 +284,25 @@ def processing_after_campaign_sent(base_class, sends_result, user_id, campaign_t
                         sms_campaign_service/sms_campaign_base.py
     """
     logger = current_app.config[TalentConfigKeys.LOGGER]
-    if isinstance(sends_result, list):
-        total_sends = sends_result.count(True)
-        blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
-        blast_obj = blast_model.get_by_id(blast_id)
-        campaign = blast_obj.campaign
-        if total_sends:
-            # update SMS campaign blast. i.e. update number of sends.
-            try:
-                blast_obj.update(sends=blast_obj.sends + total_sends)
-            except Exception:
-                logger.exception(
-                    'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
-                    % (campaign.id, blast_obj.id))
-                raise
-            base_class.create_campaign_send_activity(user_id, campaign,
-                                                     oauth_header, total_sends)
-        logger.debug(
-            'process_send: %s(id:%s) has been sent to %s candidate(s).'
-            '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
-    else:
-        logger.error('callback_campaign_sent: Result is not a list')
+    if not isinstance(sends_result, list):
+        logger.error("post_campaign_sent_processing: Celery task's result is not a list")
+    total_sends = sends_result.count(True)
+    blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+    blast_obj = blast_model.get_by_id(blast_id)
+    campaign = blast_obj.campaign
+    if total_sends:
+        # update SMS campaign blast. i.e. update number of sends.
+        try:
+            blast_obj.update(sends=blast_obj.sends + total_sends)
+        except Exception:
+            logger.exception(
+                'post_campaign_sent_processing: Error updating campaign(id:%s) blast(id:%s)'
+                % (campaign.id, blast_obj.id))
+            raise
+        base_class.create_campaign_send_activity(user_id, campaign,
+                                                 oauth_header, total_sends)
+    logger.debug('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
+                 '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
 
 
 def delete_scheduled_task(scheduled_task_id, oauth_header):

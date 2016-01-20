@@ -407,24 +407,20 @@ class TestURLRedirectionMethods(object):
                                                       url_conversion_by_send_test_sms_campaign):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
-        All parameters passed are valid, So, it should get OK response.
+        All parameters passed are valid, So, it should not get any error.
         :param url_conversion_by_send_test_sms_campaign:
         :return:
         """
-        try:
-            request_args = _get_args_from_url(url_conversion_by_send_test_sms_campaign.source_url)
-            _call_pre_process_url_redirect(request_args,
-                                           url_conversion_by_send_test_sms_campaign.source_url)
-        except Exception as error:
-            assert not error.message, 'Pre Processing should not raise any error'
+        request_args = _get_args_from_url(url_conversion_by_send_test_sms_campaign.source_url)
+        _call_pre_process_url_redirect(request_args,
+                                       url_conversion_by_send_test_sms_campaign.source_url)
 
     def test_pre_process_url_redirect_with_missing_key_signature(
-            self, url_conversion_by_send_test_sms_campaign, candidate_first):
+            self, url_conversion_by_send_test_sms_campaign):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         signature is missing from request_arg.So, it should get Invalid Usage Error.
         :param url_conversion_by_send_test_sms_campaign:
-        :param candidate_first:
         :return:
         """
         try:
@@ -539,7 +535,6 @@ def _call_process_url_redirect(url_conversion_obj):
 def _call_pre_process_url_redirect(request_args, url):
     """
     This directly calls the pre_process_url_redirect() class method of CampaignBase
-    :param url_conversion_obj:
     :return:
     """
     with app.app_context():

@@ -93,7 +93,7 @@ class TwilioSMS(object):
                 type=self.phone_type,
                 sms_enabled=self.sms_enabled,
             )
-        except Exception as error:
+        except twilio.TwilioRestException as error:
             raise TwilioApiError('Cannot get available number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
         return phone_numbers
@@ -122,7 +122,7 @@ class TwilioSMS(object):
             number = self.client.phone_numbers.update(phone_number_sid,
                                                       sms_url=self.sms_call_back_url)
             logger.info('SMS call back URL has been set to: %s' % number.sms_url)
-        except Exception as error:
+        except twilio.TwilioRestException as error:
             raise TwilioApiError('Error updating callback URL. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
@@ -134,7 +134,7 @@ class TwilioSMS(object):
             number = self.client.phone_numbers.list(phone_number=phone_number)
             if len(number) == 1:
                 return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
-        except Exception as error:
+        except twilio.TwilioRestException as error:
             raise TwilioApiError('Error getting SID of phone_number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 

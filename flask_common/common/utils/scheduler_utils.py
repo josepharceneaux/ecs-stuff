@@ -14,10 +14,6 @@ class SchedulerUtils(object):
     QUEUE = 'celery_scheduler'
     # Set the minimum frequency in seconds
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ['dev', 'circle']:
-        MIN_ALLOWED_FREQUENCY = 4
-    else:
-        # For qa and production minimum frequency would be one hour
-        MIN_ALLOWED_FREQUENCY = 3600
-
+    # For qa and production minimum frequency would be one hour
+    MIN_ALLOWED_FREQUENCY = 4 if env in ['dev', 'circle'] else 3600
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds

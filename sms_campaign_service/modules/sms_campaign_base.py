@@ -39,7 +39,7 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (sign_redirect_url, CampaignType,  processing_after_campaign_sent)
+    (sign_redirect_url, CampaignType,  post_campaign_sent_processing)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
@@ -571,7 +571,7 @@ class SmsCampaignBase(CampaignBase):
         1) Update number of sends in campaign blast
         2) Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
 
-        This uses processing_after_campaign_sent() function defined in
+        This uses post_campaign_sent_processing() function defined in
             common/campaign_services/campaign_utils.py
 
         :param sends_result: Result of executed task
@@ -590,8 +590,8 @@ class SmsCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
-            processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
-                                           blast_id, oauth_header)
+            post_campaign_sent_processing(CampaignBase, sends_result, user_id,
+                                          campaign_type, blast_id, oauth_header)
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
@@ -712,7 +712,7 @@ class SmsCampaignBase(CampaignBase):
                 modified_body_text = ' '.join(text_split)
             else:
                 modified_body_text = self.body_text
-        except Exception as error:
+        except IndexError as error:
             raise ErrorUpdatingBodyText(
                 'Error while updating body text. Error is %s' % error.message)
         return modified_body_text
