@@ -12,13 +12,13 @@ from candidate_service.common.models.user import User
 from candidate_service.common.models.candidate import Candidate
 
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
+# from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    create_same_candidate, check_for_id, AddUserRoles, request_to_candidate_resource
+    create_same_candidate, check_for_id, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
 )
 
 # Sample data
@@ -32,49 +32,49 @@ from candidate_service.common.models.candidate import CandidateEmail
 
 
 ######################## Candidate ########################
-def test_create_candidate_successfully(sample_user, user_auth):
+def test_create_candidate_without_talent_pools(access_token_first, user_first):
+    """
+    Test: Attempt to create a candidate without providing talent pool IDs
+    Expect: 400
+    """
+    AddUserRoles.add(user=user_first)
+    # Create Candidate
+    data = {'candidates': [{'first_name': 'cher'}]}
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+
+
+def test_create_candidate_successfully(access_token_first, user_first, talent_pool):
     """
     Test:   Create a new candidate and candidate's info
     Expect: 201
-    :type   sample_user:  User
-    :type   user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
-    AddUserRoles.add(user=sample_user)
-
+    AddUserRoles.add(user=user_first)
     # Create Candidate
-    print "\nsample_user_domain_id: {}".format(sample_user.domain_id)
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id, user_id=sample_user.id)
-
-    resp_dict = create_resp.json()
+    data = {'candidates': [{'first_name': 'joker', 'talent_pool_ids': {'add': [talent_pool.id]}}]}
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
     assert create_resp.status_code == 201
-    assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
 
 
-def test_create_candidate_and_retrieve_it(sample_user, user_auth):
+def test_create_candidate_and_retrieve_it(access_token_first, user_first, talent_pool):
     """
     Test:   Create a Candidate and retrieve it. Ensure that the data sent in for creating the
             Candidate is identical to the data obtained from retrieving the Candidate
             minus id-keys
     Expect: 201
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
-
+    AddUserRoles.add_and_get(user=user_first)
     # Create Candidate
-    data = generate_single_candidate_data()
-    create_resp = post_to_candidate_resource(token, data=data)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
     assert create_resp.status_code == 201
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    resp = get_from_candidate_resource(token, candidate_id)
+    resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
     print response_info(resp)
     assert resp.status_code == 200
 

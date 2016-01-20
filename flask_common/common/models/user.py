@@ -122,7 +122,7 @@ class User(db.Model):
 
     # ***** Below function to be used for testing only *****
     @staticmethod
-    def add_test_user(session, domain_id, password):
+    def add_test_user(session, password, domain_id, user_group_id):
         """
         Function creates a unique user for testing
         :rtype: User
@@ -131,6 +131,7 @@ class User(db.Model):
             email='{}@example.com'.format(uuid.uuid4().__str__()),
             password=generate_password_hash(password, method='pbkdf2:sha512'),
             domain_id=domain_id,
+            user_group_id=user_group_id,
             expiration=None
         )
         session.add(user)
@@ -177,9 +178,8 @@ class Domain(db.Model):
         :return:
         """
         from datetime import timedelta
-        domain = Domain(
-            name='{}'.format(uuid.uuid4().__str__()[0:8]),
-            expiration=datetime.datetime.now() + timedelta(weeks=500))
+        domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
+                        expiration='0000-00-00 00:00:00')
         session.add(domain)
         session.commit()
         return domain
@@ -556,18 +556,6 @@ class UserGroup(db.Model):
                 raise InvalidUsage(error_message="User: %s doesn't exist or either it doesn't belong to same Domain "
                                                  "%s as user group" % (user_id, user_group.domain_id))
         db.session.commit()
-
-    @staticmethod
-    def add_group(session, domain_id):
-        """
-        Function adds a UserGroup to domain
-        :type domain_id:  int|long
-        :rtype:  UserGroup
-        """
-        user_group = UserGroup(name='{}'.format(str(uuid.uuid4)[0:8]), domain_id=domain_id)
-        session.add(user_group)
-        session.commit()
-        return user_group
 
 
 class UserSocialNetworkCredential(db.Model):
