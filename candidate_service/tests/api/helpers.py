@@ -11,6 +11,8 @@ from candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
+from candidate_service.common.error_handling import InvalidUsage
+
 
 class AddUserRoles(object):
     """
@@ -131,6 +133,9 @@ def request_to_candidates_resource(access_token, request, data=None):
     :type request: str
     :type data: dict
     """
+    if request.lower() == 'post' and data is None:
+        raise InvalidUsage(error_message='POST request requires data')
+
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
 
@@ -407,25 +412,6 @@ def request_to_candidate_preference_resource(token, request, candidate_id='', da
     """
     url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
     return define_and_send_request(token, request, url, data)
-
-
-def create_same_candidate(access_token):
-    """
-    Function will attempt to create the same Candidate twice
-    """
-    # Create Candidate
-    resp = post_to_candidate_resource(access_token)
-    resp_dict = resp.json()
-    candidate_id = resp_dict['candidates'][0]['id']
-
-    # Fetch Candidate\
-    resp = get_from_candidate_resource(access_token, candidate_id)
-    resp_dict = resp.json()
-
-    # Create Candidate again
-    resp = post_to_candidate_resource(access_token, resp_dict)
-
-    return resp
 
 
 def check_for_id(_dict):
