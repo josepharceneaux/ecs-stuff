@@ -2,7 +2,10 @@ import json
 import datetime
 import requests
 from social_network_service.common.models.event import Event
+from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
+    event_data_tests
 
 API_URL = SocialNetworkApiUrl.HOST_NAME % '/v1'
 
@@ -14,6 +17,7 @@ class TestResourceEvents:
     def test_get_with_invalid_token(self):
         response = requests.get(SocialNetworkApiUrl.EVENTS,
                                 headers=auth_header('invalid_token'))
+        logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
@@ -21,20 +25,22 @@ class TestResourceEvents:
 
         response = requests.get(SocialNetworkApiUrl.EVENTS,
                                 headers=auth_header(token))
+        logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) == 0, 'There should be some events for test user'
 
     def test_events_get_with_valid_token(self, token, event_in_db):
 
-        response = requests.get(SocialNetworkApiUrl.EVENTS,
-                                headers=auth_header(token))
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=auth_header(token))
+        logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']
         assert len(events) > 0, 'There should be some events for test user'
 
     def test_events_post_with_invalid_token(self):
         response = send_post_request(SocialNetworkApiUrl.EVENTS, {}, 'invalid_token')
+        logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
@@ -47,13 +53,15 @@ class TestResourceEvents:
         # test with a social network that does not exists
         event_data['social_network_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4052, 'Social Network not found'
 
         # test social network which have no implementation for events
         event_data['social_network_id'] = 1
-        response = send_post_request('/events', event_data, token)
+        response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4062, 'Social Network have no events implementation'
@@ -63,6 +71,7 @@ class TestResourceEvents:
         # test with invalid organizer
         event_data['organizer_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4054, 'Event organizer not found'
@@ -72,6 +81,7 @@ class TestResourceEvents:
         # test with invalid venue
         event_data['venue_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4065, 'Venue not found'
@@ -82,6 +92,7 @@ class TestResourceEvents:
         datetime_now = datetime.datetime.now()
         event_data['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%S')
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4064, 'Invalid start datetime format'
@@ -90,6 +101,7 @@ class TestResourceEvents:
         event_data['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%SZ')
         event_data['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%S')
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4064, 'Invalid end datetime format'
@@ -97,39 +109,45 @@ class TestResourceEvents:
 
         # Success case
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 201, 'Status should be Ok, Resource Created (201)'
         assert 'Location' in response.headers
         event_id = response.json()['id']
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id     # Add created event id  in test_event so it can be deleted in tear_down
 
-    def test_eventbrite_with_missing_required_fields(self, token, eventbrite_missing_data):
+    def test_eventbrite_with_missing_required_fields(self, token, eventbrite_missing_data,
+                                                     test_eventbrite_credentials):
         key, event_data = eventbrite_missing_data
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500, 'It should fail'
         response = response.json()
         assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 
-    def test_meetup_with_missing_required_fields(self, token, meetup_missing_data):
+    def test_meetup_with_missing_required_fields(self, token, meetup_missing_data, test_meetup_credentials):
         key, event_data = meetup_missing_data
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500, 'It should fail'
         response = response.json()
         assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 
-    def test_meetup_with_valid_address(self, token, meetup_event_data):
+    def test_meetup_with_valid_address(self, token, meetup_event_data, test_meetup_credentials):
         event_data = meetup_event_data
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 201, 'Event should be created, address is valid'
         event_id = response.json()['id']
         meetup_event_data['id'] = event_id
 
-    def test_meetup_with_invalid_address(self, token, meetup_event_data):
+    def test_meetup_with_invalid_address(self, token, meetup_event_data, test_meetup_credentials):
         event_data = meetup_event_data
         event_data['venue_id'] = 2
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+        logger.info(response.text)
         assert response.status_code == 500, 'Internal Server Error'
         response = response.json()
         assert response['error']['code'] == 4065, \
@@ -138,17 +156,19 @@ class TestResourceEvents:
 
 class TestEventById:
 
-    def test_get_with_invalid_token(self):
-        response = requests.post(SocialNetworkApiUrl.EVENT % 1,
-                                 headers=auth_header('invalid_token'))
+    def test_get_by_id_with_invalid_token(self):
+        response = requests.get(SocialNetworkApiUrl.EVENT % 1,
+                                headers=auth_header('invalid_token'))
+        logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'event' not in response.json()
 
-    def test_get_with_valid_token(self, token, event_in_db):
+    def test_get_by_id_with_valid_token(self, token, event_in_db):
         event = event_in_db
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id,
                                 headers=auth_header(token))
+        logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         results = response.json()
         assert 'event' in results
@@ -169,12 +189,13 @@ class TestEventById:
 
         assert status == True, 'Event values were not matched\n' + comparison
 
-    def test_post_with_invalid_token(self):
-        response = requests.post(SocialNetworkApiUrl.EVENT % 1,
-                                 headers=auth_header('invalid_token'))
+    def test_put_with_invalid_token(self):
+        response = requests.get(SocialNetworkApiUrl.EVENT % 1,
+                                headers=auth_header('invalid_token'))
+        logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
-    def test_post_with_valid_token(self, token, event_in_db):
+    def test_put_with_valid_token(self, token, event_in_db):
 
         event = event_in_db.to_json()
         event_id = event['id']
@@ -182,20 +203,18 @@ class TestEventById:
 
         # Update with invalid event id
         event['id'] = 231232132133  # We will find a better way to test it
-        response = send_post_request(SocialNetworkApiUrl.EVENT % event['id'],
-                                     event, token)
+        response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
+        # response = send_post_request(SocialNetworkApiUrl.EVENT % event['id'],
+        #                              event, token)
+        logger.info(response.text)
         assert response.status_code == 404, 'Event not found with this id'
-        response = response.json()
-        assert response['error']['code'] == 404, 'Error code should be 404'
 
         # Update with invalid social network event id
         event['id'] = event_id
         event['social_network_event_id'] = -1
-        response = send_post_request(SocialNetworkApiUrl.EVENT % event['id'],
-                                     event, token)
+        response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
+        logger.info(response.text)
         assert response.status_code == 404, 'Event not found with this social network event id'
-        response = response.json()
-        assert response['error']['code'] == 404, 'Error code should be 404'
 
         event['social_network_event_id'] = social_network_event_id
 
@@ -204,8 +223,8 @@ class TestEventById:
         event['title'] = 'Test update event'
         event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%SZ')
         event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
-        response = send_post_request(SocialNetworkApiUrl.EVENT % event['id'],
-                                     event, token)
+        response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
+        logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok, Resource Modified (204)'
         event_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
@@ -219,24 +238,23 @@ class TestEventById:
     def test_delete_with_invalid_token(self, event_in_db):
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_in_db.id,
                                    headers=auth_header('invalid_token'))
+        logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
     def test_delete_with_valid_token(self, token, event_in_db):
         event_id = event_in_db.id
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
                                    headers=auth_header(token))
+        logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
-        response = requests.delete(SocialNetworkApiUrl.EVENTS + str(event_id),
+        response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
                                    headers=auth_header(token))
+        logger.info(response.text)
         assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
 
 
 def send_post_request(url, data, access_token):
     return requests.post(url, data=json.dumps(data),
-                         headers={'Authorization': 'Bearer %s' % access_token,
-                                  'Content-Type': 'application/json'})
+                         headers=get_headers(access_token))
 
-
-def auth_header(token):
-    return dict(Authorization='Bearer %s' % token)
 

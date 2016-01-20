@@ -1,15 +1,11 @@
 # Standard Library
 import os
 
-import requests
 # Third Party
 import pytest
 from faker import Faker
 from datetime import datetime, timedelta
 from mixer._faker import faker
-from werkzeug.security import gen_salt
-from mixer.backend.sqlalchemy import Mixer
-from werkzeug.security import generate_password_hash
 
 # App Settings
 from social_network_service.social_network_app import app
@@ -22,14 +18,12 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
 from social_network_service.common.models.user import Domain
-from social_network_service.common.models.misc import Culture
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.misc import Organization
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.modules.utilities import process_event
 from social_network_service.modules.utilities import delete_events
-from social_network_service.modules.utilities import get_random_word
 from social_network_service.common.routes import AuthApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.tests.conftest import (user_auth, sample_user,
@@ -111,147 +105,6 @@ def facebook():
     return SocialNetwork.get_by_name('Facebook')
 
 
-# @pytest.fixture(scope='session')
-# def test_client(request):
-#     """
-#     Get the test_client from the app, for the whole test session.
-#     This client_id and client_secret is used to create access_token for user to access APIs.
-#     """
-#     # Add test client in Client DB
-#     client_id = gen_salt(40)
-#     client_secret = gen_salt(50)
-#     client = Client(
-#         client_id=client_id,
-#         client_secret=client_secret
-#     )
-#     db.session.add(client)
-#     db.session.commit()
-#
-#     def delete_client():
-#         """
-#         This method deletes client at the end of test session
-#         """
-#         # Client.delete(client.client_id)
-#         client.delete()
-#
-#     request.addfinalizer(delete_client)
-#     return client
-
-
-# @pytest.fixture(scope='session')
-# def test_culture(request):
-#     mixer = Mixer(session=db_session, commit=True)
-#     culture = mixer.blend(Culture, description=get_random_word(20), code=get_random_word(5))
-#
-#     def fin():
-#         """
-#         Delete culture at the end of test session
-#         """
-#         Culture.delete(culture.id)
-#
-#     request.addfinalizer(fin)
-#     return culture
-
-
-# @pytest.fixture(scope='session')
-# def test_organization(request):
-#     """
-#     Creates a test organization which will be used to create domain model object
-#     :param request:
-#     :return:
-#     """
-#     mixer = Mixer(session=db_session, commit=True)
-#     organization = mixer.blend(Organization, name=faker.nickname(), notes='')
-#
-#     def delete_organization():
-#         """
-#         Delete this organization at the end of test session
-#         """
-#         Organization.delete(organization.id)
-#
-#     request.addfinalizer(delete_organization)
-#
-#     return organization
-
-
-# @pytest.fixture(scope='session')
-# def test_domain(request, test_organization, test_culture):
-#     """
-#     Create a test domain which will be used to create user model object
-#     :param request:
-#     :param test_organization: organization fixture
-#     :param test_culture: culture fixture
-#     :return: Domain model object
-#     """
-#     now_timestamp = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
-#     mixer = Mixer(session=db_session, commit=True)
-#     domain = mixer.blend(Domain, organization=test_organization, culture=test_culture,
-#                          name=faker.nickname(), addedTime=now_timestamp, expiration=datetime(2020,1,1,0,0,0))
-#
-#     def delete_doamin():
-#         """
-#         Delete this domain object at the end of test session
-#         """
-#         Domain.delete(domain)
-#
-#     request.addfinalizer(delete_doamin)
-#     return domain
-
-
-# @pytest.fixture(scope='session')
-# def test_user(request, test_domain):
-#     """
-#     Create a new fresh user object for testing purposes.
-#     This user has no events, no credentials for any social network. We need to add that
-#     We will be doing that in different credentials fixture like test_meetup_credentials
-#     Also we will add access token record for this user in Token table
-#     :param request:
-#     :param test_domain: Domain fixture
-#     :return:
-#     """
-#     mixer = Mixer(session=db_session, commit=True)
-#     user = mixer.blend(User, domain=test_domain, firstName=get_random_word(10),
-#                        lastName=get_random_word(10), email=faker.email_address(),
-#                        password=generate_password_hash('A123456', method='pbkdf2:sha512'))
-#
-#     def fin():
-#         """
-#         Delete this user object at the end of test session
-#         """
-#         User.delete(user)
-#
-#     request.addfinalizer(fin)
-#     return user
-
-
-# @pytest.fixture(scope='session')
-# def test_token(request, test_user, test_client):
-#     """
-#     This create access token in Token table for this user so we can access API
-#     :param request:
-#     :param test_user:
-#     :return:
-#     """
-#     params = dict(grant_type="password", username=test_user.email, password='A123456')
-#     auth_service_token_response = requests.post(TOKEN_URL,
-#                                                 params=params, auth=(test_client.client_id, test_client.client_secret)).json()
-#     if not (auth_service_token_response.get(u'access_token') and auth_service_token_response.get(u'refresh_token')):
-#         raise Exception("Either Access Token or Refresh Token is missing")
-#     else:
-#         db.session.commit()
-#         token = Token.query.filter_by(access_token=auth_service_token_response.get(u'access_token')).first()
-#
-#     def fin():
-#         """
-#         Delete this token object at the end of test session
-#         """
-#         db.session.delete(token)
-#         db.session.commit()
-#
-#     request.addfinalizer(fin)
-#     return token
-
-
 @pytest.fixture()
 def test_eventbrite_credentials(request, sample_user, eventbrite):
     """
@@ -304,18 +157,6 @@ def test_meetup_credentials(request, sample_user, meetup):
     return user_credentials
 
 
-# @pytest.fixture(scope='session')
-# def auth_data(sample_user, test_eventbrite_credentials, test_meetup_credentials, test_token):
-#     """
-#     This fixture just calls other fixtures which are required o be executed before running a test.
-#     By using them in this fixture as arguments we are actually creating those resources like sample_user,
-#     user credentials for meetup and eventbrite and access token to access social network service api
-#     :return: dictionary containing authentication data
-#     """
-#     token = test_token
-#     return token.to_json()
-
-
 @pytest.fixture()
 def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_db):
     """
@@ -329,15 +170,15 @@ def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_d
     data['venue_id'] = meetup_venue.id
     data['organizer_id'] = organizer_in_db.id
 
-    def delete_event():
-        # delete event if it was created by API. In that case,
-        # data contains id of that event
-        if 'id' in data:
-            event_id = data['id']
-            del data['id']
-            delete_events(sample_user.id, [event_id])
-
-    request.addfinalizer(delete_event)
+    # def delete_event():
+    #     # delete event if it was created by API. In that case,
+    #     # data contains id of that event
+    #     if 'id' in data:
+    #         event_id = data['id']
+    #         del data['id']
+    #         delete_events(sample_user.id, [event_id])
+    #
+    # request.addfinalizer(delete_event)
     return data
 
 
@@ -363,11 +204,11 @@ def eventbrite_event_data(request, eventbrite, sample_user, eventbrite_venue,
 
 @pytest.fixture(scope='function')
 def meetup_event(request, sample_user, test_meetup_credentials, meetup,
-                 venues, organizer_in_db):
+                 meetup_venue, organizer_in_db):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
     event['social_network_id'] = meetup.id
-    event['venue_id'] = venues[0].id
+    event['venue_id'] = meetup_venue.id
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, sample_user.id)
     event = Event.get_by_id(event_id)
@@ -417,7 +258,7 @@ def meetup_event_dict(request, sample_user, meetup_event):
 
 @pytest.fixture()
 def eventbrite_event(request, sample_user, test_eventbrite_credentials,
-                     eventbrite, venues, organizer_in_db):
+                     eventbrite, eventbrite_venue, organizer_in_db):
     """
     This method create a dictionary data to create event on eventbrite.
     It uses meetup SocialNetwork model object, venue for meetup
@@ -426,7 +267,7 @@ def eventbrite_event(request, sample_user, test_eventbrite_credentials,
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
-    event['venue_id'] = venues[1].id
+    event['venue_id'] = eventbrite_venue.id
     event['organizer_id'] = organizer_in_db.id
     event_id = process_event(event, sample_user.id)
     event = Event.get_by_id(event_id)
@@ -458,15 +299,24 @@ def event_in_db(request, eventbrite_event, meetup_event):
         return meetup_event
 
 
+@pytest.fixture(params=['Meetup', 'Eventbrite'])
+def venue_in_db(request, meetup_venue, eventbrite_venue):
+    """
+    This fixture returns meetup and eventbrite event one by one depending on the param value.
+
+    """
+    if request.param == 'Meetup':
+        return meetup_venue
+    if request.param == 'Eventbrite':
+        return eventbrite_venue
+
+
 @pytest.fixture()
-def venues(request, sample_user, meetup, eventbrite):
+def meetup_venue(meetup, sample_user):
     """
-    Create venues for both meetup.com and eventbrite.com on getTalent database and returns
-    list venues containing these two venues.
-    These venues will be used for event creation and in tests for venue API endpoints.
+    This fixture returns meetup venue in getTalent database
     """
-    venues = []
-    meetup_venue = {
+    venue = {
         "social_network_id": meetup.id,
         "user_id": sample_user.id,
         "zip_code": "95014",
@@ -478,11 +328,17 @@ def venues(request, sample_user, meetup, eventbrite):
         "city": "Cupertino",
         "country": "us"
     }
-    meetup_venue = Venue(**meetup_venue)
-    Venue.save(meetup_venue)
-    venues.append(meetup_venue)
+    venue = Venue(**venue)
+    Venue.save(venue)
+    return venue
 
-    eventbrite_venue = {
+
+@pytest.fixture()
+def eventbrite_venue(sample_user, eventbrite):
+    """
+    This fixture returns eventbrite venue in getTalent database
+    """
+    venue = {
         "social_network_id": eventbrite.id,
         "user_id": sample_user.id,
         "zip_code": "54600",
@@ -495,46 +351,9 @@ def venues(request, sample_user, meetup, eventbrite):
         "country": "Pakistan"
     }
 
-    eventbrite_venue = Venue(**eventbrite_venue)
-    Venue.save(eventbrite_venue)
-    venues.append(eventbrite_venue)
-
-    def fin():
-        try:
-            for venue in venues:
-                Venue.delete(venue.id)
-        except:
-            pass
-    request.addfinalizer(fin)
-    return venues
-
-
-@pytest.fixture(params=['Meetup', 'Eventbrite'])
-def venue_in_db(request, venues):
-    """
-    This fixture returns meetup and eventbrite event one by one depending on the param value.
-
-    """
-    if request.param == 'Meetup':
-        return venues[0]
-    if request.param == 'Eventbrite':
-        return venues[1]
-
-
-@pytest.fixture()
-def meetup_venue(venues):
-    """
-    This fixture returns meetup venue in getTalent database
-    """
-    return venues[0]
-
-
-@pytest.fixture()
-def eventbrite_venue(request, venues):
-    """
-    This fixture returns eventbrite venue in getTalent database
-    """
-    return venues[1]
+    venue = Venue(**venue)
+    Venue.save(venue)
+    return venue
 
 
 @pytest.fixture()
@@ -562,18 +381,19 @@ def organizer_in_db(request, sample_user):
 
 
 @pytest.fixture()
-def get_test_events(request, sample_user, meetup, eventbrite, venues, test_eventbrite_credentials,
-           test_meetup_credentials, organizer_in_db):
+def get_test_events(request, sample_user, meetup, eventbrite, meetup_venue,
+                    eventbrite_venue, test_eventbrite_credentials,
+                    test_meetup_credentials, organizer_in_db):
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
     meetup_dict = EVENT_DATA.copy()
     meetup_dict['social_network_id'] = meetup.id
-    meetup_dict['venue_id'] = venues[0].id
+    meetup_dict['venue_id'] = meetup_venue.id
     meetup_dict['organizer_id'] = organizer_in_db.id
     eventbrite_dict = EVENT_DATA.copy()
     eventbrite_dict['social_network_id'] = eventbrite.id
-    eventbrite_dict['venue_id'] = venues[1].id
+    eventbrite_dict['venue_id'] = eventbrite_venue.id
     eventbrite_dict['organizer_id'] = organizer_in_db.id
 
     def delete_test_event():

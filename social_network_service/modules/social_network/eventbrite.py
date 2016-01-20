@@ -9,7 +9,7 @@ from social_network_service.social_network_app import app, logger
 from social_network_service.modules.custom_exceptions import *
 from social_network_service.modules.utilities import http_request
 
-WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io/webhook'  # app.config['WEBHOOK_REDIRECT_URL']
+WEBHOOK_REDIRECT_URL = 'http://bfd91b3c.ngrok.io'  # app.config['WEBHOOK_REDIRECT_URL']
 
 
 class Eventbrite(SocialNetworkBase):

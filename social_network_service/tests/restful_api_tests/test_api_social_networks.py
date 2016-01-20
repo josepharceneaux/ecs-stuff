@@ -5,9 +5,10 @@ import requests
 import json
 
 from social_network_service.social_network_app import logger
+from social_network_service.common.routes import SocialNetworkApiUrl
 
 
-def test_subscribed_social_network(base_url, token, is_subscribed_test_data):
+def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):
     """
     Input: We created two test social networks with name SN1 and SN2 and added credentials for SN1
     in UserSocialNetworkCredential Table in is_subscribed_test_data fixture.
@@ -19,8 +20,8 @@ def test_subscribed_social_network(base_url, token, is_subscribed_test_data):
     :param user:
     :return:
     """
-    response = requests.get(base_url + '/social_networks',
-                            headers={'Authorization': token})
+    response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
+                            headers={'Authorization': 'Bearer %s' %token})
     logger.info(response.text)
     assert response.status_code == 200
     social_networks = json.loads(response.text)['social_networks']
@@ -36,8 +37,8 @@ def test_subscribed_social_network(base_url, token, is_subscribed_test_data):
     assert not_subscribed_social_network[0]['is_subscribed'] == False, 'SN2 must be not subscribed'
 
 
-def test_social_network_no_auth(base_url):
-    response = requests.get(base_url + '/social_networks',
+def test_social_network_no_auth():
+    response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
                             headers={'Authorization': 'some random'})
     logger.info(response.text)
     assert response.status_code == 401

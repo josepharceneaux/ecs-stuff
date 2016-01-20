@@ -327,7 +327,7 @@ class EventById(Resource):
                     4066 (Access token for Social Network has expired)
 
         """
-        event_data = request.get_json(force=True)
+        event_data = get_valid_json_data(request)
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
             request.user.id, id, event_data['social_network_event_id'])
