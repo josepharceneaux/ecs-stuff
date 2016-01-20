@@ -2,6 +2,7 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
@@ -43,6 +44,13 @@ try:
         schedule_candidate_daily_stats_update
 
     schedule_candidate_daily_stats_update()
+    # Enable CORS
+    CORS(app, resources={
+        r'%s/*' % CandidatePoolApi: {
+            'origins': '*',
+            'allow_headers': ['Content-Type', 'Authorization']
+        }
+    })
 
     logger.info("Starting candidate_pool_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
