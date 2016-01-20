@@ -27,6 +27,8 @@
                         if (response.status === 401) {
                             OAuth.getRefreshToken().then(function () {
                                 $http(response.config).then(responseHandler, deferred.reject);
+                            }, function () {
+                                throw new Error('Unable to renew your session. Please log out and back in again');
                             });
 
                             return false; // error handled
