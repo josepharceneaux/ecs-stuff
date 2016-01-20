@@ -14,3 +14,7 @@ Resume Parsing Service
 Dashboard in AngularJS
 ----------------------
 [README](dashboard/README.md)
+
+Scheduler Service
+-------------
+[README](scheduler_service/README.md)

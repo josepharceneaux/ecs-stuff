@@ -1,9 +1,9 @@
 (function () {
     'use strict';
 
-    angular.module('app.user')
-        .directive('gtFaq', directiveFunction)
-        .controller('FaqController', ControllerFunction);
+    angular.module('app.admin')
+        .directive('gtAdminUserAdd', directiveFunction)
+        .controller('AdminUserAddController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/faq/faq.html',
+            templateUrl: 'components/admin/admin-users/admin-user-add/admin-user-add.html',
             replace: true,
             scope: {},
-            controller: 'FaqController',
+            controller: 'AdminUserAddController',
             controllerAs: 'vm'
         };
 
@@ -24,21 +24,16 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['$cookies', 'logger'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction($cookies, logger) {
         var vm = this;
 
-        init();
         activate();
 
         function activate() {
-            logger.log('Activated FAQ View');
-        }
-
-        function init() {
-            //
+            logger.log('Activated Admin User Add View');
         }
     }
 })();

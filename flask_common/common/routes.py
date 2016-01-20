@@ -271,13 +271,30 @@ class WidgetApiUrl(object):
     UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
 
 
-class SocialNetworkApiUrl(object):
+class SocialNetworkApi(object):
     """
     API relative URLs for social_network_service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    EVENTS = RELATIVE_VERSION % 'events/'
+    EVENT = RELATIVE_VERSION % '/events/<int:event_id>'
+
+
+class SocialNetworkApiUrl(object):
+    """
+    API absolute URLs for social_network_service
     """
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
                                GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
+    EVENTS = API_URL % 'events'
 
 
 class CandidatePoolApiWords(object):

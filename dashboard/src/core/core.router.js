@@ -79,6 +79,34 @@
                     }
                 }
             })
+            .state('admin.users', {
+                url: '/users',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-users></gt-admin-users>'
+                    }
+                }
+            })
+            .state('admin.users.add', {
+                url: '/add',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-user-add></gt-admin-user-add>'
+                    }
+                }
+            })
+            .state('admin.users.user', {
+                url: '/:userId',
+                redirectTo: 'admin.users.user.edit'
+            })
+            .state('admin.users.user.edit', {
+                url: '/edit',
+                views: {
+                    '@site': {
+                        template: '<gt-admin-user-edit></gt-admin-user-edit>'
+                    }
+                }
+            })
             .state('admin.settings', {
                 url: '/settings',
                 views: {
@@ -173,15 +201,19 @@
                     }
                 }
             })
-            .state('campaigns.detail', {
+            .state('campaigns.campaign', {
                 url: '/:campaignId',
+                redirectTo: 'campaigns.campaign.detail'
+            })
+            .state('campaigns.campaign.detail', {
+                url: '',
                 views: {
                     '@site': {
                         template: '<gt-campaign-detail></gt-campaign-detail>'
                     }
                 }
             })
-            .state('campaigns.detail.settings', {
+            .state('campaigns.campaign.settings', {
                 url: '/settings',
                 views: {
                     '@site': {
@@ -189,11 +221,11 @@
                     }
                 }
             })
-            .state('campaigns.detail.emails', {
+            .state('campaigns.campaign.emails', {
                 abstract: true,
                 url: '/emails'
             })
-            .state('campaigns.detail.emails.create', {
+            .state('campaigns.campaign.emails.create', {
                 url: '/create',
                 views: {
                     '@site': {
@@ -201,19 +233,31 @@
                     }
                 }
             })
-            .state('campaigns.detail.emails.detail', {
+            .state('campaigns.campaign.emails.email', {
                 url: '/:emailId',
+                redirectTo: 'campaigns.campaign.emails.email.detail'
+            })
+            .state('campaigns.campaign.emails.email.detail', {
+                url: '',
                 views: {
                     '@site': {
                         template: '<gt-campaign-email-detail></gt-campaign-email-detail>'
                     }
                 }
             })
-            .state('campaigns.detail.events', {
+            .state('campaigns.campaign.emails.email.edit', {
+                url: '/edit',
+                views: {
+                    '@site': {
+                        template: '<gt-campaign-email-edit></gt-campaign-email-edit>'
+                    }
+                }
+            })
+            .state('campaigns.campaign.events', {
                 abstract: true,
                 url: '/events'
             })
-            .state('campaigns.detail.events.create', {
+            .state('campaigns.campaign.events.create', {
                 url: '/create',
                 views: {
                     '@site': {
@@ -221,11 +265,34 @@
                     }
                 }
             })
-            .state('campaigns.detail.events.detail', {
+            .state('campaigns.campaign.events.event', {
                 url: '/:eventId',
+                redirectTo: 'campaigns.campaign.events.event.detail'
+            })
+            .state('campaigns.campaign.events.event.detail', {
+                url: '',
                 views: {
                     '@site': {
                         template: '<gt-campaign-event-detail></gt-campaign-event-detail>'
+                    }
+                }
+            })
+            .state('campaigns.campaign.events.event.edit', {
+                url: '/edit',
+                views: {
+                    '@site': {
+                        template: '<gt-campaign-event-edit></gt-campaign-event-edit>'
+                    }
+                }
+            })
+
+            // Candidate Search
+            .state('candidateSearch', {
+                parent: 'site',
+                url: '/candidate-search',
+                views: {
+                    '@site': {
+                        template: '<gt-candidate-search></gt-candidate-search>'
                     }
                 }
             })
@@ -256,26 +323,46 @@
                 url: '/manage',
                 views: {
                     '@site': {
-                        template: '<gt-candidates-manage></gt-candidate-manage>'
+                        template: '<gt-candidates-manage></gt-candidates-manage>'
                     }
                 }
             })
             .state('candidates.profile', {
-                url: '/profile/:profileId',
+                url: '/:profileId',
+                redirectTo: 'candidates.profile.detail',
+            })
+            .state('candidates.profile.detail', {
+                url: '',
                 views: {
                     '@site': {
                         template: '<gt-candidate-profile></gt-candidate-profile>'
                     }
                 }
             })
-
-            // FAQ
-            .state('faq', {
-                parent: 'site',
-                url: '/faq',
+            .state('candidates.profile.edit', {
+                url: '/edit',
                 views: {
                     '@site': {
-                        template: '<gt-faq></gt-faq>'
+                        template: '<gt-candidate-edit></gt-candidate-edit>'
+                    }
+                }
+            })
+            .state('candidates.profile.verify', {
+                url: '/verify',
+                views: {
+                    '@site': {
+                        template: '<gt-candidate-verify></gt-candidate-verify>'
+                    }
+                }
+            })
+
+            // FAQ
+            .state('support', {
+                parent: 'site',
+                url: '/support',
+                views: {
+                    '@site': {
+                        template: '<gt-support></gt-support>'
                     }
                 }
             })
@@ -370,15 +457,19 @@
                     }
                 }
             })
-            .state('pipelines.detail', {
+            .state('pipelines.pipeline', {
                 url: '/:pipelineId',
+                redirectTo: 'pipelines.pipeline.detail'
+            })
+            .state('pipelines.pipeline.detail', {
+                url: '',
                 views: {
                     '@pipelines': {
                         template: '<gt-pipeline-detail></gt-pipeline-detail>'
                     }
                 }
             })
-            .state('pipelines.detail.settings', {
+            .state('pipelines.pipeline.settings', {
                 url: '/settings',
                 views: {
                     '@pipelines': {
@@ -386,7 +477,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.team', {
+            .state('pipelines.pipeline.team', {
                 url: '/team',
                 views: {
                     '@pipelines': {
@@ -394,7 +485,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists', {
+            .state('pipelines.pipeline.smartLists', {
                 url: '/smart-lists',
                 views: {
                     '@pipelines': {
@@ -402,7 +493,7 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists.create', {
+            .state('pipelines.pipeline.smartLists.create', {
                 url: '/create',
                 views: {
                     '@pipelines': {
@@ -410,8 +501,12 @@
                     }
                 }
             })
-            .state('pipelines.detail.smartLists.detail', {
-                url: '/:smartListId',
+            .state('pipelines.pipeline.smartLists.smartList', {
+                url: '/:pipelineId',
+                redirectTo: 'pipelines.pipeline.smartLists.smartList.detail'
+            })
+            .state('pipelines.pipeline.smartLists.smartList.detail', {
+                url: '',
                 views: {
                     '@pipelines': {
                         template: '<gt-smart-list-details></gt-smart-list-details>'
@@ -489,6 +584,14 @@
                     }
                 }
             })
+            .state('user.organization.invite', {
+                url: '/invite',
+                views: {
+                    '@user': {
+                        template: '<gt-organization-invite></gt-organization-invite>'
+                    }
+                }
+            })
             .state('user.settings', {
                 url: '/settings',
                 views: {
@@ -502,6 +605,30 @@
                 views: {
                     '@user': {
                         template: '<gt-widget-options></gt-widget-options>'
+                    }
+                }
+            })
+            .state('user.widgets', {
+                abstract: true,
+                url: '/widgets'
+            })
+            .state('user.widgets.add', {
+                url: '/add',
+                views: {
+                    '@user': {
+                        template: '<gt-widget-add></gt-widget-add>'
+                    }
+                }
+            })
+            .state('user.widgets.widget', {
+                url: '/:widgetId',
+                redirectTo: 'user.widgets.widget.edit'
+            })
+            .state('user.widgets.widget.edit', {
+                url: '/edit',
+                views: {
+                    '@user': {
+                        template: '<gt-widget-edit></gt-widget-edit>'
                     }
                 }
             })
@@ -524,7 +651,19 @@
                 url: '/create',
                 views: {
                     '@site': {
-                        template: '<gt-talent-pools-create></gt-talent-pools-create>'
+                        template: '<gt-talent-pool-create></gt-talent-pool-create>'
+                    }
+                }
+            })
+            .state('talentPools.talentPool', {
+                url: '/:pipelineId',
+                redirectTo: 'talentPools.talentPool.detail'
+            })
+            .state('talentPools.talentPool.detail', {
+                url: '',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pool-detail></gt-talent-pool-detail>'
                     }
                 }
             });

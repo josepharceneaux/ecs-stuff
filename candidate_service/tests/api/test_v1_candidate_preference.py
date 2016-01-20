@@ -17,10 +17,9 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_preference_resource
+    response_info, post_to_candidate_resource, request_to_candidate_preference_resource,
+    AddUserRoles
 )
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 #####################
@@ -35,7 +34,7 @@ def test_add_subs_preference_to_candidate_without_providing_any_data(sample_user
     :type user_auth:  UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
+    AddUserRoles.add(user=sample_user)
 
     # Create candidate and candidate subscription preference
     create_resp = post_to_candidate_resource(token)
@@ -58,7 +57,7 @@ def test_add_candidate_subs_preference(sample_user, user_auth):
     :type user_auth:   UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create candidate and candidate subscription preference
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -85,7 +84,7 @@ def test_get_non_existing_candidate_preference(sample_user, user_auth):
     :type user_auth:  UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create candidate
     create_resp = post_to_candidate_resource(token)
@@ -109,7 +108,7 @@ def test_update_non_existing_candidate_preference(sample_user, user_auth):
     :type user_auth:   UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create candidate
     create_resp = post_to_candidate_resource(token)
@@ -131,7 +130,7 @@ def test_update_candidate_pref_without_providing_adequate_data(sample_user, user
     :type user_auth:  UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create candidate
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -157,7 +156,7 @@ def test_update_subs_pref_of_a_non_existing_candidate(sample_user, user_auth):
     :type user_auth:   UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
+    AddUserRoles.edit(user=sample_user)
 
     # Update candidate's subs preference
     last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
@@ -176,9 +175,7 @@ def test_update_subs_pref_of_candidate(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_EDIT_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate and candidate's subscription preference
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -206,9 +203,7 @@ def test_delete_candidate_preference(sample_user, user_auth):
     :type user_auth:    UserAuthentication
     """
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES'])
-    add_role_to_test_user(sample_user, ['CAN_DELETE_CANDIDATES'])
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate and candidate's subscription preference
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
