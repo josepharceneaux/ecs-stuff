@@ -41,7 +41,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    thumbnail_url = db.Column('thumbnailUrl', db.TEXT, default="")
+    thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -168,6 +168,21 @@ class Domain(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    # ***** Below functions to be used for testing only *****
+    @staticmethod
+    def add_test_domain(session):
+        """
+        Function creates a unique domain + domain's UserGroup for testing
+        :return:
+        """
+        from datetime import timedelta
+        domain = Domain(
+            name='{}'.format(uuid.uuid4().__str__()[0:8]),
+            expiration=datetime.datetime.now() + timedelta(weeks=500))
+        session.add(domain)
+        session.commit()
+        return domain
 
 
 class WebAuthGroup(db.Model):
@@ -541,6 +556,18 @@ class UserGroup(db.Model):
                 raise InvalidUsage(error_message="User: %s doesn't exist or either it doesn't belong to same Domain "
                                                  "%s as user group" % (user_id, user_group.domain_id))
         db.session.commit()
+
+    @staticmethod
+    def add_group(session, domain_id):
+        """
+        Function adds a UserGroup to domain
+        :type domain_id:  int|long
+        :rtype:  UserGroup
+        """
+        user_group = UserGroup(name='{}'.format(str(uuid.uuid4)[0:8]), domain_id=domain_id)
+        session.add(user_group)
+        session.commit()
+        return user_group
 
 
 class UserSocialNetworkCredential(db.Model):

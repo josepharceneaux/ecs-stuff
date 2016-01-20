@@ -44,7 +44,8 @@ def test_create_candidate_successfully(sample_user, user_auth):
     AddUserRoles.add(user=sample_user)
 
     # Create Candidate
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+    print "\nsample_user_domain_id: {}".format(sample_user.domain_id)
+    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id, user_id=sample_user.id)
 
     resp_dict = create_resp.json()
     print response_info(create_resp)
