@@ -1,198 +1,87 @@
 <section id="pipelines-overview-view" class="view__main--pipelines">
 
-    <div class="row--expanded row--blue hero">
-        <!-- Graph: Total Candidates -->
-        <div class="col--full-12">
-            <header class="hero__header">
-                <div class="row--widget">
-                    <div class="row--table hero__header__stats">
-                        <div class="col--full-4 hero__header__stats--column">
-                            <h3>Unique Candidates</h3>
-                            <h1>21,704</h1>
-                        </div>
+    <div layout-padding>
 
-                        <div class="col--full-4 hero__header__stats--column">
-                            <h3>Talent Pipelines <a class="hero__header__new-pipeline" href="#" title="New Pipeline">+</a></h3>
-                            <h1>14</h1>
-                        </div>
-
-                        <div class="col--full-4 hero__header__stats--column">
-                            <h3>Total Engagement</h3>
-                            <h1>62%</h1>
-                        </div>
-                    </div>
-                </div>
-            </header>
-            <section class="row--widget hero__content">
-                <div class="row--table">
-                    <div class="col--large-8--cell hero__header__text">
-                        <h2>Candidate Growth by Pipeline</h2>
-                        <h1>2.138 <span class="hero__header__stats--stat-subhead">+21%</span></h1>
-                    </div>
-                    <div class="col--large-4--cell hero__header__action">
-                        <a class="hero__header__action--icon-link" href="#">
-                            <span class="icon--download"></span>
-                        </a>
-                        <select id="chartToView" class="form__input--select" name="chartToView">
-                            <option value="">Select Chart to View</option>
-                            <option value="totalEngagement">Total Engagement</option>
-                        </select>
-                        <select id="chartDateRange" class="form__input--select" name="chartDateRange">
-                            <option value="15d">15d</option>
-                            <option value="30d">30d</option>
-                            <option value="60d">60d</option>
-                        </select>
-                    </div>
-                </div>
-            </section>
-            <figure gt-area-graph data="vm.totalCandidates.graph.data" class="areaGraph hero__graph"></figure>
+        <div layout="row">
+            <div flex="100" class="v2-font__sm"><a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb</div>
         </div>
-    </div>
 
-    <div class="row--widget">
-        <!-- Widget: Active Engagement Campaigns -->
-        <div class="col--full-4--cell box">
-            <header class="row--expanded">
-                <div class="col--large-7">
-                    <h2>Talent Pipeline <span>(14)</span></h2>
+        <header layout="row" class="v2-page-header">
+            <div flex class="module">
+                <div class="v2-align__vertical">
+                    <div class="page-title-icon">
+                        <img src="//placehold.it/80x80" />
+                    </div>
+                    <div>
+                        <div class="v2-font__xlg">Pipeline Name</div>
+                        <div class="v2-font__sm v2-line-height__1-6">Created by <a href="">Jason Provencher</a> on 5/22/16</div>
+                    </div>
+                    <div class="v2-align__right">
+                        <a class="v2-button-round__blue" href="">T</a>
+                        <a class="v2-button-round__blue" href="">T</a>
+                        <a class="v2-button-round__blue" href="">T</a>
+                    </div>
                 </div>
-                <div class="col--large-5 align--right box__header__with-link">
-                    <a href="#" class="button--blue button--greenHover">New Pipeline</a>
-                    <select id="activeEngagementCharts" class="form__input--select" name="activeEngagementCharts">
-                        <option value="">Select chart to view</option>
-                        <option value="candidate-count-by-pipelines">Candidate Count by Pipelines</option>
-                        <option value="candidate-growth-by-pipelines">Candidate Growth by Pipelines</option>
-                        <option value="candidate-growth-by-user">Candidate Growth by User</option>
-                        <option value="candidate-opt-outs-by-pipelines">Candidate Opt-Outs by Pipelines</option>
-                        <option value="engagement-by-pipelines">Engagement by Pipelines</option>
-                    </select>
+            </div>
+        </header>
+
+        <header layout="row" class="v2-page-header">
+            <div flex class="module">
+                <div class="v2-align__vertical">
+                    <div class="page-title-icon">
+                        <img src="//placehold.it/80x80" />
+                    </div>
+                    <div>
+                        <div class="v2-font__xlg">Your Pipelines</div>
+                    </div>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <div class="box__table">
-                <table class="table">
-                    <tr class="table__row">
-                        <th class="table__header">Pipeline</th>
-                        <th class="table__header">Candidates</th>
-                        <th class="table__header">Created</th>
-                        <th class="table__header">Growth</th>
-                        <th class="table__header">Engagement</th>
-                    </tr>
 
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Python developer</td>
-                        <td class="table__col--morePadding">608</td>
-                        <td class="table__col--morePadding">03/02/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">20%</td>
-                    </tr>
+        <div layout="row">
+            <div flex="100" class="module"><div style="height:400px;"></div></div>
+        </div>
 
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Site Reliability Engineers</td>
-                        <td class="table__col--morePadding">23</td>
-                        <td class="table__col--morePadding">06/06/2015</td>
-                        <td class="table__col--morePadding">+12</td>
-                        <td class="table__col--morePadding">50%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Engineering Manager</td>
-                        <td class="table__col--morePadding">502</td>
-                        <td class="table__col--morePadding">06/21/2015</td>
-                        <td class="table__col--morePadding">+200</td>
-                        <td class="table__col--morePadding">61%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Python developer in SF</td>
-                        <td class="table__col--morePadding">230</td>
-                        <td class="table__col--morePadding">04/25/2015</td>
-                        <td class="table__col--morePadding">+567</td>
-                        <td class="table__col--morePadding">87%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Finance Analyst</td>
-                        <td class="table__col--morePadding">608</td>
-                        <td class="table__col--morePadding">03/22/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">45%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Sr. iOS Developer</td>
-                        <td class="table__col--morePadding">20</td>
-                        <td class="table__col--morePadding">02/15/2015</td>
-                        <td class="table__col--morePadding">+45</td>
-                        <td class="table__col--morePadding">78%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Java Developers</td>
-                        <td class="table__col--morePadding">25</td>
-                        <td class="table__col--morePadding">04/15/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">12%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Sr. QA Engineer</td>
-                        <td class="table__col--morePadding">132</td>
-                        <td class="table__col--morePadding">10/22/2015</td>
-                        <td class="table__col--morePadding">+33</td>
-                        <td class="table__col--morePadding">23%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Android developers</td>
-                        <td class="table__col--morePadding">14</td>
-                        <td class="table__col--morePadding">02/29/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">55%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Dev Ops</td>
-                        <td class="table__col--morePadding">372</td>
-                        <td class="table__col--morePadding">06/29/2015</td>
-                        <td class="table__col--morePadding">+17</td>
-                        <td class="table__col--morePadding">9%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Javascript & Web Devs</td>
-                        <td class="table__col--morePadding">462</td>
-                        <td class="table__col--morePadding">09/21/2015</td>
-                        <td class="table__col--morePadding">+163</td>
-                        <td class="table__col--morePadding">14%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">IT Manager</td>
-                        <td class="table__col--morePadding">156</td>
-                        <td class="table__col--morePadding">08/12/2015</td>
-                        <td class="table__col--morePadding">+67</td>
-                        <td class="table__col--morePadding">90%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Front End Developer</td>
-                        <td class="table__col--morePadding">158</td>
-                        <td class="table__col--morePadding">01/28/2015</td>
-                        <td class="table__col--morePadding">+37</td>
-                        <td class="table__col--morePadding">31%</td>
-                    </tr>
-
-                    <tr class="table__row">
-                        <td class="table__col--morePadding">Project Manager</td>
-                        <td class="table__col--morePadding">68</td>
-                        <td class="table__col--morePadding">06/12/2015</td>
-                        <td class="table__col--morePadding">+167</td>
-                        <td class="table__col--morePadding">46%</td>
-                    </tr>
-                </table>
+        <div layout="row" layout-xs="column" layout-sm="row" class="v2-align__center">
+            <div flex="25" flex-xs="100" flex-sm="50" class="module">
+                <div>
+                    <div>Callout Box 1<i class="v2-infotip">i</i></div>
+                    <div class="v2-font__xxlg">42.5%</div>
+                    <div class="v2-font__med">Call-out Secondary Meta</div>
+                </div>
+            </div>
+            <div flex="25" flex-xs="100" flex-sm="50" class="module">
+                <div>
+                    <div>Callout Box 1</div>
+                    <div class="v2-font__xxlg">42.5%</div>
+                    <div class="v2-font__med">Call-out Secondary Meta</div>
+                </div>
+            </div>
+            <div flex="25" flex-xs="100" flex-sm="50" class="module">
+                <div>
+                    <div>Callout Box 1</div>
+                    <div class="v2-font__xxlg">42.5%</div>
+                    <div class="v2-font__med">Call-out Secondary Meta</div>
+                </div>
+            </div>
+            <div flex="25" flex-xs="100" flex-sm="50" class="module">
+                <div>
+                    <div>Callout Box 1</div>
+                    <div class="v2-font__xxlg">42.5%</div>
+                    <div class="v2-font__med">Call-out Secondary Meta</div>
+                </div>
+            </div>
+        </div>
+        <div layout="row" style="background:red;">
+            <div layout="row">
+                <div flex>First item in row</div>
+                <div flex>Second item in row</div>
+            </div>
+            <div layout="column">
+                <div flex>First item in column</div>
+                <div flex>Second item in column</div>
             </div>
         </div>
     </div>
-
 </section>

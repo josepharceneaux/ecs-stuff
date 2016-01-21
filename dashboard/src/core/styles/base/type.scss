@@ -29,13 +29,14 @@
 
 html {
   font-size: $font-size--main;
+  font-weight: $font-weight--light;
   color: $color--darkerGray;
   font-family: $font--main;
 }
 
 h1,h2,h3,h4,h5,h6 {
   font-family: $font--main;
-  font-weight: $font-weight--regular;
+  font-weight: $font-weight--light;
 }
 
 h1,

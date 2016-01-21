@@ -41,6 +41,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    thumbnail_url = db.Column('thumbnailUrl', db.TEXT, default="")
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -113,6 +114,11 @@ class User(db.Model):
         :rtype: list[User]
         """
         return User.query.filter_by(domain_id=domain_id).all()
+
+    @classmethod
+    def get_domain_id(cls, _id):
+        user = cls.query.filter_by(id=_id).first()
+        return user.domain_id if user else None
 
     # ***** Below function to be used for testing only *****
     @staticmethod

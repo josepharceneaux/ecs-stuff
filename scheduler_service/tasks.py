@@ -16,12 +16,14 @@ For Scheduler Service, celery flower is =>
 
 """
 # Application imports
+import json
+
 from scheduler_service.common.utils.handy_functions import http_request
-from scheduler_service import celery_app as celery, flask_app as app
+from scheduler_service import celery_app as celery, flask_app as app, TalentConfigKeys
 
 
 @celery.task(name="send_request")
-def send_request(access_token, secret_key_id, url, content_type, kwargs):
+def send_request(access_token, secret_key_id, url, content_type, post_data):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
@@ -32,18 +34,22 @@ def send_request(access_token, secret_key_id, url, content_type, kwargs):
     :return:
     """
     with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info("Celery running....")
         headers = {
             'Content-Type': content_type,
             'Authorization': access_token
         }
+        if content_type == 'application/json':
+            post_data = json.dumps(post_data)
         if secret_key_id:
             headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
         # Send request to URL with job post data
-        response = http_request(method_type='POST', url=url, data=kwargs, headers=headers)
+        logger.info("Sending post request to %s" % url)
+        response = http_request(method_type='POST', url=url, data=post_data, headers=headers)
 
         try:
             return response.text
         except Exception as e:
             # This exception will be caught by flower
             return {'message': e.message, 'status_code': response.status_code}
-
