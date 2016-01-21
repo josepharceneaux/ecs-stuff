@@ -25,13 +25,14 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuth'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuth) {
+    function ControllerFunction($state, OAuth, toastr) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
+        vm.notifyUser = notifyUser;
 
         init();
 
@@ -86,6 +87,22 @@
         function logout() {
             OAuth.revokeToken();
             $state.go('login');
+        }
+
+        function notifyUser(type) {
+            switch (type) {
+                case 'success':
+                    toastr.success('Hello world!', 'Toastr fun!');
+                    break;
+                case 'warning':
+                    toastr.warning('Your computer is about to explode!', 'Warning');
+                    break;
+                case 'error':
+                    toastr.error('Your credentials are gone', 'Error');
+                    break;
+                default:
+                    toastr.info('We are open today from 10 to 22', 'Information');
+            }
         }
     }
 })();
