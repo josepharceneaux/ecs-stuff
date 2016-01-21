@@ -43,6 +43,13 @@ class TalentPoolCandidate(db.Model):
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
 
+    def __repr__(self):
+        return "<TalentPoolCandidate: (talent_pool_id = {})>".format(self.talent_pool_id)
+
+    @classmethod
+    def get(cls, candidate_id, talent_pool_id):
+        return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
+
 
 class TalentPoolStats(db.Model):
 
@@ -68,6 +75,13 @@ class TalentPoolGroup(db.Model):
 
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
     user_group = db.relationship('UserGroup', backref=db.backref('talent_pool_group', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<TalentPoolGroup: (talent_pool_id = {})>".format(self.talent_pool_id)
+
+    @classmethod
+    def get(cls, talent_pool_id, user_group_id):
+        return cls.query.filter_by(talent_pool_id=talent_pool_id, user_group_id=user_group_id).first()
 
     def delete(self):
         db.session.delete(self)

@@ -1,10 +1,9 @@
 # Standard Library
 from datetime import datetime
-import random, string, uuid
+import random, string, uuid, requests
 
 # Third Party
 import json
-import datetime
 import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
@@ -95,8 +94,7 @@ def revoke_token(user_logout_credentials):
 
 @pytest.fixture()
 def sample_user(test_domain, first_group, request):
-    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    UserGroup.add_users_to_group(user_group=first_group, user_ids=[user.id])
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
 
     def tear_down():
         try:
@@ -109,9 +107,8 @@ def sample_user(test_domain, first_group, request):
 
 
 @pytest.fixture()
-def sample_user_2(test_domain, request):
-    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    UserGroup.add_users_to_group(user_group=test_group, user_ids=[user.id])
+def sample_user_2(test_domain, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
 
     def tear_down():
         try:
@@ -124,8 +121,8 @@ def sample_user_2(test_domain, request):
 
 
 @pytest.fixture()
-def user_from_diff_domain(test_domain_2, request):
-    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+def user_from_diff_domain(test_domain_2, second_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain_2.id, second_group.id)
 
     def tear_down():
         try:

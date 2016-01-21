@@ -158,10 +158,10 @@ def test_create_hidden_candidate(access_token_first, user_first, talent_pool):
     Expect: 201, candidate should no longer be web hidden.
             No duplicate records should be in the database
     """
-    AddUserRoles.all_roles(user=user_first)
     # Create candidate
-    create_resp = request_to_candidates_resource(access_token_first, 'post',
-                                                 data=CommonData.data(talent_pool))
+    AddUserRoles.all_roles(user=user_first)
+    data = CommonData.data(talent_pool)
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     candidate_id = create_resp.json()['candidates'][0]['id']
     db.session.commit()
     print response_info(response=create_resp)
@@ -180,8 +180,7 @@ def test_create_hidden_candidate(access_token_first, user_first, talent_pool):
     assert candidate.is_web_hidden == 1
 
     # Create previously deleted candidate
-    create_resp = request_to_candidates_resource(access_token_first, 'post',
-                                                 data=CommonData.data(talent_pool))
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     db.session.commit()
     print response_info(response=create_resp)
     assert create_resp.status_code == 201
@@ -227,8 +226,8 @@ def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(access_to
     assert candidate.is_web_hidden == 0
 
     # Retrieve candidate
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    assert candidate_dict['full_name'] != full_name
+    get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+    assert get_resp.json()['candidate']['full_name'] != full_name
 
 
 ######################## CandidateAddress ########################

@@ -647,7 +647,7 @@ def create_or_update_candidate_from_params(
     :type first_name:               basestring
     :type last_name:                basestring
     :type middle_name:              basestring
-    :type formatted_name:           basestring
+    :type formatted_name:           str
     :type status_id:                int
     :type emails:                   list
     :type phones:                   list
@@ -667,7 +667,7 @@ def create_or_update_candidate_from_params(
     :type source_id:                int
     :type objective:                basestring
     :type summary:                  basestring
-    :type talent_pool_ids:          list
+    :type talent_pool_ids:          dict
     :type delete_talent_pools:      bool
     :rtype                          dict
     """
@@ -715,7 +715,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's talent-pools
     if talent_pool_ids:
-        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating)
+        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating,
+                                              is_updating)
 
     # Add or update Candidate's address(es)
     if addresses:
@@ -1705,54 +1706,51 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             db.session.add(CandidateSocialNetwork(**social_network_dict))
 
 
-def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating):
+def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):
 
     talent_pools_to_be_added = talent_pool_ids.get('add')
     talent_pools_to_be_deleted = talent_pool_ids.get('delete')
 
-    for talent_pool_id in talent_pools_to_be_added:
-        talent_pool = TalentPool.query.get(int(talent_pool_id))
-        if not talent_pool:
-            raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+    if is_creating or is_updating and talent_pools_to_be_added:
+        for talent_pool_id in talent_pools_to_be_added:
+            talent_pool = TalentPool.query.get(int(talent_pool_id))
+            if not talent_pool:
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
-        if talent_pool.domain_id != request.user.domain_id:
-            raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+            if talent_pool.domain_id != request.user.domain_id:
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-        if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                               talent_pool_id=talent_pool_id).first():
-            raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                  "user" % (talent_pool_id, request.user.user_group_id))
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
 
-        if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
-            raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
-
-        talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
-        db.session.add(talent_pool_candidate)
-
-    if not is_creating:
-        for talent_pool_id in talent_pools_to_be_deleted:
-
-            if not is_number(talent_pool_id):
-                raise InvalidUsage(error_message="TalentPool id should be an integer")
+            # In case candidate was web-hidden, the recreated with the same talent-pool-id
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if talent_pool_candidate and is_updating:
+                pass
             else:
-                talent_pool = TalentPool.query.get(int(talent_pool_id))
-                if not talent_pool:
-                    raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+                db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
+                                                   talent_pool_id=talent_pool_id))
 
-                if talent_pool.domain_id != request.user.domain_id:
-                    raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+    if is_updating and talent_pools_to_be_deleted:
+        for talent_pool_id in talent_pools_to_be_deleted:
+            talent_pool = TalentPool.query.get(int(talent_pool_id))
+            if not talent_pool:
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
-                if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                       talent_pool_id=talent_pool_id).first():
-                    raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                          "user" % (talent_pool_id, request.user.user_group_id))
+            if talent_pool.domain_id != request.user.domain_id:
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-                talent_pool_candidate = TalentPoolCandidate.query.filter_by(candidate_id=candidate_id,
-                                                                            talent_pool_id=talent_pool_id).first()
-                if not talent_pool_candidate:
-                    raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" % (candidate_id, talent_pool_id))
-                else:
-                    db.session.delete(talent_pool_candidate)
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
+
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if not talent_pool_candidate:
+                raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" %
+                                   (candidate_id, talent_pool_id))
+            else:
+                db.session.delete(talent_pool_candidate)
 
 
 ###############################################################
