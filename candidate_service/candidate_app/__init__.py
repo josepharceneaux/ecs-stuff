@@ -35,13 +35,10 @@ try:
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-    # Enable CORS
-    CORS(app, resources={
-        r'%s/*' % CandidateApi.CANDIDATES: {
-            'origins': '*',
-            'allow_headers': ['Content-Type', 'Authorization']
-        }
-    })
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
+
     # API RESOURCES
     # ****** CandidateResource ******
     api.add_resource(

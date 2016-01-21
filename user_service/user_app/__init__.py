@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from user_service.common.routes import UserServiceApi, HEALTH_CHECK
 from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
@@ -36,6 +37,9 @@ try:
 
     db.create_all()
     db.session.commit()
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting user_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

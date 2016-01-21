@@ -1,4 +1,3 @@
-
 __author__ = 'ufarooqi'
 
 from flask import Flask
@@ -44,13 +43,9 @@ try:
         schedule_candidate_daily_stats_update
 
     schedule_candidate_daily_stats_update()
-    # Enable CORS
-    CORS(app, resources={
-        r'%s/*' % CandidatePoolApi: {
-            'origins': '*',
-            'allow_headers': ['Content-Type', 'Authorization']
-        }
-    })
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting candidate_pool_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

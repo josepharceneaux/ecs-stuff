@@ -12,7 +12,6 @@ import types
 from datetime import timedelta, datetime
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-from flask.ext.cors import CORS
 
 # Application imports
 from werkzeug.exceptions import BadRequest
@@ -33,14 +32,6 @@ api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
 api.init_app(scheduler_blueprint)
 api.route = types.MethodType(api_route, api)
-
-# Enable CORS
-CORS(scheduler_blueprint, resources={
-    SchedulerApi.SCHEDULER_MULTIPLE_TASKS + '*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
