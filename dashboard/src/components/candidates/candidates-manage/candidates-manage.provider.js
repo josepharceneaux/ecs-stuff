@@ -2,7 +2,7 @@
     'use strict';
 
     angular
-        .module('app.core')
+        .module('app.candidates')
         .provider('candidatesManageService', providerFunction);
 
     /**
