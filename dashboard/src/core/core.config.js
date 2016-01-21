@@ -16,12 +16,12 @@
 
     configFunction.$inject = ['$provide', '$compileProvider', '$httpProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
-        'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider'];
+        'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider', '$mdThemingProvider'];
 
     /* @ngInject */
     function configFunction($provide, $compileProvider, $httpProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
-                            tagsInputConfigProvider, authInfo, $uibTooltipProvider) {
+                            tagsInputConfigProvider, authInfo, $uibTooltipProvider, $mdThemingProvider) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -50,6 +50,13 @@
         });
 
         $httpProvider.interceptors.push('authorizationInterceptor');
+
+        // specify primary color, all
+        // other color intentions will be inherited
+        // from default
+        $mdThemingProvider
+            .theme('altTheme')
+            .primaryPalette('purple');
 
         pickADateProvider.setOptions({
             today: '',
