@@ -209,7 +209,7 @@ class TestSmsCampaignHTTPPost(object):
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_creation_with_invalid_url_body_text(self, campaign_valid_data,
+    def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data,
                                                           valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid URL in body text(random word).
@@ -244,7 +244,6 @@ class TestSmsCampaignHTTPPost(object):
         _assert_campaign_creation(response, sample_user.id, 207)
 
     def test_campaign_creation_with_one_user_phone_and_valid_data(self,
-
                                                                   sample_user,
                                                                   valid_header,
                                                                   campaign_valid_data,

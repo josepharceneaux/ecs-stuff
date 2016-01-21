@@ -199,8 +199,7 @@ class SMSCampaigns(Resource):
         """
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id, invalid_smartlist_ids, not_found_smartlist_ids = \
-            campaign_obj.process_save_or_update(data_from_ui)
+        campaign_id, invalid_smartlist_ids, not_found_smartlist_ids = campaign_obj.save(data_from_ui)
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         if not_found_smartlist_ids or invalid_smartlist_ids:
@@ -529,8 +528,8 @@ class CampaignById(Resource):
         """
         campaign_data = get_valid_json_data(request)
         camp_obj = SmsCampaignBase(request.user.id)
-        _, invalid_smartlist_ids, not_found_smartlist_ids = \
-            camp_obj.create_or_update_campaign(campaign_data, campaign_id=campaign_id)
+        invalid_smartlist_ids, not_found_smartlist_ids = camp_obj.update(campaign_data,
+                                                                         campaign_id=campaign_id)
         if not_found_smartlist_ids or invalid_smartlist_ids:
             return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
                         not_found_smartlist_ids=not_found_smartlist_ids,

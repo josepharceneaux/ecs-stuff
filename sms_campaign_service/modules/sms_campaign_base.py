@@ -114,9 +114,6 @@ class SmsCampaignBase(CampaignBase):
         This implements CampaignBase class method and returns True if the current user is
         an owner for given campaign_id. Otherwise it raises the Forbidden error.
 
-    * process_send(self, campaign_id=None)
-        This method is used to send the campaign to candidates.
-
     * is_candidate_have_unique_mobile_phone(self, candidate)
         This validates if candidate have unique mobile number associated with it.
 
@@ -143,9 +140,6 @@ class SmsCampaignBase(CampaignBase):
 
     * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shortened URL.
-
-    * create_sms_campaign_blast(campaign_id, send=0, clicks=0, replies=0): [static]
-        For each campaign, here we create/update stats of that particular campaign.
 
     * create_campaign_blast(campaign_id, sends=0, clicks=0, replies=0)
         Every time we send a campaign, we create a new blast for that campaign here.
@@ -319,8 +313,7 @@ class SmsCampaignBase(CampaignBase):
         """
         return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
 
-    @classmethod
-    def validate_form_data(cls, form_data):
+    def pre_process_save_or_update(self, form_data):
         """
         This overrides the CampaignBase class method.
         It calls super constructor to do the common validation. It then validates if body_text
@@ -330,7 +323,7 @@ class SmsCampaignBase(CampaignBase):
         :rtype: tuple
         :exception: Invalid URL
         """
-        validation_result = super(SmsCampaignBase, cls).validate_form_data(form_data)
+        validation_result = super(SmsCampaignBase, self).pre_process_save_or_update(form_data)
         # validate URLs present in SMS body text
         invalid_urls = validate_urls_in_body_text(form_data['body_text'])
         if invalid_urls:
@@ -338,7 +331,7 @@ class SmsCampaignBase(CampaignBase):
                                error_code=SmsCampaignApiException.INVALID_URL_FORMAT)
         return validation_result
 
-    def process_save_or_update(self, form_data, campaign_id=None):
+    def save(self, form_data):
         """
         This overrides tha CampaignBase class method. This appends user_phone_id in
         form_data and calls super constructor to save the campaign in database.
@@ -350,9 +343,9 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
-        print 'in sms_base' + self.user.name
-        return super(SmsCampaignBase, self).process_save_or_update(form_data,
-                                                                   campaign_id=campaign_id)
+        logger.debug("user_phone_id has been added in form data for user %s() %s"
+                     % (self.user.name, self.user.id))
+        return super(SmsCampaignBase, self).save(form_data)
 
     def schedule(self, data_to_schedule):
         """
@@ -636,7 +629,7 @@ class SmsCampaignBase(CampaignBase):
                      'link present in body_text for '
                      'SMS Campaign(id:%s) and Candidate(id:%s). (User(id:%s))'
                      % (self.campaign.id, candidate_id, self.user.id))
-        urls_in_body_text = search_urls_in_text(self.body_text)
+        urls_in_body_text = search_urls_in_text(self.campaign.body_text)
         short_urls = []
         url_conversion_ids = []
         for url in urls_in_body_text:
@@ -698,20 +691,19 @@ class SmsCampaignBase(CampaignBase):
         logger.debug('transform_body_text: Replacing original URL with shortened URL. (User(id:%s))'
                      % self.user.id)
         try:
-            if urls_in_sms_body_text:
-                text_split = self.body_text.split(' ')
-                short_urls_index = 0
-                for url in urls_in_sms_body_text:
-                    text_split_index = 0
-                    for word in text_split:
-                        if word == url:
-                            text_split[text_split_index] = short_urls[short_urls_index]
-                            break
-                        text_split_index += 1
-                    short_urls_index += 1
-                modified_body_text = ' '.join(text_split)
-            else:
-                modified_body_text = self.body_text
+            if not urls_in_sms_body_text:
+                return self.campaign.body_text
+            text_split = self.campaign.body_text.split(' ')
+            short_urls_index = 0
+            for url in urls_in_sms_body_text:
+                text_split_index = 0
+                for word in text_split:
+                    if word == url:
+                        text_split[text_split_index] = short_urls[short_urls_index]
+                        break
+                    text_split_index += 1
+                short_urls_index += 1
+            modified_body_text = ' '.join(text_split)
         except IndexError as error:
             raise ErrorUpdatingBodyText(
                 'Error while updating body text. Error is %s' % error.message)
@@ -930,7 +922,7 @@ class SmsCampaignBase(CampaignBase):
         cls.update_campaign_blast(sms_campaign_blast, replies=True)
         logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).(User(id:%s))'
                      % (candidate_phone.candidate_id, reply_data.get('Body'),
-                        sms_campaign_blast.sms_campaign_id, user_phone.user_id))
+                        sms_campaign_blast.campaign_id, user_phone.user_id))
 
     @classmethod
     def save_candidate_reply(cls, campaign_blast_id, candidate_phone_id, reply_body_text):

@@ -24,7 +24,6 @@ class CampaignException(InternalServerError):
     NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST = 5103
 
     # used as custom exceptions
-    MISSING_REQUIRED_FIELD = 5104
     MULTIPLE_CANDIDATES_FOUND = 5015
     EMPTY_DESTINATION_URL = 5016
 
@@ -62,3 +61,4 @@ class EmptyDestinationUrl(CampaignException):
         .. see also:: process_url_redirect() method of SmsCampaignBase class.
     """
     error_code = CampaignException.EMPTY_DESTINATION_URL
+

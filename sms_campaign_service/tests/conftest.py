@@ -9,14 +9,13 @@ from datetime import timedelta
 
 # Third Party
 from dateutil.relativedelta import relativedelta
-
-# Initialize app
 from sqlalchemy.orm.exc import ObjectDeletedError
-from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
-
-app, _ = init_sms_campaign_app_and_celery_app()
 
 # Application Specific
+
+from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+app, _ = init_sms_campaign_app_and_celery_app()
+
 # common conftest
 from sms_campaign_service.common.tests.conftest import *
 
@@ -24,8 +23,9 @@ from sms_campaign_service.common.tests.conftest import *
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.tests.modules.common_functions import assert_api_send_response, \
-    assert_campaign_schedule, delete_test_scheduled_task
+from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
+                                                                 assert_campaign_schedule,
+                                                                 delete_test_scheduled_task)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER,
@@ -320,7 +320,9 @@ def create_sms_campaign_blast(sms_campaign_of_current_user):
     :param sms_campaign_of_current_user:
     :return:
     """
-    return SmsCampaignBase.create_campaign_blast(sms_campaign_of_current_user.id)
+    blast_obj = SmsCampaignBlast(campaign_id=sms_campaign_of_current_user.id)
+    SmsCampaignBlast.save(blast_obj)
+    return blast_obj.id
 
 
 @pytest.fixture()

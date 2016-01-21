@@ -141,10 +141,10 @@ def get_model(file_name, model_name):
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)
     except ImportError:
-        logger.exception('Error importing model %s' % model_name)
+        logger.exception('Error importing model %s.' % model_name)
         raise
     except AttributeError:
-        logger.exception('%s has no attribute %s' % (file_name, model_name))
+        logger.exception('%s has no attribute %s.' % (file_name, model_name))
         raise
     return _class
 

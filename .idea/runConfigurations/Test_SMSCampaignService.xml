@@ -17,9 +17,9 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests/restful_api_tests/test_celery_tasks.py" />
+    <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="-k test_pre_process_url_redirect_with_missing_key_signature" />
+    <option name="params" value="" />
     <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />

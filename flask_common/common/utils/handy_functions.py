@@ -1,4 +1,5 @@
 __author__ = 'erikfarmer'
+
 import re
 import json
 import pytz
@@ -228,27 +229,39 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 
-def get_missing_keys(data_dict, required_fields=None):
+def validate_required_fields(data_dict, required_fields):
     """
-    This function returns the keys that are not present in the data_dict.
-    If required_fields is provided, it only checks for those keys otherwise it checks all
-    the keys of data_dict.
+    This function returns the keys as specified by required_fields, that are not present in
+    the data_dict. If any of the field is missing, it raises missing
     :param data_dict:
     :param required_fields:
     :type data_dict: dict
-    :type required_fields: list | None
-    :return:
+    :type required_fields: list
+    :exception: Invalid Usage
     """
-    missing_keys = filter(lambda required_key: required_key not in data_dict,
-                          required_fields if required_fields else data_dict.keys())
-    return missing_keys
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('data_dict must be instance of dictionary.')
+    if not isinstance(required_fields, (tuple, list)):
+        raise InvalidUsage('required_fields must be instance of list.')
+    missing_keys = list(set(required_fields) - set(data_dict.keys()))
+    if missing_keys:
+        raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
+                           error_code=InvalidUsage.http_status_code())
 
 
 def find_missing_items(data_dict, required_fields=None, verify_values_of_all_keys=False):
     """
-    This function is used to find the missing items in given data_dict. If verify_all
-    is true, this function checks all the keys present in data_dict if they are empty or not.
-    Otherwise it verify only those fields as given in required_fields.
+    This function is used to find the missing items (either key or its value)in given
+    data_dict. If verify_all is true, this function checks all the keys present in data_dict
+    if they are empty or not. Otherwise it verify only those fields as given in required_fields.
+
+    :Example:
+
+        >>> data_dict = {'name' : 'Name', 'title': 'myTitle'}
+        >>> missing_items = find_missing_items(data_dict, required_fields =['name', 'title', 'type']
+        >>> print missing_items
+
+         Output will be ['type']
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
     :param verify_values_of_all_keys: indicator if we want to check values of all keys or only keys
@@ -262,19 +275,12 @@ def find_missing_items(data_dict, required_fields=None, verify_values_of_all_key
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_values_of_all_keys:
-        # Check if required keys are present
-        missing_keys = get_missing_keys(data_dict)
-        if missing_keys:
-            raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
-                               error_code=InvalidUsage.http_status_code())
         # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if not value and not value == 0]
     else:
-        missing_keys = get_missing_keys(data_dict, required_fields=required_fields)
-        if missing_keys:
-            raise InvalidUsage('Required fields are missing from given data. %s' % missing_keys,
-                               error_code=InvalidUsage.http_status_code())
+        # verify if required fields are present as keys in data_dict
+        validate_required_fields(data_dict, required_fields)
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value and not value == 0]
