@@ -77,7 +77,7 @@
   }
 
   background: nth(nth($color-stops, 1), 1);
-  background: -webkit-linear-gradient(legacy-direction($direction), $color-stops);
+  // background: -webkit-linear-gradient(legacy-direction($direction), $color-stops);
   background: linear-gradient($direction, $color-stops);
 }
 
