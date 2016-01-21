@@ -5,7 +5,7 @@
 
 from flask import Blueprint, jsonify
 from flask import request
-from flask.ext.cors import CORS
+
 from . import logger
 from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
 from spreadsheet_import_service.common.error_handling import InvalidUsage
@@ -14,14 +14,6 @@ from spreadsheet_import_service.common.utils.auth_utils import require_oauth, re
 from spreadsheet_import_service.common.utils.talent_s3 import *
 
 mod = Blueprint('spreadsheet_import_api', __name__)
-
-# Enable CORS
-CORS(mod, resources={
-    r'/parse_spreadsheet': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 

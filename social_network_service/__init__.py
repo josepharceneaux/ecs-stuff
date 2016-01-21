@@ -1,4 +1,6 @@
 """Initializer for Social Network Service App"""
+from flask.ext.cors import CORS
+
 from social_network_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
 __author__ = 'zohaib'
@@ -29,6 +31,10 @@ def init_app():
     db.init_app(flask_app)
     db.app = flask_app
     register_error_handlers(flask_app, logger)
+
+    # Enable CORS for all origins & endpoints
+    CORS(flask_app)
+
     logger.info("Starting social network service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])
     return flask_app
