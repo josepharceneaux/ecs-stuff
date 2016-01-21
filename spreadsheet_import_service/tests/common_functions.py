@@ -13,20 +13,24 @@ import requests
 from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
-from spreadsheet_import_service.common.models.user import User, Token
-from spreadsheet_import_service.common.tests.conftest import custom_field_for_domain
+# from spreadsheet_import_service.common.models.user import User, Token
+# from spreadsheet_import_service.common.tests.conftest import custom_field_for_domain
 
 
 def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False):
+                                  import_candidates=False, domain_custom_fields=None):
 
-    token = Token.query.filter_by(access_token=access_token).first()
-    if token:
-        current_user_id = token.user_id
-        current_user_domain_id = User.query.get(current_user_id).domain_id
-        list_of_custom_fields = custom_field_for_domain(domain_id=current_user_domain_id)
-        custom_field_id = list_of_custom_fields[0].id
-        custom_field = 'custom_field.{}'.format(custom_field_id)
+    # token = Token.query.filter_by(access_token=access_token).first()
+    # if token:
+    #     current_user_id = token.user_id
+    #     current_user_domain_id = User.query.get(current_user_id).domain_id
+    #     list_of_custom_fields = custom_field_for_domain(domain_id=current_user_domain_id)
+    #     custom_field_id = list_of_custom_fields[0].id
+    #     custom_field = 'custom_field.{}'.format(custom_field_id)
+    # else:
+    #     custom_field = 'custom_field.3'
+    if domain_custom_fields:
+        custom_field = 'custom_field.{}'.format(domain_custom_fields[0].id)
     else:
         custom_field = 'custom_field.3'
 

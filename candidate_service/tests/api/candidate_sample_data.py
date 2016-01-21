@@ -1,23 +1,13 @@
 """
-This module entails sample-data functions for testing
+This module entails candidate sample data functions for testing
 """
 # Standard libraries
 import random
 from random import randrange
 
-# Conftest
-# from candidate_service.common.tests.conftest import (custom_field_for_domain)
-
-# Models
-from candidate_service.candidate_app import app
-from candidate_service.common.models.db import db
-from candidate_service.common.models.talent_pools_pipelines import TalentPool
-
-from candidate_service.common.error_handling import InvalidUsage
-
 # Faker
 from faker import Faker
-
+# Instantiate faker
 fake = Faker()
 
 
@@ -146,78 +136,6 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     return data
 
 
-def candidate_data_for_update(candidate_id, email_1_id, email_2_id, phone_1_id,
-                              phone_2_id, address_1_id, address_2_id,
-                              work_preference_id, work_experience_1_id,
-                              education_1_id, degree_1_id, military_1_id,
-                              preferred_location_1_id, preferred_location_2_id,
-                              skill_1_id, skill_2_id, social_1_id,
-                              social_2_id):
-    """
-    Function will replace each field with params
-    :rtype  dict
-    """
-    data = {'candidates': [
-        {
-            'id': candidate_id,
-            'first_name': fake.first_name(),
-            'middle_name': fake.first_name(),
-            'last_name': fake.last_name(),
-            'emails': [
-                {'id': email_1_id, 'label': 'Primary', 'address': fake.email()},
-                {'id': email_2_id, 'label': 'work', 'address': fake.company_email()}
-            ],
-            'phones': [
-                {'id': phone_1_id, 'label': 'mobile', 'value': '8009346489'},
-                {'id': phone_2_id, 'label': 'Work', 'value': '8009346489'}
-            ],
-            'addresses': [
-                {'id': address_1_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-                 'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()},
-                {'id': address_2_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-                 'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country()}
-            ],
-            'work_preference': {'id': work_preference_id, "relocate": False, "authorization": "US Citizen",
-                                "telecommute": True, "travel_percentage": randrange(0, 100),
-                                "hourly_rate": float('%.2f' % random.uniform(20, 90)),
-                                "salary": randrange(50000, 300000),
-                                "tax_terms": "full-time employment",
-                                "security_clearance": False,
-                                "third_party": False},
-            'work_experiences': [
-                {'id': work_experience_1_id, 'organization': fake.company(),
-                 'position': fake.job(), 'city': fake.city(),
-                 'state': fake.state(), 'work_experience_bullets': [{'description': None}]
-                 }
-            ],
-            'educations': [
-                {'id': education_1_id, 'school_name': 'SJSU', 'city': 'San Jose',
-                 'country': 'USA', 'degrees': [
-                    {'id': degree_1_id, 'type': 'BS', 'title': 'dancing'}
-                ]}
-            ],
-            'military_services': [
-                {'id': military_1_id, 'country': 'us', 'branch': fake.military_ship(),
-                 'highest_rank': 'lieutenant', 'comments': fake.sentence()}
-            ],
-            'preferred_locations': [
-                {'id': preferred_location_1_id, 'city': fake.city(), 'region': fake.state()},
-                {'id': preferred_location_2_id, 'city': fake.city(), 'region': fake.state()}  # TODO state
-            ],
-            'skills': [
-                {'id': skill_1_id, 'name': 'payroll'},
-                {'id': skill_2_id, 'name': 'sql'}
-            ],
-            'social_networks': [
-                {'id': social_1_id, 'profile_url': 'http://www.facebook.com/', 'name': 'facebook'},
-                {'id': social_2_id, 'profile_url': 'https://twitter.com/', 'name': 'twitter'}
-            ]
-        }
-    ]}
-
-    return data
-
-
 def candidate_addresses(candidate_id=None, address_id=None):
     """
     Sample data for creating or updating Candidate + CandidateAddress
@@ -247,50 +165,42 @@ def candidate_addresses(candidate_id=None, address_id=None):
     return data
 
 
-def candidate_areas_of_interest(domain_id, candidate_id=None, aoi_id=None):
+def candidate_areas_of_interest(domain_aoi, candidate_id=None, aoi_id=None):
     """
     Sample data for creating Candidate + CandidateAreaOfInterest.
     Date for updating will be returned if candidate_id is provided.
     :rtype  dict
     """
-    # Create sample AreaOfInterest in domain
-    areas_of_interest = areas_of_interest_for_domain(domain_id=domain_id)
-
     # Data for adding CandidateAreaOfInterest to existing Candidate
     if candidate_id and not aoi_id:
         data = {'candidates': [{'id': candidate_id, 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-            ]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
     elif candidate_id and aoi_id:
         data = {'candidates': [{'id': candidate_id, 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-            ]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
     # Data for creating Candidate + CandidateAreaOfInterest
     else:
         data = {'candidates': [{'emails': [{'address': fake.email()}], 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in areas_of_interest
-            ]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
     return data
 
 
-def candidate_custom_fields(domain_id, candidate_id=None):
+def candidate_custom_fields(domain_custom_fields, candidate_id=None):
     """
     Sample data for creating Candidate + CandidateCustomField.
     Data for updating will be returned if candidate_id is provided.
     :rtype  dict
     """
-    custom_fields = custom_field_for_domain(domain_id=domain_id)
-
     # Data for adding CandidateCustomField to an existing candidate
     if candidate_id:
         data = {'candidates': [{'id': candidate_id, 'custom_fields': [
-            {'custom_field_id': custom_field.id, 'value': fake.word()} for custom_field in custom_fields
-            ]}]}
+            {'custom_field_id': custom_field.id, 'value': fake.word()}
+            for custom_field in domain_custom_fields]}]}
     # Data for creating Candidate + CandidateCustomField
     else:
         data = {'candidates': [{'emails': [{'address': fake.email()}], 'custom_fields': [
-            {'custom_field_id': custom_field.id, 'value': fake.word()} for custom_field in custom_fields
-            ]}]}
+            {'custom_field_id': custom_field.id, 'value': fake.word()}
+            for custom_field in domain_custom_fields]}]}
     return data
 
 
@@ -434,9 +344,8 @@ def candidate_phones(talent_pool, candidate_id=None, phone_id=None):
     # Data for creating Candidate + CandidatePhone
     else:
         data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
-                {'value': '6009346489', 'label': 'Home'}]}
-        ]}
+            {'talent_pool_ids': {'add': [talent_pool.id]},
+             'phones': [{'value': '6009346489', 'label': 'Home'}]}]}
 
     return data
 
