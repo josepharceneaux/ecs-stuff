@@ -13,6 +13,8 @@ from candidate_service.candidate_app import app
 from candidate_service.common.models.db import db
 from candidate_service.common.models.talent_pools_pipelines import TalentPool
 
+from candidate_service.common.error_handling import InvalidUsage
+
 # Faker
 from faker import Faker
 
@@ -298,6 +300,7 @@ def candidate_educations(candidate_id=None, education_id=None):
      and CandidateEducationBullets
     :rtype  dict
     """
+    assert candidate_id is not None or education_id is not None
     # Data for adding CandidateEducation to an existing Candidate
     if candidate_id and not education_id:
         data = {'candidates': [{'id': candidate_id, 'educations': [
@@ -316,10 +319,6 @@ def candidate_educations(candidate_id=None, education_id=None):
             {'id': education_id, 'school_name': 'westvalley', 'school_type': 'college', 'city': 'saratoga',
              'state': 'ca', 'country': None, 'is_current': True, 'degrees': None}
         ]}]}
-
-    # Data for adding Candidate + CandidateEducation
-    else:
-        data = reset_all_data_except_param(generate_single_candidate_data(), 'educations')
 
     return data
 
@@ -416,7 +415,7 @@ def candidate_emails(candidate_id=None, email_id=None):
     return data
 
 
-def candidate_phones(candidate_id=None, phone_id=None):
+def candidate_phones(talent_pool, candidate_id=None, phone_id=None):
     """
     Sample data for creating Candidate + CandidatePhones
     :rtype  dict
@@ -434,44 +433,63 @@ def candidate_phones(candidate_id=None, phone_id=None):
 
     # Data for creating Candidate + CandidatePhone
     else:
-        data = reset_all_data_except_param(generate_single_candidate_data(), 'phones')
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
+                {'value': '6009346489', 'label': 'Home'}]}
+        ]}
 
     return data
 
 
-def candidate_military_service():
+def candidate_military_service(talent_pool):
     """
     Sample data for Candidate and CandidateMilitaryService
     :rtype  dict
     """
-    data = reset_all_data_except_param(generate_single_candidate_data(), 'military_services')
+    data = {'candidates': [
+        {'military_services': [
+            {'country': 'us', 'branch': fake.military_ship(), 'highest_rank': 'lieutenant',
+             'status': 'active', 'highest_grade': '0-1', 'comments': fake.bs(),
+             'from_date': '1974-5-25', 'to_date': '1996-12-12'}
+        ], 'talent_pool_ids': {'add': [talent_pool.id]}}
+    ]}
     return data
 
 
-def candidate_preferred_locations():
+def candidate_preferred_locations(talent_pool):
     """
     Sample data for Candidate and CandidatePreferredLocation
     :rtype  dict
     """
-    data = reset_all_data_except_param(generate_single_candidate_data(), 'preferred_locations')
+    data = {'candidates': [
+        {'preferred_locations': [
+            {'city': fake.city(), 'state': fake.state(), 'country': fake.country()}
+        ], 'talent_pool_ids': {'add': [talent_pool.id]}}
+    ]}
     return data
 
 
-def candidate_skills():
+def candidate_skills(talent_pool):
     """
     Sample data for Candidate and CandidateSkill
     :rtype  dict
     """
-    data = reset_all_data_except_param(generate_single_candidate_data(), 'skills')
+    data = {'candidates': [
+        {'skills': [{'name': 'payroll', 'months_used': 120}],
+         'talent_pool_ids': {'add': [talent_pool.id]}}
+    ]}
     return data
 
 
-def candidate_social_network():
+def candidate_social_network(talent_pool):
     """
     Sample data for Candidate and CandidateSocialNetwork
     :rtype  dict
     """
-    data = reset_all_data_except_param(generate_single_candidate_data(), 'social_networks')
+    data = {'candidates': [
+        {'social_networks': [{'profile_url': 'http://www.facebook.com/', 'name': 'facebook'}],
+         'talent_pool_ids': {'add': [talent_pool.id]}}
+    ]}
     return data
 
 
