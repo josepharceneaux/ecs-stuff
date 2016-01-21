@@ -133,8 +133,8 @@ def request_to_candidates_resource(access_token, request, data=None):
     :type request: str
     :type data: dict
     """
-    if request.lower() == 'post' and data is None:
-        raise InvalidUsage(error_message='POST request requires data')
+    if request.lower() == 'post':
+        assert data is not None
 
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
