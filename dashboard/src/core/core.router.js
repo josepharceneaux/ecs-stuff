@@ -50,6 +50,9 @@
             .state('site', {
                 abstract: true,
                 views: {
+                    systemAlerts: {
+                        template: '<gt-system-alerts></gt-system-alerts>'
+                    },
                     topnav: {
                         template: '<gt-topnav></gt-topnav>'
                     },

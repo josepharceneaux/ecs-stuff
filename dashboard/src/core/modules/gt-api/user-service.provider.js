@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('userService', providerFunction)
+        .provider('userService', providerFunction);
 
     /**
      * @return {[type]}
