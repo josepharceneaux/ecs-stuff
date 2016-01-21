@@ -14,8 +14,8 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/campaigns/campaign-events/campaign-event-create/campaign-event-create.html',
-            scope: {
-            },
+            replace: true,
+            scope: {},
             controller: 'CampaignEventCreateController',
             controllerAs: 'vm'
         };

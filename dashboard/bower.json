@@ -38,6 +38,7 @@
     "lodash": "~3.9.3",
     "ng-pickadate": "~0.3.0",
     "ng-tags-input": "~3.0.0",
+    "restangular": "~1.5.1",
     "velocity": "~1.2.3"
   }
 }

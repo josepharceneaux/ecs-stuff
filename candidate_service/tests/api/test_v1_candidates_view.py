@@ -14,32 +14,31 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_view_resource
+    request_to_candidate_view_resource, AddUserRoles
 )
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
-# TODO: Uncomment test once user-roles are implemented for the candidates resources
-# def test_user_without_appropriate_permission_to_view_candidate_info(sample_user, user_auth):
-#     """
-#     Test: User without "CAN_VIEW_CANDIDATES" permission to view candidate's view info
-#     Expect: 401
-#     :type sample_user:      User
-#     :type user_auth:        UserAuthentication
-#     """
-#     # Access token
-#     token = user_auth.get_auth_token(sample_user, True)['access_token']
-#
-#     # Create Candidate
-#     create_resp = post_to_candidate_resource(token)
-#     candidate_id = create_resp.json()['candidates'][0]['id']
-#
-#     get_from_candidate_resource(token, candidate_id)  # sample_user views candidate
-#
-#     # Retrieve candidate's view information
-#     view_resp = request_to_candidate_view_resource(token, 'get', candidate_id)
-#     print response_info(view_resp)
-#     assert view_resp.status_code == 401
+def test_user_without_appropriate_permission_to_view_candidate_info(sample_user, user_auth):
+    """
+    Test: User without "CAN_GET_CANDIDATES" permission to view candidate's view info
+    Expect: 401
+    :type sample_user:      User
+    :type user_auth:        UserAuthentication
+    """
+    # Access token
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    get_from_candidate_resource(token, candidate_id)  # sample_user views candidate
+
+    # Retrieve candidate's view information
+    view_resp = request_to_candidate_view_resource(token, 'get', candidate_id)
+    print response_info(view_resp)
+    assert view_resp.status_code == 401
 
 
 def test_retrieve_candidate_view_information(sample_user, user_auth):
@@ -51,7 +50,7 @@ def test_retrieve_candidate_view_information(sample_user, user_auth):
     """
     # Access token & Appropriate role to sample_user
     token = user_auth.get_auth_token(sample_user, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES_VIEW_INFO'])
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -82,8 +81,8 @@ def test_all_users_from_domain_get_candidate_view(sample_user, sample_user_2, us
     # Access tokens & Appropriate role to sample_user and sample_user_2
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
-    add_role_to_test_user(sample_user, ['CAN_GET_CANDIDATES_VIEW_INFO'])
-    add_role_to_test_user(sample_user_2, ['CAN_GET_CANDIDATES_VIEW_INFO'])
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.get(user=sample_user_2)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token_1)

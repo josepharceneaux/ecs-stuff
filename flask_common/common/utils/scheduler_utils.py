@@ -9,4 +9,3 @@ class SchedulerUtils(object):
     PERIODIC = 'periodic'
     QUEUE = 'celery_scheduler'
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds
-

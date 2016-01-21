@@ -50,7 +50,7 @@ def check_if_user_exists(email):
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None):
+                            dice_user_id=None, thumbnail_url=''):
 
     from dateutil import parser
     expiration = None
@@ -62,7 +62,7 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
 
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
-                       expiration=expiration, dice_user_id=dice_user_id)
+                       expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
 
     return user.id
 
@@ -102,14 +102,14 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
-def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None):
+def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None, thumbnail_url=''):
 
     temp_password = gen_salt(20)
     hashed_password = generate_password_hash(temp_password, method='pbkdf2:sha512')
 
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
-                dice_user_id=dice_user_id, password=hashed_password, phone=phone)
+                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url)
 
     db.session.add(user)
     db.session.commit()

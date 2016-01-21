@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/approot/approot.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'RootController',
             controllerAs: 'vm'
         };

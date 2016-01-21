@@ -6,7 +6,6 @@ This API also checks for authentication token
 
 # Standard imports
 import json
-import os
 import types
 
 # Third party imports
@@ -21,7 +20,7 @@ from werkzeug.exceptions import BadRequest
 from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
-from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
+from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -700,7 +699,6 @@ class SendRequestTest(Resource):
     """
     decorators = [require_oauth()]
 
-    @property
     def post(self):
 
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
@@ -728,7 +726,6 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
-
             run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
                 task.get('post_data', dict()))
         else:
@@ -737,7 +734,7 @@ class SendRequestTest(Resource):
             test_user = User.query.filter_by(id=test_user_id).first()
             test_user.delete()
 
-        return dict(message="Request sent to url %s" % url)
+        return dict(message='Dummy Endpoint called')
 
 
 def check_if_scheduler_is_running():

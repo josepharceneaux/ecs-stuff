@@ -14,12 +14,12 @@
     // Configure the app
     core.config(configFunction);
 
-    configFunction.$inject = ['$provide', '$compileProvider', '$logProvider', 'exceptionHandlerProvider',
+    configFunction.$inject = ['$provide', '$compileProvider', '$httpProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
         'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider'];
 
     /* @ngInject */
-    function configFunction($provide, $compileProvider, $logProvider, exceptionHandlerProvider,
+    function configFunction($provide, $compileProvider, $httpProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
                             tagsInputConfigProvider, authInfo, $uibTooltipProvider) {
 
@@ -48,6 +48,8 @@
                 secure: false
             }
         });
+
+        $httpProvider.interceptors.push('authorizationInterceptor');
 
         pickADateProvider.setOptions({
             today: '',

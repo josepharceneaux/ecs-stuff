@@ -18,7 +18,7 @@ from helpers import (
     request_to_candidate_work_preference_resource, request_to_candidate_email_resource,
     request_to_candidate_phone_resource, request_to_candidate_military_service,
     request_to_candidate_preferred_location_resource, request_to_candidate_skill_resource,
-    request_to_candidate_social_network_resource
+    request_to_candidate_social_network_resource, AddUserRoles
 )
 
 
@@ -58,12 +58,14 @@ def test_delete_experience_of_a_candidate_belonging_to_a_diff_user(sample_user, 
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -87,13 +89,15 @@ def test_delete_experience_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
     candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve candidate_2's experiences
-    can_2_experiences = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['work_experiences']
+    can_2_experiences = get_from_candidate_resource(token, candidate_2_id).\
+        json()['candidate']['work_experiences']
 
     # Delete candidate_2's id using candidate_1_id
     updated_resp = request_to_candidate_experience_resource(token, 'delete', candidate_1_id,
@@ -111,6 +115,7 @@ def test_delete_candidate_experience_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's experiences without experience_id
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -128,6 +133,7 @@ def test_delete_candidate_experiences(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -152,6 +158,7 @@ def test_delete_candidate_experience(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -215,19 +222,22 @@ def test_delete_exp_bullets_of_a_candidate_belonging_to_a_diff_user(sample_user,
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
 
     # Retrieve candidate_1's experiences
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-    experience = get_from_candidate_resource(token_1, candidate_1_id).json()['candidate']['work_experiences'][0]
+    experience = get_from_candidate_resource(token_1, candidate_1_id)\
+        .json()['candidate']['work_experiences'][0]
 
     # Delete candidate_1's exp-bullets with sample_user_2 logged in
     updated_resp = request_to_candidate_experience_bullet_resource(
@@ -245,6 +255,7 @@ def test_delete_exp_bullets_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -272,6 +283,7 @@ def test_delete_candidate_exp_bullets_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's exp-bullets without an id
     candidate_id, experience_id = 5, 5 # These are arbitrary since a 404 is expected
@@ -290,6 +302,7 @@ def test_delete_candidate_experience_bullets(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -324,6 +337,7 @@ def test_delete_candidates_experience_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -386,21 +400,22 @@ def test_delete_email_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
-
-    # Retrieve candidate_1
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's email with sample_user_2 logged in
-    updated_resp = request_to_candidate_email_resource(token_2, 'delete', candidate_1_id, all_emails=True)
+    updated_resp = request_to_candidate_email_resource(token_2, 'delete', candidate_1_id,
+                                                       all_emails=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 204
 
@@ -414,6 +429,7 @@ def test_delete_email_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -438,6 +454,7 @@ def test_delete_candidate_email_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's emails without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -455,6 +472,7 @@ def test_delete_candidate_emails(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -480,6 +498,7 @@ def test_delete_candidate_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -524,29 +543,33 @@ def test_delete_candidate_military_service_with_bad_input():
     Expect: 404
     """
     # Delete Candidate's military_services
-    resp = request_to_candidate_military_service(None, 'delete', candidate_id='x', all_military_services=True)
+    resp = request_to_candidate_military_service(None, 'delete', candidate_id='x',
+                                                 all_military_services=True)
     print response_info(resp)
     assert resp.status_code == 404
 
     # Delete Candidate's military_service
-    resp = request_to_candidate_military_service(None, 'delete', candidate_id=5, military_service_id='x')
+    resp = request_to_candidate_military_service(None, 'delete', candidate_id=5,
+                                                 military_service_id='x')
     print response_info(resp)
     assert resp.status_code == 404
 
 
-def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(
-        sample_user, sample_user_2, user_auth):
+def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(sample_user,
+                                                                         sample_user_2, user_auth):
     """
     Test:   Attempt to delete the military_services of a Candidate that belongs
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -570,6 +593,7 @@ def test_delete_military_service_of_a_different_candidate(sample_user, user_auth
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -596,6 +620,7 @@ def test_delete_candidate_military_service_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's military_services without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -614,6 +639,7 @@ def test_delete_candidate_military_services(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -639,6 +665,7 @@ def test_delete_can_military_service(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -700,12 +727,14 @@ def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -729,17 +758,19 @@ def test_delete_phone_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
     candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve candidate_2's phones
-    can_2_phonees = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['phones']
+    can_2_phones = get_from_candidate_resource(token, candidate_2_id) \
+        .json()['candidate']['phones']
 
     # Delete candidate_2's id using candidate_1_id
     updated_resp = request_to_candidate_phone_resource(token, 'delete', candidate_1_id,
-                                                         phone_id=can_2_phonees[0]['id'])
+                                                       phone_id=can_2_phones[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 
@@ -753,6 +784,7 @@ def test_delete_candidate_phone_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's phones without an id
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -770,6 +802,7 @@ def test_delete_candidate_phones(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -795,6 +828,7 @@ def test_delete_candidate_phone(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -851,19 +885,22 @@ def test_delete_candidate_preferred_location_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(
-        sample_user, sample_user_2, user_auth):
+def test_delete_preferred_location_of_a_candidate_belonging_to_a_diff_user(sample_user,
+                                                                           sample_user_2,
+                                                                           user_auth):
     """
     Test:   Attempt to delete preferred locations of a Candidate that belongs
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -887,6 +924,7 @@ def test_delete_preferred_location_of_a_different_candidate(sample_user, user_au
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -897,8 +935,8 @@ def test_delete_preferred_location_of_a_different_candidate(sample_user, user_au
         json()['candidate']['preferred_locations']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_preferred_location_resource(token, 'delete', candidate_1_id,
-                                                         preferred_location_id=can_2_preferred_locationes[0]['id'])
+    updated_resp = request_to_candidate_preferred_location_resource(
+            token, 'delete', candidate_1_id, preferred_location_id=can_2_preferred_locationes[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 
@@ -912,6 +950,7 @@ def test_delete_candidate_preferred_location_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's preferred location without preferred location ID
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -929,6 +968,7 @@ def test_delete_candidate_preferred_locations(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -954,6 +994,7 @@ def test_delete_candidate_preferred_location(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1016,12 +1057,14 @@ def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(sample_user, sampl
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -1045,6 +1088,7 @@ def test_delete_skill_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -1086,6 +1130,7 @@ def test_delete_candidate_skills(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1102,7 +1147,7 @@ def test_delete_candidate_skills(sample_user, user_auth):
     assert len(can_dict_after_update['skills']) == 0
 
 
-def test_delete_cand_skill(sample_user, user_auth):
+def test_delete_candidate_skill(sample_user, user_auth):
     """
     Test:   Remove Candidate's skill from db
     Expect: 204, Candidate's skills must be less 1
@@ -1111,6 +1156,7 @@ def test_delete_cand_skill(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1128,7 +1174,8 @@ def test_delete_cand_skill(sample_user, user_auth):
     print response_info(updated_resp)
 
     # Retrieve Candidate's skills after update
-    can_skills_after_delete = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills']
+    can_skills_after_delete = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['skills']
 
     assert updated_resp.status_code == 204
     assert len(can_skills_after_delete) == skills_count_before_delete - 1
@@ -1137,7 +1184,7 @@ def test_delete_cand_skill(sample_user, user_auth):
 ######################## CandidateSocialNetwork ########################
 def test_non_logged_in_user_delete_can_social_network():
     """
-    Test:   Delete candidate's social nerwork without logging in
+    Test:   Delete candidate's social network without logging in
     Expect: 401
     :type sample_user:  User
     :type user_auth:    UserAuthentication
@@ -1171,12 +1218,14 @@ def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(sample_us
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -1200,6 +1249,7 @@ def test_delete_social_network_of_a_different_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -1211,7 +1261,7 @@ def test_delete_social_network_of_a_different_candidate(sample_user, user_auth):
 
     # Delete candidate_2's id using candidate_1_id
     updated_resp = request_to_candidate_social_network_resource(token, 'delete', candidate_1_id,
-                                                         sn_id=can_2_social_networkes[0]['id'])
+                                                                sn_id=can_2_social_networkes[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 
@@ -1225,6 +1275,7 @@ def test_delete_candidate_social_network_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's social network without social network ID
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -1242,6 +1293,7 @@ def test_delete_candidate_social_networks(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1267,6 +1319,7 @@ def test_delete_can_social_network(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1323,24 +1376,28 @@ def test_delete_candidate_work_preference_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(sample_user,
+                                                                        sample_user_2,
+                                                                        user_auth):
     """
     Test:   Attempt to delete the work preference of a Candidate that belongs
             to a different user in the same domain
     Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
+    candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Retrieve candidate_1's work preference
-    candidate_1_id = create_resp_1.json()['candidates'][0]['id']
     can_1_work_preference = get_from_candidate_resource(token_1, candidate_1_id).\
         json()['candidate']['work_preference']
 
@@ -1360,6 +1417,7 @@ def test_delete_work_preference_of_a_different_candidate(sample_user, user_auth)
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -1370,8 +1428,9 @@ def test_delete_work_preference_of_a_different_candidate(sample_user, user_auth)
         json()['candidate']['work_preference']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_work_preference_resource(token, 'delete', candidate_1_id,
-                                                         work_preference_id=can_2_work_preference['id'])
+    updated_resp = request_to_candidate_work_preference_resource(
+            token, 'delete', candidate_1_id,
+            work_preference_id=can_2_work_preference['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 
@@ -1385,6 +1444,7 @@ def test_delete_candidate_work_preference_with_no_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Remove one of Candidate's work preference without work preference ID
     candidate_id = 5 # This is arbitrary since a 404 is expected
@@ -1402,13 +1462,15 @@ def test_delete_candidate_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate's work preference
     candidate_id = create_resp.json()['candidates'][0]['id']
-    work_pref_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_preference']
+    work_pref_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['work_preference']
 
     # Delete Candidate's work preference
     updated_resp = request_to_candidate_work_preference_resource(token, 'delete', candidate_id,
@@ -1420,4 +1482,3 @@ def test_delete_candidate_work_preference(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['work_preference']) == 0
-

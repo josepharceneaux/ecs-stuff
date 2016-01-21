@@ -1,5 +1,5 @@
 """
-Helper functions for tests pertaining to candidate_service's restful services
+Helper functions for tests written for the candidate_service
 """
 # Standard library
 import requests
@@ -7,9 +7,48 @@ import json
 
 # Candidate's sample data
 from candidate_sample_data import generate_single_candidate_data
-
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
+
+
+class AddUserRoles(object):
+    """
+    Class entails functions that will help add specific roles to test-user
+    """
+    @staticmethod
+    def get(user):
+        return add_role_to_test_user(user, ['CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+
+    @staticmethod
+    def edit(user):
+        return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
+
+    @staticmethod
+    def delete(user):
+        return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_and_get(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add_and_delete(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_get_edit(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES'])
+
+    @staticmethod
+    def all_roles(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
 
 
 def define_and_send_request(access_token, request, url, data=None):
@@ -30,17 +69,20 @@ def define_and_send_request(access_token, request, url, data=None):
 
 def response_info(response):
     """
-    Function returns the following information about the request:
-        1. Request, 2. Response dict, and 3. Response status
+    Function returns the following response information:
+        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+    :type response: requests.models.Response
     """
+    url = response.url
     request = response.request
+    status_code = response.status_code
     try:
         _json = response.json()
     except Exception:
         _json = None
 
-    status_code = response.status_code
-    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % (request, _json, status_code)
+    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+    return content.format(url, request, status_code, _json)
 
 
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
@@ -63,9 +105,12 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
     return resp
 
 
-def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
+def get_from_candidate_resource(access_token, candidate_id=None, candidate_email=None):
     """
     Function sends a get request to CandidateResource/get()
+    :type access_token:     basestring
+    :type candidate_id:     int|long
+    :type candidate_email:  basestring
     """
     url = CandidateApiUrl.CANDIDATES
     if candidate_id:
@@ -355,8 +400,8 @@ def request_to_candidate_preference_resource(token, request, candidate_id='', da
     """
     Function sends request to CandidatePreferenceResource
     :type token:  str
-    :type request: str
-    :type url: str
+    :type candidate_id: int|long
+    :type data: dict
     """
     url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
     return define_and_send_request(token, request, url, data)

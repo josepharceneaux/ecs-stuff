@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/topnav/topnav.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TopnavController',
             controllerAs: 'vm'
         };
@@ -26,10 +25,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuthToken'];
+    ControllerFunction.$inject = ['$state', 'OAuth'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuthToken) {
+    function ControllerFunction($state, OAuth) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
@@ -85,7 +84,7 @@
         }
 
         function logout() {
-            OAuthToken.removeToken();
+            OAuth.revokeToken();
             $state.go('login');
         }
     }

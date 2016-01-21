@@ -134,9 +134,12 @@ def validate_periodic_job(data):
     # If job is not in 0-30 seconds in past or greater than current datetime.
     past_datetime = current_datetime - datetime.timedelta(seconds=REQUEST_TIMEOUT)
     future_datetime = end_datetime - datetime.timedelta(seconds=frequency)
-    if not past_datetime < start_datetime < future_datetime:
+    if not past_datetime < start_datetime:
         raise InvalidUsage(
-            "start_datetime and end_datetime should be in future. Also frequency should be lesser than end_datetime")
+            "start_datetime and end_datetime should be in future.")
+    elif not start_datetime < future_datetime:
+        raise InvalidUsage(
+            "start_datetime should be greater than (end_datetime - frequency)")
 
     return valid_data
 
@@ -226,7 +229,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data']],
+                                          job_config['post_data']]
                                     )
 
             current_datetime = datetime.datetime.utcnow()
@@ -238,7 +241,7 @@ def schedule_job(data, user_id=None, access_token=None):
             if job_start_time < current_datetime:
                 run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'])
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
-        except Exception:
+        except Exception as e:
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
