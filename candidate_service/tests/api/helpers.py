@@ -292,7 +292,8 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_skill_resource(access_token, request, candidate_id='', all_skills=False, skill_id=''):
+def request_to_candidate_skill_resource(access_token, request, candidate_id='',
+                                        all_skills=False, skill_id=''):
     """
     Function sends a request to CandidateSkillResource
     If all_skills is True, the request will hit /.../skills endpoint.

@@ -225,7 +225,7 @@ def domain_custom_fields(domain_first):
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
     for custom_field in custom_fields:
         db.session.add(CustomField(domain_id=domain_first.id, name=custom_field['name'],
-                                   type=custom_field['type'], added_time=datetime.datetime.now()))
+                                   type=custom_field['type'], added_time=datetime.now()))
     db.session.commit()
     return CustomField.get_domain_custom_fields(domain_id=domain_first.id)
 

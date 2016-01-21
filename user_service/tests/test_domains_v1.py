@@ -139,7 +139,7 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
 
     second_domain = {
         'name': gen_salt(6),
-        'expiration': str(datetime.datetime.now().replace(microsecond=0)),
+        'expiration': str(datetime.now().replace(microsecond=0)),
         'dice_company_id': 1
     }
 

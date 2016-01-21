@@ -939,28 +939,29 @@ def test_delete_candidate_skill_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(user_first, access_token_first, talent_pool, sample_user_2):
+def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(user_first, access_token_first,
+                                                              talent_pool, user_second,
+                                                              access_token_second):
     """
     Test:   Attempt to delete the skill of a Candidate that belongs
-            to a different user in the same domain
-    Expect: 204
+            to a different user from a different domain
+    Expect: 403
     """
-    # Get access token_1 & access_token_second for sample_user & sample_user_2, respectively
+    # Create candidate_1 & candidate_2
     AddUserRoles.add(user=user_first)
     AddUserRoles.delete(user=user_second)
-
-    # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     data = generate_single_candidate_data([talent_pool.id])
     create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data)
+    print response_info(create_resp_1)
 
     # Retrieve candidate_1
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
-    # Delete candidate_1's skills with sample_user_2 logged in
+    # Delete candidate_1's skills with user_second logged in
     updated_resp = request_to_candidate_skill_resource(
             access_token_second, 'delete', candidate_1_id, all_skills=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 204
+    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
 
 
 def test_delete_skill_of_a_different_candidate(user_first, access_token_first, talent_pool):
