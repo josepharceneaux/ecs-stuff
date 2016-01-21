@@ -209,7 +209,7 @@ def test_org(request):
 
 @pytest.fixture()
 def domain_aoi(domain_first):
-    """Function will add areas-of-interest to domain
+    """Will add areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
     areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
@@ -222,7 +222,7 @@ def domain_aoi(domain_first):
 
 @pytest.fixture()
 def domain_custom_fields(domain_first):
-    """Function will add custom fields to domain
+    """Will add custom fields to domain
     :rtype:  list[CustomField]
     """
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
@@ -302,7 +302,6 @@ def user_same_domain(request, domain_first, first_group):
 
 @pytest.fixture()
 def user_second(request, domain_second, second_group):
-    # user = create_test_user(db.session, domain_second.id, PASSWORD)
     user = User.add_test_user(db.session, PASSWORD, domain_second.id, second_group.id)
     UserGroup.add_users_to_group(second_group, [user.id])
 
@@ -318,12 +317,6 @@ def user_second(request, domain_second, second_group):
 
 @pytest.fixture()
 def domain_first(request):
-    # test_domain = Domain(
-    #     name=gen_salt(20),
-    #     expiration='0000-00-00 00:00:00'
-    # )
-    # db.session.add(test_domain)
-    # db.session.commit()
     test_domain = Domain.add_test_domain(session=db.session)
 
     def tear_down():

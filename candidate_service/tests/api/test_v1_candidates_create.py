@@ -1,32 +1,18 @@
 """
 Test cases for CandidateResource/post()
 """
-# Standard library
-import json
-
 # Candidate Service app instance
 from candidate_service.candidate_app import app
-
-# Models
-from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import Candidate
-
 # Conftest
-# from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
-
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    check_for_id, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
+    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
 )
-
 # Sample data
 from candidate_sample_data import (
-    generate_single_candidate_data, candidate_educations, candidate_experience,
-    candidate_work_preference, candidate_phones, candidate_military_service,
-    candidate_preferred_locations, candidate_skills, candidate_social_network,
-    complete_candidate_data_for_posting
+    generate_single_candidate_data, candidate_phones, candidate_military_service,
+    candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 from candidate_service.common.models.candidate import CandidateEmail
 
