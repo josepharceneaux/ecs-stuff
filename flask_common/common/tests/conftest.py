@@ -10,7 +10,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
-from auth_utilities import get_access_token, create_test_user, get_or_create
+from auth_utilities import get_access_token, get_or_create
 
 # Application Specific
 from ..models.db import db
@@ -21,150 +21,150 @@ from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
-# USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
-# USER_PASSWORD = 'Talent15'
+USER_HASHED_PASSWORD = 'pbkdf2(1000,64,sha512)$a97efdd8d6b0bf7f$55de0d7bafb29a88e7596542aa927ac0e1fbc30e94db2c5215851c72294ebe01fb6461b27f0c01b9bd7d3ce4a180707b6652ba2334c7a2b0fcb93c946aa8b4ec'
+USER_PASSWORD = 'Talent15'
 
 # TODO: Above fixed passwords should be removed and random passwords should be used
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
 
 
-# class UserAuthentication:
-#     def __init__(self, db):
-#         self.db = db
-#         self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string
-#         self.client_secret = str(uuid.uuid4())[0:8] # can be any arbitrary string
-#         self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
-#
-#     def get_auth_token(self, user_row, get_bearer_token=False):
-#         """ Function will add new_client to the database
-#         :param user:    user-row
-#         :return:        {'client_id': '01a14510', 'client_secret': '04077ead'}
-#         """
-#         self.db.session.add(self.new_client)
-#         self.db.session.commit()
-#         # will return return access_token, refresh_token, user_id, token_type, and expiration date + time
-#         if get_bearer_token:
-#             return get_token(user_login_credentials=dict(
-#                 client_id=self.client_id, client_secret=self.client_secret, user_row=user_row
-#             ))
-#         return dict(client_id=self.client_id, client_secret=self.client_secret, user_row=user_row)
-#
-#     def get_auth_credentials_to_revoke_token(self, user_row, auto_revoke=False):
-#         self.db.session.commit()
-#         token = Token.query.filter_by(user_id=user_row.id).first()
-#         # if auto_revoke is set to True, function will post to /oauth2/revoke and assert its success
-#         if auto_revoke:
-#             return revoke_token(user_logout_credentials=dict(
-#                 token=token, client_id=self.client_id, client_secret=self.client_secret, user=user_row
-#             ))
-#         return dict(token=token, client_id=self.client_id, client_secret=self.client_secret,
-#                     grand_type='password')
-#
-#     def refresh_token(self, user_row):
-#         token = Token.query.filter_by(user_id=user_row.id).first()
-#         return dict(grand_type='refresh_token', token_row=token)
-#
-#
-# @pytest.fixture()
-# def user_auth():
-#     return UserAuthentication(db=db)
+class UserAuthentication:
+    def __init__(self, db):
+        self.db = db
+        self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string
+        self.client_secret = str(uuid.uuid4())[0:8] # can be any arbitrary string
+        self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
+
+    def get_auth_token(self, user_row, get_bearer_token=False):
+        """ Function will add new_client to the database
+        :param user:    user-row
+        :return:        {'client_id': '01a14510', 'client_secret': '04077ead'}
+        """
+        self.db.session.add(self.new_client)
+        self.db.session.commit()
+        # will return return access_token, refresh_token, user_id, token_type, and expiration date + time
+        if get_bearer_token:
+            return get_token(user_login_credentials=dict(
+                client_id=self.client_id, client_secret=self.client_secret, user_row=user_row
+            ))
+        return dict(client_id=self.client_id, client_secret=self.client_secret, user_row=user_row)
+
+    def get_auth_credentials_to_revoke_token(self, user_row, auto_revoke=False):
+        self.db.session.commit()
+        token = Token.query.filter_by(user_id=user_row.id).first()
+        # if auto_revoke is set to True, function will post to /oauth2/revoke and assert its success
+        if auto_revoke:
+            return revoke_token(user_logout_credentials=dict(
+                token=token, client_id=self.client_id, client_secret=self.client_secret, user=user_row
+            ))
+        return dict(token=token, client_id=self.client_id, client_secret=self.client_secret,
+                    grand_type='password')
+
+    def refresh_token(self, user_row):
+        token = Token.query.filter_by(user_id=user_row.id).first()
+        return dict(grand_type='refresh_token', token_row=token)
 
 
-# def get_token(user_login_credentials):
-#     data = {'client_id': user_login_credentials['client_id'],
-#             'client_secret': user_login_credentials['client_secret'],
-#             'username': user_login_credentials['user_row'].email,
-#             'password': 'Talent15',
-#             'grant_type':'password'}
-#     resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
-#     assert resp.status_code == 200
-#     return resp.json()
-#
-#
-# def revoke_token(user_logout_credentials):
-#     access_token = user_logout_credentials['token'].access_token
-#     revoke_data = {'client_id': user_logout_credentials['client_id'],
-#                    'client_secret': user_logout_credentials['client_secret'],
-#                    'token': access_token,
-#                    'grant_type': 'password'}
-#     resp = requests.post('http://localhost:8001/v1/oauth2/revoke', data=revoke_data)
-#     assert resp.status_code == 200
-#     return
-#
-#
-# @pytest.fixture()
-# def sample_user(test_domain, first_group, request):
-#     user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-#     UserGroup.add_users_to_group(user_group=first_group, user_ids=[user.id])
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(user)
-#             db.session.commit()
-#         except Exception:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return user
+@pytest.fixture()
+def user_auth():
+    return UserAuthentication(db=db)
 
 
-# @pytest.fixture()
-# def sample_user_2(test_domain, request):
-#     user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-#     UserGroup.add_users_to_group(user_group=test_group, user_ids=[user.id])
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(user)
-#             db.session.commit()
-#         except Exception:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return user
-#
-#
-# @pytest.fixture()
-# def user_from_diff_domain(test_domain_2, request):
-#     user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(user)
-#             db.session.commit()
-#         except Exception:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return user
+def get_token(user_login_credentials):
+    data = {'client_id': user_login_credentials['client_id'],
+            'client_secret': user_login_credentials['client_secret'],
+            'username': user_login_credentials['user_row'].email,
+            'password': 'Talent15',
+            'grant_type':'password'}
+    resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
+    assert resp.status_code == 200
+    return resp.json()
 
 
-# @pytest.fixture(autouse=True)
-# def test_domain(request):
-#     domain = Domain.add_test_domain(session=db.session)
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(domain)
-#             db.session.commit()
-#         except Exception:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return domain
+def revoke_token(user_logout_credentials):
+    access_token = user_logout_credentials['token'].access_token
+    revoke_data = {'client_id': user_logout_credentials['client_id'],
+                   'client_secret': user_logout_credentials['client_secret'],
+                   'token': access_token,
+                   'grant_type': 'password'}
+    resp = requests.post('http://localhost:8001/v1/oauth2/revoke', data=revoke_data)
+    assert resp.status_code == 200
+    return
 
 
-# @pytest.fixture()
-# def test_domain_2(request):
-#     domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
-#     db.session.add(domain)
-#     db.session.commit()
-#
-#     def tear_down():
-#         try:
-#             db.session.delete(domain)
-#             db.session.commit()
-#         except Exception:
-#             db.session.rollback()
-#     request.addfinalizer(tear_down)
-#     return domain
+@pytest.fixture()
+def sample_user(test_domain, first_group, request):
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    UserGroup.add_users_to_group(user_group=first_group, user_ids=[user.id])
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def sample_user_2(test_domain, request):
+    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
+    UserGroup.add_users_to_group(user_group=test_group, user_ids=[user.id])
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def user_from_diff_domain(test_domain_2, request):
+    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture(autouse=True)
+def test_domain(request):
+    domain = Domain.add_test_domain(session=db.session)
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return domain
+
+
+@pytest.fixture()
+def test_domain_2(request):
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(domain)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return domain
 
 
 @pytest.fixture()
@@ -418,9 +418,13 @@ def talent_pool(request, domain_first, first_group, user_first):
 
 
 @pytest.fixture()
-def talent_pool_second(request, domain_second, user_second):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=user_second.id)
+def talent_pool_second(request, domain_second, second_group, user_second):
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
+                             owner_user_id=user_second.id)
     db.session.add(talent_pool)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
     db.session.commit()
 
     def tear_down():
