@@ -19,7 +19,6 @@
         'app.pipelines',
         'app.resetPassword',
         'app.search',
-        'app.sidenav',
         'app.smartLists',
         'app.styleguide',
         'app.support',
