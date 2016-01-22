@@ -83,6 +83,34 @@
                     text: 'Haohong added 54 Candidates'
                 }
             ];
+
+            vm.topSkills = [
+                {
+                    title: 'Java Developer',
+                    width: 100,
+                    value: '45'
+                },
+                {
+                    title: 'Rails Developer',
+                    width: 80,
+                    value: '35'
+                },
+                {
+                    title: 'Angular Developer',
+                    width: 70,
+                    value: '20'
+                },
+                {
+                    title: 'PHP Developer',
+                    width: 65,
+                    value: '10'
+                },
+                {
+                    title: 'Python Developer',
+                    width: 50,
+                    value: '+16'
+                },
+            ];
         }
     }
 })();

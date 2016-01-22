@@ -48,54 +48,84 @@
         <div layout="row" layout-wrap>
             <!-- Summaries -->
             <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
+
+                <!-- Top Skills -->
                 <div flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
-                        <md-card-title>
+                        <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Top Skills<i class="fa fa-info-circle"></i></span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
+                            <md-list class="v2-h-barchart">
+                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h4>{{topSkill.title}}</h4>
+                                        <h4>{{topSkill.value}}</h4>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
                         </md-card-content>
                     </md-card>
                 </div>
+                <!-- End: Top Skills -->
                 
+                <!-- Candidate Breakdown -->
                 <div flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
-                        <md-card-title>
+                        <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
                         </md-card-content>
                     </md-card>
                 </div>
+                <!-- End: Candidate Breakdown -->
                 
+                <!-- Top Performing Campaigns -->
                 <div flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
-                        <md-card-title>
+                        <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
                                 <span class="md-subhead">By Candidates Added</span>
                             </md-card-title-text>
+                            <span class="md-caption card-top-right-button">Create Campaign</span>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
+                            <md-list class="v2-h-barchart">
+                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h4>{{topSkill.title}}</h4>
+                                        <h4>{{topSkill.value}}</h4>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
                         </md-card-content>
+                        <md-card-actions layout="row" layout-align="end center">
+                            <md-button>See more</md-button>
+                        </md-card-actions>
                     </md-card>
                 </div>
+                <!-- End: Top Performing Campaigns -->
                 
+                <!-- Team Contributors -->
                 <div flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
-                        <md-card-title>
+                        <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Team Contributors<i class="fa fa-info-circle"></i></span>
                             </md-card-title-text>
+                            <span class="md-caption card-top-right-button">Invite Team</span>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
                         </md-card-content>
                     </md-card>
                 </div>
+                <!-- End: Team Contributors -->
             </div>
             <!-- End: Summaries -->
 

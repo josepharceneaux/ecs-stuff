@@ -22,7 +22,11 @@ md-content {
 #v2-pipeline-summaries {
     md-card {
         min-height: 400px;
-        height: 400px;
+
+        .card-top-right-button {
+            max-width: 60px;
+            text-align: right;
+        }
     }
 }
 
@@ -31,6 +35,14 @@ md-content {
         background-color: #eee;
         padding: 16px;
         margin: 8px 0;
+    }
+}
+
+.v2-h-barchart {
+    .v2-bar {
+        background: #888;
+        color: #fff;
+        margin: 8px 0;        
     }
 }
 
