@@ -36,9 +36,7 @@
         init();
 
         function init() {
-            systemAlertsService.getAlerts().then(function (response) {
-                vm.alerts = response.alerts;
-            });
+            vm.alerts = systemAlertsService.getAlerts().$object;
         }
 
         function dismissAlert(alert) {
