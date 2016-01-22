@@ -27,10 +27,10 @@ def send_request(method, url, access_token, data=None, is_json=True):
     return request_method(url, data=data, headers=headers)
 
 
-def unauthorize_test(method, url, access_token, data=None):
-    # TODO: Use a hard coded token invalid
-    response = send_request(method, url, access_token,  data)
-    assert response.status_code == 401
+def unauthorize_test(method, url, data=None):
+    response = send_request(method, url, 'invalid_token',  data)
+    assert response.status_code == 401, 'It should be unauthorized (401)'
+    return response
 
 
 def event_data_tests(method, url, data, token):

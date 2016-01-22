@@ -257,7 +257,7 @@ def meetup_event_dict(request, sample_user, meetup_event):
 
 
 @pytest.fixture()
-def eventbrite_event(request, sample_user, test_eventbrite_credentials,
+def eventbrite_event(request, test_eventbrite_credentials,
                      eventbrite, eventbrite_venue, organizer_in_db):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -269,7 +269,8 @@ def eventbrite_event(request, sample_user, test_eventbrite_credentials,
     event['social_network_id'] = eventbrite.id
     event['venue_id'] = eventbrite_venue.id
     event['organizer_id'] = organizer_in_db.id
-    event_id = process_event(event, sample_user.id)
+    user_id = eventbrite_venue.user_id
+    event_id = process_event(event, user_id)
     event = Event.get_by_id(event_id)
 
     def fin():
@@ -280,7 +281,7 @@ def eventbrite_event(request, sample_user, test_eventbrite_credentials,
         delete_event() function to delete the event both from social network
         and from our database.
         """
-        delete_events(sample_user.id, [event_id])
+        delete_events(user_id, [event_id])
     request.addfinalizer(fin)
     return event
 
