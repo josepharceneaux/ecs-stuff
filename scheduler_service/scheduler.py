@@ -12,12 +12,12 @@ import datetime
 # Third-party imports
 from dateutil.tz import tzutc
 from pytz import timezone
-from urllib import urlencode
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
+from urllib import urlencode
 
 # Application imports
 from scheduler_service.common.models import db
@@ -27,7 +27,7 @@ from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
-from scheduler_service.common.utils.handy_functions import http_request, to_utc_str
+from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
@@ -39,6 +39,13 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.configure(job_defaults=job_defaults)
 scheduler.add_jobstore(job_store)
+
+# Set the minimum frequency in seconds
+if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'jenkins']:
+    MIN_ALLOWED_FREQUENCY = 4
+else:
+    # For qa and production minimum frequency would be one hour
+    MIN_ALLOWED_FREQUENCY = 3600
 
 # Request timeout is 30 seconds.
 REQUEST_TIMEOUT = 30
@@ -114,12 +121,13 @@ def validate_periodic_job(data):
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
-        raise InvalidUsage('Invalid value of frequency. Value should be greater than or equal to '
-                           '%s' % SchedulerUtils.MIN_ALLOWED_FREQUENCY)
+    if int(frequency) < MIN_ALLOWED_FREQUENCY:
+        raise InvalidUsage(error_message='Invalid value of frequency. Value should '
+                                         'be greater than or equal to %s' % MIN_ALLOWED_FREQUENCY)
 
     frequency = int(frequency)
     valid_data.update({'frequency': frequency})
+
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
@@ -252,8 +260,7 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception as e:
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
-        raise TriggerTypeError("Task type not correct. Please use either %s or %s as task type."
-                               % (SchedulerUtils.ONE_TIME, SchedulerUtils.PERIODIC))
+        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
 
 
 def remove_tasks(ids, user_id):
@@ -293,6 +300,14 @@ def serialize_task(task):
                 pending=task.pending,
                 task_type=SchedulerUtils.PERIODIC
         )
+        if task_dict['start_datetime']:
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        if task_dict['end_datetime']:
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        if task_dict['next_run_datetime']:
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
     # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
@@ -307,12 +322,6 @@ def serialize_task(task):
 
         if task_dict['run_datetime']:
             task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        if task_dict['end_datetime']:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        if task_dict['next_run_datetime']:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name

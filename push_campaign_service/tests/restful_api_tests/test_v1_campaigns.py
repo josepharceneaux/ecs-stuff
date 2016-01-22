@@ -4,18 +4,8 @@ This module contains tests related to Push Campaign RESTful API endpoints.
 # Builtin imports
 
 # Application specific imports
-from push_campaign_service.tests.helper_methods import *
-from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
-# Constants
-API_URL = PushCampaignApi.HOST_NAME
-VERSION = PushCampaignApi.VERSION
-
-SLEEP_TIME = 20
-OK = 200
-INVALID_USAGE = 400
-NOT_FOUND = 404
-FORBIDDEN = 403
-INTERNAL_SERVER_ERROR = 500
+from push_campaign_service.tests.test_utilities import *
+from push_campaign_service.common.routes import PushCampaignApiUrl
 
 
 class TestCreateCampaign(object):

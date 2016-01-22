@@ -8,7 +8,7 @@ from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
-
+from push_campaign import PushCampaignSend
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'
@@ -63,6 +63,7 @@ class Candidate(db.Model):
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
     sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
+    push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
     devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
                            backref='candidate', lazy='dynamic')

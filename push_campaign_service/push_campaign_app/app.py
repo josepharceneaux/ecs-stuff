@@ -9,7 +9,7 @@ from push_campaign_service.push_campaign_app import app, logger
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.push_campaign import PushCampaignBlast
 
-from push_campaign_service.push_campaign_app.api.v1_push_notification_api import push_notification_blueprint
+from push_campaign_service.push_campaign_app.api.v1_push_campaign_api import push_notification_blueprint
 app.register_blueprint(push_notification_blueprint)
 
 

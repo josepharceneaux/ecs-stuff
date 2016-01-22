@@ -65,16 +65,17 @@ import types
 
 # Third Party
 from flask import request
+from flask import redirect
 from flask import Blueprint
-from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
 
 # Application Specific
+from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from push_campaign_service.common.campaign_services.campaign_utils import CampaignType
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import (PushCampaignApi,
-                                                 PushCampaignApiUrl)
+from push_campaign_service.common.routes import PushCampaignApi
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
@@ -95,13 +96,6 @@ push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
 api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
-# Enable CORS
-CORS(push_notification_blueprint, resources={
-    r'%s/*' % PushCampaignApiUrl.CAMPAIGNS: {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                  rest_key=ONE_SIGNAL_REST_API_KEY)
@@ -725,3 +719,55 @@ class AssociateDevice(Resource):
             raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
 
 
+@api.route(PushCampaignApi.REDIRECT)
+class PushCampaignUrlRedirection(Resource):
+    """
+    This endpoint redirects the candidate to our app.
+    """
+    def get(self, url_conversion_id):
+        """
+        This endpoint is /v1/redirect/:id
+
+        When recruiter(user) assigns a URL as a redirect for that push notification,
+        we save the original URL as destination URL in "url_conversion" database table.
+        Then we create a new URL (which is
+        created during the process of sending campaign to candidate) to redirect the candidate
+        to our app. This looks like
+
+                http://127.0.0.1:8013/v1/redirect/1
+        After signing this URL, it looks like
+        http://127.0.0.1:8013/v1/redirect/1052?valid_until=1453990099.0&auth_user=no_user&extra=
+                &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
+        This is called signed_url.
+
+        When candidate clicks on above url, it is redirected to this flask endpoint, where we
+        keep track of number of clicks and hit_counts for a URL. We then create activity that
+        'this' candidate has clicked on 'this' campaign. Finally we redirect the candidate to
+        destination URL (Original URL provided by the recruiter)
+
+        .. Status:: 200 (OK)
+                    400 (Invalid Usage)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden Error)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        ., Error codes::
+                    5005 (EmptyDestinationUrl)
+
+        :param url_conversion_id: id of url_conversion record in db
+        :type url_conversion_id: int
+        :return: redirects to the destination URL else raises exception
+        """
+        try:
+            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignType.PUSH,
+                                                                verify_signature=True,
+                                                                request_args=request.args,
+                                                                requested_url=request.full_path)
+            return redirect(redirection_url)
+        # In case any type of exception occurs, candidate should only get internal server error
+        except Exception:
+            # As this endpoint is hit by client, so we log the error, and return internal server
+            # error.
+            logger.exception("Error occurred while URL redirection for Push campaign.")
+        return dict(message='Internal Server Error'), 500

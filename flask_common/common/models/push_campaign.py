@@ -65,6 +65,12 @@ class PushCampaignSend(db.Model):
     campaign_blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
                                   nullable=False)
 
+    # Relationships
+    push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
+                                                       cascade='all,delete-orphan',
+                                                       passive_deletes=True,
+                                                       backref='send')
+
     def __repr__(self):
         return "<PushCampaignSend (one_signal_notification_id: %s, candidate_id: %s)>" % (self.one_signal_notification_id, self.candidate_id)
 
@@ -120,3 +126,33 @@ class PushCampaignSmartlist(db.Model):
         return cls.query.filter_by(
             campaign_id=campaign_id,
             smartlist_id=smartlist_id).first()
+
+
+class PushCampaignSendUrlConversion(db.Model):
+    __tablename__ = 'push_campaign_send_url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    push_campaign_send_id = db.Column(db.Integer,
+                                      db.ForeignKey("push_campaign_send.id", ondelete='CASCADE'),
+                                      nullable=False)
+    url_conversion_id = db.Column(db.Integer,
+                                  db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
+                                  nullable=False)
+
+    def __repr__(self):
+        return '<PushCampaignSendUrlConversion (id = %r)>' % self.id
+
+    @classmethod
+    def get_by_campaign_send_id_and_url_conversion_id(cls,
+                                                      campaign_send_id,
+                                                      url_conversion_id):
+        assert campaign_send_id, 'No campaign_send_id given'
+        assert url_conversion_id, 'No url_conversion_id given'
+        return cls.query.filter(
+            push_campaign_send_id=campaign_send_id,
+            url_conversion_id=url_conversion_id
+        ).first()
+
+    @classmethod
+    def get_by_campaign_send_id(cls, campaign_send_id):
+        assert campaign_send_id, 'No campaign_send_id given'
+        return cls.query.filter_by(push_campaign_send_id=campaign_send_id).all()

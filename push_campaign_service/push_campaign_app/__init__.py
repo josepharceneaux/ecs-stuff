@@ -4,6 +4,7 @@
 # Third Party
 from flask import Flask
 from celery import Celery
+from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 
 
@@ -22,6 +23,7 @@ health = HealthCheck(flask_app, "/healthcheck")
 
 logger.info("push_campaign_service is running in %s environment" % flask_app.config[TalentConfigKeys.ENV_KEY])
 app = init_talent_app(flask_app, logger)
+CORS(app)
 # Celery settings
 celery_app = Celery(app, broker=app.config['BACKEND_URL'], backend=app.config['BACKEND_URL'],
                     include=['push_campaign_service.modules.push_campaign_base'])

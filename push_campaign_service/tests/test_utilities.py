@@ -2,10 +2,19 @@ import json
 from datetime import datetime, timedelta
 import requests
 from faker import Faker
-from push_campaign_service.common.routes import  PushCampaignApiUrl
+from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
 from push_campaign_service.common.utils.handy_functions import to_utc_str
 
 fake = Faker()
+
+API_URL = PushCampaignApi.HOST_NAME
+VERSION = PushCampaignApi.VERSION
+SLEEP_TIME = 20
+OK = 200
+INVALID_USAGE = 400
+NOT_FOUND = 404
+FORBIDDEN = 403
+INTERNAL_SERVER_ERROR = 500
 
 
 def send_request(method, url, access_token, data=None, is_json=True):

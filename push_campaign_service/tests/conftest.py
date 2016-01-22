@@ -21,7 +21,7 @@ from faker import Faker
 import pytest
 
 from push_campaign_service.modules.constants import TEST_DEVICE_ID
-from push_campaign_service.tests.helper_methods import (generate_campaign_data, send_request,
+from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data)
 
 fake = Faker()

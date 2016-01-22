@@ -4,21 +4,11 @@ This module contains tests related to Push Campaign RESTful API endpoints.
 # Builtin imports
 
 # Application specific imports
-from push_campaign_service.tests.helper_methods import *
+from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.models.push_campaign import *
+from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.models.candidate import Candidate
 from push_campaign_service.modules.constants import TEST_DEVICE_ID
-from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
-# Constants
-API_URL = PushCampaignApi.HOST_NAME
-VERSION = PushCampaignApi.VERSION
-
-SLEEP_TIME = 20
-OK = 200
-INVALID_USAGE = 400
-NOT_FOUND = 404
-FORBIDDEN = 403
-INTERNAL_SERVER_ERROR = 500
 
 
 class TestRegisterCandidateDevice(object):

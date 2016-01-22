@@ -30,7 +30,7 @@ from requests import ConnectionError
 from ..models.user import (Token, User)
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
-from ..models.push_campaign import PushCampaign, PushCampaignSmartlist
+from ..models.push_campaign import PushCampaign, PushCampaignSmartlist, PushCampaignBlast
 from ..models.email_marketing import EmailCampaignBlast
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
 
@@ -1305,9 +1305,13 @@ class CampaignBase(object):
         :type campaign_obj: SmsCampaign | PushCampaign etc
         """
         # Any new campaign can add the entry in this statement
-        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
+        if not isinstance(campaign_blast_obj, (SmsCampaignBlast,
+                                               EmailCampaignBlast,
+                                               PushCampaignBlast)):
             raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
-                               (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
+                               (SmsCampaignBlast.__tablename__,
+                                EmailCampaignBlast.__tablename__,
+                                PushCampaignBlast.__tablename__))
         # update hit_count
         cls.create_or_update_url_conversion(url_conversion_id=url_conversion_obj.id,
                                             increment_hit_count=True)
@@ -1390,9 +1394,13 @@ class CampaignBase(object):
         """
         # Any new campaign can add the entry in this statement
 
-        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
+        if not isinstance(campaign_blast_obj, (SmsCampaignBlast,
+                                               EmailCampaignBlast,
+                                               PushCampaignBlast)):
             raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
-                               (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
+                               (SmsCampaignBlast.__tablename__,
+                                EmailCampaignBlast.__tablename__,
+                                PushCampaignBlast.__tablename__))
         not_found_attr = None
         for key, value in kwargs.iteritems():
             try:

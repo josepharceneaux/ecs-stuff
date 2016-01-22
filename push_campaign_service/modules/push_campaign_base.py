@@ -1,5 +1,5 @@
 # Third Party
-from werkzeug.exceptions import BadRequest
+from dateutil.relativedelta import relativedelta
 
 # Application Specific
 from push_campaign_service.common.error_handling import *
@@ -140,44 +140,51 @@ class PushCampaignBase(CampaignBase):
 
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate):
-        assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
-        print('Sending campaign to one candidate')
-        logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
-        # A device is actually candidate's desktop, android or ios machine where
-        # candidate will receive push notifications. Device id is given by OneSignal.
-        devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
-        device_ids = [device.one_signal_device_id for device in devices]
-        if not device_ids:
-            logger.error('Candidate has not subscribed for push notification')
-        else:
-            try:
-                destination_url = self.campaign.url
-                url_conversion = UrlConversion(source_url='', destination_url=destination_url)
-                UrlConversion.save(url_conversion)
-                redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion.id
-                expiry_time = datetime.datetime.utcnow() + datetime.timedelta(weeks=8)
-                signed_url = sign_redirect_url(redirect_url, expiry_time)
-                url_conversion.update(source_url=signed_url)
-                response = one_signal_client.send_notification(signed_url,
-                                                               self.campaign.body_text,
-                                                               self.campaign.name,
-                                                               players=device_ids)
-                if response.ok:
-                    campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
-                                                     candidate_id=candidate.id
-                                                     )
-                    PushCampaignSend.save(campaign_send)
-                    return True
-                else:
-                    response = response.json()
-                    errors = response['errors']
-                    logger.error('Error while sending push notification to candidate (id: %s),'
-                                 'Errors: %s' % errors)
+        with app.app_context():
+            assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
+            print('Sending campaign to one candidate')
+            logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
+            # A device is actually candidate's desktop, android or ios machine where
+            # candidate will receive push notifications. Device id is given by OneSignal.
+            devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
+            device_ids = [device.one_signal_device_id for device in devices]
+            if not device_ids:
+                logger.error('Candidate has not subscribed for push notification')
+            else:
+                try:
+                    destination_url = self.campaign.url
+                    url_conversion = UrlConversion(source_url='', destination_url=destination_url)
+                    UrlConversion.save(url_conversion)
+                    redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion.id
+                    expiry_time = datetime.datetime.now() + relativedelta(years=+1)
+                    # signed_url = sign_redirect_url(redirect_url, expiry_time)
+                    signed_url = sign_redirect_url(redirect_url, expiry_time)
+                    url_conversion.update(source_url=signed_url)
+                    response = one_signal_client.send_notification(signed_url,
+                                                                   self.campaign.body_text,
+                                                                   self.campaign.name,
+                                                                   players=device_ids)
+                    if response.ok:
+                        campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
+                                                         candidate_id=candidate.id
+                                                         )
+                        PushCampaignSend.save(campaign_send)
+                        push_url_conversion = PushCampaignSendUrlConversion(
+                            url_conversion_id=url_conversion.id,
+                            push_campaign_send_id=campaign_send.id
+                        )
+                        PushCampaignSendUrlConversion.save(push_url_conversion)
+                        return True
+                    else:
+                        response = response.json()
+                        errors = response['errors']
+                        logger.error('Error while sending push notification to candidate (id: %s),'
+                                     'Errors: %s' % errors)
+                        UrlConversion.delete(url_conversion)
 
-            except Exception as e:
-                print(e)
-                logger.error('Unable to send push  campaign (id: %s) to candidate (id: %s)'
-                             % (self.campaign.id, candidate.id))
+                except Exception as e:
+                    logger.exception('Unable to send push  campaign (id: %s) to candidate (id: %s)'
+                                     % (self.campaign.id, candidate.id))
 
     @staticmethod
     @celery_app.task(name='callback_campaign_sent')
