@@ -56,6 +56,33 @@
                     value: '4/3/16'
                 }
             ];
+
+            vm.feeds = [
+                {
+                    time: '36 minutes ago',
+                    text: 'Haohong opened the email from Java Developer campaign'
+                },
+                {
+                    time: '1 hr ago',
+                    text: 'Haohong added 54 Candidates'
+                },
+                {
+                    time: '2 hrs ago',
+                    text: 'Haohong opened the email from Java Developer campaign'
+                },
+                {
+                    time: '4 hrs ago',
+                    text: 'Haohong added 54 Candidates'
+                },
+                {
+                    time: '5 hrs ago',
+                    text: 'Haohong opened the email from Java Developer campaign'
+                },
+                {
+                    time: 'Yesterday',
+                    text: 'Haohong added 54 Candidates'
+                }
+            ];
         }
     }
 })();

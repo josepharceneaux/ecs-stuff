@@ -24,6 +24,27 @@ md-content {
     }
 }
 
+.v2-activity-feed {
+    position: relative;
+    padding: 30px 30px 50px;
+    
+    .v2-feed {        
+        background-color: #eee;
+        padding: 16px;
+        margin: 8px 0;
+    }
+
+    .v2-feed-load-more {
+        position: absolute;
+        display: block;
+        text-align: center;
+        width: 200px;
+        left: 50%;
+        bottom: 15px;
+        margin-left: -100px;
+    }
+}
+
 /** UiX Base **/
 
 /** UiX Grid **/

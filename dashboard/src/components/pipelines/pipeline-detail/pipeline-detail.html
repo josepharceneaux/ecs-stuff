@@ -1,88 +1,97 @@
 <section id="pipeline-detail-view" class="view-wrapper view__main--pipelines">
 
     <div layout="column" layout-margin>
-    	
-    	<!-- Navigation path -->
-    	<div>
-    		<p class="md-caption">
-    			<a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
-    		</p>
-    	</div>
-    	<!-- End: Navigation path -->
+        
+        <!-- Navigation path -->
+        <div>
+            <p class="md-caption">
+                <a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
+            </p>
+        </div>
+        <!-- End: Navigation path -->
 
         <!-- Header -->
         <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
-			<div class="page-title-icon">
+            <div class="page-title-icon">
                 <img src="//placehold.it/80x80" />
             </div>
-			<div flex>
+            <div flex>
                 <h3 class="md-title">Pipeline Name</h3>
                 <h3 class="md-body-1">Created by <a href="">Haohong Xu</a> on 5/22/16</h3>
-            </div>    		
-    		<div layout="row" layout-xs="column" layout-sm="column">
-    			<md-button class="md-raised md-primary">Add Candidates</md-button>
-            	<md-button class="md-raised md-primary">Create Campaign</md-button>
-            	<md-button class="md-raised md-primary">Create Smartlist</md-button>
-    		</div>
+            </div>          
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <md-button class="md-raised md-primary">Add Candidates</md-button>
+                <md-button class="md-raised md-primary">Create Campaign</md-button>
+                <md-button class="md-raised md-primary">Create Smartlist</md-button>
+            </div>
         </md-content>
         <!-- End: Header -->
 
         <!-- Growth graph -->
         <md-content layout="row" class="md-whiteframe-z1">
-        	<div style="height:400px;">Pipeline Growth Chart</div>
+            <div style="height:400px;">Pipeline Growth Chart</div>
         </md-content>
         <!-- End: Growth graph -->
 
         <!-- Metrics -->
         <div layout="row" layout-wrap class="v2-align__center">
-        	<div layout-fill layout-margin flex="25" flex-md="50" flex-sm="100" flex-xs="100" ng-repeat="metric in vm.metrics">
-        		<md-content class="md-whiteframe-z1">
-	        		<h3 class="md-title">{{metric.name}} <i class="fa fa-info-circle"></i></h3>
-	                <h3 class="md-display-3">{{metric.value}}</h3>
-	        	</md-content>
-        	</div>
+            <div layout-fill layout-margin flex="25" flex-md="50" flex-sm="100" flex-xs="100" ng-repeat="metric in vm.metrics">
+                <md-content class="md-whiteframe-z1">
+                    <h3 class="md-title">{{metric.name}} <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{metric.value}}</h3>
+                </md-content>
+            </div>
         </div>
         <!-- End: Metrics -->
 
         <!-- Summary -->
         <div layout="row" layout-wrap>
-        	<!-- Summaries -->
-        	<div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
-        		<div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-	        		<md-content class="md-whiteframe-z1 v2-card" style="height: 400px">
-	        			<h3 class="md-title">Top Skills<i class="fa fa-info-circle"></i></h3>
-	        		</md-content>
-	        	</div>
-        		
-        		<div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-	        		<md-content class="md-whiteframe-z1 v2-card">
-	        			<h3 class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></h3>
-	        		</md-content>
-	        	</div>
-        		
-        		<div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-	        		<md-content class="md-whiteframe-z1 v2-card">
-	        			<h3 class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></h3>
-	        		</md-content>
-	        	</div>
-        		
-        		<div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-        			<md-content class="md-whiteframe-z1 v2-card">
-        				<h3 class="md-title">Team Contributors<i class="fa fa-info-circle"></i></h3>
-        			</md-content>
-    			</div>
-        	</div>
-        	<!-- End: Summaries -->
+            <!-- Summaries -->
+            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
+                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
+                    <md-content class="md-whiteframe-z1 v2-card" style="height: 400px">
+                        <h3 class="md-title">Top Skills<i class="fa fa-info-circle"></i></h3>
+                    </md-content>
+                </div>
+                
+                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
+                    <md-content class="md-whiteframe-z1 v2-card">
+                        <h3 class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></h3>
+                    </md-content>
+                </div>
+                
+                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
+                    <md-content class="md-whiteframe-z1 v2-card">
+                        <h3 class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></h3>
+                    </md-content>
+                </div>
+                
+                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
+                    <md-content class="md-whiteframe-z1 v2-card">
+                        <h3 class="md-title">Team Contributors<i class="fa fa-info-circle"></i></h3>
+                    </md-content>
+                </div>
+            </div>
+            <!-- End: Summaries -->
 
-        	<!-- Activity Feed -->
-        	<div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
-        		<div flex layout="row" layout-fill layout-margin>
-        			<md-content flex class="md-whiteframe-z1">
-	    				<h3 class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></h3>
-	    			</md-content>
-        		</div>    			
-        	</div>
-        	<!-- End: Activity Feed -->
+            <!-- Activity Feed -->
+            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+                <div flex layout="row" layout-fill layout-margin>
+                    <md-content flex class="md-whiteframe-z1 v2-activity-feed">
+                        <h3 class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></h3>
+
+                        <md-list>
+                            <div class="md-whiteframe-z1 v2-feed" ng-repeat="feed in vm.feeds">
+                                <span class="md-caption">{{feed.time}}</span>
+                                <h4 class="md-body-2">{{feed.text}}</h4>
+                            </div>
+                        </md-list>
+
+                        <span class="md-title v2-feed-load-more">Load more...</span>
+                    </md-content>
+                </div>              
+            </div>
+            <!-- End: Activity Feed -->
         </div>
         <!-- End: Summary -->
     </div>
