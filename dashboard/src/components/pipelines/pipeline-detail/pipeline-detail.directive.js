@@ -38,7 +38,24 @@
         }
 
         function init() {
-            //
+            vm.metrics = [
+                {
+                    name: 'Total Candidates',
+                    value: '1000'
+                },
+                {
+                    name: 'Active Campaigns',
+                    value: '20'
+                },
+                {
+                    name: 'Smart Lists',
+                    value: '10'
+                },
+                {
+                    name: 'Created Date',
+                    value: '4/3/16'
+                }
+            ];
         }
     }
 })();

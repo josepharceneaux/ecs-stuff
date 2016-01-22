@@ -14,6 +14,16 @@ body {
 
 }
 
+md-content {
+    padding: 30px;
+    border-radius: 3px;
+
+    &.v2-card {
+        min-height: 400px;
+        height: 400px;
+    }
+}
+
 /** UiX Base **/
 
 /** UiX Grid **/
