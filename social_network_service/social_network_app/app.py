@@ -9,7 +9,6 @@ import traceback
 
 # 3rd party imports
 import flask
-from flask.ext.cors import CORS
 from flask import request, redirect
 
 # Application specific imports
@@ -21,7 +20,6 @@ from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
 
@@ -33,12 +31,18 @@ app.register_blueprint(social_network_blueprint)
 api = TalentApi(app)
 
 # Enable CORS
-CORS(app, resources={
-    r'/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
+# options = {
+#     'origins': '*',
+#     'allow_headers': ['Content-Type', 'Authorization']
+# }
+# CORS(app, resources={
+#     r'/code*': options,
+#     r'/%s/*' % SocialNetworkApiUrl.EVENTS: options,
+#     r'/%s/*' % SocialNetworkApiUrl.VENUES: options,
+#     r'/%s/*' % SocialNetworkApiUrl.TIMEZONES: options,
+#     r'/%s/*' % SocialNetworkApiUrl.SOCIAL_NETWORKS: options,
+#     r'/%s/*' % SocialNetworkApiUrl.EVENT_ORIGANIZERS: options
+# })
 
 
 @app.route('/')

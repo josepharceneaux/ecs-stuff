@@ -27,15 +27,6 @@ api.init_app(events_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-# Enable CORS
-CORS(events_blueprint, resources={
-    r'/%s/events/*' % SocialNetworkApi.VERSION: {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
-
-
 @api.route(SocialNetworkApi.EVENTS)
 class Events(Resource):
     """
