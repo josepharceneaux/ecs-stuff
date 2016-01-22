@@ -7,7 +7,7 @@
   margin: 0;
   padding: 0;
 
-  li {
+  > li {
     padding-bottom: $padding--tiny;
     list-style-type: none;
     margin: 0;
@@ -19,7 +19,7 @@
   width: 100%;
   margin: $margin--line 0;
 
-  li {
+  > li {
     display: block;
     float: left;
     width: 50%;
@@ -30,7 +30,7 @@
 .list--spaced {
   @extend .list;
 
-  li {
+  > li {
     padding-bottom: $padding--large;
   }
 }

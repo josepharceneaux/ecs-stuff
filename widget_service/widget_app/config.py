@@ -45,8 +45,8 @@ if env == 'dev':
     OAUTH_TOKEN_URI = OAUTH_ROOT % '/oauth2/token'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
     DEBUG = True
-elif env == 'circle':
-    ENVIRONMENT = 'circle'
+elif env == 'jenkins':
+    ENVIRONMENT = 'jenkins'
     SQLALCHEMY_DATABASE_URI = 'mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci'
     DEBUG = True
 elif env == 'qa':

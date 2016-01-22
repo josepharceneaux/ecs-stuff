@@ -12,7 +12,7 @@ from auth_service.common.routes import AuthApi
 
 # Enable CORS
 CORS(app, resources={
-    r'/(oauth2|roles|users)/*': {
+    r'/%s/oauth2/*' % AuthApi.VERSION: {
         'origins': '*',
         'allow_headers': ['Content-Type', 'Authorization']
     }

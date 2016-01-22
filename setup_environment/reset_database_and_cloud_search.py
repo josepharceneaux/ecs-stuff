@@ -18,9 +18,14 @@ static_tables = ['candidate_status', 'classification_type', 'country', 'culture'
 app = Flask(__name__)
 load_gettalent_config(app.config)
 
-if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'circle']:
-    print "You can reset your database and CloudSearch domain only in 'dev' or 'circle' environment"
+if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
+    print "You can reset your database and CloudSearch domain only in 'dev' or 'jenkins' environment"
     raise SystemExit(0)
+
+# Flush redis-cache
+from common.redis_cache import redis_store
+redis_store.init_app(app)
+redis_store.flushall()
 
 from common.models.db import db
 db.init_app(app)

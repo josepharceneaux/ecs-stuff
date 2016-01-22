@@ -87,8 +87,7 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         _assert_counts_and_sends(response)
 
-    def test_get_with_deleted_campaign_id(self, auth_token,
-                                                          sms_campaign_of_current_user):
+    def test_get_with_deleted_campaign_id(self, auth_token, sms_campaign_of_current_user):
         """
         It first deletes a campaign from database and try to get its sends.
         It should get ResourceNotFound error.
@@ -107,8 +106,8 @@ class TestSmsCampaignSends(object):
             'Campaign should not be found (404)'
 
     def test_get_with_valid_token_and_two_sends(self, auth_token,
-                                                         sms_campaign_of_current_user,
-                                                         create_campaign_sends):
+                                                sms_campaign_of_current_user,
+                                                create_campaign_sends):
         """
         This is the case where we assume we have sent the campaign to 2 candidates. We are
         using fixtures to create campaign blast and campaign sends.

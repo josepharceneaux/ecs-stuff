@@ -6,7 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import CandidateCustomField
+from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -18,11 +18,38 @@ from helpers import (
     request_to_candidate_resource, request_to_candidate_address_resource,
     request_to_candidate_aoi_resource, request_to_candidate_education_resource,
     request_to_candidate_education_degree_resource, request_to_candidate_education_degree_bullet_resource,
-    request_to_candidate_custom_field_resource
+    request_to_candidate_custom_field_resource, AddUserRoles
 )
 
 
 ######################## Candidate ########################
+def test_delete_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to delete a candidate that isn't recognized via ID or Email
+    Expect: 404
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
+
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+
+    # Delete non existing candidate via ID
+    resp = request_to_candidate_resource(token, 'delete', non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010
+
+    # Delete non existing candidate via Email
+    bogus_email = '{}_{}'.format(fake.word(), fake.safe_email())
+    assert CandidateEmail.get_by_address(email_address=bogus_email) is None
+
+    resp = request_to_candidate_resource(token, 'delete', bogus_email)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
+
+
 def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     """
     Test:   "Delete" a Candidate by setting is_web_hidden to True, and then retrieve Candidate
@@ -32,6 +59,7 @@ def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -45,6 +73,7 @@ def test_delete_candidate_and_retrieve_it(sample_user, user_auth):
     get_resp = get_from_candidate_resource(token, candidate_id)
     print response_info(get_resp)
     assert get_resp.status_code == 404
+    assert get_resp.json()['error']['code'] == 3011
 
 
 def test_delete_candidate_without_id(sample_user, user_auth):
@@ -72,6 +101,7 @@ def test_delete_candidate_via_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -83,6 +113,7 @@ def test_delete_candidate_via_email(sample_user, user_auth):
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email=can_emails[0]['address'])
     print response_info(resp)
+    assert resp.status_code == 204
 
 
 def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
@@ -94,11 +125,12 @@ def test_delete_candidate_via_unrecognized_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.delete(user=sample_user)
 
     # Delete (hide) Candidate
     resp = request_to_candidate_resource(token, 'delete', candidate_email='email_not_found_45623@simple.com')
     print response_info(resp)
-    assert resp.status_code == 404
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
 
 
 def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
@@ -112,6 +144,8 @@ def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
     # Get access token_1 and token_2
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+    AddUserRoles.all_roles(user=sample_user_2)
 
     # Create Candidate with token_1 (belonging to sample_user)
     candidate_1_id = post_to_candidate_resource(token_1).json()['candidates'][0]['id']
@@ -122,7 +156,7 @@ def test_delete_someone_elses_candidate(sample_user, sample_user_2, user_auth):
     # Delete (hide) Candidate with token_2 (sample_user_2)
     resp = request_to_candidate_resource(token_2, 'delete', candidate_dict['id'])
     print response_info(resp)
-    assert resp.status_code == 403
+    assert resp.status_code == 204
 
 
 ######################## CandidateAddress ########################
@@ -137,6 +171,7 @@ def test_non_logged_in_user_delete_can_address():
     resp = request_to_candidate_address_resource(None, 'delete', 5, True)
     print response_info(resp)
     assert resp.status_code == 401
+    assert resp.json()['error']['code'] == 11
 
 
 def test_delete_candidate_address_with_bad_input():
@@ -157,15 +192,17 @@ def test_delete_candidate_address_with_bad_input():
 
 def test_delete_address_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the address of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the address of a Candidate that belongs to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.add_and_delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -176,7 +213,7 @@ def test_delete_address_of_a_candidate_belonging_to_a_diff_user(sample_user, sam
     # Delete candidate_1's address with sample_user_2 logged in
     updated_resp = request_to_candidate_address_resource(token_2, 'delete', candidate_1_id, all_addresses=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_address_of_a_diff_candidate(sample_user, user_auth):
@@ -188,6 +225,7 @@ def test_delete_address_of_a_diff_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -200,7 +238,7 @@ def test_delete_address_of_a_diff_candidate(sample_user, user_auth):
     updated_resp = request_to_candidate_address_resource(token, 'delete', candidate_1_id,
                                                          address_id=can_2_addresses[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3021
 
 
 def test_delete_candidate_address_with_no_id(sample_user, user_auth):
@@ -220,22 +258,6 @@ def test_delete_candidate_address_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_addresses_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's address without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's addresses without an id
-    updated_resp = request_to_candidate_address_resource(token, 'delete', all_addresses=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_can_address(sample_user, user_auth):
     """
     Test:   Remove Candidate's address from db
@@ -247,6 +269,7 @@ def test_delete_can_address(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate
@@ -279,6 +302,7 @@ def test_delete_all_of_candidates_addresses(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Remove all of Candidate's addresses
@@ -325,8 +349,8 @@ def test_delete_candidate_aoi_with_bad_input():
 
 def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete the candidate aois of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete the aois of a Candidate that belongs to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -334,17 +358,17 @@ def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(sample_user, sam
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
-
-    # Retrieve candidate_1
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's areas of interest with sample_user_2 logged in
     updated_resp = request_to_candidate_aoi_resource(token_2, 'delete', candidate_1_id, all_aois=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_candidate_aoi_with_no_id(sample_user, user_auth):
@@ -364,22 +388,6 @@ def test_delete_candidate_aoi_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_aois_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's areas of interest without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's areas of interest without an id
-    updated_resp = request_to_candidate_aoi_resource(token, 'delete', all_aois=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
     """
     Test:   Remove all of candidate's aois from db
@@ -391,6 +399,7 @@ def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     # Retrieve Candidate's aois
@@ -406,8 +415,8 @@ def test_delete_all_of_candidates_areas_of_interest(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['areas_of_interest']) == 0
-    assert db.session.query(AreaOfInterest).get(can_aois[0]['id']) # AreaOfInterest should still be in db
-    assert db.session.query(AreaOfInterest).get(can_aois[1]['id']) # AreaOfInterest should still be in db
+    assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
+    assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
 
 def test_delete_can_area_of_interest(sample_user, user_auth):
@@ -419,6 +428,7 @@ def test_delete_can_area_of_interest(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -431,7 +441,8 @@ def test_delete_can_area_of_interest(sample_user, user_auth):
     candidate_aois_count = len(can_aois)
 
     # Remove one of Candidate's area of interest
-    updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id, aoi_id=can_aois[0]['id'])
+    updated_resp = request_to_candidate_aoi_resource(token, 'delete', candidate_id,
+                                                     aoi_id=can_aois[0]['id'])
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
@@ -439,8 +450,8 @@ def test_delete_can_area_of_interest(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['areas_of_interest']) == candidate_aois_count - 1
-    assert db.session.query(AreaOfInterest).get(can_aois[0]['id']) # AreaOfInterest should still be in db
-    assert db.session.query(AreaOfInterest).get(can_aois[1]['id']) # AreaOfInterest should still be in db
+    assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
+    assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
 
 ######################## CandidateCustomFields ########################
@@ -475,15 +486,17 @@ def test_delete_candidate_custom_field_with_bad_input():
 
 def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete custom fields of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Delete custom fields of a Candidate that belongs to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -492,10 +505,10 @@ def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(sample_use
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's custom fields with sample_user_2 logged in
-    updated_resp = request_to_candidate_custom_field_resource(token_2, 'delete', candidate_1_id,
-                                                              all_custom_fields=True)
+    updated_resp = request_to_candidate_custom_field_resource(
+            token_2, 'delete', candidate_1_id, all_custom_fields=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_candidate_custom_fields_with_no_id(sample_user, user_auth):
@@ -515,22 +528,6 @@ def test_delete_candidate_custom_fields_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_custom_fields_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's custom fields without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's custom fields without candidate_id
-    updated_resp = request_to_candidate_custom_field_resource(token, 'delete', all_custom_fields=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidates_custom_fields(sample_user, user_auth):
     """
     Test:   Remove all of candidate's custom fields from db
@@ -542,14 +539,15 @@ def test_delete_candidates_custom_fields(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     # Retrieve Candidate's custom fields
     candidate_id = create_resp.json()['candidates'][0]['id']
     can_custom_fields = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields']
     db.session.commit()
-    custom_field_id_1 = db.session.query(CandidateCustomField).get(can_custom_fields[0]['id']).custom_field_id
-    custom_field_id_2 = db.session.query(CandidateCustomField).get(can_custom_fields[1]['id']).custom_field_id
+    custom_field_id_1 = CandidateCustomField.query.get(can_custom_fields[0]['id']).custom_field_id
+    custom_field_id_2 = CandidateCustomField.query.get(can_custom_fields[1]['id']).custom_field_id
 
     # Remove all of Candidate's custom fields
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id, True)
@@ -560,8 +558,8 @@ def test_delete_candidates_custom_fields(sample_user, user_auth):
 
     assert updated_resp.status_code == 204
     assert len(can_dict_after_update['custom_fields']) == 0
-    assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
-    assert db.session.query(CustomField).get(custom_field_id_2) # CustomField should still be in db
+    assert CustomField.query.get(custom_field_id_1) # CustomField should still be in db
+    assert CustomField.query.get(custom_field_id_2) # CustomField should still be in db
 
 
 def test_delete_can_custom_field(sample_user, user_auth):
@@ -573,6 +571,7 @@ def test_delete_can_custom_field(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -581,24 +580,16 @@ def test_delete_can_custom_field(sample_user, user_auth):
     candidate_id = create_resp.json()['candidates'][0]['id']
     can_custom_fields = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields']
     db.session.commit()
-    custom_field_id_1 = db.session.query(CandidateCustomField).get(can_custom_fields[0]['id']).custom_field_id
-    custom_field_id_2 = db.session.query(CandidateCustomField).get(can_custom_fields[1]['id']).custom_field_id
-
-    # Current number of Candidate's custom fields
-    can_custom_fields_count = len(can_custom_fields)
+    custom_field_id_1 = CandidateCustomField.get_by_id(can_custom_fields[0]['id']).custom_field_id
+    custom_field_id_2 = CandidateCustomField.get_by_id(can_custom_fields[1]['id']).custom_field_id
 
     # Remove one of Candidate's custom field
     updated_resp = request_to_candidate_custom_field_resource(token, 'delete', candidate_id,
-                                                              custom_field_id=can_custom_fields[0]['id'])
+                                                      custom_field_id=can_custom_fields[0]['id'])
     print response_info(updated_resp)
-
-    # Retrieve Candidate after update
-    can_dict_after_update = get_from_candidate_resource(token, candidate_id).json()['candidate']
-
     assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['custom_fields']) == can_custom_fields_count - 1
-    assert db.session.query(CustomField).get(custom_field_id_1) # CustomField should still be in db
-    assert db.session.query(CustomField).get(custom_field_id_2) # CustomField should still be in db
+    assert CustomField.query.get(custom_field_id_1) # CustomField should still be in db
+    assert CustomField.query.get(custom_field_id_2) # CustomField should still be in db
 
 
 ######################## CandidateEducation ########################
@@ -631,17 +622,19 @@ def test_delete_candidate_education_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_education_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_education_of_a_candidate_in_same_domain(sample_user, sample_user_2, user_auth):
     """
     Test:   Attempt to delete the education of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Expect: 204, deletion must be prevented
     :type sample_user:  User
-    :type sampl_user_2: User
+    :type sample_user_2: User
     :type user_auth:   UserAuthentication
     """
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+    AddUserRoles.all_roles(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -650,20 +643,22 @@ def test_delete_education_of_a_candidate_belonging_to_a_diff_user(sample_user, s
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
     # Delete candidate_1's education with sample_user_2 logged in
-    updated_resp = request_to_candidate_education_resource(token_2, 'delete', candidate_1_id, all_educations=True)
+    updated_resp = request_to_candidate_education_resource(token_2, 'delete', candidate_1_id,
+                                                           all_educations=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_education_of_a_different_candidate(sample_user, user_auth):
     """
-    Test:   Attempt to delete the education of a different Candidate
+    Test:   Attempt to delete the education of a different Candidate in the same domain
     Expect: 403
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -677,6 +672,7 @@ def test_delete_education_of_a_different_candidate(sample_user, user_auth):
                                                            education_id=can_2_educations[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == 3050
 
 
 def test_delete_candidate_education_with_no_id(sample_user, user_auth):
@@ -696,22 +692,6 @@ def test_delete_candidate_education_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_educations_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's educations without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's educations without an id
-    updated_resp = request_to_candidate_education_resource(token, 'delete', all_educations=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_educations(sample_user, user_auth):
     """
     Test:   Remove all of candidate's educations from db
@@ -723,6 +703,7 @@ def test_delete_candidate_educations(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Remove all of Candidate's educations
@@ -748,6 +729,7 @@ def test_delete_candidates_education(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     # Retrieve Candidate
@@ -803,7 +785,8 @@ def test_delete_candidate_education_degrees_with_bad_input():
     assert resp.status_code == 404
 
 
-def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
+def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2,
+                                                                   user_auth):
     """
     Test:   Attempt to delete the education-degrees of a Candidate that belongs to a different user
     Expect: 403, deletion must be prevented
@@ -814,19 +797,23 @@ def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(sample_user, 
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
 
     # Retrieve candidate_1
     candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-    can_1_edu_id = get_from_candidate_resource(token_1, candidate_1_id).json()['candidate']['educations'][0]['id']
+    can_1_edu_id = get_from_candidate_resource(token_1, candidate_1_id).\
+        json()['candidate']['educations'][0]['id']
 
     # Delete candidate_1's education degree with sample_user_2 logged in
-    updated_resp = request_to_candidate_education_degree_resource(token_2, 'delete', candidate_1_id,
-                                                                  education_id=can_1_edu_id, all_degrees=True)
+    updated_resp = request_to_candidate_education_degree_resource(
+            token_2, 'delete', candidate_1_id,
+            education_id=can_1_edu_id, all_degrees=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_education_degree_of_a_different_candidate(sample_user, user_auth):
@@ -838,17 +825,20 @@ def test_delete_education_degree_of_a_different_candidate(sample_user, user_auth
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
     candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve candidate_2's education degrees
-    can_2_educations = get_from_candidate_resource(token, candidate_2_id).json()['candidate']['educations']
+    can_2_educations = get_from_candidate_resource(token, candidate_2_id).\
+        json()['candidate']['educations']
 
     # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_education_degree_resource(token, 'delete', candidate_1_id,
-                                                                  can_2_educations[0]['id'], all_degrees=True)
+    updated_resp = request_to_candidate_education_degree_resource(
+            token, 'delete', candidate_1_id,
+            can_2_educations[0]['id'], all_degrees=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
 
@@ -870,21 +860,6 @@ def test_delete_candidate_edu_degree_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_can_edu_degree_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's education-degrees without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's education degrees without an id
-    updated_resp = request_to_candidate_education_degree_resource(token, 'delete', all_degrees=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
 
 def test_delete_candidate_education_degrees(sample_user, user_auth):
     """
@@ -897,6 +872,7 @@ def test_delete_candidate_education_degrees(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate
@@ -930,6 +906,7 @@ def test_delete_candidates_education_degree(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
 
     # Retrieve Candidate
@@ -964,6 +941,7 @@ def test_non_logged_in_user_delete_can_edu_degree_bullets():
     resp = request_to_candidate_education_degree_bullet_resource(None, 'delete', 5, 5, 5, all_bullets=True)
     print response_info(resp)
     assert resp.status_code == 401
+    assert resp.json()['error']['code'] == 11
 
 
 def test_delete_candidate_edu_degree_bullets_with_bad_input():
@@ -986,8 +964,8 @@ def test_delete_candidate_edu_degree_bullets_with_bad_input():
 
 def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(sample_user, sample_user_2, user_auth):
     """
-    Test:   Attempt to delete degree-bullets of a Candidate that belongs to a different user
-    Expect: 403, deletion must be prevented
+    Test:   Attempt to delete degree-bullets of a Candidate that belongs to a different user in the same domain
+    Expect: 204
     :type sample_user:  User
     :type sampl_user_2: User
     :type user_auth:   UserAuthentication
@@ -995,6 +973,8 @@ def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(sample_us
     # Get access token_1 & token_2 for sample_user & sample_user_2, respectively
     token_1 = user_auth.get_auth_token(sample_user, True)['access_token']
     token_2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
+    AddUserRoles.delete(user=sample_user_2)
 
     # Create candidate_1 & candidate_2 with sample_user & sample_user_2
     create_resp_1 = post_to_candidate_resource(token_1)
@@ -1009,7 +989,7 @@ def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(sample_us
                                                                          can_1_educations[0]['degrees'][0]['id'],
                                                                          all_bullets=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403
+    assert updated_resp.status_code == 204
 
 
 def test_delete_can_edu_degree_bullets_of_a_different_candidate(sample_user, user_auth):
@@ -1021,6 +1001,7 @@ def test_delete_can_edu_degree_bullets_of_a_different_candidate(sample_user, use
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create candidate_1 and candidate_2
     candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -1038,6 +1019,7 @@ def test_delete_can_edu_degree_bullets_of_a_different_candidate(sample_user, use
                                                                          bullet_id=can_2_edu_degree_bullet['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
+    assert updated_resp.json()['error']['code'] == 3053
 
 
 def test_delete_candidate_edu_degree_bullet_with_no_id(sample_user, user_auth):
@@ -1058,22 +1040,6 @@ def test_delete_candidate_edu_degree_bullet_with_no_id(sample_user, user_auth):
     assert updated_resp.status_code == 404
 
 
-def test_delete_candidate_degree_bullets_without_candidate_id(sample_user, user_auth):
-    """
-    Test:   Attempt to delete Candidate's degree-bullets without providing candidate_id
-    Expect: 404
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Remove one of Candidate's degree-bullets without providing candidate_id
-    updated_resp = request_to_candidate_education_degree_bullet_resource(token, 'delete', all_bullets=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_education_degree_bullets(sample_user, user_auth):
     """
     Test:   Remove all of candidate's degree_bullets from db
@@ -1086,6 +1052,7 @@ def test_delete_candidate_education_degree_bullets(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate
@@ -1124,6 +1091,7 @@ def test_delete_candidates_education_degree_bullet(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
     # Create Candidate
+    AddUserRoles.all_roles(user=sample_user)
     create_resp = post_to_candidate_resource(token)
 
     # Retrieve Candidate

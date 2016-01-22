@@ -224,16 +224,15 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                                            sms_campaign_of_current_user):
         """
         User has one phone value, valid header and invalid URL in body text(random word).
-        It should get internal server error, Custom error should be InvalidUrl.
+        It should get invalid usage error, Custom error should be INVALID_URL_FORMAT.
         :param valid_header: valid header to POST data
-        :param user_phone_1: user_phone fixture to assign a test phone number to user
         :return:
         """
         campaign_valid_data['body_text'] += 'http://' + fake.word()
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=valid_header,
                                 data=json.dumps(campaign_valid_data))
-        assert response.status_code == InternalServerError.http_status_code()
+        assert response.status_code == InvalidUsage.http_status_code()
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 
 

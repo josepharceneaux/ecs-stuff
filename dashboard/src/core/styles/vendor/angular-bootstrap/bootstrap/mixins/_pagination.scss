@@ -1,0 +1,24 @@
+// Pagination
+
+@mixin bs-pagination-size($bs-padding-vertical, $bs-padding-horizontal, $bs-font-size, $bs-line-height, $bs-border-radius) {
+  > li {
+    > a,
+    > span {
+      padding: $bs-padding-vertical $bs-padding-horizontal;
+      font-size: $bs-font-size;
+      line-height: $bs-line-height;
+    }
+    &:first-child {
+      > a,
+      > span {
+        @include bs-border-left-radius($bs-border-radius);
+      }
+    }
+    &:last-child {
+      > a,
+      > span {
+        @include bs-border-right-radius($bs-border-radius);
+      }
+    }
+  }
+}

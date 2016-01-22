@@ -8,15 +8,18 @@ import re
 import time
 
 # Common Utils
+
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.tests.conftest import app
 from user_service.common.error_handling import MethodNotAllowed
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlConversion,
                                                              SmsCampaignReply, SmsCampaignBlast,
                                                              SmsCampaignSend)
+from sms_campaign_service.common.campaign_services.campaign_utils import delete_scheduled_task
 
-SLEEP_TIME = 20
+SLEEP_TIME = 25
 
 
 def assert_url_conversion(sms_campaign_sends):
@@ -31,7 +34,6 @@ def assert_url_conversion(sms_campaign_sends):
     So we will verify whether source_url has same format as above URL.
 
     :param sms_campaign_sends: sends of campaign
-    :param campaign_id: id of SMS campaign
     :return:
     """
     campaign_send_url_conversions = []
@@ -149,3 +151,14 @@ def assert_campaign_delete(response, user_id, campaign_id):
     """
     assert response.status_code == 200, 'should get ok response(200)'
     assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_DELETE, campaign_id)
+
+
+def delete_test_scheduled_task(task_id, headers):
+    """
+    This deletes the scheduled task from scheduler_service
+    :param task_id:
+    :param headers:
+    :return:
+    """
+    with app.app_context():
+        delete_scheduled_task(task_id, headers)

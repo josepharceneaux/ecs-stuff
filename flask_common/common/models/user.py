@@ -16,6 +16,7 @@ from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from werkzeug.security import generate_password_hash
 
 
 class User(db.Model):
@@ -41,6 +42,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    thumbnail_url = db.Column('thumbnailUrl', db.TEXT, default="")
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -116,6 +118,28 @@ class User(db.Model):
         :rtype: list[User]
         """
         return User.query.filter_by(domain_id=domain_id).all()
+
+    @classmethod
+    def get_domain_id(cls, _id):
+        user = cls.query.filter_by(id=_id).first()
+        return user.domain_id if user else None
+
+    # ***** Below function to be used for testing only *****
+    @staticmethod
+    def add_test_user(session, domain_id, password):
+        """
+        Function creates a unique user for testing
+        :rtype: User
+        """
+        user = User(
+            email='{}@example.com'.format(uuid.uuid4().__str__()),
+            password=generate_password_hash(password, method='pbkdf2:sha512'),
+            domain_id=domain_id,
+            expiration=None
+        )
+        session.add(user)
+        session.commit()
+        return user
 
 
 class UserPhone(db.Model):

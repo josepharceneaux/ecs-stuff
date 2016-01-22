@@ -6,6 +6,7 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.user import User
+from candidate_service.common.models.candidate import CandidateEmail
 
 # Conftest
 from candidate_service.common.tests.conftest import UserAuthentication
@@ -14,7 +15,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    patch_to_candidate_resource
+    patch_to_candidate_resource, request_to_candidates_resource, AddUserRoles
 )
 
 # Candidate sample data
@@ -26,6 +27,31 @@ from candidate_sample_data import (
 
 
 ######################## Candidate ########################
+def test_update_candidate_outside_of_domain(sample_user, user_auth, user_from_diff_domain):
+    """
+    Test: User attempts to update a candidate from a different domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_diff_domain:  User
+    """
+    # Get access tokens
+    sample_user_token = user_auth.get_auth_token(sample_user, True)['access_token']
+    user_from_other_domain_token = user_auth.get_auth_token(user_from_diff_domain, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.edit(user=user_from_diff_domain)
+
+    # Create Candidate
+    create_resp = post_to_candidate_resource(sample_user_token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+
+    # User from different domain to update candidate
+    data = {'candidates': [{'id': candidate_id, 'first_name': 'moron'}]}
+    update_resp = patch_to_candidate_resource(user_from_other_domain_token, data)
+    print response_info(update_resp)
+    assert update_resp.status_code == 403 and update_resp.json()['error']['code'] == 3012
+
+
 def test_update_existing_candidate(sample_user, user_auth):
     """
     Test:   Update an existing Candidate
@@ -35,6 +61,7 @@ def test_update_existing_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create a candidate
     create_candidate = post_to_candidate_resource(token).json()
@@ -79,6 +106,7 @@ def test_update_candidate_without_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.edit(user=sample_user)
 
     # Update Candidate's first_name
     data = {'candidate': {'first_name': fake.first_name()}}
@@ -97,31 +125,27 @@ def test_data_validations(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.edit(user=sample_user)
 
     data = {'candidate': [{}]}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': {}}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': [{}]}
     resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 400
     print response_info(resp)
+    assert resp.status_code == 400
 
     data = {'candidates': [{'id': 5, 'phones': [{}]}]}
     resp = patch_to_candidate_resource(token, data)
+    print response_info(resp)
     assert resp.status_code == 400
-    print response_info(resp)
-
-    data = {'candidates': [{'id': 5, 'phones': [{'id': 10, 'label': None, 'value': None, 'is_default': False}]}]}
-    resp = patch_to_candidate_resource(token, data)
-    assert resp.status_code == 403
-    print response_info(resp)
 
 
 def test_update_candidate_names(sample_user, user_auth):
@@ -133,6 +157,7 @@ def test_update_candidate_names(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -157,6 +182,48 @@ def test_update_candidate_names(sample_user, user_auth):
     assert candidate_dict['candidate']['full_name'] == full_name_from_data
 
 
+def test_update_candidates_in_bulk_with_one_erroneous_data(sample_user, user_auth):
+    """
+    Test: Attempt to update few candidates, one of which will have bad data
+    Expect: 400; no record should be added to the db
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
+
+    # Create Candidate + candidate's emails
+    email_1, email_2 = fake.safe_email(), fake.safe_email()
+    data = {'candidates': [
+        {'emails': [{'label': None, 'address': email_1}]},
+        {'emails': [{'label': None, 'address': email_2}]}
+    ]}
+    create_resp = post_to_candidate_resource(token, data).json()
+    candidate_ids = [candidate['id'] for candidate in create_resp['candidates']]
+
+    # Retrieve both candidates
+    get_candidates_resp = request_to_candidates_resource(
+            token, 'get', data={'candidate_ids': candidate_ids}
+    ).json()['candidates']
+
+    # Update candidates' email address, one will be an invalid email address
+    candidate_1_id, candidate_2_id = get_candidates_resp[0]['id'], get_candidates_resp[1]['id']
+    email_1_id = get_candidates_resp[0]['emails'][0]['id']
+    email_2_id = get_candidates_resp[1]['emails'][0]['id']
+    update_data = {'candidates': [
+        {'id': candidate_1_id, 'emails': [{'id': email_1_id, 'address': fake.safe_email()}]},
+        {'id': candidate_2_id, 'emails': [{'id': email_2_id, 'address': 'bad_email_.com'}]}
+    ]}
+    update_resp = patch_to_candidate_resource(token, update_data)
+    db.session.commit()
+    print response_info(update_resp)
+
+    # Candidates' emails must remain unchanged
+    assert update_resp.status_code == 400
+    assert CandidateEmail.get_by_id(_id=email_1_id).address == email_1
+    assert CandidateEmail.get_by_id(_id=email_2_id).address == email_2
+
+
 ######################## CandidateAddress ########################
 def test_add_new_candidate_address(sample_user, user_auth):
     """
@@ -167,6 +234,7 @@ def test_add_new_candidate_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -198,6 +266,7 @@ def test_multiple_is_default_addresses(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -223,6 +292,7 @@ def test_update_an_existing_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -259,6 +329,7 @@ def test_update_candidate_current_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(access_token=token)
@@ -297,6 +368,7 @@ def test_add_new_area_of_interest(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -332,6 +404,7 @@ def test_add_new_education(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -375,18 +448,21 @@ def test_update_education_of_a_diff_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
-    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    candidate_1_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    candidate_2_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
 
     # Retrieve Candidate
-    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    candidate_dict = get_from_candidate_resource(token, candidate_1_id).json()['candidate']
 
     # Update existing CandidateEducation of a different Candidate
-    data = candidate_educations(7, candidate_dict['educations'][0]['id'])
+    data = candidate_educations(candidate_2_id, candidate_dict['educations'][0]['id'])
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == 3050, "Education Forbidden"
 
 
 def test_update_education_primary_info(sample_user, user_auth):
@@ -400,6 +476,7 @@ def test_update_education_primary_info(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -437,6 +514,7 @@ def test_add_education_degree(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -480,6 +558,7 @@ def test_add_candidate_experience(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -519,6 +598,7 @@ def test_multiple_is_current_experiences(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -546,6 +626,7 @@ def test_add_experience_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -585,6 +666,7 @@ def test_update_experience_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -622,19 +704,17 @@ def test_add_multiple_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
-
-    # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
     # Add CandidateWorkPreference
     data = candidate_work_preference(candidate_id)
     updated_resp = patch_to_candidate_resource(token, data)
     print response_info(updated_resp)
-
-    assert updated_resp.status_code == 400
+    assert updated_resp.status_code == 400 and updated_resp.json()['error']['code'] == 3132
 
 
 def test_update_work_preference(sample_user, user_auth):
@@ -647,6 +727,7 @@ def test_update_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -683,6 +764,7 @@ def test_add_eamils(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -719,6 +801,7 @@ def test_multiple_is_default_emails(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -744,6 +827,7 @@ def test_update_existing_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -780,6 +864,7 @@ def test_update_existing_email_with_bad_email_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -817,6 +902,7 @@ def test_add_candidate_phones(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -852,6 +938,7 @@ def test_multiple_is_default_phones(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -877,6 +964,7 @@ def test_update_existing_phone(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -913,6 +1001,7 @@ def test_add_military_service(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -950,6 +1039,7 @@ def test_update_military_service(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -989,6 +1079,7 @@ def test_add_preferred_location(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1026,6 +1117,7 @@ def test_update_preferred_location(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1064,6 +1156,7 @@ def test_add_skill(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1097,6 +1190,7 @@ def test_update_skill(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1133,6 +1227,7 @@ def test_add_social_network(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -1170,6 +1265,7 @@ def test_update_social_network(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_get_edit(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)

@@ -1,5 +1,5 @@
 """
-Helper functions for tests pertaining to candidate_service's restful services
+Helper functions for tests written for the candidate_service
 """
 # Standard library
 import requests
@@ -7,9 +7,48 @@ import json
 
 # Candidate's sample data
 from candidate_sample_data import generate_single_candidate_data
-
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
+
+
+class AddUserRoles(object):
+    """
+    Class entails functions that will help add specific roles to test-user
+    """
+    @staticmethod
+    def get(user):
+        return add_role_to_test_user(user, ['CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+
+    @staticmethod
+    def edit(user):
+        return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
+
+    @staticmethod
+    def delete(user):
+        return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_and_get(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+
+    @staticmethod
+    def add_and_delete(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+
+    @staticmethod
+    def add_get_edit(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES'])
+
+    @staticmethod
+    def all_roles(user):
+        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
+                                            'CAN_EDIT_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
 
 
 def define_and_send_request(access_token, request, url, data=None):
@@ -20,26 +59,30 @@ def define_and_send_request(access_token, request, url, data=None):
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
-    if not data:
+    if data is None:
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
-        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token},
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
                       data=json.dumps(data))
 
 
 def response_info(response):
     """
-    Function returns the following information about the request:
-        1. Request, 2. Response dict, and 3. Response status
+    Function returns the following response information:
+        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+    :type response: requests.models.Response
     """
+    url = response.url
     request = response.request
+    status_code = response.status_code
     try:
         _json = response.json()
     except Exception:
         _json = None
 
-    status_code = response.status_code
-    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % (request, _json, status_code)
+    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+    return content.format(url, request, status_code, _json)
 
 
 def post_to_candidate_resource(access_token, data=None, domain_id=None):
@@ -56,15 +99,18 @@ def post_to_candidate_resource(access_token, data=None, domain_id=None):
 
     resp = requests.post(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
 
 
-def get_from_candidate_resource(access_token, candidate_id='', candidate_email=''):
+def get_from_candidate_resource(access_token, candidate_id=None, candidate_email=None):
     """
     Function sends a get request to CandidateResource/get()
+    :type access_token:     basestring
+    :type candidate_id:     int|long
+    :type candidate_email:  basestring
     """
     url = CandidateApiUrl.CANDIDATES
     if candidate_id:
@@ -79,6 +125,9 @@ def get_from_candidate_resource(access_token, candidate_id='', candidate_email='
 def request_to_candidates_resource(access_token, request, data=None):
     """
     Function sends a get request to CandidatesResource NOT CandidateResource
+    :type access_token: str
+    :type request: str
+    :type data: dict
     """
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
@@ -90,7 +139,7 @@ def patch_to_candidate_resource(access_token, data):
     """
     resp = requests.patch(
         url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token},
+        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
         data=json.dumps(data)
     )
     return resp
@@ -288,7 +337,6 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
         url = CandidateApiUrl.PREFERRED_LOCATIONS % candidate_id
     else:
         url = CandidateApiUrl.PREFERRED_LOCATION % (candidate_id, preferred_location_id)
-
     return define_and_send_request(access_token, request, url)
 
 
@@ -320,7 +368,8 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_work_preference_resource(access_token, request, candidate_id='', work_preference_id=''):
+def request_to_candidate_work_preference_resource(access_token, request, candidate_id='',
+                                                  work_preference_id=''):
     """
     Function sends a request to CandidateWorkPreferenceResource
     :param request: delete
@@ -336,6 +385,26 @@ def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
     """
     url = CandidateApiUrl.CANDIDATE_EDIT % candidate_id
     return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_view_resource(access_token, request, candidate_id=''):
+    """
+    :type access_token: str
+    :type request: get  str
+    """
+    url = CandidateApiUrl.CANDIDATE_VIEW % candidate_id
+    return define_and_send_request(access_token, request, url)
+
+
+def request_to_candidate_preference_resource(token, request, candidate_id='', data=None):
+    """
+    Function sends request to CandidatePreferenceResource
+    :type token:  str
+    :type candidate_id: int|long
+    :type data: dict
+    """
+    url = CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id
+    return define_and_send_request(token, request, url, data)
 
 
 def create_same_candidate(access_token):

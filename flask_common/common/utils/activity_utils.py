@@ -20,12 +20,14 @@ class ActivityMessageIds(object):
     CANDIDATE_DELETE = 3
 
     # params=dict(id, name)
+    # All Campaigns
     CAMPAIGN_CREATE = 4
     CAMPAIGN_DELETE = 5
     CAMPAIGN_SEND = 6  # also has num_candidates
     CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
     CAMPAIGN_PAUSE = 21
     CAMPAIGN_RESUME = 22
+    CAMPAIGN_SCHEDULE = 27
 
     # params=dict(name, is_smartlist=0/1)
     SMARTLIST_CREATE = 8
@@ -41,10 +43,15 @@ class ActivityMessageIds(object):
     NOTIFICATION_CREATE = 14  # when we want to show the users a message
 
     # params=dict(candidateId, campaign_name, candidate_name)
+    # Email campaign
     CAMPAIGN_EMAIL_SEND = 15
     CAMPAIGN_EMAIL_OPEN = 16
     CAMPAIGN_EMAIL_CLICK = 17
+
+    # Social Network Service
     RSVP_EVENT = 23
+
+    # SMS campaign
     CAMPAIGN_SMS_SEND = 24
     CAMPAIGN_SMS_CLICK = 25
     CAMPAIGN_SMS_REPLY = 26

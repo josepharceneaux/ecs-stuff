@@ -5,22 +5,76 @@
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "emailCampaignServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "smartlistServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "userServiceInfo": {
+        "baseUrl": "http://localhost"
     }
   },
   "development": {
     "authInfo": {
-      "baseUrl": "http://secure-webdev.gettalent.com",
+      "baseUrl": "https://auth-service-staging.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "https://activity-service-staging.gettalent.com/v1"
+    },
+    "candidatePoolServiceInfo": {
+        "baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "https://candidate-service-staging.gettalent.com/v1"
+    },
+    "emailCampaignServiceInfo": {
+        "baseUrl": "https://email-campaign-service-staging.gettalent.com/v1"
+    },
+    "smartlistServiceInfo": {
+        "baseUrl": "https://smartlist-service-staging.gettalent.com/v1"
+    },
+    "userServiceInfo": {
+        "baseUrl": "https://user-service-staging.gettalent.com/v1"
     }
   },
   "production": {
     "authInfo": {
-      "baseUrl": "https://webdev.gettalent.com",
+      "baseUrl": "https://auth-service.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "https://activity-service.gettalent.com/v1"
+    },
+    "candidatePoolServiceInfo": {
+        "baseUrl": "https://candidate-pool-service.gettalent.com/v1"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "https://candidate-service.gettalent.com/v1"
+    },
+    "emailCampaignServiceInfo": {
+        "baseUrl": "https://email-campaign-service.gettalent.com/v1"
+    },
+    "smartlistServiceInfo": {
+        "baseUrl": "https://smartlist-service.gettalent.com/v1"
+    },
+    "userServiceInfo": {
+        "baseUrl": "https://user-service.gettalent.com/v1"
     }
   }
 }

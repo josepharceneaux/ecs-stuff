@@ -25,7 +25,8 @@ from ..models.smartlist import Smartlist
 from campaign_utils import frequency_id_to_seconds
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound)
-from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items)
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items,
+                                     validate_required_fields)
 
 
 def validate_header(request):
@@ -36,7 +37,29 @@ def validate_header(request):
     :return:
     """
     if not request.headers.get('CONTENT_TYPE') == JSON_CONTENT_TYPE_HEADER['content-type']:
-        raise InvalidUsage('Invalid header provided')
+        raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
+                           'and application/json content-type header')
+
+
+def get_valid_json_data(req):
+    """
+    This first verifies that request has proper JSON content-type header and raise invalid
+    usage error in case it doesn't has
+    From given request, we get the JSON data from it. If data is not JSON serializable, we log
+    the error and raise it.
+    :param req:
+    :return:
+    """
+    validate_header(req)
+    try:
+        data = req.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable.')
+    if not isinstance(data, dict):
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
+    if not data:
+        raise InvalidUsage('No data provided.')
+    return data
 
 
 def validate_datetime_format(str_datetime):
@@ -123,11 +146,10 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     This validates the data provided to schedule a campaign.
     1- Get JSON data from request and raise Invalid Usage exception if no data is found or
             data is not JSON serializable.
-    2- If start datetime is not provide/given in invalid format/is in past, we raise Invalid usage
+    2- If start datetime is not provide/given in valid format, we raise Invalid usage
         error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
     3- Get number of seconds by validating given frequency_id
-    4- If end_datetime and frequency, both are provided then we validate same checks for
-        end_datetime as we did in step 2 for start_datetime.
+    4- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
     5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
     6- Returns data_to_schedule
 
@@ -138,35 +160,25 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     :return: data_to_schedule
     :rtype: dict
     """
-    try:
-        data_to_schedule_campaign = request.get_json()
-    except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable.')
+    data_to_schedule_campaign = get_valid_json_data(request)
     if not data_to_schedule_campaign:
         raise InvalidUsage('No data provided to schedule %s (id:%s)'
                            % (campaign_obj.__tablename__, campaign_obj.id))
     # check if data has start_datetime
     if not data_to_schedule_campaign.get('start_datetime'):
         raise InvalidUsage('start_datetime is required field.')
-    # start datetime should be in valid format and in future
-    is_datetime_in_valid_format_and_in_future(data_to_schedule_campaign.get('start_datetime'))
-    # get start_datetime object
-    start_datetime = if_str_datetime_in_valid_format_get_datetime_obj(
-        data_to_schedule_campaign.get('start_datetime'))
-    end_datetime_str = data_to_schedule_campaign.get('end_datetime')
+    # validate format of start_datetime
+    validate_datetime_format(data_to_schedule_campaign['start_datetime'])
     # get number of seconds from frequency id
     frequency = frequency_id_to_seconds(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
-    if end_datetime_str and frequency:
-        # check if end_datetime is greater than start_datetime
-        end_datetime_plus_frequency = \
-            if_str_datetime_in_valid_format_get_datetime_obj(end_datetime_str)\
-            + timedelta(seconds=frequency)
-        if end_datetime_plus_frequency < start_datetime:
-            raise InvalidUsage("end_datetime must be greater than start_datetime")
-    elif frequency and not end_datetime_str:
+    if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
+    if frequency:
+        # validate format of end_datetime
+        validate_datetime_format(data_to_schedule_campaign['end_datetime'])
     data_to_schedule_campaign['frequency'] = frequency
+    # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
 
 
@@ -209,7 +221,7 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     return campaign_blast_obj.campaign
 
 
-def validate_form_data(form_data, required_fields):
+def validate_form_data(form_data, required_fields=('name', 'body_text', 'smartlist_ids')):
     """
     This does the validation of the data received to create/update a campaign.
 
@@ -218,33 +230,33 @@ def validate_form_data(form_data, required_fields):
         2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
 
     :param form_data: Data from the UI
+    :param required_fields: Fields which are required and expected in form_data.
     :type form_data: dict
+    :type required_fields: tuple | list
     :return: tuple of lists
                     1)ids of smartlists which were not found in database.
                     2)ids of unknown smartlist ids (not, int)
     :rtype: tuple
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     if not isinstance(form_data, dict):
-        raise InvalidUsage('form_data should be instance of dict.')
+        raise InvalidUsage('form_data should be a dictionary.')
+    if not isinstance(required_fields, (tuple, list)):
+        raise InvalidUsage('required_fields should be tuple|list')
     # find if any required key is missing from data
-    missing_fields = filter(lambda required_key: required_key not in form_data, required_fields)
-    if missing_fields:
-        raise InvalidUsage('Required fields not provided to save sms_campaign. '
-                           'Missing fields are %s' % missing_fields)
+    validate_required_fields(form_data, required_fields)
     # find if any required key has no value
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
-        raise InvalidUsage(
-            'Required fields are empty to save '
-            'sms_campaign. Empty fields are %s' % missing_field_values)
-
+        raise InvalidUsage('Required fields not provided to save '
+                           'campaign. Empty fields are %s' % missing_field_values)
     # validate smartlist ids are in a list
-    if not isinstance(form_data.get('smartlist_ids'), list):
+    if not isinstance(form_data['smartlist_ids'], list):
         raise InvalidUsage('Include smartlist id(s) in a list.')
-
+    smartlist_ids = form_data['smartlist_ids']
     not_found_smartlist_ids = []
     invalid_smartlist_ids = []
-    for smartlist_id in form_data.get('smartlist_ids'):
+    for smartlist_id in smartlist_ids:
         try:
             if not isinstance(smartlist_id, (int, long)):
                 invalid_smartlist_ids.append(smartlist_id)
@@ -253,20 +265,19 @@ def validate_form_data(form_data, required_fields):
                 not_found_smartlist_ids.append(smartlist_id)
                 raise ResourceNotFound
         except InvalidUsage:
-            current_app.config[TalentConfigKeys.LOGGER].exception('validate_form_data: Invalid smartlist id')
+            logger.exception('validate_form_data: Invalid smartlist id')
         except ResourceNotFound:
-            current_app.config[TalentConfigKeys.LOGGER].exception(
-                'validate_form_data: Smartlist(id:%s) not found in database.' % str(smartlist_id))
+            logger.exception('validate_form_data: Smartlist(id:%s) not found in database.'
+                             % str(smartlist_id))
     # If all provided smartlist ids are invalid, raise InvalidUsage
-    if len(form_data.get('smartlist_ids')) == len(invalid_smartlist_ids):
-        raise InvalidUsage(
-            'smartlists(id(s):%s are invalid. Valid id must be int|long'
-            % form_data.get('smartlist_ids'))
+    if len(smartlist_ids) == len(invalid_smartlist_ids):
+        raise InvalidUsage('smartlists(id(s):%s are invalid. Valid id must be int|long'
+                           % form_data.get('smartlist_ids'))
     # If all provided smartlist ids do not exist in database, raise ResourceNotFound
-    if len(form_data.get('smartlist_ids')) == len(not_found_smartlist_ids):
+    if len(smartlist_ids) == len(not_found_smartlist_ids):
         raise ResourceNotFound('smartlists(id(s):%s not found in database.'
                                % form_data.get('smartlist_ids'))
     # filter out unknown smartlist ids, and keeping the valid ones
-    form_data['smartlist_ids'] = list(set(form_data.get('smartlist_ids')) -
+    form_data['smartlist_ids'] = list(set(smartlist_ids) -
                                       set(invalid_smartlist_ids + not_found_smartlist_ids))
     return invalid_smartlist_ids, not_found_smartlist_ids

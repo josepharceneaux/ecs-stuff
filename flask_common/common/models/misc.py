@@ -183,6 +183,9 @@ class Frequency(db.Model):
         assert desc, 'No description given'
         return cls.query.filter(cls.description == desc.lower()).first().id
 
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
 
 # Even though the table name is major I'm keeping the model class singular.
 class Major(db.Model):
@@ -253,15 +256,6 @@ class UrlConversion(db.Model):
 
     def __repr__(self):
         return "<UrlConversion (id=' %r')>" % self.id
-
-    @classmethod
-    def get_by_destination_url(cls, destination_url):
-        assert destination_url
-        return cls.query.filter(
-            and_(
-                UrlConversion.destination_url == destination_url
-            )
-        ).first()
 
 
 class CustomField(db.Model):

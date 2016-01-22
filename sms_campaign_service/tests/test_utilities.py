@@ -11,10 +11,13 @@ import requests
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import app
-from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
                                                      validate_url_format)
-from sms_campaign_service.modules.custom_exceptions import (InvalidUrl, SmsCampaignApiException)
+from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
+                                                            TwilioApiError)
+from sms_campaign_service.modules.handy_functions import search_urls_in_text, TwilioSMS
+from sms_campaign_service.modules.sms_campaign_app_constants import  (TWILIO_TEST_NUMBER,
+                                                                      TWILIO_INVALID_TEST_NUMBER)
 
 # Common Utils
 from sms_campaign_service.common.tests.conftest import fake
@@ -139,8 +142,8 @@ class TestValidUrlFormat(object):
     def _assert_validate_url_format(self, url):
         try:
             assert validate_url_format(url)
-        except InvalidUrl as e:
-            assert e.error_code == SmsCampaignApiException.INVALID_URL_FORMAT
+        except InvalidUsage as error:
+            assert error.status_code == SmsCampaignApiException.INVALID_URL_FORMAT
 
 
 class TestValidUrlByHTTPRequest(object):
@@ -179,9 +182,8 @@ class TestUrlConversion(object):
         """
         try:
             url_conversion({"url": TEST_DATA['valid_url']})
-        except Exception as error:
-            assert error.status_code == InvalidUsage.http_status_code(), \
-                'Should be bad request(400)'
+        except InvalidUsage as error:
+            assert error.message, 'Invalid usage error should be raised'
 
     def test_with_invalid_url(self):
         """
@@ -192,3 +194,70 @@ class TestUrlConversion(object):
             response, error = url_conversion(LOCAL_HOST)
             assert not response
             assert error
+
+
+class TestTwilioSMS(object):
+    """
+    This class contains tests for TwilioSMS class defined in modules/handy_functions.py
+    """
+
+    def test_sms_send_with_valid_data(self):
+        """
+        Sending SMS from valid phone number to valid phone number
+        :return:
+        """
+        response = self._send_sms(TWILIO_TEST_NUMBER, TWILIO_TEST_NUMBER)
+        assert getattr(response, 'date_created')
+
+    def test_sms_send_to_invalid_phone(self):
+        """
+        Sending SMS to invalid phone number
+        :return:
+        """
+        try:
+            self._send_sms(TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that receiver phone is invalid'
+        except TwilioApiError as error:
+            assert error.message
+
+    def test_sms_send_from_invalid_phone(self):
+        """
+        Sending SMS from invalid phone number
+        :return:
+        """
+        try:
+            self._send_sms(TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that sender phone is invalid'
+        except TwilioApiError as error:
+            assert error.message
+
+    def test_purchase_valid_number(self):
+        """
+        Purchasing valid phone number
+        :return:
+        """
+        response = self._purchase_number(TWILIO_TEST_NUMBER), 'Purchasing valid number should ' \
+                                                              'not raise any error'
+        assert response
+
+    def test_purchase_invalid_number(self):
+        """
+        Purchasing invalid phone number
+        :return:
+        """
+        try:
+            self._purchase_number(TWILIO_INVALID_TEST_NUMBER)
+            assert None, \
+                'Custom exception TwilioApiError should be thrown that phone number is invalid'
+        except TwilioApiError as error:
+            assert error.message
+
+    def _send_sms(self, sender, receiver):
+        twilio_obj = TwilioSMS()
+        return twilio_obj.send_sms(fake.word(), sender, receiver)
+
+    def _purchase_number(self, phone_number):
+        twilio_obj = TwilioSMS()
+        return twilio_obj.purchase_twilio_number(phone_number)

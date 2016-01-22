@@ -135,6 +135,6 @@ def register_error_handlers(app, logger):
         else:
             # This really shouldn't happen -- exc should be an exception
             response = {'error': {'message': "Internal server error"}}
-        logger.exception("Internal server error for app %s: %s", app.import_name, exc)
+        logger.error("Internal server error for app %s: %s", app.import_name, exc.message)
         return jsonify(response), 500
 

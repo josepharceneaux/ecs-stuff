@@ -17,9 +17,9 @@ from twilio.rest import TwilioRestClient
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import flask_app, logger, app
-from sms_campaign_service.modules.custom_exceptions import TwilioAPIError
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
+from sms_campaign_service.modules.custom_exceptions import TwilioApiError
 from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 
 # Common utils
 from sms_campaign_service.common.error_handling import InvalidUsage
@@ -68,7 +68,7 @@ class TwilioSMS(object):
                          % error.msg if hasattr(error, 'msg') else error.message)
         return False
 
-    def send_sms(self, body_text=None, receiver_phone=None, sender_phone=None):
+    def send_sms(self, body_text, sender_phone, receiver_phone):
         # -------------------------------------
         # sends SMS to given number
         # -------------------------------------
@@ -80,7 +80,7 @@ class TwilioSMS(object):
             )
             return message
         except twilio.TwilioRestException as error:
-            raise TwilioAPIError('Cannot send SMS. Error is "%s"'
+            raise TwilioApiError('Cannot send SMS. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_available_numbers(self):
@@ -93,8 +93,8 @@ class TwilioSMS(object):
                 type=self.phone_type,
                 sms_enabled=self.sms_enabled,
             )
-        except Exception as error:
-            raise TwilioAPIError('Cannot get available number. Error is "%s"'
+        except twilio.TwilioRestException as error:
+            raise TwilioApiError('Cannot get available number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
         return phone_numbers
 
@@ -103,15 +103,16 @@ class TwilioSMS(object):
         # Purchase a number
         # --------------------------------------
         try:
-            number = self.client.phone_numbers.purchase(friendly_name=phone_number,
-                                                        phone_number=phone_number,
-                                                        sms_url=self.sms_call_back_url,
-                                                        sms_method=self.sms_method,
-                                                        )
+            response = self.client.phone_numbers.purchase(friendly_name=phone_number,
+                                                          phone_number=phone_number,
+                                                          sms_url=self.sms_call_back_url,
+                                                          sms_method=self.sms_method
+                                                          )
             logger.info('Bought new Twilio number %s' % phone_number)
-        except Exception as error:
-            raise TwilioAPIError('Cannot buy new number. Error is "%s"'
+        except twilio.TwilioRestException as error:
+            raise TwilioApiError('Cannot buy new number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
+        return response
 
     def update_sms_call_back_url(self, phone_number_sid):
         # --------------------------------------
@@ -121,8 +122,8 @@ class TwilioSMS(object):
             number = self.client.phone_numbers.update(phone_number_sid,
                                                       sms_url=self.sms_call_back_url)
             logger.info('SMS call back URL has been set to: %s' % number.sms_url)
-        except Exception as error:
-            raise TwilioAPIError('Error updating callback URL. Error is "%s"'
+        except twilio.TwilioRestException as error:
+            raise TwilioApiError('Error updating callback URL. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_sid(self, phone_number):
@@ -133,8 +134,8 @@ class TwilioSMS(object):
             number = self.client.phone_numbers.list(phone_number=phone_number)
             if len(number) == 1:
                 return 'SID of Phone Number %s is %s' % (phone_number, number[0].sid)
-        except Exception as error:
-            raise TwilioAPIError('Error getting SID of phone_number. Error is "%s"'
+        except twilio.TwilioRestException as error:
+            raise TwilioApiError('Error getting SID of phone_number. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
 

@@ -12,12 +12,30 @@
         'app.candidates',
         'app.dashboard',
         'app.footer',
-        'app.forgot-password',
+        'app.forgotPassword',
         'app.login',
         'app.main',
+        'app.onboard',
         'app.pipelines',
+        'app.resetPassword',
+        'app.search',
         'app.sidenav',
+        'app.smartLists',
         'app.styleguide',
-        'app.topnav'
+        'app.support',
+        'app.systemAlerts',
+        'app.talentPools',
+        'app.topnav',
+        'app.user'
     ]);
+    angular.module('myApp', ['ngMaterial'])
+        .config(function($mdThemingProvider) {
+            $mdThemingProvider.theme('altTheme')
+                .primaryPalette('purple') // specify primary color, all
+            // other color intentions will be inherited
+            // from default
+        });
 })();
+
+
+

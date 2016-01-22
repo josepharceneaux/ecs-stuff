@@ -1,4 +1,5 @@
 __author__ = 'erikfarmer'
+
 import re
 import json
 import pytz
@@ -8,6 +9,7 @@ import requests
 from pytz import timezone
 from datetime import datetime
 
+from ..models.db import db
 from flask import current_app
 from ..routes import AuthApiUrl
 from sqlalchemy.sql.expression import ClauseElement
@@ -37,78 +39,6 @@ def get_or_create(session, model, defaults=None, **kwargs):
         instance = model(**params)
         session.add(instance)
         return instance, True
-
-
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
-    """
-    This is common function to make HTTP Requests. It takes method_type (GET or POST)
-    and makes call on given URL. It also handles/logs exception.
-    :param method_type: GET or POST.
-    :param url: resource URL.
-    :param params: params to be sent in URL.
-    :param headers: headers for Authorization.
-    :param data: data to be sent.
-    :param user_id: Id of logged in user.
-    :type method_type: str
-    :type url: str
-    :type params: dict
-    :type headers: dict
-    :type data: dict
-    :type user_id: int | long
-    :return: response from HTTP request or None
-    """
-    response = None
-    if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
-        method = getattr(requests, method_type.lower())
-        error_message = None
-        if url:
-            try:
-                response = method(url, params=params, headers=headers, data=data, verify=False)
-                # If we made a bad request (a 4XX client error or 5XX server
-                # error response),
-                # we can raise it with Response.raise_for_status():"""
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code in [401]:
-                    # 401 is the error code for Not Authorized user(Expired Token)
-                    raise
-                # checks if error occurred on "Server" or is it a bad request
-                elif e.response.status_code < 500:
-                    try:
-                        # In case of Meetup, we have error details in e.response.json()['errors'].
-                        # So, tyring to log as much
-                        # details of error as we can.
-                        if 'errors' in e.response.json():
-                            error_message = e.message + ', Details: ' + json.dumps(
-                                e.response.json().get('errors'))
-                        elif 'error_description' in e.response.json():
-                            error_message = e.message + ', Details: ' + json.dumps(
-                                e.response.json().get('error_description'))
-                        else:
-                            error_message = e.message
-                    except Exception:
-                        error_message = e.message
-                else:
-                    # raise any Server error
-                    raise
-            except requests.RequestException as e:
-                if hasattr(e.message, 'args'):
-                    if 'Connection aborted' in e.message.args[0]:
-                        current_app.config['LOGGER'].exception(
-                            "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url))
-                        raise
-                error_message = e.message
-            if error_message:
-                current_app.config['LOGGER'].exception('http_request: HTTP request failed, %s, '
-                                                       'user_id: %s', error_message, user_id)
-            return response
-        else:
-            error_message = 'URL is None. Unable to make "%s" Call' % method_type
-            current_app.config['LOGGER'].error('http_request: Error: %s, user_id: %s'
-                                               % (error_message, user_id))
-    else:
-        current_app.config['LOGGER'].error('Unknown Method type %s ' % method_type)
 
 
 def create_test_user(session, domain_id, password):
@@ -148,8 +78,12 @@ def add_role_to_test_user(test_user, role_names):
     :return:
     """
     for role_name in role_names:
-        if not DomainRole.get_by_name(role_name):
+        try:
             DomainRole.save(role_name)
+        except Exception:
+            db.session.rollback()
+            pass
+
     UserScopedRoles.add_roles(test_user, role_names)
 
 
@@ -335,32 +269,39 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 
-def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
-    # Creates a random string of lowercase/uppercase letter and digits. Useful for Oauth2 tokens.
-    return ''.join(random.choice(chars) for _ in range(size))
-
-
-def get_missing_keys(data_dict, required_fields=None):
+def validate_required_fields(data_dict, required_fields):
     """
-    This function returns the keys that are not present in the data_dict.
-    If required_fields is provided, it only checks for those keys otherwise it checks all
-    the keys of data_dict.
+    This function returns the keys as specified by required_fields, that are not present in
+    the data_dict. If any of the field is missing, it raises missing
     :param data_dict:
     :param required_fields:
     :type data_dict: dict
-    :type required_fields: list | None
-    :return:
+    :type required_fields: list
+    :exception: Invalid Usage
     """
-    missing_keys = filter(lambda required_key: required_key not in data_dict,
-                          required_fields if required_fields else data_dict.keys())
-    return missing_keys
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('data_dict must be instance of dictionary.')
+    if not isinstance(required_fields, (tuple, list)):
+        raise InvalidUsage('required_fields must be instance of list.')
+    missing_keys = list(set(required_fields) - set(data_dict.keys()))
+    if missing_keys:
+        raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
+                           error_code=InvalidUsage.http_status_code())
 
 
 def find_missing_items(data_dict, required_fields=None, verify_values_of_all_keys=False):
     """
-    This function is used to find the missing items in given data_dict. If verify_all
-    is true, this function checks all the keys present in data_dict if they are empty or not.
-    Otherwise it verify only those fields as given in required_fields.
+    This function is used to find the missing items (either key or its value)in given
+    data_dict. If verify_all is true, this function checks all the keys present in data_dict
+    if they are empty or not. Otherwise it verify only those fields as given in required_fields.
+
+    :Example:
+
+        >>> data_dict = {'name' : 'Name', 'title': 'myTitle'}
+        >>> missing_items = find_missing_items(data_dict, required_fields =['name', 'title', 'type']
+        >>> print missing_items
+
+         Output will be ['type']
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
     :param verify_values_of_all_keys: indicator if we want to check values of all keys or only keys
@@ -374,19 +315,12 @@ def find_missing_items(data_dict, required_fields=None, verify_values_of_all_key
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_values_of_all_keys:
-        # Check if required keys are present
-        missing_keys = get_missing_keys(data_dict)
-        if missing_keys:
-            raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
-                               error_code=InvalidUsage.http_status_code())
         # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if not value and not value == 0]
     else:
-        missing_keys = get_missing_keys(data_dict, required_fields=required_fields)
-        if missing_keys:
-            raise InvalidUsage('Required fields are missing from given data. %s' % missing_keys,
-                               error_code=InvalidUsage.http_status_code())
+        # verify if required fields are present as keys in data_dict
+        validate_required_fields(data_dict, required_fields)
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value and not value == 0]

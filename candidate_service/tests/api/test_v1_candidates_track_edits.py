@@ -1,5 +1,5 @@
 """
-Test cases for keeping track of changes made to a Candidate
+Test cases pertaining to CandidateEditResource
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
@@ -15,19 +15,20 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    patch_to_candidate_resource, request_to_candidate_edit_resource
+    patch_to_candidate_resource, request_to_candidate_edit_resource, AddUserRoles
 )
 
 
 def test_edit_candidate_primary_info(sample_user, user_auth):
     """
-    Test:   Change Candidate's first and last names
+    Test:   Change Candidate's first, middle, and last names
     Expect: 200
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -38,7 +39,7 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
 
     # Update Candidate's first and last names
     data = {'candidates': [
-        {'id': candidate_id, 'first_name': 'bruce', 'last_name': 'willis'}
+        {'id': candidate_id, 'first_name': 'Quentin', 'middle_name': 'Jerome', 'last_name': 'Tarantino'}
     ]}
     patch_to_candidate_resource(token, data)
 
@@ -51,6 +52,8 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
+    assert candidate_edits[0]['old_value'] == old_candidate_dict['full_name']
+    assert candidate_edits[0]['new_value'] == new_candidate_dict['full_name']
 
 
 def test_edit_candidate_address(sample_user, user_auth):
@@ -62,6 +65,7 @@ def test_edit_candidate_address(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -101,6 +105,7 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -120,7 +125,8 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
     patch_to_candidate_resource(token, data)
 
     # Retrieve Candidate custom fields
-    new_custom_field_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['custom_fields'][0]
+    new_custom_field_dict = get_from_candidate_resource(token, candidate_id).\
+        json()['candidate']['custom_fields'][0]
 
     # Retrieve Candidate Edits
     edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
@@ -141,6 +147,7 @@ def test_edit_candidate_education(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -180,6 +187,7 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -224,6 +232,7 @@ def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -269,6 +278,7 @@ def test_edit_candidate_experience(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -311,6 +321,7 @@ def test_edit_candidate_experience_bullet(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -353,6 +364,7 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -393,6 +405,7 @@ def test_edit_candidate_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -429,6 +442,7 @@ def test_edit_candidate_phone(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -465,6 +479,7 @@ def test_edit_candidate_military_service(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -503,6 +518,7 @@ def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -543,6 +559,7 @@ def test_edit_candidate_skill_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -581,6 +598,7 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -608,4 +626,3 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
     assert edit_resp.status_code == 200
     assert candidate_edits[0]['old_value'] == old_sn_dict['profile_url']
     assert candidate_edits[0]['new_value'] == new_skill_dict['profile_url']
-

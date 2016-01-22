@@ -6,7 +6,7 @@ def database_connection():
     # SQL ALCHEMY DB URL
     if os.environ.get('GT_ENVIRONMENT') == 'dev':
         engine = create_engine('mysql://talent_web:s!loc976892@localhost/talent_local')
-    elif os.environ.get('GT_ENVIRONMENT') == 'circle':
+    elif os.environ.get('GT_ENVIRONMENT') == 'jenkins':
          # CircleCI provides circle_test as default configured db.
         engine = create_engine('mysql://talent_ci:s!ci976892@circleci.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_ci')
     elif os.environ.get('GT_ENVIRONMENT') == 'qa':

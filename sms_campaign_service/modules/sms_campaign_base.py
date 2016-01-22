@@ -23,46 +23,46 @@ It also contains private methods for this module as
 # Standard Library
 from datetime import datetime
 
+# Third party
+from dateutil.relativedelta import relativedelta
+
 # Database Models
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
-                                                             SmsCampaignBlast, SmsCampaignSmartlist,
-                                                             SmsCampaignSendUrlConversion,
-                                                             SmsCampaignReply)
+                                                             SmsCampaignBlast, SmsCampaignReply,
+                                                             SmsCampaignSendUrlConversion)
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from sms_campaign_service.common.campaign_services.campaign_utils import \
+    (sign_redirect_url, CampaignType,  post_campaign_sent_processing)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
-                                                        InvalidUsage, InternalServerError)
+                                                        InvalidUsage)
+from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
+                                                                         CampaignException)
 from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion)
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import celery_app, app, logger
-from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (sign_redirect_url, CampaignType, processing_after_campaign_sent)
 from sms_campaign_service.modules.validators import (validate_url_format, search_urls_in_text,
-                                                     validate_urls_in_body_text)
+                                                     validate_urls_in_body_text,
+                                                     get_formatted_phone_number)
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok)
 from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
                                                                      TWILIO_TEST_NUMBER)
-from sms_campaign_service.modules.custom_exceptions import (EmptySmsBody,
-                                                            MultipleTwilioNumbersFoundForUser,
+from sms_campaign_service.modules.custom_exceptions import (TwilioApiError,
                                                             MultipleUsersFound,
-                                                            MultipleCandidatesFound,
-                                                            NoCandidateAssociatedWithSmartlist,
-                                                            NoSmartlistAssociatedWithCampaign,
-                                                            NoSMSCampaignSentToCandidate,
                                                             ErrorUpdatingBodyText,
-                                                            NoCandidateFoundForPhoneNumber,
-                                                            NoUserFoundForPhoneNumber,
+                                                            SmsCampaignApiException,
                                                             GoogleShortenUrlAPIError,
-                                                            TwilioAPIError, InvalidUrl,
-                                                            SmsCampaignApiException)
+                                                            NoUserFoundForPhoneNumber,
+                                                            NoSMSCampaignSentToCandidate,
+                                                            NoCandidateFoundForPhoneNumber,
+                                                            MultipleTwilioNumbersFoundForUser)
 
 
 class SmsCampaignBase(CampaignBase):
@@ -114,9 +114,6 @@ class SmsCampaignBase(CampaignBase):
         This implements CampaignBase class method and returns True if the current user is
         an owner for given campaign_id. Otherwise it raises the Forbidden error.
 
-    * process_send(self, campaign_id=None)
-        This method is used to send the campaign to candidates.
-
     * is_candidate_have_unique_mobile_phone(self, candidate)
         This validates if candidate have unique mobile number associated with it.
 
@@ -143,9 +140,6 @@ class SmsCampaignBase(CampaignBase):
 
     * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shortened URL.
-
-    * create_sms_campaign_blast(campaign_id, send=0, clicks=0, replies=0): [static]
-        For each campaign, here we create/update stats of that particular campaign.
 
     * create_campaign_blast(campaign_id, sends=0, clicks=0, replies=0)
         Every time we send a campaign, we create a new blast for that campaign here.
@@ -229,7 +223,9 @@ class SmsCampaignBase(CampaignBase):
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user.id,
                                                                  phone_label_id)
         if len(user_phone) == 1:
-            if user_phone[0].value:
+            user_phone_value = user_phone[0].value
+            if user_phone_value:
+                get_formatted_phone_number(user_phone_value)
                 return user_phone[0]
         elif len(user_phone) > 1:
             raise MultipleTwilioNumbersFoundForUser(
@@ -253,7 +249,7 @@ class SmsCampaignBase(CampaignBase):
 
         :param phone_label_id: id of phone label
         :type phone_label_id: int
-        :exception: TwilioAPIError
+        :exception: TwilioApiError
         :return: UserPhone obj
         :rtype: UserPhone
         """
@@ -261,7 +257,7 @@ class SmsCampaignBase(CampaignBase):
             raise InvalidUsage('phone_label_id must be an integer.')
         twilio_obj = TwilioSMS()
         if app.config[TalentConfigKeys.IS_DEV]:
-            # Buy Twilio TEST number so that we won't be charged
+            # Buy Twilio TEST number so that we won't be charged in case of dev, jenkins and QA
             number_to_buy = TWILIO_TEST_NUMBER
         else:
             logger.debug('buy_twilio_mobile_number: Going to buy Twilio number for '
@@ -317,8 +313,7 @@ class SmsCampaignBase(CampaignBase):
         """
         return SmsCampaign.get_by_user_phone_id(self.user_phone.id)
 
-    @classmethod
-    def validate_form_data(cls, form_data):
+    def pre_process_save_or_update(self, form_data):
         """
         This overrides the CampaignBase class method.
         It calls super constructor to do the common validation. It then validates if body_text
@@ -328,14 +323,15 @@ class SmsCampaignBase(CampaignBase):
         :rtype: tuple
         :exception: Invalid URL
         """
-        validation_result = super(SmsCampaignBase, cls).validate_form_data(form_data)
+        validation_result = super(SmsCampaignBase, self).pre_process_save_or_update(form_data)
         # validate URLs present in SMS body text
         invalid_urls = validate_urls_in_body_text(form_data['body_text'])
         if invalid_urls:
-            raise InvalidUrl('Invalid URL(s) in body_text. %s' % invalid_urls)
+            raise InvalidUsage('Invalid URL(s) in body_text. %s' % invalid_urls,
+                               error_code=SmsCampaignApiException.INVALID_URL_FORMAT)
         return validation_result
 
-    def process_save_or_update(self, form_data, campaign_id=None):
+    def save(self, form_data):
         """
         This overrides tha CampaignBase class method. This appends user_phone_id in
         form_data and calls super constructor to save the campaign in database.
@@ -347,9 +343,9 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
-        print 'in sms_base' + self.user.name
-        return super(SmsCampaignBase, self).process_save_or_update(form_data,
-                                                                   campaign_id=campaign_id)
+        logger.debug("user_phone_id has been added in form data for user %s() %s"
+                     % (self.user.name, self.user.id))
+        return super(SmsCampaignBase, self).save(form_data)
 
     def schedule(self, data_to_schedule):
         """
@@ -412,72 +408,6 @@ class SmsCampaignBase(CampaignBase):
             raise ForbiddenError('User(id:%s) are not the owner of SMS campaign(id:%s)'
                                  % (current_user_id, campaign_id))
 
-    def process_send(self, campaign):
-        """
-        :param campaign: SMS campaign obj
-        :type campaign: SmsCampaign
-        :exception: TwilioAPIError
-        :exception: InvalidUsage
-        :exception: EmptySmsBody
-        :exception: NoSmartlistAssociatedWithCampaign
-        :exception: NoCandidateAssociatedWithSmartlist
-
-        This does the following steps to send campaign to candidates.
-
-        1- Get body_text from sms_campaign obj
-        2- Get selected smart lists for the campaign to be sent from sms_campaign_smartlist.
-        3- Loop over all the smart lists and do the following:
-
-            3.1- Get candidates and their phone number(s) to which we need to send the SMS.
-            3.2- Transform the body text to be sent in SMS (convert URls), add entry in
-                    url_conversion and sms_campaign_url_conversion db tables.
-            3.3- Create SMS campaign blast
-            3.4- Loop over list of candidate_ids found in step 3.1 and do the following:
-                3.3.1- Send SMS
-                3.3.2- Create SMS campaign send
-                3.3.3- Update SMS campaign blast
-                3.3.4- Add activity e.g.("Roger Federer" received SMS of campaign "Keep winning"")
-        4- Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
-
-        :Example:
-
-            1- Create class object
-                from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-                camp_obj = SmsCampaignBase(1)
-
-            2- Get SMS campaign to send
-                from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-                campaign = SmsCampaign.get(1)
-
-            3- Call method process_send
-                camp_obj.process(campaign)
-        """
-        if not isinstance(campaign, SmsCampaign):
-            raise InvalidUsage('campaign should be instance of SmsCampaign model')
-        self.campaign = campaign
-        logger.debug('process_send: SMS Campaign(id:%s) is being sent. User(id:%s)'
-                     % (campaign.id, self.user.id))
-        if not self.campaign.body_text:
-            # SMS body text is empty
-            raise EmptySmsBody('SMS Body text is empty for Campaign(id:%s)'
-                               % campaign.id)
-        self.body_text = self.campaign.body_text.strip()
-        # Get smartlists associated to this campaign
-        smartlists = SmsCampaignSmartlist.get_by_campaign_id(campaign.id)
-        if not smartlists:
-            raise NoSmartlistAssociatedWithCampaign(
-                'No smartlist is associated with SMS '
-                'Campaign(id:%s). (User(id:%s))' % (campaign.id, self.user.id))
-        # get candidates from search_service and filter the None records
-        candidates = sum(filter(None, map(self.get_smartlist_candidates, smartlists)), [])
-        if not candidates:
-            raise NoCandidateAssociatedWithSmartlist(
-                'No candidate is associated to smartlist(s). SMS Campaign(id:%s). '
-                'smartlist ids are %s' % (campaign.id, smartlists))
-        # create SMS campaign blast
-        self.campaign_blast_id = self.create_sms_campaign_blast(self.campaign.id)
-        self.send_campaign_to_candidates(candidates)
-
     def is_candidate_have_unique_mobile_phone(self, candidate):
         """
         Here we validate that candidate has one unique mobile number associated.
@@ -500,7 +430,7 @@ class SmsCampaignBase(CampaignBase):
         """
         if not isinstance(candidate, Candidate):
             raise InvalidUsage('parameter must be an instance of model Candidate')
-        candidate_phones = candidate.candidate_phones
+        candidate_phones = candidate.candidate_phone
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
 
         # filter only mobile numbers
@@ -554,6 +484,9 @@ class SmsCampaignBase(CampaignBase):
             4- Update sms_campaign_send_url_conversion
             5- Update SMS campaign blast
             6- Add activity e.g.('Vincent' received SMS of campaign 'Hiring senior SE'")
+            7- Once campaign is sent to all candidates, we create activity in callback function
+                of Celery task.
+                e.g. (SMS Campaign "abc" was sent to "1000" candidates")
 
         - This method is called from send_sms_campaign_to_candidates() method of class
             SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
@@ -561,7 +494,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidate_and_phone: candidate obj at index 0 and candidate phone value at index 1
         :type candidate_and_phone: tuple
         :exception: ErrorUpdatingBodyText
-        :exception: TwilioAPIError
+        :exception: TwilioApiError
         :exception: GoogleShortenUrlAPIError
         :return: True if SMS is sent otherwise False.
         :rtype: bool
@@ -570,9 +503,10 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
         # Celery app is not configured with flask app, so need to use app.app_context() here
-        # so that Celery tasks know the config of flask app,
+        # so that Celery tasks know the config of flask app.
         with app.app_context():
             candidate, candidate_phone_value = candidate_and_phone
+            candidate_phone_value = get_formatted_phone_number(candidate_phone_value)
             try:
                 modified_body_text, url_conversion_ids = \
                     self.process_urls_in_sms_body_text(candidate.id)
@@ -581,11 +515,9 @@ class SmsCampaignBase(CampaignBase):
                 return False
             # send SMS
             try:
-                # format the number
-                candidate_phone_value = format_phone_number(candidate_phone_value)
                 message_sent_datetime = self.send_sms(str(candidate_phone_value),
                                                       modified_body_text)
-            except TwilioAPIError or InvalidUsage:
+            except TwilioApiError or InvalidUsage:
                 logger.exception('send_campaign_to_candidate: Cannot send SMS.')
                 return False
             # Create sms_campaign_send i.e. it will record that an SMS has been sent
@@ -632,7 +564,7 @@ class SmsCampaignBase(CampaignBase):
         1) Update number of sends in campaign blast
         2) Add activity e.g. (SMS Campaign "abc" was sent to "1000" candidates")
 
-        This uses processing_after_campaign_sent() function defined in
+        This uses post_campaign_sent_processing() function defined in
             common/campaign_services/campaign_utils.py
 
         :param sends_result: Result of executed task
@@ -651,8 +583,8 @@ class SmsCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
-            processing_after_campaign_sent(CampaignBase, sends_result, user_id, campaign_type,
-                                           blast_id, oauth_header)
+            post_campaign_sent_processing(CampaignBase, sends_result, user_id,
+                                          campaign_type, blast_id, oauth_header)
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
@@ -697,7 +629,7 @@ class SmsCampaignBase(CampaignBase):
                      'link present in body_text for '
                      'SMS Campaign(id:%s) and Candidate(id:%s). (User(id:%s))'
                      % (self.campaign.id, candidate_id, self.user.id))
-        urls_in_body_text = search_urls_in_text(self.body_text)
+        urls_in_body_text = search_urls_in_text(self.campaign.body_text)
         short_urls = []
         url_conversion_ids = []
         for url in urls_in_body_text:
@@ -712,7 +644,7 @@ class SmsCampaignBase(CampaignBase):
             # http://127.0.0.1:8012/redirect/1
             redirect_url = str(app_redirect_url % url_conversion_id)
             # sign the redirect URL
-            long_url = sign_redirect_url(redirect_url, self.campaign.end_datetime)
+            long_url = sign_redirect_url(redirect_url, datetime.now() + relativedelta(years=+1))
             # long_url looks like
             # http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
@@ -759,59 +691,23 @@ class SmsCampaignBase(CampaignBase):
         logger.debug('transform_body_text: Replacing original URL with shortened URL. (User(id:%s))'
                      % self.user.id)
         try:
-            if urls_in_sms_body_text:
-                text_split = self.body_text.split(' ')
-                short_urls_index = 0
-                for url in urls_in_sms_body_text:
-                    text_split_index = 0
-                    for word in text_split:
-                        if word == url:
-                            text_split[text_split_index] = short_urls[short_urls_index]
-                            break
-                        text_split_index += 1
-                    short_urls_index += 1
-                modified_body_text = ' '.join(text_split)
-            else:
-                modified_body_text = self.body_text
-        except Exception as error:
+            if not urls_in_sms_body_text:
+                return self.campaign.body_text
+            text_split = self.campaign.body_text.split(' ')
+            short_urls_index = 0
+            for url in urls_in_sms_body_text:
+                text_split_index = 0
+                for word in text_split:
+                    if word == url:
+                        text_split[text_split_index] = short_urls[short_urls_index]
+                        break
+                    text_split_index += 1
+                short_urls_index += 1
+            modified_body_text = ' '.join(text_split)
+        except IndexError as error:
             raise ErrorUpdatingBodyText(
                 'Error while updating body text. Error is %s' % error.message)
         return modified_body_text
-
-    @staticmethod
-    def create_sms_campaign_blast(campaign_id, sends=0, clicks=0, replies=0):
-        """
-        - Here we create SMS blast for a campaign. We also use this to update
-            record with every new send. This gives the statistics about a campaign.
-
-        - This method is called from process_send() and send_sms_campaign_to_candidates()
-            methods of class SmsCampaignBase inside
-            sms_campaign_service/sms_campaign_base.py.
-
-        :param campaign_id: id of "sms_campaign"
-        :param sends: numbers of sends, default 0
-        :param clicks: number of clicks on a sent SMS, default 0
-        :param replies: number of replies on a sent SMS, default 0
-        :type campaign_id: int
-        :type sends: int
-        :type clicks: int
-        :type replies: int
-        :return: id of "sms_campaign_blast" record
-        :rtype: int
-
-        **See Also**
-        .. see also:: process_send() method in SmsCampaignBase class.
-
-        .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
-        """
-        data = {'sms_campaign_id': campaign_id,
-                'sends': sends,
-                'clicks': clicks,
-                'replies': replies,
-                'sent_datetime': datetime.now()}
-        blast_obj = SmsCampaignBlast(**data)
-        SmsCampaignBlast.save(blast_obj)
-        return blast_obj.id
 
     def send_sms(self, candidate_phone_value, message_body):
         """
@@ -834,12 +730,13 @@ class SmsCampaignBase(CampaignBase):
         if app.config[TalentConfigKeys.IS_DEV]:
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
+            candidate_phone_value = TWILIO_TEST_NUMBER
         else:
-            sender_phone = format_phone_number(self.user_phone.value)
+            sender_phone = self.user_phone.value
         twilio_obj = TwilioSMS()
-        message_response = twilio_obj.send_sms(body_text=message_body,
-                                               sender_phone=sender_phone,
-                                               receiver_phone=candidate_phone_value)
+        message_response = twilio_obj.send_sms(message_body,
+                                               sender_phone,
+                                               candidate_phone_value)
         return message_response.date_created
 
     @staticmethod
@@ -975,12 +872,13 @@ class SmsCampaignBase(CampaignBase):
         :type reply_data: dict
 
         .. Status:: 200 (OK)
+                    400 (Invalid Usage)
                     403 (ForbiddenError)
                     404 (Resource not found)
                     500 (Internal Server Error)
 
         .. Error codes:
-                     MISSING_REQUIRED_FIELD(5006)
+                     MISSING_REQUIRED_FIELD(5104)
                      MultipleUsersFound(5007)
                      MultipleCandidatesFound(5008)
                      NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5011)
@@ -995,9 +893,9 @@ class SmsCampaignBase(CampaignBase):
         required_fields = ['From', 'To', 'Body']
         missing_items = find_missing_items(reply_data, required_fields)
         if missing_items:
-            raise InternalServerError(
+            raise InvalidUsage(
                 'process_candidate_reply: Missing items are %s' % missing_items,
-                error_code=SmsCampaignApiException.MISSING_REQUIRED_FIELD)
+                error_code=CampaignException.MISSING_REQUIRED_FIELD)
         # get "user_phone" obj
         user_phone = _get_valid_user_phone_value(reply_data.get('To'))
         # get "candidate_phone" obj
@@ -1024,7 +922,7 @@ class SmsCampaignBase(CampaignBase):
         cls.update_campaign_blast(sms_campaign_blast, replies=True)
         logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).(User(id:%s))'
                      % (candidate_phone.candidate_id, reply_data.get('Body'),
-                        sms_campaign_blast.sms_campaign_id, user_phone.user_id))
+                        sms_campaign_blast.campaign_id, user_phone.user_id))
 
     @classmethod
     def save_candidate_reply(cls, campaign_blast_id, candidate_phone_id, reply_body_text):
@@ -1077,7 +975,7 @@ class SmsCampaignBase(CampaignBase):
             raise ResourceNotFound(
                 'create_campaign_reply_activity: Candidate(id:%s) not found.'
                 % candidate_id, error_code=ResourceNotFound.http_status_code())
-        campaign = SmsCampaign.get_by_id(campaign_blast.sms_campaign_id)
+        campaign = SmsCampaign.get_by_id(campaign_blast.campaign_id)
         if not campaign:
             raise ResourceNotFound(
                 'create_campaign_reply_activity: SMS Campaign(id=%s) Not found.'

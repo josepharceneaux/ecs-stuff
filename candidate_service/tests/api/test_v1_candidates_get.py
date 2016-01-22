@@ -15,7 +15,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource, check_for_id,
-    request_to_candidates_resource
+    request_to_candidates_resource, request_to_candidate_resource, AddUserRoles
 )
 
 ######################## Candidate ########################
@@ -28,6 +28,7 @@ def test_get_candidate_without_authed_user(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token)
@@ -52,6 +53,7 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     resp = post_to_candidate_resource(token)
@@ -65,16 +67,18 @@ def test_get_candidate_without_id_or_email(sample_user, user_auth):
     assert len(resp.json()['candidates']) == 1
 
 
-def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user_2):
+def test_get_candidate_from_forbidden_domain(sample_user, user_auth, user_from_diff_domain):
     """
     Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
     Expect: 403 status_code
     :type sample_user:      User
-    :type sample_user_2:    User
+    :type user_from_diff_domain:    User
     :type user_auth:        UserAuthentication
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+    AddUserRoles.get(user=user_from_diff_domain)
 
     # Create Candidate
     resp = post_to_candidate_resource(token)
@@ -82,7 +86,7 @@ def test_get_candidate_from_forbidden_domain(sample_user, user_auth, sample_user
     print response_info(resp)
 
     # Get access token for sample_user_2
-    token_2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
+    token_2 = user_auth.get_auth_token(user_from_diff_domain, True)['access_token']
 
     # Retrieve candidate from a different domain
     candidate_id = resp_dict['candidates'][0]['id']
@@ -98,6 +102,7 @@ def test_get_candidate_via_invalid_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.get(user=sample_user)
 
     # Retrieve Candidate via candidate's email
     resp = get_from_candidate_resource(access_token=token, candidate_email='bad_email.com')
@@ -114,6 +119,7 @@ def test_get_can_via_id_and_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create candidate
     resp = post_to_candidate_resource(access_token=token, data=None, domain_id=sample_user.domain_id)
@@ -124,7 +130,7 @@ def test_get_can_via_id_and_email(sample_user, user_auth):
 
     # Candidate ID & Email
     candidate_id = resp_dict['candidates'][0]['id']
-    candidate_email = db.session.query(Candidate).get(candidate_id).candidate_emails[0].address
+    candidate_email = Candidate.get_by_id(candidate_id).emails[0].address
 
     # Get candidate via Candidate ID
     resp = get_from_candidate_resource(access_token=token, candidate_id=candidate_id)
@@ -154,6 +160,7 @@ def test_get_candidates_via_list_of_ids(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create candidates
     can_id_1 = post_to_candidate_resource(token).json()['candidates'][0]['id']
@@ -165,3 +172,28 @@ def test_get_candidates_via_list_of_ids(sample_user, user_auth):
     print response_info(resp)
     assert resp.status_code == 200
     assert len(resp.json()['candidates']) == 2
+
+
+def test_get_non_existing_candidate(sample_user, user_auth):
+    """
+    Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+
+    # Retrieve non existing candidate
+    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+    non_existing_candidate_id = last_candidate.id * 100
+    resp = get_from_candidate_resource(token, non_existing_candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
+
+    # Create Candidate and hide it
+    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
+    request_to_candidate_resource(token, 'delete', candidate_id)
+    # Retrieve web-hidden candidate
+    resp = get_from_candidate_resource(token, candidate_id)
+    print response_info(resp)
+    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden

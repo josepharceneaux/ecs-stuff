@@ -16,7 +16,7 @@ __author__ = 'saad'
 
 class TestSchedulerPause(object):
 
-    def test_single_job(self, auth_header, job_config):
+    def test_single_job(self, auth_header, job_config, job_cleanup):
         """
         Create a job by hitting endpoint. Then stop it using endpoint. We then stop it again and
         it should give error (6053).
@@ -55,6 +55,7 @@ class TestSchedulerPause(object):
         response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
+
         del jobs[:1]
         # Check if rest of the jobs are okay
         for job_id in jobs:
@@ -64,11 +65,10 @@ class TestSchedulerPause(object):
                    response_get.json()['task']['next_run_datetime']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs
 
-    def test_multiple_jobs(self, auth_header, job_config):
+    def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
         Pause already running scheduled jobs and then see it returns 200 status code and also get jobs
         and check their next_run_datetime is none (Paused job has next_run_datetime equal to None)
@@ -106,9 +106,8 @@ class TestSchedulerPause(object):
             assert next_run_datetime is None
 
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id
 
     def test_single_pause_job_without_token(self, auth_header, job_config):
         """
@@ -144,7 +143,7 @@ class TestSchedulerPause(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_pause_jobs_without_token(self, auth_header, job_config):
+    def test_multiple_pause_jobs_without_token(self, auth_header, job_config, job_cleanup):
         """
         Pause multiple jobs which are already scheduled and running without using token and then check
         if the response is 401
@@ -186,6 +185,5 @@ class TestSchedulerPause(object):
             assert next_run_datetime != 'None'
 
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id

@@ -60,7 +60,7 @@ def create_candidates_dict(candidate_ids):
         candidate_id = candidate.id
         candidate_dict["id"] = candidate_id
         candidate_dict["emails"] = [email.address for email in
-                                    candidate.candidate_emails]
+                                    candidate.emails]
         # Finally append all candidates in list and return it
         candidates_dict["candidates"].append(candidate_dict)
     candidates_dict["total_found"] = len(candidates)

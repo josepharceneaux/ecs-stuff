@@ -29,10 +29,24 @@ from ..models.email_marketing import EmailCampaign
 # Common Utils
 from ..routes import SchedulerApiUrl
 from ..utils.handy_functions import http_request
+from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..utils.handy_functions import snake_case_to_pascal_case
 from ..error_handling import (InvalidUsage, ResourceNotFound)
+
+
+def get_campaign_type_prefix(campaign_type):
+    """
+    Campaign type can be sms_campaign, push_campaign etc. So this method checks if campaign
+    type is SMS, it returns SMS. Otherwise it returns prefix as lower case e.g push or email.
+    :param campaign_type:
+    :return:
+    """
+    prefix = "".join(campaign_type.split('_')[0])
+    if prefix in SmsCampaign.__tablename__:
+        return prefix.upper()
+    return prefix.lower()
 
 
 class CampaignType(object):
@@ -42,6 +56,7 @@ class CampaignType(object):
     SMS = SmsCampaign.__tablename__
     PUSH = PushCampaign.__tablename__
     EMAIL = EmailCampaign.__tablename__
+    WITH_ARTICLE_AN = [get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
 
 
 class FrequencyIds(object):
@@ -78,7 +93,8 @@ def frequency_id_to_seconds(frequency_id):
         FrequencyIds.WEEKLY: 7 * 24 * 3600,
         FrequencyIds.BIWEEKLY: 14 * 24 * 3600,
         FrequencyIds.MONTHLY: 30 * 24 * 3600,
-        FrequencyIds.YEARLY: 365 * 24 * 3600
+        FrequencyIds.YEARLY: 365 * 24 * 3600,
+        FrequencyIds.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
     }
     seconds = seconds_from_frequency_id.get(frequency_id)
     if not seconds and seconds != 0:
@@ -127,10 +143,10 @@ def get_model(file_name, model_name):
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)
     except ImportError:
-        logger.exception('Error importing model %s' % model_name)
+        logger.exception('Error importing model %s.' % model_name)
         raise
     except AttributeError:
-        logger.exception('%s has no attribute %s' % (file_name, model_name))
+        logger.exception('%s has no attribute %s.' % (file_name, model_name))
         raise
     return _class
 
@@ -148,15 +164,6 @@ def get_activity_message_name(campaign_name, postfix):
     :rtype: str
     """
     return "_".join(campaign_name.split('_')[::-1]).upper() + '_' + postfix
-
-
-def get_campaign_type_prefix(campaign_type):
-    """
-    Campaign type can be sms_campaign, push_campaign etc. So this method returns SMS or PUSH.
-    :param campaign_type:
-    :return:
-    """
-    return "".join(campaign_type.split('_')[0]).upper()
 
 
 def get_activity_message_id(activity_name):
@@ -252,7 +259,7 @@ def validate_signed_url(request_args):
 
 
 def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_type, blast_id,
-                                   oauth_header):
+                                  oauth_header):
     """
     Once SMS campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we
@@ -279,27 +286,25 @@ def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_ty
                         sms_campaign_service/sms_campaign_base.py
     """
     logger = current_app.config[TalentConfigKeys.LOGGER]
-    if isinstance(sends_result, list):
-        total_sends = sends_result.count(True)
-        blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
-        blast_obj = blast_model.get_by_id(blast_id)
-        campaign = blast_obj.campaign
-        if total_sends:
-            # update SMS campaign blast. i.e. update number of sends.
-            try:
-                blast_obj.update(sends=blast_obj.sends + total_sends)
-            except Exception:
-                logger.exception(
-                    'callback_campaign_sent: Error updating campaign(id:%s) blast(id:%s)'
-                    % (campaign.id, blast_obj.id))
-                raise
-            base_class.create_campaign_send_activity(user_id, campaign,
-                                                     oauth_header, total_sends)
-        logger.debug(
-            'process_send: %s(id:%s) has been sent to %s candidate(s).'
-            '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
-    else:
-        logger.error('callback_campaign_sent: Result is not a list')
+    if not isinstance(sends_result, list):
+        logger.error("post_campaign_sent_processing: Celery task's result is not a list")
+    total_sends = sends_result.count(True)
+    blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+    blast_obj = blast_model.get_by_id(blast_id)
+    campaign = blast_obj.campaign
+    if total_sends:
+        # update SMS campaign blast. i.e. update number of sends.
+        try:
+            blast_obj.update(sends=blast_obj.sends + total_sends)
+        except Exception:
+            logger.exception(
+                'post_campaign_sent_processing: Error updating campaign(id:%s) blast(id:%s)'
+                % (campaign.id, blast_obj.id))
+            raise
+        base_class.create_campaign_send_activity(user_id, campaign,
+                                                 oauth_header, total_sends)
+    logger.debug('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
+                 '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
 
 
 def delete_scheduled_task(scheduled_task_id, oauth_header):
@@ -320,14 +325,14 @@ def delete_scheduled_task(scheduled_task_id, oauth_header):
     try:
         response = http_request('DELETE', SchedulerApiUrl.TASK % scheduled_task_id,
                                 headers=oauth_header)
-        if response.ok:
-            logger.info("delete_scheduled_task: Task(id:%s) has been removed from "
-                        "scheduler_service" % scheduled_task_id)
-            return True
+        if not response.ok:
+            logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted from "
+                         "scheduler_service." % scheduled_task_id)
+            return False
     except ResourceNotFound:
         logger.info("delete_scheduled_task: Task(id:%s)has already been removed from "
                     "scheduler_service" % scheduled_task_id)
-        pass
-    logger.error("delete_scheduled_task: Task(id:%s) couldn't be deleted from scheduler_service."
+        return True
+    logger.info("delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
                 % scheduled_task_id)
-    return False
+    return True
