@@ -172,7 +172,7 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     response, status_code = domain_api(access_token_first, data=data, action='POST')
     assert status_code == 400
 
-    first_domain['expiration'] = str(datetime.datetime.now().replace(microsecond=0))
+    first_domain['expiration'] = str(datetime.now().replace(microsecond=0))
     first_domain['name'] = domain_first.name
 
     # Logged-in user trying to add new domains where domain name already exists

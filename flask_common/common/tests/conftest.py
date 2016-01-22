@@ -263,7 +263,6 @@ def access_token_same(user_same_domain, sample_client):
     return get_access_token(user_same_domain, PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
 
-
 @pytest.fixture()
 def user_first(request, domain_first, first_group):
     # user = create_test_user(db.session, domain_first.id, PASSWORD)

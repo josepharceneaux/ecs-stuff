@@ -15,19 +15,21 @@ from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepick
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 
 
-def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False, domain_custom_fields=None):
-    if domain_custom_fields:
-        custom_field = 'custom_field.{}'.format(domain_custom_fields[0].id)
+def import_spreadsheet_candidates(talent_pool, access_token, candidate_data=None,
+                                  spreadsheet_file_name=None, is_csv=True,
+                                  import_candidates=False, domain_custom_field=None):
+    if domain_custom_field:
+        custom_field = 'custom_field.{}'.format(domain_custom_field.id)
     else:
         custom_field = 'custom_field.3'
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
-                  'candidate_education.schoolName', 'student_year', 'candidate_address.city', 'candidate_address.state',
-                  'candidate_education_degree_bullet.concentrationType', 'area_of_interest.description',
-                  custom_field, 'area_of_interest.description', 'candidate_experience.organization',
-                  'candidate_experience.position']
+                  'candidate_education.schoolName', 'student_year', 'candidate_address.city',
+                  'candidate_address.state', 'candidate_education_degree_bullet.concentrationType',
+                  'area_of_interest.description', custom_field, 'area_of_interest.description',
+                  'candidate_experience.organization', 'candidate_experience.position',
+                  'talent_pool.{}'.format(talent_pool.id)]
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
 

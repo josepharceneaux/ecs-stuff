@@ -668,7 +668,7 @@ def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(user_first, access
     updated_resp = request_to_candidate_phone_resource(
             access_token_second, 'delete', candidate_1_id, all_phones=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 204
+    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
 
 
 def test_delete_phone_of_a_different_candidate(user_first, access_token_first, talent_pool):
