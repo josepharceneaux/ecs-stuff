@@ -1,9 +1,228 @@
-<section id="pipeline-detail-view">
+<section id="pipeline-detail-view" class="view-wrapper view__main--pipelines">
 
-    <div layout-padding layout="row">
-        <div flex layout-margin layout-padding class="module">
-            <div class="mod-header">Pipeline Detail</div>
+    <div layout="column" layout-margin>
+        
+        <!-- Navigation path -->
+        <div>
+            <p class="md-caption">
+                <a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
+            </p>
         </div>
+        <!-- End: Navigation path -->
+
+        <!-- Header -->
+        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+            <div class="page-title-icon">
+                <img src="//placehold.it/80x80" />
+            </div>
+            <div flex>
+                <h3 class="md-title">Pipeline Name</h3>
+                <h3 class="md-body-1">Created by <a href="">Haohong Xu</a> on 5/22/16</h3>
+            </div>          
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <md-button class="md-raised md-primary">Add Candidates</md-button>
+                <md-button class="md-raised md-primary">Create Campaign</md-button>
+                <md-button class="md-raised md-primary">Create Smartlist</md-button>
+            </div>
+        </md-content>
+        <!-- End: Header -->
+
+        <!-- Growth graph -->
+        <md-content layout="row" class="md-whiteframe-z1">
+            <div style="height:400px;">Pipeline Growth Chart</div>
+        </md-content>
+        <!-- End: Growth graph -->
+
+        <!-- Metrics -->
+        <div layout="row" layout-wrap>
+            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100" ng-repeat="metric in vm.metrics">
+                <md-content class="md-margin md-whiteframe-z1" layout="column" layout-align="center center">
+                    <h3 class="md-title">{{metric.name}} <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{metric.value}}</h3>
+                </md-content>
+            </div>
+        </div>
+        <!-- End: Metrics -->
+
+        <!-- Summaries and Activity Feed -->
+        <div layout="row" layout-wrap>
+            <!-- Summaries -->
+            <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
+
+                <!-- Top Skills -->
+                <div id="v2-top-skills" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Top Skills<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-list class="v2-h-barchart">
+                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h4>{{topSkill.title}}</h4>
+                                        <h4>{{topSkill.value}}</h4>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Top Skills -->
+                
+                <!-- Candidate Breakdown -->
+                <div id="v2-candidate-breakdown" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-tabs md-stretch-tabs="always" md-dynamic-height md-border-bottom>
+                                <md-tab>
+                                    <md-tab-label>Typical</md-tab-label>
+                                    <md-tab-body>
+                                        <md-list>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Experience:</span>
+                                                    <span flex class="md-body-2">10-12 Years</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Job Length:</span>
+                                                    <span flex class="md-body-2">16 Months</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Education:</span>
+                                                    <span flex class="md-body-2">Bachelors Degree</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Relocation:</span>
+                                                    <span flex class="md-body-2">No</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Requires Sponsor:</span>
+                                                    <span flex class="md-body-2">No</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Income:</span>
+                                                    <span flex class="md-body-2">$90,000 p/y</span>
+                                                </div>
+                                            </md-list-item>
+                                        </md-list>
+                                    </md-tab-body>
+                                </md-tab>
+                                <md-tab>
+                                    <md-tab-label>Locations</md-tab-label>
+                                    <md-tab-body>
+                                        <md-content class="md-padding">
+                                            <span class="md-body-2">Breakdown by locations</span>
+                                        </md-content>
+                                    </md-tab-body>
+                                </md-tab>
+                                <md-tab>
+                                    <md-tab-label>Resources</md-tab-label>
+                                    <md-tab-body>
+                                        <md-content class="md-padding">
+                                            <span class="md-body-2">Breakdown by resources</span>
+                                        </md-content>
+                                    </md-tab-body>
+                                </md-tab>
+                            </md-tabs>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Candidate Breakdown -->
+                
+                <!-- Top Performing Campaigns -->
+                <div id="v2-top-campaigns" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
+                                <span class="md-subhead">By Candidates Added</span>
+                            </md-card-title-text>
+                            <span class="md-caption card-top-right-button">Create Campaign</span>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-list class="v2-h-barchart">
+                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h4>{{topSkill.title}}</h4>
+                                        <h4>{{topSkill.value}}</h4>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                        <md-card-actions layout="row" layout-align="end center">
+                            <md-button>See more</md-button>
+                        </md-card-actions>
+                    </md-card>
+                </div>
+                <!-- End: Top Performing Campaigns -->
+                
+                <!-- Team Contributors -->
+                <div id="v2-team-contributors" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Team Contributors<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                            <span class="md-caption card-top-right-button">Invite Team</span>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-list>
+                                <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
+                                    <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h3>{{contributor.name}}</h3>
+                                        <h3>{{contributor.value}}</h3>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Team Contributors -->
+            </div>
+            <!-- End: Summaries -->
+
+            <!-- Activity Feed -->
+            <div id="v2-activity-feed" flex="33" flex-xs="100" flex-sm="100" flex-md="100">
+                <md-card class="md-margin">
+                    <md-card-title>
+                        <md-card-title-text>
+                            <span class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content>
+                        <md-list>
+                            <div class="md-whiteframe-z1 v2-feed" ng-repeat="feed in vm.feeds">
+                                <span class="md-caption">{{feed.time}}</span>
+                                <h4 class="md-body-2">{{feed.text}}</h4>
+                            </div>
+                        </md-list>
+                    </md-card-content>
+                    <md-card-actions layout="row" layout-align="center center">
+                        <span class="md-title">Load more...</span>
+                    </md-card-actions>
+                </md-card>
+            </div>
+            <!-- End: Activity Feed -->
+        </div>
+        <!-- End: Summaries and Activity Feed -->
     </div>
 
 </section>
