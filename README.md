@@ -1,6 +1,6 @@
 Jenkins build:
 
-![Jenkins](http://jenkins.gettalent.com:8080/job/talent-flask-services/badge/icon)
+[![Build Status](http://jenkins.gettalent.com:8080/buildStatus/icon?job=talent-flask-services)](http://jenkins.gettalent.com:8080/job/talent-flask-services)
 
 getTalent Flask Micro Services
 ==============================
