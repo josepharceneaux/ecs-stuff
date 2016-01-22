@@ -72,5 +72,5 @@ def candidate_test_data(num_candidates=15):
         candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
                                'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'MS', 'San Jose',
                                'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
-                               'Summer Software Intern'])
+                               'Summer Software Intern', 'talent_pool_id'])
     return candidate_data

@@ -11,7 +11,9 @@ from spreadsheet_import_service.common.utils.handy_functions import add_role_to_
 from common_functions import candidate_test_data, import_spreadsheet_candidates, SpreadsheetImportApiUrl
 
 
-def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_custom_fields):
+def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_custom_fields,
+                                      talent_pool):
+    print "user: {}".format(user_first)
     domain_custom_field = domain_custom_fields[0]
     candidate_data = candidate_test_data()
 
@@ -58,19 +60,18 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first, tale
     response, status_code = import_spreadsheet_candidates(talent_pool,
             access_token_first, candidate_data=candidate_data, import_candidates=True,
             domain_custom_field=domain_custom_fields[0])
-    print "\nresponse: {}".format(response)
     assert status_code == 201
     assert response.get('count') == len(candidate_data)
     assert response.get('status') == 'complete'
 
-    # candidate_data = candidate_test_data(501)
-    #
-    # # Logged-in user trying to import 501 candidates from a csv spreadsheet
-    # response, status_code = import_spreadsheet_candidates(
-    #         access_token_first, candidate_data=candidate_data, import_candidates=True,
-    #         domain_custom_field=domain_custom_field)
-    # assert response.get('count') == len(candidate_data)
-    # assert response.get('status') == 'pending'
+    candidate_data = candidate_test_data(501)
+
+    # Logged-in user trying to import 501 candidates from a csv spreadsheet
+    response, status_code = import_spreadsheet_candidates(talent_pool,
+            access_token_first, candidate_data=candidate_data, import_candidates=True,
+            domain_custom_field=domain_custom_fields[0])
+    assert response.get('count') == len(candidate_data)
+    assert response.get('status') == 'pending'
 
 
 def test_health_check():
