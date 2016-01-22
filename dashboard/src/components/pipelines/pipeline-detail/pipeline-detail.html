@@ -200,14 +200,14 @@
             <!-- End: Summaries -->
 
             <!-- Activity Feed -->
-            <div id="v2-activity-feed" flex="33" flex-xs="100" flex-sm="100" flex-md="100">
-                <md-card class="md-margin">
-                    <md-card-title>
+            <div id="v2-activity-feed" flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="row">
+                <md-card flex class="md-margin">
+                    <md-card-title flex="none">
                         <md-card-title-text>
                             <span class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></span>
                         </md-card-title-text>
                     </md-card-title>
-                    <md-card-content>
+                    <md-card-content flex>
                         <md-list>
                             <div class="md-whiteframe-z1 v2-feed" ng-repeat="feed in vm.feeds">
                                 <span class="md-caption">{{feed.time}}</span>
