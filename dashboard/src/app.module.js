@@ -16,6 +16,7 @@
         'app.login',
         'app.main',
         'app.onboard',
+        'app.notificationCenter',
         'app.pipelines',
         'app.resetPassword',
         'app.search',
