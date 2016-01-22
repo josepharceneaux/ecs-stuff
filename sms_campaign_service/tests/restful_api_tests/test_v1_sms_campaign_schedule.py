@@ -192,6 +192,19 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         CampaignsCommonTests.request_for_forbidden_error(
             'put', self.URL % sms_campaign_of_current_user.id, auth_token)
 
+    def test_schedule_campaign_with_invalid_campaign_id(self, auth_token):
+        """
+        This is a test to schedule a campaign which does not exists in database.
+        :param auth_token:
+        :return:
+        """
+        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
+        CampaignsCommonTests.request_with_invalid_campaign_id(self.METHOD,
+                                                              self.URL,
+                                                              auth_token,
+                                                              generate_campaign_schedule_data(),
+                                                              last_campaign_id_in_db)
+
 
 class TestSmsCampaignScheduleHTTPPUT(object):
     """

@@ -7,26 +7,32 @@ Functions in this file are
     - validate_headers()
     - validate_datetime_format()
     - is_datetime_in_future()
-    - validation_of_data_to_schedule_campaign() etc.
+    - validation_of_data_to_schedule_campaign()
+    - get_valid_json_data()
+    - validate_blast_candidate_url_conversion_in_db()
+    - validate_if_current_user_is_owner() etc.
 """
 
 # Standard Imports
 import re
-from dateutil.tz import tzutc
-from flask import current_app
-from datetime import (datetime, timedelta)
+from datetime import datetime
 from werkzeug.exceptions import BadRequest
 
+
 # Third Party
+from dateutil.tz import tzutc
+from flask import current_app
 from dateutil.parser import parse
 
 # Common utils
 from ..models.smartlist import Smartlist
-from campaign_utils import frequency_id_to_seconds
+from ..models.sms_campaign import SmsCampaign
 from ..talent_config_manager import TalentConfigKeys
-from ..error_handling import (InvalidUsage, ResourceNotFound)
+from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items,
                                      validate_required_fields)
+from campaign_utils import (frequency_id_to_seconds, assert_is_instance_of_campaign_model,
+                            assert_for_int_or_long)
 
 
 def validate_header(request):
@@ -107,8 +113,9 @@ def is_datetime_in_valid_format_and_in_future(datetime_str):
     :type datetime_str: str
     :return:
     """
+    logger = current_app.config[TalentConfigKeys.LOGGER]
     if not is_datetime_in_future(if_str_datetime_in_valid_format_get_datetime_obj(datetime_str)):
-        current_app.config[TalentConfigKeys.LOGGER].error('Datetime str should be in future. %s' % datetime_str)
+        logger.error('Datetime str should be in future. %s' % datetime_str)
         raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
 
@@ -281,3 +288,29 @@ def validate_form_data(form_data, required_fields=('name', 'body_text', 'smartli
     form_data['smartlist_ids'] = list(set(smartlist_ids) -
                                       set(invalid_smartlist_ids + not_found_smartlist_ids))
     return invalid_smartlist_ids, not_found_smartlist_ids
+
+
+def validate_if_current_user_is_owner(campaign_obj, campaign_user_id, current_user_id):
+    """
+    If current user is the owner of given campaign, it returns the campaign. Otherwise
+    it raises Forbidden error.
+    :param campaign_obj: campaign object e.g. SMS campaign obj etc.
+    :param campaign_user_id: Id of user who created given campaign
+    :param current_user_id: id of logged-in user
+    :type campaign_obj: SmsCampaign | PushCampaign
+    :type campaign_user_id: int | long
+    :type current_user_id: int | long
+    :exception: Invalid Usage
+    :exception: Forbidden Error
+    :return: campaign obj
+    :rtype: SmsCampaign | PushCampaign etc.
+    """
+    assert_for_int_or_long(dict(campaign_user_id=campaign_user_id,
+                                               current_user_id=current_user_id))
+    # Any campaign service will add the entry of respective model name here
+    assert_is_instance_of_campaign_model(campaign_obj)
+    if campaign_user_id == current_user_id:
+        return campaign_obj
+    else:
+        raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
+                             % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))

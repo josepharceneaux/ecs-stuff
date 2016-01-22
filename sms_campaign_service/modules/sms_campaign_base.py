@@ -8,7 +8,7 @@ methods like
      - save()
      - buy_twilio_mobile_number()
      - create_or_update_user_phone()
-     - process_send()
+     - send()
      - process_link_in_body_text()
      - transform_body_text()
      - send_campaign_to_candidate()
@@ -39,7 +39,11 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (sign_redirect_url, CampaignType,  post_campaign_sent_processing)
+    (sign_redirect_url, CampaignType,
+     post_campaign_sent_processing,
+     get_campaign_for_ownership_validation)
+from sms_campaign_service.common.campaign_services.validators import \
+    validate_if_current_user_is_owner
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
@@ -181,7 +185,7 @@ class SmsCampaignBase(CampaignBase):
             from sms_campaign_service.common.models.sms_campaign import SmsCampaign
             campaign = SmsCampaign.get(1)
 
-        3- Call method process_send
+        3- Call method send
             camp_obj.process(campaign)
 
     **See Also**
@@ -382,31 +386,27 @@ class SmsCampaignBase(CampaignBase):
         return scheduler_task_id
 
     @staticmethod
-    def validate_ownership_of_campaign(campaign_id, current_user_id):
+    def get_owner_user_id(campaign_obj, current_user_id):
         """
-        This function returns True if the current user is an owner for given
-        campaign_id. Otherwise it raises the Forbidden error.
-        :param campaign_id: id of campaign form getTalent database
-        :param current_user_id: Id of current user
-        :exception: InvalidUsage
-        :exception: ResourceNotFound
-        :exception: ForbiddenError
-        :return: Campaign obj if current user is an owner for given campaign.
-        :rtype: SmsCampaign
+        This implements the base class method and returns the id of user who created the
+        given campaign.
+        :param campaign_obj: campaign object
+        :param current_user_id: id of logged-in user
+        :type campaign_obj: SmsCampaign
+        :type current_user_id: int | long
+        :exception: Invalid Usage
+        :return: id of owner user of given campaign
+        :rtype: int | long
         """
-        if not isinstance(campaign_id, (int, long)):
-            raise InvalidUsage('Include campaign_id as int|long.')
-        if not isinstance(current_user_id, (int, long)):
-            raise InvalidUsage('Include current_user_id as int|long.')
-        campaign_obj = SmsCampaign.get_by_id(campaign_id)
-        if not campaign_obj:
-            raise ResourceNotFound('SMS Campaign(id=%s) not found.' % campaign_id)
-        campaign_user_id = UserPhone.get_by_id(campaign_obj.user_phone_id).user_id
-        if campaign_user_id == current_user_id:
-            return campaign_obj
-        else:
-            raise ForbiddenError('User(id:%s) are not the owner of SMS campaign(id:%s)'
-                                 % (current_user_id, campaign_id))
+        if not campaign_obj.user_phone_id:
+            raise ForbiddenError('SMS campaign(id:%s) has no user_phone associated.'
+                                 % campaign_obj.id)
+        # using relationship
+        user_phone = campaign_obj.user_phone
+        if not user_phone:
+            raise InvalidUsage('User(id:%s) has no phone number associated.' % current_user_id)
+        # using relationship
+        return user_phone.user_id
 
     def is_candidate_have_unique_mobile_phone(self, candidate):
         """
@@ -463,7 +463,7 @@ class SmsCampaignBase(CampaignBase):
             filter(lambda obj: obj is not None, map(self.is_candidate_have_unique_mobile_phone,
                                                     candidates)
                    )
-        logger.debug('process_send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
+        logger.debug('send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
                      '(User(id:%s))' % (self.campaign.id, len(filtered_candidates_and_phones),
                                         self.user.id))
         return filtered_candidates_and_phones
@@ -613,7 +613,7 @@ class SmsCampaignBase(CampaignBase):
 
             Otherwise we save the body text in modified_body_text
 
-        - This method is called from process_send() method of class SmsCampaignBase inside
+        - This method is called from send() method of class SmsCampaignBase inside
             sms_campaign_service/sms_campaign_base.py.
 
         :param candidate_id: id of Candidate
@@ -623,7 +623,7 @@ class SmsCampaignBase(CampaignBase):
         :rtype: list
 
         **See Also**
-        .. see also:: process_send() method in SmsCampaignBase class.
+        .. see also:: send() method in SmsCampaignBase class.
         """
         logger.debug('process_urls_in_sms_body_text: Processing any '
                      'link present in body_text for '
@@ -835,7 +835,7 @@ class SmsCampaignBase(CampaignBase):
                              source_id=source.id,
                              source_table=SmsCampaignSend.__tablename__,
                              params=params,
-                             headers=self.oauth_header)
+                             auth_header=self.oauth_header)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):
@@ -989,7 +989,7 @@ class SmsCampaignBase(CampaignBase):
                             source_id=sms_campaign_reply.id,
                             source_table=SmsCampaignReply.__tablename__,
                             params=params,
-                            headers=user_access_token)
+                            auth_header=user_access_token)
 
 
 def _get_valid_user_phone_value(user_phone_value):

@@ -241,14 +241,35 @@ def campaign_data_unknown_key_text():
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
+def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
     """
     This creates the SMS campaign for sammple_user using valid data.
     :param campaign_valid_data:
     :param user_phone_1:
     :return:
     """
-    return _create_sms_campaign(campaign_valid_data, user_phone_1)
+    test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_1)
+
+    def fin():
+        SmsCampaign.delete(test_sms_campaign)
+    request.addfinalizer(fin)
+    return test_sms_campaign
+
+
+@pytest.fixture()
+def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
+    """
+    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
+    :param campaign_valid_data:
+    :param user_phone_3:
+    :return:
+    """
+    test_sms_campaign_of_other_user = _create_sms_campaign(campaign_valid_data, user_phone_3)
+
+    def fin():
+        SmsCampaign.delete(test_sms_campaign_of_other_user)
+    request.addfinalizer(fin)
+    return test_sms_campaign_of_other_user
 
 
 @pytest.fixture(params=[FrequencyIds.ONCE, FrequencyIds.DAILY])
@@ -300,17 +321,6 @@ def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
 
     request.addfinalizer(delete_scheduled_task)
     return campaign
-
-
-@pytest.fixture()
-def sms_campaign_of_other_user(campaign_valid_data, user_phone_3):
-    """
-    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
-    :param campaign_valid_data:
-    :param user_phone_3:
-    :return:
-    """
-    return _create_sms_campaign(campaign_valid_data, user_phone_3)
 
 
 @pytest.fixture()
