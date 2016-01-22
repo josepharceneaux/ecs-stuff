@@ -21,15 +21,6 @@ api.init_app(data_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-# Enable CORS
-CORS(data_blueprint, resources={
-    r'/%s/data/*' % SocialNetworkApi.VERSION: {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
-
-
 @api.route(SocialNetworkApi.TIMEZONES)
 class TimeZones(Resource):
     """
