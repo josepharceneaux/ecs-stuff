@@ -1,8 +1,6 @@
-Develop branch:
-(Add Jenkins build status widget here)
+Jenkins build:
 
-Master branch:
-(Add Jenkins build status widget here)
+![Jenkins](http://jenkins.gettalent.com:8080/job/talent-flask-services/badge/icon)
 
 getTalent Flask Micro Services
 ==============================
