@@ -25,9 +25,7 @@
             };
 
             function getAlerts() {
-                return alertsService.all('system-alerts').customGET().then(function (response) {
-                    return response;
-                });
+                return alertsService.all('system-alerts').getList();
             }
         }
     }
