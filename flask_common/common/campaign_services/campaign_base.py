@@ -23,7 +23,6 @@ from abc import abstractmethod
 # Third Party
 from celery import chord
 from flask import current_app
-from requests import ConnectionError
 
 # Database Models
 from ..models.db import db
@@ -312,12 +311,11 @@ class CampaignBase(object):
         campaign_model.save(campaign_obj)
         # Create record in database table e.g. "sms_campaign_smartlist"
         self.create_campaign_smartlist(campaign_obj, form_data['smartlist_ids'])
-        # Create Activity, and If we get Connection error, we log the error
+        # Create Activity, and If we get any error, we log it.
         try:
             self.create_activity_for_campaign_creation(campaign_obj, self.user,
                                                        self.oauth_header)
-        except ConnectionError:
-            # In case activity_service is not running, we proceed normally and log the error.
+        except Exception:
             logger.exception('Error creating campaign creation activity.')
         return campaign_obj.id, invalid_smartlist_ids, not_found_smartlist_ids
 
@@ -522,7 +520,7 @@ class CampaignBase(object):
             return False
         try:
             self.create_activity_for_campaign_delete(self.user, campaign_obj, oauth_header)
-        except ConnectionError:
+        except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
             logger.error('delete: Error creating campaign delete activity.')
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (campaign_type,
@@ -677,6 +675,7 @@ class CampaignBase(object):
             raise InvalidUsage('data_to_schedule must be a dict.')
         if not data_to_schedule.get('url_to_run_task'):
             raise InvalidUsage('No URL given to run the task.')
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         # format data to create new task
         data_to_schedule_task = self.format_data_to_schedule(data_to_schedule.copy())
         # set content-type in header
@@ -687,10 +686,13 @@ class CampaignBase(object):
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
             # create campaign scheduled activity
-            self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
-            current_app.config[TalentConfigKeys.LOGGER].info('%s(id:%s) has been scheduled.'
-                                                             % (self.campaign.__tablename__,
-                                                                self.campaign.id))
+            try:
+                self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
+            except Exception:
+                # In case activity_service is not running, we proceed normally and log the error.
+                logger.exception('Error creating campaign clicked activity.')
+            logger.info('%s(id:%s) has been scheduled.' % (self.campaign.__tablename__,
+                                                           self.campaign.id))
             return response.json()['id']
         else:
             raise InvalidUsage(
@@ -794,14 +796,14 @@ class CampaignBase(object):
             raise InvalidUsage('Campaign id is required to unschedule it.')
         if not hasattr(request, 'user'):
             raise InvalidUsage('User cannot be None for un scheduling a campaign.')
-        delete_status = False
+        is_deleted = False
         campaign_obj, scheduled_task, oauth_header = \
             cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id,
                                                                campaign_type)
         if scheduled_task:
-            delete_status = delete_scheduled_task(scheduled_task['id'], oauth_header)
-            campaign_obj.update(scheduler_task_id=None) if delete_status else None
-        return delete_status
+            is_deleted = delete_scheduled_task(scheduled_task['id'], oauth_header)
+            campaign_obj.update(scheduler_task_id=None) if is_deleted else None
+        return is_deleted
 
     @staticmethod
     def pre_process_re_schedule(pre_processed_data):
@@ -1330,7 +1332,7 @@ class CampaignBase(object):
         # create_activity
         try:
             cls.create_campaign_clicked_activity(campaign_obj, candidate, _type, oauth_header)
-        except ConnectionError:
+        except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
             logger.exception('Error creating campaign clicked activity.')
 

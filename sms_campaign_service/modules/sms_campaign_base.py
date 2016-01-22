@@ -913,11 +913,14 @@ class SmsCampaignBase(CampaignBase):
         sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
                                                       candidate_phone.id,
                                                       reply_data.get('Body'))
-        # create Activity
-        cls.create_campaign_reply_activity(sms_campaign_reply,
-                                           sms_campaign_blast,
-                                           candidate_phone.candidate_id,
-                                           user_phone.user_id)
+        try:
+            # create Activity
+            cls.create_campaign_reply_activity(sms_campaign_reply,
+                                               sms_campaign_blast,
+                                               candidate_phone.candidate_id,
+                                               user_phone.user_id)
+        except Exception:
+            logger.exception('process_candidate_reply: Error creating SMS receive activity.')
         # get/update SMS campaign blast i.e. increase number of replies by 1
         cls.update_campaign_blast(sms_campaign_blast, replies=True)
         logger.debug('Candidate(id:%s) replied "%s" to Campaign(id:%s).(User(id:%s))'
