@@ -46,6 +46,12 @@ md-content {
     }
 }
 
+#v2-candidate-breakdown {
+    md-list-item {
+        min-height: 36px;
+    }
+}
+
 #v2-team-contributors {
     .v2-contributor {
         background-color: #eee;

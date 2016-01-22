@@ -50,7 +50,7 @@
             <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
 
                 <!-- Top Skills -->
-                <div flex="50" flex-xs="100" flex-sm="100">
+                <div id="v2-top-skills" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
                         <md-card-title flex="none">
                             <md-card-title-text>
@@ -72,7 +72,7 @@
                 <!-- End: Top Skills -->
                 
                 <!-- Candidate Breakdown -->
-                <div flex="50" flex-xs="100" flex-sm="100">
+                <div id="v2-candidate-breakdown" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
                         <md-card-title flex="none">
                             <md-card-title-text>
@@ -80,13 +80,74 @@
                             </md-card-title-text>
                         </md-card-title>
                         <md-card-content flex>
+                            <md-tabs md-stretch-tabs="always" md-dynamic-height md-border-bottom>
+                                <md-tab>
+                                    <md-tab-label>Typical</md-tab-label>
+                                    <md-tab-body>
+                                        <md-list>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Experience:</span>
+                                                    <span flex class="md-body-2">10-12 Years</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Job Length:</span>
+                                                    <span flex class="md-body-2">16 Months</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Education:</span>
+                                                    <span flex class="md-body-2">Bachelors Degree</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Relocation:</span>
+                                                    <span flex class="md-body-2">No</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Requires Sponsor:</span>
+                                                    <span flex class="md-body-2">No</span>
+                                                </div>
+                                            </md-list-item>
+                                            <md-list-item>
+                                                <div class="md-list-item-text" flex layout="row">
+                                                    <span flex="40" class="md-body-2">Income:</span>
+                                                    <span flex class="md-body-2">$90,000 p/y</span>
+                                                </div>
+                                            </md-list-item>
+                                        </md-list>
+                                    </md-tab-body>
+                                </md-tab>
+                                <md-tab>
+                                    <md-tab-label>Locations</md-tab-label>
+                                    <md-tab-body>
+                                        <md-content class="md-padding">
+                                            <span class="md-body-2">Breakdown by locations</span>
+                                        </md-content>
+                                    </md-tab-body>
+                                </md-tab>
+                                <md-tab>
+                                    <md-tab-label>Resources</md-tab-label>
+                                    <md-tab-body>
+                                        <md-content class="md-padding">
+                                            <span class="md-body-2">Breakdown by resources</span>
+                                        </md-content>
+                                    </md-tab-body>
+                                </md-tab>
+                            </md-tabs>
                         </md-card-content>
                     </md-card>
                 </div>
                 <!-- End: Candidate Breakdown -->
                 
                 <!-- Top Performing Campaigns -->
-                <div flex="50" flex-xs="100" flex-sm="100">
+                <div id="v2-top-campaigns" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
                         <md-card-title flex="none">
                             <md-card-title-text>
