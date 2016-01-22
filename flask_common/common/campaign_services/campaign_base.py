@@ -439,8 +439,11 @@ class CampaignBase(object):
         campaign_obj = get_campaign_for_ownership_validation(campaign_id, current_user_id,
                                                              campaign_type)
         campaign_user_id = cls.get_owner_user_id(campaign_obj, current_user_id)
-        validate_if_current_user_is_owner(campaign_obj, campaign_user_id, current_user_id)
-        return campaign_obj
+        if campaign_user_id == current_user_id:
+            return campaign_obj
+        else:
+            raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
+                             % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
 
     @staticmethod
     @abstractmethod
@@ -510,8 +513,8 @@ class CampaignBase(object):
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
-            unschedule = delete_scheduled_task(scheduled_task['id'], oauth_header)
-            if not unschedule:
+            unscheduled = delete_scheduled_task(scheduled_task['id'], oauth_header)
+            if not unscheduled:
                 return False
 
         campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
@@ -522,7 +525,7 @@ class CampaignBase(object):
             self.create_activity_for_campaign_delete(self.user, campaign_obj, oauth_header)
         except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
-            logger.error('delete: Error creating campaign delete activity.')
+            logger.exception('delete: Error creating campaign delete activity.')
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (campaign_type,
                                                                           campaign_obj.id))
         return True
@@ -552,12 +555,14 @@ class CampaignBase(object):
         # Activity message looks like %(username)s deleted a campaign: %(name)s"
         params = {'username': user.name, 'name': source.name,
                   'campaign_type': get_campaign_type_prefix(source.__tablename__)}
-        cls.create_activity(user.id,
-                            _type=ActivityMessageIds.CAMPAIGN_DELETE,
-                            source_id=source.id,
-                            source_table=source.__tablename__,
-                            params=params,
-                            auth_header=oauth_header)
+        cls.create_activity(
+                user.id,
+                _type=ActivityMessageIds.CAMPAIGN_DELETE,
+                source_id=source.id,
+                source_table=source.__tablename__,
+                params=params,
+                auth_header=oauth_header
+        )
 
     @classmethod
     def pre_process_schedule(cls, request, campaign_id, campaign_type):

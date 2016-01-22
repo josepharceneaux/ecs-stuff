@@ -169,7 +169,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     """
     data_to_schedule_campaign = get_valid_json_data(request)
     if not data_to_schedule_campaign:
-        raise InvalidUsage('No data provided to schedule %s (id:%s)'
+        raise InvalidUsage('No data provided to schedule %s(id:%s)'
                            % (campaign_obj.__tablename__, campaign_obj.id))
     # check if data has start_datetime
     if not data_to_schedule_campaign.get('start_datetime'):

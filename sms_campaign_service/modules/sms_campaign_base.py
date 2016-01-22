@@ -41,7 +41,7 @@ from sms_campaign_service.common.campaign_services.campaign_base import Campaign
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (sign_redirect_url, CampaignType,
      post_campaign_sent_processing,
-     get_campaign_for_ownership_validation)
+     get_campaign_for_ownership_validation, assert_is_instance_of_campaign_model)
 from sms_campaign_service.common.campaign_services.validators import \
     validate_if_current_user_is_owner
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
@@ -398,6 +398,7 @@ class SmsCampaignBase(CampaignBase):
         :return: id of owner user of given campaign
         :rtype: int | long
         """
+        assert_is_instance_of_campaign_model(campaign_obj)
         if not campaign_obj.user_phone_id:
             raise ForbiddenError('SMS campaign(id:%s) has no user_phone associated.'
                                  % campaign_obj.id)
