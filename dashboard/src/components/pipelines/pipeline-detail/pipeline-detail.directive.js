@@ -111,6 +111,34 @@
                     value: '+16'
                 },
             ];
+
+            vm.contributors = [
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 20
+                },
+                {
+                    name: 'Osman Masood',
+                    avatar: '//placehold.it/80x80',
+                    value: 18
+                },
+                {
+                    name: 'Jason Provencher',
+                    avatar: '//placehold.it/80x80',
+                    value: 15
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 12
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 10
+                }
+            ];
         }
     }
 })();
