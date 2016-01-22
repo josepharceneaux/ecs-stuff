@@ -38,7 +38,7 @@
         }
 
         function init() {
-            vm.metrics = [
+            vm.callouts = [
                 {
                     name: 'Total Candidates',
                     value: '1000'
