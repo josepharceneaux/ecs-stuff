@@ -1,7 +1,7 @@
-
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from spreadsheet_import_service.common.routes import HEALTH_CHECK
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
@@ -26,6 +26,9 @@ try:
 
     from spreadsheet_import_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting spreadsheet_import_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

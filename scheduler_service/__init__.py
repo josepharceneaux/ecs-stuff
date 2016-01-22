@@ -5,6 +5,8 @@ from celery import Celery
 from flask import Flask
 
 # Service specific imports
+from flask.ext.cors import CORS
+
 from scheduler_service.common.error_handling import register_error_handlers
 from scheduler_service.common.models.db import db
 from scheduler_service.common.redis_cache import redis_store
@@ -23,6 +25,9 @@ logger = flask_app.config[TalentConfigKeys.LOGGER]
 add_model_helpers(db.Model, logger=logger)
 db.init_app(flask_app)
 db.app = flask_app
+
+# Enable CORS for all origins & endpoints
+CORS(flask_app)
 
 # Initialize Redis Cache
 redis_store.init_app(flask_app)

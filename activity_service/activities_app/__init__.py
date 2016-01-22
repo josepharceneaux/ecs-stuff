@@ -1,8 +1,8 @@
 """Initializer for activities_app"""
-
 __author__ = 'Erik Farmer'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from activity_service.common.routes import HEALTH_CHECK
 from activity_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
@@ -25,6 +25,9 @@ try:
 
     from activity_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

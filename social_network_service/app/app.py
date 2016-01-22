@@ -15,7 +15,6 @@ app = init_app()
 
 # 3rd party imports
 from flask import request
-from flask.ext.cors import CORS
 
 # Application specific imports
 from social_network_service.app.restful.data import data_blueprint
@@ -30,14 +29,6 @@ app.register_blueprint(social_network_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(data_blueprint)
 api = TalentApi(app)
-
-# Enable CORS
-CORS(app, resources={
-    r'/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @app.route('/')

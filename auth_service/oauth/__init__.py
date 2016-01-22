@@ -1,3 +1,4 @@
+from flask.ext.cors import CORS
 
 __author__ = 'ufarooqi'
 
@@ -35,6 +36,9 @@ try:
     import views
 
     db_create_all()
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting auth_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
