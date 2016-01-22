@@ -44,56 +44,85 @@
         </div>
         <!-- End: Metrics -->
 
-        <!-- Summary -->
+        <!-- Summaries and Activity Feed -->
         <div layout="row" layout-wrap>
             <!-- Summaries -->
-            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
-                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-                    <md-content class="md-whiteframe-z1 v2-card" style="height: 400px">
-                        <h3 class="md-title">Top Skills<i class="fa fa-info-circle"></i></h3>
-                    </md-content>
+            <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
+                <div flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">Top Skills<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                        </md-card-content>
+                    </md-card>
                 </div>
                 
-                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-                    <md-content class="md-whiteframe-z1 v2-card">
-                        <h3 class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></h3>
-                    </md-content>
+                <div flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                        </md-card-content>
+                    </md-card>
                 </div>
                 
-                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-                    <md-content class="md-whiteframe-z1 v2-card">
-                        <h3 class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></h3>
-                    </md-content>
+                <div flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
+                                <span class="md-subhead">By Candidates Added</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                        </md-card-content>
+                    </md-card>
                 </div>
                 
-                <div layout-fill layout-margin flex="50" flex-xs="100" flex-sm="100">
-                    <md-content class="md-whiteframe-z1 v2-card">
-                        <h3 class="md-title">Team Contributors<i class="fa fa-info-circle"></i></h3>
-                    </md-content>
+                <div flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">Team Contributors<i class="fa fa-info-circle"></i></span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
+                        </md-card-content>
+                    </md-card>
                 </div>
             </div>
             <!-- End: Summaries -->
 
             <!-- Activity Feed -->
-            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
-                <div flex layout="row" layout-fill layout-margin>
-                    <md-content flex class="md-whiteframe-z1 v2-activity-feed">
-                        <h3 class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></h3>
-
+            <div id="v2-activity-feed" flex="33" flex-xs="100" flex-sm="100" flex-md="100">
+                <md-card class="md-margin">
+                    <md-card-title>
+                        <md-card-title-text>
+                            <span class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content>
                         <md-list>
                             <div class="md-whiteframe-z1 v2-feed" ng-repeat="feed in vm.feeds">
                                 <span class="md-caption">{{feed.time}}</span>
                                 <h4 class="md-body-2">{{feed.text}}</h4>
                             </div>
                         </md-list>
-
-                        <span class="md-title v2-feed-load-more">Load more...</span>
-                    </md-content>
-                </div>              
+                    </md-card-content>
+                    <md-card-actions layout="row" layout-align="center center">
+                        <span class="md-title">Load more...</span>
+                    </md-card-actions>
+                </md-card>
             </div>
             <!-- End: Activity Feed -->
         </div>
-        <!-- End: Summary -->
+        <!-- End: Summaries and Activity Feed -->
     </div>
 
 </section>
