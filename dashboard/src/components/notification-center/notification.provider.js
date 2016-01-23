@@ -22,8 +22,12 @@
                 getActivity: getActivity
             };
 
-            function getActivity() {
-                return notificationService.all('activities').all('1').getList('1');
+            function getActivity(page, aggregate) {
+                var params = {};
+                page = page || 1;
+                aggregate = aggregate || 1;
+                params[aggregate] = '';
+                return notificationService.all('activities').customGETLIST(page, params);
             }
         }
     }
