@@ -19,8 +19,14 @@
             });
 
             return {
+                createTalentPool: createTalentPool,
                 createTalentPools: createTalentPools
             };
+
+            function createTalentPool(talentPool) {
+                var talentPools = [ talentPool ];
+                return createTalentPools(talentPools);
+            }
 
             function createTalentPools(talentPools) {
                 return talentPoolsService.all('talent-pools').post(talentPools);

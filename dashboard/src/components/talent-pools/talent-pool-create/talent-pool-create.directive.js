@@ -44,10 +44,7 @@
         }
 
         function createTalentPool(talentPool) {
-            var talentPools = [
-                talentPool
-            ];
-            talentPoolsService.createTalentPools(talentPools).then(function (response) {
+            talentPoolsService.createTalentPool(talentPool).then(function (response) {
                 var poolId = response.talent_pools[0];
                 if (poolId) {
                     systemAlertsService.createAlert('Talent pool <strong>"$poolName"</strong> successfully created.'.replace('$poolName', talentPool.name));
