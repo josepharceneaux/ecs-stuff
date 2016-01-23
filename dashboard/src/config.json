@@ -40,7 +40,7 @@
         "baseUrl": "https://private-56260-activityservice4.apiary-mock.com"
     },
     "alertServiceInfo": {
-        "THE_REAL_baseUrl": "https://alert-service.gettalent.com/v1",
+        "THE_REAL_baseUrl": "https://alert-service-staging.gettalent.com/v1",
         "baseUrl": "http://localhost:7203/api"
     },
     "candidatePoolServiceInfo": {
