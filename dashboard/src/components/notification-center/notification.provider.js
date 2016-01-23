@@ -16,8 +16,6 @@
         /* @ngInject */
         function $get(activityService) {
             var notificationService = activityService.withConfig(function (RestangularConfigurer) {
-                // @TODO: remove once activity-service server is up and running.
-                RestangularConfigurer.setBaseUrl('https://private-56260-activityservice4.apiary-mock.com');
             });
 
             return {
