@@ -239,7 +239,7 @@ class CandidateEmail(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateEmail (address='%r')" % self.address
+        return "<CandidateEmail (address = '{}')".format(self.address)
 
     @classmethod
     def get_by_id(cls, _id):
@@ -252,7 +252,7 @@ class CandidateEmail(db.Model):
 
     @classmethod
     def get_by_address(cls, email_address):
-        return cls.query.filter_by(address=email_address).first()
+        return cls.query.filter_by(address=email_address).all()
 
 
 class CandidatePhoto(db.Model):

@@ -26,7 +26,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
+from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
@@ -208,7 +208,7 @@ def candidate_phones(candidate):
 
 def candidate_addresses(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -231,7 +231,7 @@ def candidate_addresses(candidate_id):
 
 def candidate_experiences(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -471,37 +471,19 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def get_candidate_id_from_candidate_email(candidate_email):
+def get_candidate_id_from_email_if_exists(user_id, email):
     """
-    Function will get the candidate associated with candidate_email and return its ID,
-    If candidate is not found, None will be returned
-    :type candidate_email: str
+    Function will get the domain-candidate associated with email and return its ID.
+    :type email: str
+    :return Candidate.id or None (if not found)
     """
-    assert isinstance(candidate_email, basestring)
-    can_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
-    if not can_email_row:
-        logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
-                    candidate_email)
-        return None
-
-    return can_email_row.candidate_id
-
-
-# TODO: move function to Email Marketing Service
-def retrieve_email_campaign_send(email_campaign, candidate_id):
-    """
-    :type email_campaign:   EmailCampaign
-    :type candidate_id:     int
-    :rtype:                 list
-    """
-    assert isinstance(email_campaign, EmailCampaign)
-    email_campaign_send_rows = db.session.query(EmailCampaignSend). \
-        filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
-                  EmailCampaignSend.candidate_id == candidate_id)
-
-    return [{'candidate_id': email_campaign_send_row.candidate_id,
-             'sent_time': email_campaign_send_row.sent_time
-             } for email_campaign_send_row in email_campaign_send_rows]
+    email_obj = CandidateEmail.query.join(Candidate) \
+        .filter(Candidate.user_id == user_id) \
+        .filter(CandidateEmail.address == email).first()
+    if not email_obj:
+        raise NotFoundError(error_message='Candidate email not recognized: {}'.format(email),
+                            error_code=custom_error.EMAIL_NOT_FOUND)
+    return email_obj.candidate_id
 
 
 ######################################
@@ -687,7 +669,7 @@ def create_or_update_candidate_from_params(
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
-    # Get domain ID
+    # Get user's domain ID
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
