@@ -6,4 +6,14 @@
         </div>
     </div>
 
+    <div layout-padding layout="row">
+        <div flex layout-margin layout-padding class="module">
+            <form name="createTalentPool" ng-submit="event.preventDefault();vm.createTalentPool(vm.talentPool)">
+                <input name="talentPoolName" required ng-model="vm.talentPool.name" placeholder="Name">
+                <input name="talentPoolDescription" required ng-model="vm.talentPool.description" placeholder="Description">
+                <button type="submit">Create</button>
+            </form>
+        </div>
+    </div>
+
 </section>

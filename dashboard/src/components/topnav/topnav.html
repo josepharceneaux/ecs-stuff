@@ -71,6 +71,22 @@
                             </ul>
                         </span>
                     </li>
+                    <li>
+                        <span uib-dropdown>
+                            <a href="" uib-dropdown-toggle>
+                                User Notifications <span class="caret"></span>
+                            </a>
+                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
+                                <li><a href="" ng-click="vm.notifyUser('success')">Success</a></li>
+                                <li><a href="" ng-click="vm.notifyUser('info')">Info</a></li>
+                                <li><a href="" ng-click="vm.notifyUser('warning')">Warning</a></li>
+                                <li><a href="" ng-click="vm.notifyUser('error')">Error</a></li>
+                            </ul>
+                        </span>
+                    </li>
+                    <li>
+                        <a href="" ng-click="vm.createSystemAlert()">Create System Alert</a>
+                    </li>
                 </ul>
             </div>
         </div>
