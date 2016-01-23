@@ -147,9 +147,10 @@ def test_create_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     ]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
+    db.session.commit()
     assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
-    assert CandidateEmail.get_by_address(email_address=email_1) is None
-    assert CandidateEmail.get_by_address(email_address=email_2) is None
+    assert not CandidateEmail.get_by_address(email_address=email_1)
+    assert not CandidateEmail.get_by_address(email_address=email_2)
 
 
 def test_create_hidden_candidate(access_token_first, user_first, talent_pool):
@@ -185,7 +186,7 @@ def test_create_hidden_candidate(access_token_first, user_first, talent_pool):
     print response_info(response=create_resp)
     assert create_resp.status_code == 201
     assert candidate.is_web_hidden == 0
-    assert CandidateEmail.get_by_address(first_can_email['address']).id == first_can_email['id']
+    assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
     assert len(candidate.emails) == candidate_emails_count
 
 
