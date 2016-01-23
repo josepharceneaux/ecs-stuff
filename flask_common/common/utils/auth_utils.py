@@ -72,6 +72,10 @@ def require_all_roles(*role_names):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
+
+            if True:  # TODO Amir: Remove this once we get the Roles migration done in staging & prod!
+                return func(*args, **kwargs)
+
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
@@ -98,6 +102,10 @@ def require_any_role(*role_names):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
+
+            if True:  # TODO Amir: Remove this once we get the Roles migration done run in staging & prod!
+                return func(*args, **kwargs)
+
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
             user_roles.append('SELF')
