@@ -11,14 +11,10 @@
     function providerFunction() {
         this.$get = $get;
 
-        $get.$inject = ['userService'];
+        $get.$inject = ['alertService'];
 
         /* @ngInject */
-        function $get(userService) {
-            // TODO: replace with appropriate service and endpoint once a system alerts api has been developed
-            var alertsService = userService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl('http://localhost:7203/api');
-            });
+        function $get(alertService) {
 
             var alerts;
 
@@ -38,7 +34,7 @@
                 // changes and/or listen for published updates (e.g. new incoming alerts,
                 // alert status updates (read/unread)), if they choose.
 
-                var request = alertsService.all('system-alerts').getList();
+                var request = alertService.all('system-alerts').getList();
                 alerts = alerts || request.$object;
                 request.then(updateAlerts);
                 return alerts;

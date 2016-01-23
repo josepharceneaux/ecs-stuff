@@ -16,12 +16,17 @@
         /* @ngInject */
         function $get(candidatePoolService) {
             var talentPoolsService = candidatePoolService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl('https://private-120a6-candidatepoolservice.apiary-mock.com/v1');
             });
 
             return {
+                createTalentPool: createTalentPool,
                 createTalentPools: createTalentPools
             };
+
+            function createTalentPool(talentPool) {
+                var talentPools = [ talentPool ];
+                return createTalentPools(talentPools);
+            }
 
             function createTalentPools(talentPools) {
                 return talentPoolsService.all('talent-pools').post(talentPools);
