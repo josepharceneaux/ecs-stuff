@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Deploy Container: resume_parsing_service" type="PythonConfigurationType" factoryName="Python" folderName="resume_parsing_service">
+  <configuration default="false" name="Push Container to ECR: auth_service" type="PythonConfigurationType" factoryName="Python" folderName="auth_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -13,7 +13,7 @@
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
     <option name="SCRIPT_NAME" value="$PROJECT_DIR$/container_config.py" />
-    <option name="PARAMETERS" value="--deploy=resume_parsing_service" />
+    <option name="PARAMETERS" value="--push-ecr=auth_service" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />
   </configuration>
