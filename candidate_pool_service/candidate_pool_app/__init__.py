@@ -4,11 +4,12 @@ from flask import Flask
 from flask.ext.cors import CORS
 from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
-
 logger = app.config[TalentConfigKeys.LOGGER]
+logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
 
 try:
     from candidate_pool_service.common.error_handling import register_error_handlers

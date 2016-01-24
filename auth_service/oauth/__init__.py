@@ -1,21 +1,20 @@
-from flask.ext.cors import CORS
-
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from flask_oauthlib.provider import OAuth2Provider
 from auth_service.common.routes import HEALTH_CHECK
 from auth_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from auth_service.common.migrate import db_create_all
+from auth_service.common.utils.talent_ec2 import get_ec2_instance_id
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
-
 logger = app.config[TalentConfigKeys.LOGGER]
+logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
 
 try:
     from auth_service.common.error_handling import register_error_handlers
-    print "register error handlers"
     register_error_handlers(app, logger)
 
     from auth_service.common.models.db import db
