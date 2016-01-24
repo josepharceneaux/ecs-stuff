@@ -12,7 +12,7 @@ def database_connection():
     elif os.environ.get('GT_ENVIRONMENT') == 'qa':
         engine = create_engine('mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging')
     elif os.environ.get('GT_ENVIRONMENT') == 'prod':
-        engine = create_engine(os.environ.get('DB_STRING'))
+        engine = create_engine(os.environ.get('SQLALCHEMY_DATABASE_URI'))
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
 

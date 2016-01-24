@@ -1,5 +1,3 @@
-
-
 # Third Party imports
 from celery import Celery
 from flask import Flask
@@ -15,7 +13,6 @@ from scheduler_service.common.talent_config_manager import load_gettalent_config
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 __author__ = 'saad'
-
 
 flask_app = Flask(__name__)
 load_gettalent_config(flask_app.config)
@@ -48,7 +45,8 @@ resultant_db_tables = {
 accept_content = {
     'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
 }
-celery_app = Celery(flask_app, broker=flask_app.config['REDIS_URL'], backend=flask_app.config['BACKEND_URL'],
+celery_app = Celery(flask_app, broker=flask_app.config['REDIS_URL'],
+                    backend=flask_app.config['CELERY_RESULT_BACKEND_URL'],
                     include=['scheduler_service.tasks'])
 celery_app.conf.update(default_queue)
 celery_app.conf.update(resultant_db_tables)
@@ -56,8 +54,10 @@ celery_app.conf.update(default_serializer)
 celery_app.conf.update(accept_content)
 
 from scheduler_service.api.scheduler_api import scheduler_blueprint
+
 flask_app.register_blueprint(scheduler_blueprint)
 
 # Start APS Scheduler
 from scheduler_service.scheduler import scheduler
+
 scheduler.start()
