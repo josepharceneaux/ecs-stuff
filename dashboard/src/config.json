@@ -42,8 +42,7 @@
       "grantPath": "/oauth2/token"
     },
     "activityServiceInfo": {
-        "THE_REAL_baseUrl": "https://activity-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-56260-activityservice4.apiary-mock.com"
+        "baseUrl": "https://activity-service-staging.gettalent.com/v1"
     },
     "alertServiceInfo": {
         "THE_REAL_baseUrl": "https://alert-service-staging.gettalent.com/v1",
@@ -73,8 +72,7 @@
         "baseUrl": "https://private-abc6bd-socialnetworkservice.apiary-mock.com"
     },
     "userServiceInfo": {
-        "THE_REAL_baseUrl": "https://user-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-16331-userservice17.apiary-mock.com/v1"
+        "baseUrl": "https://user-service-staging.gettalent.com/v1"
     }
   },
   "production": {
