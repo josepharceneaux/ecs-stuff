@@ -39,7 +39,6 @@ This file contains API endpoints related to social network.
 import json
 import types
 
-from flask.ext.cors import CORS
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
@@ -58,15 +57,6 @@ social_network_blueprint = Blueprint('social_network_api', __name__)
 api = TalentApi()
 api.init_app(social_network_blueprint)
 api.route = types.MethodType(api_route, api)
-
-
-# Enable CORS
-CORS(social_network_blueprint, resources={
-    r'/(social_networks|venues|organizers)/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @api.route('/social_networks/')

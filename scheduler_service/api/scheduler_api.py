@@ -12,15 +12,14 @@ import types
 from datetime import timedelta, datetime
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-from flask.ext.cors import CORS
 
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app
+from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token
-from scheduler_service.common.routes import SchedulerApiUrl, SchedulerApi
+from scheduler_service.common.models.user import Token, User
+from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -33,14 +32,6 @@ api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
 api.init_app(scheduler_blueprint)
 api.route = types.MethodType(api_route, api)
-
-# Enable CORS
-CORS(scheduler_blueprint, resources={
-    SchedulerApi.SCHEDULER_MULTIPLE_TASKS + '*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
@@ -234,6 +225,7 @@ class Tasks(Resource):
         # check if tasks_ids list is not empty
         removed = remove_tasks(task_ids, user_id=user_id)
         if len(removed) == len(task_ids):
+            logger.info('Job with ids %s removed successfully.' % task_ids)
             return dict(
                 message='%s Tasks removed successfully' % len(removed))
 
@@ -242,6 +234,7 @@ class Tasks(Resource):
         removed_jobs = map(lambda job: job[1], removed)
         not_removed = list(set(task_ids) - set(removed_jobs))
         if not_removed:
+            logger.info('Job with ids %s removed successfully and unable to remove jobs %s' % (task_ids, not_removed))
             return dict(message='Unable to remove %s tasks' % len(not_removed),
                         removed=removed,
                         not_removed=not_removed), 207
@@ -598,6 +591,7 @@ class TaskById(Resource):
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
             scheduler.remove_job(task.id)
+            logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
 
@@ -699,7 +693,7 @@ class SendRequestTest(Resource):
     def post(self):
 
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-        if not (env_key == 'dev' or env_key == 'circle'):
+        if not (env_key == 'dev' or env_key == 'jenkins'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
 
         user_id = request.user.id
@@ -723,11 +717,15 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
+            run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+                task.get('post_data', dict()))
+        else:
+            db.db.session.commit()
+            test_user_id = task['test_user_id']
+            test_user = User.query.filter_by(id=test_user_id).first()
+            test_user.delete()
 
-        run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
-                kwargs=task.get('post_data', dict()))
-
-        return dict(message="Request sent to url %s" % url)
+        return dict(message='Dummy Endpoint called')
 
 
 def check_if_scheduler_is_running():

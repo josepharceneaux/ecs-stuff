@@ -9,7 +9,7 @@ For Celery to run from command line, script runs as separate process with celery
 
 # Service Specific
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
-from scheduler_service.run import celery
+from scheduler_service import celery_app as celery
 
 
 celery.start(argv=['celery', 'worker', '-l', 'info', '-Q', SchedulerUtils.QUEUE])

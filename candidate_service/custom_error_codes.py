@@ -3,10 +3,7 @@ Custom error codes for all candidate-REST-resources
 """
 
 
-class CandidateCustomErrors:
-    def __init__(self):
-        pass
-
+class CandidateCustomErrors(object):
     # General error codes
     INVALID_INPUT = 3000
     MISSING_INPUT = 3001
@@ -72,3 +69,9 @@ class CandidateCustomErrors:
     WORK_PREF_FORBIDDEN = 3130
     WORK_PREF_NOT_FOUND = 3131
     WORK_PREF_EXISTS = 3132
+
+    # Error codes for CandidatePreference
+    PREFERENCE_FORBIDDEN = 3140
+    PREFERENCE_NOT_FOUND = 3141
+    NO_PREFERENCES = 3142
+    PREFERENCE_EXISTS = 3143

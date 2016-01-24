@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/pipelines/pipeline-team/pipeline-team.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'PipelineTeamController',
             controllerAs: 'vm'
         };

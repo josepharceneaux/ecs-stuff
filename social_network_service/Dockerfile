@@ -10,13 +10,16 @@ RUN sed -i -e 's/APP_NAME/social_network_service/g' newrelic.ini /etc/rsyslog.d/
 
 EXPOSE 80
 
+# Set DB connection string
+ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
+
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 
 CMD\
     eval "$(pyenv init -)" && \
 
-    sed -i -e s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g /etc/rsyslog.d/*loggly.conf && \
+    sed -i -e "s/GT_ENVIRONMENT/$GT_ENVIRONMENT/g" /etc/rsyslog.d/*loggly.conf && \
 
     /etc/init.d/rsyslog start && \
 
@@ -24,4 +27,5 @@ CMD\
 
     export NEW_RELIC_ENVIRONMENT=$GT_ENVIRONMENT && export NEW_RELIC_CONFIG_FILE=newrelic.ini && \
 
-    newrelic-admin run-program uwsgi --ini ./talent-uwsgi.ini
+    if [[ "${GT_ENVIRONMENT}" -eq "jenkins" ]]; then uwsgi --lazy --ini ./talent-uwsgi.ini; else newrelic-admin \
+    run-program uwsgi --lazy --ini ./talent-uwsgi.ini; fi

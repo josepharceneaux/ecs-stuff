@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/talent-pools/talent-pools-manage/talent-pools-manage.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TalentPoolsManageController',
             controllerAs: 'vm'
         };

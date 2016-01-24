@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/styleguide/styleguide-dashboard/styleguide-dashboard.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'StyleguideDashboardController',
             controllerAs: 'vm'
         };
