@@ -29,7 +29,7 @@
     "angular-moment": "~0.10.3",
     "angular-oauth2": "~3.0.1",
     "angular-sanitize": "~1.4.8",
-    "angular-toastr": "~1.4.1",
+    "angular-toastr": "~1.6.0",
     "angular-ui-router": "~0.2.15",
     "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",

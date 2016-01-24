@@ -10,9 +10,6 @@ RUN sed -i -e 's/APP_NAME/user_service/g' newrelic.ini /etc/rsyslog.d/*loggly.co
 
 EXPOSE 80
 
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
-
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 

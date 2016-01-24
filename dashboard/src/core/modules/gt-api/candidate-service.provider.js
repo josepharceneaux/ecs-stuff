@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('candidateService', providerFunction)
+        .provider('candidateService', providerFunction);
 
     /**
      * @return {[type]}
@@ -16,17 +16,8 @@
         /* @ngInject */
         function $get(gtRestangular, candidateServiceInfo) {
             return gtRestangular.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl(candidateServiceInfo.baseUrl);
-                RestangularConfigurer.addResponseInterceptor(function (data, operation, what, url, response, deferred) {
-                    var mappings = {
-                        'candidates': 'candidates'
-                    };
-
-                    if (operation === 'getList' && what in mappings) {
-                        return data[mappings[what]];
-                    }
-                    return data;
-                });
+                RestangularConfigurer
+                    .setBaseUrl(candidateServiceInfo.baseUrl);
             });
         }
     }

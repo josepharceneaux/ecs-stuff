@@ -50,6 +50,9 @@
             .state('site', {
                 abstract: true,
                 views: {
+                    systemAlerts: {
+                        template: '<gt-system-alerts></gt-system-alerts>'
+                    },
                     topnav: {
                         template: '<gt-topnav></gt-topnav>'
                     },
@@ -656,7 +659,7 @@
                 }
             })
             .state('talentPools.talentPool', {
-                url: '/:pipelineId',
+                url: '/:poolId',
                 redirectTo: 'talentPools.talentPool.detail'
             })
             .state('talentPools.talentPool.detail', {
