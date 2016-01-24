@@ -41,6 +41,7 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_marketing import Frequency
+from candidate_service.common.models.user import DomainRole
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -57,7 +58,8 @@ from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    # @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.RoleNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates
@@ -217,7 +219,7 @@ class CandidatesResource(Resource):
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    @require_all_roles('CAN_EDIT_CANDIDATES')
+    @require_all_roles()
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates
