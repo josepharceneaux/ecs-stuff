@@ -24,6 +24,12 @@
     "smartlistServiceInfo": {
         "baseUrl": "http://localhost"
     },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
     "userServiceInfo": {
         "baseUrl": "http://localhost"
     }
@@ -51,10 +57,20 @@
         "baseUrl": "https://candidate-service-staging.gettalent.com/v1"
     },
     "emailCampaignServiceInfo": {
-        "baseUrl": "https://email-campaign-service-staging.gettalent.com/v1"
+        "THE_REAL_baseUrl": "https://email-campaign-service-staging.gettalent.com/v1",
+        "baseUrl": "http://private-fa828-emailcampaignservice.apiary-mock.com/v1"
     },
     "smartlistServiceInfo": {
-        "baseUrl": "https://smartlist-service-staging.gettalent.com/v1"
+        "THE_REAL_baseUrl": "https://smartlist-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-f7ae8-smartlistservice.apiary-mock.com/v1"
+    },
+    "smsCampaignServiceInfo": {
+        "THE_REAL_baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1",
+        "baseUrl": "http://private-4583b-smscampaignapi.apiary-mock.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "THE_REAL_baseUrl": "https://social-network-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-abc6bd-socialnetworkservice.apiary-mock.com"
     },
     "userServiceInfo": {
         "THE_REAL_baseUrl": "https://user-service-staging.gettalent.com/v1",
@@ -85,6 +101,12 @@
     },
     "smartlistServiceInfo": {
         "baseUrl": "https://smartlist-service.gettalent.com/v1"
+    },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "https://sms-campaign-service.gettalent.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "https://social-network-service.gettalent.com/v1"
     },
     "userServiceInfo": {
         "baseUrl": "https://user-service.gettalent.com/v1"
