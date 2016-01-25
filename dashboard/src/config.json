@@ -21,9 +21,6 @@
     "emailCampaignServiceInfo": {
         "baseUrl": "http://localhost"
     },
-    "smartlistServiceInfo": {
-        "baseUrl": "http://localhost"
-    },
     "smsCampaignServiceInfo": {
         "baseUrl": "http://localhost"
     },
@@ -59,10 +56,6 @@
         "THE_REAL_baseUrl": "https://email-campaign-service-staging.gettalent.com/v1",
         "baseUrl": "http://private-fa828-emailcampaignservice.apiary-mock.com/v1"
     },
-    "smartlistServiceInfo": {
-        "THE_REAL_baseUrl": "https://smartlist-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-f7ae8-smartlistservice.apiary-mock.com/v1"
-    },
     "smsCampaignServiceInfo": {
         "THE_REAL_baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1",
         "baseUrl": "http://private-4583b-smscampaignapi.apiary-mock.com/v1"
@@ -96,9 +89,6 @@
     },
     "emailCampaignServiceInfo": {
         "baseUrl": "https://email-campaign-service.gettalent.com/v1"
-    },
-    "smartlistServiceInfo": {
-        "baseUrl": "https://smartlist-service.gettalent.com/v1"
     },
     "smsCampaignServiceInfo": {
         "baseUrl": "https://sms-campaign-service.gettalent.com/v1"
