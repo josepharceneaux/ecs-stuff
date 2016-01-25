@@ -1,8 +1,6 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
-from activity_service.common.campaign_services.campaign_utils import CampaignType
-
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -20,6 +18,7 @@ from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.utils.activity_utils import ActivityMessageIds
+from activity_service.common.campaign_services.campaign_utils import CampaignType
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20

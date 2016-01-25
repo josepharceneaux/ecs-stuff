@@ -27,7 +27,6 @@ from ..models.email_marketing import EmailCampaign
 
 # Common Utils
 from ..routes import SchedulerApiUrl
-from sms_campaign_service.common.error_handling import InvalidUsage
 from ..utils.handy_functions import http_request
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
