@@ -25,6 +25,7 @@ logger.info("push_campaign_service is running in %s environment" % flask_app.con
 app = init_talent_app(flask_app, logger)
 CORS(app)
 # Celery settings
-celery_app = Celery(app, broker=app.config['BACKEND_URL'], backend=app.config['BACKEND_URL'],
+celery_app = Celery(app, broker=app.config['CELERY_RESULT_BACKEND_URL'],
+                    backend=app.config['CELERY_RESULT_BACKEND_URL'],
                     include=['push_campaign_service.modules.push_campaign_base'])
 

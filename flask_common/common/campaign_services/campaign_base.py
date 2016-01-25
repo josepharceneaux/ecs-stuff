@@ -26,6 +26,7 @@ from flask import current_app
 
 # Database Models
 # from ..models.db import db
+from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
@@ -1327,7 +1328,7 @@ class CampaignBase(object):
         if not isinstance(campaign_blast_obj, (SmsCampaignBlast,
                                                EmailCampaignBlast,
                                                PushCampaignBlast)):
-            raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
+            raise InvalidUsage('blast object should be an instance of models %s, %s, %s etc.' %
                                (SmsCampaignBlast.__tablename__,
                                 EmailCampaignBlast.__tablename__,
                                 PushCampaignBlast.__tablename__))
@@ -1418,7 +1419,7 @@ class CampaignBase(object):
         if not isinstance(campaign_blast_obj, (SmsCampaignBlast,
                                                EmailCampaignBlast,
                                                PushCampaignBlast)):
-            raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
+            raise InvalidUsage('blast object should be an instance of models %s, %s, %s etc.' %
                                (SmsCampaignBlast.__tablename__,
                                 EmailCampaignBlast.__tablename__,
                                 PushCampaignBlast.__tablename__))
@@ -1441,7 +1442,7 @@ class CampaignBase(object):
         if kwargs:
             # Update the campaign_blast stats like sends, clicks
             campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
-            # db.session.commit()
+            db.session.commit()
 
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url=None, hit_count=0,

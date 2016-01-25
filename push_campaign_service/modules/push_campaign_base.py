@@ -6,6 +6,7 @@ from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushCampaignApiUrl
@@ -153,13 +154,22 @@ class PushCampaignBase(CampaignBase):
             else:
                 try:
                     destination_url = self.campaign.url
-                    url_conversion = UrlConversion(source_url='', destination_url=destination_url)
-                    UrlConversion.save(url_conversion)
-                    redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion.id
+                    url_conversion_id = self.create_or_update_url_conversion(
+                        destination_url=destination_url,
+                        source_url='')
+                    # url_conversion = UrlConversion(source_url='', destination_url=destination_url)
+                    # UrlConversion.save(url_conversion)
+                    redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion_id
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
                     # signed_url = sign_redirect_url(redirect_url, expiry_time)
                     signed_url = sign_redirect_url(redirect_url, expiry_time)
-                    url_conversion.update(source_url=signed_url)
+                    if app.config[TalentConfigKeys.IS_DEV]:
+                        # update the 'source_url' in "url_conversion" record.
+                        # Source URL should not be saved in database. But we have tests written
+                        # for Redirection endpoint. That's why in case of DEV, I am saving source URL here.
+                        self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
+                                                             source_url=signed_url)
+                    # url_conversion.update(source_url=signed_url)
                     response = one_signal_client.send_notification(signed_url,
                                                                    self.campaign.body_text,
                                                                    self.campaign.name,
@@ -170,7 +180,7 @@ class PushCampaignBase(CampaignBase):
                                                          )
                         PushCampaignSend.save(campaign_send)
                         push_url_conversion = PushCampaignSendUrlConversion(
-                            url_conversion_id=url_conversion.id,
+                            url_conversion_id=url_conversion_id,
                             push_campaign_send_id=campaign_send.id
                         )
                         PushCampaignSendUrlConversion.save(push_url_conversion)
@@ -180,7 +190,7 @@ class PushCampaignBase(CampaignBase):
                         errors = response['errors']
                         logger.error('Error while sending push notification to candidate (id: %s),'
                                      'Errors: %s' % errors)
-                        UrlConversion.delete(url_conversion)
+                        UrlConversion.delete(url_conversion_id)
 
                 except Exception as e:
                     logger.exception('Unable to send push  campaign (id: %s) to candidate (id: %s)'
