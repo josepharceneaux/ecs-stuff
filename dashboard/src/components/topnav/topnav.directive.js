@@ -25,14 +25,15 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuth, toastr) {
+    function ControllerFunction($state, OAuth, toastr, systemAlertsService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
         vm.notifyUser = notifyUser;
+        vm.createSystemAlert = createSystemAlert;
 
         init();
 
@@ -103,6 +104,17 @@
                 default:
                     toastr.info('We are open today from 10 to 22', 'Information');
             }
+        }
+
+        function createSystemAlert() {
+            var messages = [
+                'Hello world!',
+                'Your computer is about to explode!',
+                'Your credentials are gone',
+                'We are open today from 10 to 22'
+            ];
+
+            systemAlertsService.createAlert(messages[Math.round((messages.length - 1) * Math.random())]);
         }
     }
 })();

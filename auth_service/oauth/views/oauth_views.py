@@ -6,17 +6,8 @@ from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
 from auth_service.common.error_handling import *
-from flask.ext.cors import CORS
 from auth_service.common.routes import AuthApi
 
-
-# Enable CORS
-CORS(app, resources={
-    r'/%s/oauth2/*' % AuthApi.VERSION: {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)

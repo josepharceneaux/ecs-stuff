@@ -8,7 +8,6 @@ import json
 from flask import Blueprint
 from flask import request
 from flask import jsonify
-from flask.ext.cors import CORS
 # Module Specific
 from .parse_lib import parse_resume
 from .utils import create_candidate_from_parsed_resume
@@ -16,17 +15,7 @@ from resume_parsing_service.common.utils.talent_s3 import download_file, get_s3_
 from resume_parsing_service.common.utils.auth_utils import require_oauth
 from resume_parsing_service.common.routes import ResumeApi
 
-
 mod = Blueprint('resume_api', __name__)
-
-
-# Enable CORS
-CORS(mod, resources={
-    r'/parse_resume': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @mod.route('/')

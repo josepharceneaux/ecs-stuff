@@ -659,7 +659,7 @@
                 }
             })
             .state('talentPools.talentPool', {
-                url: '/:pipelineId',
+                url: '/:poolId',
                 redirectTo: 'talentPools.talentPool.detail'
             })
             .state('talentPools.talentPool.detail', {
