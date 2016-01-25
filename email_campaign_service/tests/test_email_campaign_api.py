@@ -24,17 +24,14 @@ __author__ = 'jitesh'
 
 def test_get_all_email_campaigns(user_first, access_token_first):
     """
-
-    :param sample_user:
-    :param user_auth:
-    :return:
+    Test GET API of email_campaigns for getting all campaigns
     """
     # create candidate
     smartlist_id = create_smartlist(user_first, access_token_first)
     email_campaign_name = fake.name()
     reply_to_name = fake.name()
-    email_campaign_subject= fake.sentence()
-    campaign_body_html="<html><body>Email campaign test</body></html>"
+    email_campaign_subject = fake.sentence()
+    campaign_body_html = "<html><body>Email campaign test</body></html>"
     email_campaign = EmailCampaign(name=email_campaign_name,
                                    user_id=user_first.id,
                                    is_hidden=0,
