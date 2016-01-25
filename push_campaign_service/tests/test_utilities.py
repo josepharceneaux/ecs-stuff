@@ -89,7 +89,7 @@ def generate_campaign_data():
     data = {
         "name": fake.domain_name(),
         "body_text": fake.paragraph(1),
-        "url": fake.url()
+        "url": 'https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-getting-started' #fake.url()
     }
     return data
 

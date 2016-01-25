@@ -417,7 +417,7 @@ class CampaignBase(object):
         :exception: Invalid usage
         """
         assert_for_int_or_long(dict(campaign_id=campaign_id, user_id=user_id))
-        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, user_id, campaign_type)
+        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, user_id)
         assert_is_instance_of_campaign_model(campaign_obj)
         oauth_header = cls.get_authorization_header(user_id)
         # check if campaign is already scheduled

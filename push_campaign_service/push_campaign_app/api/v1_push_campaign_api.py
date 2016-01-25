@@ -389,7 +389,8 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id)
+        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
+                                                                   CampaignType.PUSH)
         campaign_obj = PushCampaignBase(user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])

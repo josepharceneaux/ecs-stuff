@@ -1,8 +1,10 @@
 """
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 """
+import time
 from datetime import datetime
 
+from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.tests.conftest import (user_auth, sample_user,
                                                          test_domain, test_org, test_culture)
 from push_campaign_service.common.routes import PushCampaignApiUrl, SchedulerApiUrl
@@ -14,7 +16,9 @@ from push_campaign_service.common.models.candidate import (Candidate,
 
 
 from push_campaign_service.common.models.push_campaign import (PushCampaign,
-                                                               PushCampaignSmartlist)
+                                                               PushCampaignSmartlist,
+                                                               PushCampaignBlast,
+                                                               PushCampaignSendUrlConversion)
 from push_campaign_service.common.utils.handy_functions import create_test_user
 
 from faker import Faker
@@ -22,7 +26,7 @@ import pytest
 
 from push_campaign_service.modules.constants import TEST_DEVICE_ID
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
-                                                        generate_campaign_schedule_data)
+                                                        generate_campaign_schedule_data, SLEEP_TIME)
 
 fake = Faker()
 # Service specific
@@ -92,6 +96,29 @@ def campaign_data(request):
 def test_smartlist(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
     """ TODO
     """
+    smartlist = create_smart_list(request, sample_user, test_candidate,
+                             test_candidate_device, campaign_in_db)
+
+    def tear_down():
+            Smartlist.delete(smartlist)
+    request.addfinalizer(tear_down)
+    return smartlist
+
+
+@pytest.fixture(scope='function')
+def test_smartlist_2(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
+    """ TODO
+    """
+    smartlist = create_smart_list(request, sample_user, test_candidate,
+                             test_candidate_device, campaign_in_db)
+
+    def tear_down():
+            Smartlist.delete(smartlist)
+    request.addfinalizer(tear_down)
+    return smartlist
+
+
+def create_smart_list(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
     smartlist = Smartlist(user_id=sample_user.id,
                           name=fake.word())
     Smartlist.save(smartlist)
@@ -103,10 +130,6 @@ def test_smartlist(request, sample_user, test_candidate, test_candidate_device, 
     push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
                                            campaign_id=campaign_in_db.id)
     PushCampaignSmartlist.save(push_smartlist)
-
-    def tear_down():
-            Smartlist.delete(smartlist)
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -160,14 +183,76 @@ def schedule_a_campaign(request, test_smartlist, campaign_in_db, token):
     return data
 
 
+# @pytest.fixture()
+# def scheduled_sms_campaign_of_current_user(request, sample_user, valid_header,
+#                                            sms_campaign_of_current_user):
+#     """
+#     This creates the SMS campaign for sample_user using valid data.
+#     """
+#     campaign = _get_scheduled_campaign(sample_user, sms_campaign_of_current_user, valid_header)
+#
+#     def delete_scheduled_task():
+#         _unschedule_campaign(campaign, valid_header)
+#
+#     request.addfinalizer(delete_scheduled_task)
+#     return campaign
+#
+#
+# @pytest.fixture()
+# def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
+#                                          sms_campaign_of_other_user):
+#     """
+#     This creates the SMS campaign for sample_user_2 using valid data.
+#     :return:
+#     """
+#     campaign = _get_scheduled_campaign(sample_user_2, sms_campaign_of_other_user, valid_header_2)
+#
+#     def delete_scheduled_task():
+#         _unschedule_campaign(campaign, valid_header_2)
+#
+#     request.addfinalizer(delete_scheduled_task)
+#     return campaign
+
+@pytest.fixture()
+def url_conversion(request, token, campaign_in_db, test_smartlist):
+    """
+    This sends SMS campaign (using process_send_sms_campaign fixture)
+     and returns the source URL from url_conversion database table.
+    :return:
+    """
+    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
+    assert response.status_code == 200
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
+    # get campaign blast
+    campaign_blast = campaign_in_db.blasts.first()
+    # get campaign sends
+    campaign_send = campaign_blast.blast_sends.first()
+    # get if of record of sms_campaign_send_url_conversion for this campaign
+    assert campaign_send, 'No campaign sends were found'
+    campaign_send_url_conversions = PushCampaignSendUrlConversion.get_by_campaign_send_id(
+        campaign_send.id)
+    # get URL conversion record from database table 'url_conversion'
+    url_conversion = UrlConversion.get_by_id(campaign_send_url_conversions[0].url_conversion_id)
+
+    def tear_down():
+        UrlConversion.delete(url_conversion)
+
+    request.addfinalizer(tear_down)
+    return url_conversion
+
+
 @pytest.fixture(scope='function')
-def test_candidate(request):
+def test_candidate(request, sample_user):
     """ TODO
     """
     candidate = Candidate(first_name=fake.first_name(),
                           middle_name=fake.user_name(),
                           last_name=fake.last_name(),
-                          candidate_status_id=1)
+                          candidate_status_id=1,
+                          user_id=sample_user.id)
     Candidate.save(candidate)
     candidate_email = CandidateEmail(candidate_id=candidate.id,
                                      email_label_id=1,
