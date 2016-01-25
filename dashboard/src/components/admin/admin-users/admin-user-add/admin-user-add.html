@@ -11,7 +11,7 @@
             <form name="createUser" ng-submit="event.preventDefault();vm.createUser(vm.user)">
                 <input name="userFirstName" required ng-model="vm.user.firstName" placeholder="First Name">
                 <input name="userLastName" required ng-model="vm.user.lastName" placeholder="Last Name">
-                <input type="email" name="userEmail" required ng-model="vm.user.userName" placeholder="Email">
+                <input type="email" name="userEmail" required ng-model="vm.user.email" placeholder="Email">
                 <input name="userDomain" required ng-model="vm.user.domain" placeholder="Domain">
                 <button type="submit">Add</button>
             </form>
