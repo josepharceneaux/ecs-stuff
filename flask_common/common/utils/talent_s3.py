@@ -55,7 +55,7 @@ def download_file(bucket, key_name):
     :type: boto.s3.key.Key | None
     """
     if not key_obj:
-        raise InternalServerError("No S3 key found in bucket %s, key_name=%s", bucket, key_name)
+        raise InternalServerError("No S3 key found in bucket %s, key_name=%s" % (bucket, key_name))
     from StringIO import StringIO
 
     return StringIO(key_obj.get_contents_as_string())
