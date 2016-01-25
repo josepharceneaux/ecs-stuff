@@ -80,19 +80,19 @@ def validate_and_format_request_data(data, user_id):
 
     # strip whitespaces and return data
     return {
-            'campaign_name': campaign_name.strip(),
-            'email_subject': email_subject.strip(),
-            'email_from': email_from.strip() if email_from else email_from,
-            'reply_to': reply_to.strip() if reply_to else reply_to,
-            'email_body_html': email_body_html.strip(),
-            'email_body_text': email_body_text.strip() if email_body_text else email_body_text,
-            'list_ids': list_ids,
-            'email_client_id': email_client_id,
-            'send_datetime': send_datetime,
-            'stop_datetime': stop_datetime,
-            'frequency': frequency,
-            'template_id': template_id
-            }
+        'campaign_name': campaign_name.strip(),
+        'email_subject': email_subject.strip(),
+        'email_from': email_from.strip() if email_from else email_from,
+        'reply_to': reply_to.strip() if reply_to else reply_to,
+        'email_body_html': email_body_html.strip(),
+        'email_body_text': email_body_text.strip() if email_body_text else email_body_text,
+        'list_ids': list_ids,
+        'email_client_id': email_client_id,
+        'send_datetime': send_datetime,
+        'stop_datetime': stop_datetime,
+        'frequency': frequency,
+        'template_id': template_id
+    }
 
 
 def validate_lists_belongs_to_domain(list_ids, user_id):
