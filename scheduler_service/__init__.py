@@ -11,13 +11,14 @@ from scheduler_service.common.redis_cache import redis_store
 from scheduler_service.common.utils.models_utils import add_model_helpers
 from scheduler_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.common.utils.talent_ec2 import get_ec2_instance_id
 
 __author__ = 'saad'
 
 flask_app = Flask(__name__)
 load_gettalent_config(flask_app.config)
-
 logger = flask_app.config[TalentConfigKeys.LOGGER]
+logger.info("Starting app %s in EC2 instance %s", flask_app.import_name, get_ec2_instance_id())
 
 add_model_helpers(db.Model, logger=logger)
 db.init_app(flask_app)

@@ -6,12 +6,13 @@ from flask import Flask
 from flask.ext.cors import CORS
 from resume_parsing_service.common.routes import ResumeApi, HEALTH_CHECK
 from resume_parsing_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from resume_parsing_service.common.utils.talent_ec2 import get_ec2_instance_id
 
 app = Flask(__name__)
 app.config.from_object(config)
 load_gettalent_config(app.config)
-
 logger = app.config[TalentConfigKeys.LOGGER]
+logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
 
 try:
     from resume_parsing_service.common.models.db import db
