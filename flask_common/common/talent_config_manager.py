@@ -4,22 +4,25 @@
 In a developer's local environment, the file given by the below LOCAL_CONFIG_PATH contains the property keys and values.
 
 ﻿In prod and staging environments, the above config file does not exist.
-Rather, the properties are obtained from ECS Environment Variables.
+Rather, the properties are obtained from ECS environment variables and a private S3 bucket.
 """
 
-import os
 import logging
 import logging.config
+import os
+import tempfile
 
-# load logging configuration file
+# Load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
 
-
 # Kindly refer to following url for sample web.cfg
 # https://github.com/gettalent/talent-flask-services/wiki/Local-environment-setup#local-configurations
-LOCAL_CONFIG_PATH = ".talent/web.cfg"
+CONFIG_FILE_NAME = "web.cfg"
+LOCAL_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
+STAGING_CONFIG_FILE_S3_BUCKET = "gettalent-private-staging"
+PROD_CONFIG_FILE_S3_BUCKET = "gettalent-private"
 
 
 class TalentConfigKeys(object):
@@ -38,53 +41,55 @@ class TalentConfigKeys(object):
 
 def load_gettalent_config(app_config):
     """
-    Load configuration variables from conf file or environment varaibles
+    Load configuration variables from env vars, conf file, or S3 bucket (if QA/prod)
     :param flask.config.Config app_config: Flask configuration object
     :return: None
     """
-
     app_config.root_path = os.path.expanduser('~')
+
+    # Make sure that the environment and AWS credentials are defined
+    environment = app_config.get(TalentConfigKeys.ENV_KEY)
+    if not environment:
+        raise Exception("Error loading getTalent config: Missing environment!")
+    environment = environment.strip().lower()
+    app_config['LOGGER'] = logging.getLogger("flask_service.%s" % environment)
+    if not os.environ.get('AWS_ACCESS_KEY_ID') or not os.environ.get('AWS_SECRET_ACCESS_KEY'):
+        raise Exception("Error loading getTalent config: Missing AWS credentials!")
 
     # Load up config from file on local filesystem (for local dev only).
     app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)  # silent=True avoids errors in CI/QA/prod envs
 
-    for key, value in TalentConfigKeys.__dict__.iteritems():
-        if not key.startswith('__'):
+    # Load up config from private S3 bucket, if environment is qa or prod
+    if environment in ('dev', 'qa', 'prod'):
+        # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars
+        from boto.s3.connection import S3Connection
+        s3_connection = S3Connection()
+        bucket_name = PROD_CONFIG_FILE_S3_BUCKET if environment == 'prod' else STAGING_CONFIG_FILE_S3_BUCKET
+        bucket_obj = s3_connection.get_bucket(bucket_name)
+        app_config['LOGGER'].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
-            # If a configuration variable is set in environment variables then it should be given preference
-            app_config[value] = os.getenv(value) or app_config.get(value, '')
-            if not app_config[value] and value != 'LOGGER':
-                raise Exception('Configuration variable: "%s" is missing' % value)
+        # Download into temporary file & load config
+        tmp_config_file = tempfile.NamedTemporaryFile()
+        bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
+        app_config.from_pyfile(tmp_config_file.file.name)
+        tmp_config_file.close()
 
-    _set_environment_specific_configurations(app_config)
+    # Load up hardcoded app config values
+    _set_environment_specific_configurations(environment, app_config)
 
 
-def _set_environment_specific_configurations(app_config):
-
-    environment = app_config.get(TalentConfigKeys.ENV_KEY)
+def _set_environment_specific_configurations(environment, app_config):
     app_config['DEBUG'] = False
 
     if environment == 'dev':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.dev")
         app_config['DEBUG'] = True
+        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
     elif environment == 'jenkins':
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
-        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.jenkins")
-    elif environment == 'qa':
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
-                                                     'com/talent_staging'
-        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
-                                                                        'amazonaws.com:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.qa")
-    elif environment == 'prod':
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core'
-        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
-                                                                        'usw1.cache.amazonaws.com:6379'
-        app_config['LOGGER'] = logging.getLogger("flask_service.prod")
-    else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly - could not run app.")
-
-    app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
+        app_config['DEBUG'] = True
+        app_config['SQLALCHEMY_DATABASE_URI'] = \
+            'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
+        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = \
+            'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
+        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
