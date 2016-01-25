@@ -72,7 +72,7 @@ class TestSchedulerExceptions(object):
                                  headers=auth_header)
 
         # Invalid trigger type exception
-        assert response.status_code == 500 and \
+        assert response.status_code == 400 and \
                response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
 
     def test_invalid_frequency(self, auth_header, job_config, job_cleanup):

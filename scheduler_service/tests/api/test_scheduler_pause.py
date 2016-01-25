@@ -48,7 +48,7 @@ class TestSchedulerPause(object):
         # Try stopping again, it should throw exception
         response_stop_again = requests.post(SchedulerApiUrl.PAUSE_TASK % job_id,
                                             headers=auth_header)
-        assert response_stop_again.status_code == 500 and \
+        assert response_stop_again.status_code == 400 and \
                response_stop_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_PAUSED
 
         # Let's delete jobs now

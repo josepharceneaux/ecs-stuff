@@ -58,7 +58,7 @@ class TestSchedulerResume(object):
         # Resume job stop request again - does not affect
         response_resume_again = requests.post(SchedulerApiUrl.RESUME_TASK % job_id,
                                               headers=auth_header)
-        assert response_resume_again.status_code == 500 and \
+        assert response_resume_again.status_code == 400 and \
                response_resume_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
         # Let's delete jobs now
