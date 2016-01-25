@@ -19,7 +19,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlC
                                                              SmsCampaignSend)
 from sms_campaign_service.common.campaign_services.campaign_utils import delete_scheduled_task
 
-SLEEP_TIME = 20
+SLEEP_TIME = 40
 
 
 def assert_url_conversion(sms_campaign_sends):
