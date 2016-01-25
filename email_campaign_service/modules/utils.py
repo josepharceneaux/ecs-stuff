@@ -24,9 +24,9 @@ def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
     :return:
     """
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    r = requests.get(CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id, params=params,
+    response = requests.get(CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id, params=params,
                      headers={'Authorization': oauth_token})
-    response_body = json.loads(r.content)
+    response_body = json.loads(response.content)
     candidates = response_body['candidates']
     if candidate_ids_only:
         return [long(candidate['id']) for candidate in candidates]

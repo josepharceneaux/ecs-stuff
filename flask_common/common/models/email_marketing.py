@@ -30,8 +30,9 @@ class EmailCampaign(db.Model):
     send_time = db.Column('SendTime', db.DateTime)
     stop_time = db.Column('StopTime', db.DateTime)
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
-    frequency = relationship("Frequency", backref="frequency")
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
+
+    frequency = relationship("Frequency", backref="frequency")
 
     def get_id(self):
         return unicode(self.id)

@@ -47,7 +47,11 @@ class EmailCampaignApi(Resource):
     def post(self):
         """
         POST /email-campaigns
-
+        Required parameters:
+        email_campaign_name: Name of email campaign
+        email_subject: subject of email
+        email_body_html: email body
+        list_ids: smartlist ids to which emails will be sent
         """
         user_id = request.user.id
         # Get and validate request data
@@ -84,8 +88,7 @@ def send_campaign_emails(campaign_id):
     """
     campaign = EmailCampaign.query.get(campaign_id)
     if not campaign:
-        logger.exception("Given campaign_id: %s does not exists." % campaign_id)
-        raise NotFoundError("Given `campaign_id` does not exists")
+        raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
     # remove oauth_token instead use trusted server to server calls
     oauth_token = request.oauth_token
     email_send = send_emails_to_campaign(oauth_token, campaign, new_candidates_only=False)
