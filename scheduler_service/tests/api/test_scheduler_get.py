@@ -3,13 +3,15 @@ Test cases for getting already scheduled job with or without id. Also it should 
 using bearer token
 """
 
-# Third party imports
+# Std imports
 import json
+
+# Third party imports
 import requests
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
-
+from scheduler_service.common.utils.handy_functions import random_word
 
 __author__ = 'saad'
 
@@ -55,7 +57,7 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_single_job_without_user(self, auth_header_no_user, job_config):
+    def test_single_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
         response.
@@ -66,7 +68,18 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom_General_Named_Task'
+        job_config['task_name'] = 'General_Named_Task'
+
+        # Get the job using correct task name
+        response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                    headers=auth_header_no_user)
+
+        # If task with the same name already exist
+        if response_get.status_code == 200:
+            response_delete = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                              headers=auth_header_no_user)
+            assert response_delete.status_code == 200
+
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
@@ -78,12 +91,10 @@ class TestSchedulerGet(object):
                                     headers=auth_header_no_user)
         assert response_get.status_code == 200
 
-        # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
-    def test_job_without_user(self, auth_header_no_user, job_config):
+    def test_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
         Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
         response. Also try to get task using 'invalid_name' string which shouldn't be in apscheduler. So, it should
@@ -95,7 +106,7 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'Custom_General_Named_Task'
+        job_config['task_name'] = 'General_Named_Task'
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
@@ -117,9 +128,8 @@ class TestSchedulerGet(object):
         assert job_data['task_name'] == job_config['task_name']
 
         # Let's delete jobs now
-        response_remove = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-                                          headers=auth_header_no_user)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
     def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
         """
@@ -133,9 +143,10 @@ class TestSchedulerGet(object):
         :return:
         """
         jobs_id = []
+        word = random_word(5)
         # Create tasks
         for i in range(10):
-            job_config['task_name'] = 'Custom_General_Named_Task_%s' % i
+            job_config['task_name'] = word + str(i)
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header_no_user)
             assert response.status_code == 201
@@ -152,11 +163,12 @@ class TestSchedulerGet(object):
 
         # Delete all jobs
         for job_id in jobs_id:
-            response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
-                                              headers=auth_header_no_user)
-            assert response_remove.status_code == 200
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % job_id,
+                                                  headers=auth_header_no_user)
 
-    def test_multiple_jobs(self, auth_header, job_config):
+            assert response_remove_job.status_code == 200
+
+    def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get all tasks of the current user.
         Then check if the jobs created are in the tasks of user. If yes, then show status code 200
@@ -181,9 +193,8 @@ class TestSchedulerGet(object):
         for job in jobs_id:
             assert job in get_jobs_id
         # Delete all jobs
-        response_remove = requests.delete(SchedulerApiUrl.TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                          headers=auth_header)
-        assert response_remove.status_code == 200
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = jobs_id
 
     def test_scheduled_get_job_without_token(self, auth_header, job_config):
         """
@@ -211,6 +222,7 @@ class TestSchedulerGet(object):
                                     headers=invalid_header)
 
         assert response_get.status_code == 401
+
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
