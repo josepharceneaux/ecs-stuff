@@ -97,7 +97,7 @@ def get_reply_text(candidate_phone):
     """
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
-    time.sleep(SLEEP_TIME)
+    time.sleep(2*SLEEP_TIME)
     db.session.commit()
     campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
     return campaign_reply_record
@@ -162,3 +162,23 @@ def delete_test_scheduled_task(task_id, headers):
     """
     with app.app_context():
         delete_scheduled_task(task_id, headers)
+
+
+def assert_counts_and_replies_or_sends(response, count=0, entity='sends'):
+    """
+    This is the common function to assert that response is returning valid 'count'
+    and 'sends' or 'repleis' for a particular campaign.
+    :param response:
+    :param count:
+    :return:
+    """
+    assert response.status_code == 200, 'Response should be ok (200)'
+    assert response.json()
+    resp = response.json()
+    assert 'count' in resp
+    assert entity in resp
+    assert resp['count'] == count
+    if not count:  # if count is 0, campaign_sends should be []
+        assert not resp[entity]
+    else:
+        assert resp[entity]

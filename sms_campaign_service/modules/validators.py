@@ -59,7 +59,8 @@ def validate_urls_in_body_text(text):
     for url in urls:
         try:
             validate_url_format(url)
-            validate_url_by_http_request(url)
+            if not validate_url_by_http_request(url):
+                invalid_urls.append(url)
         except InvalidUsage:
             invalid_urls.append(url)
     return invalid_urls

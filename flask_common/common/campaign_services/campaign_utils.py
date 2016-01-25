@@ -37,12 +37,12 @@ from ..error_handling import (InvalidUsage, ResourceNotFound)
 
 def get_campaign_type_prefix(campaign_type):
     """
-    Campaign type can be sms_campaign, push_campaign etc. So this method checks if campaign
+    Campaign type can be 'sms_campaign', 'push_campaign' etc. So this method checks if campaign
     type is SMS, it returns SMS. Otherwise it returns prefix as lower case e.g push or email.
     :param campaign_type:
     :return:
     """
-    prefix = "".join(campaign_type.split('_')[0])
+    prefix = campaign_type.split('_')[0]
     if prefix in SmsCampaign.__tablename__:
         return prefix.upper()
     return prefix.lower()
@@ -54,6 +54,7 @@ class CampaignType(object):
     """
     SMS = SmsCampaign.__tablename__
     EMAIL = EmailCampaign.__tablename__
+    # TODO: add comment
     WITH_ARTICLE_AN = [get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
     # Any campaign service will add the entry of respective model name here
     MODELS = (SmsCampaign, EmailCampaign)
@@ -179,9 +180,10 @@ def get_activity_message_id(activity_name):
     """
     if not hasattr(ActivityMessageIds, activity_name):
         raise InvalidUsage('Unknown activity message id %s.' % activity_name)
-    if not getattr(ActivityMessageIds, activity_name):
+    message_id = getattr(ActivityMessageIds, activity_name)
+    if not message_id:
         raise InvalidUsage('No Activity message %s found for id.' % activity_name)
-    return getattr(ActivityMessageIds, activity_name)
+    return message_id
 
 
 def get_activity_message_id_from_name(activity_name):

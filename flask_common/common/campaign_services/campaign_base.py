@@ -1196,7 +1196,7 @@ class CampaignBase(object):
                                error_code=InvalidUsage.http_status_code())
         result = validate_signed_url(request_args)
         if not result:
-            raise InvalidUsage("request from URL %s was not verified." % requested_url,
+            raise InvalidUsage("Cannot validate the request from URL %s." % requested_url,
                                error_code=InvalidUsage.http_status_code())
         current_app.config[TalentConfigKeys.LOGGER].info("Requested URL %s has been verified."
                                                          % requested_url)
@@ -1427,6 +1427,7 @@ class CampaignBase(object):
                 del kwargs[not_found_attr]
         if kwargs:
             # Update the campaign_blast stats like sends, clicks
+            #TODO: add comment why can't help it
             campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
             db.session.commit()
 

@@ -10,15 +10,20 @@ import requests
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (ResourceNotFound, UnauthorizedError)
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 
 # Service Specific
-from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
+from sms_campaign_service.tests.modules.common_functions import (assert_method_not_allowed,
+                                                                 assert_counts_and_replies_or_sends)
 
 
 class TestSmsCampaignSends(object):
     """
     This class contains tests for endpoint /campaigns/:id/sends
     """
+    URL = SmsCampaignApiUrl.SENDS
+    METHOD = 'get'
+    ENTITY = 'sends'
 
     def test_for_post_request(self, auth_token, sms_campaign_of_current_user):
         """
@@ -51,7 +56,7 @@ class TestSmsCampaignSends(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should not be authorized (401)'
@@ -64,9 +69,9 @@ class TestSmsCampaignSends(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        _assert_counts_and_sends(response)
+        assert_counts_and_replies_or_sends(response)
 
     def test_get_with_no_candidate_associated_to_campaign(self, auth_token,
                                                           sms_campaign_of_current_user,
@@ -83,9 +88,9 @@ class TestSmsCampaignSends(object):
         :param create_sms_campaign_blast: fixture to create entry in "sms_campaign_blast" db table.
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        _assert_counts_and_sends(response)
+        assert_counts_and_replies_or_sends(response)
 
     def test_get_with_deleted_campaign_id(self, auth_token, sms_campaign_of_current_user):
         """
@@ -99,13 +104,12 @@ class TestSmsCampaignSends(object):
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_get = requests.get(
-            SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+        response_get = requests.get(self.URL % sms_campaign_of_current_user.id,
+                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_get.status_code == ResourceNotFound.http_status_code(), \
             'Campaign should not be found (404)'
 
-    def test_get_with_valid_token_and_two_sends(self, auth_token,
+    def test_get_with_valid_token_and_two_sends(self, auth_token, candidate_first,
                                                 sms_campaign_of_current_user,
                                                 create_campaign_sends):
         """
@@ -118,26 +122,19 @@ class TestSmsCampaignSends(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        _assert_counts_and_sends(response, count=2)
+        assert_counts_and_replies_or_sends(response, count=2)
+        json_resp = response.json()[self.ENTITY][0]
+        assert json_resp['blast_id'] == sms_campaign_of_current_user.blasts[0].id
+        assert json_resp['candidate_id'] == candidate_first.id
 
-
-def _assert_counts_and_sends(response, count=0):
-    """
-    This is the common function to assert that response is returning valid 'count'
-    and 'campaign_sends'
-    :param response:
-    :param count:
-    :return:
-    """
-    assert response.status_code == 200, 'Response should be ok (200)'
-    assert response.json()
-    resp = response.json()
-    assert 'count' in resp
-    assert 'sends' in resp
-    assert resp['count'] == count
-    if not count:  # if count is 0, campaign_sends should be []
-        assert not resp['sends']
-    else:
-        assert resp['sends']
+    def test_get_with_not_owned_campaign(self, auth_token, sms_campaign_of_other_user):
+        """
+        This is the case where we try to get replies of a campaign which was created by
+        some other user. It should get Forbidden error.
+        :return:
+        """
+        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
+                                                         self.URL % sms_campaign_of_other_user.id,
+                                                         auth_token)

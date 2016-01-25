@@ -14,6 +14,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 # Application Specific
 
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+
 app, _ = init_sms_campaign_app_and_celery_app()
 
 # common conftest
@@ -139,6 +140,7 @@ def user_phone_1(request, sample_user):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -155,6 +157,7 @@ def user_phone_2(request, sample_user):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -170,6 +173,7 @@ def user_phone_3(request, sample_user_2):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -187,6 +191,7 @@ def sample_smartlist(request, sample_user):
 
     def tear_down():
         _delete_smartlist(smartlist)
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -248,6 +253,7 @@ def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
 
     def fin():
         _delete_campaign(test_sms_campaign)
+
     request.addfinalizer(fin)
     return test_sms_campaign
 
@@ -264,6 +270,7 @@ def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
 
     def fin():
         _delete_campaign(test_sms_campaign_of_other_user)
+
     request.addfinalizer(fin)
     return test_sms_campaign_of_other_user
 
@@ -348,6 +355,18 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
 
 
 @pytest.fixture()
+def create_campaign_replies(candidate_phone_1, create_sms_campaign_blast):
+    """
+    This creates a record in database table "sms_campaign_send"
+    :param candidate_first: fixture to create test candidate
+    :param candidate_second: fixture to create another test candidate
+    :return:
+    """
+    SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast,
+                                         candidate_phone_1.id, 'Got it')
+
+
+@pytest.fixture()
 def sample_smartlist_2(request, sample_user):
     """
     This creates sample smartlist for sample user
@@ -359,6 +378,7 @@ def sample_smartlist_2(request, sample_user):
 
     def tear_down():
         _delete_smartlist(smartlist)
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -409,6 +429,7 @@ def candidate_phone_1(request, candidate_first):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -424,6 +445,7 @@ def candidate_phone_2(request, candidate_second):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -439,6 +461,7 @@ def candidate_invalid_phone(request, candidate_second):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -457,6 +480,7 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     def tear_down():
         _delete_candidate_phone(cand_phone_1)
         _delete_candidate_phone(cand_phone_2)
+
     request.addfinalizer(tear_down)
     return cand_phone_1, cand_phone_2
 
@@ -473,6 +497,7 @@ def users_with_same_phone(request, sample_user, sample_user_2):
     def tear_down():
         _delete_user_phone(user_1)
         _delete_user_phone(user_2)
+
     request.addfinalizer(tear_down)
     return user_1, user_2
 
@@ -505,7 +530,7 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    time.sleep(3 * SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
@@ -661,6 +686,7 @@ def _delete_smartlist(smartlist_obj):
         Smartlist.delete(smartlist_obj)
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
+
 
 def _create_sms_campaign_smartlist(campaign, smartlist):
     """

@@ -464,9 +464,12 @@ class SmsCampaignApiUrl(object):
     REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
                                                       SmsCampaignWords.REDIRECT + '/%s')
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
     BLASTS = CAMPAIGN + SmsCampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
+    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
+    REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
+    BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
+    BLAST_REPLIES = SmsCampaignWords.REPLIES
 
 
 class CandidateApiWords(object):
