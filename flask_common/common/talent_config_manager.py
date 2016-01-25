@@ -47,35 +47,35 @@ def load_gettalent_config(app_config):
     """
     app_config.root_path = os.path.expanduser('~')
 
-    # Make sure that the environment and AWS credentials are defined
-    environment = app_config.get(TalentConfigKeys.ENV_KEY)
-    if not environment:
-        raise Exception("Error loading getTalent config: Missing environment!")
-    environment = environment.strip().lower()
-    app_config['LOGGER'] = logging.getLogger("flask_service.%s" % environment)
-    if not os.environ.get('AWS_ACCESS_KEY_ID') or not os.environ.get('AWS_SECRET_ACCESS_KEY'):
-        raise Exception("Error loading getTalent config: Missing AWS credentials!")
-
-    # Load up config from file on local filesystem (for local dev only).
+    # Load up config from file on local filesystem (for local dev & Jenkins only).
     app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)  # silent=True avoids errors in CI/QA/prod envs
 
+    # Make sure that the environment and AWS credentials are defined
+    for config_field_key in (TalentConfigKeys.ENV_KEY, TalentConfigKeys.AWS_KEY, TalentConfigKeys.AWS_SECRET):
+        app_config[config_field_key] = app_config.get(config_field_key) or os.environ.get(config_field_key)
+        if not app_config.get(config_field_key):
+            raise Exception("Loading getTalent config: Missing required environment variable: %s" % config_field_key)
+    app_config[TalentConfigKeys.ENV_KEY] = app_config[TalentConfigKeys.ENV_KEY].strip().lower()
+    app_config['LOGGER'] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
+
     # Load up config from private S3 bucket, if environment is qa or prod
-    if environment in ('dev', 'qa', 'prod'):
+    if app_config[TalentConfigKeys.ENV_KEY] in ('qa', 'prod'):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars
         from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
-        bucket_name = PROD_CONFIG_FILE_S3_BUCKET if environment == 'prod' else STAGING_CONFIG_FILE_S3_BUCKET
+        bucket_name = PROD_CONFIG_FILE_S3_BUCKET if app_config[TalentConfigKeys.ENV_KEY] == 'prod' else \
+            STAGING_CONFIG_FILE_S3_BUCKET
         bucket_obj = s3_connection.get_bucket(bucket_name)
         app_config['LOGGER'].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
         # Download into temporary file & load config
         tmp_config_file = tempfile.NamedTemporaryFile()
         bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
-        app_config.from_pyfile(tmp_config_file.file.name)
+        app_config.from_object(tmp_config_file)
         tmp_config_file.close()
 
     # Load up hardcoded app config values
-    _set_environment_specific_configurations(environment, app_config)
+    _set_environment_specific_configurations(app_config[TalentConfigKeys.ENV_KEY], app_config)
 
 
 def _set_environment_specific_configurations(environment, app_config):
