@@ -36,6 +36,7 @@
             { value: 15, name: '15 per page' }
         ];
         vm.candidatesPerPage = vm.itemsPerPageOptions[0].value;
+        vm.candidatesPageChanged = candidatesPageChanged;
 
         init();
         activate();
@@ -45,8 +46,23 @@
         }
 
         function init() {
-            candidatesManageService.getCandidates().then(function (candidates) {
-                vm.candidates = candidates;
+            getCandidatesData({
+                limit: vm.candidatesPerPage,
+                page: 1
+            });
+        }
+
+        function getCandidatesData(params) {
+            candidatesManageService.getCandidates(params).then(function (response) {
+                vm.candidates = response.candidates;
+                vm.totalCandidates = response.total_found;
+            });
+        }
+
+        function candidatesPageChanged(pageNumber) {
+            getCandidatesData({
+                limit: vm.candidatesPerPage,
+                page: pageNumber
             });
         }
     }

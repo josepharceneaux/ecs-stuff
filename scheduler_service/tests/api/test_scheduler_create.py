@@ -11,6 +11,8 @@ import requests
 # Application imports
 import time
 
+from datetime import timedelta, datetime
+
 from scheduler_service import db
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
@@ -63,6 +65,8 @@ class TestSchedulerCreate(object):
         # Create a new test user
         test_user = create_test_user(db.session, None, "@sdqscheo!amcs")
         user_id = test_user.id
+        run_datetime = datetime.utcnow() + timedelta(seconds=10)
+        job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         job_config_one_time_task['post_data'].update({'test_user_id': test_user.id})
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
                                  headers=auth_header)

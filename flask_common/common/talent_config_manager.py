@@ -18,12 +18,11 @@ logging.config.fileConfig(LOGGING_CONF)
 
 
 # Kindly refer to following url for sample web.cfg
-#https://github.com/gettalent/talent-flask-services/wiki/Local-environment-setup#local-configurations
+# https://github.com/gettalent/talent-flask-services/wiki/Local-environment-setup#local-configurations
 LOCAL_CONFIG_PATH = ".talent/web.cfg"
 
 
 class TalentConfigKeys(object):
-
     CS_REGION_KEY = "CLOUD_SEARCH_REGION"
     CS_DOMAIN_KEY = "CLOUD_SEARCH_DOMAIN"
     EMAIL_KEY = "EMAIL"
@@ -49,8 +48,8 @@ def load_gettalent_config(app_config):
 
     app_config.root_path = os.path.expanduser('~')
 
-    # LOCAL_CONFIG_PATH will not exist for Production and QA that's why we provided silent=True to avoid exception
-    app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)
+    # Load up config from file on local filesystem (for local dev only).
+    app_config.from_pyfile(LOCAL_CONFIG_PATH, silent=True)  # silent=True avoids errors in CI/QA/prod envs
 
     for key, value in TalentConfigKeys.__dict__.iteritems():
         if not key.startswith('__'):
@@ -70,22 +69,22 @@ def _set_environment_specific_configurations(app_config):
 
     if environment == 'dev':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
+        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.dev")
         app_config['DEBUG'] = True
     elif environment == 'jenkins':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
+        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.jenkins")
     elif environment == 'qa':
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@devdb.gettalent.' \
                                                      'com/talent_staging'
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
+        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'dev-redis-vpc.znj3iz.0001.usw1.cache.' \
                                                                         'amazonaws.com:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.qa")
     elif environment == 'prod':
-        app_config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_STRING')
-        app_config['BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
+        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core'
+        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis-prod.znj3iz.0001.' \
                                                                         'usw1.cache.amazonaws.com:6379'
         app_config['LOGGER'] = logging.getLogger("flask_service.prod")
     else:

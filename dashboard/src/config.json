@@ -9,6 +9,9 @@
     "activityServiceInfo": {
         "baseUrl": "http://localhost"
     },
+    "alertServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
     "candidateServiceInfo": {
         "baseUrl": "http://localhost"
     },
@@ -33,10 +36,16 @@
       "grantPath": "/oauth2/token"
     },
     "activityServiceInfo": {
-        "baseUrl": "https://activity-service-staging.gettalent.com/v1"
+        "THE_REAL_baseUrl": "https://activity-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-56260-activityservice4.apiary-mock.com"
+    },
+    "alertServiceInfo": {
+        "THE_REAL_baseUrl": "https://alert-service-staging.gettalent.com/v1",
+        "baseUrl": "http://localhost:7203/api"
     },
     "candidatePoolServiceInfo": {
-        "baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1"
+        "THE_REAL_baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-120a6-candidatepoolservice.apiary-mock.com/v1"
     },
     "candidateServiceInfo": {
         "baseUrl": "https://candidate-service-staging.gettalent.com/v1"
@@ -48,7 +57,8 @@
         "baseUrl": "https://smartlist-service-staging.gettalent.com/v1"
     },
     "userServiceInfo": {
-        "baseUrl": "https://user-service-staging.gettalent.com/v1"
+        "THE_REAL_baseUrl": "https://user-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-16331-userservice17.apiary-mock.com/v1"
     }
   },
   "production": {
@@ -60,6 +70,9 @@
     },
     "activityServiceInfo": {
         "baseUrl": "https://activity-service.gettalent.com/v1"
+    },
+    "alertServiceInfo": {
+        "baseUrl": "https://alert-service.gettalent.com/v1"
     },
     "candidatePoolServiceInfo": {
         "baseUrl": "https://candidate-pool-service.gettalent.com/v1"
