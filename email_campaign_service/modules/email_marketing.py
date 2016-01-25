@@ -95,11 +95,9 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         email_campaign.isTrackHtmlClicks = 1
         email_campaign.isTrackTextClicks = 1
         db.session.commit()  # Commit the changes
-        # Since actual emails are sent from the client. We will only return the updated html.
-        # This will not send the actual emails but it will return the new_html of email to the client.
-        new_html, new_text = send_emails_to_campaign(oauth_token=oauth_token, campaign=email_campaign,
-                                                     list_ids=list_ids, email_client_id=email_client_id)
-        return {'id': email_campaign.id, 'new_html': new_html, 'new_text': new_text}
+        # Actual emails are sent from the client. So no need to schedule it
+        # TODO: Update campaign status to 'completed'
+        return {'id': email_campaign.id}
 
     # Schedule the sending of emails & update email_campaign scheduler fields
     schedule_task_params = {
@@ -151,7 +149,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
     """
     user = campaign.user
     emails_sent = 0
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign, user=user,
+    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign,
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
@@ -198,10 +196,6 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                 email_client_id=campaign.email_client_id
             )
 
-            # if email_client_id is present then we only return new html
-            if email_client_id:
-                return was_send
-
             if was_send:
                 emails_sent += 1
 
@@ -213,7 +207,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
     return emails_sent
 
 
-def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, user, list_ids=None,
+def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, list_ids=None,
                                                 new_candidates_only=False):
     """
     :param campaign:    email campaign row
@@ -294,7 +288,7 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
-            return 0
+            return False
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sentTime
     if not blast_datetime:
@@ -328,16 +322,18 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
                                                                is_email_open_tracking=campaign.is_email_open_tracking,
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
-    # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
-    if os.getenv(TalentConfigKeys.ENV_KEY) in ['dev', 'qa', 'jenkins']:
+    # Only in case of production we should send mails to candidate address else mails will go to test account.
+    # To avoid spamming actual email addresses, while testing.
+    if os.getenv(TalentConfigKeys.ENV_KEY) is 'prod':
+        to_addresses = candidate_address
+    else:
+        # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
         domain = Domain.query.get(user.domain_id)
         domain_name = domain.name.lower()
         if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
             to_addresses = user.email
         else:
             to_addresses = ['gettalentmailtest@gmail.com']
-    else:
-        to_addresses = candidate_address
     # Do not send mail if email_client_id is provided
     if email_client_id:
         logger.info("Marketing email added through client %s", email_client_id)
@@ -358,7 +354,7 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
         except Exception as e:
             # Mark email as bounced
             _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, e)
-            return 0
+            return False
         # Save SES message ID & request ID
         logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
@@ -378,7 +374,7 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
     email_campaign_blast.sends = blast_params['sends']
     db.session.commit()
 
-    return 1
+    return True
 
 
 def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, exception):

@@ -74,6 +74,10 @@ def get_candidate_subscription_preference(oauth_token, candidate_id):
     resp = requests.get(CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
                                  'content-type': 'application/json'})
+    # Candidate_subscription pref should not return 404 if candidate is not subscribed to any frequency.
+    # Instead it should return blank dictionary. TODO: if subscription API is corrected, correct it.
+    if resp.status_code == 404:  # If no subscription preference API returns 404
+        return {}  # No subscription_preference
     assert resp.status_code == 200
     response = resp.json()
     # return candidate's subscription_preference

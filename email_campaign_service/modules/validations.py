@@ -61,9 +61,9 @@ def validate_and_format_request_data(data, user_id):
         raise UnprocessableEntity("Frequency requires send time.")
 
     if send_datetime and stop_datetime:
-        parsed_send_datetime = validate_datetime(send_datetime, '`send_datetime`')
-        parsed_stop_datetime = validate_datetime(stop_datetime, '`stop_datetime`')
-        if parsed_send_datetime < parsed_stop_datetime:
+        job_send_datetime = validate_datetime(send_datetime, '`send_datetime`')
+        job_stop_datetime = validate_datetime(stop_datetime, '`stop_datetime`')
+        if job_send_datetime > job_stop_datetime:
             raise UnprocessableEntity("`stop_datetime` cannot be before `send_datetime`")
 
     if email_client_id:

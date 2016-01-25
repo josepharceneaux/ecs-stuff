@@ -27,7 +27,7 @@ def test_get_all_email_campaigns(user_first, access_token_first):
     Test GET API of email_campaigns for getting all campaigns
     """
     # create candidate
-    smartlist_id = create_smartlist(user_first, access_token_first)
+    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first)
     email_campaign_name = fake.name()
     reply_to_name = fake.name()
     email_campaign_subject = fake.sentence()
@@ -43,7 +43,7 @@ def test_get_all_email_campaigns(user_first, access_token_first):
                                    )
     db.session.add(email_campaign)
     db.session.commit()
-    create_email_campaign_smart_lists(smart_list_ids=[smartlist_id],
+    create_email_campaign_smart_lists(smartlist_ids=[smartlist_id],
                                       email_campaign_id=email_campaign.id)
     # Test GET api of email campaign
     response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
@@ -57,10 +57,10 @@ def test_get_all_email_campaigns(user_first, access_token_first):
         assert resp['email_campaigns']
 
 
-def create_smartlist(user, access_token):
+def create_smartlist_with_candidate(user, access_token):
     # create candidate
     data = FakeCandidatesData.create(count=1)
-    add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+    add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
     candidate_ids = create_candidates_from_candidate_api(access_token, data, return_candidate_ids_only=True)
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids}
@@ -69,14 +69,14 @@ def create_smartlist(user, access_token):
     return smartlist_id
 
 
-def _test_create_email_campaign(user_first, access_token_first):
+def test_create_email_campaign(user_first, access_token_first):
     email_campaign_name = fake.name()
-    email_subject = uuid.uuid4().__str__()[0:8] + ' test_email_campaign_api::test_create_email_campaign'
+    email_subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
     email_from = fake.name()
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    smartlist_id = create_smartlist(user_first, access_token_first)
+    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first)
     data = {
         "email_campaign_name": email_campaign_name,
         "email_subject": email_subject,
@@ -87,6 +87,7 @@ def _test_create_email_campaign(user_first, access_token_first):
         "list_ids": [smartlist_id],
         # "email_client_id": 1
     }
+    # add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
     r = requests.post(
         url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
         data=json.dumps(data),
@@ -98,30 +99,31 @@ def _test_create_email_campaign(user_first, access_token_first):
     assert 'campaign' in resp_object
     # Wait for 10 seconds for scheduler to execute it and then assert mail.
     time.sleep(10)
+    # Check for email received.
     assert_mail(email_subject)
 
 
-def _test_create_email_campaign_invalid_campaign_name(sample_user, user_auth):
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+def test_create_email_campaign_whitespace_campaign_name(user_first, access_token_first):
     email_campaign_name = '       '
-    email_subject = uuid.uuid4().__str__()[0:8] + ' test_email_campaign_api::test_create_email_campaign'
+    email_subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
     email_from = 'no-reply@gettalent.com'
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    list_ids = create_smartlist(auth_token_row)
+    smart_list_id = create_smartlist_with_candidate(user_first, access_token_first)
     data = {'email_campaign_name': email_campaign_name,
             'email_subject': email_subject,
             'email_from': email_from,
             'email_reply_to': email_reply_to,
             'email_body_html': email_body_html,
             'email_body_text': email_body_text,
-            'list_ids': list_ids
+            'list_ids': [smart_list_id]
             }
     r = requests.post(
         url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
         data=json.dumps(data),
-        headers={'Authorization': 'Bearer %s' % auth_token_row['access_token']}
+        headers={'Authorization': 'Bearer %s' % access_token_first,
+                 'content-type': 'application/json'}
     )
     resp_object = r.json()
     assert 'error' in resp_object
@@ -146,12 +148,12 @@ def assert_mail(email_subject):
     mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     # mail.list()  # Out: list of "folders" aka labels in gmail.
     print "Check for mail with subject: %s" % email_subject
-    mail.select("inbox")  # connect to inbox.
     header_subject = '(HEADER Subject "%s")' % email_subject
-
+    # Wait for 10 seconds then start the loop for 60 seconds
+    time.sleep(10)
     while True:
         delta = time.time() - start
-
+        mail.select("inbox")  # connect to inbox.
         result, data = mail.uid('search', None, header_subject)
 
         for latest_email_uid in data[0].split():

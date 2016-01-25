@@ -1,3 +1,5 @@
+"""Initialize Email campaign service app, register error handlers and register blueprint"""
+
 from flask import Flask
 from email_campaign_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from email_campaign_service.common.models.db import db
