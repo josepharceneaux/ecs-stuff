@@ -3,6 +3,7 @@ from user_service.common.models.db import db
 from user_service.common.models.user import (
     User, UserGroup, UserScopedRoles, Domain, DomainRole
 )
+from user_service.common.models.talent_pools_pipelines import TalentPool, TalentPoolCandidate
 
 
 def get_domain_role_names():
@@ -19,6 +20,8 @@ def update_domain_roles():
         if domain_role is None:
             db.session.add(DomainRole(role_name=role_name))
 
+    db.session.commit()
+
 
 def update_user_roles():
     existing_users = User.query.all()
@@ -28,22 +31,39 @@ def update_user_roles():
         for role in domain_roles:
             db.session.add(UserScopedRoles(user_id=user.id, role_id=role.id))
 
+    db.session.commit()
+
 
 def add_user_group_to_domains():
     domains = Domain.query.all()
     for domain in domains:
         db.session.add(UserGroup(name='default', domain_id=domain.id))
 
+    db.session.commit()
+
+
+def add_talent_pool():
+    users = User.query.all()
+    for user in users:
+        talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id, name='default')
+        db.session.add(talent_pool)
+        db.session.flush()
+
+        user_candidates = user.candidates
+        for candidate in user_candidates:
+            db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
+                                               candidate_id=candidate.id))
+
+    db.session.commit()
+
 
 if __name__ == '__main__':
     print "starting role updates"
     try:
         update_domain_roles()
-        db.session.commit()
         update_user_roles()
-        db.session.commit()
         add_user_group_to_domains()
-        db.session.commit()
+        add_talent_pool()
     except Exception as e:
         db.session.rollback()
         print "\nUpdates failed: {}".format(e.message)
