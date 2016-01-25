@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['logger', 'pipelinesDetailService'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, pipelinesDetailService) {
         var vm = this;
 
         init();
@@ -139,6 +139,8 @@
                     value: 10
                 }
             ];
+
+            pipelinesDetailService.getPipelineDetail();
         }
     }
 })();
