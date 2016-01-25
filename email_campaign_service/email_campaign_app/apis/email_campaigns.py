@@ -1,3 +1,7 @@
+"""File contains APIs for email campaign.
+EmailCampaign is a restful resource and the endpoint which is sending out emails which is called by scheduler API is
+using blueprint.
+"""
 import json
 from flask import request, Blueprint, redirect
 from flask_restful import Resource
@@ -29,7 +33,7 @@ class EmailCampaignApi(Resource):
         if email_campaign_id:
             email_campaign = EmailCampaign.query.get(email_campaign_id)
             if not email_campaign:
-                raise NotFoundError("Email campaign with id: %s does not exists")
+                raise NotFoundError("Email campaign with id: %s does not exists" % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
             email_campaign_object = get_email_campaign_object(email_campaign)
@@ -41,6 +45,10 @@ class EmailCampaignApi(Resource):
                                         for email_campaign in email_campaigns]}
 
     def post(self):
+        """
+        POST /email-campaigns
+
+        """
         user_id = request.user.id
         # Get and validate request data
         data = request.get_json(silent=True)
@@ -93,7 +101,7 @@ def url_redirect(url_conversion_id):
 
     url_conversion = UrlConversion.query.get(url_conversion_id)
     if not url_conversion:
-        logger.exception('No record of url_conversion found for id: %s' % url_conversion_id)
+        logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
         return
     # Update hitcount
     update_hit_count(url_conversion)

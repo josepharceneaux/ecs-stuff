@@ -17,7 +17,7 @@ def add_activity(user_id, oauth_token, activity_type, source_table, source_id=No
     All errors or exceptions are notified to Admins and doesn't raises any exception.
 
     :param user_id: Id of user against whom activity is to be created
-    :param access_token: User access token (TODO: Should not be required though, Once activity API is corrected, remove it)
+    :param oauth_token: oauth token (TODO: Should not be required though, Once activity API is corrected, remove it)
     :param activity_type: Type of activity
     :param source_table: Table name for which activity is created. TODO: Should be removed.
     :param source_id: Integer of the source_table's ID for entering specific activity.
@@ -31,7 +31,8 @@ def add_activity(user_id, oauth_token, activity_type, source_table, source_id=No
                                 'source_id': source_id,
                                 'params': params})
     except Exception as ex:
-        # TODO: Email admins about the error and then return silently
+        # Email admins about the error and then return silently
+        email_error_to_admins(body="Not able to json.dumps. The exception was: %s" %ex, subject="Activity Service Error: Error occurred while adding activity")
         return
     # TODO: Remove bearer token because system should create activity not the user.
     headers = {'content-type': 'application/json',
@@ -43,7 +44,6 @@ def add_activity(user_id, oauth_token, activity_type, source_table, source_id=No
     except Exception as ex:
         # Email admins and return silently
         tb = traceback.format_exc()
-        print tb
         email_body = """Exception occurred while adding activity (POST API). <br/>
         The exception was: <em> {exception}. <br/><br/>
         Traceback: <br/>

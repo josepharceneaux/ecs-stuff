@@ -17,7 +17,7 @@ def validate_datetime(datetime_text, field_name=None):
     except ValueError:
         raise InvalidUsage("%s should be in valid format `YYYY-MM-DD hh:mm:ss`" % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
-        raise UnprocessableEntity("The %s cannot be before today.")
+        raise InvalidUsage("The %s cannot be before today." % field_name)
     return parsed_date
 
 

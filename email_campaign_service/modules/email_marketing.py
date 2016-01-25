@@ -28,16 +28,16 @@ from email_campaign_service.common.utils.candidate_service_calls import get_cand
 __author__ = 'jitesh'
 
 
-def create_email_campaign_smart_lists(smart_list_ids, email_campaign_id):
+def create_email_campaign_smart_lists(smartlist_ids, email_campaign_id):
     """ Maps smart lists to email campaign
-    :param smart_list_ids:
-    :type smart_list_ids: list[int | long]
+    :param smartlist_ids:
+    :type smartlist_ids: list[int | long]
     :param email_campaign_id: id of email campaign to which smart lists will be associated.
 
     """
-    if type(smart_list_ids) in (int, long):
-        smart_list_ids = [smart_list_ids]
-    for smart_list_id in smart_list_ids:
+    if type(smartlist_ids) in (int, long):
+        smartlist_ids = [smartlist_ids]
+    for smart_list_id in smartlist_ids:
         email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=smart_list_id,
                                                            email_campaign_id=email_campaign_id)
         db.session.add(email_campaign_smart_list)
@@ -84,16 +84,19 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                  params=dict(id=email_campaign.id, name=email_campaign_name))
 
     # create email_campaign_smart_list record
-    create_email_campaign_smart_lists(smart_list_ids=list_ids,
+    create_email_campaign_smart_lists(smartlist_ids=list_ids,
                                       email_campaign_id=email_campaign.id)
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
     if email_client_id:
+        # If email is sent via email_client then enable tracking.
         email_campaign.isEmailOpenTracking = 1
         email_campaign.isTrackHtmlClicks = 1
         email_campaign.isTrackTextClicks = 1
-        db.session.commit()
+        db.session.commit()  # Commit the changes
+        # Since actual emails are sent from the client. We will only return the updated html.
+        # This will not send the actual emails but it will return the new_html of email to the client.
         new_html, new_text = send_emails_to_campaign(oauth_token=oauth_token, campaign=email_campaign,
                                                      list_ids=list_ids, email_client_id=email_client_id)
         return {'id': email_campaign.id, 'new_html': new_html, 'new_text': new_text}
@@ -114,8 +117,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["end_datetime"] = send_time
     else:
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["run_datetime"] = datetime.datetime.strftime(
-            datetime.datetime.utcnow() + datetime.timedelta(seconds=10),
+        schedule_task_params["run_datetime"] = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).strftime(
             "%Y-%m-%d %H:%M:%S")
 
     # Schedule email campaign; call Scheduler API
@@ -329,7 +331,8 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
     # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
     if os.getenv(TalentConfigKeys.ENV_KEY) in ['dev', 'qa', 'jenkins']:
         domain = Domain.query.get(user.domain_id)
-        if 'gettalent' in domain.name.lower() or 'bluth' in domain.name.lower() or 'dice' in domain.name.lower():
+        domain_name = domain.name.lower()
+        if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
             to_addresses = user.email
         else:
             to_addresses = ['gettalentmailtest@gmail.com']
