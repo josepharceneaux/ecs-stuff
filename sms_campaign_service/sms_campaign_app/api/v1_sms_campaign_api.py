@@ -859,60 +859,61 @@ class SmsCampaignBlastById(Resource):
         return response, 200
 
 
-# @api.route(SmsCampaignApi.BLAST)
-# class SmsCampaignBlastWithId(Resource):
-#     """
-#     Endpoint looks like /v1/campaigns/:id/blasts/:id
-#     This gives the blast object for the request campaign_id and blast_id
-#     """
-#     decorators = [require_oauth()]
-#
-#     def get(self, campaign_id, blast_id):
-#         """
-#         This endpoint returns a blast object for a given campaign_id and blast_id. From which
-#         we can extract sends, clicks and replies.
-#         :param campaign_id: int, unique id of a SMS campaign
-#         :param blast_id: id of blast object
-#         :return: JSON data containing list of blasts and their counts
-#
-#         :Example:
-#             headers = {'Authorization': 'Bearer <access_token>'}
-#             campaign_id = 1
-#             response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts'
-#                                 + str(blast_id), headers=headers)
-#
-#         .. Response::
-#
-#                {
-#                       "blast": {
-#                         "sends": 763,
-#                         "campaign_id": 1,
-#                         "id": 1,
-#                         "replies": 26,
-#                         "updated_time": "2016-01-06 00:00:43",
-#                         "clicks": 55,
-#                         "sent_datetime": "2016-01-05 14:59:56"
-#                               }
-#                 }
-#
-#         .. Status:: 200 (OK)
-#                     401 (Unauthorized to access getTalent)
-#                     403 (Not owner of campaign)
-#                     404 (Campaign not found)
-#                     500 (Internal server error)
-#         """
-#         assert_for_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
-#         # Get a campaign that was created by this user
-#         SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-#                                                        CampaignType.SMS)
-#         blast = SmsCampaignBlast.get_by_id(blast_id)
-#         if not blast:
-#             raise ResourceNotFound('Blast(id:%s) does not exists in database.' % blast_id)
-#         if not blast.campaign_id == campaign_id:
-#             raise ForbiddenError('Blast(id:%s) is not associated with campaign(id:%s).'
-#                                    % (blast_id, campaign_id))
-#         response = dict(blast=blast.to_json())
-#         return response, 200
+@api.route(SmsCampaignApi.BLAST_REPLIES)
+class SmsCampaignBlastReplies(Resource):
+    """
+    Endpoint looks like /v1/campaigns/:id/blasts/:id/replies
+    This gives the replies object for the request campaign_id and blast_id
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, blast_id):
+        """
+        This endpoint returns a blast object for a given campaign_id and blast_id. From which
+        we can extract sends, clicks and replies.
+        :param campaign_id: int, unique id of a SMS campaign
+        :param blast_id: id of blast object
+        :return: JSON data containing list of blasts and their counts
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts'
+                                + str(blast_id), headers=headers)
+
+        .. Response::
+
+               {
+                      "blast": {
+                        "sends": 763,
+                        "campaign_id": 1,
+                        "id": 1,
+                        "replies": 26,
+                        "updated_time": "2016-01-06 00:00:43",
+                        "clicks": 55,
+                        "sent_datetime": "2016-01-05 14:59:56"
+                              }
+                }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    403 (Not owner of campaign)
+                    404 (Campaign not found)
+                    500 (Internal server error)
+        """
+        assert_for_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        # Get a campaign that was created by this user
+        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+                                                       CampaignType.SMS)
+        blast = SmsCampaignBlast.get_by_id(blast_id)
+        if not blast:
+            raise ResourceNotFound('Blast(id:%s) does not exists in database.' % blast_id)
+        if not blast.campaign_id == campaign_id:
+            raise ForbiddenError('Blast(id:%s) is not associated with campaign(id:%s).'
+                                 % (blast_id, campaign_id))
+        replies = [replies_obj.to_json() for replies_obj in blast.blast_replies]
+        response = dict(replies=replies)
+        return response, 200
 
 
 @api.route(SmsCampaignApi.BLAST_SENDS)
@@ -942,14 +943,14 @@ class SmsCampaignBlastSends(Resource):
                                           "candidate_id": 1,
                                           "id": 9,
                                           "sent_datetime": "2015-11-23 18:25:09",
-                                          "sms_campaign_blast_id": 1,
+                                          "blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:08"
                                         },
                                         {
                                           "candidate_id": 2,
                                           "id": 10,
                                           "sent_datetime": "2015-11-23 18:25:13",
-                                          "sms_campaign_blast_id": 1,
+                                          "blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:13"
                                        }
                                     ],
@@ -977,8 +978,9 @@ class SmsCampaignBlastSends(Resource):
             raise ForbiddenError('Blast(id:%s) is not associated with campaign(id:%s).'
                                    % (blast_id, campaign_id))
         sends = [send_obj.to_json() for send_obj in blast.blast_sends]
-        response = dict(sends=blast.to_json(), count=len(sends))
+        response = dict(sends=sends, count=len(sends))
         return response, 200
+
 
 @api.route(SmsCampaignApi.SENDS)
 class SmsCampaignSends(Resource):
@@ -1007,14 +1009,14 @@ class SmsCampaignSends(Resource):
                                           "candidate_id": 1,
                                           "id": 9,
                                           "sent_datetime": "2015-11-23 18:25:09",
-                                          "sms_campaign_blast_id": 1,
+                                          "blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:08"
                                         },
                                         {
                                           "candidate_id": 2,
                                           "id": 10,
                                           "sent_datetime": "2015-11-23 18:25:13",
-                                          "sms_campaign_blast_id": 1,
+                                          "blast_id": 1,
                                           "updated_time": "2015-11-23 18:25:13"
                                        }
                                     ],
@@ -1034,11 +1036,71 @@ class SmsCampaignSends(Resource):
         # Get a campaign that was created by this user
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
                                                                   CampaignType.SMS)
-        sends = []
-        # Add sends for every blast to `sends` list to get all sends of a campaign.
-        # A campaign can have multiple blasts
-        [sends.extend(blast.blast_sends) for blast in campaign.blasts]
+        # Get send objects from database table 'sms_campaign_send'
+        sends = [blast.blast_sends for blast in campaign.blasts]
         # Get JSON serializable data
         sends = [send.to_json() for send in sends]
         response = dict(sends=sends, count=len(sends))
+        return response, 200
+
+
+@api.route(SmsCampaignApi.REPLIES)
+class SmsCampaignReplies(Resource):
+    """
+    Endpoint looks like /v1/campaigns/:id/replies
+    This resource is used to GET Campaign sends
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id):
+        """
+        Returns Campaign sends for given campaign id
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            response = requests.get(API_URL + '/campaigns/' + str(campaign_id) + '/replies',
+                                        headers=headers)
+
+        .. Response::
+
+            {
+                "campaign_sends":
+                                    [
+                                        {
+                                          "candidate_id": 1,
+                                          "id": 9,
+                                          "sent_datetime": "2015-11-23 18:25:09",
+                                          "blast_id": 1,
+                                          "updated_time": "2015-11-23 18:25:08"
+                                        },
+                                        {
+                                          "candidate_id": 2,
+                                          "id": 10,
+                                          "sent_datetime": "2015-11-23 18:25:13",
+                                          "blast_id": 1,
+                                          "updated_time": "2015-11-23 18:25:13"
+                                       }
+                                    ],
+                "count": 2
+
+            }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    403 (Not owner of campaign)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: 1- count of campaign replies and 2- SMS campaign replies records in as dict
+        """
+        # Get a campaign that was created by this user
+        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+                                                                  CampaignType.SMS)
+        # Get replies objects from database table 'sms_campaign_reply'
+        replies = [blast.blast_replies for blast in campaign.blasts]
+        # Get JSON serializable data
+        replies = [reply.to_json() for reply in replies]
+        response = dict(replies=replies, count=len(replies))
         return response, 200

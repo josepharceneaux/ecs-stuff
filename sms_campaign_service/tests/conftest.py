@@ -44,7 +44,7 @@ from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE
                                                                to_utc_str)
 from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
-SLEEP_TIME = 30  # needed to add this because tasks run on Celery
+SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
 # This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",

@@ -63,8 +63,7 @@ class SmsCampaignBlast(db.Model):
 class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_blast_id = db.Column(db.Integer,
-                                      db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
+    blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
     sent_datetime = db.Column(db.DateTime)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
@@ -84,7 +83,7 @@ class SmsCampaignSend(db.Model):
         assert candidate_id, 'No candidate_id given'
         return cls.query.filter(
             db.and_(
-                cls.sms_campaign_blast_id == campaign_blast_id,
+                cls.blast_id == campaign_blast_id,
                 cls.candidate_id == candidate_id,
             )
         ).first()
@@ -98,14 +97,13 @@ class SmsCampaignSend(db.Model):
     @classmethod
     def get_by_blast_id(cls, campaign_blast_id):
         assert campaign_blast_id, 'No campaign_blast_id given'
-        return cls.query.filter(cls.sms_campaign_blast_id == campaign_blast_id).all()
+        return cls.query.filter(cls.blast_id == campaign_blast_id).all()
 
 
 class SmsCampaignReply(db.Model):
     __tablename__ = 'sms_campaign_reply'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_blast_id = db.Column(db.Integer,
-                                      db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
+    blast_id = db.Column(db.Integer, db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     body_text = db.Column(db.Text)
     candidate_phone_id = db.Column(db.Integer,
                                    db.ForeignKey('candidate_phone.id', ondelete='CASCADE'))
@@ -118,12 +116,8 @@ class SmsCampaignReply(db.Model):
     def get_by_blast_id_and_candidate_phone_id(cls, campaign_blast_id, candidate_phone_id):
         assert campaign_blast_id, 'No campaign_blast_id given'
         assert candidate_phone_id, 'No candidate_phone_id given'
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_blast_id == campaign_blast_id,
-                cls.candidate_phone_id == candidate_phone_id
-            )
-        ).first()
+        return cls.query.filter_by(blast_id=campaign_blast_id,
+                                   candidate_phone_id=candidate_phone_id).first()
 
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):

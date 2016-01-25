@@ -760,7 +760,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        data = {'sms_campaign_blast_id': campaign_blast_id,
+        data = {'blast_id': campaign_blast_id,
                 'candidate_id': candidate_id,
                 'sent_datetime': sent_datetime}
         record_in_db = SmsCampaignSend.get_by_blast_id_and_candidate_id(campaign_blast_id,
@@ -909,7 +909,7 @@ class SmsCampaignBase(CampaignBase):
                 % candidate_phone.candidate_id)
         # get SMS campaign blast
         sms_campaign_blast = SmsCampaignBlast.get_by_id(
-            sms_campaign_send.sms_campaign_blast_id)
+            sms_campaign_send.blast_id)
         # save candidate's reply
         sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
                                                       candidate_phone.id,
@@ -941,7 +941,7 @@ class SmsCampaignBase(CampaignBase):
         :type reply_body_text: str
         :return:
         """
-        sms_campaign_reply_obj = SmsCampaignReply(sms_campaign_blast_id=campaign_blast_id,
+        sms_campaign_reply_obj = SmsCampaignReply(blast_id=campaign_blast_id,
                                                   candidate_phone_id=candidate_phone_id,
                                                   body_text=reply_body_text,
                                                   added_datetime=datetime.now())
