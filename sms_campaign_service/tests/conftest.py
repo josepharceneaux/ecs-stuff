@@ -44,7 +44,7 @@ from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE
                                                                to_utc_str)
 from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
-SLEEP_TIME = 10  # needed to add this because tasks run on Celery
+SLEEP_TIME = 30  # needed to add this because tasks run on Celery
 
 # This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
@@ -138,8 +138,7 @@ def user_phone_1(request, sample_user):
     user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
-        UserPhone.delete(user_phone)
-
+        _delete_user_phone(user_phone)
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -155,8 +154,7 @@ def user_phone_2(request, sample_user):
     user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
 
     def tear_down():
-        UserPhone.delete(user_phone)
-
+        _delete_user_phone(user_phone)
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -171,8 +169,7 @@ def user_phone_3(request, sample_user_2):
     user_phone = _create_user_twilio_phone(sample_user_2, fake.phone_number())
 
     def tear_down():
-        UserPhone.delete(user_phone)
-
+        _delete_user_phone(user_phone)
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -189,8 +186,7 @@ def sample_smartlist(request, sample_user):
     smartlist = _create_smartlist(sample_user)
 
     def tear_down():
-        Smartlist.delete(smartlist)
-
+        _delete_smartlist(smartlist)
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -241,14 +237,35 @@ def campaign_data_unknown_key_text():
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user(campaign_valid_data, user_phone_1):
+def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
     """
     This creates the SMS campaign for sammple_user using valid data.
     :param campaign_valid_data:
     :param user_phone_1:
     :return:
     """
-    return _create_sms_campaign(campaign_valid_data, user_phone_1)
+    test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_1)
+
+    def fin():
+        _delete_campaign(test_sms_campaign)
+    request.addfinalizer(fin)
+    return test_sms_campaign
+
+
+@pytest.fixture()
+def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
+    """
+    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
+    :param campaign_valid_data:
+    :param user_phone_3:
+    :return:
+    """
+    test_sms_campaign_of_other_user = _create_sms_campaign(campaign_valid_data, user_phone_3)
+
+    def fin():
+        _delete_campaign(test_sms_campaign_of_other_user)
+    request.addfinalizer(fin)
+    return test_sms_campaign_of_other_user
 
 
 @pytest.fixture(params=[FrequencyIds.ONCE, FrequencyIds.DAILY])
@@ -303,17 +320,6 @@ def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
 
 
 @pytest.fixture()
-def sms_campaign_of_other_user(campaign_valid_data, user_phone_3):
-    """
-    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
-    :param campaign_valid_data:
-    :param user_phone_3:
-    :return:
-    """
-    return _create_sms_campaign(campaign_valid_data, user_phone_3)
-
-
-@pytest.fixture()
 def create_sms_campaign_blast(sms_campaign_of_current_user):
     """
     This creates a record in database table "sms_campaign_blast"
@@ -352,8 +358,7 @@ def sample_smartlist_2(request, sample_user):
     smartlist = _create_smartlist(sample_user)
 
     def tear_down():
-        Smartlist.delete(smartlist)
-
+        _delete_smartlist(smartlist)
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -403,8 +408,7 @@ def candidate_phone_1(request, candidate_first):
     candidate_phone = _create_candidate_mobile_phone(candidate_first, fake.phone_number())
 
     def tear_down():
-        CandidatePhone.delete(candidate_phone)
-
+        _delete_candidate_phone(candidate_phone)
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -419,8 +423,7 @@ def candidate_phone_2(request, candidate_second):
     candidate_phone = _create_candidate_mobile_phone(candidate_second, fake.phone_number())
 
     def tear_down():
-        CandidatePhone.delete(candidate_phone)
-
+        _delete_candidate_phone(candidate_phone)
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -435,8 +438,7 @@ def candidate_invalid_phone(request, candidate_second):
     candidate_phone = _create_candidate_mobile_phone(candidate_second, TWILIO_INVALID_TEST_NUMBER)
 
     def tear_down():
-        CandidatePhone.delete(candidate_phone)
-
+        _delete_candidate_phone(candidate_phone)
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -453,9 +455,8 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     cand_phone_2 = _create_candidate_mobile_phone(candidate_second, common_phone)
 
     def tear_down():
-        CandidatePhone.delete(cand_phone_1)
-        CandidatePhone.delete(cand_phone_2)
-
+        _delete_candidate_phone(cand_phone_1)
+        _delete_candidate_phone(cand_phone_2)
     request.addfinalizer(tear_down)
     return cand_phone_1, cand_phone_2
 
@@ -470,9 +471,8 @@ def users_with_same_phone(request, sample_user, sample_user_2):
     user_2 = _create_user_twilio_phone(sample_user_2, common_phone)
 
     def tear_down():
-        UserPhone.delete(user_1)
-        UserPhone.delete(user_2)
-
+        _delete_user_phone(user_1)
+        _delete_user_phone(user_2)
     request.addfinalizer(tear_down)
     return user_1, user_2
 
@@ -615,6 +615,52 @@ def _unschedule_campaign(campaign, headers):
     except ObjectDeletedError:  # campaign may have been deleted in case of DELETE request
         pass
 
+
+def _delete_campaign(campaign_obj):
+    """
+    This deletes the given campaign from database
+    :param campaign_obj:
+    :return:
+    """
+    try:
+        SmsCampaign.delete(campaign_obj)
+    except Exception:  # campaign may have been deleted in case of DELETE request
+        pass
+
+
+def _delete_candidate_phone(candidate_phone_obj):
+    """
+    This deletes the given candidate_phone record from database
+    :param campaign:
+    :return:
+    """
+    try:
+        CandidatePhone.delete(candidate_phone_obj)
+    except Exception:  # resource may have been deleted in case of DELETE request
+        pass
+
+
+def _delete_user_phone(user_phone_obj):
+    """
+    This deletes the given user_phone record from database
+    :return:
+    """
+    try:
+        UserPhone.delete(user_phone_obj)
+    except Exception:  # resource may have been deleted in case of DELETE request
+        pass
+
+
+def _delete_smartlist(smartlist_obj):
+    """
+    This un deletes the given smartlist record from database
+    :param campaign:
+    :return:
+    """
+    try:
+        Smartlist.delete(smartlist_obj)
+    except Exception:  # resource may have been deleted in case of DELETE request
+        pass
 
 def _create_sms_campaign_smartlist(campaign, smartlist):
     """

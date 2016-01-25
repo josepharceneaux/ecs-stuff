@@ -57,6 +57,8 @@ class CampaignType(object):
     PUSH = PushCampaign.__tablename__
     EMAIL = EmailCampaign.__tablename__
     WITH_ARTICLE_AN = [get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
+    # Any campaign service will add the entry of respective model name here
+    MODELS = (SmsCampaign, EmailCampaign, PushCampaign)
 
 
 class FrequencyIds(object):
@@ -336,3 +338,52 @@ def delete_scheduled_task(scheduled_task_id, oauth_header):
     logger.info("delete_scheduled_task: Task(id:%s) has been removed from scheduler_service"
                 % scheduled_task_id)
     return True
+
+
+def get_campaign_for_ownership_validation(campaign_id, current_user_id, campaign_type):
+    """
+    This function gets the campaign from database table as specified by campaign_type.
+    If campaign obj is found, it returns it. Otherwise it returns Resource Not Found error.
+    :param campaign_id: id of campaign
+    :param current_user_id: id of logged-in user
+    :param campaign_type: type of campaign. e.g. sms_campaign or push_campaign
+    :type campaign_id: int | long
+    :type current_user_id: int | long
+    :type campaign_type: str
+    :return: campaign obj
+    :rtype: SmsCampaign | PushCampaign etc.
+    """
+    assert_for_int_or_long(dict(campaign_id=campaign_id, current_user_id=current_user_id))
+    if not isinstance(campaign_type, str):
+        raise InvalidUsage('Include campaign_type as sms_campaign or push_campaign etc.')
+    campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
+    campaign_obj = campaign_model.get_by_id(campaign_id)
+    if not campaign_obj:
+        raise ResourceNotFound('%s(id=%s) not found.' % (campaign_model.__tablename__, campaign_id))
+    return campaign_obj
+
+
+def assert_for_int_or_long(data):
+    """
+    This validates if campaign_user_id and current_user_id are int or long.
+    :param data: data to validate
+    :type data: dict
+    :exception: Invalid Usage
+    """
+    if not isinstance(data, dict):
+        raise InvalidUsage('Include data as dictionary.')
+    for key, value in data.iteritems():
+        if not isinstance(value, (int, long)) or not value:
+            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)
+
+
+def assert_is_instance_of_campaign_model(obj):
+    """
+    This validates that given object is an instance of campaign models. e.g. SmsCampaign,
+    PushCampaign etc.
+    :param obj: data to validate
+    :type obj: SmsCampaign | PushCampaign etc.
+    :exception: Invalid Usage
+    """
+    if not isinstance(obj, CampaignType.MODELS):
+        raise InvalidUsage('Campaign must be an instance of SmsCampaign or PushCampaign etc.')

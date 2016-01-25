@@ -25,7 +25,7 @@
                         <th class="table__header">Position</th>
                     </tr>
 
-                    <tr class="table__row" dir-paginate="item in vm.candidates | itemsPerPage: vm.candidatesPerPage" pagination-id="candidatesPagination">
+                    <tr class="table__row" dir-paginate="item in vm.candidates | itemsPerPage: vm.candidatesPerPage" total-items="vm.totalCandidates" pagination-id="candidatesPagination">
                         <td class="table__col--morePadding">{{item.first_name + ' ' + item.last_name}}</td>
                         <td class="table__col--morePadding">{{item.email[0]}}</td>
                         <td class="table__col--morePadding">{{item.organization[0]}}</td>
@@ -47,7 +47,7 @@
                     </select>
                 </div>
                 <div class="col--large-10 align--right">
-                    <dir-pagination-controls direction-links="false" boundary-links="false" pagination-id="candidatesPagination"></dir-pagination-controls>
+                    <dir-pagination-controls on-page-change="vm.candidatesPageChanged(newPageNumber)" pagination-id="candidatesPagination"></dir-pagination-controls>
                 </div>
             </div>
         </div>

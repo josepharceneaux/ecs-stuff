@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.sidenav', [
+    angular.module('app.notificationCenter', [
         'app.core'
     ]);
 })();

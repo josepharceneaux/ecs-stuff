@@ -1,8 +1,6 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
-from activity_service.common.campaign_services.campaign_utils import CampaignType
-
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -12,7 +10,6 @@ import re
 from flask import Blueprint
 from flask import jsonify
 from flask import request
-from flask.ext.cors import CORS
 
 # application specific
 from activity_service.activities_app import db
@@ -21,19 +18,11 @@ from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.utils.activity_utils import ActivityMessageIds
+from activity_service.common.campaign_services.campaign_utils import CampaignType
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
-
-
-# Enable CORS
-CORS(mod, resources={
-    r'/activities/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @mod.route(ActivityApi.ACTIVITIES_PAGE, methods=['GET'])

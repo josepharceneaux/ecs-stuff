@@ -135,9 +135,9 @@ def _assert_counts_and_sends(response, count=0):
     assert response.json()
     resp = response.json()
     assert 'count' in resp
-    assert 'campaign_sends' in resp
+    assert 'sends' in resp
     assert resp['count'] == count
     if not count:  # if count is 0, campaign_sends should be []
-        assert not resp['campaign_sends']
+        assert not resp['sends']
     else:
-        assert resp['campaign_sends']
+        assert resp['sends']

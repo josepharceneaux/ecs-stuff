@@ -9,7 +9,6 @@ from datetime import datetime
 
 from flask import Blueprint
 from flask.ext.restful import Resource
-from flask.ext.cors import CORS
 
 from social_network_service.app.app_utils import api_route, SocialNetworkApiResponse
 from social_network_service.common.talent_api import TalentApi
@@ -18,15 +17,6 @@ data_blueprint = Blueprint('data_api', __name__)
 api = TalentApi()
 api.init_app(data_blueprint)
 api.route = types.MethodType(api_route, api)
-
-
-# Enable CORS
-CORS(data_blueprint, resources={
-    r'/data/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @api.route('/data/timezones/')

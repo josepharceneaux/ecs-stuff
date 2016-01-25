@@ -20,10 +20,11 @@ class SmsCampaign(db.Model):
     scheduler_task_id = db.Column(db.String(255))
 
     # Relationships
-    sms_campaign_blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
-                                       passive_deletes=True, backref='campaign')
-    sms_campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                                           passive_deletes=True, backref='campaign')
+    user_phone = relationship('UserPhone', backref='campaign')
+    blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
+                          passive_deletes=True, backref='campaign')
+    smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+                              passive_deletes=True, backref='campaign')
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
@@ -45,10 +46,10 @@ class SmsCampaignBlast(db.Model):
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
-                                      passive_deletes=True, backref='blast')
-    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
-                                        passive_deletes=True, backref='blast')
+    blast_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
+                               passive_deletes=True, backref='blast')
+    blast_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
+                                 passive_deletes=True, backref='blast')
 
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id

@@ -190,11 +190,11 @@ class TestCampaignSchedule(object):
         task_id = assert_campaign_schedule(response, sample_user.id,
                                            sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(sms_campaign_of_current_user.id))
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+                                                           str(sms_campaign_of_current_user.id))
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(sms_campaign_of_current_user.id))
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+                                                           str(sms_campaign_of_current_user.id))
         delete_test_scheduled_task(task_id, valid_header)
 
 

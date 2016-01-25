@@ -16,12 +16,14 @@
 
     configFunction.$inject = ['$provide', '$compileProvider', '$httpProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
-        'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider'];
+        'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider', '$mdThemingProvider',
+        'toastrConfig'];
 
     /* @ngInject */
     function configFunction($provide, $compileProvider, $httpProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
-                            tagsInputConfigProvider, authInfo, $uibTooltipProvider) {
+                            tagsInputConfigProvider, authInfo, $uibTooltipProvider, $mdThemingProvider,
+                            toastrConfig) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -51,6 +53,13 @@
 
         $httpProvider.interceptors.push('authorizationInterceptor');
 
+        // specify primary color, all
+        // other color intentions will be inherited
+        // from default
+        $mdThemingProvider
+            .theme('altTheme')
+            .primaryPalette('purple');
+
         pickADateProvider.setOptions({
             today: '',
             format: 'mmmm dd, yyyy'
@@ -70,6 +79,43 @@
         $uibTooltipProvider.options({
             appendToBody: true,
             placement: 'auto'
+        });
+
+        angular.extend(toastrConfig, {
+            // container config
+            autoDismiss: false,
+            containerId: 'toast-container',
+            maxOpened: 1,
+            newestOnTop: true,
+            positionClass: 'toast-bottom-right',
+            preventDuplicates: false,
+            preventOpenDuplicates: false,
+            target: 'body',
+
+            // toast config
+            allowHtml: true,
+            closeButton: true,
+            closeHtml: '<button>Dismiss</button>',
+            extendedTimeOut: 1000,
+            iconClasses: {
+                error: 'toast-error',
+                info: 'toast-info',
+                success: 'toast-success',
+                warning: 'toast-warning'
+            },
+            messageClass: 'toast-message',
+            onHidden: null,
+            onShown: null,
+            onTap: null,
+            progressBar: true,
+            tapToDismiss: false,
+            templates: {
+                toast: 'directives/toast/toast.html',
+                progressbar: 'directives/progressbar/progressbar.html'
+            },
+            timeOut: false,
+            titleClass: 'toast-title',
+            toastClass: 'toast'
         });
 
         $provide.decorator('hljsDirective', HljsDecorator);

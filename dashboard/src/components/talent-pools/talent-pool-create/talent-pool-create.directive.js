@@ -24,11 +24,13 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['$state', 'logger', 'systemAlertsService', 'talentPoolsService'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction($state, logger, systemAlertsService, talentPoolsService) {
         var vm = this;
+
+        vm.createTalentPool = createTalentPool;
 
         init();
         activate();
@@ -39,6 +41,16 @@
 
         function init() {
             //
+        }
+
+        function createTalentPool(talentPool) {
+            talentPoolsService.createTalentPool(talentPool).then(function (response) {
+                var poolId = response.talent_pools[0];
+                if (poolId) {
+                    systemAlertsService.createAlert('Talent pool <strong>"$poolName"</strong> successfully created.'.replace('$poolName', talentPool.name));
+                    $state.go('talentPools.talentPool', { poolId: poolId })
+                }
+            });
         }
     }
 })();
