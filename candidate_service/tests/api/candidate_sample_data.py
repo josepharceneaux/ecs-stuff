@@ -5,6 +5,8 @@ This module entails candidate sample data functions for testing
 import random
 from random import randrange
 
+from candidate_service.common.utils.handy_functions import sample_phone_number
+
 # Faker
 from faker import Faker
 # Instantiate faker
@@ -39,8 +41,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {'label': 'work', 'address': fake.company_email(), 'is_default': False}
                 ],
                 'phones': [
-                    {'label': 'mobile', 'value': '8009346489', 'is_default': True},
-                    {'label': 'Work', 'value': '8009346489', 'is_default': False}
+                    {'label': 'mobile', 'value': sample_phone_number(), 'is_default': True},
+                    {'label': 'Work', 'value': sample_phone_number(), 'is_default': False}
                 ],
                 'addresses': [
                     {
@@ -118,8 +120,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {'city': fake.city(), 'state': fake.state(), 'country': fake.country()}
                 ],
                 'skills': [
-                    {'name': 'payroll', 'months_used': 15, 'last_used_date': '2015-11-25'},
-                    {'name': 'sql', 'months_used': 24, 'last_used_date': '1998-10-19'}
+                    {'name': 'payroll', 'months_used': 15, 'last_used_date': fake.date()},
+                    {'name': 'sql', 'months_used': 24, 'last_used_date': fake.date()}
                 ],
                 'social_networks': [
                     {'profile_url': 'http://www.facebook.com/1024359318', 'name': 'facebook'},
@@ -333,19 +335,19 @@ def candidate_phones(talent_pool, candidate_id=None, phone_id=None):
     # Data for adding CandidatePhone to an existing Candidate
     if candidate_id and not phone_id:
         data = {'candidates': [{'id': candidate_id, 'phones': [
-            {'label': 'home', 'value': '6009346489', 'is_default': True}
+            {'label': 'home', 'value': sample_phone_number(), 'is_default': True}
         ]}]}
 
     # Data for updating an existing CandidatePhone
     elif candidate_id and phone_id:
         data = {'candidates': [{'id': candidate_id, 'phones': [{'id': phone_id, 'label': 'home',
-                                                                'value': '6009346489'}]}]}
+                                                                'value': sample_phone_number()}]}]}
 
     # Data for creating Candidate + CandidatePhone
     else:
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]},
-             'phones': [{'value': '6009346489', 'label': 'Home'}]}]}
+             'phones': [{'value': sample_phone_number(), 'label': 'Home'}]}]}
 
     return data
 

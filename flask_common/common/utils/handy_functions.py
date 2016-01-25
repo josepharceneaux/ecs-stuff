@@ -142,3 +142,16 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         logger.error('http_request: Unknown Method type %s ' % method_type)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
+
+
+def sample_phone_number():
+    """Create random phone number.
+    Phone number only creates area code + 7 random digits
+    :rtype: str
+    """
+    first = random.randint(1, 9)
+    second = random.randint(0, 99)
+    area_code = (first * 100) + second
+    middle = random.randint(101, 999)
+    last_four = ''.join(map(str, random.sample(range(10), 4)))
+    return "{}-{}-{}".format(area_code, middle, last_four)
