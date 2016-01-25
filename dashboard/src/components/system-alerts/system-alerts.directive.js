@@ -25,20 +25,23 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['systemAlertsService'];
+    ControllerFunction.$inject = ['logger', 'systemAlertsService'];
 
     /* @ngInject */
-    function ControllerFunction(systemAlertsService) {
+    function ControllerFunction(logger, systemAlertsService) {
         var vm = this;
 
         vm.dismissAlert = dismissAlert;
 
         init();
+        activate();
+
+        function activate() {
+            logger.log('Activated System Alerts View');
+        }
 
         function init() {
-            systemAlertsService.getAlerts().then(function (response) {
-                vm.alerts = response.alerts;
-            });
+            vm.alerts = systemAlertsService.getAlerts();
         }
 
         function dismissAlert(alert) {

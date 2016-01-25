@@ -19,10 +19,11 @@
                 getCandidates: getCandidates
             };
 
-            function getCandidates() {
+            function getCandidates(params) {
                 console.log('fetching candidates');
-                return candidateService.all('candidates/search').customGET().then(function (response) {
-                    return response.candidates;
+                params = params || {};
+                return candidateService.all('candidates').customGET('search', params).then(function (response) {
+                    return response;
                 });
             }
         }

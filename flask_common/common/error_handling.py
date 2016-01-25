@@ -82,6 +82,8 @@ def register_error_handlers(app, logger):
     :type app: flask.app.Flask
     :type logger: logging.Logger
     """
+    logger.info("Registering error handlers for app %s", app.import_name)
+
     @app.errorhandler(405)
     def handle_method_not_allowed(ignored):
         return jsonify({'error': {'message': 'Given HTTP method is not allowed on this endpoint'}}), 405

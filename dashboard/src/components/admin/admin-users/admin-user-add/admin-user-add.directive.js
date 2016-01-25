@@ -24,16 +24,29 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$cookies', 'logger'];
+    ControllerFunction.$inject = ['$state', 'logger', 'adminUsersService', 'systemAlertsService'];
 
     /* @ngInject */
-    function ControllerFunction($cookies, logger) {
+    function ControllerFunction($state, logger, adminUsersService, systemAlertsService) {
         var vm = this;
+
+        vm.createUser = createUser;
 
         activate();
 
         function activate() {
             logger.log('Activated Admin User Add View');
         }
+
+        function createUser(user) {
+            adminUsersService.createUser(user).then(function (response) {
+                var userId = response.users[0];
+                if (userId) {
+                    systemAlertsService.createAlert('User (<strong>$userName</strong>) successfully created.'.replace('$userName', user.userName));
+                    $state.go('admin.users.user', { userId: userId })
+                }
+            });
+        }
+
     }
 })();
