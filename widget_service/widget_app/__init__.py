@@ -1,8 +1,8 @@
-
 __author__ = 'erikfarmer'
 
 import config
 from flask import Flask
+from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from widget_service.common.models.db import db
 from widget_service.common.routes import WidgetApi, HEALTH_CHECK
@@ -16,6 +16,9 @@ logger = app.config[TalentConfigKeys.LOGGER]
 db.init_app(app)
 db.app = app
 from .views import api
+
+# Enable CORS for all origins & endpoints
+CORS(app)
 
 # wrap the flask app and give a heathcheck url
 health = HealthCheck(app, HEALTH_CHECK)

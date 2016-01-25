@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/topnav/topnav.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TopnavController',
             controllerAs: 'vm'
         };
@@ -26,13 +25,15 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuthToken'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuthToken) {
+    function ControllerFunction($state, OAuth, toastr, systemAlertsService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
+        vm.notifyUser = notifyUser;
+        vm.createSystemAlert = createSystemAlert;
 
         init();
 
@@ -85,8 +86,35 @@
         }
 
         function logout() {
-            OAuthToken.removeToken();
+            OAuth.revokeToken();
             $state.go('login');
+        }
+
+        function notifyUser(type) {
+            switch (type) {
+                case 'success':
+                    toastr.success('Hello world!', 'Toastr fun!');
+                    break;
+                case 'warning':
+                    toastr.warning('Your computer is about to explode!', 'Warning');
+                    break;
+                case 'error':
+                    toastr.error('Your credentials are gone', 'Error');
+                    break;
+                default:
+                    toastr.info('We are open today from 10 to 22', 'Information');
+            }
+        }
+
+        function createSystemAlert() {
+            var messages = [
+                'Hello world!',
+                'Your computer is about to explode!',
+                'Your credentials are gone',
+                'We are open today from 10 to 22'
+            ];
+
+            systemAlertsService.createAlert(messages[Math.round((messages.length - 1) * Math.random())]);
         }
     }
 })();

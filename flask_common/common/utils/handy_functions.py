@@ -1,18 +1,18 @@
-import json
+__author__ = 'erikfarmer'
 
+import json
 import requests
 from flask import current_app
 from requests.packages.urllib3.connection import ConnectionError
-
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
-
-__author__ = 'erikfarmer'
-
 import re
 import random
 import string
+from ..models.db import db
 from ..models.user import User, UserScopedRoles, DomainRole
+# from user_service.common.models.db import db
+# import user_service.user_app
 
 
 def random_word(length):
@@ -33,8 +33,12 @@ def add_role_to_test_user(test_user, role_names):
     :return:
     """
     for role_name in role_names:
-        if not DomainRole.get_by_name(role_name):
+        try:
             DomainRole.save(role_name)
+        except Exception:
+            db.session.rollback()
+            pass
+
     UserScopedRoles.add_roles(test_user, role_names)
 
 

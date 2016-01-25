@@ -14,7 +14,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     check_for_id, post_to_candidate_resource, get_from_candidate_resource,
-    remove_id_key, generate_single_candidate_data, response_info
+    remove_id_key, generate_single_candidate_data, response_info, AddUserRoles
 )
 
 
@@ -27,6 +27,7 @@ def test_check_for_id(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create candidate
     resp = post_to_candidate_resource(token)
@@ -90,6 +91,7 @@ def test_remove_id_key(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = generate_single_candidate_data()

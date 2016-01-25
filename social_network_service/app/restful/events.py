@@ -4,8 +4,8 @@ This file contains list of all API endpoints related to events.
 import types
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-from flask.ext.cors import CORS
 from social_network_service.app.app_utils import api_route, authenticate, SocialNetworkApiResponse
+from social_network_service.common.routes import SocialNetworkApi
 from social_network_service.utilities import process_event, delete_events
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.event import Event
@@ -17,19 +17,9 @@ from social_network_service.custom_exceptions import *
 events_blueprint = Blueprint('events_api', __name__)
 api = TalentApi()
 api.init_app(events_blueprint)
-api.route = types.MethodType(api_route, api)
 
 
-# Enable CORS
-CORS(events_blueprint, resources={
-    r'/(events|venues|organizers)/*': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
-
-
-@api.route('/events/')
+@api.route(SocialNetworkApi.EVENTS)
 class Events(Resource):
     """
         This resource returns a list of events or it can be used to create event using POST.
@@ -204,7 +194,7 @@ class Events(Resource):
         raise InvalidUsage('Bad request, include event_ids as list data', error_code=400)
 
 
-@api.route('/events/<int:event_id>')
+@api.route(SocialNetworkApi.EVENT)
 class EventById(Resource):
     """
     This resource handles event related task for a specific event specified by id

@@ -18,7 +18,7 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
     response_info, post_to_candidate_resource, get_from_candidate_resource,
-    create_same_candidate, check_for_id
+    create_same_candidate, check_for_id, AddUserRoles, request_to_candidate_resource
 )
 
 # Sample data
@@ -26,11 +26,11 @@ from candidate_sample_data import (
     generate_single_candidate_data, candidate_educations, candidate_experience,
     candidate_work_preference, candidate_phones, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network,
-    candidate_areas_of_interest, candidate_custom_fields, reset_all_data_except_param,
     complete_candidate_data_for_posting
 )
+from candidate_service.common.models.candidate import CandidateEmail
 
-# TODO: Implement server side custom error codes and add necessary assertions
+
 ######################## Candidate ########################
 def test_create_candidate_successfully(sample_user, user_auth):
     """
@@ -41,6 +41,7 @@ def test_create_candidate_successfully(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create Candidate
     create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
@@ -49,32 +50,6 @@ def test_create_candidate_successfully(sample_user, user_auth):
     print response_info(create_resp)
     assert create_resp.status_code == 201
     assert 'candidates' in resp_dict and 'id' in resp_dict['candidates'][0]
-
-
-def test_schema_validation(sample_user, user_auth):
-    """
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-
-    # Create Candidate
-    data = {'candidates': [
-        {
-            'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
-            'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': {},
-            'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
-            'areas_of_interest': [], 'phones': []
-        }
-    ]}
-    create_resp = post_to_candidate_resource(token, data)
-    assert create_resp.status_code == 201
-    print response_info(create_resp)
-    # candidate_id = create_resp.json()['candidates'][0]['id']
-    # cand_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-    # print "\ncand_dict = %s" % cand_dict
 
 
 def test_create_candidate_and_retrieve_it(sample_user, user_auth):
@@ -88,16 +63,19 @@ def test_create_candidate_and_retrieve_it(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = generate_single_candidate_data()
     create_resp = post_to_candidate_resource(token, data=data)
     print response_info(create_resp)
+    assert create_resp.status_code == 201
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     resp = get_from_candidate_resource(token, candidate_id)
     print response_info(resp)
+    assert resp.status_code == 200
 
 
 def test_create_an_existing_candidate(sample_user, user_auth):
@@ -109,6 +87,7 @@ def test_create_an_existing_candidate(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create same Candidate twice
     create_resp = create_same_candidate(token)
@@ -116,24 +95,26 @@ def test_create_an_existing_candidate(sample_user, user_auth):
     resp_dict = create_resp.json()
     print response_info(create_resp)
     assert create_resp.status_code == 400
-    assert 'error' in resp_dict
+    assert create_resp.json()['error']['code'] == 3000
 
 
 def test_create_candidate_with_missing_keys(sample_user, user_auth):
     """
-    Test:   Attempt to create a Candidate with missing key(s)
-    Expect: 400
+    Test:   Create a Candidate with only first_name provided
+    Expect: 201, candidate creation should be successful
+            regardless of how much data is provided
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create Candidate without 'candidate'-key
-    data = generate_single_candidate_data()['candidates']
+    data = {'candidates': [{'first_name': fake.first_name()}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400
+    assert create_resp.status_code == 201
 
 
 def test_update_candidate_via_post(sample_user, user_auth):
@@ -145,18 +126,13 @@ def test_update_candidate_via_post(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
-
-    # Create Candidate
-    create_resp = post_to_candidate_resource(token)
-
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = get_from_candidate_resource(token, candidate_id).json()
+    AddUserRoles.add(user=sample_user)
 
     # Send Candidate object with candidate_id to post
-    resp = post_to_candidate_resource(token, data=candidate_dict)
+    data = {'candidates': [{'id': 5, 'emails': [{'address': fake.safe_email()}]}]}
+    resp = post_to_candidate_resource(token, data=data)
     print response_info(resp)
-    assert resp.status_code == 400
+    assert resp.status_code == 400 and resp.json()['error']['code'] == 3000
 
 
 def test_create_candidate_with_invalid_fields(sample_user, user_auth):
@@ -168,12 +144,118 @@ def test_create_candidate_with_invalid_fields(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create Candidate with invalid keys/fields
     data = {'candidates': [{'emails': [{'address': 'someone@nice.io'}], 'foo': 'bar'}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400
+    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+
+
+def test_create_candidates_in_bulk_with_one_erroneous_data(sample_user, user_auth):
+    """
+    Test: Attempt to create few candidates, one of which will have bad data
+    Expect: 400, no record should be added to the db
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+
+    email_1, email_2 = fake.safe_email(), fake.safe_email()
+    data = {'candidates': [
+        {'emails': [{'label': None, 'address': email_1}]},
+        {'emails': [{'label': None, 'address': email_2}]},
+        {'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
+    ]}
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
+    assert CandidateEmail.get_by_address(email_address=email_1) is None
+    assert CandidateEmail.get_by_address(email_address=email_2) is None
+
+
+def test_create_hidden_candidate(sample_user, user_auth):
+    """
+    Test: Create a candidate that is web-hidden
+    Expect: 201, candidate should no longer be web hidden.
+            No duplicate records should be in the database
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+
+    # Create candidate
+    create_resp = post_to_candidate_resource(token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    db.session.commit()
+    print response_info(response=create_resp)
+
+    # Retrieve candidate's email
+    get_resp = get_from_candidate_resource(token, candidate_id)
+    first_can_email = get_resp.json()['candidate']['emails'][0]
+
+    # Delete (hide) candidate
+    del_resp = request_to_candidate_resource(token, 'delete', candidate_id)
+    db.session.commit()
+    print response_info(response=del_resp)
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate_emails_count = len(candidate.emails)
+    assert del_resp.status_code == 204
+    assert candidate.is_web_hidden == 1
+
+    # Create previously deleted candidate
+    data = {'candidates': [{'emails': [{'address': first_can_email['address']}]}]}
+    create_resp = post_to_candidate_resource(access_token=token, data=data)
+    db.session.commit()
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 201
+    assert candidate.is_web_hidden == 0
+    assert CandidateEmail.get_by_address(first_can_email['address']).id == first_can_email['id']
+    assert len(candidate.emails) == candidate_emails_count
+
+
+def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(sample_user, user_auth):
+    """
+    Test: Create a candidate that is currently web-hidden
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.all_roles(user=sample_user)
+
+    # Create candidate
+    create_resp = post_to_candidate_resource(token)
+    candidate_id = create_resp.json()['candidates'][0]['id']
+    db.session.commit()
+    print response_info(response=create_resp)
+
+    # Retrieve candidate's first name
+    get_resp = get_from_candidate_resource(token, candidate_id)
+    candidate_email = get_resp.json()['candidate']['emails'][0]
+    full_name = get_resp.json()['candidate']['full_name']
+
+    # Delete candidate
+    del_resp = request_to_candidate_resource(token, 'delete', candidate_id)
+    db.session.commit()
+    print response_info(response=del_resp)
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    assert del_resp.status_code == 204
+    assert candidate.is_web_hidden == 1
+
+    # Create previously deleted candidate
+    data = {'candidates': [{'emails': [{'address': candidate_email['address']}],'first_name': 'McLovin'}]}
+    create_resp = post_to_candidate_resource(token, data)
+    db.session.commit()
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 201
+    assert candidate.is_web_hidden == 0
+
+    # Retrieve candidate
+    candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    assert candidate_dict['full_name'] != full_name
 
 
 ######################## CandidateAddress ########################
@@ -186,6 +268,7 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = generate_single_candidate_data()
@@ -197,8 +280,7 @@ def test_create_candidate_with_bad_zip_code(sample_user, user_auth):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
     candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
-
-    assert candidate_dict['addresses'][0]['zip_code'] == None
+    assert candidate_dict['addresses'][0]['zip_code'] is None
 
 
 ######################## CandidateAreaOfInterest ########################
@@ -211,6 +293,7 @@ def test_create_candidate_area_of_interest(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate + CandidateAreaOfInterest
     data = generate_single_candidate_data(domain_id=sample_user.domain_id)
@@ -224,8 +307,26 @@ def test_create_candidate_area_of_interest(sample_user, user_auth):
 
     candidate_aoi = resp.json()['candidate']['areas_of_interest']
     assert isinstance(candidate_aoi, list)
-    assert candidate_aoi[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[0]['id']).name
-    assert candidate_aoi[1]['name'] == db.session.query(AreaOfInterest).get(candidate_aoi[1]['id']).name
+    assert candidate_aoi[0]['name'] == AreaOfInterest.query.get(candidate_aoi[0]['id']).name
+    assert candidate_aoi[1]['name'] == AreaOfInterest.query.get(candidate_aoi[1]['id']).name
+
+
+def test_create_candidate_area_of_interest_outside_of_domain(sample_user, user_auth, user_from_diff_domain):
+    """
+    Test: Attempt to create candidate's area of interest outside of user's domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:    User
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+
+    data = generate_single_candidate_data(user_from_diff_domain.domain_id)
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 403 and create_resp.json()['error']['code'] == 3040
+
 
 ######################## CandidateCustomField ########################
 def test_create_candidate_custom_fields(sample_user, user_auth):
@@ -237,6 +338,7 @@ def test_create_candidate_custom_fields(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate + CandidateCustomField
     data = generate_single_candidate_data(domain_id=sample_user.domain_id)
@@ -253,6 +355,24 @@ def test_create_candidate_custom_fields(sample_user, user_auth):
     assert can_custom_fields[0]['value'] == data['candidates'][0]['custom_fields'][0]['value']
     assert can_custom_fields[1]['value'] == data['candidates'][0]['custom_fields'][1]['value']
 
+
+def test_create_candidate_custom_fields_outside_of_domain(sample_user, user_auth, user_from_diff_domain):
+    """
+    Test: Attempt to create candidate's custom fields outside of user's domain
+    Expect: 403
+    :type sample_user:  User
+    :type user_auth:    UserAuthentication
+    :type user_from_different_domain:    User
+    """
+    token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add(user=sample_user)
+
+    data = generate_single_candidate_data(user_from_diff_domain.domain_id)
+    create_resp = post_to_candidate_resource(token, data)
+    print response_info(create_resp)
+    assert create_resp.status_code == 403 and create_resp.json()['error']['code'] == 3040
+
+
 ######################## CandidateEducations ########################
 def test_create_candidate_educations(sample_user, user_auth):
     """
@@ -263,6 +383,7 @@ def test_create_candidate_educations(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = candidate_educations()
@@ -304,6 +425,7 @@ def test_create_candidate_educations_with_no_degrees(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate without degrees
     data = candidate_educations()
@@ -335,6 +457,7 @@ def test_create_candidate_experience(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = candidate_experience()
@@ -372,6 +495,7 @@ def test_create_candidate_experiences_with_no_bullets(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate without degrees
     data = {'candidates': [
@@ -408,6 +532,7 @@ def test_create_candidate_work_preference(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = candidate_work_preference()
@@ -436,24 +561,26 @@ def test_create_candidate_work_preference(sample_user, user_auth):
 def test_create_candidate_without_email(sample_user, user_auth):
     """
     Test:   Attempt to create a Candidate with no email
-    Expect: 400
+    Expect: 201
     :type sample_user:  User
     :type user_auth:    UserAuthentication
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
-    # Create Candidate with no email-object
+    # Create Candidate with no email
+    AddUserRoles.add_and_get(user=sample_user)
     data = {'candidates': [{'first_name': 'john', 'last_name': 'stark'}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400
+    assert create_resp.status_code == 201
 
-    # Create Candidate with empty email-list
+    # Create Candidate
+    # add_role_to_test_user(sample_user, ['CAN_ADD_CANDIDATES']) with empty email-list
     data = {'candidates': [{'first_name': 'john', 'last_name': 'stark', 'emails': [{}]}]}
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400
+    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
 
 
 def test_create_candidate_with_bad_email(sample_user, user_auth):
@@ -465,6 +592,7 @@ def test_create_candidate_with_bad_email(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add(user=sample_user)
 
     # Create Candidate
     data = {'candidates': [{'emails': [{'label': None, 'is_default': True, 'address': 'bad_email.com'}]}]}
@@ -472,8 +600,7 @@ def test_create_candidate_with_bad_email(sample_user, user_auth):
 
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
-
-    assert create_resp.status_code == 400
+    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
 
 
 def test_create_candidate_without_email_label(sample_user, user_auth):
@@ -485,12 +612,13 @@ def test_create_candidate_without_email_label(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate without email-label
     data = {'candidates': [
         {'emails': [
-            {'label': None, 'is_default': None, 'address': fake.email()},
-            {'label': None, 'is_default': None, 'address': fake.email()}
+            {'label': None, 'is_default': None, 'address': fake.safe_email()},
+            {'label': None, 'is_default': None, 'address': fake.safe_email()}
         ]}
     ]}
 
@@ -516,6 +644,7 @@ def test_create_candidate_phones(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
     # Create Candidate
     data = candidate_phones()
@@ -544,8 +673,9 @@ def test_create_candidate_without_phone_label(sample_user, user_auth):
     """
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
+    AddUserRoles.add_and_get(user=sample_user)
 
-    # Create Candidate without phone-label
+    # Create Candidate without label
     data = {'candidates': [{'phones':
         [
             {'label': None, 'is_default': None, 'value': '6504084069'},
@@ -575,7 +705,8 @@ def test_create_candidate_with_bad_phone_label(sample_user, user_auth):
     # Get access token
     token = user_auth.get_auth_token(sample_user, True)['access_token']
 
-    # Create Candidate without phone-label
+    # Create Candidate without label
+    AddUserRoles.add_and_get(user=sample_user)
     data = {'candidates': [{'phones':
         [
             {'label': 'vork', 'is_default': None, 'value': '6504084069'},
@@ -607,6 +738,7 @@ def test_create_candidate_military_service(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
+    AddUserRoles.add_and_get(user=sample_user)
     data = candidate_military_service()
     create_resp = post_to_candidate_resource(token, data)
     print response_info(create_resp)
@@ -638,6 +770,7 @@ def test_create_candidate_preferred_location(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
+    AddUserRoles.add_and_get(user=sample_user)
     data = candidate_preferred_locations()
     create_resp = post_to_candidate_resource(token, data=data)
     print response_info(create_resp)
@@ -669,6 +802,7 @@ def test_create_candidate_skills(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
+    AddUserRoles.add_and_get(user=sample_user)
     data = candidate_skills()
     create_resp = post_to_candidate_resource(token, data=data)
     print response_info(create_resp)
@@ -701,6 +835,7 @@ def test_create_candidate_social_networks(sample_user, user_auth):
     token = user_auth.get_auth_token(sample_user, get_bearer_token=True)['access_token']
 
     # Create Candidate
+    AddUserRoles.add_and_get(user=sample_user)
     data = candidate_social_network()
     create_resp = post_to_candidate_resource(token, data=data)
     print response_info(create_resp)

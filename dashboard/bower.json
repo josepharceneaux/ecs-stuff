@@ -25,10 +25,11 @@
     "angular-bootstrap": "~1.0.0",
     "angular-cookies": "~1.4.8",
     "angular-highlightjs": "~0.5.1",
+    "angular-material": "~1.0.1",
     "angular-moment": "~0.10.3",
     "angular-oauth2": "~3.0.1",
     "angular-sanitize": "~1.4.8",
-    "angular-toastr": "~1.4.1",
+    "angular-toastr": "~1.6.0",
     "angular-ui-router": "~0.2.15",
     "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",
@@ -37,6 +38,7 @@
     "lodash": "~3.9.3",
     "ng-pickadate": "~0.3.0",
     "ng-tags-input": "~3.0.0",
+    "restangular": "~1.5.1",
     "velocity": "~1.2.3"
   }
 }

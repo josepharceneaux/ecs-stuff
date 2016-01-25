@@ -1,26 +1,18 @@
-Develop branch:
-[![Circle CI](https://circleci.com/gh/gettalent/talent-flask-services/tree/develop.svg?style=svg&circle-token=51dd4e4631bf4a44e01c204e79e9110c8995f387)](https://circleci.com/gh/gettalent/talent-flask-services/tree/develop)
+Jenkins build:
 
-Master branch:
-[![Circle CI](https://circleci.com/gh/gettalent/talent-flask-services/tree/develop.svg?style=svg&circle-token=51dd4e4631bf4a44e01c204e79e9110c8995f387)](https://circleci.com/gh/gettalent/talent-flask-services/tree/master)
+[![Build Status](http://jenkins.gettalent.com:8080/buildStatus/icon?job=talent-flask-services)](http://jenkins.gettalent.com:8080/job/talent-flask-services)
 
 getTalent Flask Micro Services
 ==============================
 
-Auth Service
------------
-[README](auth_service/README.md)
-
-
-Resume Service
+Resume Parsing Service
 -------------
 [README](resume_parsing_service/README.md)
-
-
-Event Service
--------------
-[README](event_service/README.md)
 
 Dashboard in AngularJS
 ----------------------
 [README](dashboard/README.md)
+
+Scheduler Service
+-------------
+[README](scheduler_service/README.md)

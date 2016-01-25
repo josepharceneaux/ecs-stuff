@@ -31,7 +31,7 @@ from social_network_service.custom_exceptions import *
 from scheduler_service.common.routes import AuthApiUrl
 
 
-OAUTH_SERVER = AuthApiUrl.AUTH_SERVICE_AUTHORIZE_URI
+OAUTH_SERVER = AuthApiUrl.AUTHORIZE
 
 
 class Attendee(object):

@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/admin/admin-system-alerts/admin-system-alerts.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'AdminSystemAlertsController',
             controllerAs: 'vm'
         };

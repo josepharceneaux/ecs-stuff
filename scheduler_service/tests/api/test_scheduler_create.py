@@ -11,8 +11,11 @@ import requests
 # Application imports
 import time
 
+<<<<<<< HEAD
 from datetime import timedelta, datetime
 
+=======
+>>>>>>> be391d50d4dc444a2590dc48421bf711ea87ad04
 from scheduler_service import db
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
