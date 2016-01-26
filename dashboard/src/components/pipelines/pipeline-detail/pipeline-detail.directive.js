@@ -41,7 +41,7 @@
             vm.callouts = [
                 {
                     name: 'Total Candidates',
-                    value: '1000'
+                    value: vm.candidatesCount
                 },
                 {
                     name: 'Active Campaigns',
@@ -140,7 +140,19 @@
                 }
             ];
 
-            pipelinesDetailService.getPipelineDetail();
+            pipelinesDetailService.getPipelineDetail().then(function (response) {
+                console.log('dir', response);
+                vm.pipelineDetails = response;
+            });
+
+            pipelinesDetailService.getPipelineCandidatesCount().then(function (response) {
+                vm.candidatesCount = response;
+            });
+
+            pipelinesDetailService.getPipelineSmartlistsCount().then(function (response) {
+                vm.smartLists = response;
+            })
+
         }
     }
 })();
