@@ -4,7 +4,7 @@
   src: url("../fonts/gettalent-icons.eot?#iefix") format("embedded-opentype"), url("../fonts/gettalent-icons.woff") format("woff"), url("../fonts/gettalent-icons.ttf") format("truetype"), url("../fonts/gettalent-icons.svg#gettalent-icons") format("svg");
 }
 
-.icon, .icon--box, .icon--build, .icon--calendar, .icon--campaigns, .icon--checked, .icon--close, .icon--cloud, .icon--computer, .icon--custom-fields, .icon--download, .icon--dropbox, .icon--education, .icon--file, .icon--google-drive, .icon--linkedin, .icon--location, .icon--lock, .icon--mail-open, .icon--mail, .icon--notes, .icon--overview, .icon--people, .icon--person, .icon--phone, .icon--pipelines, .icon--progress, .icon--raised-hand, .icon--save, .icon--search, .icon--settings, .icon--speech, .icon--thumbs-up, .icon--tools, .icon--twitter, .icon--unchecked, .icon--upload, .icon--work {
+.icon, .icon--box, .icon--build, .icon--calendar, .icon--campaigns, .icon--carret, .icon--checked, .icon--close, .icon--cloud, .icon--computer, .icon--custom-fields, .icon--download, .icon--dropbox, .icon--education, .icon--file, .icon--google-drive, .icon--linkedin, .icon--location, .icon--lock, .icon--mail-open, .icon--mail, .icon--notes, .icon--overview, .icon--people, .icon--person, .icon--phone, .icon--pipelines, .icon--progress, .icon--raised-hand, .icon--save, .icon--search, .icon--settings, .icon--speech, .icon--thumbs-up, .icon--tools, .icon--twitter, .icon--unchecked, .icon--upload, .icon--work {
   font-family: "gettalent-icons";
   font-style: normal;
   font-weight: normal;
@@ -30,134 +30,138 @@
   content: "\EA04";
 }
 
-.icon--checked:after {
+.icon--carret:after {
   content: "\EA05";
 }
 
-.icon--close:after {
+.icon--checked:after {
   content: "\EA06";
 }
 
-.icon--cloud:after {
+.icon--close:after {
   content: "\EA07";
 }
 
-.icon--computer:after {
+.icon--cloud:after {
   content: "\EA08";
 }
 
-.icon--custom-fields:after {
+.icon--computer:after {
   content: "\EA09";
 }
 
-.icon--download:after {
+.icon--custom-fields:after {
   content: "\EA0A";
 }
 
-.icon--dropbox:after {
+.icon--download:after {
   content: "\EA0B";
 }
 
-.icon--education:after {
+.icon--dropbox:after {
   content: "\EA0C";
 }
 
-.icon--file:after {
+.icon--education:after {
   content: "\EA0D";
 }
 
-.icon--google-drive:after {
+.icon--file:after {
   content: "\EA0E";
 }
 
-.icon--linkedin:after {
+.icon--google-drive:after {
   content: "\EA0F";
 }
 
-.icon--location:after {
+.icon--linkedin:after {
   content: "\EA10";
 }
 
-.icon--lock:after {
+.icon--location:after {
   content: "\EA11";
 }
 
-.icon--mail-open:after {
+.icon--lock:after {
   content: "\EA12";
 }
 
-.icon--mail:after {
+.icon--mail-open:after {
   content: "\EA13";
 }
 
-.icon--notes:after {
+.icon--mail:after {
   content: "\EA14";
 }
 
-.icon--overview:after {
+.icon--notes:after {
   content: "\EA15";
 }
 
-.icon--people:after {
+.icon--overview:after {
   content: "\EA16";
 }
 
-.icon--person:after {
+.icon--people:after {
   content: "\EA17";
 }
 
-.icon--phone:after {
+.icon--person:after {
   content: "\EA18";
 }
 
-.icon--pipelines:after {
+.icon--phone:after {
   content: "\EA19";
 }
 
-.icon--progress:after {
+.icon--pipelines:after {
   content: "\EA1A";
 }
 
-.icon--raised-hand:after {
+.icon--progress:after {
   content: "\EA1B";
 }
 
-.icon--save:after {
+.icon--raised-hand:after {
   content: "\EA1C";
 }
 
-.icon--search:after {
+.icon--save:after {
   content: "\EA1D";
 }
 
-.icon--settings:after {
+.icon--search:after {
   content: "\EA1E";
 }
 
-.icon--speech:after {
+.icon--settings:after {
   content: "\EA1F";
 }
 
-.icon--thumbs-up:after {
+.icon--speech:after {
   content: "\EA20";
 }
 
-.icon--tools:after {
+.icon--thumbs-up:after {
   content: "\EA21";
 }
 
-.icon--twitter:after {
+.icon--tools:after {
   content: "\EA22";
 }
 
-.icon--unchecked:after {
+.icon--twitter:after {
   content: "\EA23";
 }
 
-.icon--upload:after {
+.icon--unchecked:after {
   content: "\EA24";
 }
 
-.icon--work:after {
+.icon--upload:after {
   content: "\EA25";
+}
+
+.icon--work:after {
+  content: "\EA26";
 }

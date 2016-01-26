@@ -17,5 +17,5 @@
   display: inline;
 }
 
-<% _.each(glyphs, function(glyph) { %>.<%= className %>--<%= glyph.name %> { @extend .<%= className %>; &:after { content: "\<%= glyph.unicode[0].charCodeAt(0).toString(16).toUpperCase() %>" } }
+<% .each(glyphs, function(glyph) { %>.<%= className %>--<%= glyph.name %> { @extend .<%= className %>; &:after { content: "\<%= glyph.unicode[0].charCodeAt(0).toString(16).toUpperCase() %>" } }
 <% }); %>
