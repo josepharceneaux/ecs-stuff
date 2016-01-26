@@ -16,10 +16,13 @@ def get_role_names():
     for constant in constants.__iter__():
         if "__" in constant:
             constants.remove(constant)
+
+    print "ROLE_NAMES: {}".format(constants)
     return constants
 
 
 def add_domain_roles():
+    print "running: add_domain_roles()"
     for role_name in get_role_names():
         domain_role = DomainRole.get_by_name(role_name=role_name)
         if domain_role is None:
@@ -29,6 +32,7 @@ def add_domain_roles():
 
 
 def add_user_roles():
+    print "running: add_user_roles()"
     existing_users = User.query.all()
     domain_roles = DomainRole.query.filter(DomainRole.role_name.notlike('%delete_user%') &
                                            DomainRole.role_name.notlike('%delete_domain%')).all()
@@ -43,6 +47,7 @@ def add_user_roles():
 
 
 def add_user_group_to_domains():
+    print "running: add_user_group_to_domains()"
     domains = Domain.query.all()
     for domain in domains:
         user_group = UserGroup.query.filter_by(domain_id=domain.id).first()
@@ -53,6 +58,7 @@ def add_user_group_to_domains():
 
 
 def add_talent_pool():
+    print "running: add_talent_pool()"
     users = User.query.all()
     for user in users:
         talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id,
@@ -75,6 +81,7 @@ def update_users_group_id():
     """
     Users.user_group_id will be updated if user is not already assocaited with a UserGroup.id
     """
+    print "running: update_users_group_id()"
     users = User.query.all()
     for user in users:
         if user.user_group_id is None:
@@ -86,6 +93,7 @@ def update_users_group_id():
 
 
 def add_talent_pool_group():
+    print "running: add_talent_pool_group()"
     talent_pools = TalentPool.query.all()
     user_groups = UserGroup.query.all()
     for group in user_groups:
@@ -97,16 +105,24 @@ def add_talent_pool_group():
 
     db.session.commit()
 
+# Staging: GetTalent
+# Prod: GetTalent, viacom, Kaiser, Kaiser Corporate, Dice, IT Job Boards, EFC, QC Technologies, HP. Geico, Dice Demore Account, DHI, ABC Demo
 
 if __name__ == '__main__':
-    print "starting role updates"
+    print "***** starting role updates *****"
     try:
         add_domain_roles()
+        print "completed: add_domain_roles()"
         add_user_roles()
+        print "completed: add_user_roles()"
         add_user_group_to_domains()
+        print "completed: add_user_group_to_domains()"
         add_talent_pool()
+        print "completed: add_talent_pool()"
         update_users_group_id()
+        print "completed: update_users_group_id()"
         add_talent_pool_group()
+        print "completed: add_talent_pool_group()"
     except Exception as e:
         db.session.rollback()
         print "\nUpdates failed: {}".format(e.message)
