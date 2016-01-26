@@ -1,9 +1,79 @@
-<section id="smart-lists-view" class="view__main">
+<section id="smart-lists-view" class="view-wrapper view__main--smart-lists">
 
-    <div layout-padding layout="row">
-        <div flex layout-margin layout-padding class="module">
-            <div class="mod-header">Smart Lists</div>
+    <div layout="column" layout-margin>
+
+        <!-- Navigation path -->
+        <div>
+            <p class="md-caption">
+                <a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
+            </p>
         </div>
+        <!-- End: Navigation path -->
+
+        <!-- Header -->
+        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+                <div class="page-title-icon">
+                    <img src="//placehold.it/80x80" />
+                </div>
+                <div flex>
+                    <h3 class="md-title">All Smart Lists</h3>
+                </div>
+                <div layout="row" layout-xs="column" layout-sm="column">
+                    <a ui-sref="pipelines.pipeline.smartLists.create"><md-button class="md-raised md-primary">Create Smartlist</md-button></a>
+                </div>
+        </md-content>
+        <!-- End: Header -->
+
+        <!-- Summaries and Activity Feed -->
+        <div layout="row" layout-wrap>
+
+            <!-- SmartList Table -->
+            <div id="smartlists-table" flex="66" flex-xs="100" flex-sm="100">
+                <md-card class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Top Smart Lists<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">Sub header if needed</span>
+                        </md-card-title-text>
+                        <span class="md-caption card-top-right-button">Create New List</span>
+                    </md-card-title>
+                    <md-card-content flex>
+                        Table Directive
+                    </md-card-content>
+                </md-card>
+            </div>
+            <!-- End SmartList Table -->
+
+            <!-- Top Lists by Candidate Growth -->
+            <div flex="33" flex-xs="100" flex-sm="100">
+                <md-card class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Top Smart Lists<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">Sub header if needed</span>
+                        </md-card-title-text>
+                        <span class="md-caption card-top-right-button">Create New List</span>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <md-list class="v2-h-barchart">
+                            <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
+                                <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                    <h4>{{topSkill.title}}</h4>
+                                    <h4>{{topSkill.value}}</h4>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </md-card-content>
+                    <md-card-actions layout="row" layout-align="end center">
+                        <md-button>See more</md-button>
+                    </md-card-actions>
+                </md-card>
+            </div>
+            <!-- End: Top Performing Campaigns -->
+
+
+        </div>
+
     </div>
 
 </section>
