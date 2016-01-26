@@ -77,7 +77,7 @@ def load_gettalent_config(app_config):
         # Download into temporary file & load config
         tmp_config_file = tempfile.NamedTemporaryFile()
         bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
-        app_config.from_object(tmp_config_file)
+        app_config.from_pyfile(tmp_config_file.name)
         tmp_config_file.close()
     if not app_config[TalentConfigKeys.ENV_KEY] == 'prod':
         app_config['IS_DEV'] = True
