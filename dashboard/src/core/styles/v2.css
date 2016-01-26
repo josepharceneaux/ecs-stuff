@@ -2727,7 +2727,7 @@ em {
 .header__profile:after {
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '\EA05';
+  content: '\EA06';
   font-size: 5px;
   line-height: 1;
   width: 0;
@@ -2930,10 +2930,6 @@ em {
 
 .icon--cog:before {
   content: "";
-}
-
-.icon--bell:before {
-  content: "";
 }
 
 .icon--down:before {
@@ -3142,7 +3138,7 @@ em {
   transition: color 0.5s ease;
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '\EA05';
+  content: '\EA06';
   font-size: 5px;
   right: 20px;
   line-height: 1;
