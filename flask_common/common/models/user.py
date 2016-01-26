@@ -411,6 +411,9 @@ class UserScopedRoles(db.Model):
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
 
+    def __repr__(self):
+        return "<UserScopedRoles: (id = {})>".format(self.id)
+
     @staticmethod
     def add_roles(user, roles_list):
         """ Add a role for user
