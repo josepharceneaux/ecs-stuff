@@ -2727,7 +2727,7 @@ em {
 .header__profile:after {
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '\EA06';
+  content: '\EA08';
   font-size: 5px;
   line-height: 1;
   width: 0;
@@ -2920,10 +2920,6 @@ em {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon--announcements:before {
-  content: "";
-}
-
 .icon--hamburger:before {
   content: "";
 }
@@ -2932,28 +2928,12 @@ em {
   content: "";
 }
 
-.icon--cog:before {
-  content: "";
-}
-
 .icon--down:before {
   content: "";
 }
 
 .icon--clipboard:before {
   content: "";
-}
-
-.icon--list:before {
-  content: "";
-}
-
-.icon--people:before {
-  content: "";
-}
-
-.icon--pipeline:before {
-  content: "";
 }
 
 .icon--plus:before {
@@ -3142,7 +3122,7 @@ em {
   transition: color 0.5s ease;
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '\EA06';
+  content: '\EA08';
   font-size: 5px;
   right: 20px;
   line-height: 1;
@@ -3500,7 +3480,7 @@ em {
 .navigation__childItem__content li:before {
   left: 0.75em;
   font-family: "gettalent-icons";
-  content: '';
+  content: '\EA02';
   width: 0;
   height: 0;
   font-size: 7px;
