@@ -15,7 +15,7 @@ from ..error_handling import *
 from ..routes import AuthApiUrl
 
 
-def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token

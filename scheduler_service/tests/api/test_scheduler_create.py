@@ -15,6 +15,7 @@ from scheduler_service import db
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.auth_utilities import create_test_user
+from scheduler_service.common.tests.conftest import sample_user
 
 __author__ = 'saad'
 
@@ -40,7 +41,7 @@ class TestSchedulerCreate(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 
-    def test_endpoint_job(self, auth_header, job_config_one_time_task):
+    def test_dummy_endpoint_accesstoken_job(self, sample_user, auth_header, job_config_one_time_task):
         """
         Create a job by hitting the endpoint and make sure response
         is correct. Job will be one time and run after 16 seconds.
@@ -53,16 +54,47 @@ class TestSchedulerCreate(object):
             POST data while hitting the endpoint.
         :return:
         """
-        email = 'saad@test.com'
-
-        # Delete old user if exist
-        test_user = User.query.filter_by(email=email).first()
-        if test_user:
-            test_user.delete()
-
-        # Create a new test user
-        test_user = create_test_user(db.session, None, "@sdqscheo!amcs")
+        test_user = User.query.filter_by(email=sample_user.email).first()
         user_id = test_user.id
+        run_datetime = datetime.utcnow() + timedelta(seconds=10)
+        job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config_one_time_task['post_data'].update({'test_user_id': test_user.id})
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        # Wait till job run
+        time.sleep(16)
+
+        # Scheduler endpoint should delete test user
+        db.session.commit()
+        test_user = User.query.filter_by(id=user_id).first()
+        assert not test_user
+
+    def test_dummy_endpoint_jwt_job(self, auth_header, job_config_one_time_task, sample_user):
+        """
+        Create a job by hitting the endpoint and make sure response
+        is correct. Job will be one time and run after 16 seconds.
+        Then wait for job to hit our scheduler service dummy endpoint.
+        Create a test user and pass its id to post_data
+        Dummy endpoint will delete test user. In the test, check if that test user exist
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        test_user = User.query.filter_by(email=sample_user.email).first()
+        user_id = test_user.id
+
+        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
+        auth_header['X-Talent-Secret-Key-ID'] = secret_key_id
+        auth_header['Authorization'] = 'Bearer %s' % access_token
+
+        job_config_one_time_task['is_jwt_request'] = True
+
         run_datetime = datetime.utcnow() + timedelta(seconds=10)
         job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
         job_config_one_time_task['post_data'].update({'test_user_id': test_user.id})

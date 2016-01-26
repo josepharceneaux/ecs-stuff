@@ -39,7 +39,7 @@ class TestSchedulerExceptions(object):
 
     def test_incorrect_post_data_exception(self, auth_header):
         """
-            Create a job by posting wrong data and check if exception occurs with status code 400
+            Create a job by posting wrong data (is_jwt_token) and check if exception occurs with status code 400
             Args:
                 auth_data: Fixture that contains token.
                 job_config (dict): Fixture that contains job config to be used as
@@ -48,6 +48,24 @@ class TestSchedulerExceptions(object):
             """
         # Create job with invalid string
         response = requests.post(SchedulerApiUrl.TASKS, data='invalid data',
+                                 headers=auth_header)
+        assert response.status_code == 400
+
+    def test_invalid_isjwtrequest_exception(self, auth_header, job_config):
+        """
+            Create a job using incorrect task_type, it should throw 500 exception with error code
+
+            Args:
+                auth_data: Fixture that contains token.
+                job_config (dict): Fixture that contains job config to be used as
+                POST data while hitting the endpoint.
+            :return:
+            """
+        # Create job with invalid is_jwt_toke  string
+        invalid_job_config = job_config.copy()
+        invalid_job_config['is_jwt_request'] = 'invalid'
+
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config),
                                  headers=auth_header)
         assert response.status_code == 400
 
