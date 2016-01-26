@@ -594,7 +594,7 @@ class PushCampaignSends(Resource):
         sends = []
         # Add sends for every blast to `sends` list to get all sends of a campaign.
         # A campaign can have multiple blasts
-        [sends.extend(blast.blast_sends) for blast in push_campaign.blasts]
+        [sends.extend(blast.blast_sends.all()) for blast in push_campaign.blasts.all()]
         # Get JSON serializable data
         sends = [send.to_json() for send in sends]
         response = dict(sends=sends, count=len(sends))
@@ -650,13 +650,65 @@ class PushCampaignBlasts(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
-        if not push_campaign:
-            raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in push_campaign.blasts]
+        blasts = [blast.to_json() for blast in campaign.blasts.all()]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
+
+
+@api.route(PushCampaignApi.BLAST)
+class PushCampaignBlastById(Resource):
+
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, blast_id):
+        """
+        This endpoint returns a specific blast object (dict)
+        associated with a specific push campaign.
+
+        :param campaign_id: int, unique id of a push campaign
+        :param blast_id: int, unique id of a blast of campaign
+        :return: json data containing blast
+
+
+        :Example:
+            headers = {'Authorization': 'Bearer <access_token>'}
+            campaign_id = 1
+            blast_id = 3
+            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ \
+                                    '/blasts/' + str(blast_id),
+                                    headers=headers)
+
+        .. Response::
+
+            {
+                "blast":
+                        {
+                          "campaign_id": 2,
+                          "clicks": 6,
+                          "id": 3,
+                          "sends": 10,
+                          "updated_time": "2015-12-30 14:33:44"
+                        }
+            }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    404 (Blast not found, Campaign not found)
+                    500 (Internal Server Error)
+        """
+        user = request.user
+        # Get a campaign that was created by this user
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        # Serialize blasts of a campaign
+        blast = campaign.blasts.filter_by(id=blast_id).first()
+        if blast:
+            response = dict(blast=blast.to_json())
+            return response, 200
+        else:
+            raise ResourceNotFound('Blast not found for campaign (id: %s) with id %s'
+                                   % (campaign_id, blast_id))
 
 
 @api.route(PushCampaignApi.DEVICES)

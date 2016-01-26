@@ -690,6 +690,7 @@ class PushCampaignApi(object):
     SENDS = CAMPAIGN + '/sends'
     BLASTS_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
     BLASTS = CAMPAIGN + '/blasts'
+    BLAST = CAMPAIGN + '/blasts/<int:blast_id>'
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
@@ -711,6 +712,7 @@ class PushCampaignApiUrl(object):
     CAMPAIGN = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'campaigns/%s')
     SENDS = CAMPAIGN + '/sends'
     BLASTS = CAMPAIGN + '/blasts'
+    BLAST = CAMPAIGN + '/blasts/%s'
     BLASTS_SENDS = CAMPAIGN + '/blasts/%s/sends'
     SEND = CAMPAIGN + '/send'
     SCHEDULE = CAMPAIGN + '/schedule'

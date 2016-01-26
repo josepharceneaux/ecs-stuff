@@ -5,7 +5,7 @@ import time
 from datetime import datetime
 
 from push_campaign_service.common.models.misc import UrlConversion
-from push_campaign_service.common.tests.conftest import (user_auth, sample_user,
+from push_campaign_service.common.tests.conftest import (user_auth, sample_user, sample_user_2,
                                                          test_domain, test_org, test_culture)
 from push_campaign_service.common.routes import PushCampaignApiUrl, SchedulerApiUrl
 from push_campaign_service.common.models.db import db
@@ -67,6 +67,17 @@ def token(request, user_auth, sample_user):
 
 
 @pytest.fixture()
+def token2(request, user_auth, sample_user_2):
+    """
+    returns the access token for a different user so that we can test forbidden error etc.
+    :param user_auth: fixture in common/tests/conftest.py
+    :param sample_user: fixture in common/tests/conftest.py
+    :return token
+    """
+    auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
+    return auth_token_obj['access_token']
+
+@pytest.fixture()
 def campaign_in_db(request, sample_user, campaign_data):
     campaign_data['user_id'] = sample_user.id
     campaign = PushCampaign(**campaign_data)
@@ -76,6 +87,17 @@ def campaign_in_db(request, sample_user, campaign_data):
         PushCampaign.delete(campaign)
     request.addfinalizer(tear_down)
     return campaign
+
+
+@pytest.fixture()
+def blast_and_camapign_in_db(token, campaign_in_db, test_smartlist):
+    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
+    # campaign_obj.process_send(campaign_in_db)
+    assert response.status_code == 200
+    time.sleep(SLEEP_TIME)
+    db.session.commit()
+    blast = campaign_in_db.blasts.first()
+    return campaign_in_db, blast
 
 
 @pytest.fixture(scope='function')
@@ -182,36 +204,6 @@ def schedule_a_campaign(request, test_smartlist, campaign_in_db, token):
     request.addfinalizer(fin)
     return data
 
-
-# @pytest.fixture()
-# def scheduled_sms_campaign_of_current_user(request, sample_user, valid_header,
-#                                            sms_campaign_of_current_user):
-#     """
-#     This creates the SMS campaign for sample_user using valid data.
-#     """
-#     campaign = _get_scheduled_campaign(sample_user, sms_campaign_of_current_user, valid_header)
-#
-#     def delete_scheduled_task():
-#         _unschedule_campaign(campaign, valid_header)
-#
-#     request.addfinalizer(delete_scheduled_task)
-#     return campaign
-#
-#
-# @pytest.fixture()
-# def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
-#                                          sms_campaign_of_other_user):
-#     """
-#     This creates the SMS campaign for sample_user_2 using valid data.
-#     :return:
-#     """
-#     campaign = _get_scheduled_campaign(sample_user_2, sms_campaign_of_other_user, valid_header_2)
-#
-#     def delete_scheduled_task():
-#         _unschedule_campaign(campaign, valid_header_2)
-#
-#     request.addfinalizer(delete_scheduled_task)
-#     return campaign
 
 @pytest.fixture()
 def url_conversion(request, token, campaign_in_db, test_smartlist):
