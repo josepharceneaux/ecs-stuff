@@ -3153,13 +3153,9 @@
       value: function bindEventsToElement(element, events, handler, bindAction) {
         var action = bindAction === 'stop' ? 'unbind' : 'bind';
 
-        <<<<<<< HEAD
         self.toggleSubMenu = function (element) {
           var $this = element;
           var $subMenu = $this.find('.navigation__subMenu');
-          =======
-              events = events instanceof Array ? events : [events];
-          >>>>>>> 1a33068f6185f4224f3a019c2ad1e54b8d56dce8
 
           // Iterate through the list of event-handler pairs
           for (var _i5 = 0; _i5 < events.length; _i5++) {
@@ -3168,7 +3164,8 @@
             }
           }
         }
-      }, {
+      }
+    }, {
       key: 'handleEventBindings',
       value: function handleEventBindings(context, action) {
         var bindings = this.bindings;
@@ -3318,3 +3315,4 @@
   App.View.Search = function () {
     App.Module.BubbleGraph.init();
   };})(this);
+
