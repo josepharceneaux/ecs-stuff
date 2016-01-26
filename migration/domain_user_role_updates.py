@@ -90,7 +90,10 @@ def add_talent_pool_group():
     user_groups = UserGroup.query.all()
     for group in user_groups:
         for pool in talent_pools:
-            TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id)
+            pool_group = TalentPoolGroup.query.filter_by(talent_pool_id=pool.id,
+                                                         user_group_id=group.id).first()
+            if pool_group is None:
+                db.session.add(TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id))
 
     db.session.commit()
 
