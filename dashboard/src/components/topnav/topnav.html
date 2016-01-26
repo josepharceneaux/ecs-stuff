@@ -1,4 +1,68 @@
-<!-- Header -->
+<div id="top-nav">
+
+    <!-- Header -->
+    <header class="header">
+        <figure class="header__logo">
+            <a ui-sref="dashboard"><img src="/images/logo--main--white.svg" alt="getTalent"></a>
+        </figure>
+        <form class="header__search">
+            <input class="header__search__input" type="text" name="query" autocomplete="off" placeholder="Jon Smith, Developer, Java">
+            <button class="header__search__submit">
+                <span class="icon--mag"></span>
+            </button>
+        </form>
+        <nav class="header__actions">
+            <a href="#" class="header__notifications--mobile">
+                <span class="header__notifications__icon icon--hamburger"></span>
+                <span class="header__notifications__count">1</span>
+            </a>
+            <a href="#" class="header__notifications">
+                <span class="header__notifications__icon icon--bell"></span>
+                <span class="header__notifications__count">1</span>
+            </a>
+            <a href="#" class="header__profile">
+                <img src="/images/placeholder/profile.png" alt="Change settings">
+            </a>
+        </nav>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navigation">
+        <li class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+            <strong>Talent Pool:</strong> University Relations
+            <nav class="js--mobileMenu-target navigation__subMenu">
+                <header class="navigation__subMenu__header">
+                    <span class="icon--pipeline"></span> Choose a Pipeline
+                </header>
+                <a href="#">Loremipsu</a>
+                <a href="#">M'dolor Sitam</a>
+                <a href="#">Etconsecte Teur</a>
+                <footer class="navigation__subMenu__footer">
+                    <a href="#">See All</a>
+                </footer>
+            </nav>
+        </li>
+        <div class="navigation__items">
+            <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
+            <li class="js--mobileMenu js--topNavItem navigation__item">
+                Pipelines
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--announcements"></span> Recent Campaigns
+                    </header>
+                    <a href="#">Loremipsu</a>
+                    <a href="#">M'dolor Sitam</a>
+                    <a href="#">Etconsecte Teur</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a href="#">See All</a>
+                    </footer>
+                </nav>
+            </li>
+        </div>
+    </nav>
+
+</div>
+<!-- Header
 <header class="header row--expanded">
     <nav class="header__nav col--medium-8 col--large-12">
         <div style="background:#333; height:70px; ">
@@ -91,5 +155,5 @@
             </div>
         </div>
     </nav>
-</header>
+</header> -->
 <!-- End Header -->
