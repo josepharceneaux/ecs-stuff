@@ -4,7 +4,7 @@
   src: url("../fonts/gettalent-icons.eot?#iefix") format("embedded-opentype"), url("../fonts/gettalent-icons.woff") format("woff"), url("../fonts/gettalent-icons.ttf") format("truetype"), url("../fonts/gettalent-icons.svg#gettalent-icons") format("svg");
 }
 
-.icon, .icon--box, .icon--build, .icon--calendar, .icon--campaigns, .icon--carret, .icon--checked, .icon--close, .icon--cloud, .icon--computer, .icon--custom-fields, .icon--download, .icon--dropbox, .icon--education, .icon--file, .icon--google-drive, .icon--linkedin, .icon--location, .icon--lock, .icon--mail-open, .icon--mail, .icon--notes, .icon--overview, .icon--people, .icon--person, .icon--phone, .icon--pipelines, .icon--progress, .icon--raised-hand, .icon--save, .icon--search, .icon--settings, .icon--speech, .icon--thumbs-up, .icon--tools, .icon--twitter, .icon--unchecked, .icon--upload, .icon--work {
+.icon, .icon--bell, .icon--box, .icon--build, .icon--calendar, .icon--campaigns, .icon--caret, .icon--checked, .icon--close, .icon--cloud, .icon--computer, .icon--custom-fields, .icon--download, .icon--dropbox, .icon--education, .icon--file, .icon--google-drive, .icon--linkedin, .icon--location, .icon--lock, .icon--mag, .icon--mail-open, .icon--mail, .icon--notes, .icon--overview, .icon--people, .icon--person, .icon--phone, .icon--pipelines, .icon--progress, .icon--raised-hand, .icon--save, .icon--search, .icon--settings, .icon--speech, .icon--thumbs-up, .icon--tools, .icon--twitter, .icon--unchecked, .icon--upload, .icon--work {
   font-family: "gettalent-icons";
   font-style: normal;
   font-weight: normal;
@@ -14,154 +14,162 @@
   display: inline;
 }
 
-.icon--box:after {
+.icon--bell:after {
   content: "\EA01";
 }
 
-.icon--build:after {
+.icon--box:after {
   content: "\EA02";
 }
 
-.icon--calendar:after {
+.icon--build:after {
   content: "\EA03";
 }
 
-.icon--campaigns:after {
+.icon--calendar:after {
   content: "\EA04";
 }
 
-.icon--carret:after {
+.icon--campaigns:after {
   content: "\EA05";
 }
 
-.icon--checked:after {
+.icon--caret:after {
   content: "\EA06";
 }
 
-.icon--close:after {
+.icon--checked:after {
   content: "\EA07";
 }
 
-.icon--cloud:after {
+.icon--close:after {
   content: "\EA08";
 }
 
-.icon--computer:after {
+.icon--cloud:after {
   content: "\EA09";
 }
 
-.icon--custom-fields:after {
+.icon--computer:after {
   content: "\EA0A";
 }
 
-.icon--download:after {
+.icon--custom-fields:after {
   content: "\EA0B";
 }
 
-.icon--dropbox:after {
+.icon--download:after {
   content: "\EA0C";
 }
 
-.icon--education:after {
+.icon--dropbox:after {
   content: "\EA0D";
 }
 
-.icon--file:after {
+.icon--education:after {
   content: "\EA0E";
 }
 
-.icon--google-drive:after {
+.icon--file:after {
   content: "\EA0F";
 }
 
-.icon--linkedin:after {
+.icon--google-drive:after {
   content: "\EA10";
 }
 
-.icon--location:after {
+.icon--linkedin:after {
   content: "\EA11";
 }
 
-.icon--lock:after {
+.icon--location:after {
   content: "\EA12";
 }
 
-.icon--mail-open:after {
+.icon--lock:after {
   content: "\EA13";
 }
 
-.icon--mail:after {
+.icon--mag:after {
   content: "\EA14";
 }
 
-.icon--notes:after {
+.icon--mail-open:after {
   content: "\EA15";
 }
 
-.icon--overview:after {
+.icon--mail:after {
   content: "\EA16";
 }
 
-.icon--people:after {
+.icon--notes:after {
   content: "\EA17";
 }
 
-.icon--person:after {
+.icon--overview:after {
   content: "\EA18";
 }
 
-.icon--phone:after {
+.icon--people:after {
   content: "\EA19";
 }
 
-.icon--pipelines:after {
+.icon--person:after {
   content: "\EA1A";
 }
 
-.icon--progress:after {
+.icon--phone:after {
   content: "\EA1B";
 }
 
-.icon--raised-hand:after {
+.icon--pipelines:after {
   content: "\EA1C";
 }
 
-.icon--save:after {
+.icon--progress:after {
   content: "\EA1D";
 }
 
-.icon--search:after {
+.icon--raised-hand:after {
   content: "\EA1E";
 }
 
-.icon--settings:after {
+.icon--save:after {
   content: "\EA1F";
 }
 
-.icon--speech:after {
+.icon--search:after {
   content: "\EA20";
 }
 
-.icon--thumbs-up:after {
+.icon--settings:after {
   content: "\EA21";
 }
 
-.icon--tools:after {
+.icon--speech:after {
   content: "\EA22";
 }
 
-.icon--twitter:after {
+.icon--thumbs-up:after {
   content: "\EA23";
 }
 
-.icon--unchecked:after {
+.icon--tools:after {
   content: "\EA24";
 }
 
-.icon--upload:after {
+.icon--twitter:after {
   content: "\EA25";
 }
 
-.icon--work:after {
+.icon--unchecked:after {
   content: "\EA26";
+}
+
+.icon--upload:after {
+  content: "\EA27";
+}
+
+.icon--work:after {
+  content: "\EA28";
 }

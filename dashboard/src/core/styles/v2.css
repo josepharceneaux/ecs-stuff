@@ -2727,7 +2727,7 @@ em {
 .header__profile:after {
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '';
+  content: '\EA05';
   font-size: 5px;
   line-height: 1;
   width: 0;
@@ -2932,10 +2932,6 @@ em {
   content: "";
 }
 
-.icon--bell:before {
-  content: "";
-}
-
 .icon--down:before {
   content: "";
 }
@@ -2946,10 +2942,6 @@ em {
 
 .icon--list:before {
   content: "";
-}
-
-.icon--mag:before {
-  content: "";
 }
 
 .icon--people:before {
@@ -3146,7 +3138,7 @@ em {
   transition: color 0.5s ease;
   color: #ffffff;
   font-family: "gettalent-icons";
-  content: '';
+  content: '\EA05';
   font-size: 5px;
   right: 20px;
   line-height: 1;
