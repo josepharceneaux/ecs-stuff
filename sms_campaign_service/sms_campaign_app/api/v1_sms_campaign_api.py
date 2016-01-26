@@ -10,17 +10,17 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
-        - SmsCampaigns: /v1/campaigns/:id
-
-            GET     : Gets campaign data using given id
-            PUT    : Updates existing campaign using given id
-            DELETE  : Deletes SMS campaign from db using given id
-
         - ScheduleSmsCampaign: /v1/campaigns/:id/schedule
 
             POST    : Schedules the campaign from given campaign_id and data provided
             PUT     : Re-schedules the campaign from given campaign_id and data provided
             DELETE  : Un-schedules the campaign from given campaign_id
+
+        - SmsCampaigns: /v1/campaigns/:id
+
+            GET     : Gets campaign data using given id
+            PUT    : Updates existing campaign using given id
+            DELETE  : Deletes SMS campaign from db using given id
 
         - SendSmsCampaign: /v1/campaigns/:id/send
 
@@ -36,11 +36,6 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : When candidate replies to an SMS campaign, this endpoint is hit from Twilio
                         to notify our app.
 
-        - SmsCampaignSends:  /v1/campaigns/:id/sends
-
-            GET    : Gets the "sends" records for given SMS campaign id
-                    from db table sms_campaign_sends
-
         - SmsCampaignBlasts:  /v1/campaigns/:id/blasts
 
             GET    : Gets the all the "blast" records for given SMS campaign id from db table
@@ -50,6 +45,26 @@ This file contains API endpoints related to sms_campaign_service.
 
             GET    : Gets the "blast" record for given SMS campaign id and blast_id from db table
                     "sms_campaign_blast"
+
+        - SmsCampaignBlastSends:  /v1/campaigns/:id/blasts/:id/sends
+
+            GET    : Gets the "sends" records for given SMS campaign id and blast_id
+                        from db table 'sms_campaign_sends'.
+
+        - SmsCampaignBlastReplies:  /v1/campaigns/:id/blasts/:id/replies
+
+            GET    : Gets the "replies" records for given SMS campaign id and blast_id
+                        from db table 'sms_campaign_replies'
+
+        - SmsCampaignSends:  /v1/campaigns/:id/sends
+
+            GET    : Gets all the "sends" records for given SMS campaign id
+                        from db table sms_campaign_sends
+
+        - SmsCampaignReplies:  /v1/campaigns/:id/replies
+
+            GET    : Gets all the "replies" records for given SMS campaign id
+                        from db table "sms_campaign_replies"
 """
 
 
@@ -120,8 +135,11 @@ class SMSCampaigns(Resource):
         :rtype JSON
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/campaigns/', headers=headers)
+
+        >>> import requests
+
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> response = requests.post(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
 
         .. Response::
 
@@ -165,29 +183,25 @@ class SMSCampaigns(Resource):
 
     def post(self, *args, **kwargs):
         """
-        This method takes data to create SMS campaign in database.
+        This method takes data to create SMS campaign in database table 'sms_campaign'.
         :return: id of created campaign
         :type: JSON
 
         :Example:
 
-            campaign_data = {
-                                "name": "New SMS Campaign",
-                                "body_text": "Hi all, we have few openings at abc.com",
-                                "smartlist_ids": [1, 2, 3]
-                             }
+        >>> import json
+        >>> import requests
 
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'content-type': 'application/json'
+        >>> headers = {'Authorization': 'Bearer <access_token>',
+        >>>             'content-type': 'application/json'
+        >>>           }
+        >>> campaign_data = {"name": "My SMS Campaign",
+        >>>                  "body_text": "HI all, we have few openings at getTalent",
+        >>>                  "smartlist_ids": [1, 25]
+        >>>                  }
+        >>> data = json.dumps(campaign_data)
+        >>> response = requests.post(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
 
-                       }
-            data = json.dumps(campaign_data)
-            response = requests.post(
-                                        API_URL + '/campaigns/',
-                                        data=data,
-                                        headers=headers,
-                                    )
         .. Response::
 
             {
@@ -224,19 +238,15 @@ class SMSCampaigns(Resource):
 
         :Example:
 
-            campaign_ids = {
-                'ids': [1, 2, 3]
-            }
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'content-type': 'application/json'
-                       }
-            data = json.dumps(campaign_ids)
-            response = requests.delete(
-                                        API_URL + '/campaigns/',
-                                        data=data,
-                                        headers=headers,
-                                    )
+        >>> import json
+        >>> import requests
+
+        >>> headers = {'Authorization': 'Bearer <access_token>',
+        >>>             'content-type': 'application/json'
+        >>>           }
+        >>> campaign_ids = {'ids': [1, 2, 3]}
+        >>> data = json.dumps(campaign_ids)
+        >>> response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
 
         .. Response::
 
@@ -289,30 +299,31 @@ class ScheduleSmsCampaign(Resource):
     This resource is used to
         1- schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
+        3- Un-schedule SMS Campaign using scheduler_service [DELETE]
     """
     decorators = [require_oauth()]
 
     def post(self, campaign_id):
         """
-        It schedules an SMS campaign using given campaign_id by making HTTP request to
+        It schedules an SMS campaign using given campaign_id by making HTTP POST request to
          scheduler_service.
 
         :Example:
 
-            headers = {'Authorization': 'Bearer <access_token>',
-                       'Content-type': 'application/json'}
+        >>> import json
+        >>> import requests
 
-            schedule_data =
-                        {
-                            "frequency_id": 2,
-                            "start_datetime": "2015-11-26T08:00:00Z",
-                            "end_datetime": "2015-11-30T08:00:00Z"
-                        }
-
-            campaign_id = 1
-
-            response = requests.post(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers, data=schedule_data)
+        >>> headers = {'Authorization': 'Bearer <access_token>',
+        >>>             'content-type': 'application/json'
+        >>>           }
+        >>> schedule_data = {
+        >>>                    "frequency_id": 2,
+        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                 }
+        >>> data = json.dumps(schedule_data)
+        >>> campaign_id = 1
+        >>> response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers)
 
         .. Response::
 
@@ -352,20 +363,20 @@ class ScheduleSmsCampaign(Resource):
         'sms_campaign' as well.
 
         :Example:
+        >>> import json
+        >>> import requests
 
-            headers = {'Authorization': 'Bearer <access_token>'}
-
-            schedule_data =
-                        {
-                            "frequency_id": 2,
-                            "start_datetime": "2015-11-26T08:00:00Z",
-                            "end_datetime": "2015-11-30T08:00:00Z"
-                        }
-
-            campaign_id = 1
-
-            response = requests.put(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers, data=schedule_data)
+        >>> headers = {'Authorization': 'Bearer <access_token>',
+        >>>             'content-type': 'application/json'
+        >>>           }
+        >>> schedule_data = {
+        >>>                    "frequency_id": 2,
+        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                 }
+        >>> data = json.dumps(schedule_data)
+        >>> campaign_id = 1
+        >>> response = requests.put(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers)
 
         .. Response::
 
@@ -416,14 +427,12 @@ class ScheduleSmsCampaign(Resource):
         :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
 
         :Example:
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                       }
 
-            campaign_id = 1
-            response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers,
-                                    )
+        >>> import requests
+
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> response = requests.delete(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers)
 
         .. Response::
 
@@ -449,7 +458,7 @@ class CampaignById(Resource):
     Endpoint looks like /v1/campaigns/:id
     This resource is used to
         1- Get Campaign from given campaign_id [GET]
-        2- Update an existing SMS campaign [POST]
+        2- Update an existing SMS campaign [PUT]
         3- Delete campaign by given campaign id [DELETE]
     """
     decorators = [require_oauth()]
@@ -459,9 +468,11 @@ class CampaignById(Resource):
         Returns campaign object with given id
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/campaigns/' + str(campaign_id), headers=headers)
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
 
         .. Response::
 
@@ -480,6 +491,7 @@ class CampaignById(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden: Current user cannot get SMS campaign record)
                     404 (Campaign not found)
@@ -499,29 +511,26 @@ class CampaignById(Resource):
 
         :Example:
 
-            campaign_data = {
+        >>> import json
+        >>> import requests
 
-                            "name": "New SMS Campaign",
-                            "body_text": "HI all, we have few openings at abc.com",
-                            "frequency_id": 2,
-                            "added_datetime": "2015-11-24T08:00:00Z",
-                            "start_datetime": "2015-11-26T08:00:00Z",
-                            "end_datetime": "2015-11-30T08:00:00Z",
-                            "id": 1,
-                            "smartlist_ids": [1, 2, 3]
-                            }
+        >>> headers = {'Authorization': 'Bearer <access_token>',
+        >>>             'content-type': 'application/json'
+        >>>           }
+        >>> campaign_data = {"name": "Updated SMS Campaign",
+        >>>                  "body_text": "HI all, we have few openings at abc.com",
+        >>>                  "smartlist_ids": [1, 25]
+        >>>                  }
+        >>> data = json.dumps(campaign_data)
+        >>> campaign_id = 1
+        >>> response = requests.put(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
 
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'content-type': 'application/json'
-                       }
-            data = json.dumps(campaign_data)
-            campaign_id = campaign_data['id']
-            response = requests.post(
-                                        API_URL + '/campaign/' + str(campaign_id)',
-                                        data=data,
-                                        headers=headers,
-                                    )
+        ..Response::
+                    {
+                          "not_found_smartlist_ids": [25],
+                          "invalid_smartlist_ids": [],
+                          "message": "SMS Campaign(id:1) has been updated successfully"
+                    }
 
         .. Status:: 200 (Resource Modified)
                     207 (Not all modified)
@@ -552,15 +561,11 @@ class CampaignById(Resource):
         :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
 
         :Example:
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                       }
 
-            campaign_id = 1
-            response = requests.delete(
-                                        API_URL + '/campaigns/' + str(campaign_id),
-                                        headers=headers,
-                                    )
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
 
         .. Response::
 
@@ -568,6 +573,7 @@ class CampaignById(Resource):
                 'message': 'Campaign(id:125) has been deleted successfully'
             }
         .. Status:: 200 (Resource Deleted)
+                    400 (Bad request)
                     403 (Forbidden: Current user cannot delete SMS campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
@@ -599,10 +605,11 @@ class SendSmsCampaign(Resource):
             associated with given campaign.
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.post(API_URL + '/campaigns/' + str(campaign_id)
-                                + '/send', headers=headers)
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> response = requests.post(SmsCampaignApiUrl.SEND % campaign_id, headers=headers)
 
         .. Response::
 
@@ -611,6 +618,7 @@ class SendSmsCampaign(Resource):
                 }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden Error)
                     404 (Campaign not found)
@@ -742,7 +750,7 @@ class SmsReceive(Resource):
 @api.route(SmsCampaignApi.BLASTS)
 class SmsCampaignBlasts(Resource):
     """
-    Endpoint looks liks /v1/campaigns/:id/blasts.
+    Endpoint looks like /v1/campaigns/:id/blasts.
     This class returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
@@ -756,10 +764,12 @@ class SmsCampaignBlasts(Resource):
         :return: JSON data containing list of blasts and their counts
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts',
-                                    headers=headers)
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(SmsCampaignApiUrl.BLASTS % campaign_id, headers=headers)
 
         .. Response::
 
@@ -788,6 +798,7 @@ class SmsCampaignBlasts(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)
@@ -819,10 +830,13 @@ class SmsCampaignBlastById(Resource):
         :return: JSON data containing list of blasts and their counts
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts'
-                                + str(blast_id), headers=headers)
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(SmsCampaignApiUrl.BLAST % (campaign_id, blast_id),
+        >>>                         headers=headers)
 
         .. Response::
 
@@ -839,6 +853,7 @@ class SmsCampaignBlastById(Resource):
                 }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)
@@ -869,7 +884,8 @@ class SmsCampaignBlastSends(Resource):
         >>> import requests
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
-        >>> response = requests.get(SmsCampaignApiUrl.BLAST_SENDS % str(campaign_id),
+        >>> blast_id = 1
+        >>> response = requests.get(SmsCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
         >>>                         headers=headers)
 
         .. Response::
@@ -896,6 +912,7 @@ class SmsCampaignBlastSends(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)
@@ -931,12 +948,13 @@ class SmsCampaignBlastReplies(Resource):
         :return: JSON data containing list of blasts and their counts
 
         :Example:
+
         >>> import requests
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
-        >>> response = requests.get(SmsCampaignApiUrl.BLAST_REPLIES % str(campaign_id),
+        >>> blast_id = 1
+        >>> response = requests.get(SmsCampaignApiUrl.BLAST_REPLIES % (campaign_id, blast_id),
         >>>                         headers=headers)
-
 
         .. Response::
 
@@ -961,6 +979,7 @@ class SmsCampaignBlastReplies(Resource):
                 }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)
@@ -1017,6 +1036,7 @@ class SmsCampaignSends(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)
@@ -1079,6 +1099,7 @@ class SmsCampaignReplies(Resource):
                 }
 
         .. Status:: 200 (OK)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Not owner of campaign)
                     404 (Campaign not found)

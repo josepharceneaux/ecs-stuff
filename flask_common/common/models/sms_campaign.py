@@ -54,11 +54,6 @@ class SmsCampaignBlast(db.Model):
     def __repr__(self):
         return "<SmsCampaignBlast (id = %r)>" % self.id
 
-    @classmethod
-    def get_by_campaign_id(cls, campaign_id):
-        assert campaign_id, 'No campaign_id given'
-        return cls.query.filter(cls.campaign_id == campaign_id).first()
-
 
 class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'

@@ -223,7 +223,9 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     # check if url_conversion record exists in database
     if not url_conversion_obj:
         raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
-                               'Url Conversion(id=%s) not found.' % url_conversion_obj.id,
+                               'Url Conversion obj not found for %s(id:%s).'
+                               % (campaign_blast_obj.campaign.__tablename__,
+                                  campaign_blast_obj.campaign.id),
                                error_code=ResourceNotFound.http_status_code())
     return campaign_blast_obj.campaign
 

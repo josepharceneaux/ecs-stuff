@@ -49,7 +49,7 @@ def assert_url_conversion(sms_campaign_sends):
         UrlConversion.delete(url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign_id):
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
@@ -61,7 +61,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    sms_campaign_blast = SmsCampaignBlast.get_by_campaign_id(campaign_id)
+    sms_campaign_blast = campaign.blasts[0]
     assert sms_campaign_blast.sends == expected_count
     # assert on sends
     sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
@@ -71,7 +71,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
         assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
     if sms_campaign_sends:
         # assert on activity for whole campaign send
-        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign_id)
+        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign.id)
     assert_url_conversion(sms_campaign_sends)
 
 
@@ -164,10 +164,10 @@ def delete_test_scheduled_task(task_id, headers):
         delete_scheduled_task(task_id, headers)
 
 
-def assert_counts_and_replies_or_sends(response, count=0, entity='sends'):
+def assert_ok_response_and_counts(response, count=0, entity='sends', check_count=True):
     """
     This is the common function to assert that response is returning valid 'count'
-    and 'sends' or 'repleis' for a particular campaign.
+    and 'sends' or 'replies' for a particular campaign.
     :param response:
     :param count:
     :return:
@@ -175,10 +175,11 @@ def assert_counts_and_replies_or_sends(response, count=0, entity='sends'):
     assert response.status_code == 200, 'Response should be ok (200)'
     assert response.json()
     resp = response.json()
-    assert 'count' in resp
     assert entity in resp
-    assert resp['count'] == count
-    if not count:  # if count is 0, campaign_sends should be []
-        assert not resp[entity]
-    else:
-        assert resp[entity]
+    if check_count:
+        assert 'count' in resp
+        assert resp['count'] == count
+        if not count:  # if count is 0, campaign_sends should be []
+            assert not resp[entity]
+        else:
+            assert resp[entity]

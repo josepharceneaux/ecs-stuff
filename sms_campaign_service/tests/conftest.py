@@ -327,15 +327,35 @@ def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
 
 
 @pytest.fixture()
-def create_sms_campaign_blast(sms_campaign_of_current_user):
+def create_sms_campaign_blast(request, sms_campaign_of_current_user):
     """
-    This creates a record in database table "sms_campaign_blast"
+    This creates a record in database table "sms_campaign_blast" for
+    campaign owned by logged-in user.
     :param sms_campaign_of_current_user:
     :return:
     """
-    blast_obj = SmsCampaignBlast(campaign_id=sms_campaign_of_current_user.id)
-    SmsCampaignBlast.save(blast_obj)
-    return blast_obj.id
+    blast_obj = _create_blast(sms_campaign_of_current_user.id)
+
+    def fin():
+        _delete_blast(blast_obj)
+    request.addfinalizer(fin)
+    return blast_obj
+
+
+@pytest.fixture()
+def create_blast_for_not_owned_campaign(request, sms_campaign_of_other_user):
+    """
+    This creates a record in database table "sms_campaign_blast" for
+    a campaign for which logged-in user is not an owner.
+    :param sms_campaign_of_other_user:
+    :return:
+    """
+    blast_obj = _create_blast(sms_campaign_of_other_user.id)
+
+    def fin():
+        _delete_blast(blast_obj)
+    request.addfinalizer(fin)
+    return blast_obj
 
 
 @pytest.fixture()
@@ -346,24 +366,24 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
     :param candidate_second: fixture to create another test candidate
     :return:
     """
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
                                                        candidate_first.id,
                                                        datetime.now())
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
                                                        candidate_second.id,
                                                        datetime.now())
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
 
 
 @pytest.fixture()
 def create_campaign_replies(candidate_phone_1, create_sms_campaign_blast):
     """
-    This creates a record in database table "sms_campaign_send"
-    :param candidate_first: fixture to create test candidate
-    :param candidate_second: fixture to create another test candidate
-    :return:
+    This creates a record in database table "sms_campaign_reply"
     """
-    SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast,
+    SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast.id,
                                          candidate_phone_1.id, 'Got it')
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, replies=True)
 
 
 @pytest.fixture()
@@ -530,26 +550,17 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-    time.sleep(3 * SLEEP_TIME)  # had to add this as sending process runs on celery
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
-    sms_campaign_blast = \
-        SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
-    # get campaign sends
-    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
-    # get if of record of sms_campaign_send_url_conversion for this campaign
-    if not sms_campaign_sends:
-        raise ResourceNotFound('sms_campaign_sends record is empty')
-    campaign_send_url_conversions = SmsCampaignSendUrlConversion.get_by_campaign_send_id(
-        sms_campaign_sends[0].id)
-    # get URL conversion record from database table 'url_conversion'
-    url_conversion = UrlConversion.get_by_id(campaign_send_url_conversions[0].url_conversion_id)
+    sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
+    # get URL conversion record from relationship
+    url_conversion = sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0]
 
     def tear_down():
         UrlConversion.delete(url_conversion)
-
     request.addfinalizer(tear_down)
     return url_conversion
 
@@ -698,3 +709,27 @@ def _create_sms_campaign_smartlist(campaign, smartlist):
                                                   sms_campaign_id=campaign.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
+
+
+def _create_blast(campaign_id):
+    """
+    This creates campaign blast object for given campaign id
+    :param campaign_id:
+    :return:
+    """
+    blast_obj = SmsCampaignBlast(campaign_id=campaign_id)
+    SmsCampaignBlast.save(blast_obj)
+    return blast_obj
+
+
+def _delete_blast(blast_obj):
+    """
+    This deletes the campaign blast obj from database.
+    :param blast_obj:
+    :return:
+    """
+    try:
+        SmsCampaignBlast.delete(blast_obj)
+    except Exception:  # resource may have been deleted in case of DELETE request
+        pass
+

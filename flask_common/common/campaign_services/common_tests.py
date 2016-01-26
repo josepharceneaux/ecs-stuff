@@ -110,11 +110,13 @@ class CampaignsCommonTests(object):
         _invalid_data_test('put', url, token)
 
     @classmethod
-    def request_with_invalid_campaign_id(cls, method,  url, token, data, last_campaign_id_in_db):
+    def request_with_invalid_campaign_id(cls, model, method, url, token, data):
         # Test with invalid integer id
         # Test for 404, Schedule a campaign which does not exists or id is invalid
-        invalid_ids = _get_invalid_ids(last_campaign_id_in_db)
-        for _id, status_code in invalid_ids:
+        last_campaign_id_in_db = model.query.order_by(model.id.desc()).first().id
+        invalid_ids = get_invalid_ids(last_campaign_id_in_db)
+        invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
+        for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, token, data)
             assert response.status_code == status_code
     
@@ -288,11 +290,19 @@ def _invalid_data_test(method, url, token):
     CampaignsCommonTests.assert_api_response(response)
 
 
-def _get_invalid_ids(last_id_of_obj_in_db):
+def get_invalid_ids(last_id_of_obj_in_db):
     """
     Given a database model object, here we create a list of two Invalid ids. One of them
     is 0 and other one is 100 plus the id of last record.
     """
-    non_existing_id = last_id_of_obj_in_db + 100
-    return [(0, InvalidUsage.http_status_code()),
-            (non_existing_id, ResourceNotFound.http_status_code())]
+    return 0, last_id_of_obj_in_db + 100
+
+
+def _get_invalid_id_and_status_code_pair(invalid_ids):
+    """
+    This associates expected status code with given invalid_ids.
+    :param invalid_ids:
+    :return:
+    """
+    return [(invalid_ids[0], InvalidUsage.http_status_code()),
+            (invalid_ids[1], ResourceNotFound.http_status_code())]

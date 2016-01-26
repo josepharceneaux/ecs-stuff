@@ -129,9 +129,8 @@ class TestSmsReceive(object):
         except NoCandidateFoundForPhoneNumber as error:
             assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_FOR_PHONE_NUMBER
 
-    def test_process_candidate_reply_with_multiple_candidates_having_same_phone(self,
-                                                                                user_phone_1,
-                                                                                candidates_with_same_phone):
+    def test_process_candidate_reply_with_multiple_candidates_having_same_phone(
+            self, user_phone_1, candidates_with_same_phone):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
         Data passed is valid, but phone number of candidate is associated with multiple
@@ -213,5 +212,5 @@ def get_replies_count(campaign):
     :return:
     """
     db.session.commit()
-    sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
+    sms_campaign_blasts = campaign.blasts[0]
     return sms_campaign_blasts.replies

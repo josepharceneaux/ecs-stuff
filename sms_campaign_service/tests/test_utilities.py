@@ -10,20 +10,23 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
-from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.tests.conftest import app
+from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
                                                      validate_url_format)
 from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
                                                             TwilioApiError)
 from sms_campaign_service.modules.handy_functions import search_urls_in_text, TwilioSMS
-from sms_campaign_service.modules.sms_campaign_app_constants import  (TWILIO_TEST_NUMBER,
-                                                                      TWILIO_INVALID_TEST_NUMBER)
+from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER,
+                                                                     TWILIO_INVALID_TEST_NUMBER)
 
 # Common Utils
+from sms_campaign_service.common.models.user import User
 from sms_campaign_service.common.tests.conftest import fake
-from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
 from sms_campaign_service.common.utils.handy_functions import url_conversion
+from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
+from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids
 
 
 # Test for healthcheck
@@ -261,3 +264,35 @@ class TestTwilioSMS(object):
     def _purchase_number(self, phone_number):
         twilio_obj = TwilioSMS()
         return twilio_obj.purchase_twilio_number(phone_number)
+
+
+class TestTSmsCampaignBase(object):
+    """
+    This class contains tests for TwilioSMS class defined in modules/handy_functions.py
+    """
+
+    def test_creating_obj_with_non_existing_user_id(self):
+        """
+        Creating object of SmsCampaignBase class with non-existing user_ids.
+        :return:
+        """
+        last_campaign_id_in_db = User.query.order_by(User.id.desc()).first().id
+        ids = get_invalid_ids(last_campaign_id_in_db)
+        for _id in ids:
+            try:
+                SmsCampaignBase(_id)
+                assert None, 'ResourceNotFound should be thrown as user_id does not exists in db.'
+            except ResourceNotFound as error:
+                assert error.message
+                assert str(_id) in error.message
+
+    def test_creating_obj_with_invalid_user_id(self):
+        """
+        Creating object of SmsCampaignBase class with invalid user_id.
+        :return:
+        """
+        try:
+            SmsCampaignBase(fake.word())
+            assert None, 'ResourceNotFound should be thrown as user_id must be int|long.'
+        except InvalidUsage as error:
+            assert error.message

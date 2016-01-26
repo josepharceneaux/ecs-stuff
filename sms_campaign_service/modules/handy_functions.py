@@ -7,9 +7,10 @@ This contains following helper classes/functions for SMS Campaign Service.
 - Function search_urls_in_text() to search a URL present in given text.
 
 """
-# Third Party Imports
+# Standard Imports
 import re
 
+# Third Party Imports
 import twilio
 import twilio.rest
 from twilio.rest import TwilioRestClient

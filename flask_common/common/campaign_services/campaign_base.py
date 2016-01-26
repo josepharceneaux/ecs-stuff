@@ -47,12 +47,10 @@ from campaign_utils import (get_model, validate_signed_url, delete_scheduled_tas
                             get_activity_message_name, get_activity_message_id_from_name,
                             FrequencyIds, get_campaign_type_prefix,
                             assert_is_instance_of_campaign_model,
-                            assert_for_int_or_long, get_campaign_for_ownership_validation,
-                            CampaignType)
+                            assert_for_int_or_long, get_campaign_for_ownership_validation)
 from validators import (validate_datetime_format, validate_form_data,
                         validation_of_data_to_schedule_campaign,
-                        validate_blast_candidate_url_conversion_in_db,
-                        validate_if_current_user_is_owner)
+                        validate_blast_candidate_url_conversion_in_db)
 
 
 class CampaignBase(object):
@@ -443,7 +441,7 @@ class CampaignBase(object):
             return campaign_obj
         else:
             raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
-                             % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
+                                 % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
 
     @staticmethod
     @abstractmethod
@@ -1205,7 +1203,12 @@ class CampaignBase(object):
     def process_url_redirect(cls, url_conversion_id, campaign_type, verify_signature=False,
                              request_args=None, requested_url=None):
         """
-        When candidate clicks on a URL present in any campaign e.g. in SMS, Email etc. it is
+        When candidate clicks on a URL (which looks like
+
+        http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0&auth_user=no_user&extra=
+                &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D)
+
+        present in any campaign e.g. in SMS, Email etc. it is
         redirected to our app first to keep track of number of clicks, hit_count and to create
         activity e.g. Mitchel clicked on SMS campaign 'Jobs'.
         From given url_conversion_id, we

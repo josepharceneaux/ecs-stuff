@@ -196,12 +196,13 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     # In case of Meetup, we have error details in e.response.json()['errors'].
                     # So, tyring to log as much
                     # details of error as we can.
-                    if 'errors' in e.response.json():
+                    json_response = e.response.json()
+                    if 'errors' in json_response:
+                        error_message = \
+                            e.message + ', Details: ' + json.dumps(json_response['errors'])
+                    elif 'error_description' in json_response:
                         error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('errors'))
-                    elif 'error_description' in e.response.json():
-                        error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('error_description'))
+                            json_response['error_description'])
                     else:
                         error_message = e.message
                 except json.JSONDecoder:

@@ -469,7 +469,7 @@ class SmsCampaignApiUrl(object):
     SENDS = CAMPAIGN + SmsCampaignWords.SENDS
     REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
     BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
-    BLAST_REPLIES = SmsCampaignWords.REPLIES
+    BLAST_REPLIES = BLAST + SmsCampaignWords.REPLIES
 
 
 class CandidateApiWords(object):

@@ -6,22 +6,22 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Standard Imports
 import json
 
+# Third Party
 import requests
 
-
 # Service Specific
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
-                                                        ForbiddenError, InternalServerError,
+                                                        ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.tests.modules.common_functions import assert_for_activity, \
-    assert_campaign_delete
+from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -29,13 +29,15 @@ class TestSmsCampaignWithIdHTTPGET(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method GET.
 
     """
+    METHOD = 'get'
+    URL = SmsCampaignApiUrl.CAMPAIGN
 
     def test_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
@@ -48,7 +50,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         original field values(provided at time of creation of campaign).
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'Response should be ok (200)'
         # verify all the field values
@@ -64,7 +66,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         Response should get Forbidden error as current user is not an owner of this campaign.
         :return:
         """
-        response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
+        response = requests.get(self.URL % sms_campaign_of_other_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error(403)'
@@ -76,19 +78,33 @@ class TestSmsCampaignWithIdHTTPGET(object):
         It should get ResourceNotFound error.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.delete(self.URL % sms_campaign_of_current_user.id,
                                    headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == 200, 'should get ok response (200)'
-        response = requests.get(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % auth_token))
         assert response.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
+
+    def test_get_with_invalid_campaign_id(self, auth_token):
+        """
+        This is a test to get campaign object which does not exists in database.
+        :param auth_token:
+        :return:
+        """
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
+                                                              self.URL,
+                                                              auth_token,
+                                                              None)
 
 
 class TestSmsCampaignWithIdHTTPPUT(object):
     """
     This class contains tests for endpoint /campaigns/:id and HTTP method POST.
     """
+    METHOD = 'put'
+    URL = SmsCampaignApiUrl.CAMPAIGN
 
     def test_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -235,18 +251,32 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code()
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 
+    def test_campaign_update_with_invalid_campaign_id(self, auth_token, campaign_valid_data):
+        """
+        This is a test to update a campaign which does not exists in database.
+        :param auth_token:
+        :return:
+        """
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
+                                                              self.URL,
+                                                              auth_token,
+                                                              campaign_valid_data)
+
 
 class TestSmsCampaignWithIdHTTPDelete(object):
     """
     This class contains tests for endpoint /campaigns/:id and HTTP method DELETE.
     """
+    URL = SmsCampaignApiUrl.CAMPAIGN
+    METHOD = 'delete'
 
     def test_delete_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.delete(self.URL % sms_campaign_of_current_user.id,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
@@ -257,7 +287,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         It should get OK response.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+        response = requests.delete(self.URL % sms_campaign_of_current_user.id,
                                    headers=valid_header)
         assert_campaign_delete(response, sample_user.id, sms_campaign_of_current_user.id)
 
@@ -267,7 +297,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         from database. It should get forbidden error.
         :return:
         """
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
+        response = requests.delete(self.URL % sms_campaign_of_other_user.id,
                                    headers=valid_header)
         assert response.status_code == ForbiddenError.http_status_code(), \
             'it should get forbidden error (403)'
@@ -279,10 +309,19 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         :return:
         """
         campaign_id = sms_campaign_of_current_user.id
-        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
-                                   headers=valid_header)
+        response = requests.delete(self.URL % campaign_id, headers=valid_header)
         assert_campaign_delete(response, sample_user.id, campaign_id)
-        response_after_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % campaign_id,
-            headers=valid_header)
+        response_after_delete = requests.delete(self.URL % campaign_id, headers=valid_header)
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
+
+    def test_campaign_delete_with_invalid_campaign_id(self, auth_token):
+        """
+        This is a test to update a campaign which does not exists in database.
+        :param auth_token:
+        :return:
+        """
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
+                                                              self.URL,
+                                                              auth_token,
+                                                              None)

@@ -3,9 +3,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns/:id/schedule of SMS Campaign API.
 """
+# Standard Imports
+import json
 
 # Third Party Imports
-import json
 import requests
 
 # Service Specific
@@ -198,12 +199,11 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         :param auth_token:
         :return:
         """
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
-        CampaignsCommonTests.request_with_invalid_campaign_id(self.METHOD,
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
                                                               self.URL,
                                                               auth_token,
-                                                              generate_campaign_schedule_data(),
-                                                              last_campaign_id_in_db)
+                                                              generate_campaign_schedule_data())
 
 
 class TestSmsCampaignScheduleHTTPPUT(object):
@@ -253,12 +253,12 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :param auth_token:
         :return:
         """
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
-        CampaignsCommonTests.request_with_invalid_campaign_id(self.METHOD,
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
                                                               self.URL,
                                                               auth_token,
-                                                              generate_campaign_schedule_data(),
-                                                              last_campaign_id_in_db)
+                                                              generate_campaign_schedule_data()
+                                                              )
 
     def test_reschedule_campaign_with_post_method(self, auth_token,
                                                   scheduled_sms_campaign_of_current_user):
@@ -340,10 +340,8 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, auth_token):
         # Test with invalid integer id
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
         CampaignsCommonTests.request_with_invalid_campaign_id(
-            self.METHOD, self.URL, auth_token, generate_campaign_schedule_data(),
-            last_campaign_id_in_db)
+            SmsCampaign, self.METHOD, self.URL, auth_token, generate_campaign_schedule_data())
 
     def test_unschedule_a_campaign(self, auth_token, scheduled_sms_campaign_of_current_user):
         """

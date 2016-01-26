@@ -3,7 +3,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns/:id/send of SMS Campaign API.
 """
-# Standard Imports
+# Third Party
 import requests
 
 # Service Specific
@@ -11,52 +11,31 @@ from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,
      assert_api_send_response)
-from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
-                                                                         MultipleCandidatesFound)
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError, InvalidUsage)
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
+                                                                         MultipleCandidatesFound)
 
 
 class TestSendSmsCampaign(object):
     """
     This class contains tests for endpoint /campaigns/:id/send
     """
-
-    def test_for_get_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        GET method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.get(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'GET')
-
-    def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        DELETE method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.delete(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'DELETE')
+    URL = SmsCampaignApiUrl.SEND
+    METHOD = 'post'
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid, it should get Unauthorized error.
         :return:
         """
-        response = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % 'invalid_token'))
+        response = requests.post(self.URL % sms_campaign_of_current_user.id,
+                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
@@ -70,9 +49,8 @@ class TestSendSmsCampaign(object):
         response_delete = requests.delete(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
         assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+        response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
+                                      headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
@@ -83,9 +61,8 @@ class TestSendSmsCampaign(object):
         It should get Forbidden error.
         :return:
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_other_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+        response_post = requests.post(self.URL % sms_campaign_of_other_user.id,
+                                      headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
         assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
@@ -101,7 +78,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+            self.URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InvalidUsage.http_status_code(), \
             'It should be invalid usage error(400)'
@@ -118,14 +95,25 @@ class TestSendSmsCampaign(object):
         Custom error should be NoCandidateAssociatedWithSmartlist .
         :return:
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+        response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
+                                      headers=dict(Authorization='Bearer %s' % auth_token))
         assert response_post.status_code == InvalidUsage.http_status_code(), \
             'It should be invalid usage error (400)'
         assert response_post.json()['error']['code'] == \
                CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
+
+    def test_post_with_invalid_campaign_id(self, auth_token):
+        """
+        This is a test to update a campaign which does not exists in database.
+        :param auth_token:
+        :return:
+        """
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
+                                                              self.URL,
+                                                              auth_token,
+                                                              None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
             self, auth_token, sample_user, sms_campaign_of_current_user,
@@ -137,11 +125,11 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(
-            SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+            self.URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 0, str(sms_campaign_of_current_user.id))
+            sample_user.id, 0, sms_campaign_of_current_user)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
             self, auth_token, sample_user, smartlist_for_not_scheduled_campaign,
@@ -172,3 +160,29 @@ class TestSendSmsCampaign(object):
         obj = SmsCampaignBase(sample_user.id)
         obj.campaign = sms_campaign_of_current_user
         assert obj.pre_process_celery_task([candidate_first, candidate_second])
+
+
+def test_for_get_request(auth_token, sms_campaign_of_current_user):
+    """
+    GET method is not allowed on this endpoint, should get 405 (Method not allowed)
+    :param auth_token: access token for sample user
+    :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
+    :return:
+    """
+    response = requests.get(
+        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+        headers=dict(Authorization='Bearer %s' % auth_token))
+    assert_method_not_allowed(response, 'GET')
+
+
+def test_for_delete_request(auth_token, sms_campaign_of_current_user):
+    """
+    DELETE method is not allowed on this endpoint, should get 405 (Method not allowed)
+    :param auth_token: access token for sample user
+    :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
+    :return:
+    """
+    response = requests.delete(
+        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
+        headers=dict(Authorization='Bearer %s' % auth_token))
+    assert_method_not_allowed(response, 'DELETE')
