@@ -2869,8 +2869,15 @@ em {
 }
 
 @media (min-width: 48em) {
-  .view__sidebar, .view__sidebar--feed {
+  .view__sidebar {
     position: relative;
+    vertical-align: top;
+  }
+
+  .view__sidebar--feed {
+    display: table-cell;
+    position: relative;
+    vertical-align: top;
   }
 }
 
