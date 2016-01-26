@@ -27,8 +27,7 @@ def add_domain_roles():
         domain_role = DomainRole.get_by_name(role_name=role_name)
         if not domain_role:
             db.session.add(DomainRole(role_name=role_name))
-
-    db.session.commit()
+            db.session.commit()
 
 
 def add_user_roles():
@@ -43,8 +42,7 @@ def add_user_roles():
             if not user_scoped_role:
                 print "role_id: {}, user_id: {}".format(role.id, user.id)
                 db.session.add(UserScopedRoles(user_id=user.id, role_id=role.id))
-
-    db.session.commit()
+                db.session.commit()
 
 
 def add_user_group_to_domains():
@@ -55,8 +53,7 @@ def add_user_group_to_domains():
         if not user_group:
             print "domain_id: {}".format(domain.id)
             db.session.add(UserGroup(name='default', domain_id=domain.id))
-
-    db.session.commit()
+            db.session.commit()
 
 
 def add_talent_pool():
@@ -76,8 +73,7 @@ def add_talent_pool():
                 print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
                 db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
                                                    candidate_id=candidate.id))
-
-    db.session.commit()
+                db.session.commit()
 
 
 def update_users_group_id():
@@ -92,8 +88,7 @@ def update_users_group_id():
             if user_group:
                 print "user_id: {}, user_group_id: {}".format(user.id, user_group.id)
                 user.user_group_id = user_group.id
-
-    db.session.commit()
+                db.session.commit()
 
 
 def add_talent_pool_group():
@@ -107,8 +102,7 @@ def add_talent_pool_group():
             if not pool_group:
                 print "talent_pool_id: {}, group_id: {}".format(pool.id, group.id)
                 db.session.add(TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id))
-
-    db.session.commit()
+                db.session.commit()
 
 # Staging: GetTalent
 # Prod: GetTalent, viacom, Kaiser, Kaiser Corporate, Dice, IT Job Boards, EFC, QC Technologies, HP. Geico, Dice Demore Account, DHI, ABC Demo
