@@ -1,15 +1,18 @@
-from social_network_service.common.routes import SocialNetworkApiUrl
-
-__author__ = 'zohaib'
+"""
+test_utilities.py: helper methods for testing social network service endpoints
+"""
 
 # Standard Library
 from datetime import datetime
-from dateutil.parser import parse
+import json
+import requests
 
 # Third Party
 from pytz import timezone
+from dateutil.parser import parse
 
 # Application Specific
+from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.utilities import unix_time
 from social_network_service.modules.utilities import snake_case_to_camel_case
 from social_network_service.modules.utilities import camel_case_to_title_case
@@ -21,6 +24,8 @@ from social_network_service.modules.utilities import import_from_dist_packages
 from social_network_service.modules.utilities import milliseconds_since_epoch
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 
+__author__ = 'zohaib'
+
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
 LOCAL_TIMEZONE = timezone('Asia/Karachi')
@@ -29,6 +34,11 @@ LOCAL_TEST_DATE = LOCAL_TIMEZONE.localize(TEST_DATE, is_dst=None)
 EPOCH_UTC_TEST_DATE_IN_SECONDS = 1420070400
 EPOCH_UTC_TEST_DATE_IN_MILLISECONDS = 1420070400000
 EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS = 1420052400000
+
+
+"""
+SECTION: Helper methods for tests
+"""
 
 
 def test_camel_case_to_snake_case():
@@ -232,3 +242,27 @@ def test_health_check():
     import requests
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
+
+
+def send_request(method, url, access_token, data=None, is_json=True):
+    # This method is being used for test cases, so it is sure that method has
+    #  a valid value like 'get', 'post' etc.
+    request_method = getattr(requests, method)
+    headers = dict(Authorization='Bearer %s' % access_token)
+    if is_json:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(data)
+    return request_method(url, data=data, headers=headers)
+
+
+def send_post_request(url, data, access_token):
+    """
+    This method sends a post request to a URL with given data using access_token for authorization in header
+    :param url: URL where post data needs to be sent
+    :param data: Data which needs to be sent
+    :param access_token: User access_token for authorization
+    :return:
+    """
+    return requests.post(url, data=json.dumps(data),
+                         headers=get_headers(access_token))
+
