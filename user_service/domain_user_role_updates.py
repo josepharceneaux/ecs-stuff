@@ -25,7 +25,7 @@ def add_domain_roles():
     print "running: add_domain_roles()"
     for role_name in get_role_names():
         domain_role = DomainRole.get_by_name(role_name=role_name)
-        if domain_role is None:
+        if not domain_role:
             db.session.add(DomainRole(role_name=role_name))
 
     db.session.commit()
@@ -40,7 +40,8 @@ def add_user_roles():
         for role in domain_roles:
             user_scoped_role = UserScopedRoles.query.filter_by(user_id=user.id,
                                                                role_id=role.id).first()
-            if user_scoped_role is None:
+            if not user_scoped_role:
+                print "role_id: {}, user_id: {}".format(role.id, user.id)
                 db.session.add(UserScopedRoles(user_id=user.id, role_id=role.id))
 
     db.session.commit()
@@ -51,7 +52,8 @@ def add_user_group_to_domains():
     domains = Domain.query.all()
     for domain in domains:
         user_group = UserGroup.query.filter_by(domain_id=domain.id).first()
-        if user_group is None:
+        if not user_group:
+            print "domain_id: {}".format(domain.id)
             db.session.add(UserGroup(name='default', domain_id=domain.id))
 
     db.session.commit()
@@ -63,7 +65,7 @@ def add_talent_pool():
     for user in users:
         talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id,
                                                  owner_user_id=user.id).first()
-        if talent_pool is None:
+        if not talent_pool:
             talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id,
                                      name='default')
             db.session.add(talent_pool)
@@ -71,6 +73,7 @@ def add_talent_pool():
 
             user_candidates = user.candidates
             for candidate in user_candidates:
+                print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
                 db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
                                                    candidate_id=candidate.id))
 
@@ -84,9 +87,10 @@ def update_users_group_id():
     print "running: update_users_group_id()"
     users = User.query.all()
     for user in users:
-        if user.user_group_id is None:
+        if not user.user_group_id:
             user_group = UserGroup.query.filter_by(domain_id=user.domain_id).first()
             if user_group:
+                print "user_id: {}, user_group_id: {}".format(user.id, user_group.id)
                 user.user_group_id = user_group.id
 
     db.session.commit()
@@ -100,7 +104,8 @@ def add_talent_pool_group():
         for pool in talent_pools:
             pool_group = TalentPoolGroup.query.filter_by(talent_pool_id=pool.id,
                                                          user_group_id=group.id).first()
-            if pool_group is None:
+            if not pool_group:
+                print "talent_pool_id: {}, group_id: {}".format(pool.id, group.id)
                 db.session.add(TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id))
 
     db.session.commit()
