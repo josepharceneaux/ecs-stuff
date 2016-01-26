@@ -2932,6 +2932,10 @@ em {
   content: "";
 }
 
+.icon--bell:before {
+  content: "";
+}
+
 .icon--down:before {
   content: "";
 }
