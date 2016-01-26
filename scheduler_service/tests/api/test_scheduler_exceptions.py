@@ -53,7 +53,7 @@ class TestSchedulerExceptions(object):
 
     def test_invalid_isjwtrequest_exception(self, auth_header, job_config):
         """
-            Create a job using incorrect task_type, it should throw 500 exception with error code
+            Create a job using incorrect isjwtrequest, it should throw 500 exception with error code
 
             Args:
                 auth_data: Fixture that contains token.
@@ -61,7 +61,7 @@ class TestSchedulerExceptions(object):
                 POST data while hitting the endpoint.
             :return:
             """
-        # Create job with invalid is_jwt_toke  string
+        # Create job with invalid is_jwt_toke string
         invalid_job_config = job_config.copy()
         invalid_job_config['is_jwt_request'] = 'invalid'
 

@@ -75,7 +75,7 @@ class TestSchedulerCreate(object):
 
     def test_dummy_endpoint_jwt_job(self, auth_header, job_config_one_time_task, sample_user):
         """
-        Create a job by hitting the endpoint and make sure response
+        Create a job by hitting the endpoint using jwt parameter equal to true and make sure response
         is correct. Job will be one time and run after 16 seconds.
         Then wait for job to hit our scheduler service dummy endpoint.
         Create a test user and pass its id to post_data
