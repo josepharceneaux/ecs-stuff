@@ -24,11 +24,12 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', 'pipelinesDetailService'];
+    ControllerFunction.$inject = ['$q', 'logger', 'pipelinesDetailService'];
 
     /* @ngInject */
-    function ControllerFunction(logger, pipelinesDetailService) {
+    function ControllerFunction($q, logger, pipelinesDetailService) {
         var vm = this;
+        vm.pipelineId = 1337;
 
         init();
         activate();
@@ -38,24 +39,6 @@
         }
 
         function init() {
-            vm.callouts = [
-                {
-                    name: 'Total Candidates',
-                    value: vm.candidatesCount
-                },
-                {
-                    name: 'Active Campaigns',
-                    value: '20'
-                },
-                {
-                    name: 'Smart Lists',
-                    value: '10'
-                },
-                {
-                    name: 'Created Date',
-                    value: '4/3/16'
-                }
-            ];
 
             vm.feeds = [
                 {
@@ -140,18 +123,22 @@
                 }
             ];
 
-            pipelinesDetailService.getPipelineDetail().then(function (response) {
-                console.log('dir', response);
+            pipelinesDetailService.getPipelineDetail(vm.pipelineId).then(function (response) {
+                //console.log('pipelineDetail', response);
                 vm.pipelineDetails = response;
+                pipelinesDetailService.getPipelineCandidateInfo(vm.pipelineDetails.search_params).then(function (response) {
+                    //console.log('candidateInfo', response);
+                    vm.candidateInfo = response;
+                });
             });
 
-            pipelinesDetailService.getPipelineCandidatesCount().then(function (response) {
+            pipelinesDetailService.getPipelineCandidatesCount(vm.pipelineId).then(function (response) {
                 vm.candidatesCount = response;
             });
 
-            pipelinesDetailService.getPipelineSmartlistsCount().then(function (response) {
+            pipelinesDetailService.getPipelineSmartlistsCount(vm.pipelineId).then(function (response) {
                 vm.smartLists = response;
-            })
+            });
 
         }
     }
