@@ -42,7 +42,6 @@ class TestSendCmapign(object):
         assert len(blasts) == 1
         assert blasts[0].sends == 1, 'Campaign should have been sent to one candidate'
 
-
     def test_send_campaign_without_smartlist(self, token, campaign_in_db):
 
         response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)

@@ -688,7 +688,7 @@ class PushCampaignApi(object):
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
-    BLASTS_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
+    BLAST_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
     BLASTS = CAMPAIGN + '/blasts'
     BLAST = CAMPAIGN + '/blasts/<int:blast_id>'
     # endpoint /v1/campaigns/:id/send
@@ -713,7 +713,7 @@ class PushCampaignApiUrl(object):
     SENDS = CAMPAIGN + '/sends'
     BLASTS = CAMPAIGN + '/blasts'
     BLAST = CAMPAIGN + '/blasts/%s'
-    BLASTS_SENDS = CAMPAIGN + '/blasts/%s/sends'
+    BLAST_SENDS = CAMPAIGN + '/blasts/%s/sends'
     SEND = CAMPAIGN + '/send'
     SCHEDULE = CAMPAIGN + '/schedule'
     DEVICES = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')

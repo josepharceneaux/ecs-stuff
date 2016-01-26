@@ -39,7 +39,7 @@ class TestURLRedirectionApi(object):
                                                       ActivityMessageIds.CAMPAIGN_PUSH_CLICK,
                                                       campaign_in_db.id)
 
-    def test_get_with_no_sigature(self, url_conversion):
+    def test_get_with_no_signature(self, url_conversion):
         """
         Removing signature of signed redirect URL. It should get internal server error.
         :return:

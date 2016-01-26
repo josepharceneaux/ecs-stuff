@@ -16,7 +16,7 @@ class TestCampaignBlastSends(object):
     # Test URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
     def test_get_campaign_blast_sends_with_invalid_id(self, campaign_in_db):
             # We are testing 401 here. so campaign and blast ids will not matter.
-            unauthorize_test('get',  PushCampaignApiUrl.BLASTS_SENDS % (campaign_in_db.id, 1),
+            unauthorize_test('get',  PushCampaignApiUrl.BLAST_SENDS % (campaign_in_db.id, 1),
                              'invalid_token')
 
     def test_get_campaign_blast_sends(self, token, campaign_in_db, test_smartlist,

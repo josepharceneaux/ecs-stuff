@@ -77,6 +77,7 @@ def token2(request, user_auth, sample_user_2):
     auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
     return auth_token_obj['access_token']
 
+
 @pytest.fixture()
 def campaign_in_db(request, sample_user, campaign_data):
     campaign_data['user_id'] = sample_user.id

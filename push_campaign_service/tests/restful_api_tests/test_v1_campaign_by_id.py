@@ -26,21 +26,24 @@ class TestCampaignById(object):
         assert campaign_in_db.name == campaign['name']
         assert campaign_in_db.url == campaign['url']
 
+
+class TestUpdateCampaign(object):
     # update campaign test
     # URL: /v1/campaigns/:id [PUT]
-    def test_put_by_id_with_invalid_id(self,campaign_in_db):
-        unauthorize_test('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, 'invalid_data')
+    def test_put_by_id_with_invalid_token(self, campaign_in_db, test_smartlist):
+        data = generate_campaign_data()
+        data['smartlist_ids'] = [test_smartlist.id]
+        unauthorize_test('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id,
+                         'invalid_token', data)
 
-    def test_put_by_id(self, token, campaign_in_db, campaign_data, test_smartlist):
+    def test_put_by_id_without_ownership(self, token2, campaign_in_db, test_smartlist):
+        # Test `raise ForbiddenError`
+        data = generate_campaign_data()
+        data['smartlist_ids'] = [test_smartlist.id]
+        response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token2, data)
+        assert response.status_code == FORBIDDEN
 
-        # First get already created campaign
-        response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
-        assert response.status_code == OK, 'Status code is not 200'
-        json_response = response.json()
-        campaign = json_response['campaign']
-        compare_campaign_data(campaign_in_db, campaign)
-        invalid_data_test('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token)
-
+    def test_put_by_id_with_invalid_id(self, token, test_smartlist):
         # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
         data = generate_campaign_data()
         data['smartlist_ids'] = [test_smartlist.id]
@@ -48,27 +51,27 @@ class TestCampaignById(object):
         for _id in [0, last_obj.id + 100]:
             response = send_request('put', PushCampaignApiUrl.CAMPAIGN % _id, token, data)
             assert response.status_code == NOT_FOUND, 'ResourceNotFound exception should be raised'
-            assert response.json()['error']['message'] == 'Campaign not found with id %s' % _id
 
+    def test_put_by_id_with_invalid_field(self, token, campaign_in_db, test_smartlist):
         # Test invalid field
-        data.update(**generate_campaign_data())
+        data = generate_campaign_data()
         data['invalid_field_name'] = 'Any Value'
         response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE, 'InvalidUsage exception should be raised'
         error = response.json()['error']
-        assert error['message'] == 'Invalid field in campaign data'
         assert error['invalid_field'] == 'invalid_field_name'
 
-        del data['invalid_field_name']
-        smartlist_ids = data['smartlist_ids']
-
+    def test_put_by_id_with_missing_required_key(self, token, test_smartlist, campaign_in_db):
         # Test valid fields with invalid/ empty values
+        data = generate_campaign_data()
+        data['smartlist_ids'] = [test_smartlist.id]
         for key in ['name', 'body_text', 'url', 'smartlist_ids']:
             invalid_value_test(data, key, token, campaign_in_db.id)
 
+    def test_put_by_id(self, token, campaign_in_db, campaign_data, test_smartlist):
         # Test positive case with valid data
-        data.update(**generate_campaign_data())
-        data['smartlist_ids'] = smartlist_ids
+        data = generate_campaign_data()
+        data['smartlist_ids'] = [test_smartlist.id]
         response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_in_db.id, token, data)
         assert response.status_code == OK, 'Campaign was not updated successfully'
         data['id'] = campaign_in_db.id

@@ -35,16 +35,14 @@ class TestScheduleCampaignUsingPOST(object):
             response = send_request('post', PushCampaignApiUrl.SCHEDULE % _id, token, data)
             assert response.status_code == status_code
 
-    # def test_schedule_campaign_with_other_user(self):
+    def test_schedule_campaign_with_other_user(self, token2, campaign_in_db):
         # Test with a valid campaign but user is not owner of campaign
         # Here we created campaign with user whose Auth token is "token"
-        # and we have a a test user token "test_auth_token" to test ownership
-        # response = send_request('post', PushCampaignApiUrl.SCHEDULE
-        #                         % campaign_in_db.id, test_auth_token, data)
-        # assert response.status_code == FORBIDDEN
-        # error = response.json['error']
-        # assert error['message'] == 'You are not the owner of Push campaign(id:%s)' \
-        #                            % campaign_in_db
+        # and we want to schedule this campaign with other user with token "token2"
+        data = generate_campaign_schedule_data()
+        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+                                % campaign_in_db.id, token2, data)
+        assert response.status_code == FORBIDDEN
 
     def test_schedule_campaign_with_put_method(self, token, campaign_in_db, test_smartlist):
         # Test forbidden error. To schedule a task first time, we have to send POST,
@@ -53,8 +51,6 @@ class TestScheduleCampaignUsingPOST(object):
         response = send_request('put', PushCampaignApiUrl.SCHEDULE
                                 % campaign_in_db.id, token, data)
         assert response.status_code == FORBIDDEN
-        error = response.json()['error']
-        assert error['message'] == 'Use POST method instead to schedule campaign first time'
 
     def test_schedule_campaign_with_missing_fields_in_schedule_data(self, token, campaign_in_db,
                                                            test_smartlist):
@@ -64,8 +60,6 @@ class TestScheduleCampaignUsingPOST(object):
         response = send_request('post', PushCampaignApiUrl.SCHEDULE
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
-        error = response.json()['error']
-        assert error['message'] == 'start_datetime is required field.'
 
         data = generate_campaign_schedule_data()
         del data['end_datetime']
@@ -84,9 +78,7 @@ class TestScheduleCampaignUsingPOST(object):
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
-        assert error['message'] == 'Invalid DateTime: Kindly specify UTC datetime in ' \
-                                   'ISO-8601 format like 2015-10-08T06:16:55Z. ' \
-                                   'Given Date is %s' % data['start_datetime']
+        assert 'Invalid DateTime' in error['message']
 
         data = generate_campaign_schedule_data()
         end = datetime.datetime.utcnow()
@@ -135,6 +127,15 @@ class TestRescheduleCampaignUsingPUT(object):
         unauthorize_test('put',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id,
                          'invalid_token', data)
 
+    def test_reschedule_campaign_with_other_user(self, token2, campaign_in_db):
+        # Test with a valid campaign but user is not owner of campaign
+        # Here we created campaign with user whose Auth token is "token"
+        # and we want to reschedule this campaign using different token "token2"
+        data = generate_campaign_schedule_data()
+        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+                                % campaign_in_db.id, token2, data)
+        assert response.status_code == FORBIDDEN
+
     def test_reschedule_campaign_with_invalid_data(self, token, campaign_in_db, test_smartlist):
         invalid_data_test('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
 
@@ -161,8 +162,6 @@ class TestRescheduleCampaignUsingPUT(object):
         response = send_request('post', PushCampaignApiUrl.SCHEDULE
                                 % campaign_in_db.id, token, data)
         assert response.status_code == FORBIDDEN
-        error = response.json()['error']
-        assert error['message'] == 'Use PUT method instead to update already scheduled task'
 
     def test_reschedule_campaign_with_missing_fields_in_schedule_data(self, token, campaign_in_db,
                                                            test_smartlist, schedule_a_campaign):
@@ -246,6 +245,14 @@ class TestUnscheduleCamapignUsingDELETE(object):
         data = generate_campaign_schedule_data()
         unauthorize_test('delete',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id,
                          'invalid_token', data)
+
+    def test_unschedule_campaign_with_other_user(self, token2, campaign_in_db):
+        # Test with a valid campaign but user is not owner of campaign
+        # Here we created campaign with user whose Auth token is "token"
+        # and we have a a test user token "test_auth_token" to test ownership
+        response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+                                % campaign_in_db.id, token2)
+        assert response.status_code == FORBIDDEN
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token):
         # Test with invalid integer id

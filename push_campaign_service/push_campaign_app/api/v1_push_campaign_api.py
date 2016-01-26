@@ -253,9 +253,7 @@ class CampaignByIdResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
-        if not campaign:
-            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         response = dict(campaign=campaign.to_json())
         return response, 200
 
@@ -307,10 +305,7 @@ class CampaignByIdResource(Resource):
         data = get_valid_json_data(request)
         if not campaign_id > 0:
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
-        campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
-        if not campaign:
-            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
-
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         for key, value in data.items():
             if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
                 raise InvalidUsage('Invalid field in campaign data',
@@ -439,7 +434,8 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id)
+        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
+                                                                   CampaignType.PUSH)
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
@@ -477,7 +473,7 @@ class SchedulePushCampaignResource(Resource):
         """
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        task_unscheduled = PushCampaignBase.unschedule(campaign_id, request)
+        task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignType.PUSH)
         if task_unscheduled:
             return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
         else:
@@ -522,7 +518,7 @@ class SendPushCampaign(Resource):
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
-@api.route(PushCampaignApi.BLASTS_SENDS)
+@api.route(PushCampaignApi.BLAST_SENDS)
 class PushCampaignBlastSends(Resource):
 
     decorators = [require_oauth()]
@@ -530,16 +526,17 @@ class PushCampaignBlastSends(Resource):
     def get(self, campaign_id, blast_id):
         user = request.user
         # Get a campaign that was created by this user
-        push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
-        if not push_campaign:
-            raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         blast = PushCampaignBlast.get_by_id(blast_id)
-        if blast and blast.campaign_id == campaign_id:
+        if not blast:
+            raise ResourceNotFound('Campaign Blast not found with id: %s' % blast_id)
+        if blast.campaign_id == campaign.id:
             sends = [send.to_json() for send in blast.blast_sends]
             response = dict(sends=sends, count=len(sends))
             return response, 200
         else:
-            raise ResourceNotFound('Push Campaign Blast not found with id: %s' % blast_id)
+            raise ForbiddenError('Campaign Blast (id: %s) is not assciated with campaign (id: %s)'
+                                 % (blast_id, campaign.id))
 
 
 @api.route(PushCampaignApi.SENDS)
@@ -588,13 +585,11 @@ class PushCampaignSends(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        push_campaign = PushCampaign.get_by_id_and_user_id(campaign_id, user.id)
-        if not push_campaign:
-            raise ResourceNotFound('Push campaign does not exists with id %s for this user' % campaign_id)
+        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         sends = []
         # Add sends for every blast to `sends` list to get all sends of a campaign.
         # A campaign can have multiple blasts
-        [sends.extend(blast.blast_sends.all()) for blast in push_campaign.blasts.all()]
+        [sends.extend(blast.blast_sends.all()) for blast in campaign.blasts.all()]
         # Get JSON serializable data
         sends = [send.to_json() for send in sends]
         response = dict(sends=sends, count=len(sends))
