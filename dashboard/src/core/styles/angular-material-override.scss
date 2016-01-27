@@ -12,12 +12,28 @@
     }
 }
 
+.fa-info-circle {
+    color:#ccc;
+    margin:0 0 0 3px;
+    top:-5px;
+    font-size:13px;
+    position:relative;
+}
 
+.tooltip--info {
+    .tooltip-inner {
+        padding:20px;
+        text-align:left;
+        border:1px #ccc solid;
+        box-shadow: 0 1px 6px 1px rgba(0,0,0,0.15);
+        background:rgba(255,255,255,.5);
+    }
+}
 
 /** Angular Material Overrides **/
 
 body {
-    font-weight:300;
+    font-weight:400;
 }
 
 #toast-container {
@@ -31,7 +47,7 @@ body {
         box-shadow:0 0 4px rgba(0,0,0,.10);
         font-size: 15px;
         &:hover {
-            box-shadow:0 0 4px rgba(0,0,0,.20);
+            box-shadow:0 0 4px rgba(0,0,0,.10);
         }
         strong {
             color: $color--blue;
@@ -60,15 +76,29 @@ md-card {
     box-shadow:none;
     border-right: solid 1px #e2e2e2;
     border-bottom: solid 1px #e2e2e2;
+    color:#444;
+    padding:10px 15px;
+    .md-subhead {
+        padding-top:0px;
+    }
     md-card-content {
 
     }
-}
-
-.md-title {
-    font-weight:300;
-    font-size: 1.1em;
-    .fa-info {
+    .md-card-title {
 
     }
+    .md-title {
+        font-weight:500;
+        font-size: 1.4em;
+    }
+    .md-subhead-alt {
+        margin-top:4px;
+    }
+}
+
+.page-title-icon {
+    display:inline-block;
+    border-radius:50px;
+    overflow:hidden;
+    margin-right:15px;
 }
