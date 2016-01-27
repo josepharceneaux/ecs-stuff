@@ -11,11 +11,11 @@
     function providerFunction() {
         this.$get = $get;
 
-        $get.$inject = ['gtRestangular', 'activityServiceInfo'];
+        $get.$inject = ['baseService', 'activityServiceInfo'];
 
         /* @ngInject */
-        function $get(gtRestangular, activityServiceInfo) {
-            return gtRestangular.withConfig(function (RestangularConfigurer) {
+        function $get(baseService, activityServiceInfo) {
+            return baseService.withConfig(function (RestangularConfigurer) {
                 RestangularConfigurer.setBaseUrl(activityServiceInfo.baseUrl);
             });
         }
