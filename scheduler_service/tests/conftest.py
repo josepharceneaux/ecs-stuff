@@ -10,7 +10,7 @@ from datetime import timedelta
 import requests
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture
+    test_org, test_culture, first_group, domain_first
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'

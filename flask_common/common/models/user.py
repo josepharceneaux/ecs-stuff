@@ -41,7 +41,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    thumbnail_url = db.Column('thumbnailUrl', db.TEXT, default="")
+    thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -122,7 +122,7 @@ class User(db.Model):
 
     # ***** Below function to be used for testing only *****
     @staticmethod
-    def add_test_user(session, domain_id, password):
+    def add_test_user(session, password, domain_id, user_group_id):
         """
         Function creates a unique user for testing
         :rtype: User
@@ -131,6 +131,7 @@ class User(db.Model):
             email='{}@example.com'.format(uuid.uuid4().__str__()),
             password=generate_password_hash(password, method='pbkdf2:sha512'),
             domain_id=domain_id,
+            user_group_id=user_group_id,
             expiration=None
         )
         session.add(user)
@@ -168,6 +169,20 @@ class Domain(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    # ***** Below functions to be used for testing only *****
+    @staticmethod
+    def add_test_domain(session):
+        """
+        Function creates a unique domain + domain's UserGroup for testing
+        :return:
+        """
+        from datetime import timedelta
+        domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
+                        expiration='0000-00-00 00:00:00')
+        session.add(domain)
+        session.commit()
+        return domain
 
 
 class WebAuthGroup(db.Model):

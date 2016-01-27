@@ -53,7 +53,7 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_domain_areas_of_interest(cls, domain_id):
         """
-        :rtype  [AreaOfInterest]
+        :rtype: list[AreaOfInterest]
         """
         return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
 
@@ -230,6 +230,10 @@ class CustomField(db.Model):
 
     @classmethod
     def get_domain_custom_fields(cls, domain_id):
+        """Function gets all domain's custom fields
+        :type domain_id:  int|long
+        :rtype:  list[CustomField]
+        """
         return cls.query.filter(CustomField.domain_id==domain_id).all()
 
 
