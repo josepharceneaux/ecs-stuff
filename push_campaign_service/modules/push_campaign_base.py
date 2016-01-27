@@ -1,3 +1,13 @@
+"""
+This module contain PushCampaignVase class which is sub class of CamapignBase.
+
+    PushCampaignBase class contains method that do following actions:
+        - __init__():
+            Constructor calls supper method to intiliaze default values for a push campaign
+        -
+
+"""
+
 # Third Party
 from dateutil.relativedelta import relativedelta
 
@@ -46,59 +56,28 @@ class PushCampaignBase(CampaignBase):
         """
         return PushCampaign.get_by_user_id(self.user_id)
 
-    # @classmethod
-    # def pre_process_schedule(cls, request, campaign_id):
+    # @staticmethod
+    # def validate_ownership_of_campaign(campaign_id, current_user_id):
     #     """
-    #     This implements the base class method. Before making HTTP POST/GET call on
-    #     scheduler_service, we do the following.
-    #     1- Check if request has valid JSON content-type header
-    #     2- Check if current user is an owner of given campaign_id
-    #     :return: dictionary containing Campaign obj, data to schedule SMS campaign,
-    #                 scheduled_task and bearer access token
-    #     :rtype: dict
+    #     This function returns True if the current user is an owner for given
+    #     campaign_id. Otherwise it raises the Forbidden error.
+    #     :param campaign_id: id of campaign form getTalent database
+    #     :param current_user_id: Id of current user
+    #     :exception: InvalidUsage
+    #     :exception: ResourceNotFound
+    #     :exception: ForbiddenError
+    #     :return: Campaign obj if current user is an owner for given campaign.
+    #     :rtype: PushNotification
     #     """
-    #     campaign_obj = cls.validate_ownership_of_campaign(campaign_id, request.user.id)
-    #     # check if campaign is already scheduled
-    #     scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
-    #                                               request.oauth_token)
-    #     # Updating scheduled task should not be allowed in POST request
-    #     if scheduled_task and request.method == 'POST':
-    #         raise ForbiddenError(error_message='Use PUT method to update task')
-    #     try:
-    #         data_to_schedule_campaign = request.get_json()
-    #     except BadRequest:
-    #         raise InvalidUsage(error_message='Given data should be in dict format')
-    #     if not data_to_schedule_campaign:
-    #         raise InvalidUsage(
-    #             error_message='No data provided to schedule %s (id:%s)'
-    #                           % (campaign_obj.__tablename__, campaign_id))
-    #     return {'campaign': campaign_obj,
-    #             'data_to_schedule': data_to_schedule_campaign,
-    #             'scheduled_task': scheduled_task,
-    #             'auth_header': {'Authorization': request.oauth_token}}
-
-    @staticmethod
-    def validate_ownership_of_campaign(campaign_id, current_user_id):
-        """
-        This function returns True if the current user is an owner for given
-        campaign_id. Otherwise it raises the Forbidden error.
-        :param campaign_id: id of campaign form getTalent database
-        :param current_user_id: Id of current user
-        :exception: InvalidUsage
-        :exception: ResourceNotFound
-        :exception: ForbiddenError
-        :return: Campaign obj if current user is an owner for given campaign.
-        :rtype: PushNotification
-        """
-        if not isinstance(campaign_id, (int, long)):
-            raise InvalidUsage(error_message='Include campaign_id as int|long')
-        campaign_obj = PushCampaign.get_by_id(campaign_id)
-        if not campaign_obj:
-            raise ResourceNotFound(error_message='Push Campaign (id=%s) not found.' % campaign_id)
-        if campaign_obj.user_id == current_user_id:
-            return campaign_obj
-        else:
-            raise ForbiddenError(error_message='You are not the owner of Push campaign(id:%s)' % campaign_id)
+    #     if not isinstance(campaign_id, (int, long)):
+    #         raise InvalidUsage(error_message='Include campaign_id as int|long')
+    #     campaign_obj = PushCampaign.get_by_id(campaign_id)
+    #     if not campaign_obj:
+    #         raise ResourceNotFound(error_message='Push Campaign (id=%s) not found.' % campaign_id)
+    #     if campaign_obj.user_id == current_user_id:
+    #         return campaign_obj
+    #     else:
+    #         raise ForbiddenError(error_message='You are not the owner of Push campaign(id:%s)' % campaign_id)
 
     def schedule(self, data_to_schedule):
         """
