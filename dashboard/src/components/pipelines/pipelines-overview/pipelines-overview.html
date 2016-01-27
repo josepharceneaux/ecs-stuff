@@ -9,7 +9,7 @@
         <!-- End: Navigation path -->
 
         <!-- Header -->
-        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+        <md-content layout="row" layout-xs="column" layout-align="center center" >
             <div flex>
                 <h3 class="md-title">My Pipelines</h3>
             </div>
@@ -20,7 +20,7 @@
         <!-- End: Header -->
 
         <!-- Growth graph -->
-        <md-content layout="row" class="md-whiteframe-z1">
+        <md-content layout="row" >
             <div style="height:400px;">Candidate Growth Chart</div>
         </md-content>
         <!-- End: Growth graph -->
@@ -28,7 +28,7 @@
         <!-- Call-outs -->
         <div layout="row" layout-wrap>
             <div flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
-                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
+                <md-content layout="column" layout-align="center center">
                     <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"></i></h3>
                     <h3 class="md-display-3">{{callout.value}}</h3>
                 </md-content>
