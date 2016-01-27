@@ -81,11 +81,25 @@ def add_talent_pool():
             db.session.add(talent_pool)
             db.session.commit()
 
-            for candidate in user.candidates:
-                print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
-                db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
-                                                   candidate_id=candidate.id))
-                db.session.commit()
+            user_candidates = user.candidates
+            for candidate in user_candidates:
+                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
+                                                                talent_pool_id=talent_pool.id)
+                if not talent_pool_candidate:
+                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
+                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
+                                                       candidate_id=candidate.id))
+                    db.session.commit()
+        else:
+            user_candidates = user.candidates
+            for candidate in user_candidates:
+                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
+                                                                talent_pool_id=talent_pool.id)
+                if not talent_pool_candidate:
+                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
+                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
+                                                       candidate_id=candidate.id))
+                    db.session.commit()
 
 
 def add_talent_pool_group():
