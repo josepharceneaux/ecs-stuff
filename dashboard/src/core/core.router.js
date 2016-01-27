@@ -642,6 +642,34 @@
                 url: '/talent-pools',
                 redirectTo: 'talentPools.manage'
             })
+            .state('talentPools.dashboard', {
+                abstract: true,
+                url: '/dashboard'
+            })
+            .state('talentPools.dashboard.candidates', {
+                url: '/candidates',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-candidates></gt-talent-pools-dashboard-candidates>'
+                    }
+                }
+            })
+            .state('talentPools.dashboard.pipelines', {
+                url: '/pipelines',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-pipelines></gt-talent-pools-dashboard-pipelines>'
+                    }
+                }
+            })
+            .state('talentPools.dashboard.teams', {
+                url: '/teams',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-teams></gt-talent-pools-dashboard-teams>'
+                    }
+                }
+            })
             .state('talentPools.manage', {
                 url: '',
                 views: {
