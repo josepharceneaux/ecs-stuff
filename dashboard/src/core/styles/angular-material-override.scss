@@ -1,9 +1,14 @@
 body {
-    font-weight:400;
+    font-weight: 400;
+    color: #555;
 }
 
-.md-margin-wrapper {
-    margin: 8px;
+.view__main,
+.view__main--pipelines,
+.view__main--user,
+.view__wrapper--pipelines,
+.view__wrapper--user {
+    background: #efefef;
 }
 
 #toast-container {
@@ -64,6 +69,45 @@ body {
     }
 }
 
+.page-title-icon {
+    display:inline-block;
+    border-radius:50px;
+    overflow:hidden;
+    margin-right:15px;
+}
+
+
+
+
+/** Angular Material Overrides **/
+
+.md-margin-wrapper {
+    margin: 8px;
+}
+
+md-content {
+    padding: 30px;
+    border-radius: 3px;
+}
+
+md-toolbar.md-table-toolbar form {
+    input {
+        width: 100%;
+        margin: 0;
+        border: none;
+        color: rgba(0, 0, 0, 0.87);
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: rgba(0, 0, 0, 0.26);
+            font-weight: 300;
+        }
+    }
+}
+
 #v2-pipeline-summaries {
     md-card {
         min-height: 450px;
@@ -109,19 +153,6 @@ body {
     }
 }
 
-/** Angular Material Overrides **/
-
-
-
-
-.view__main,
-.view__main--pipelines,
-.view__main--user,
-.view__wrapper--pipelines,
-.view__wrapper--user {
-    background: #efefef;
-}
-
 @mixin card {
     border-radius: 3px;
     box-shadow:none;
@@ -154,11 +185,4 @@ md-card {
     .md-subhead-alt {
         margin-top:4px;
     }
-}
-
-.page-title-icon {
-    display:inline-block;
-    border-radius:50px;
-    overflow:hidden;
-    margin-right:15px;
 }

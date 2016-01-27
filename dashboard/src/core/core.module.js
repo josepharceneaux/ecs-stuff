@@ -16,6 +16,7 @@
         'angularUtils.directives.dirPagination',
         'hljs',
         'ngMaterial',
+        'md.data.table',
         'ngTagsInput',
         'pickadate',
         'restangular',

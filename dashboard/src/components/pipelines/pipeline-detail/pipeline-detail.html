@@ -1,39 +1,40 @@
-<section id="pipeline-detail-view" class="view-wrapper view__main--pipeline hero-chart" layout-margin>
+<section id="pipeline-detail-view" class="view-wrapper view__main--pipelines">
 
     <div layout="column" layout-margin>
         
         <!-- Navigation path -->
         <div layout="row">
-            <div flex ncy-breadcrumb></div>
+            <div ncy-breadcrumb></div>
         </div>
         <!-- End: Navigation path -->
 
-        <div layout="column" flex>
-            <md-card flex="none">
-                <md-card-content layout="row" layout-xs="column" layout-align="center center">
-                    <div class="page-title-icon">
-                        <img src="//placehold.it/80x80" />
-                    </div>
-                    <div flex>
-                        <div class="md-title"> Java Developers in California</div>
-                    </div>
-                </md-card-content>
-            </md-card>
-        </div>
-        <!-- End: Page Header -->
+        <!-- Header -->
+        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+            <div class="page-title-icon">
+                <img src="//placehold.it/80x80" />
+            </div>
+            <div flex>
+                <h3 class="md-title">Pipeline Name</h3>
+                <h3 class="md-body-1">Created by <a href="">Haohong Xu</a> on 5/22/16</h3>
+            </div>          
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <md-button class="md-raised md-primary">Add Candidates</md-button>
+                <md-button class="md-raised md-primary">Create Campaign</md-button>
+                <md-button class="md-raised md-primary">Create Smartlist</md-button>
+            </div>
+        </md-content>
+        <!-- End: Header -->
 
         <!-- Growth graph -->
-        <div class="md-margin-wrapper" layout="column" flex >
-            <div class="md-whiteframe-gt" layout="row" style="height:400px;">
-                    Chart Placeholder
-            </div>
-        </div>
+        <md-content layout="row" class="md-whiteframe-z1">
+            <div style="height:400px;">Pipeline Growth Chart</div>
+        </md-content>
         <!-- End: Growth graph -->
 
         <!-- Callouts -->
-        <div class="md-margin-wrapper"  layout="row" layout-wrap>
+        <div layout="row" layout-wrap>
             <div flex="25" flex-md="50" flex-sm="100" flex-xs="100" ng-repeat="callout in vm.callouts">
-                <md-content class="md-whiteframe-gt" layout="column" layout-align="center center">
+                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
                     <h3 class="md-title">{{callout.name}} <i class="fa fa-info-circle"></i></h3>
                     <h3 class="md-display-3">{{callout.value}}</h3>
                 </md-content>
@@ -42,7 +43,7 @@
         <!-- End: Callouts -->
 
         <!-- Summaries and Activity Feed -->
-        <div layout="row" layout-wrap>
+        <div layout="row" layout-wrap layout-fill>
             <!-- Summaries -->
             <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
 
