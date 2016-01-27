@@ -82,6 +82,7 @@ class AuthServiceTestsContext:
         else:
             raise Exception("%s is not a valid action" % action)
 
+        headers['Origin'] = 'https://app.gettalent.com'  # To verify that CORS headers work
         response = requests.post(AuthApiUrl.TOKEN_REVOKE if action == 'revoke' else
                                  AuthApiUrl.TOKEN_CREATE, data=urlencode(params), headers=headers)
         db.session.commit()

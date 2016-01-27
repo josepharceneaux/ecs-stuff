@@ -1,26 +1,109 @@
 {
   "local": {
     "authInfo": {
-      "baseUrl": "http://localhost",
+      "baseUrl": "http://localhost:8001/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "http://localhost:8002/v1"
+    },
+    "alertServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "candidatePoolServiceInfo": {
+        "baseUrl": "http://localhost:8008/v1"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "http://localhost:8005/v1"
+    },
+    "emailCampaignServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "http://localhost"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "http://localhost:8006/v1"
+    },
+    "userServiceInfo": {
+        "baseUrl": "http://localhost:8004/v1"
     }
   },
   "development": {
     "authInfo": {
-      "baseUrl": "http://secure-webdev.gettalent.com",
+      "baseUrl": "https://auth-service-staging.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "https://activity-service-staging.gettalent.com/v1"
+    },
+    "alertServiceInfo": {
+        "THE_REAL_baseUrl": "https://alert-service-staging.gettalent.com/v1",
+        "baseUrl": "http://localhost:7203/api"
+    },
+    "candidatePoolServiceInfo": {
+        "THE_REAL_baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-120a6-candidatepoolservice.apiary-mock.com/v1"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "https://candidate-service-staging.gettalent.com/v1"
+    },
+    "emailCampaignServiceInfo": {
+        "THE_REAL_baseUrl": "https://email-campaign-service-staging.gettalent.com/v1",
+        "baseUrl": "http://private-fa828-emailcampaignservice.apiary-mock.com/v1"
+    },
+    "smsCampaignServiceInfo": {
+        "THE_REAL_baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1",
+        "baseUrl": "http://private-4583b-smscampaignapi.apiary-mock.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "THE_REAL_baseUrl": "https://social-network-service-staging.gettalent.com/v1",
+        "baseUrl": "https://private-abc6bd-socialnetworkservice.apiary-mock.com"
+    },
+    "userServiceInfo": {
+        "baseUrl": "https://user-service-staging.gettalent.com/v1"
     }
   },
   "production": {
     "authInfo": {
-      "baseUrl": "https://webdev.gettalent.com",
+      "baseUrl": "https://auth-service.gettalent.com/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
+    },
+    "activityServiceInfo": {
+        "baseUrl": "https://activity-service.gettalent.com/v1"
+    },
+    "alertServiceInfo": {
+        "baseUrl": "https://alert-service.gettalent.com/v1"
+    },
+    "candidatePoolServiceInfo": {
+        "baseUrl": "https://candidate-pool-service.gettalent.com/v1"
+    },
+    "candidateServiceInfo": {
+        "baseUrl": "https://candidate-service.gettalent.com/v1"
+    },
+    "emailCampaignServiceInfo": {
+        "baseUrl": "https://email-campaign-service.gettalent.com/v1"
+    },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "https://sms-campaign-service.gettalent.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "https://social-network-service.gettalent.com/v1"
+    },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "https://sms-campaign-service.gettalent.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "https://social-network-service.gettalent.com/v1"
+    },
+    "userServiceInfo": {
+        "baseUrl": "https://user-service.gettalent.com/v1"
     }
   }
 }

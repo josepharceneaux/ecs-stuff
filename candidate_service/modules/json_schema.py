@@ -17,7 +17,7 @@ candidates_resource_schema_post = {
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
-                "required": ["emails"],
+                "required": ["talent_pool_ids"],
                 "additionalProperties": False,
                 "properties": {
                     "first_name": {
@@ -52,10 +52,6 @@ candidates_resource_schema_post = {
                         # "id": "http://jsonschema.net/dice_profile_id",
                         "type": ["integer", "null"]
                     },
-                    "talent_pool_ids": {
-                        # "id": "http://jsonschema.net/talent_pool_id",
-                        "type": ["object", "null"]
-                    },
                     "source_id": {
                         # "id": "http://jsonschema.net/source_id",
                         "type": ["integer", "null"]
@@ -68,10 +64,31 @@ candidates_resource_schema_post = {
                         # "id": "http://jsonschema.net/summary",
                         "type": ["string", "null"]
                     },
+                    "talent_pool_ids": {
+                        # "id": "http://jsonschema.net/talent_pool_id",
+                        "type": "object",
+                        "required": ["add"],
+                        "additionalProperties": False,
+                        "properties": {
+                            "add": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "delete": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    },
                     "emails": {
                         # "id": "http://jsonschema.net/emails",
-                        "type": "array",
-                        "minItems": 1,
+                        "type": ["array", "null"],
+                        # "minItems": 1,
                         "items": {
                             # "id": "http://jsonschema.net/emails/0",
                             "type": "object",
@@ -85,7 +102,7 @@ candidates_resource_schema_post = {
                                 },
                                 "address": {
                                     # "id": "http://jsonschema.net/emails/0/address",
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 255
                                 },
                                 "is_default": {
@@ -474,7 +491,7 @@ candidates_resource_schema_post = {
                                     "maxLength": 100
                                 },
                                 "start_year": {
-                                    # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
+                                    # "id": "http://jsonschema.net/work_experiences/0/start_date",
                                     "type": ["integer", "string", "null"],
                                     "maxLength": 4,
                                     "minimum": 1900, "maximum": CURRENT_YEAR
@@ -1263,6 +1280,20 @@ candidates_resource_schema_get = {
                 # "id": "http://jsonschema.net/candidate_ids/0",
                 "type": "integer"
             }
+        }
+    }
+}
+
+resource_schema_preferences = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    # "id": "http://jsonschema.net",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["frequency_id"],
+    "properties": {
+        "frequency_id": {
+            # "id": "http://jsonschema.net/frequency_id",
+            "type": "integer",
         }
     }
 }

@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/forgot-password/forgot-password.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'ForgotPasswordController',
             controllerAs: 'vm'
         };
@@ -26,14 +25,13 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$rootScope', '$state', '$stateParams'];
+    ControllerFunction.$inject = ['$rootScope', '$state', '$stateParams', 'forgotPasswordService'];
 
     /* @ngInject */
-    function ControllerFunction($rootScope, $state, $stateParams) {
+    function ControllerFunction($rootScope, $state, $stateParams, forgotPasswordService) {
         var vm = this;
 
-        vm.email = '';
-        vm.errorMessage = '';
+        vm.sendForgotPasswordRequest = sendForgotPasswordRequest;
 
         init();
 
@@ -41,6 +39,16 @@
             if ($stateParams.errorMessage) {
                 vm.errorMessage = $stateParams.errorMessage;
             }
+        }
+
+        function sendForgotPasswordRequest(username) {
+            forgotPasswordService.sendForgotPasswordRequest(username).then(function (response) {
+                console.log('forgot password success!:', arguments);
+                vm.errorMessage = 'Thanks! If this username belongs to an account, you\'ll receive an email shortly.';
+            }, function (response) {
+                console.log('forgot password failure:', arguments);
+                vm.errorMessage = 'Something went wrong.';
+            });
         }
     }
 })();

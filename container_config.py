@@ -1,24 +1,21 @@
-__author__ = 'erikfarmer'
-
-
 import argparse
 import os
-from subprocess import call, check_output
+from subprocess import check_output
 from sys import exit, platform as _platform
 
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
-SERVICE_TO_DOCKERHUB_REPO = {'base_service_container': 'base-service-container',
-                             'auth_service': 'auth-service',
-                             'activity_service': 'activity-service',
-                             'resume_parsing_service': 'resume-parsing-service',
-                             'user_service': 'user-service',
-                             'candidate_service': 'candidate-service',
-                             'social_network_service': 'social-network-service',
-                             'widget_service': 'widget-service',
-                             'candidate_pool_service': 'candidate-pool-service',
-                             'spreadsheet_import_service': 'spreadsheet-import-service',
-                             'scheduler_service': 'scheduler_service'
-                             }
+SERVICE_TO_REPO_NAME = {'base_service_container': 'base-service-container',
+                        'auth_service': 'auth-service',
+                        'activity_service': 'activity-service',
+                        'resume_parsing_service': 'resume-parsing-service',
+                        'user_service': 'user-service',
+                        'candidate_service': 'candidate-service',
+                        'social_network_service': 'social-network-service',
+                        'widget_service': 'widget-service',
+                        'candidate_pool_service': 'candidate-pool-service',
+                        'spreadsheet_import_service': 'spreadsheet-import-service',
+                        'scheduler_service': 'scheduler-service'
+                        }
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'activity_service': 8002,
@@ -32,9 +29,11 @@ SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
                           'scheduler_service': 8011}
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
-parser.add_argument('--build', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Invokes the Docker build action for given service')
-parser.add_argument('--deploy', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Pushes to Dockerhub & deploys the latest container into staging environment')
-parser.add_argument('--run', nargs=1, choices=SERVICE_TO_DOCKERHUB_REPO.keys(), help='Runs the container locally for given service')
+parser.add_argument('--build', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Invokes the Docker build action for given service')
+parser.add_argument('--build-all', action='store_true', help='Invokes the Docker build action for all services except base_service_container')
+parser.add_argument('--push-ecr', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Pushes image to Amazon EC2 Container Registry (ECR)')
+parser.add_argument('--push-ecr-all', action='store_true', help='Pushes all images to Amazon EC2 Container Registry (ECR) except base_service_container')
+parser.add_argument('--run', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Runs the container locally for given service')
 args = parser.parse_args()
 
 
@@ -52,6 +51,18 @@ def set_environment_variables_from_env_output(env_output=''):
             exit(VM_NOT_RUNNING_ERROR_MESSAGE)
 
 
+def _execute_command_or_exit(command):
+    output = None
+    try:
+        print ' > ', command
+        output = check_output(command, shell=True)
+        if output:
+            print output
+    except Exception as e:
+        exit(e.message)
+    return output
+
+
 def attach_bash_shell_to_vm_if_not_linux():
     """
     If on OS X, use docker-machine to run Docker client.
@@ -59,12 +70,6 @@ def attach_bash_shell_to_vm_if_not_linux():
     """
     if _platform == "darwin" or _platform == "win32":  # Host machine is not linux based
         print 'OS X or Windows detected. Attaching bash shell to Virtual Machine'
-
-        # Configure Docker env for this process
-        try:
-            check_output('eval "$(docker-machine env default)"', shell=True)
-        except Exception as e:
-            exit(e.message)
 
         # Set the environment variables from the Docker env
         try:
@@ -75,9 +80,10 @@ def attach_bash_shell_to_vm_if_not_linux():
             exit(e.message)
 
 
-if args.build:
-    service_name = args.build[0]
-    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
+def build_docker_image(service_name):
+    repo_name = "gettalent/%s" % SERVICE_TO_REPO_NAME[service_name]
+    original_cwd = os.getcwd()
+
     print 'Changing dir to %s' % service_name
     os.chdir(service_name)
 
@@ -85,11 +91,53 @@ if args.build:
 
     # Build Dockerfile
     print 'Building Docker file for service %(service_name)s, repo %(repo_name)s:' % locals()
-    command = 'tar -czh . | docker build -t %(repo_name)s:latest -' % locals()
-    print ' > ', command
-    call(command, shell=True)
+    _execute_command_or_exit('tar -czh . | docker build -t %(repo_name)s:latest -' % locals())
 
-    # TODO: Running and testing docker container locally
+    print 'Moving back to original dir: %s' % original_cwd
+    os.chdir(original_cwd)
+
+
+def push_image_to_ecr(service_name):
+    repo_name = "gettalent/%s" % SERVICE_TO_REPO_NAME[service_name]
+    ecr_registry_url = "528222547498.dkr.ecr.us-east-1.amazonaws.com"
+    original_cwd = os.getcwd()
+
+    attach_bash_shell_to_vm_if_not_linux()
+
+    print 'Changing directory to pyenv 2.7.9 directory to access AWS CLI'
+    python_bin_path = os.path.expanduser("~/.pyenv/versions/2.7.9/bin")
+    command = 'cd %(python_bin_path)s' % locals()
+    print ' > ', command
+    os.chdir(python_bin_path)
+
+    print 'Get ECR login command'
+    ecr_get_login_output = _execute_command_or_exit('aws ecr get-login --region us-east-1')
+
+    print 'Docker login to ECR'
+    _execute_command_or_exit(ecr_get_login_output)
+
+    print 'Tagging %(repo_name)s image with fully-qualified ECR path' % locals()
+    _execute_command_or_exit('docker tag -f %(repo_name)s:latest %(ecr_registry_url)s/%(repo_name)s:latest' % locals())
+
+    print 'Pushing %(repo_name)s:latest to ECR registry at %(ecr_registry_url)s' % locals()
+    _execute_command_or_exit('docker push %(ecr_registry_url)s/%(repo_name)s:latest' % locals())
+
+    print 'Moving back to original director: %s' % original_cwd
+    os.chdir(original_cwd)
+
+
+if args.build:
+    service_name = args.build[0]
+    build_docker_image(service_name)
+
+
+if args.build_all:
+    for service_name in SERVICE_TO_REPO_NAME.keys():
+        if service_name == "base_service_container":
+            print "Skipping base service container"
+            continue
+        print "Building Docker image for %s" % service_name
+        build_docker_image(service_name)
 
 
 if args.run:
@@ -97,7 +145,7 @@ if args.run:
         raise Exception("This doesn't work yet! Need to get MySQL set up")
     # Set up Docker env
     service_name = args.run[0]
-    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
+    repo_name = "gettalent/%s" % SERVICE_TO_REPO_NAME[service_name]
     print 'Changing dir to %s' % service_name
     os.chdir(service_name)
 
@@ -112,20 +160,18 @@ if args.run:
         SERVICE_TO_PORT_NUMBER[service_name],
         my_ip,
         repo_name)
-    print ' > ', command
-    call(command, shell=True)
+    _execute_command_or_exit(command)
 
 
-if args.deploy:
-    # Set up Docker env
-    service_name = args.deploy[0]
-    repo_name = "gettalent/%s" % SERVICE_TO_DOCKERHUB_REPO[service_name]
-    print 'Changing dir to %s' % service_name
-    os.chdir(service_name)
+if args.push_ecr:
+    service_name = args.push_ecr[0]
+    push_image_to_ecr(service_name)
 
-    attach_bash_shell_to_vm_if_not_linux()
 
-    print 'Pushing %(repo_name)s:latest to docker-hub registry' % locals()
-    command = 'docker push %(repo_name)s:latest' % locals()
-    print ' > ', command
-    call(command, shell=True)
+if args.push_ecr_all:
+    for service_name in SERVICE_TO_REPO_NAME.keys():
+        if service_name == "base_service_container":
+            print "Skipping base service container"
+            continue
+        print "Pushing Docker image for %s to ECR" % service_name
+        push_image_to_ecr(service_name)

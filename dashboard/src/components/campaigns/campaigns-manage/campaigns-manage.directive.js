@@ -14,8 +14,8 @@
         var directive = {
             restrict: 'E',
             templateUrl: 'components/campaigns/campaigns-manage/campaigns-manage.html',
-            scope: {
-            },
+            replace: true,
+            scope: {},
             controller: 'CampaignsManageController',
             controllerAs: 'vm'
         };

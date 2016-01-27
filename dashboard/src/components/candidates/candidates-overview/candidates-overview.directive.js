@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/candidates/candidates-overview/candidates-overview.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'CandidatesOverviewController',
             controllerAs: 'vm'
         };

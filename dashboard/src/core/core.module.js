@@ -15,8 +15,10 @@
         // 3rd Party modules
         'angularUtils.directives.dirPagination',
         'hljs',
+        'ngMaterial',
         'ngTagsInput',
         'pickadate',
+        'restangular',
         'toastr',
         'ui.bootstrap',
         'ui.router'

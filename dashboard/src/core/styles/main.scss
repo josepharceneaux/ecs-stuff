@@ -36,6 +36,7 @@
 @import 'vendor/pickadate/pickadate';
 @import 'vendor/magnific-popup/magnific-popup';
 @import 'vendor/angular-bootstrap/bootstrap';
+@import 'vendor/angular-toastr/toastr';
 
 // -----
 // Modules
@@ -80,5 +81,6 @@
 @import 'modules/available-candidates';
 @import 'modules/create-pipeline-smartlist';
 @import 'modules/campaign-detail';
+@import 'modules/info-tooltip';
 
 @import 'modules/styleguide';

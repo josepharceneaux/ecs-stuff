@@ -16,23 +16,25 @@
             restrict: 'E',
             templateUrl: 'components/topnav/topnav.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'TopnavController',
-            controllerAs: 'vm'
+            controllerAs: 'vm',
+            link: linkFunction
         };
 
         return directive;
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuthToken'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuthToken) {
+    function ControllerFunction($state, OAuth, toastr, systemAlertsService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
+        vm.notifyUser = notifyUser;
+        vm.createSystemAlert = createSystemAlert;
 
         init();
 
@@ -85,8 +87,97 @@
         }
 
         function logout() {
-            OAuthToken.removeToken();
+            OAuth.revokeToken();
             $state.go('login');
         }
+
+        function notifyUser(type) {
+            switch (type) {
+                case 'success':
+                    toastr.success('Hello world!', 'Toastr fun!');
+                    break;
+                case 'warning':
+                    toastr.warning('Your computer is about to explode!', 'Warning');
+                    break;
+                case 'error':
+                    toastr.error('Your credentials are gone', 'Error');
+                    break;
+                default:
+                    toastr.info('We are open today from 10 to 22', 'Information');
+            }
+        }
+
+        function createSystemAlert() {
+            var messages = [
+                'Hello world!',
+                'Your computer is about to explode!',
+                'Your credentials are gone',
+                'We are open today from 10 to 22'
+            ];
+
+            systemAlertsService.createAlert(messages[Math.round((messages.length - 1) * Math.random())]);
+        }
+
+
+    }
+
+    function linkFunction() {
+        var self = {};
+
+        self.navItem   = $('.js--topNavItem');
+
+        let navClickout = function(target, $menu) {
+            // console.log(menu.is(target), !!menu.has(target).length)
+
+            if(!!$menu.has(target).length) return;
+
+            return closeSubMenu($menu);
+        }
+
+        let openSubMenu = function($menu) {
+            setTimeout(function() {
+                $('body').bind('click.clickout', function(e) {
+                    navClickout(e.target, $menu)
+                })
+            });
+
+            return $menu.addClass('navigation__item--active')
+        }
+
+        let closeSubMenu = function($menu) {
+            $('body').unbind('click.clickout')
+            return $menu.removeClass('navigation__item--active')
+        }
+
+        // -----
+        // Public Methods
+        // -----
+
+        self.toggleSubMenu = function(element) {
+            let $this = element;
+            let $subMenu = $this.find('.navigation__subMenu')
+
+            if(!$subMenu.length) return false;
+
+            if($this.hasClass('navigation__item--active')) {
+                return closeSubMenu($this)
+            } else {
+                return openSubMenu($this)
+            }
+        };
+
+
+        self.init = function() {
+            $(self.navItem).on('click', function(e) {
+                e.preventDefault();
+                self.toggleSubMenu($(this));
+            });
+        };
+
+        (function() {
+            self.init();
+        })();
+
+        return self;
     }
 })();

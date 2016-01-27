@@ -15,8 +15,8 @@ def test_update_talent_pipeline_stats(access_token_first, user_first, talent_pip
     status_code = talent_pipeline_update_stats(access_token_first)
     assert status_code == 401
 
-    # Adding 'CAN_UPDATE_TALENT_PIPELINES_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_PIPELINES_STATS'])
+    # Adding 'CAN_EDIT_TALENT_PIPELINES_STATS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_PIPELINES_STATS'])
 
     # Setting Empty search_params for talent_pipeline
     talent_pipeline.search_params = json.dumps({})
@@ -72,9 +72,11 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
                                                       {'from_date': from_date, 'to_date': to_date})
 
     assert status_code == 200
-    assert len(response.get('talent_pipeline_data')) == 1
-    assert response.get('talent_pipeline_data')[0].get('total_number_of_candidates') == 10
-    assert response.get('talent_pipeline_data')[0].get('number_of_candidates_removed_or_added') == 3
+    assert len(response.get('talent_pipeline_data')) >= 1
+    assert 10 in [talent_pipeline_data. get('total_number_of_candidates') for talent_pipeline_data in
+                  response.get('talent_pipeline_data')]
+    assert 3 in [talent_pipeline_data. get('number_of_candidates_removed_or_added') for talent_pipeline_data in
+                 response.get('talent_pipeline_data')]
 
 
 def test_talent_pipeline_candidate_get(access_token_first, access_token_second, talent_pool, talent_pipeline,

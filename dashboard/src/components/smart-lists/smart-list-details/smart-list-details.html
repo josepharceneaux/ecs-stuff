@@ -1,12 +1,81 @@
-<section id="smart-list-details-view" class="view__main">
+<section id="smart-list-details-view" class="view-wrapper view__main--smart-list">
 
-    <div class="row--widget">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Smart List Details</h2>
-            </header>
-            </div>
+    <div layout="column" layout-margin>
+
+        <!-- Begin: Page Header -->
+        <div>
+            <p class="md-caption">
+                <a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
+            </p>            
         </div>
+
+        
+        <md-card-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+            <div class="page-title-icon">
+                <img src="//placehold.it/80x80" />
+            </div>
+            <div flex>
+                <h3 class="md-title"> [smart list name]</h3>
+            </div>
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <a ui-sref="pipelines.pipeline.smartLists.create"><md-button class="md-raised md-primary">Create Campaign</md-button></a>
+            </div>
+        </md-card-content>
+        <!-- End: Page Header -->
+
+        <div layout="row" layout-wrap layout-fill>
+
+            <div flex-gt-xs="100" flex-gt-md="66" layout="column">
+                <!-- Begin: Candidate Search -->
+                <md-card flex="none" class="md-margin">
+                    <md-card-content>
+                        Candidate Search
+                    </md-card-content>
+                </md-card>
+                <!-- End: Candidate Search -->
+
+                <!-- Begin: Candidate Results -->
+                <md-card flex="none" class="md-margin">
+                    <md-card-content>
+                        Candidate results
+                    </md-card-content>
+                </md-card>
+                <!-- End: Candidate Search -->
+            </div>
+
+            <div flex-gt-xs="100" flex-gt-md="33" layout="column">                
+                <md-card flex class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">Sub header if needed</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        Candidate Usage D3
+                    </md-card-content>
+                    <md-card-actions layout="row" layout-align="end center">
+                    </md-card-actions>
+                </md-card>                
+                
+                <md-card flex class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">Sub header if needed</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        Candidate Usage D3
+                    </md-card-content>
+                    <md-card-actions layout="row" layout-align="end center">
+                    </md-card-actions>
+                </md-card>                
+            </div>
+
+
+        </div>
+
     </div>
 
 </section>

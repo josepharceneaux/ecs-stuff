@@ -4,7 +4,7 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, db
+from user_service.common.models.user import User, db, DomainRole
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
@@ -16,7 +16,7 @@ class UserApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_USERS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_USERS)
     def get(self, **kwargs):
         """
         GET /users/<id> Fetch user object with user's basic info
@@ -48,7 +48,8 @@ class UserApi(Resource):
                         'phone': requested_user.phone,
                         'registration_id': requested_user.registration_id,
                         'dice_user_id': requested_user.dice_user_id,
-                        'last_read_datetime': requested_user.last_read_datetime.isoformat()
+                        'last_read_datetime': requested_user.last_read_datetime.isoformat(),
+                        'thumbnail_url': requested_user.thumbnail_url
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -58,7 +59,7 @@ class UserApi(Resource):
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to get user's info.")
 
-    @require_all_roles('CAN_ADD_USERS')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_USERS)
     def post(self):
         """
         POST /users  Create a new user
@@ -103,18 +104,18 @@ class UserApi(Resource):
             first_name = user_dict.get('first_name', "").strip()
             last_name = user_dict.get('last_name', "").strip()
             email = user_dict.get('email', "").strip()
-            # TODO: Phone numbers formatting should be done on client side using country information for user
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
             domain_id = request.user.domain_id
+            thumbnail_url = posted_data.get('thumbnail_url', '').strip()
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
-                                              domain_id=domain_id, dice_user_id=dice_user_id)
+                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
             user_ids.append(user_id)
 
         return {'users': user_ids}
 
-    @require_all_roles('CAN_DELETE_USERS')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_USERS)
     def delete(self, **kwargs):
         """
         DELETE /users/<id>
@@ -154,7 +155,7 @@ class UserApi(Resource):
         return {'deleted_user': {'id': user_id_to_delete}}
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_EDIT_USERS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_EDIT_USERS)
     def put(self, **kwargs):
         """
         PUT /users/<id>
@@ -185,6 +186,7 @@ class UserApi(Resource):
         last_name = posted_data.get('last_name', '').strip()
         email = posted_data.get('email', '').strip()
         phone = posted_data.get('phone', '').strip()
+        thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
         try:
             last_read_datetime = parser.parse(last_read_datetime)
@@ -203,6 +205,7 @@ class UserApi(Resource):
             'last_name': last_name,
             'email': email,
             'phone': phone,
+            'thumbnail_url': thumbnail_url,
             'last_read_datetime': last_read_datetime
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)

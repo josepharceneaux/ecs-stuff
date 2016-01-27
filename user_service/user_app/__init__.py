@@ -1,13 +1,16 @@
+
 __author__ = 'ufarooqi'
 
 from flask import Flask
+from flask.ext.cors import CORS
 from user_service.common.routes import UserServiceApi, HEALTH_CHECK
 from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from user_service.common.utils.talent_ec2 import get_ec2_instance_id
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
-
 logger = app.config[TalentConfigKeys.LOGGER]
+logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
 
 try:
     from user_service.common.error_handling import register_error_handlers
@@ -19,6 +22,9 @@ try:
 
     from user_service.common.redis_cache import redis_store
     redis_store.init_app(app)
+    # noinspection PyProtectedMember
+    logger.debug("Redis connection pool: %s", repr(redis_store._redis_client.connection_pool))
+    logger.debug("Info on app startup: %s", redis_store._redis_client.info())
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
@@ -36,6 +42,9 @@ try:
 
     db.create_all()
     db.session.commit()
+
+    # Enable CORS for all origins & endpoints
+    CORS(app)
 
     logger.info("Starting user_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

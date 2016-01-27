@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/pipelines/pipeline-create/pipeline-create.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'PipelineCreateController',
             controllerAs: 'vm'
         };

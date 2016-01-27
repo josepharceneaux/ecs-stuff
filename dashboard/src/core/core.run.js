@@ -45,6 +45,15 @@
             }
         });
 
+        $rootScope.$on('$stateChangeError', function (event, toState, toParams, fromState, fromParams, error) {
+            // TODO: handle state change errors caused by failure to resolve dependencies
+            // possible reasons for failure:
+            //   1) timeout or server failure,
+            //   2) user's access token AND refresh token have expired
+
+            event.preventDefault();
+        });
+
         $rootScope.$on('oauth:error', function (event, rejection) {
             // Ignore `invalid_grant` error - should be catched on `LoginController`.
             if ('invalid_grant' === rejection.data.error) {

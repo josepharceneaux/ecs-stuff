@@ -5,30 +5,23 @@
 
 from flask import Blueprint, jsonify
 from flask import request
-from flask.ext.cors import CORS
+
 from . import logger
 from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
 from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_roles
 from spreadsheet_import_service.common.utils.talent_s3 import *
+from spreadsheet_import_service.common.models.user import DomainRole
 
 mod = Blueprint('spreadsheet_import_api', __name__)
-
-# Enable CORS
-CORS(mod, resources={
-    r'/parse_spreadsheet': {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 
 @mod.route(SpreadsheetImportApi.CONVERT_TO_TABLE, methods=['GET'])
 @require_oauth()
-@require_all_roles('CAN_ADD_CANDIDATES')
+@require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
 def spreadsheet_to_table():
     """
     POST /parse_spreadsheet/convert_to_table:  Convert given spreadsheet to table of candidates
@@ -53,7 +46,7 @@ def spreadsheet_to_table():
 
 @mod.route(SpreadsheetImportApi.IMPORT_CANDIDATES, methods=['POST'])
 @require_oauth()
-@require_all_roles('CAN_ADD_CANDIDATES')
+@require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
 def import_from_table():
     """
     POST /parse_spreadsheet/import_from_table: Import candidates from a python table object (arrays of arrays)

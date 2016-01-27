@@ -21,12 +21,12 @@ from candidate_service.common.models.candidate import (
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
     CandidateExperienceBullet, ClassificationType
 )
-from candidate_service.common.models.candidate import EmailLabel
+from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
+from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
@@ -48,7 +48,7 @@ from candidate_service.common.geo_services.geo_coordinates import get_coordinate
 def fetch_candidate_info(candidate, fields=None):
     """
     Fetch Candidate and candidate related objects via Candidate's id
-    :type       candidate_id: int
+    :type       candidate: Candidate
     :type       fields: None | str
 
     :return:    Candidate dict
@@ -183,7 +183,7 @@ def candidate_emails(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    emails = candidate.candidate_emails
+    emails = candidate.emails
     return [{'id': email.id,
              'label': email.email_label.description,
              'address': email.address,
@@ -197,7 +197,7 @@ def candidate_phones(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    phones = candidate.candidate_phones
+    phones = candidate.phones
     return [{'id': phone.id,
              'label': phone.phone_label.description,
              'value': phone.value,
@@ -208,7 +208,7 @@ def candidate_phones(candidate):
 
 def candidate_addresses(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -231,7 +231,7 @@ def candidate_addresses(candidate_id):
 
 def candidate_experiences(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -259,7 +259,7 @@ def _candidate_experience_bullets(experience):
     :rtype              [dict]
     """
     assert isinstance(experience, CandidateExperience)
-    experience_bullets = experience.candidate_experience_bullets
+    experience_bullets = experience.bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
              'added_time': str(experience_bullet.added_time)
@@ -272,7 +272,7 @@ def candidate_work_preference(candidate):
     :rtype              dict
     """
     assert isinstance(candidate, Candidate)
-    work_preference = candidate.candidate_work_preferences
+    work_preference = candidate.work_preferences
     return {'id': work_preference[0].id,
             'authorization': work_preference[0].authorization,
             'employment_type': work_preference[0].tax_terms,
@@ -292,7 +292,7 @@ def candidate_preferred_locations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    preferred_locations = candidate.candidate_preferred_locations
+    preferred_locations = candidate.preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
@@ -307,7 +307,7 @@ def candidate_educations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    educations = candidate.candidate_educations
+    educations = candidate.educations
     return [{'id': education.id,
              'school_name': education.school_name,
              'school_type': education.school_type,
@@ -326,7 +326,7 @@ def _candidate_degrees(education):
     :rtype              [dict]
     """
     assert isinstance(education, CandidateEducation)
-    degrees = education.candidate_education_degrees
+    degrees = education.degrees
     return [{'id': degree.id,
              'type': degree.degree_type,
              'title': degree.degree_title,
@@ -347,7 +347,7 @@ def _candidate_degree_bullets(degree):
     :rtype          [dict]
     """
     assert isinstance(degree, CandidateEducationDegree)
-    degree_bullets = degree.candidate_education_degree_bullets
+    degree_bullets = degree.bullets
     return [{'id': degree_bullet.id,
              'major': degree_bullet.concentration_type,
              'comments': degree_bullet.comments,
@@ -423,7 +423,7 @@ def candidate_social_networks(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    social_networks = candidate.candidate_social_networks
+    social_networks = candidate.social_networks
     return [{'id': soc_net.id,
              'name': soc_net.social_network.name,
              'profile_url': soc_net.social_profile_url
@@ -449,8 +449,7 @@ def candidate_contact_history(candidate):
     timeline = []
 
     # Campaign sends & campaigns
-    email_campaign_sends = candidate.email_campaign_sends
-    for email_campaign_send in email_campaign_sends:
+    for email_campaign_send in candidate.email_campaign_sends:
         if not email_campaign_send.email_campaign_id:
             logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
             continue
@@ -472,39 +471,24 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def get_candidate_id_from_candidate_email(candidate_email):
+def get_candidate_id_from_email_if_exists(user_id, email):
     """
+    Function will get the domain-candidate associated with email and return its ID.
+    :type email: str
+    :return Candidate.id or None (if not found)
     """
-    candidate_email_row = db.session.query(CandidateEmail). \
-        filter_by(address=candidate_email).first()
-    if not candidate_email_row:
-        logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
-                    candidate_email)
-        return None
-
-    return candidate_email_row.candidate_id
-
-
-# TODO: move function to Email Marketing Service
-def retrieve_email_campaign_send(email_campaign, candidate_id):
-    """
-    :type email_campaign:   EmailCampaign
-    :type candidate_id:     int
-    :rtype:                 list
-    """
-    assert isinstance(email_campaign, EmailCampaign)
-    email_campaign_send_rows = db.session.query(EmailCampaignSend). \
-        filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
-                  EmailCampaignSend.candidate_id == candidate_id)
-
-    return [{'candidate_id': email_campaign_send_row.candidate_id,
-             'sent_time': email_campaign_send_row.sent_time
-             } for email_campaign_send_row in email_campaign_send_rows]
+    email_obj = CandidateEmail.query.join(Candidate) \
+        .filter(Candidate.user_id == user_id) \
+        .filter(CandidateEmail.address == email).first()
+    if not email_obj:
+        raise NotFoundError(error_message='Candidate email not recognized: {}'.format(email),
+                            error_code=custom_error.EMAIL_NOT_FOUND)
+    return email_obj.candidate_id
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Edits
-#################################################
+######################################
+# Helper Functions For Candidate Edits
+######################################
 def fetch_candidate_edits(candidate_id):
     assert isinstance(candidate_id, (int, long))
     all_edits = []
@@ -523,9 +507,9 @@ def fetch_candidate_edits(candidate_id):
     return all_edits
 
 
-#################################################
-# Helper Functions For Retrieving Candidate Views
-#################################################
+######################################
+# Helper Functions For Candidate Views
+######################################
 def fetch_candidate_views(candidate_id):
     """
     :return: list of candidate view information
@@ -545,6 +529,8 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
+    :type user_id: int|long
+    :type candidate_id: int|long
     """
     db.session.add(CandidateView(
         user_id=user_id,
@@ -555,9 +541,40 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.commit()
 
 
-#########################################
-# Helper Functions For Creating Candidate
-#########################################
+########################################################
+# Helper Functions For Candidate Subscription Preference
+########################################################
+def fetch_candidate_subscription_preference(candidate_id):
+    """
+    :type candidate_id: int|long
+    :return:
+    """
+    assert isinstance(candidate_id, (int, long))
+    candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+    return {'id': candidate_subs_pref.id, 'frequency_id': candidate_subs_pref.frequency_id}
+
+
+def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=False):
+    """
+    Function adds or updates candidate's subs preference
+    :type candidate_id: int|long
+    :type frequency_id: int|long
+    :type is_update: bool
+    """
+    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
+    can_subs_pref_query = CandidateSubscriptionPreference.query.filter_by(candidate_id=candidate_id)
+    if is_update:  # Update
+        can_subs_pref_query.update(dict(frequency_id=frequency_id))
+    else:  # Add
+        db.session.add(CandidateSubscriptionPreference(
+            candidate_id=candidate_id, frequency_id=frequency_id
+        ))
+    db.session.commit()
+
+
+######################################################
+# Helper Functions For Creating and Updating Candidate
+######################################################
 def create_or_update_candidate_from_params(
         user_id,
         is_creating=False,
@@ -605,13 +622,13 @@ def create_or_update_candidate_from_params(
         CandidateMilitaryService, CandidatePreferredLocation,
         CandidateSkill, CandidateSocialNetwork
 
-    :type user_id:                  int
+    :type user_id:                  int|long
     :type is_creating:              bool
     :type is_updating:              bool
     :type candidate_id:             int
-    :type first_name:               str
-    :type last_name:                str
-    :type middle_name:              str
+    :type first_name:               basestring
+    :type last_name:                basestring
+    :type middle_name:              basestring
     :type formatted_name:           str
     :type status_id:                int
     :type emails:                   list
@@ -629,19 +646,16 @@ def create_or_update_candidate_from_params(
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
     :type added_time:               date
-    :type domain_can_read:          bool
-    :type domain_can_write:         bool
     :type source_id:                int
-    :type objective:                str
-    :type summary:                  str
-    :type talent_pool_ids:          list
+    :type objective:                basestring
+    :type summary:                  basestring
+    :type talent_pool_ids:          dict
     :type delete_talent_pools:      bool
     :rtype                          dict
     """
     # Format inputs
     added_time = added_time or datetime.datetime.now()
     status_id = status_id or 1
-    is_update = False
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
@@ -653,28 +667,25 @@ def create_or_update_candidate_from_params(
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
-    # Get domain ID
+    # Get user's domain ID
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
-    if not candidate_id:
-        candidate_id = does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails)
+    if is_creating:
+        candidate_id = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id,
+                                                 domain_id, emails)
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
         raise InvalidUsage(error_message='Candidate already exists, creation failed.',
                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS)
 
-    # Update if an update is requested and candidate_id is provided/found
-    elif candidate_id and is_updating:
-        is_update = True
-
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
         raise InvalidUsage(error_message='Candidate ID is required for updating',
                            error_code=custom_error.MISSING_INPUT)
 
-    if is_update:  # Update Candidate
+    if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
                                          formatted_name, objective, summary,
                                          candidate_id, user_id, edit_time)
@@ -686,7 +697,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's talent-pools
     if talent_pool_ids:
-        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating)
+        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating,
+                                              is_updating)
 
     # Add or update Candidate's address(es)
     if addresses:
@@ -791,9 +803,13 @@ def domain_id_from_user_id(user_id):
     return user.domain_id
 
 
-def does_candidate_id_exist(dice_social_profile_id, dice_profile_id, domain_id, emails):
+def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id, emails):
     """
     Function will search the db for a candidate with the same parameter(s) as provided
+    :type dice_social_profile_id: int|long
+    :type dice_profile_id: int|long
+    :type domain_id: int|long
+    :type emails: list
     :return candidate_id if found, otherwise None
     """
     candidate = None
@@ -1419,8 +1435,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email_dict.update(dict(candidate_id=candidate_id))
-            db.session.add(CandidateEmail(**email_dict))
+            email = get_candidate_email_from_domain_if_exists(candidate_id, user_id,
+                                                              email_dict['address'])
+            # Prevent duplicate email address for the same candidate in the same domain
+            if email is None:
+                email_dict.update(dict(candidate_id=candidate_id))
+                db.session.add(CandidateEmail(**email_dict))
 
 
 def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
@@ -1668,58 +1688,51 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             db.session.add(CandidateSocialNetwork(**social_network_dict))
 
 
-def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating):
+def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):
 
     talent_pools_to_be_added = talent_pool_ids.get('add')
     talent_pools_to_be_deleted = talent_pool_ids.get('delete')
 
-    for talent_pool_id in talent_pools_to_be_added:
-
-        if not is_number(talent_pool_id):
-            raise InvalidUsage(error_message="TalentPool id should be an integer")
-        else:
+    if is_creating or is_updating and talent_pools_to_be_added:
+        for talent_pool_id in talent_pools_to_be_added:
             talent_pool = TalentPool.query.get(int(talent_pool_id))
             if not talent_pool:
-                raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-            if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                   talent_pool_id=talent_pool_id).first():
-                raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                      "user" % (talent_pool_id, request.user.user_group_id))
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
 
-            if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
-                raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
-
-            talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
-            db.session.add(talent_pool_candidate)
-
-    if not is_creating:
-        for talent_pool_id in talent_pools_to_be_deleted:
-
-            if not is_number(talent_pool_id):
-                raise InvalidUsage(error_message="TalentPool id should be an integer")
+            # In case candidate was web-hidden, the recreated with the same talent-pool-id
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if talent_pool_candidate and is_updating:
+                pass
             else:
-                talent_pool = TalentPool.query.get(int(talent_pool_id))
-                if not talent_pool:
-                    raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+                db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
+                                                   talent_pool_id=talent_pool_id))
 
-                if talent_pool.domain_id != request.user.domain_id:
-                    raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+    if is_updating and talent_pools_to_be_deleted:
+        for talent_pool_id in talent_pools_to_be_deleted:
+            talent_pool = TalentPool.query.get(int(talent_pool_id))
+            if not talent_pool:
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
-                if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                       talent_pool_id=talent_pool_id).first():
-                    raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                          "user" % (talent_pool_id, request.user.user_group_id))
+            if talent_pool.domain_id != request.user.domain_id:
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-                talent_pool_candidate = TalentPoolCandidate.query.filter_by(candidate_id=candidate_id,
-                                                                            talent_pool_id=talent_pool_id).first()
-                if not talent_pool_candidate:
-                    raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" % (candidate_id, talent_pool_id))
-                else:
-                    db.session.delete(talent_pool_candidate)
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
+
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if not talent_pool_candidate:
+                raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" %
+                                   (candidate_id, talent_pool_id))
+            else:
+                db.session.delete(talent_pool_candidate)
 
 
 ###############################################################
@@ -2073,3 +2086,18 @@ def _track_candidate_social_network_edits(sn_dict, candidate_social_network, can
             new_value=new_value,
             edit_datetime=edit_time
         ))
+
+
+def get_candidate_email_from_domain_if_exists(candidate_id, user_id, email_address):
+    """
+    Function will retrieve CandidateEmail belonging to the requested candidate
+    in the same domain if found.
+    :type candidate_id:  int|long
+    :type user_id:       int|long
+    :type email_address: basestring
+    :rtype: CandidateEmail|None
+    """
+    user_domain_id = User.get_domain_id(_id=user_id)
+    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+    return candidate_email if candidate_email else None

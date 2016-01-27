@@ -5,6 +5,50 @@
             <header class="box__header">
                 <h2>Manage Candidates</h2>
             </header>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12--cell box">
+            <header class="row--expanded">
+                <div class="col--large-9">
+                    <h2>Candidates <span>({{vm.totalCandidates}})</span></h2>
+                </div>
+            </header>
+
+            <div class="box__table">
+                <table class="table">
+                    <tr class="table__row">
+                        <th class="table__header">Name</th>
+                        <th class="table__header">Email</th>
+                        <th class="table__header">Organization</th>
+                        <th class="table__header">Position</th>
+                    </tr>
+
+                    <tr class="table__row" dir-paginate="item in vm.candidates | itemsPerPage: vm.candidatesPerPage" total-items="vm.totalCandidates" pagination-id="candidatesPagination">
+                        <td class="table__col--morePadding">{{item.first_name + ' ' + item.last_name}}</td>
+                        <td class="table__col--morePadding">{{item.email[0]}}</td>
+                        <td class="table__col--morePadding">{{item.organization[0]}}</td>
+                        <td class="table__col--morePadding">{{item.position[0]}}</td>
+                        <td class="table__col--check">
+                            <label gt-float-label class="form__input--checkbox">
+                                <input type="checkbox">
+                                <span></span>
+                            </label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="pagination__controls col--12">
+                <div class="col--large-2">
+                    <select ng-model="vm.candidatesPerPage" ng-options="option.value as option.name for option in vm.itemsPerPageOptions"
+                        id="candidatesPerPage" class="form__input--select" name="candidatesPerPage">
+                    </select>
+                </div>
+                <div class="col--large-10 align--right">
+                    <dir-pagination-controls on-page-change="vm.candidatesPageChanged(newPageNumber)" pagination-id="candidatesPagination"></dir-pagination-controls>
+                </div>
             </div>
         </div>
     </div>

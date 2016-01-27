@@ -16,8 +16,7 @@
             restrict: 'E',
             templateUrl: 'components/search/search.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'SearchController',
             controllerAs: 'vm',
             link: linkFunction

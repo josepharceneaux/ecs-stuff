@@ -15,8 +15,7 @@
             restrict: 'E',
             templateUrl: 'components/dashboard/dashboard-customize/dashboard-customize.html',
             replace: true,
-            scope: {
-            },
+            scope: {},
             controller: 'DashboardCustomizeController',
             controllerAs: 'vm'
         };
