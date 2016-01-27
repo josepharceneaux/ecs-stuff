@@ -16,12 +16,16 @@
 
         /* @ngInject */
         function $get($q, candidatePoolService, userService, candidateService) {
+            //var candidateService = candidatePoolService.withConfig(function (RestangularConfigurer) {
+            //    RestangularConfigurer.setBaseUrl('https://private-5dd13-gettalentcandidateservice.apiary-mock.com/v1/');
+            //});
+
             var candidatePoolService = candidatePoolService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl('https://private-2ec1c-candidatepoolservice.apiary-mock.com/v1/');
+                RestangularConfigurer.setBaseUrl('https://private-2ec1c-gettalentcandidatepoolservice.apiary-mock.com/v1');
             });
 
             var userService = userService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl('https://private-caacc-userservice17.apiary-mock.com/v1/');
+                RestangularConfigurer.setBaseUrl('https://private-caacc-gettalentuserservice.apiary-mock.com/v1/');
             });
 
             function getPipelineDetail(pipelineId) {
@@ -58,16 +62,16 @@
 
             function getPipelineSmartlistsCount(pipelineId) {
                 console.log('fetching smartlist count');
-                return candidatePoolService.one('talent-pipeline', pipelineId).customGET('smart_lists').then(
+                return candidatePoolService.one('talent-pipeline', pipelineId).customGET('smartlists').then(
                     function (smartListResponse) {
-                        return smartListResponse.smart_lists.length;
+                        return smartListResponse.smartlists.length;
                     }
                 )
             }
 
             function getPipelineCandidateInfo(searchParamsObj) {
                 console.log('fetching candidate info with: ', searchParamsObj);
-                return candidateService.one('candidates/search').customGET('', searchParamsObj).then(
+                return candidateService.one('candidates/search').customGET('').then(
                     function (searchResponse) {
                         return searchResponse;
                     })

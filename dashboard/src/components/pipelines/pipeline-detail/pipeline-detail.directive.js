@@ -124,10 +124,8 @@
             ];
 
             pipelinesDetailService.getPipelineDetail(vm.pipelineId).then(function (response) {
-                //console.log('pipelineDetail', response);
                 vm.pipelineDetails = response;
                 pipelinesDetailService.getPipelineCandidateInfo(vm.pipelineDetails.search_params).then(function (response) {
-                    //console.log('candidateInfo', response);
                     vm.candidateInfo = response;
                 });
             });
