@@ -15,8 +15,8 @@ def test_update_talent_pipeline_stats(access_token_first, user_first, talent_pip
     status_code = talent_pipeline_update_stats(access_token_first)
     assert status_code == 401
 
-    # Adding 'CAN_UPDATE_TALENT_PIPELINES_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_PIPELINES_STATS'])
+    # Adding 'CAN_EDIT_TALENT_PIPELINES_STATS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_PIPELINES_STATS'])
 
     # Setting Empty search_params for talent_pipeline
     talent_pipeline.search_params = json.dumps({})

@@ -4,7 +4,7 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, db
+from user_service.common.models.user import User, db, DomainRole
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
@@ -16,7 +16,7 @@ class UserApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_USERS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_USERS)
     def get(self, **kwargs):
         """
         GET /users/<id> Fetch user object with user's basic info
@@ -59,7 +59,7 @@ class UserApi(Resource):
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to get user's info.")
 
-    @require_all_roles('CAN_ADD_USERS')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_USERS)
     def post(self):
         """
         POST /users  Create a new user
@@ -115,7 +115,7 @@ class UserApi(Resource):
 
         return {'users': user_ids}
 
-    @require_all_roles('CAN_DELETE_USERS')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_USERS)
     def delete(self, **kwargs):
         """
         DELETE /users/<id>
@@ -155,7 +155,7 @@ class UserApi(Resource):
         return {'deleted_user': {'id': user_id_to_delete}}
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_EDIT_USERS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_EDIT_USERS)
     def put(self, **kwargs):
         """
         PUT /users/<id>

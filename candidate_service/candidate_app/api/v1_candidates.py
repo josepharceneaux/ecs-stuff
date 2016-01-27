@@ -12,7 +12,7 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.validators import (is_valid_email)
+from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
@@ -40,10 +40,12 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
+from candidate_service.common.models.user import DomainRole
+
 
 # Module
 from candidate_service.modules.talent_candidates import (
-    fetch_candidate_info, get_candidate_id_from_candidate_email,
+    fetch_candidate_info, get_candidate_id_from_email_if_exists,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference
@@ -56,7 +58,7 @@ from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates
@@ -107,7 +109,7 @@ class CandidatesResource(Resource):
 
         return {'candidates': retrieved_candidates}
 
-    @require_all_roles('CAN_ADD_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
@@ -146,14 +148,17 @@ class CandidatesResource(Resource):
                     raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
                                        error_code=custom_error.INVALID_EMAIL)
 
-                # If candidate is web-hidden, un-hide it
-                can_email_query_obj = CandidateEmail.get_by_address(email_address=email_address)
-                if can_email_query_obj:
-                    candidate = Candidate.get_by_id(candidate_id=can_email_query_obj.candidate_id)
-                    if candidate.is_web_hidden:
-                        candidate.is_web_hidden = False
+                # Check for candidate's email in authed_user's domain
+                candidate_email_obj = CandidateEmail.query.join(Candidate)\
+                    .filter(Candidate.user_id==authed_user.id)\
+                    .filter(CandidateEmail.address==email_address).first()
+                # If candidate's email is found, check if it's web-hidden
+                if candidate_email_obj:
+                    candidate = Candidate.get_by_id(candidate_id=candidate_email_obj.candidate_id)
+                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
+                        candidate.is_web_hidden = 0
                         # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating, candidate_id = False, True, candidate.id
+                        is_creating, is_updating, candidate_id = False, True, candidate_email_obj.candidate_id
                     else:
                         raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
                                            custom_error.CANDIDATE_ALREADY_EXISTS)
@@ -216,7 +221,7 @@ class CandidatesResource(Resource):
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    @require_all_roles('CAN_EDIT_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates
@@ -331,7 +336,7 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -356,9 +361,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -374,7 +377,7 @@ class CandidateResource(Resource):
 
         return {'candidate': candidate_data_dict}
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -398,9 +401,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -420,7 +421,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -463,7 +464,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -517,7 +518,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -560,7 +561,7 @@ class CandidateCustomFieldResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -603,7 +604,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -654,7 +655,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -719,7 +720,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateExperienceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -762,7 +763,7 @@ class CandidateExperienceResource(Resource):
 class CandidateExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -820,7 +821,7 @@ class CandidateExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -863,7 +864,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -906,7 +907,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -949,7 +950,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -993,7 +994,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1037,7 +1038,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1083,7 +1084,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
@@ -1118,7 +1119,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1142,6 +1143,7 @@ class CandidateEditResource(Resource):
 class CandidateOpenWebResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/openweb?url=http://...
@@ -1161,7 +1163,7 @@ class CandidateOpenWebResource(Resource):
 class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:id/views
@@ -1184,7 +1186,7 @@ class CandidateViewResource(Resource):
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1200,14 +1202,10 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        if not CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
-            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id),
-                                custom_error.NO_PREFERENCES)
-
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_roles('CAN_ADD_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
@@ -1242,7 +1240,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
         return '', 204
 
-    @require_all_roles('CAN_EDIT_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1281,7 +1279,7 @@ class CandidatePreferenceResource(Resource):
 
         return '', 204
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpint:  DELETE /v1/candidates/:id/preferences
