@@ -18,6 +18,7 @@ from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from candidate_pool_service.common.models.user import DomainRole
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
@@ -28,7 +29,7 @@ class TalentPoolApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_TALENT_POOLS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_TALENT_POOLS)
     def get(self, **kwargs):
         """
         GET /talent-pools/<id>          Fetch talent-pool object
@@ -81,7 +82,7 @@ class TalentPoolApi(Resource):
         else:
             raise ForbiddenError("User %s is not authorized to get talent-pool's info" % request.user.id)
 
-    @require_all_roles('CAN_EDIT_TALENT_POOLS')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS)
     def put(self, **kwargs):
         """
         PUT /talent-pools/<id>      Modify an already existing talent-pool
@@ -126,7 +127,7 @@ class TalentPoolApi(Resource):
             'talent_pool': {'id': talent_pool.id}
         }
 
-    @require_all_roles('CAN_DELETE_TALENT_POOLS')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_POOLS)
     def delete(self, **kwargs):
         """
         DELETE /talent-pools/<id>      Delete an already existing talent-pool
@@ -151,7 +152,7 @@ class TalentPoolApi(Resource):
             'talent_pool': {'id': talent_pool.id}
         }
 
-    @require_all_roles('CAN_ADD_TALENT_POOLS')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_POOLS)
     def post(self, **kwargs):
         """
         POST /talent-pools    Create new empty talent pools
@@ -202,7 +203,7 @@ class TalentPoolGroupApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_TALENT_POOLS_OF_GROUP')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_TALENT_POOLS_OF_GROUP)
     def get(self, **kwargs):
         """
         GET /groups/<group_id>/talent_pools     Fetch all talent-pool objects of given user group
@@ -240,7 +241,7 @@ class TalentPoolGroupApi(Resource):
             ]
         }
 
-    @require_all_roles('CAN_DELETE_TALENT_POOLS_FROM_GROUP')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_POOLS_FROM_GROUP)
     def delete(self, **kwargs):
         """
         DELETE /groups/<group_id>/talent_pools   Remove given input of talent-pool ids from user group
@@ -289,7 +290,7 @@ class TalentPoolGroupApi(Resource):
 
         return {'talent_pools': [int(talent_pool_id) for talent_pool_id in talent_pool_ids]}
 
-    @require_all_roles('CAN_ADD_TALENT_POOLS_TO_GROUP')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_POOLS_TO_GROUP)
     def post(self, **kwargs):
         """
         POST /groups/<group_id>/talent_pools   Add talent-pools to user_group
@@ -351,7 +352,7 @@ class TalentPoolCandidateApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_CANDIDATES_FROM_TALENT_POOL')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_CANDIDATES_FROM_TALENT_POOL)
     def get(self, **kwargs):
         """
         GET /talent-pools/<id>/candidates  Fetch Candidate Statistics of Talent-Pool
@@ -385,7 +386,7 @@ class TalentPoolCandidateApi(Resource):
         }
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_ADD_CANDIDATES_TO_TALENT_POOL')
+    @require_any_role('SELF', DomainRole.Roles.CAN_ADD_CANDIDATES_TO_TALENT_POOL)
     def post(self, **kwargs):
 
         """
@@ -464,7 +465,7 @@ class TalentPoolCandidateApi(Resource):
                                                  talent_pool_candidate_ids]}
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_DELETE_CANDIDATES_FROM_TALENT_POOL')
+    @require_any_role('SELF', DomainRole.Roles.CAN_DELETE_CANDIDATES_FROM_TALENT_POOL)
     def delete(self, **kwargs):
         """
         DELETE /talent-pools/<id>/candidates   Remove input candidates from talent-pool
@@ -535,7 +536,7 @@ class TalentPoolCandidateApi(Resource):
 
 @talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
-@require_all_roles('CAN_UPDATE_TALENT_POOLS_STATS')
+@require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS)
 def update_talent_pools_stats():
     """
     This method will update the statistics of all talent-pools daily.
