@@ -21,7 +21,7 @@ users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
 @users_utilities_blueprint.route(UserServiceApi.DOMAIN_ROLES, methods=['GET'])
 @require_oauth()
-@require_all_roles('CAN_GET_DOMAIN_ROLES')
+@require_all_roles(DomainRole.Roles.CAN_GET_DOMAIN_ROLES)
 def get_all_roles_of_domain(domain_id):
     # if logged-in user should belong to same domain as input domain_id
     if Domain.query.get(domain_id) and (request.user.domain_id == domain_id):

@@ -14,6 +14,7 @@ from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
@@ -30,7 +31,7 @@ class TalentPipelineApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_TALENT_PIPELINES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINES)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>      Fetch talent-pipeline object
@@ -89,7 +90,7 @@ class TalentPipelineApi(Resource):
                 ]
             }
 
-    @require_all_roles('CAN_DELETE_TALENT_PIPELINES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipelines/<id>  Remove talent-pipeline from Database
@@ -118,7 +119,7 @@ class TalentPipelineApi(Resource):
             'talent_pipeline': {'id': talent_pipeline_id}
         }
 
-    @require_all_roles('CAN_ADD_TALENT_PIPELINES')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINES)
     def post(self, **kwargs):
         """
         POST /talent-pipelines  Add new talent-pipelines to Database
@@ -208,7 +209,7 @@ class TalentPipelineApi(Resource):
             'talent_pipelines': [talent_pipeline_object.id for talent_pipeline_object in talent_pipeline_objects]
         }
 
-    @require_all_roles('CAN_EDIT_TALENT_PIPELINES')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES)
     def put(self, **kwargs):
         """
         PUT /talent-pipelines/<id>  Edit existing talent-pipeline
@@ -310,7 +311,7 @@ class TalentPipelineSmartListApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_TALENT_PIPELINE_SMART_LISTS')
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/smart_lists   Fetch all smart_lists of a talent_pipeline
@@ -346,7 +347,7 @@ class TalentPipelineSmartListApi(Resource):
             ]
         }
 
-    @require_all_roles('CAN_ADD_TALENT_PIPELINE_SMART_LISTS')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS)
     def post(self, **kwargs):
         """
         POST /talent-pipeline/<id>/smart_lists   Add smart_lists to a talent_pipeline
@@ -409,7 +410,7 @@ class TalentPipelineSmartListApi(Resource):
             'smart_list_ids': [int(smart_list_id) for smart_list_id in smart_list_ids]
         }
 
-    @require_all_roles('CAN_DELETE_TALENT_PIPELINE_SMART_LISTS')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipeline/<id>/smart_lists   Remove smart_lists from a talent_pipeline
@@ -470,7 +471,7 @@ class TalentPipelineCandidates(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_TALENT_PIPELINE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/candidates  Fetch all candidates of a talent-pipeline
@@ -496,7 +497,7 @@ class TalentPipelineCandidates(Resource):
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
-@require_all_roles('CAN_UPDATE_TALENT_PIPELINES_STATS')
+@require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS)
 def update_talent_pipelines_stats():
     """
     This method will update the statistics of all talent-pipelines daily.
