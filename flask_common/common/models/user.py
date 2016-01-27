@@ -301,7 +301,7 @@ class DomainRole(db.Model):
     def __repr__(self):
         return "<DomainRole: (id = {})>".format(self.id)
 
-    class RoleNames(object):
+    class Roles(object):
         """
         Class entails constants that point to available user-role names
         """
