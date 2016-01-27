@@ -28,7 +28,7 @@
 
     <!-- Navigation -->
     <nav class="navigation">
-        <div layout class="navigation__items">
+        <div layout-gt-xs>
             <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
                 <strong>Talent Pool:</strong> University Relations
                 <nav class="js--mobileMenu-target navigation__subMenu">
@@ -43,59 +43,61 @@
                     </footer>
                 </nav>
             </div>
-            <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
-            <div class="js--mobileMenu js--topNavItem navigation__item">
-                Pipelines
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Recent Campaigns
-                    </header>
-                    <a href="">Loremipsu</a>
-                    <a href="">M'dolor Sitam</a>
-                    <a href="">Etconsecte Teur</a>
-                    <footer class="navigation__subMenu__footer">
-                        <a href="">See All</a>
-                    </footer>
-                </nav>
+            <div flex-gt-xs layout-gt-xs class="navigation__items">
+                <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
+                <div class="js--mobileMenu js--topNavItem navigation__item">
+                    Pipelines
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--announcements"></span> Recent Campaigns
+                        </header>
+                        <a href="">Loremipsu</a>
+                        <a href="">M'dolor Sitam</a>
+                        <a href="">Etconsecte Teur</a>
+                        <footer class="navigation__subMenu__footer">
+                            <a href="">See All</a>
+                        </footer>
+                    </nav>
+                </div>
+                <div class="js--mobileMenu js--topNavItem navigation__item">
+                    Candidates
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--announcements"></span> Recent Campaigns
+                        </header>
+                        <a href="">Loremipsu</a>
+                        <a href="">M'dolor Sitam</a>
+                        <a href="">Etconsecte Teur</a>
+                        <footer class="navigation__subMenu__footer">
+                            <a href="">See All</a>
+                        </footer>
+                    </nav>
+                </div>
+                <div class="js--mobileMenu js--topNavItem navigation__item">
+                    Team
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--announcements"></span> Recent Campaigns
+                        </header>
+                        <a href="">Loremipsu</a>
+                        <a href="">M'dolor Sitam</a>
+                        <a href="">Etconsecte Teur</a>
+                        <footer class="navigation__subMenu__footer">
+                            <a href="">See All</a>
+                        </footer>
+                    </nav>
+                </div>
+                <span flex></span>
+                <!-- Could look into adding our svg directly into md's icons for buttons -->
+                <!--<md-button class="md-icon-button" aria-label="Share">
+                    <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
+                </md-button>
+                <md-button class="md-icon-button" aria-label="Upload">
+                    <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
+                </md-button>-->
+                <a href="" class="navigation__link">Share</a>
+                <a href="" class="navigation__link">Upload</a>
             </div>
-            <div class="js--mobileMenu js--topNavItem navigation__item">
-                Candidates
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Recent Campaigns
-                    </header>
-                    <a href="">Loremipsu</a>
-                    <a href="">M'dolor Sitam</a>
-                    <a href="">Etconsecte Teur</a>
-                    <footer class="navigation__subMenu__footer">
-                        <a href="">See All</a>
-                    </footer>
-                </nav>
-            </div>
-            <div class="js--mobileMenu js--topNavItem navigation__item">
-                Team
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Recent Campaigns
-                    </header>
-                    <a href="">Loremipsu</a>
-                    <a href="">M'dolor Sitam</a>
-                    <a href="">Etconsecte Teur</a>
-                    <footer class="navigation__subMenu__footer">
-                        <a href="">See All</a>
-                    </footer>
-                </nav>
-            </div>
-            <span flex></span>
-            <!-- Could look into adding our svg directly into md's icons for buttons -->
-            <!--<md-button class="md-icon-button" aria-label="Share">
-                <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
-            </md-button>
-            <md-button class="md-icon-button" aria-label="Upload">
-                <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
-            </md-button>-->
-            <a href="" class="navigation__link">Share</a>
-            <a href="" class="navigation__link">Upload</a>
         </div>
     </nav>
 
