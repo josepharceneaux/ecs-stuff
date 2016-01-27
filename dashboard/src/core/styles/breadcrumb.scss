@@ -2,8 +2,8 @@
 .breadcrumb { 
     list-style: none; 
     overflow: hidden; 
-    font-size: 18px;
-
+    font-size: 13px;
+    padding:0px;
     li { 
         float: left;
         margin: 0;
@@ -11,7 +11,7 @@
         a {
             color: white;
             text-decoration: none; 
-            padding: 10px 0 10px 55px;
+            padding: 6px 0 6px 55px;
             background: hsla(302, 25%, 29%, 1);
             position: relative; 
             display: block;
@@ -39,7 +39,7 @@
                 height: 0;
                 border-top: 30px solid transparent;
                 border-bottom: 30px solid transparent;
-                border-left: 40px solid white;
+                border-left: 40px solid #efefef;
                 position: absolute;
                 top: 50%;
                 margin-top: -30px; 
@@ -58,7 +58,7 @@
         }
 
         &:first-child a {            
-            padding-left: 10px;            
+            padding-left: 10px;
         }
 
         &:nth-child(2) a {
