@@ -191,9 +191,9 @@ class UserServiceApiWords(object):
     DOMAIN = 'domain'
     ROLES = '/roles'
     GROUPS = 'groups'
-    RESET_PASSWORD = '/reset_password'
-    UPDATE_PASSWORD = '/update_password'
-    FORGOT_PASSWORD = '/forgot_password'
+    RESET_PASSWORD = '/reset-password'
+    UPDATE_PASSWORD = '/update-password'
+    FORGOT_PASSWORD = '/forgot-password'
 
 
 class UserServiceApi(object):
@@ -306,7 +306,7 @@ class CandidatePoolApiWords(object):
     STATS = '/stats'
     CANDIDATES = '/candidates'
     GROUPS = 'groups'
-    SMART_LISTS = '/smart_lists'
+    SMART_LISTS = '/smartlists'
 
 
 class CandidatePoolApi(object):
