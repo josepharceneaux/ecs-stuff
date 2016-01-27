@@ -4,6 +4,8 @@ Helper functions for tests written for the candidate_service
 # Standard library
 import requests
 import json
+# Models
+from candidate_service.common.models.user import DomainRole
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
 # User Roles
@@ -16,37 +18,42 @@ class AddUserRoles(object):
     """
     @staticmethod
     def get(user):
-        return add_role_to_test_user(user, ['CAN_GET_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES])
 
     @staticmethod
     def edit(user):
-        return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def delete(user):
-        return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_and_get(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add_and_delete(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_get_edit(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-                                            'CAN_EDIT_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES,
+                                            DomainRole.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def all_roles(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-                                            'CAN_EDIT_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES,
+                                            DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
 
 def define_and_send_request(access_token, request, url, data=None):
