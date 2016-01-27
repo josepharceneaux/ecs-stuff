@@ -12,7 +12,7 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.validators import (is_valid_email)
+from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
@@ -45,7 +45,7 @@ from candidate_service.common.models.user import DomainRole
 
 # Module
 from candidate_service.modules.talent_candidates import (
-    fetch_candidate_info, get_candidate_id_from_candidate_email,
+    fetch_candidate_info, get_candidate_id_from_email_if_exists,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference
@@ -149,14 +149,17 @@ class CandidatesResource(Resource):
                     raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
                                        error_code=custom_error.INVALID_EMAIL)
 
-                # If candidate is web-hidden, un-hide it
-                can_email_query_obj = CandidateEmail.get_by_address(email_address=email_address)
-                if can_email_query_obj:
-                    candidate = Candidate.get_by_id(candidate_id=can_email_query_obj.candidate_id)
-                    if candidate.is_web_hidden:
-                        candidate.is_web_hidden = False
+                # Check for candidate's email in authed_user's domain
+                candidate_email_obj = CandidateEmail.query.join(Candidate)\
+                    .filter(Candidate.user_id==authed_user.id)\
+                    .filter(CandidateEmail.address==email_address).first()
+                # If candidate's email is found, check if it's web-hidden
+                if candidate_email_obj:
+                    candidate = Candidate.get_by_id(candidate_id=candidate_email_obj.candidate_id)
+                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
+                        candidate.is_web_hidden = 0
                         # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating, candidate_id = False, True, candidate.id
+                        is_creating, is_updating, candidate_id = False, True, candidate_email_obj.candidate_id
                     else:
                         raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
                                            custom_error.CANDIDATE_ALREADY_EXISTS)
@@ -359,9 +362,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -401,9 +402,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
