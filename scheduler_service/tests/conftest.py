@@ -28,7 +28,7 @@ def job_config_periodic(request):
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "text to be sent as sms",
         }
     }
@@ -44,7 +44,7 @@ def job_config_one_time(request):
         "post_data": {
             "campaign_name": "Email Campaign",
             "email_id": "abc@hotmail.com",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "content to be sent as email",
         }
     }
