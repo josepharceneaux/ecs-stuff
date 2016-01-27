@@ -10,31 +10,12 @@ import json
 import requests
 
 # Service Specific
+from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
-from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
 from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-
-
-class TestSmsCampaignScheduleHTTPGET(object):
-    """
-    This contains test for GET endpoint. It should get method not allowed error.
-    """
-    URL = SmsCampaignApiUrl.SCHEDULE
-
-    def test_for_get_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        GET method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.get(self.URL % sms_campaign_of_current_user.id,
-                                headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'GET')
 
 
 class TestSmsCampaignScheduleHTTPPOST(object):
@@ -223,7 +204,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :return:
         """
         data = generate_campaign_schedule_data()
-        data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
+        data['frequency_id'] = Frequency.DAILY  # for Periodic job
         CampaignsCommonTests.request_for_ok_response(
             self.METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
             auth_token, data)

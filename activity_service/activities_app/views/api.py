@@ -18,7 +18,7 @@ from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.utils.activity_utils import ActivityMessageIds
-from activity_service.common.campaign_services.campaign_utils import CampaignType
+from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
@@ -285,7 +285,7 @@ class TalentActivityManager(object):
         for param in re.findall(self._check_format_string_regexp, format_string):
             if not params.get(param):
                 params[param] = 'unknown'
-            if param == 'campaign_type' and params[param].lower() not in CampaignType.WITH_ARTICLE_AN:
+            if param == 'campaign_type' and params[param].lower() not in CampaignUtils.WITH_ARTICLE_AN:
                 format_string = format_string.replace("an", "a")
 
         return format_string % params

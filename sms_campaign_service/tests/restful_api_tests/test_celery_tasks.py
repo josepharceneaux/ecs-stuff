@@ -25,17 +25,17 @@ from sms_campaign_service.common.campaign_services.custom_errors import (Campaig
                                                                          EmptyDestinationUrl)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound, InternalServerError,
-                                                        MethodNotAllowed, InvalidUsage)
+                                                        InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import (FrequencyIds, to_utc_str,
-                                                                          CampaignType)
+from sms_campaign_service.common.campaign_services.campaign_utils import (to_utc_str,
+                                                                          CampaignUtils)
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
 # Database Models
-from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.misc import UrlConversion, Frequency
 from sms_campaign_service.common.models.candidate import Candidate
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Service Specific
 from sms_campaign_service.common.models.db import db
@@ -182,7 +182,7 @@ class TestCampaignSchedule(object):
          response
         """
         data = generate_campaign_schedule_data().copy()
-        data['frequency_id'] = FrequencyIds.CUSTOM
+        data['frequency_id'] = Frequency.CUSTOM
         data['start_datetime'] = to_utc_str(datetime.utcnow())
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
@@ -204,26 +204,6 @@ class TestURLRedirectionApi(object):
     As response from Api endpoint is returned to candidate. So ,in case of any error,
     candidate should only get internal server error.
     """
-
-    def test_for_post(self, url_conversion_by_send_test_sms_campaign):
-        """
-        POST method should not be allowed at this endpoint.
-        :return:
-        """
-        response_post = _use_ngrok_or_local_address(
-            'post', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
-            'POST Method should not be allowed'
-
-    def test_for_delete(self, url_conversion_by_send_test_sms_campaign):
-        """
-        DELETE method should not be allowed at this endpoint.
-        :return:
-        """
-        response = _use_ngrok_or_local_address(
-            'delete', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response.status_code == MethodNotAllowed.http_status_code(), \
-            'DELETE Method should not be allowed'
 
     def test_for_get(self, sample_user,
                      url_conversion_by_send_test_sms_campaign,
@@ -529,7 +509,7 @@ def _call_process_url_redirect(url_conversion_obj):
     :return:
     """
     with app.app_context():
-        CampaignBase.process_url_redirect(url_conversion_obj.id, CampaignType.SMS)
+        CampaignBase.process_url_redirect(url_conversion_obj.id, CampaignUtils.SMS)
 
 
 def _call_pre_process_url_redirect(request_args, url):

@@ -1,6 +1,7 @@
 """
 This module contains tests code that is common across services. e.g SMS and Push campaign.
 """
+
 __author__ = 'basit'
 
 # Standard Imports
@@ -12,7 +13,8 @@ import requests
 
 # Application Specific
 from ..tests.conftest import fake
-from campaign_utils import (FrequencyIds, to_utc_str)
+from ..models.misc import Frequency
+from campaign_utils import to_utc_str
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
@@ -77,7 +79,7 @@ class CampaignsCommonTests(object):
         :return:
         """
         _assert_invalid_datetime(method, url, token, data, 'start_datetime')
-        if not data['frequency_id'] or not data['frequency_id'] == FrequencyIds.ONCE:
+        if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_invalid_datetime(method, url, token, data, 'end_datetime')
 
     @classmethod
@@ -85,7 +87,7 @@ class CampaignsCommonTests(object):
         # Test missing start_datetime field which is mandatory to schedule a campaign
         _assert_api_response_for_missing_field(method, url, token, data, 'start_datetime')
         # if periodic job, need to test for end_datetime as well
-        if not data['frequency_id'] or not data['frequency_id'] == FrequencyIds.ONCE:
+        if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_api_response_for_missing_field(method, url, token, data, 'end_datetime')
 
     @classmethod
@@ -98,7 +100,7 @@ class CampaignsCommonTests(object):
         :return:
         """
         _assert_invalid_datetime_format(method, url, token, data, 'start_datetime')
-        if not data['frequency_id'] or not data['frequency_id'] == FrequencyIds.ONCE:
+        if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_invalid_datetime_format(method, url, token, data, 'end_datetime')
 
     @classmethod

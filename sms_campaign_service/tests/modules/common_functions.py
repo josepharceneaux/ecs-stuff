@@ -9,15 +9,12 @@ import time
 
 # Common Utils
 
-from sms_campaign_service.common.models.db import db
 from sms_campaign_service.tests.conftest import app
-from user_service.common.error_handling import MethodNotAllowed
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSendUrlConversion,
-                                                             SmsCampaignReply, SmsCampaignBlast,
-                                                             SmsCampaignSend)
 from sms_campaign_service.common.campaign_services.campaign_utils import delete_scheduled_task
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply, SmsCampaignSend)
 
 SLEEP_TIME = 30
 
@@ -29,24 +26,24 @@ def assert_url_conversion(sms_campaign_sends):
 
     URL to redirect candidate to our app looks like e.g.
 
-    https://www.gettalent.com/campaigns/1/redirect/30
+    http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0&auth_user=no_user&extra=
+                &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D)
 
-    So we will verify whether source_url has same format as above URL.
+    So we will verify whether source_url has url_conversion id in it.
 
     :param sms_campaign_sends: sends of campaign
     :return:
     """
-    campaign_send_url_conversions = []
+    sends_url_conversions = []
     # Get "sms_campaign_send_url_conversion" records
     for sms_campaign_send in sms_campaign_sends:
-        campaign_send_url_conversions.extend(
-            SmsCampaignSendUrlConversion.get_by_campaign_send_id(sms_campaign_send.id))
+        sends_url_conversions.extend(sms_campaign_send.sms_campaign_sends_url_conversions)
     # For each url_conversion record we assert that source_url is saved correctly
-    for send_url_conversion in campaign_send_url_conversions:
-        # get URL conversion record from database table 'url_conversion'
-        url_conversion = UrlConversion.get_by_id(send_url_conversion.url_conversion_id)
+    for send_url_conversion in sends_url_conversions:
+        # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        UrlConversion.delete(url_conversion)
+        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        UrlConversion.delete(send_url_conversion.url_conversion)
 
 
 def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign):
@@ -57,7 +54,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     :param campaign_id: id of SMS campaign
     :return:
     """
-    time.sleep(2*SLEEP_TIME)
+    # time.sleep(2*SLEEP_TIME)
     # assert on blasts
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
@@ -102,18 +99,6 @@ def get_reply_text(candidate_phone):
     db.session.commit()
     campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
     return campaign_reply_record
-
-
-def assert_method_not_allowed(response, method_name):
-    """
-    This asserts the given response should have status code 405 i.e. MethodNotAllowed.
-    :param response:
-    :param method_name: HTTP method
-    :type method_name: str
-    :return:
-    """
-    assert response.status_code == MethodNotAllowed.http_status_code(), \
-        method_name + 'method should not be allowed (405)'
 
 
 def assert_api_send_response(campaign, response, expected_status_code):

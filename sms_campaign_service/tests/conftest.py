@@ -12,9 +12,7 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
-
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
-
 app, _ = init_sms_campaign_app_and_celery_app()
 
 # common conftest
@@ -22,7 +20,6 @@ from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
@@ -34,16 +31,14 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOB
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
-                                                             SmsCampaignBlast, SmsCampaignSend,
-                                                             SmsCampaignSendUrlConversion)
+                                                             SmsCampaignBlast)
 # Common Utils
 from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                                                to_utc_str)
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
 SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
@@ -56,7 +51,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
-    return {"frequency_id": FrequencyIds.ONCE,
+    return {"frequency_id": Frequency.ONCE,
             # TODO: remove timedelta from start_datetime after scheduler_service update
             "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
             "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
@@ -275,7 +270,7 @@ def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
     return test_sms_campaign_of_other_user
 
 
-@pytest.fixture(params=[FrequencyIds.ONCE, FrequencyIds.DAILY])
+@pytest.fixture(params=[Frequency.ONCE, Frequency.DAILY])
 def one_time_and_periodic(request, valid_header):
     """
     This returns data to schedule a campaign one time and periodically.
@@ -286,7 +281,7 @@ def one_time_and_periodic(request, valid_header):
         if 'task_id' in data:
             delete_test_scheduled_task(data['task_id'], valid_header)
 
-    if request.param == FrequencyIds.ONCE:
+    if request.param == Frequency.ONCE:
         request.addfinalizer(fin)
         return data
     else:
@@ -550,14 +545,15 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
     sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
     # get URL conversion record from relationship
-    url_conversion = sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0]
+    url_conversion = \
+        sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0].url_conversion
 
     def tear_down():
         UrlConversion.delete(url_conversion)

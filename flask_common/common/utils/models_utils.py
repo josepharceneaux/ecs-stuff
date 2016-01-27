@@ -42,9 +42,15 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
-from ..models.db import db
+# Standard Imports
 from types import MethodType
+
+# Third Party
 from flask import current_app
+from flask.ext.cors import CORS
+
+# Application Specific
+from ..models.db import db
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case
@@ -162,7 +168,7 @@ def delete(cls, ref):
     return True
 
 
-def add_model_helpers(cls, logger):
+def add_model_helpers(cls):
     """
     This function adds helper methods to Model class which is passed as argument.
 
@@ -225,12 +231,15 @@ def init_talent_app(flask_app, logger):
 
         2- Initializes the app by
                     db.init_app(flask_app) flask SQLAlchemy builtin
-        3- Registers error handlers for the app
+        3- Enable CORS
+        4- Registers error handlers for the app
 
     :return: Returns the app
     """
-    add_model_helpers(db.Model, logger)
+    add_model_helpers(db.Model)
     db.init_app(flask_app)
     db.app = flask_app
+    # Enable CORS for all origins & endpoints
+    CORS(flask_app)
     register_error_handlers(flask_app, logger)
     return flask_app

@@ -9,13 +9,13 @@ Functions in this file are
     - is_datetime_in_future()
     - validation_of_data_to_schedule_campaign()
     - get_valid_json_data()
-    - validate_blast_candidate_url_conversion_in_db()
-    - validate_if_current_user_is_owner() etc.
+    - validate_blast_candidate_url_conversion_in_db() etc.
 """
 
 # Standard Imports
 import re
 from datetime import datetime
+
 from werkzeug.exceptions import BadRequest
 
 
@@ -25,14 +25,12 @@ from flask import current_app
 from dateutil.parser import parse
 
 # Common utils
+from ..models.misc import Frequency
 from ..models.smartlist import Smartlist
-from ..models.sms_campaign import SmsCampaign
 from ..talent_config_manager import TalentConfigKeys
-from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
+from ..error_handling import (InvalidUsage, ResourceNotFound)
 from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items,
                                      validate_required_fields)
-from campaign_utils import (frequency_id_to_seconds, assert_is_instance_of_campaign_model,
-                            assert_for_int_or_long)
 
 
 def validate_header(request):
@@ -177,7 +175,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     # validate format of start_datetime
     validate_datetime_format(data_to_schedule_campaign['start_datetime'])
     # get number of seconds from frequency id
-    frequency = frequency_id_to_seconds(data_to_schedule_campaign.get('frequency_id'))
+    frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
@@ -292,27 +290,16 @@ def validate_form_data(form_data, required_fields=('name', 'body_text', 'smartli
     return invalid_smartlist_ids, not_found_smartlist_ids
 
 
-def validate_if_current_user_is_owner(campaign_obj, campaign_user_id, current_user_id):
+def raise_if_dict_values_are_not_int_or_long(data):
     """
-    If current user is the owner of given campaign, it returns the campaign. Otherwise
-    it raises Forbidden error.
-    :param campaign_obj: campaign object e.g. SMS campaign obj etc.
-    :param campaign_user_id: Id of user who created given campaign
-    :param current_user_id: id of logged-in user
-    :type campaign_obj: SmsCampaign | PushCampaign
-    :type campaign_user_id: int | long
-    :type current_user_id: int | long
+    This validates if values in given dict are int or long. If not, it raises Invalid usage
+    error.
+    :param data: data to validate
+    :type data: dict
     :exception: Invalid Usage
-    :exception: Forbidden Error
-    :return: campaign obj
-    :rtype: SmsCampaign | PushCampaign etc.
     """
-    assert_for_int_or_long(dict(campaign_user_id=campaign_user_id,
-                                               current_user_id=current_user_id))
-    # Any campaign service will add the entry of respective model name here
-    assert_is_instance_of_campaign_model(campaign_obj)
-    if campaign_user_id == current_user_id:
-        return campaign_obj
-    else:
-        raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
-                             % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
+    if not isinstance(data, dict):
+        raise InvalidUsage('Include data as dictionary.')
+    for key, value in data.iteritems():
+        if not isinstance(value, (int, long)) or not value:
+            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)

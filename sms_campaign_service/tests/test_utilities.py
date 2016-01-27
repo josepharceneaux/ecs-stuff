@@ -278,13 +278,16 @@ class TestTSmsCampaignBase(object):
         """
         last_campaign_id_in_db = User.query.order_by(User.id.desc()).first().id
         ids = get_invalid_ids(last_campaign_id_in_db)
+        error_message = None
         for _id in ids:
             try:
                 SmsCampaignBase(_id)
                 assert None, 'ResourceNotFound should be thrown as user_id does not exists in db.'
+            except InvalidUsage as error:
+                error_message = error.message
             except ResourceNotFound as error:
-                assert error.message
-                assert str(_id) in error.message
+                error_message = error.message
+            assert str(_id) in error_message
 
     def test_creating_obj_with_invalid_user_id(self):
         """

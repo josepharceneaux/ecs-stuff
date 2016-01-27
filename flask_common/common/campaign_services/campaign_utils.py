@@ -15,24 +15,23 @@ import importlib
 from datetime import datetime
 
 # Third Party
-from pytz import timezone
 from dateutil.tz import tzutc
 from flask import current_app
 from ska import (sign_url, Signature)
 
 # Database Models
 from ..models.misc import UrlConversion
-from ..models.sms_campaign import SmsCampaign
-from ..models.email_marketing import EmailCampaign
+from ..models.email_marketing import EmailCampaign, EmailCampaignBlast
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast)
 
 # Common Utils
 from ..routes import SchedulerApiUrl
-from ..utils.handy_functions import http_request
-from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
-from ..utils.handy_functions import snake_case_to_pascal_case
 from ..error_handling import (InvalidUsage, ResourceNotFound)
+from ..utils.handy_functions import snake_case_to_pascal_case
+from .validators import raise_if_dict_values_are_not_int_or_long
+from ..utils.handy_functions import (http_request, raise_if_not_instance_of)
 
 
 def get_campaign_type_prefix(campaign_type):
@@ -40,15 +39,16 @@ def get_campaign_type_prefix(campaign_type):
     Campaign type can be 'sms_campaign', 'push_campaign' etc. So this method checks if campaign
     type is SMS, it returns SMS. Otherwise it returns prefix as lower case e.g push or email.
     :param campaign_type:
+    :type campaign_type: str
     :return:
     """
     prefix = campaign_type.split('_')[0]
-    if prefix in SmsCampaign.__tablename__:
+    if prefix in [SmsCampaign.__tablename__]:
         return prefix.upper()
     return prefix.lower()
 
 
-class CampaignType(object):
+class CampaignUtils(object):
     """
     This is the class to avoid global variables for names of campaign
     """
@@ -58,49 +58,35 @@ class CampaignType(object):
     WITH_ARTICLE_AN = [get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
     # Any campaign service will add the entry of respective model name here
     MODELS = (SmsCampaign, EmailCampaign)
+    SMARTLIST_MODELS = SmsCampaignSmartlist
+    BLAST_MODELS = (SmsCampaignBlast, EmailCampaignBlast)
+    NAMES = (SMS, EMAIL)
 
+    @classmethod
+    def raise_if_not_instance_of_campaign_models(cls, obj):
+        """
+        This validates that given object is an instance of campaign models. e.g. SmsCampaign,
+        PushCampaign etc.
+        :param obj: data to validate
+        :type obj: SmsCampaign | PushCampaign etc.
+        :exception: Invalid Usage
+        """
+        raise_if_not_instance_of(obj, CampaignUtils.MODELS)
 
-class FrequencyIds(object):
-    """
-    This is the class to avoid global variables for following names.
-    These variables show the frequency_id associated with type of schedule.
-    """
-    ONCE = 1
-    DAILY = 2
-    WEEKLY = 3
-    BIWEEKLY = 4
-    MONTHLY = 5
-    YEARLY = 6
-    CUSTOM = 7
+    @classmethod
+    def raise_if_not_valid_campaign_type(cls, campaign_type):
+        """
+        This validates that given campaign_type is a valid type. e.g. 'sms_campaign' or
+        'push_campaign' etc.
+        :param campaign_type: type of campaign
+        :type campaign_type: str
+        :exception: Invalid Usage
+        """
+        raise_if_not_instance_of(campaign_type, str)
+        if not campaign_type in CampaignUtils.NAMES:
+            raise InvalidUsage('%s is not a valid campaign type. Valid types are %s'
+                               % (campaign_type, CampaignUtils.NAMES))
 
-
-def frequency_id_to_seconds(frequency_id):
-    """
-    This gives us the number of seconds for given frequency_id.
-    frequency_id is in range 1 to 6 representing
-        'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
-    respectively.
-    :param frequency_id: int
-    :return: seconds
-    :rtype: int
-    """
-    if not frequency_id:
-        return 0
-    if not isinstance(frequency_id, int):
-        raise InvalidUsage('Include frequency id as int')
-    seconds_from_frequency_id = {
-        FrequencyIds.ONCE: 0,
-        FrequencyIds.DAILY: 24 * 3600,
-        FrequencyIds.WEEKLY: 7 * 24 * 3600,
-        FrequencyIds.BIWEEKLY: 14 * 24 * 3600,
-        FrequencyIds.MONTHLY: 30 * 24 * 3600,
-        FrequencyIds.YEARLY: 365 * 24 * 3600,
-        FrequencyIds.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
-    }
-    seconds = seconds_from_frequency_id.get(frequency_id)
-    if not seconds and seconds != 0:
-        raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
-    return seconds
 
 
 def to_utc_str(dt):
@@ -124,7 +110,7 @@ def unix_time(dt):
     :return: returns epoch time in milliseconds.
     :rtype: long
     """
-    epoch = datetime(1970, 1, 1, tzinfo=timezone('UTC'))
+    epoch = datetime(1970, 1, 1, tzinfo=tzutc('UTC'))
     delta = dt - epoch
     return delta.total_seconds()
 
@@ -136,9 +122,19 @@ def get_model(file_name, model_name):
         file_name='sms_campaign' and model_name ='SmsCampaign'
     :param file_name: Name of file from which we want to import some model
     :param model_name: Name of model we want to import
+    :type file_name: str
+    :type model_name: str
+    :exception: Invalid usage
+    :exception: AttributeError
+    :exception: ImportError
     :return: import the required class and return it
     """
+    if not isinstance(file_name, str):
+        raise InvalidUsage('file_name must be instance of str.')
+    if not isinstance(model_name, str):
+            raise InvalidUsage('file_name must be instance of str.')
     logger = current_app.config[TalentConfigKeys.LOGGER]
+    model_name = snake_case_to_pascal_case(model_name)
     module_name = file_name + '_service.common.models.' + file_name
     try:
         module = importlib.import_module(module_name)
@@ -291,7 +287,7 @@ def post_campaign_sent_processing(base_class, sends_result, user_id, campaign_ty
     if not isinstance(sends_result, list):
         logger.error("post_campaign_sent_processing: Celery task's result is not a list")
     total_sends = sends_result.count(True)
-    blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+    blast_model = get_model(campaign_type, campaign_type + '_blast')
     blast_obj = blast_model.get_by_id(blast_id)
     campaign = blast_obj.campaign
     if total_sends:
@@ -353,37 +349,11 @@ def get_campaign_for_ownership_validation(campaign_id, current_user_id, campaign
     :return: campaign obj
     :rtype: SmsCampaign | PushCampaign etc.
     """
-    assert_for_int_or_long(dict(campaign_id=campaign_id, current_user_id=current_user_id))
-    if not isinstance(campaign_type, str):
-        raise InvalidUsage('Include campaign_type as sms_campaign or push_campaign etc.')
-    campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
-    campaign_obj = campaign_model.get_by_id(campaign_id)
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                  current_user_id=current_user_id))
+    CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
+    campaign_model = get_model(campaign_type, campaign_type)
+    campaign_obj = campaign_model.query.get(campaign_id)
     if not campaign_obj:
         raise ResourceNotFound('%s(id=%s) not found.' % (campaign_model.__tablename__, campaign_id))
     return campaign_obj
-
-
-def assert_for_int_or_long(data):
-    """
-    This validates if campaign_user_id and current_user_id are int or long.
-    :param data: data to validate
-    :type data: dict
-    :exception: Invalid Usage
-    """
-    if not isinstance(data, dict):
-        raise InvalidUsage('Include data as dictionary.')
-    for key, value in data.iteritems():
-        if not isinstance(value, (int, long)) or not value:
-            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)
-
-
-def assert_is_instance_of_campaign_model(obj):
-    """
-    This validates that given object is an instance of campaign models. e.g. SmsCampaign,
-    PushCampaign etc.
-    :param obj: data to validate
-    :type obj: SmsCampaign | PushCampaign etc.
-    :exception: Invalid Usage
-    """
-    if not isinstance(obj, CampaignType.MODELS):
-        raise InvalidUsage('Campaign must be an instance of SmsCampaign or PushCampaign etc.')

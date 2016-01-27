@@ -14,8 +14,7 @@ from sms_campaign_service.common.error_handling import  UnauthorizedError
 from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 
 # Service Specific
-from sms_campaign_service.tests.modules.common_functions import (assert_method_not_allowed,
-                                                                 assert_ok_response_and_counts)
+from sms_campaign_service.tests.modules.common_functions import assert_ok_response_and_counts
 
 
 class TestSmsCampaignSends(object):
@@ -25,30 +24,6 @@ class TestSmsCampaignSends(object):
     URL = SmsCampaignApiUrl.SENDS
     METHOD = 'get'
     ENTITY = 'sends'
-
-    def test_for_post_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        POST method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.post(SmsCampaignApiUrl.SENDS
-                                 % sms_campaign_of_current_user.id,
-                                 headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'POST')
-
-    def test_for_delete_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        DELETE method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.delete(
-            SmsCampaignApiUrl.SENDS % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'DELETE')
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """

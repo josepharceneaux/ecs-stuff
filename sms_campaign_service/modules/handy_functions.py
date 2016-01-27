@@ -26,7 +26,8 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
-from sms_campaign_service.common.campaign_services.campaign_utils import assert_for_int_or_long
+from sms_campaign_service.common.campaign_services.campaign_utils import \
+    raise_if_dict_values_are_not_int_or_long
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
@@ -227,7 +228,7 @@ def get_valid_blast_obj(blast_id, requested_campaign_id):
     :return: campaign blast object
     :rtype: SmsCampaignBlast
     """
-    assert_for_int_or_long(dict(campaign_id=requested_campaign_id, blast_id=blast_id))
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id, blast_id=blast_id))
     blast_obj = SmsCampaignBlast.get_by_id(blast_id)
     if not blast_obj:
         raise ResourceNotFound("SMS campaign's Blast(id:%s) does not exists in database."

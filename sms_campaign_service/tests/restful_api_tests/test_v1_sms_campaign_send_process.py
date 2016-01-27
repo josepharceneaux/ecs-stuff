@@ -9,8 +9,7 @@ import requests
 # Service Specific
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
-    (assert_on_blasts_sends_url_conversion_and_activity, assert_method_not_allowed,
-     assert_api_send_response)
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_api_send_response)
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -161,28 +160,3 @@ class TestSendSmsCampaign(object):
         obj.campaign = sms_campaign_of_current_user
         assert obj.pre_process_celery_task([candidate_first, candidate_second])
 
-
-def test_for_get_request(auth_token, sms_campaign_of_current_user):
-    """
-    GET method is not allowed on this endpoint, should get 405 (Method not allowed)
-    :param auth_token: access token for sample user
-    :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-    :return:
-    """
-    response = requests.get(
-        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-        headers=dict(Authorization='Bearer %s' % auth_token))
-    assert_method_not_allowed(response, 'GET')
-
-
-def test_for_delete_request(auth_token, sms_campaign_of_current_user):
-    """
-    DELETE method is not allowed on this endpoint, should get 405 (Method not allowed)
-    :param auth_token: access token for sample user
-    :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-    :return:
-    """
-    response = requests.delete(
-        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user.id,
-        headers=dict(Authorization='Bearer %s' % auth_token))
-    assert_method_not_allowed(response, 'DELETE')

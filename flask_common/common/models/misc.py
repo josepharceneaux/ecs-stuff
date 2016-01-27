@@ -6,6 +6,8 @@ import time
 
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
+from ..error_handling import InvalidUsage
+from ..utils.scheduler_utils import SchedulerUtils
 
 
 class Activity(db.Model):
@@ -175,8 +177,46 @@ class Frequency(db.Model):
     email_campaigns = relationship('EmailCampaign', backref='frequency')
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
 
+    # frequency Ids
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
+
     def __repr__(self):
         return "<Frequency (id = %r)>" % self.id
+
+    @classmethod
+    def get_seconds_from_id(cls, frequency_id):
+        """
+        This gives us the number of seconds for given frequency_id.
+        frequency_id is in range 1 to 6 representing
+            'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+        respectively.
+        :param frequency_id: int
+        :return: seconds
+        :rtype: int
+        """
+        if not frequency_id:
+            return 0
+        if not isinstance(frequency_id, int):
+            raise InvalidUsage('Include frequency id as int')
+        seconds_from_frequency_id = {
+            cls.ONCE: 0,
+            cls.DAILY: 24 * 3600,
+            cls.WEEKLY: 7 * 24 * 3600,
+            cls.BIWEEKLY: 14 * 24 * 3600,
+            cls.MONTHLY: 30 * 24 * 3600,
+            cls.YEARLY: 365 * 24 * 3600,
+            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+        }
+        seconds = seconds_from_frequency_id.get(frequency_id)
+        if not seconds and seconds != 0:
+            raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
+        return seconds
 
     @classmethod
     def get_by_id(cls, _id):
@@ -249,6 +289,12 @@ class UrlConversion(db.Model):
     hit_count = db.Column('hitCount', db.Integer)
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     last_hit_time = db.Column('lastHitTime', db.DateTime)
+
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='url_conversion')
 
     def __repr__(self):
         return "<UrlConversion (id=' %r')>" % self.id

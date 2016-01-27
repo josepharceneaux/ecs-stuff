@@ -39,8 +39,7 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (sign_redirect_url, CampaignType, post_campaign_sent_processing,
-     assert_is_instance_of_campaign_model)
+    (sign_redirect_url, post_campaign_sent_processing, CampaignUtils)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
@@ -203,7 +202,8 @@ class SmsCampaignBase(CampaignBase):
         # If sms_body_test has some URL present in it, we process to make short URL
         # and this contains the updated text to be sent via SMS.
         # This is the id of record in sms_campaign_blast" database table
-        self.campaign_type = CampaignType.SMS
+        self.campaign_type = CampaignUtils.SMS
+        CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
 
     def get_user_phone(self):
         """
@@ -373,7 +373,7 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
         """
         if not data_to_schedule or not isinstance(data_to_schedule, dict):
-            raise InvalidUsage('Data to schedule a task cannot be empty. It should be a dict.')
+            raise InvalidUsage('Data to schedule a task should be non-empty dictionary.')
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
@@ -384,7 +384,7 @@ class SmsCampaignBase(CampaignBase):
         return scheduler_task_id
 
     @staticmethod
-    def get_owner_user_id(campaign_obj, current_user_id):
+    def get_user_id_of_owner(campaign_obj, current_user_id):
         """
         This implements the base class method and returns the id of user who created the
         given campaign.
@@ -396,7 +396,7 @@ class SmsCampaignBase(CampaignBase):
         :return: id of owner user of given campaign
         :rtype: int | long
         """
-        assert_is_instance_of_campaign_model(campaign_obj)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
         if not campaign_obj.user_phone_id:
             raise ForbiddenError('SMS campaign(id:%s) has no user_phone associated.'
                                  % campaign_obj.id)

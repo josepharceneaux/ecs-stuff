@@ -78,7 +78,6 @@ from werkzeug.exceptions import BadRequest
 # Third Party
 from flask import request
 from flask import Blueprint
-from flask.ext.cors import CORS
 from flask.ext.restful import Resource
 
 # Service Specific
@@ -97,23 +96,14 @@ from sms_campaign_service.common.utils.auth_utils import require_oauth
 from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.validators import get_valid_json_data
-from sms_campaign_service.common.campaign_services.campaign_utils import (CampaignType,
-                                                                          assert_for_int_or_long)
+from sms_campaign_service.common.campaign_services.campaign_utils import \
+    (CampaignUtils, raise_if_dict_values_are_not_int_or_long)
 
 # creating blueprint
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
 api = TalentApi()
 api.init_app(sms_campaign_blueprint)
 api.route = types.MethodType(api_route, api)
-
-
-# Enable CORS
-CORS(sms_campaign_blueprint, resources={
-    r'%s/*' + SmsCampaignApi.CAMPAIGNS: {
-        'origins': '*',
-        'allow_headers': ['Content-Type', 'Authorization']
-    }
-})
 
 
 @api.route(SmsCampaignApi.CAMPAIGNS)
@@ -344,7 +334,7 @@ class ScheduleSmsCampaign(Resource):
         """
         # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
         # create object of class SmsCampaignBase
         sms_camp_obj = SmsCampaignBase(request.user.id)
         # assign campaign to object
@@ -403,7 +393,7 @@ class ScheduleSmsCampaign(Resource):
         """
         # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
         # check if task is already present on scheduler_service
         scheduled_task_id = SmsCampaignBase.pre_process_re_schedule(pre_processed_data)
         if not scheduled_task_id:  # Task not found on scheduler_service
@@ -445,7 +435,7 @@ class ScheduleSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        task_unscheduled = SmsCampaignBase.unschedule(campaign_id, request, CampaignType.SMS)
+        task_unscheduled = SmsCampaignBase.unschedule(campaign_id, request, CampaignUtils.SMS)
         if task_unscheduled:
             return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
         else:
@@ -501,7 +491,7 @@ class CampaignById(Resource):
         :return: JSON for required campaign
         """
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
         return dict(campaign=campaign.to_json()), 200
 
     def put(self, campaign_id):
@@ -683,7 +673,7 @@ class SmsCampaignUrlRedirection(Resource):
         if request_from_google_shorten_url_api(request.headers.environ):
             return 200
         try:
-            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignType.SMS,
+            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignUtils.SMS,
                                                                 verify_signature=True,
                                                                 request_args=request.args,
                                                                 requested_url=request.full_path)
@@ -806,7 +796,7 @@ class SmsCampaignBlasts(Resource):
         """
         # Get a campaign that was created by this user
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
@@ -859,10 +849,10 @@ class SmsCampaignBlastById(Resource):
                     404 (Campaign not found)
                     500 (Internal server error)
         """
-        assert_for_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
         SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                       CampaignType.SMS)
+                                                       CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         return dict(blast=blast_obj.to_json()), 200
 
@@ -921,10 +911,10 @@ class SmsCampaignBlastSends(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
         """
-        assert_for_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
         SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                       CampaignType.SMS)
+                                                       CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         sends = [send_obj.to_json() for send_obj in blast_obj.blast_sends]
         response = dict(sends=sends, count=len(sends))
@@ -985,10 +975,10 @@ class SmsCampaignBlastReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal server error)
         """
-        assert_for_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
         SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                       CampaignType.SMS)
+                                                       CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         replies = [replies_obj.to_json() for replies_obj in blast_obj.blast_replies]
         response = dict(replies=replies, count=len(replies))
@@ -1047,7 +1037,7 @@ class SmsCampaignSends(Resource):
         """
         # Get a campaign that was created by this user
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
 
         # Get replies objects from database table 'sms_campaign_reply'
         sends = sum([blast.blast_sends for blast in campaign.blasts], [])
@@ -1110,7 +1100,7 @@ class SmsCampaignReplies(Resource):
         """
         # Get a campaign that was created by this user
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
-                                                                  CampaignType.SMS)
+                                                                  CampaignUtils.SMS)
         # Get replies objects from database table 'sms_campaign_reply'
         replies = sum([blast.blast_replies for blast in campaign.blasts], [])
         # Get JSON serializable data

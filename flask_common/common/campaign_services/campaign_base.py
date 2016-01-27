@@ -27,30 +27,30 @@ from flask import current_app
 # Database Models
 from ..models.db import db
 from ..models.user import (Token, User)
-from ..models.misc import UrlConversion
 from ..models.candidate import Candidate
+from ..models.misc import (UrlConversion, Frequency)
 from ..models.email_marketing import EmailCampaignBlast
-from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..utils.handy_functions import (http_request, find_missing_items,
-                                     JSON_CONTENT_TYPE_HEADER,
-                                     snake_case_to_pascal_case)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 from campaign_utils import (get_model, validate_signed_url, delete_scheduled_task,
                             get_candidate_url_conversion_campaign_send_and_blast_obj,
                             get_activity_message_name, get_activity_message_id_from_name,
-                            FrequencyIds, get_campaign_type_prefix,
-                            assert_is_instance_of_campaign_model,
-                            assert_for_int_or_long, get_campaign_for_ownership_validation)
+                            get_campaign_type_prefix, CampaignUtils,
+                            get_campaign_for_ownership_validation,
+                            )
 from validators import (validate_datetime_format, validate_form_data,
                         validation_of_data_to_schedule_campaign,
-                        validate_blast_candidate_url_conversion_in_db)
+                        validate_blast_candidate_url_conversion_in_db,
+                        raise_if_dict_values_are_not_int_or_long)
+from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
+                                     raise_if_not_instance_of)
 
 
 class CampaignBase(object):
@@ -89,7 +89,7 @@ class CampaignBase(object):
             e.g. in case of SMS campaign, activity will appear as
                 'Nikola Tesla' created an SMS campaign "We are hiring".
 
-    * get_authorized_campaign_obj_and_scheduled_task(cls. campaign_id, user_id)
+    * get_campaign_and_scheduled_task(cls. campaign_id, user_id)
         This validates that the current user is an owner of requested campaign.
         It also return the data of scheduler_task from scheduler_service if the
         campaign was scheduled.
@@ -203,8 +203,7 @@ class CampaignBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, user_id):
-        if not isinstance(user_id, (int, long)):
-            raise InvalidUsage('User id must be int|long.')
+        raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
             raise ResourceNotFound('User does not exist in database with id %s.' % user_id)
@@ -238,8 +237,7 @@ class CampaignBase(object):
         if bearer_access_token:
             return {'Authorization': bearer_access_token}
         else:
-            if not isinstance(user_id, (int, long)):
-                raise InvalidUsage('User id must be int|long.')
+            raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
             user_token_obj = Token.get_by_user_id(user_id)
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
@@ -276,11 +274,10 @@ class CampaignBase(object):
         validated_data = campaign_data.copy()
         # if frequency_id not provided or is 0, set to id of ONCE
         if not campaign_data.get('frequency_id'):
-            campaign_data.update({'frequency_id': FrequencyIds.ONCE})
+            campaign_data.update({'frequency_id': Frequency.ONCE})
         invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
         logger.info('Campaign data has been validated.')
-        campaign_model = get_model(self.campaign_type,
-                                   snake_case_to_pascal_case(self.campaign_type))
+        campaign_model = get_model(self.campaign_type, self.campaign_type)
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
@@ -361,9 +358,9 @@ class CampaignBase(object):
         **See Also**
         .. see also:: save() method in CampaignBase class.
         """
-        assert_is_instance_of_campaign_model(campaign)
-        campaign_smartlist_model = get_model(
-            campaign.__tablename__, snake_case_to_pascal_case(campaign.__tablename__) + 'Smartlist')
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
+        campaign_type = campaign.__tablename__
+        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
         for smartlist_id in smartlist_ids:
             data = {'smartlist_id': smartlist_id, 'sms_campaign_id': campaign.id}
             db_record = campaign_smartlist_model.get_by_campaign_id_and_smartlist_id(campaign.id,
@@ -388,9 +385,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
-        assert_is_instance_of_campaign_model(source)
-        if not isinstance(user, User):
-            raise InvalidUsage('user should be instance of model User')
+        CampaignUtils.raise_if_not_instance_of_campaign_models(source)
+        raise_if_not_instance_of(user, User)
         # set params
         params = {'username': user.name, 'campaign_name': source.name,
                   'campaign_type': get_campaign_type_prefix(source.__tablename__)}
@@ -402,7 +398,7 @@ class CampaignBase(object):
                             auth_header=oauth_header)
 
     @classmethod
-    def get_authorized_campaign_obj_and_scheduled_task(cls, campaign_id, user_id, campaign_type):
+    def get_campaign_and_scheduled_task(cls, campaign_id, user_id, campaign_type):
         """
         1) verifies that current user is owner of given campaign_id
         2) If campaign has scheduler_task_id, it gets the scheduled task data from scheduler_service
@@ -412,9 +408,10 @@ class CampaignBase(object):
         :rtype: tuple
         :exception: Invalid usage
         """
-        assert_for_int_or_long(dict(campaign_id=campaign_id, user_id=user_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, user_id=user_id))
+        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         campaign_obj = cls.validate_ownership_of_campaign(campaign_id, user_id, campaign_type)
-        assert_is_instance_of_campaign_model(campaign_obj)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
         oauth_header = cls.get_authorization_header(user_id)
         # check if campaign is already scheduled
         scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id, oauth_header)
@@ -434,9 +431,10 @@ class CampaignBase(object):
         :return: Campaign obj if current user is an owner for given campaign.
         :rtype: SmsCampaign or some other campaign obj
         """
+        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         campaign_obj = get_campaign_for_ownership_validation(campaign_id, current_user_id,
                                                              campaign_type)
-        campaign_user_id = cls.get_owner_user_id(campaign_obj, current_user_id)
+        campaign_user_id = cls.get_user_id_of_owner(campaign_obj, current_user_id)
         if campaign_user_id == current_user_id:
             return campaign_obj
         else:
@@ -445,7 +443,7 @@ class CampaignBase(object):
 
     @staticmethod
     @abstractmethod
-    def get_owner_user_id(campaign_obj, current_user_id):
+    def get_user_id_of_owner(campaign_obj, current_user_id):
         """
         This returns the id of user who created the given campaign. Child classes will implement
         this as per their requirement.
@@ -460,7 +458,7 @@ class CampaignBase(object):
         :rtype: int | long
 
         **See Also**
-            .. see also:: get_owner_user_id() in SmsCampaignBase class.
+            .. see also:: get_user_id_of_owner() in SmsCampaignBase class.
         """
         pass
 
@@ -500,22 +498,18 @@ class CampaignBase(object):
             raise InvalidUsage('delete: campaign_id cannot be emtpy.')
         if not self.user:
             raise InvalidUsage('delete: user cannot be emtpy.')
-        if not self.campaign_type:
-            raise InvalidUsage('delete: campaign_type is not set correctly.')
         campaign_type = self.campaign_type
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # get campaign_obj, scheduled_task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = \
-            self.get_authorized_campaign_obj_and_scheduled_task(campaign_id, self.user.id,
-                                                                self.campaign_type)
+            self.get_campaign_and_scheduled_task(campaign_id, self.user.id, self.campaign_type)
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
             unscheduled = delete_scheduled_task(scheduled_task['id'], oauth_header)
             if not unscheduled:
                 return False
-
-        campaign_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type))
+        campaign_model = get_model(campaign_type, campaign_type)
         if not campaign_model.delete(campaign_obj):
             logger.error("%s(id:%s) couldn't be deleted." % (campaign_type, campaign_obj.id))
             return False
@@ -547,19 +541,18 @@ class CampaignBase(object):
         .. see also:: schedule() method in CampaignBase class.
         """
         # any other campaign will update this line
-        assert_is_instance_of_campaign_model(source)
-        if not isinstance(user, User):
-            raise InvalidUsage('user should be instance of model User')
+        CampaignUtils.raise_if_not_instance_of_campaign_models(source)
+        raise_if_not_instance_of(user, User)
         # Activity message looks like %(username)s deleted a campaign: %(name)s"
         params = {'username': user.name, 'name': source.name,
                   'campaign_type': get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(
-                user.id,
-                _type=ActivityMessageIds.CAMPAIGN_DELETE,
-                source_id=source.id,
-                source_table=source.__tablename__,
-                params=params,
-                auth_header=oauth_header
+            user.id,
+            _type=ActivityMessageIds.CAMPAIGN_DELETE,
+            source_id=source.id,
+            source_table=source.__tablename__,
+            params=params,
+            auth_header=oauth_header
         )
 
     @classmethod
@@ -594,10 +587,11 @@ class CampaignBase(object):
         **See Also**
         .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
         """
+        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = \
-            cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id,
-                                                               campaign_type)
+            cls.get_campaign_and_scheduled_task(campaign_id, request.user.id,
+                                                campaign_type)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
@@ -626,7 +620,7 @@ class CampaignBase(object):
         :rtype: dict
 
         **See Also**
-        .. see also:: get_authorized_campaign_obj_and_scheduled_task() defined in this file.
+        .. see also:: get_campaign_and_scheduled_task() defined in this file.
         """
         if not oauth_header:
             raise InvalidUsage('oauth_header is required param')
@@ -772,9 +766,8 @@ class CampaignBase(object):
         .. see also:: schedule() method in CampaignBase class.
         """
         # any other campaign will update this line
-        assert_is_instance_of_campaign_model(source)
-        if not isinstance(user, User):
-            raise InvalidUsage('user should be instance of model User')
+        CampaignUtils.raise_if_not_instance_of_campaign_models(source)
+        raise_if_not_instance_of(user, User)
         params = {'username': user.name,
                   'campaign_type': get_campaign_type_prefix(source.__tablename__),
                   'campaign_name': source.name}
@@ -791,6 +784,12 @@ class CampaignBase(object):
         This function gets the campaign object, and checks if it is present on scheduler_service.
         If campaign is present on scheduler_service, we delete it there and on success we return
             campaign object, otherwise we return None.
+        :param campaign_id: id of campaign
+        :param request: request from UI
+        :param campaign_type: type of campaign. e.g. sms_campaign etc
+        :type campaign_id: int | long
+        :type request: request
+        :type campaign_type: str
         :return: status of deleting a task
         :rtype: bool
         :exception: Invalid usage
@@ -799,10 +798,10 @@ class CampaignBase(object):
             raise InvalidUsage('Campaign id is required to unschedule it.')
         if not hasattr(request, 'user'):
             raise InvalidUsage('User cannot be None for un scheduling a campaign.')
+        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         is_deleted = False
         campaign_obj, scheduled_task, oauth_header = \
-            cls.get_authorized_campaign_obj_and_scheduled_task(campaign_id, request.user.id,
-                                                               campaign_type)
+            cls.get_campaign_and_scheduled_task(campaign_id, request.user.id, campaign_type)
         if scheduled_task:
             is_deleted = delete_scheduled_task(scheduled_task['id'], oauth_header)
             campaign_obj.update(scheduler_task_id=None) if is_deleted else None
@@ -941,23 +940,22 @@ class CampaignBase(object):
         .. see also:: callback_campaign_sent() method in CampaignBase class.
 
         """
-        assert_for_int_or_long(dict(campaign_id=campaign_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         logger = current_app.config[TalentConfigKeys.LOGGER]
         campaign = self.validate_ownership_of_campaign(campaign_id, self.user.id,
                                                        self.campaign_type)
-        assert_is_instance_of_campaign_model(campaign)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
         self.campaign = campaign
         campaign_type = self.campaign_type
         logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (campaign_type,
-                                                                             campaign.id,
-                                                                             self.user.id))
+                                                                     campaign.id,
+                                                                     self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
             raise InvalidUsage('Body text is empty for %s(id:%s)' % (campaign_type, campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlist_model = get_model(
-            campaign_type, snake_case_to_pascal_case(campaign_type) + 'Smartlist')
+        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
         smartlists = campaign_smartlist_model.get_by_campaign_id(campaign.id)
         if not smartlists:
             raise InvalidUsage(
@@ -994,9 +992,9 @@ class CampaignBase(object):
 
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        assert_is_instance_of_campaign_model(campaign)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
         campaign_type = campaign.__tablename__
-        blast_model = get_model(campaign_type, snake_case_to_pascal_case(campaign_type) + 'Blast')
+        blast_model = get_model(campaign_type, campaign_type + '_blast')
         blast_obj = blast_model(campaign_id=campaign.id)
         blast_model.save(blast_obj)
         return blast_obj.id
@@ -1021,9 +1019,7 @@ class CampaignBase(object):
         .. see also:: send() method in SmsCampaignBase class.
         """
         # other campaigns need to update this
-        if not isinstance(campaign_smartlist, SmsCampaignSmartlist):
-            raise InvalidUsage('campaign_smartlist obj should be an instance of models %s.'
-                               % SmsCampaignSmartlist.__tablename__)
+        raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
         logger = current_app.config[TalentConfigKeys.LOGGER]
         params = {'return': 'all'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
@@ -1165,9 +1161,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        assert_is_instance_of_campaign_model(source)
-        params = {'name': source.name,
-                  'num_candidates': num_candidates}
+        CampaignUtils.raise_if_not_instance_of_campaign_models(source)
+        params = {'name': source.name, 'num_candidates': num_candidates}
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_SEND,
                             source_id=source.id,
@@ -1274,12 +1269,15 @@ class CampaignBase(object):
         .. see also:: SmsCampaignUrlRedirection() class in
                     sms_campaign_service/sms_campaign_app/v1_sms_campaign_api.py
         """
-        current_app.config[TalentConfigKeys.LOGGER].debug(
-            'process_url_redirect: Processing for URL redirection(id:%s).' % url_conversion_id)
+        CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
+        raise_if_dict_values_are_not_int_or_long(dict(url_conversion_id=url_conversion_id))
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        logger.debug('process_url_redirect: Processing for URL redirection(id:%s).'
+                     % url_conversion_id)
         if verify_signature:  # Need to validate the signed URL
             cls.pre_process_url_redirect(request_args, requested_url)
-        campaign_send_url_conversion_model = get_model(
-            campaign_type, snake_case_to_pascal_case(campaign_type) + 'SendUrlConversion')
+        campaign_send_url_conversion_model = get_model(campaign_type,
+                                                       campaign_type + '_send_url_conversion')
         campaign_send_url_conversion_obj = campaign_send_url_conversion_model.query.filter_by(
             url_conversion_id=url_conversion_id).first()
         if not campaign_send_url_conversion_obj:
@@ -1323,9 +1321,7 @@ class CampaignBase(object):
         :type campaign_obj: SmsCampaign | PushCampaign etc
         """
         # Any new campaign can add the entry in this statement
-        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
-            raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
-                               (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
+        raise_if_not_instance_of(campaign_blast_obj, CampaignUtils.BLAST_MODELS)
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # update hit_count
         cls.create_or_update_url_conversion(url_conversion_id=url_conversion_obj.id,
@@ -1366,9 +1362,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: update_stats_and_create_click_activity() method in CampaignBase class.
         """
-        if not isinstance(candidate, Candidate):
-            raise InvalidUsage('candidate should be an instance of model Candidate')
-        assert_is_instance_of_campaign_model(source)
+        raise_if_not_instance_of(candidate, Candidate)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         params = {'candidate_name': candidate.name, 'campaign_name': source.name}
         # call activity_service to create activity
         cls.create_activity(candidate.user_id,
@@ -1409,9 +1404,7 @@ class CampaignBase(object):
         .. see also:: update_stats_and_create_click_activity() method in CampaignBase class.
         """
         # Any new campaign can add the entry in this statement
-        if not isinstance(campaign_blast_obj, (SmsCampaignBlast, EmailCampaignBlast)):
-            raise InvalidUsage('blast object should be an instance of models %s, %s etc.' %
-                               (SmsCampaignBlast.__tablename__, EmailCampaignBlast.__tablename__))
+        raise_if_not_instance_of(campaign_blast_obj, CampaignUtils.BLAST_MODELS)
         not_found_attr = None
         for key, value in kwargs.iteritems():
             try:
@@ -1430,7 +1423,7 @@ class CampaignBase(object):
                 del kwargs[not_found_attr]
         if kwargs:
             # Update the campaign_blast stats like sends, clicks
-            #TODO: add comment why can't help it
+            # TODO: add comment why can't help it
             campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
             db.session.commit()
 
@@ -1521,7 +1514,7 @@ class CampaignBase(object):
             raise InvalidUsage('params should be dictionary.')
         if not isinstance(auth_header, dict) or not auth_header:
             raise InvalidUsage('auth_header should be dictionary and cannot be empty.')
-        assert_for_int_or_long(dict(source_id=source_id, type=_type))
+        raise_if_dict_values_are_not_int_or_long(dict(source_id=source_id, type=_type))
         json_data = json.dumps({'source_table': source_table,
                                 'source_id': source_id,
                                 'type': _type,
