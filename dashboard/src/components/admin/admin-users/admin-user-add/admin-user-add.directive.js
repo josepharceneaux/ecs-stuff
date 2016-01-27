@@ -42,8 +42,8 @@
             adminUsersService.createUser(user).then(function (response) {
                 var userId = response.users[0];
                 if (userId) {
-                    systemAlertsService.createAlert('User (<strong>$userName</strong>) successfully created.'.replace('$userName', user.userName));
-                    $state.go('admin.users.user', { userId: userId })
+                    systemAlertsService.createAlert('User <strong>$userName</strong> successfully created.'.replace('$userName', user.userName));
+                    $state.go('admin.users');
                 }
             });
         }
