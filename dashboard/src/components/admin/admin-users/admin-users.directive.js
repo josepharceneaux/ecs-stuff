@@ -24,16 +24,21 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$cookies', 'logger'];
+    ControllerFunction.$inject = ['$cookies', 'logger', 'adminUsersService'];
 
     /* @ngInject */
-    function ControllerFunction($cookies, logger) {
+    function ControllerFunction($cookies, logger, adminUsersService) {
         var vm = this;
 
+        init();
         activate();
 
         function activate() {
             logger.log('Activated Admin Users View');
+        }
+
+        function init() {
+            vm.users = adminUsersService.getUsers().$object;
         }
     }
 })();

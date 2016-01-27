@@ -96,6 +96,12 @@
     "socialNetworkServiceInfo": {
         "baseUrl": "https://social-network-service.gettalent.com/v1"
     },
+    "smsCampaignServiceInfo": {
+        "baseUrl": "https://sms-campaign-service.gettalent.com/v1"
+    },
+    "socialNetworkServiceInfo": {
+        "baseUrl": "https://social-network-service.gettalent.com/v1"
+    },
     "userServiceInfo": {
         "baseUrl": "https://user-service.gettalent.com/v1"
     }

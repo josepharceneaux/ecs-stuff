@@ -78,7 +78,7 @@
 
         $uibTooltipProvider.options({
             appendToBody: true,
-            placement: 'auto'
+            placement: 'auto right'
         });
 
         angular.extend(toastrConfig, {

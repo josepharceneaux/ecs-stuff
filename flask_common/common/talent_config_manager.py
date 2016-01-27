@@ -71,7 +71,7 @@ def load_gettalent_config(app_config):
         # Download into temporary file & load config
         tmp_config_file = tempfile.NamedTemporaryFile()
         bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
-        app_config.from_object(tmp_config_file)
+        app_config.from_pyfile(tmp_config_file.name)
         tmp_config_file.close()
 
     # Load up hardcoded app config values
@@ -93,3 +93,19 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = \
             'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
+    elif environment == 'qa':
+        # TODO: Figure out why Staging services don't load from the gettalent-private-staging bucket!
+        app_config['SQLALCHEMY_DATABASE_URI'] = "mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging"
+        app_config['CELERY_RESULT_BACKEND_URL'] = "dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
+        app_config['REDIS_URL'] = "dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
+        app_config['CLOUD_SEARCH_DOMAIN'] = "gettalent-webdev"
+        app_config['CLOUD_SEARCH_REGION'] = "us-west-1"
+        app_config['S3_BUCKET_NAME'] = "tcs-staging"
+        app_config['S3_FILEPICKER_BUCKET_NAME'] = "gettalent-filepicker"
+        app_config['S3_BUCKET_REGION'] = "us-west-1"
+        app_config['EMAIL'] = "osman.masood@dice.com"
+        app_config['ACCOUNT_ID'] = "528222547498"
+        app_config['DEBUG'] = False
+        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
+        app_config['SECRET_KEY'] = "422a1a6961a450b94860ced1f55c3be8c8b4654c9af7534f"
+
