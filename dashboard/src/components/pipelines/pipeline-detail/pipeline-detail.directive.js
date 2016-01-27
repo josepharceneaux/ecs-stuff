@@ -67,66 +67,13 @@
                 }
             ];
 
-            vm.topSkills = [
-                {
-                    title: 'Java Developer',
-                    width: 100,
-                    value: '45'
-                },
-                {
-                    title: 'Rails Developer',
-                    width: 80,
-                    value: '35'
-                },
-                {
-                    title: 'Angular Developer',
-                    width: 70,
-                    value: '20'
-                },
-                {
-                    title: 'PHP Developer',
-                    width: 65,
-                    value: '10'
-                },
-                {
-                    title: 'Python Developer',
-                    width: 50,
-                    value: '+16'
-                },
-            ];
-
-            vm.contributors = [
-                {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 20
-                },
-                {
-                    name: 'Osman Masood',
-                    avatar: '//placehold.it/80x80',
-                    value: 18
-                },
-                {
-                    name: 'Jason Provencher',
-                    avatar: '//placehold.it/80x80',
-                    value: 15
-                },
-                {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 12
-                },
-                {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 10
-                }
-            ];
-
             pipelinesDetailService.getPipelineDetail(vm.pipelineId).then(function (response) {
                 vm.pipelineDetails = response;
                 pipelinesDetailService.getPipelineCandidateInfo(vm.pipelineDetails.search_params).then(function (response) {
+                    console.log('Candidate info: ', response);
                     vm.candidateInfo = response;
+                    vm.topSkills = processTopSkills(vm.candidateInfo.facets.skills.slice(0, 5));
+                    vm.contributors = processContributors(vm.candidateInfo.facets.username.slice(0, 5));
                 });
             });
 
@@ -137,6 +84,36 @@
             pipelinesDetailService.getPipelineSmartlistsCount(vm.pipelineId).then(function (response) {
                 vm.smartLists = response;
             });
+
+            function processTopSkills(skillsList) {
+                var i;
+                var processedSkills = [];
+                for (i = 0; i < skillsList.length; i++) {
+                    console.log(skillsList[i]);
+                    processedSkills.push({
+                        title: skillsList[i].value,
+                        value: skillsList[i].count,
+                        //Is the width in relation to the top skills or the entire pool?
+                        width: Math.floor(Math.random() * 50) + 40
+                    });
+                }
+                return processedSkills;
+            }
+
+            function processContributors(contributorsList) {
+                var i;
+                var processedContributors = [];
+                for (i = 0; i < contributorsList.length; i++) {
+                    console.log('Contributor: ', contributorsList[i]);
+                    processedContributors.push({
+                        //value is name attr but test data is empty string or space char
+                        name: 'User ' + contributorsList[i].id,
+                        avatar: '//placehold.it/80x80',
+                        value: contributorsList[i].count
+                    })
+                }
+                return processedContributors;
+            }
 
         }
     }
