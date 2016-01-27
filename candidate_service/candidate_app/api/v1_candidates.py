@@ -76,7 +76,8 @@ class CandidatesResource(Resource):
         # Parse request body & validate data
         body_dict = request.get_json()
         if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON")
+            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_get)
         except Exception as e:
@@ -1226,7 +1227,8 @@ class CandidatePreferenceResource(Resource):
 
         body_dict = request.get_json()
         if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content type must be JSON")
+            raise InvalidUsage("Request body cannot be empty and its content type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
@@ -1265,7 +1267,8 @@ class CandidatePreferenceResource(Resource):
 
         body_dict = request.get_json()
         if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON")
+            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
