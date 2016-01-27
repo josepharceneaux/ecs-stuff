@@ -13,8 +13,6 @@ import os
 import tempfile
 
 # Load logging configuration file
-from app_common.common.error_handling import InternalServerError
-
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
@@ -84,6 +82,7 @@ def load_gettalent_config(app_config):
     if not verify_all_config_keys_defined(app_config):
         raise Exception("Some required app config keys not defined. app config: %s" % app_config)
     app_config['LOGGER'].info("App configuration successfully loaded with %s keys: %s", len(app_config), app_config.keys())
+    app_config['LOGGER'].debug("App configuration: %s", app_config)
 
 
 def _set_environment_specific_configurations(environment, app_config):
@@ -104,8 +103,8 @@ def _set_environment_specific_configurations(environment, app_config):
     elif environment == 'qa':
         # TODO: Figure out why Staging services don't load from the gettalent-private-staging bucket!
         app_config['SQLALCHEMY_DATABASE_URI'] = "mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging"
-        app_config['CELERY_RESULT_BACKEND_URL'] = "dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
-        app_config['REDIS_URL'] = "dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
+        app_config['CELERY_RESULT_BACKEND_URL'] = "redis://dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
+        app_config['REDIS_URL'] = "redis://dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
         app_config['CLOUD_SEARCH_DOMAIN'] = "gettalent-webdev"
         app_config['CLOUD_SEARCH_REGION'] = "us-west-1"
         app_config['S3_BUCKET_NAME'] = "tcs-staging"
