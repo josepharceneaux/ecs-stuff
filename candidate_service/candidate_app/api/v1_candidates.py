@@ -1226,7 +1226,7 @@ class CandidatePreferenceResource(Resource):
 
         body_dict = request.get_json()
         if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON")
+            raise InvalidUsage("Request body cannot be empty and its content type must be JSON")
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
