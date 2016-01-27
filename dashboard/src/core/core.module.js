@@ -21,6 +21,7 @@
         'restangular',
         'toastr',
         'ui.bootstrap',
-        'ui.router'
+        'ui.router',
+        'ncy-angular-breadcrumb'
     ]);
 })();

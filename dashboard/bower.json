@@ -40,6 +40,7 @@
     "ng-tags-input": "~3.0.0",
     "restangular": "~1.5.1",
     "velocity": "~1.2.3",
-    "font-awesome": "~4.5.0"
+    "font-awesome": "~4.5.0",
+    "angular-breadcrumb": "~0.4.1"
   }
 }
