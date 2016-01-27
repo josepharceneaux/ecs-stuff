@@ -1,6 +1,3 @@
-"""
-
-"""
 from user_service.user_app import app
 from user_service.common.models.db import db
 from user_service.common.models.user import (
@@ -12,7 +9,7 @@ from user_service.common.models.talent_pools_pipelines import (
 
 
 def get_role_names():
-    constants = DomainRole.RoleNames.__dict__.keys()
+    constants = DomainRole.Roles.__dict__.keys()
     for constant in constants.__iter__():
         if "__" in constant:
             constants.remove(constant)
@@ -109,6 +106,7 @@ def add_talent_pool_group():
 
 if __name__ == '__main__':
     print "***** starting role updates *****"
+    print "database: {}".format(db)
     try:
         add_domain_roles()
         print "completed: add_domain_roles()"
