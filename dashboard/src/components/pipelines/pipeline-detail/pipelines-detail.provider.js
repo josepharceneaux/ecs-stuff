@@ -16,10 +16,6 @@
 
         /* @ngInject */
         function $get($q, candidatePoolService, userService, candidateService) {
-            //var candidateService = candidatePoolService.withConfig(function (RestangularConfigurer) {
-            //    RestangularConfigurer.setBaseUrl('https://private-5dd13-gettalentcandidateservice.apiary-mock.com/v1/');
-            //});
-
             var candidatePoolService = candidatePoolService.withConfig(function (RestangularConfigurer) {
                 RestangularConfigurer.setBaseUrl('https://private-2ec1c-gettalentcandidatepoolservice.apiary-mock.com/v1');
             });
@@ -70,7 +66,8 @@
             }
 
             function getPipelineCandidateInfo(searchParamsObj) {
-                console.log('fetching candidate info with: ', searchParamsObj);
+                console.log('fetching candidate info');
+                //Below should have the params in the customGET but using staging data for now
                 return candidateService.one('candidates/search').customGET('').then(
                     function (searchResponse) {
                         return searchResponse;

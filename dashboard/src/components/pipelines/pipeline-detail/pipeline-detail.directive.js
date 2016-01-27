@@ -29,6 +29,7 @@
     /* @ngInject */
     function ControllerFunction($q, logger, pipelinesDetailService) {
         var vm = this;
+        //How is the pipeline Id going to be set normally? Grabbing from the router $stateParams?
         vm.pipelineId = 1337;
 
         init();
@@ -70,7 +71,6 @@
             pipelinesDetailService.getPipelineDetail(vm.pipelineId).then(function (response) {
                 vm.pipelineDetails = response;
                 pipelinesDetailService.getPipelineCandidateInfo(vm.pipelineDetails.search_params).then(function (response) {
-                    console.log('Candidate info: ', response);
                     vm.candidateInfo = response;
                     vm.topSkills = processTopSkills(vm.candidateInfo.facets.skills.slice(0, 5));
                     vm.contributors = processContributors(vm.candidateInfo.facets.username.slice(0, 5));
@@ -89,7 +89,6 @@
                 var i;
                 var processedSkills = [];
                 for (i = 0; i < skillsList.length; i++) {
-                    console.log(skillsList[i]);
                     processedSkills.push({
                         title: skillsList[i].value,
                         value: skillsList[i].count,
@@ -104,7 +103,6 @@
                 var i;
                 var processedContributors = [];
                 for (i = 0; i < contributorsList.length; i++) {
-                    console.log('Contributor: ', contributorsList[i]);
                     processedContributors.push({
                         //value is name attr but test data is empty string or space char
                         name: 'User ' + contributorsList[i].id,
