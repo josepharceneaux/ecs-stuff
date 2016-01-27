@@ -292,12 +292,67 @@ class Token(db.Model):
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'
-
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))  # TODO specify that it can be NULL
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<DomainRole: (id = {})>".format(self.id)
+
+    class RoleNames(object):
+        """
+        Class entails constants that point to available user-role names
+        """
+        # Candidate Resources
+        CAN_ADD_CANDIDATES = "CAN_ADD_CANDIDATES"
+        CAN_GET_CANDIDATES = "CAN_GET_CANDIDATES"
+        CAN_EDIT_CANDIDATES = "CAN_EDIT_CANDIDATES"
+        CAN_DELETE_CANDIDATES = "CAN_DELETE_CANDIDATES"
+
+        # User Resources
+        CAN_ADD_USERS = "CAN_ADD_USERS"
+        CAN_GET_USERS = "CAN_GET_USERS"
+        CAN_EDIT_USERS = "CAN_EDIT_USERS"
+        CAN_DELETE_USERS = "CAN_DELETE_USERS"
+
+        # Domain Roles
+        CAN_ADD_DOMAIN_ROLES = "CAN_ADD_DOMAIN_ROLES"
+        CAN_GET_DOMAIN_ROLES = "CAN_GET_DOMAIN_ROLES"
+        CAN_EDIT_DOMAIN_ROLES = "CAN_EDIT_DOMAIN_ROLES"
+        CAN_DELETE_DOMAIN_ROLES = "CAN_DELETE_DOMAIN_ROLES"
+
+        # Talent Pipelines
+        CAN_ADD_TALENT_PIPELINES = "CAN_ADD_TALENT_PIPELINES"
+        CAN_GET_TALENT_PIPELINES = "CAN_GET_TALENT_PIPELINES"
+        CAN_EDIT_TALENT_PIPELINES = "CAN_EDIT_TALENT_PIPELINES"
+        CAN_DELETE_TALENT_PIPELINES = "CAN_DELETE_TALENT_PIPELINES"
+
+        # Talent Pools' Resources
+        CAN_ADD_TALENT_POOLS = "CAN_ADD_TALENT_POOLS"
+        CAN_GET_TALENT_POOLS = "CAN_GET_TALENT_POOLS"
+        CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
+        CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
+
+        # Smart List
+        CAN_ADD_SMART_LISTS_STATS = "CAN_ADD_SMART_LISTS_STATS"
+        CAN_GET_SMART_LISTS_STATS = "CAN_GET_SMART_LISTS_STATS"
+        CAN_EDIT_SMART_LISTS_STATS = "CAN_EDIT_SMART_LISTS_STATS"
+        CAN_DELETE_SMART_LISTS_STATS = "CAN_DELETE_SMART_LISTS_STATS"
+
+        # Talent Pipelines' Stats
+        CAN_ADD_TALENT_PIPELINES_STATS = "CAN_ADD_TALENT_PIPELINES_STATS"
+        CAN_GET_TALENT_PIPELINES_STATS = "CAN_GET_TALENT_PIPELINES_STATS"
+        CAN_EDIT_TALENT_PIPELINES_STATS = "CAN_EDIT_TALENT_PIPELINES_STATS"
+        CAN_DELETE_TALENT_PIPELINES_STATS = "CAN_DELETE_TALENT_PIPELINES_STATS"
+
+        # Talent Pipeline Smart lists
+        CAN_ADD_TALENT_PIPELINE_SMART_LISTS = "CAN_ADD_TALENT_PIPELINE_SMART_LISTS"
+        CAN_GET_TALENT_PIPELINE_SMART_LISTS = "CAN_GET_TALENT_PIPELINE_SMART_LISTS"
+        CAN_EDIT_TALENT_PIPELINE_SMART_LISTS = "CAN_EDIT_TALENT_PIPELINE_SMART_LISTS"
+        CAN_DELETE_TALENT_PIPELINE_SMART_LISTS = "CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"
+
 
     def delete(self):
         db.session.delete(self)
@@ -370,6 +425,9 @@ class UserScopedRoles(db.Model):
     )
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<UserScopedRoles: (id = {})>".format(self.id)
 
     @staticmethod
     def add_roles(user, roles_list):
