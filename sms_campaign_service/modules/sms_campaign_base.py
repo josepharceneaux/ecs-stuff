@@ -71,7 +71,7 @@ class SmsCampaignBase(CampaignBase):
         of their responses. It uses Twilio API to send SMS.
 
     - This is inherited from CampaignBase defined inside
-        flask_common/common/utils/campaign_base.py. It implements abstract
+        app_common/common/utils/campaign_base.py. It implements abstract
         methods of base class and defines its own methods also.
 
     This class contains following methods:
@@ -185,7 +185,7 @@ class SmsCampaignBase(CampaignBase):
             camp_obj.process(campaign)
 
     **See Also**
-        .. see also:: CampaignBase class in flask_common/common/utils/campaign_base.py.
+        .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
 
     def __init__(self, user_id):
