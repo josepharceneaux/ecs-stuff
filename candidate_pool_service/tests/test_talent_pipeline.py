@@ -321,7 +321,7 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     db.session.commit()
 
     data = {
-        'smart_list_ids': ['a', test_smart_first.id]
+        'smartlist_ids': ['a', test_smart_first.id]
     }
 
     # Logged-in user trying to add smart_lists to a talent_pipeline
@@ -352,12 +352,12 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     assert status_code == 400
 
     # Logged-in user trying to add smart_lists of different domain to talent_pipeline
-    data['smart_list_ids'][0] = test_smart_second.id
+    data['smartlist_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
     assert status_code == 403
 
     # Logged-in user trying to add smart_lists to talent_pipeline
-    data['smart_list_ids'].pop(0)
+    data['smartlist_ids'].pop(0)
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
     assert status_code == 200
 
@@ -384,7 +384,7 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     db.session.commit()
 
     data = {
-        'smart_list_ids': ['a', test_smart_first.id]
+        'smartlist_ids': ['a', test_smart_first.id]
     }
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
@@ -415,12 +415,12 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     assert status_code == 400
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
-    data['smart_list_ids'][0] = test_smart_second.id
+    data['smartlist_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
     assert status_code == 403
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
-    data['smart_list_ids'].pop(0)
+    data['smartlist_ids'].pop(0)
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
     assert status_code == 200
 
@@ -460,10 +460,10 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     # Logged-in user trying to get all smart_lists of a talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)
     assert status_code == 200
-    assert len(response['smart_lists']) == 2
+    assert len(response['smartlists']) == 2
 
-    assert response['smart_lists'][0]['name'] == test_smart_first.name
-    assert response['smart_lists'][0]['user_id'] == test_smart_first.user_id
-    assert response['smart_lists'][1]['name'] == test_smart_second.name
-    assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
+    assert response['smartlists'][0]['name'] == test_smart_first.name
+    assert response['smartlists'][0]['user_id'] == test_smart_first.user_id
+    assert response['smartlists'][1]['name'] == test_smart_second.name
+    assert response['smartlists'][1]['user_id'] == test_smart_second.user_id
 

@@ -13,6 +13,8 @@ import os
 import tempfile
 
 # Load logging configuration file
+from app_common.common.error_handling import InternalServerError
+
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
 LOGGING_CONF = os.path.join(APP_ROOT, 'logging.conf')
 logging.config.fileConfig(LOGGING_CONF)
@@ -36,6 +38,7 @@ class TalentConfigKeys(object):
     AWS_KEY = "AWS_ACCESS_KEY_ID"
     AWS_SECRET = "AWS_SECRET_ACCESS_KEY"
     SECRET_KEY = "SECRET_KEY"
+    REDIS_URL_KEY = "REDIS_URL"
     LOGGER = "LOGGER"
 
 
@@ -56,7 +59,7 @@ def load_gettalent_config(app_config):
         if not app_config.get(config_field_key):
             raise Exception("Loading getTalent config: Missing required environment variable: %s" % config_field_key)
     app_config[TalentConfigKeys.ENV_KEY] = app_config[TalentConfigKeys.ENV_KEY].strip().lower()
-    app_config['LOGGER'] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
+    app_config[TalentConfigKeys.LOGGER] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
 
     # Load up config from private S3 bucket, if environment is qa or prod
     if app_config[TalentConfigKeys.ENV_KEY] in ('qa', 'prod'):
@@ -66,7 +69,7 @@ def load_gettalent_config(app_config):
         bucket_name = PROD_CONFIG_FILE_S3_BUCKET if app_config[TalentConfigKeys.ENV_KEY] == 'prod' else \
             STAGING_CONFIG_FILE_S3_BUCKET
         bucket_obj = s3_connection.get_bucket(bucket_name)
-        app_config['LOGGER'].info("Loading getTalent config from private S3 bucket %s", bucket_name)
+        app_config[TalentConfigKeys.LOGGER].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
         # Download into temporary file & load config
         tmp_config_file = tempfile.NamedTemporaryFile()
@@ -76,6 +79,11 @@ def load_gettalent_config(app_config):
 
     # Load up hardcoded app config values
     _set_environment_specific_configurations(app_config[TalentConfigKeys.ENV_KEY], app_config)
+
+    # Verify that all the TalentConfigKeys have been defined in the app config (one way or another)
+    if not verify_all_config_keys_defined(app_config):
+        raise Exception("Some required app config keys not defined. app config: %s" % app_config)
+    app_config['LOGGER'].info("App configuration successfully loaded with %s keys: %s", len(app_config), app_config.keys())
 
 
 def _set_environment_specific_configurations(environment, app_config):
@@ -109,3 +117,20 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
         app_config['SECRET_KEY'] = "422a1a6961a450b94860ced1f55c3be8c8b4654c9af7534f"
 
+
+def verify_all_config_keys_defined(app_config):
+    """
+    If any TalentConfigKey is not defined, will return False.
+
+    :rtype: bool
+    """
+
+    # Filter out all private methods/fields of the object class
+    all_config_keys = filter(lambda possible_config_key: not possible_config_key.startswith("__"),
+                             dir(TalentConfigKeys))
+
+    for config_key in all_config_keys:
+        app_config_field_name = getattr(TalentConfigKeys, config_key)
+        if not app_config.get(app_config_field_name):
+            return False
+    return True
