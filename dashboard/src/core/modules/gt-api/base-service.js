@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('gtRestangular', providerFunction);
+        .provider('baseService', providerFunction);
 
     /**
      * @return {[type]}

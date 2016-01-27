@@ -14,7 +14,6 @@ from datetime import timedelta, datetime
 from scheduler_service import db
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.common.tests.auth_utilities import create_test_user
 from scheduler_service.common.tests.conftest import sample_user
 
 __author__ = 'saad'

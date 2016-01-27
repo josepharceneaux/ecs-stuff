@@ -1,38 +1,24 @@
 """
 Test cases for testing jsonschema validations
 """
-# Standard library
-import json
-
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
-# Models
-from candidate_service.common.models.user import User
-
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_preference_resource, AddUserRoles
+    response_info, request_to_candidates_resource, AddUserRoles
 )
 
-# ***** JSONSCHEMA POST *****
-def test_schema_validation(sample_user, user_auth):
-    """
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add(user=sample_user)
-
+# ***** JSON Schema POST Validations *****
+def test_schema_validation(access_token_first, user_first, talent_pool):
     # Create Candidate
+    AddUserRoles.add(user=user_first)
     data = {'candidates': [
         {
+            'talent_pool_ids': {'add': [talent_pool.id]},
             'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
             'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
             'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': {},
@@ -40,7 +26,7 @@ def test_schema_validation(sample_user, user_auth):
             'areas_of_interest': [], 'phones': []
         }
     ]}
-    create_resp = post_to_candidate_resource(token, data)
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
     assert create_resp.status_code == 201
 

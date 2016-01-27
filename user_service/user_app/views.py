@@ -21,7 +21,7 @@ users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
 @users_utilities_blueprint.route(UserServiceApi.DOMAIN_ROLES, methods=['GET'])
 @require_oauth()
-@require_all_roles('CAN_GET_DOMAIN_ROLES')
+@require_all_roles(DomainRole.Roles.CAN_GET_DOMAIN_ROLES)
 def get_all_roles_of_domain(domain_id):
     # if logged-in user should belong to same domain as input domain_id
     if Domain.query.get(domain_id) and (request.user.domain_id == domain_id):
@@ -69,7 +69,11 @@ def update_password():
 @users_utilities_blueprint.route(UserServiceApi.FORGOT_PASSWORD, methods=['POST'])
 def forgot_password():
 
-    email = request.form.get('username')
+    posted_data = request.get_json()
+    if not posted_data:
+        raise InvalidUsage(error_message="No request data is found")
+
+    email = posted_data.get('username', '')
     if not email or not is_valid_email(email):
         raise InvalidUsage("A valid username should be provided")
 
@@ -120,7 +124,12 @@ def reset_password(token):
     if request.method == 'GET':
         return '', 204
     else:
-        if not request.form.get('password'):
+        posted_data = request.get_json()
+        if not posted_data:
+            raise InvalidUsage(error_message="No request data is found")
+
+        password = posted_data.get('password', '')
+        if not password:
             raise InvalidUsage(error_message="A valid password should be provided")
 
         # Remove key-value pair from redis-cache
@@ -128,7 +137,7 @@ def reset_password(token):
             redis_store.delete(six_digit_token)
 
         user.reset_password_key = ''
-        user.password = generate_password_hash(request.form.get('password'), method='pbkdf2:sha512')
+        user.password = generate_password_hash(password, method='pbkdf2:sha512')
         db.session.commit()
         return '', 204
 

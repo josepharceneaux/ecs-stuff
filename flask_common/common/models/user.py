@@ -41,7 +41,7 @@ class User(db.Model):
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
-    thumbnail_url = db.Column('thumbnailUrl', db.TEXT, default="")
+    thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
@@ -122,7 +122,7 @@ class User(db.Model):
 
     # ***** Below function to be used for testing only *****
     @staticmethod
-    def add_test_user(session, domain_id, password):
+    def add_test_user(session, password, domain_id, user_group_id):
         """
         Function creates a unique user for testing
         :rtype: User
@@ -131,6 +131,7 @@ class User(db.Model):
             email='{}@example.com'.format(uuid.uuid4().__str__()),
             password=generate_password_hash(password, method='pbkdf2:sha512'),
             domain_id=domain_id,
+            user_group_id=user_group_id,
             expiration=None
         )
         session.add(user)
@@ -168,6 +169,20 @@ class Domain(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+    # ***** Below functions to be used for testing only *****
+    @staticmethod
+    def add_test_domain(session):
+        """
+        Function creates a unique domain + domain's UserGroup for testing
+        :return:
+        """
+        from datetime import timedelta
+        domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
+                        expiration='0000-00-00 00:00:00')
+        session.add(domain)
+        session.commit()
+        return domain
 
 
 class WebAuthGroup(db.Model):
@@ -277,12 +292,101 @@ class Token(db.Model):
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'
-
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))  # TODO specify that it can be NULL
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<DomainRole: (id = {})>".format(self.id)
+
+    class Roles(object):
+        """
+        Class entails constants that point to available user-role names
+        """
+        # Candidate Resources
+        CAN_ADD_CANDIDATES = "CAN_ADD_CANDIDATES"
+        CAN_GET_CANDIDATES = "CAN_GET_CANDIDATES"
+        CAN_EDIT_CANDIDATES = "CAN_EDIT_CANDIDATES"
+        CAN_DELETE_CANDIDATES = "CAN_DELETE_CANDIDATES"
+
+        # User Roles
+        CAN_GET_USER_ROLES = "CAN_GET_USER_ROLES"
+        CAN_ADD_USER_ROLES = "CAN_ADD_USER_ROLES"
+        CAN_DELETE_USER_ROLES = "CAN_DELETE_USER_ROLES"
+
+        # User Groups
+        CAN_GET_GROUP_USERS = "CAN_GET_GROUP_USERS"
+        CAN_ADD_GROUP_USERS = "CAN_ADD_GROUP_USERS"
+
+        # User Resources
+        CAN_ADD_USERS = "CAN_ADD_USERS"
+        CAN_GET_USERS = "CAN_GET_USERS"
+        CAN_EDIT_USERS = "CAN_EDIT_USERS"
+        CAN_DELETE_USERS = "CAN_DELETE_USERS"
+
+        # Domain
+        CAN_GET_DOMAINS = "CAN_GET_DOMAINS"
+        CAN_ADD_DOMAINS = "CAN_ADD_DOMAINS"
+        CAN_DELETE_DOMAINS = "CAN_DELETE_DOMAINS"
+        CAN_EDIT_DOMAINS = "CAN_EDIT_DOMAINS"
+
+        # Domain Roles
+        CAN_ADD_DOMAIN_ROLES = "CAN_ADD_DOMAIN_ROLES"
+        CAN_GET_DOMAIN_ROLES = "CAN_GET_DOMAIN_ROLES"
+        CAN_EDIT_DOMAIN_ROLES = "CAN_EDIT_DOMAIN_ROLES"
+        CAN_DELETE_DOMAIN_ROLES = "CAN_DELETE_DOMAIN_ROLES"
+
+        # Domain Groups
+        CAN_GET_DOMAIN_GROUPS = "CAN_GET_DOMAIN_GROUPS"
+        CAN_ADD_DOMAIN_GROUPS = "CAN_ADD_DOMAIN_GROUPS"
+        CAN_EDIT_DOMAIN_GROUPS = "CAN_EDIT_DOMAIN_GROUPS"
+        CAN_DELETE_DOMAIN_GROUPS = "CAN_DELETE_DOMAIN_GROUPS"
+
+        # Talent Pipelines
+        CAN_ADD_TALENT_PIPELINES = "CAN_ADD_TALENT_PIPELINES"
+        CAN_GET_TALENT_PIPELINES = "CAN_GET_TALENT_PIPELINES"
+        CAN_EDIT_TALENT_PIPELINES = "CAN_EDIT_TALENT_PIPELINES"
+        CAN_DELETE_TALENT_PIPELINES = "CAN_DELETE_TALENT_PIPELINES"
+
+        # Talent Pools' Resources
+        CAN_ADD_TALENT_POOLS = "CAN_ADD_TALENT_POOLS"
+        CAN_GET_TALENT_POOLS = "CAN_GET_TALENT_POOLS"
+        CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
+        CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
+
+        CAN_GET_TALENT_POOLS_OF_GROUP = "CAN_GET_TALENT_POOLS_OF_GROUP"
+        CAN_DELETE_TALENT_POOLS_FROM_GROUP = "CAN_DELETE_TALENT_POOLS_FROM_GROUP"
+        CAN_ADD_TALENT_POOLS_TO_GROUP = "CAN_ADD_TALENT_POOLS_TO_GROUP"
+
+        CAN_GET_CANDIDATES_FROM_TALENT_POOL = "CAN_GET_CANDIDATES_FROM_TALENT_POOL"
+        CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
+        CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
+
+        CAN_EDIT_TALENT_POOLS_STATS = "CAN_EDIT_TALENT_POOLS_STATS"
+
+        CAN_EDIT_SMARTLISTS_STATS = "CAN_EDIT_SMARTLISTS_STATS"
+
+        CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
+
+        # Smart List
+        CAN_ADD_SMART_LISTS_STATS = "CAN_ADD_SMART_LISTS_STATS"
+        CAN_GET_SMART_LISTS_STATS = "CAN_GET_SMART_LISTS_STATS"
+        CAN_EDIT_SMART_LISTS_STATS = "CAN_EDIT_SMART_LISTS_STATS"
+        CAN_DELETE_SMART_LISTS_STATS = "CAN_DELETE_SMART_LISTS_STATS"
+
+        # Talent Pipelines' Stats
+        CAN_ADD_TALENT_PIPELINES_STATS = "CAN_ADD_TALENT_PIPELINES_STATS"
+        CAN_GET_TALENT_PIPELINES_STATS = "CAN_GET_TALENT_PIPELINES_STATS"
+        CAN_EDIT_TALENT_PIPELINES_STATS = "CAN_EDIT_TALENT_PIPELINES_STATS"
+        CAN_DELETE_TALENT_PIPELINES_STATS = "CAN_DELETE_TALENT_PIPELINES_STATS"
+
+        # Talent Pipeline Smart lists
+        CAN_ADD_TALENT_PIPELINE_SMART_LISTS = "CAN_ADD_TALENT_PIPELINE_SMART_LISTS"
+        CAN_GET_TALENT_PIPELINE_SMART_LISTS = "CAN_GET_TALENT_PIPELINE_SMART_LISTS"
+        CAN_EDIT_TALENT_PIPELINE_SMART_LISTS = "CAN_EDIT_TALENT_PIPELINE_SMART_LISTS"
+        CAN_DELETE_TALENT_PIPELINE_SMART_LISTS = "CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"
 
     def delete(self):
         db.session.delete(self)
@@ -355,6 +459,9 @@ class UserScopedRoles(db.Model):
     )
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<UserScopedRoles: (id = {})>".format(self.id)
 
     @staticmethod
     def add_roles(user, roles_list):

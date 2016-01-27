@@ -123,6 +123,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
             first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
             emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
             school_names, work_experiences, educations, custom_fields = [], [], [], []
+            talent_pool_dict = {}
 
             this_source_id = source_id
 
@@ -218,6 +219,10 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                         custom_fields_dict['value'] = column.strip()
                     if custom_fields_dict:
                         custom_fields.append(custom_fields_dict)
+                elif 'talent_pool.' in column_name:
+                    talent_pool_dict = {}
+                    if isinstance(column, basestring):
+                        talent_pool_dict['add'] = [int(column_name.split('.')[1])]
 
                 number_of_educations = max(len(degrees), len(school_names))
 
@@ -243,6 +248,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                                                                                    educations=educations,
                                                                                    addresses=addresses,
                                                                                    source_id=this_source_id,
+                                                                                   talent_pool_ids=talent_pool_dict,
                                                                                    areas_of_interest=areas_of_interest,
                                                                                    custom_fields=custom_fields))
 

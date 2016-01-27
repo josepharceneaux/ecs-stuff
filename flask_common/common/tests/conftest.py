@@ -1,15 +1,15 @@
 # Standard Library
 from datetime import datetime
-import random, string, uuid
+import random, string, uuid, requests
 
 # Third Party
 import json
-import pytest, requests
+import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
-from auth_utilities import get_access_token, create_test_user, get_or_create
+from auth_utilities import get_access_token, get_or_create
 
 # Application Specific
 from ..models.db import db
@@ -93,34 +93,8 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture()
-def sample_user(test_domain, request):
-    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def sample_user_2(test_domain, request):
-    user = User.add_test_user(db.session, test_domain.id, 'Talent15')
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def user_from_diff_domain(test_domain_2, request):
-    user = User.add_test_user(db.session, test_domain_2.id, 'Talent15')
+def sample_user(test_domain, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
 
     def tear_down():
         try:
@@ -133,10 +107,36 @@ def user_from_diff_domain(test_domain_2, request):
 
 
 @pytest.fixture()
+def sample_user_2(test_domain, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def user_from_diff_domain(test_domain_2, second_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain_2.id, second_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture(autouse=True)
 def test_domain(request):
-    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
-    db.session.add(domain)
-    db.session.commit()
+    domain = Domain.add_test_domain(session=db.session)
 
     def tear_down():
         try:
@@ -164,7 +164,7 @@ def test_domain_2(request):
     return domain
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def test_culture(request):
     culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
     test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
@@ -184,7 +184,7 @@ def test_culture(request):
     return test_culture
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def test_org(request):
     org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
     test_org, created = get_or_create(session=db.session, model=Organization, **org_attrs)
@@ -204,33 +204,30 @@ def test_org(request):
     return test_org
 
 
-def areas_of_interest_for_domain(domain_id):
-    """
-    Function will add AreaOfInterest to user's domain
-    :type user: User
-    :rtype      [AreaOfInterest]
+@pytest.fixture()
+def domain_aoi(domain_first):
+    """Will add areas-of-interest to domain
+    :rtype:  list[AreaOfInterest]
     """
     areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
     for area_of_interest in areas_of_interest:
-        db.session.add(AreaOfInterest(domain_id=domain_id, name=area_of_interest['name']))
+        db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 
     db.session.commit()
-    return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_id)
+    return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_first.id)
 
 
-def custom_field_for_domain(domain_id):
+@pytest.fixture()
+def domain_custom_fields(domain_first):
+    """Will add custom fields to domain
+    :rtype:  list[CustomField]
     """
-    Function will add CustomField to user's domain
-    :type user: User
-    :rtype:  [CustomField]
-    """
-    import datetime
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
     for custom_field in custom_fields:
-        db.session.add(CustomField(domain_id=domain_id, name=custom_field['name'],
-                                   type=custom_field['type'], added_time=datetime.datetime.now()))
+        db.session.add(CustomField(domain_id=domain_first.id, name=custom_field['name'],
+                                   type=custom_field['type'], added_time=datetime.now()))
     db.session.commit()
-    return CustomField.get_domain_custom_fields(domain_id=domain_id)
+    return CustomField.get_domain_custom_fields(domain_id=domain_first.id)
 
 
 @pytest.fixture()
@@ -262,9 +259,32 @@ def access_token_second(user_second, sample_client):
 
 
 @pytest.fixture()
+def access_token_same(user_same_domain, sample_client):
+    return get_access_token(user_same_domain, PASSWORD, sample_client.client_id,
+                            sample_client.client_secret)
+
+@pytest.fixture()
 def user_first(request, domain_first, first_group):
-    user = create_test_user(db.session, domain_first.id, PASSWORD)
+    # user = create_test_user(db.session, domain_first.id, PASSWORD)
+    user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
     UserGroup.add_users_to_group(first_group, [user.id])
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def user_same_domain(request, domain_first, first_group):
+    user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
+    UserGroup.add_users_to_group(first_group, [user.id])
+    db.session.commit()
 
     def tear_down():
         try:
@@ -278,7 +298,7 @@ def user_first(request, domain_first, first_group):
 
 @pytest.fixture()
 def user_second(request, domain_second, second_group):
-    user = create_test_user(db.session, domain_second.id, PASSWORD)
+    user = User.add_test_user(db.session, PASSWORD, domain_second.id, second_group.id)
     UserGroup.add_users_to_group(second_group, [user.id])
 
     def tear_down():
@@ -293,12 +313,7 @@ def user_second(request, domain_second, second_group):
 
 @pytest.fixture()
 def domain_first(request):
-    test_domain = Domain(
-        name=gen_salt(20),
-        expiration='0000-00-00 00:00:00'
-    )
-    db.session.add(test_domain)
-    db.session.commit()
+    test_domain = Domain.add_test_domain(session=db.session)
 
     def tear_down():
         try:
@@ -399,9 +414,13 @@ def talent_pool(request, domain_first, first_group, user_first):
 
 
 @pytest.fixture()
-def talent_pool_second(request, domain_second, user_second):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, owner_user_id=user_second.id)
+def talent_pool_second(request, domain_second, second_group, user_second):
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
+                             owner_user_id=user_second.id)
     db.session.add(talent_pool)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
     db.session.commit()
 
     def tear_down():

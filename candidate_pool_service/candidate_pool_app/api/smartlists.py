@@ -6,6 +6,7 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
+from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
@@ -125,7 +126,7 @@ class SmartlistResource(Resource):
 
 @smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_STATS, methods=['POST'])
 @require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
-@require_all_roles('CAN_UPDATE_SMARTLISTS_STATS')
+@require_all_roles(DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS)
 def update_smartlists_stats():
     """
     This method will update the statistics of all smartlists daily.

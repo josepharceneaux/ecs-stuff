@@ -13,29 +13,23 @@ import requests
 from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
-from spreadsheet_import_service.common.models.user import User, Token
-from spreadsheet_import_service.common.tests.conftest import custom_field_for_domain
 
 
-def import_spreadsheet_candidates(access_token, candidate_data=None, spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False):
-
-    token = Token.query.filter_by(access_token=access_token).first()
-    if token:
-        current_user_id = token.user_id
-        current_user_domain_id = User.query.get(current_user_id).domain_id
-        list_of_custom_fields = custom_field_for_domain(domain_id=current_user_domain_id)
-        custom_field_id = list_of_custom_fields[0].id
-        custom_field = 'custom_field.{}'.format(custom_field_id)
+def import_spreadsheet_candidates(talent_pool, access_token, candidate_data=None,
+                                  spreadsheet_file_name=None, is_csv=True,
+                                  import_candidates=False, domain_custom_field=None):
+    if domain_custom_field:
+        custom_field = 'custom_field.{}'.format(domain_custom_field.id)
     else:
         custom_field = 'custom_field.3'
 
     header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
                   'candidate_experience.organization', 'candidate_experience.position',
-                  'candidate_education.schoolName', 'student_year', 'candidate_address.city', 'candidate_address.state',
-                  'candidate_education_degree_bullet.concentrationType', 'area_of_interest.description',
-                  custom_field, 'area_of_interest.description', 'candidate_experience.organization',
-                  'candidate_experience.position']
+                  'candidate_education.schoolName', 'student_year', 'candidate_address.city',
+                  'candidate_address.state', 'candidate_education_degree_bullet.concentrationType',
+                  'area_of_interest.description', custom_field, 'area_of_interest.description',
+                  'candidate_experience.organization', 'candidate_experience.position',
+                  'talent_pool.{}'.format(talent_pool.id)]
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
 
@@ -78,5 +72,5 @@ def candidate_test_data(num_candidates=15):
         candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
                                'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'MS', 'San Jose',
                                'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
-                               'Summer Software Intern'])
+                               'Summer Software Intern', 'talent_pool_id'])
     return candidate_data
