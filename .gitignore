@@ -120,3 +120,8 @@ target/
 # Ignore redis binary dump (dump.rdb) files
 
 *.rdb
+dashboard/src/core/icon-font/gettalent-icons.eot
+dashboard/src/core/icon-font/gettalent-icons.html
+dashboard/src/core/icon-font/gettalent-icons.scss
+dashboard/src/core/icon-font/gettalent-icons.ttf
+dashboard/src/core/icon-font/gettalent-icons.woff
