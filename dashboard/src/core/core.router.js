@@ -155,7 +155,10 @@
             .state('dashboard', {
                 parent: 'site',
                 url: '/dashboard',
-                redirectTo: 'dashboard.overview'
+                redirectTo: 'dashboard.overview',
+                ncyBreadcrumb: {
+                    label: 'Dashboard'
+                }
             })
             .state('dashboard.overview', {
                 url: '',
@@ -163,6 +166,9 @@
                     '@site': {
                         template: '<gt-dashboard-overview></gt-dashboard-overview>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Home'
                 }
             })
             .state('dashboard.customize', {
@@ -442,6 +448,10 @@
                     '@pipelines': {
                         template: '<gt-pipelines-overview></gt-pipelines-overview>'
                     }
+                },
+                ncyBreadcrumb: {
+                    parent: 'dashboard',
+                    label: 'Pipelines'
                 }
             })
             .state('pipelines.manage', {
@@ -470,6 +480,10 @@
                     '@pipelines': {
                         template: '<gt-pipeline-detail></gt-pipeline-detail>'
                     }
+                },
+                ncyBreadcrumb: {
+                    parent: 'pipelines.overview',
+                    label: 'Pipeline detail'
                 }
             })
             .state('pipelines.pipeline.settings', {
