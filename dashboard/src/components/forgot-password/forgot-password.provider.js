@@ -23,7 +23,7 @@
                 var payload = {
                     username: username
                 };
-                return userService.all('users').customPOST(payload, 'forgot_password').then(function (response) {
+                return userService.all('users').customPOST(payload, 'forgot-password').then(function (response) {
                     return response;
                 });
             }
