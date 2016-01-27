@@ -41,7 +41,7 @@
     "restangular": "~1.5.1",
     "velocity": "~1.2.3",
     "font-awesome": "~4.5.0",
-    "angular-breadcrumb": "~0.4.1"
+    "angular-breadcrumb": "~0.4.1",
     "angular-material-data-table": "~0.9.9"
   }
 }
