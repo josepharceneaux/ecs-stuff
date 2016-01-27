@@ -7,7 +7,7 @@ from user_service.common.error_handling import *
 from user_service.common.models.misc import Culture
 from user_service.common.talent_api import TalentApi
 from user_service.common.routes import UserServiceApi
-from user_service.common.models.user import User, Domain, db
+from user_service.common.models.user import User, Domain, db, DomainRole
 from user_service.user_app.user_service_utilties import get_or_create_domain
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 
@@ -18,7 +18,7 @@ class DomainApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', 'CAN_GET_DOMAINS')
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_DOMAINS)
     def get(self, **kwargs):
         """
         GET /domains/<id> Fetch domain object with domain's basic info
@@ -47,7 +47,7 @@ class DomainApi(Resource):
             raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as "
                                                   "requested_domain or it doesn't have appropriate permissions")
 
-    @require_all_roles('CAN_ADD_DOMAINS')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_DOMAINS)
     def post(self):
         """
         POST /domains  Create a new Domain
@@ -112,7 +112,7 @@ class DomainApi(Resource):
 
         return {'domains': domain_ids}
 
-    @require_all_roles('CAN_DELETE_DOMAINS')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_DOMAINS)
     def delete(self, **kwargs):
         """
         DELETE /domains/<id>
@@ -141,7 +141,7 @@ class DomainApi(Resource):
 
         return {'deleted_domain': {'id': domain_id_to_delete}}
 
-    @require_all_roles('CAN_EDIT_DOMAINS')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def put(self, **kwargs):
         """
         PUT /domains/<id>

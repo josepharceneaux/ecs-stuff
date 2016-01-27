@@ -1,10 +1,19 @@
 <section id="admin-users-view" class="view__main">
 
-    <div class="row--widget">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Users</h2>
-            </header>
+    <div layout-padding layout="row">
+        <div flex layout-margin layout-padding class="module">
+            <div class="mod-header">Users</div>
+        </div>
+    </div>
+
+    <div layout-padding layout="row">
+        <div flex layout-margin layout-padding class="module">
+            <div ng-repeat="user in vm.users">
+                <div>Email: {{user.email}}</div>
+                <div>First Name: {{user.first_name}}</div>
+                <div>Last Name: {{user.last_name}}</div>
+                <div>ID: {{user.id}}</div>
+                <div>Domain ID: {{user.domain_id}}</div>
             </div>
         </div>
     </div>
