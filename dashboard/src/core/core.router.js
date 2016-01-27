@@ -157,7 +157,7 @@
                 url: '/dashboard',
                 redirectTo: 'dashboard.overview',
                 ncyBreadcrumb: {
-                    label: 'Home'
+                    label: 'Dashboard'
                 }
             })
             .state('dashboard.overview', {
