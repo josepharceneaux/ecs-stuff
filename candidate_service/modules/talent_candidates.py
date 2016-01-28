@@ -26,7 +26,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSend)
+from candidate_service.common.models.email_marketing import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
@@ -208,7 +208,7 @@ def candidate_phones(candidate):
 
 def candidate_addresses(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -231,7 +231,7 @@ def candidate_addresses(candidate_id):
 
 def candidate_experiences(candidate_id):
     """
-    :type candidate_id:     int
+    :type candidate_id:     int|long
     :rtype                  [dict]
     """
     assert isinstance(candidate_id, (int, long))
@@ -471,37 +471,19 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def get_candidate_id_from_candidate_email(candidate_email):
+def get_candidate_id_from_email_if_exists(user_id, email):
     """
-    Function will get the candidate associated with candidate_email and return its ID,
-    If candidate is not found, None will be returned
-    :type candidate_email: str
+    Function will get the domain-candidate associated with email and return its ID.
+    :type email: str
+    :return Candidate.id or None (if not found)
     """
-    assert isinstance(candidate_email, basestring)
-    can_email_row = db.session.query(CandidateEmail).filter_by(address=candidate_email).first()
-    if not can_email_row:
-        logger.info('get_candidate_id_from_candidate_email: candidate email not recognized: %s',
-                    candidate_email)
-        return None
-
-    return can_email_row.candidate_id
-
-
-# TODO: move function to Email Marketing Service
-def retrieve_email_campaign_send(email_campaign, candidate_id):
-    """
-    :type email_campaign:   EmailCampaign
-    :type candidate_id:     int
-    :rtype:                 list
-    """
-    assert isinstance(email_campaign, EmailCampaign)
-    email_campaign_send_rows = db.session.query(EmailCampaignSend). \
-        filter_by(EmailCampaignSend.email_campaign_id == email_campaign.id,
-                  EmailCampaignSend.candidate_id == candidate_id)
-
-    return [{'candidate_id': email_campaign_send_row.candidate_id,
-             'sent_time': email_campaign_send_row.sent_time
-             } for email_campaign_send_row in email_campaign_send_rows]
+    email_obj = CandidateEmail.query.join(Candidate) \
+        .filter(Candidate.user_id == user_id) \
+        .filter(CandidateEmail.address == email).first()
+    if not email_obj:
+        raise NotFoundError(error_message='Candidate email not recognized: {}'.format(email),
+                            error_code=custom_error.EMAIL_NOT_FOUND)
+    return email_obj.candidate_id
 
 
 ######################################
@@ -644,9 +626,9 @@ def create_or_update_candidate_from_params(
     :type is_creating:              bool
     :type is_updating:              bool
     :type candidate_id:             int
-    :type first_name:               str
-    :type last_name:                str
-    :type middle_name:              str
+    :type first_name:               basestring
+    :type last_name:                basestring
+    :type middle_name:              basestring
     :type formatted_name:           str
     :type status_id:                int
     :type emails:                   list
@@ -664,12 +646,10 @@ def create_or_update_candidate_from_params(
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
     :type added_time:               date
-    :type domain_can_read:          bool
-    :type domain_can_write:         bool
     :type source_id:                int
-    :type objective:                str
-    :type summary:                  str
-    :type talent_pool_ids:          list
+    :type objective:                basestring
+    :type summary:                  basestring
+    :type talent_pool_ids:          dict
     :type delete_talent_pools:      bool
     :rtype                          dict
     """
@@ -687,7 +667,7 @@ def create_or_update_candidate_from_params(
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
-    # Get domain ID
+    # Get user's domain ID
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
@@ -717,7 +697,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's talent-pools
     if talent_pool_ids:
-        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating)
+        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating,
+                                              is_updating)
 
     # Add or update Candidate's address(es)
     if addresses:
@@ -1707,58 +1688,51 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
             db.session.add(CandidateSocialNetwork(**social_network_dict))
 
 
-def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating):
+def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):
 
     talent_pools_to_be_added = talent_pool_ids.get('add')
     talent_pools_to_be_deleted = talent_pool_ids.get('delete')
 
-    for talent_pool_id in talent_pools_to_be_added:
-
-        if not is_number(talent_pool_id):
-            raise InvalidUsage(error_message="TalentPool id should be an integer")
-        else:
+    if is_creating or is_updating and talent_pools_to_be_added:
+        for talent_pool_id in talent_pools_to_be_added:
             talent_pool = TalentPool.query.get(int(talent_pool_id))
             if not talent_pool:
-                raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-            if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                   talent_pool_id=talent_pool_id).first():
-                raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                      "user" % (talent_pool_id, request.user.user_group_id))
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
 
-            if TalentPoolCandidate.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first():
-                raise InvalidUsage('Candidate %s already belongs to TalentPool %s' % (candidate_id, talent_pool_id))
-
-            talent_pool_candidate = TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id)
-            db.session.add(talent_pool_candidate)
-
-    if not is_creating:
-        for talent_pool_id in talent_pools_to_be_deleted:
-
-            if not is_number(talent_pool_id):
-                raise InvalidUsage(error_message="TalentPool id should be an integer")
+            # In case candidate was web-hidden, the recreated with the same talent-pool-id
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if talent_pool_candidate and is_updating:
+                pass
             else:
-                talent_pool = TalentPool.query.get(int(talent_pool_id))
-                if not talent_pool:
-                    raise NotFoundError(error_message="TalentPool with id %s doesn't exist in database" % talent_pool_id)
+                db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
+                                                   talent_pool_id=talent_pool_id))
 
-                if talent_pool.domain_id != request.user.domain_id:
-                    raise UnauthorizedError(error_message="TalentPool and logged in user belong to different domains")
+    if is_updating and talent_pools_to_be_deleted:
+        for talent_pool_id in talent_pools_to_be_deleted:
+            talent_pool = TalentPool.query.get(int(talent_pool_id))
+            if not talent_pool:
+                raise NotFoundError("TalentPool with id %s doesn't exist in database" % talent_pool_id)
 
-                if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                       talent_pool_id=talent_pool_id).first():
-                    raise UnauthorizedError(error_message="TalentPool %s doesn't belong to UserGroup %s of logged-in "
-                                                          "user" % (talent_pool_id, request.user.user_group_id))
+            if talent_pool.domain_id != request.user.domain_id:
+                raise UnauthorizedError("TalentPool and logged in user belong to different domains")
 
-                talent_pool_candidate = TalentPoolCandidate.query.filter_by(candidate_id=candidate_id,
-                                                                            talent_pool_id=talent_pool_id).first()
-                if not talent_pool_candidate:
-                    raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" % (candidate_id, talent_pool_id))
-                else:
-                    db.session.delete(talent_pool_candidate)
+            if not TalentPoolGroup.get(talent_pool_id, request.user.user_group_id):
+                raise UnauthorizedError("TalentPool %s doesn't belong to UserGroup %s of logged-in "
+                                        "user" % (talent_pool_id, request.user.user_group_id))
+
+            talent_pool_candidate = TalentPoolCandidate.get(candidate_id, talent_pool_id)
+            if not talent_pool_candidate:
+                raise InvalidUsage("Candidate %s doesn't belong to TalentPool %s" %
+                                   (candidate_id, talent_pool_id))
+            else:
+                db.session.delete(talent_pool_candidate)
 
 
 ###############################################################

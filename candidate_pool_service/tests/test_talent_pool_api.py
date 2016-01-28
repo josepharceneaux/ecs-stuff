@@ -17,8 +17,8 @@ def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, c
     status_code = talent_pool_update_stats(access_token_first)
     assert status_code == 401
 
-    # Adding 'CAN_UPDATE_TALENT_POOLS_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_UPDATE_TALENT_POOLS_STATS'])
+    # Adding 'CAN_EDIT_TALENT_POOLS_STATS' role to user_first
+    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_POOLS_STATS'])
 
     # Logged-in user trying to add candidates to talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')

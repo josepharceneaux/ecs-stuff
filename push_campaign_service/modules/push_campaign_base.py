@@ -20,9 +20,11 @@ from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushCampaignApiUrl
+
+from push_campaign_service.common.models.push_campaign import PushCampaign
 from push_campaign_service.push_campaign_app import logger, celery_app, app
 from push_campaign_service.common.campaign_services.campaign_utils import (post_campaign_sent_processing,
-                                                                           CampaignType,
+                                                                           CampaignUtils,
                                                                            sign_redirect_url)
 from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
@@ -46,7 +48,7 @@ class PushCampaignBase(CampaignBase):
         self.campaign_blast = None
         self.campaign_blast_id = None
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
-        self.campaign_type = CampaignType.PUSH
+        self.campaign_type = CampaignUtils.PUSH
 
     def get_all_campaigns(self):
         """

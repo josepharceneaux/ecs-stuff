@@ -1,141 +1,74 @@
-/** Temporary global override during setup / remove v2 from all styles after **/
+/** To be moved over to base styles w breakpoints **/
+
+.system-alerts {
+    background-color: darken($color--blue, 10%);
+    text-align:center;
+    font-weight:$font-weight--regular;
+    font-size: $font-size--main;
+    color: $color--white;
+    padding: $padding--small;
+    a {
+        color: lighten($color--blue, 20%);
+    }
+}
+
+
 
 /** Angular Material Overrides **/
 
 body {
-    color:#555;
+    font-weight:300;
 }
 
-.layout-padding {
-    padding:20px;
-}
-
-/** UiX Base **/
-
-/** UiX Grid **/
-
-/** UiX Utility **/
-
-
-
-
-
-.v2-infotip {
-
-}
-
-.v2-font {
-    &__sm {
-        font-size:.8em;
-    }
-    &__med {
-        font-size:.9em;
-    }
-    &__lg {
-        font-size: 1.2em;
-    }
-    &__xlg {
-        font-size: 1.6em;
-    }
-    &__xxlg {
-        font-size: 2.9em;
-        line-height: 1.5;
-    }
-}
-
-.v2-float {
-    &__left {
-        float:left;
-    }
-    &__right {
-        float:right;
-    }
-}
-
-.v2-clear-fix:after {
-    content: "";
-    display: table;
-    clear: both;
-}
-
-.v2-align{
-    &__center {
-        text-align:center;
-    }
-    &__right {
-        text-align:right;
-    }
-    &__vertical {
-        display:table;
-        width:100%;
-        > div {
-            display:table-cell;
-            vertical-align: middle;
-            height:80px;
-        }
-    }
-}
-
-.v2-margin {
-    &-right {
-        &__20 {
-            margin-right:20px;
-        }
-    }
-    &-horizontal {
-        &__10 {
-
-        }
-    }
-}
-
-.v2-padding {
-    &-right {
-        &__20 {
-            margin-right:20px;
-        }
-    }
-}
-
-.v2-line-height {
-    &__1-6 {
-        line-height:2;
-    }
-}
-
-.module {
-    box-sizing: border-box;
-    border-right: 1px solid #e3e3e3;
-    border-bottom: 1px solid #e3e3e3;
-    background: #ffffff;
+#toast-container {
+    @include linear-gradient(to bottom, #ffffff, #dddddd);
     & > div {
-        border-radius: 3px;
-        padding: 20px;
-        &:after {
-            content: "";
-            display: table;
-            clear: both;
+        padding:40px 60px;
+        border-radius:0px;
+        background-color:transparent;
+        background-position: 25px center;
+        color:#666;
+        box-shadow:0 0 4px rgba(0,0,0,.10);
+        font-size: 15px;
+        &:hover {
+            box-shadow:0 0 4px rgba(0,0,0,.20);
+        }
+        strong {
+            color: $color--blue;
+        }
+        .toast-close-button {
+            color:#999;
+            font-weight:300;
+            position:absolute;
+            top:10px;
+            right:10px;
+            font-size: 11px;
         }
     }
-    .module-title {
-        font-size:1.5em;
+}
+
+.view__main,
+.view__main--pipelines,
+.view__main--user,
+.view__wrapper--pipelines,
+.view__wrapper--user {
+    background: #efefef;
+}
+
+md-card {
+    border-radius: 3px;
+    box-shadow:none;
+    border-right: solid 1px #e2e2e2;
+    border-bottom: solid 1px #e2e2e2;
+    md-card-content {
 
     }
 }
 
-/** UiX Styles **/
+.md-title {
+    font-weight:300;
+    font-size: 1.1em;
+    .fa-info {
 
-.v2-page-header {
-
-}
-
-.page-title-icon {
-    width: 95px;
-    img {
-        background:#333;
-        border-radius:50px;
-        width: 80px;
-        height: 80px;
     }
 }
-

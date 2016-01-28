@@ -50,7 +50,7 @@
                     }
                 });
                 if (vm.unreadActivity.length > 1) {
-                    toastr.info('You have <strong>%d</strong> unread activity'.replace('%d', vm.unreadActivity.length), 'Unread Activity');
+                    toastr.info('You have <strong>%d</strong> unread notifications'.replace('%d', vm.unreadActivity.length), '<p>Notifications</p>');
                 } else if (vm.unreadActivity.length === 1) {
                     toastr.info('<a href="">$name</a> opened your email from the <a href="">campaign</a> of name here.'.replace('$name', vm.unreadActivity[0].params.firstName + ' ' + vm.unreadActivity[0].params.lastName), 'Unread Activity');
                 }

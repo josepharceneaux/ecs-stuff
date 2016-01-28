@@ -49,12 +49,7 @@
             // TODO: handle state change errors caused by failure to resolve dependencies
             // possible reasons for failure:
             //   1) timeout or server failure,
-            //   2) user's access token and/or refresh token have expired
-            //     (need to check if OAuthToken will automatically detect for expired access token
-            //      based on a failed api call. More likely not, and will need to configure
-            //      gt-restangular to attempt to refresh token. Failing that,
-            //      throw exception via exception service, and have core lib handle,
-            //      e.g. display error message and/or take user to login page
+            //   2) user's access token AND refresh token have expired
 
             event.preventDefault();
         });

@@ -3,37 +3,19 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/campaigns/:id/schedule of SMS Campaign API.
 """
+# Standard Imports
+import json
 
 # Third Party Imports
-import json
 import requests
 
 # Service Specific
+from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
-from sms_campaign_service.tests.modules.common_functions import assert_method_not_allowed
 from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-
-
-class TestSmsCampaignScheduleHTTPGET(object):
-    """
-    This contains test for GET endpoint. It should get method not allowed error.
-    """
-    URL = SmsCampaignApiUrl.SCHEDULE
-
-    def test_for_get_request(self, auth_token, sms_campaign_of_current_user):
-        """
-        GET method is not allowed on this endpoint, should get 405 (Method not allowed)
-        :param auth_token: access token for sample user
-        :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
-        :return:
-        """
-        response = requests.get(self.URL % sms_campaign_of_current_user.id,
-                                headers=dict(Authorization='Bearer %s' % auth_token))
-        assert_method_not_allowed(response, 'GET')
 
 
 class TestSmsCampaignScheduleHTTPPOST(object):
@@ -198,12 +180,11 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         :param auth_token:
         :return:
         """
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
-        CampaignsCommonTests.request_with_invalid_campaign_id(self.METHOD,
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
                                                               self.URL,
                                                               auth_token,
-                                                              generate_campaign_schedule_data(),
-                                                              last_campaign_id_in_db)
+                                                              generate_campaign_schedule_data())
 
 
 class TestSmsCampaignScheduleHTTPPUT(object):
@@ -223,7 +204,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :return:
         """
         data = generate_campaign_schedule_data()
-        data['frequency_id'] = FrequencyIds.DAILY  # for Periodic job
+        data['frequency_id'] = Frequency.DAILY  # for Periodic job
         CampaignsCommonTests.request_for_ok_response(
             self.METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
             auth_token, data)
@@ -253,12 +234,12 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :param auth_token:
         :return:
         """
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
-        CampaignsCommonTests.request_with_invalid_campaign_id(self.METHOD,
+        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+                                                              self.METHOD,
                                                               self.URL,
                                                               auth_token,
-                                                              generate_campaign_schedule_data(),
-                                                              last_campaign_id_in_db)
+                                                              generate_campaign_schedule_data()
+                                                              )
 
     def test_reschedule_campaign_with_post_method(self, auth_token,
                                                   scheduled_sms_campaign_of_current_user):
@@ -340,10 +321,8 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, auth_token):
         # Test with invalid integer id
-        last_campaign_id_in_db = SmsCampaign.query.order_by(SmsCampaign.id.desc()).first().id
         CampaignsCommonTests.request_with_invalid_campaign_id(
-            self.METHOD, self.URL, auth_token, generate_campaign_schedule_data(),
-            last_campaign_id_in_db)
+            SmsCampaign, self.METHOD, self.URL, auth_token, generate_campaign_schedule_data())
 
     def test_unschedule_a_campaign(self, auth_token, scheduled_sms_campaign_of_current_user):
         """

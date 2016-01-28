@@ -4,16 +4,16 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
     Here we have validators for SMS campaign service.
 """
 # Service Specific
-from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.common.utils.validators import format_phone_number
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
+from sms_campaign_service.sms_campaign_app import app, logger
+from sms_campaign_service.modules.handy_functions import search_urls_in_text
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.modules.sms_campaign_app_constants import TWILIO_TEST_NUMBER
 
 # Common stuff
-from sms_campaign_service.sms_campaign_app import app, logger
+from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.handy_functions import http_request
-from sms_campaign_service.modules.handy_functions import search_urls_in_text
-from sms_campaign_service.modules.sms_campaign_app_constants import TWILIO_TEST_NUMBER
+from sms_campaign_service.common.utils.validators import format_phone_number
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.campaign_services.validators import is_valid_url_format
 
 
@@ -59,7 +59,8 @@ def validate_urls_in_body_text(text):
     for url in urls:
         try:
             validate_url_format(url)
-            validate_url_by_http_request(url)
+            if not validate_url_by_http_request(url):
+                invalid_urls.append(url)
         except InvalidUsage:
             invalid_urls.append(url)
     return invalid_urls

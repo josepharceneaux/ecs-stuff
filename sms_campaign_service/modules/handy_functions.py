@@ -7,9 +7,10 @@ This contains following helper classes/functions for SMS Campaign Service.
 - Function search_urls_in_text() to search a URL present in given text.
 
 """
-# Third Party Imports
+# Standard Imports
 import re
 
+# Third Party Imports
 import twilio
 import twilio.rest
 from twilio.rest import TwilioRestClient
@@ -19,11 +20,17 @@ from twilio.rest import TwilioRestClient
 from sms_campaign_service.sms_campaign_app import flask_app, logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioApiError
 from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 
 # Common utils
-from sms_campaign_service.common.error_handling import InvalidUsage
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
+                                                        ForbiddenError)
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
+from sms_campaign_service.common.campaign_services.campaign_utils import \
+    raise_if_dict_values_are_not_int_or_long
+
+# Database models
+from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
 
 
 class TwilioSMS(object):
@@ -78,6 +85,7 @@ class TwilioSMS(object):
                 to=receiver_phone,
                 from_=sender_phone
             )
+            # TODO: assert on sid
             return message
         except twilio.TwilioRestException as error:
             raise TwilioApiError('Cannot send SMS. Error is "%s"'
@@ -203,3 +211,29 @@ def request_from_google_shorten_url_api(requested_header):
     for key in keys:
         if key in requested_header and 'google' in requested_header[key]:
             logger.info("Successfully verified by Google's shorten URL API")
+
+
+def get_valid_blast_obj(blast_id, requested_campaign_id):
+    """
+    This gets the blast object from SmsCampaignBlast database table.
+    If no object is found corresponding to given blast_id, it raises ResourceNotFound.
+    If campaign_id associated with blast_obj is not same as the requested campaign id,
+    we raise forbidden error.
+    :param blast_id:
+    :param requested_campaign_id:
+    :type blast_id: int | long
+    :type requested_campaign_id: int | long
+    :exception: ResourceNotFound
+    :exception: ForbiddenError
+    :return: campaign blast object
+    :rtype: SmsCampaignBlast
+    """
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id, blast_id=blast_id))
+    blast_obj = SmsCampaignBlast.get_by_id(blast_id)
+    if not blast_obj:
+        raise ResourceNotFound("SMS campaign's Blast(id:%s) does not exists in database."
+                               % blast_id)
+    if not blast_obj.campaign_id == requested_campaign_id:
+        raise ForbiddenError("SMS campaign's Blast(id:%s) is not associated with campaign(id:%s)."
+                             % (blast_id, requested_campaign_id))
+    return blast_obj

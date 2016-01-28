@@ -8,12 +8,16 @@
 
   th {
     color: $color--blue;
-    font-size: $font-size--main;
+    font-size: $font-size--smaller;
     font-weight: $font-weight--regular;
     text-align: left;
     padding-bottom: $padding--normal;
     padding-left: $padding--small;
     padding-right: $padding--small;
+  }
+
+  td {
+    font-size: $font-size--smaller;
   }
 
   a {

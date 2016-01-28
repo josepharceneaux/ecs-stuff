@@ -44,22 +44,22 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
         :return: A dict containing info of all candidates according to query parameters
         """
 
-        # Get all smart_lists and dumb_lists of a talent-pipeline
-        smart_lists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline.id).all()
+        # Get all smartlists and dumblists of a talent-pipeline
+        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline.id).all()
 
         search_params, dumb_lists = [], []
 
         try:
             if talent_pipeline.search_params and json.loads(talent_pipeline.search_params):
                 search_params.append(json.loads(talent_pipeline.search_params))
-            for smart_list in smart_lists:
-                if smart_list.search_params and json.loads(smart_list.search_params):
-                    search_params.append(json.loads(smart_list.search_params))
+            for smartlist in smartlists:
+                if smartlist.search_params and json.loads(smartlist.search_params):
+                    search_params.append(json.loads(smartlist.search_params))
                 else:
-                    dumb_lists.append(str(smart_list.id))
+                    dumb_lists.append(str(smartlist.id))
 
         except Exception as e:
-            raise InvalidUsage(error_message="Search params of talent-pipeline or its smart-lists are in bad format "
+            raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
                                              "because: %s" % e.message)
 
         if not request.oauth_token:

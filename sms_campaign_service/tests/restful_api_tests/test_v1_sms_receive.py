@@ -1,11 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint
-
-                /v1/receive
-
-    of SMS Campaign APP.
+    This module contains pyTests for endpoint /v1/receive of SMS Campaign APP.
 """
 # Third Party Imports
 import requests
@@ -14,7 +10,6 @@ import requests
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
@@ -28,7 +23,6 @@ from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiExcept
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate)
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
-                                                                 assert_method_not_allowed,
                                                                  assert_for_activity)
 
 
@@ -37,22 +31,6 @@ class TestSmsReceive(object):
     This class contains tests for endpoint /v1/receive (and all the code being used by
     this endpoint).
     """
-
-    def test_for_get(self):
-        """
-        GET method should not be allowed at this endpoint.
-        :return:
-        """
-        response = requests.get(SmsCampaignApiUrl.RECEIVE)
-        assert_method_not_allowed(response, 'GET')
-
-    def test_for_delete(self):
-        """
-        DELETE method should not be allowed at this endpoint.
-        :return:
-        """
-        response = requests.delete(SmsCampaignApiUrl.RECEIVE)
-        assert_method_not_allowed(response, 'DELETE')
 
     def test_post_with_no_data(self):
         """
@@ -129,9 +107,8 @@ class TestSmsReceive(object):
         except NoCandidateFoundForPhoneNumber as error:
             assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_FOR_PHONE_NUMBER
 
-    def test_process_candidate_reply_with_multiple_candidates_having_same_phone(self,
-                                                                                user_phone_1,
-                                                                                candidates_with_same_phone):
+    def test_process_candidate_reply_with_multiple_candidates_having_same_phone(
+            self, user_phone_1, candidates_with_same_phone):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
         Data passed is valid, but phone number of candidate is associated with multiple
@@ -213,5 +190,5 @@ def get_replies_count(campaign):
     :return:
     """
     db.session.commit()
-    sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
+    sms_campaign_blasts = campaign.blasts[0]
     return sms_campaign_blasts.replies

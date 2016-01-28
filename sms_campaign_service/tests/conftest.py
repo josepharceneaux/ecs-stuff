@@ -12,7 +12,6 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
-
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
 app, _ = init_sms_campaign_app_and_celery_app()
 
@@ -21,7 +20,6 @@ from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import ResourceNotFound
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
@@ -33,18 +31,16 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOB
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
-                                                             SmsCampaignBlast, SmsCampaignSend,
-                                                             SmsCampaignSendUrlConversion)
+                                                             SmsCampaignBlast)
 # Common Utils
 from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                                                to_utc_str)
-from sms_campaign_service.common.campaign_services.campaign_utils import FrequencyIds
 
-SLEEP_TIME = 30  # needed to add this because tasks run on Celery
+SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
 # This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
@@ -55,7 +51,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
-    return {"frequency_id": FrequencyIds.ONCE,
+    return {"frequency_id": Frequency.ONCE,
             # TODO: remove timedelta from start_datetime after scheduler_service update
             "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
             "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
@@ -139,6 +135,7 @@ def user_phone_1(request, sample_user):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -155,6 +152,7 @@ def user_phone_2(request, sample_user):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -170,6 +168,7 @@ def user_phone_3(request, sample_user_2):
 
     def tear_down():
         _delete_user_phone(user_phone)
+
     request.addfinalizer(tear_down)
     return user_phone
 
@@ -187,6 +186,7 @@ def sample_smartlist(request, sample_user):
 
     def tear_down():
         _delete_smartlist(smartlist)
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -248,6 +248,7 @@ def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
 
     def fin():
         _delete_campaign(test_sms_campaign)
+
     request.addfinalizer(fin)
     return test_sms_campaign
 
@@ -264,11 +265,12 @@ def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
 
     def fin():
         _delete_campaign(test_sms_campaign_of_other_user)
+
     request.addfinalizer(fin)
     return test_sms_campaign_of_other_user
 
 
-@pytest.fixture(params=[FrequencyIds.ONCE, FrequencyIds.DAILY])
+@pytest.fixture(params=[Frequency.ONCE, Frequency.DAILY])
 def one_time_and_periodic(request, valid_header):
     """
     This returns data to schedule a campaign one time and periodically.
@@ -279,7 +281,7 @@ def one_time_and_periodic(request, valid_header):
         if 'task_id' in data:
             delete_test_scheduled_task(data['task_id'], valid_header)
 
-    if request.param == FrequencyIds.ONCE:
+    if request.param == Frequency.ONCE:
         request.addfinalizer(fin)
         return data
     else:
@@ -320,15 +322,35 @@ def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
 
 
 @pytest.fixture()
-def create_sms_campaign_blast(sms_campaign_of_current_user):
+def create_sms_campaign_blast(request, sms_campaign_of_current_user):
     """
-    This creates a record in database table "sms_campaign_blast"
+    This creates a record in database table "sms_campaign_blast" for
+    campaign owned by logged-in user.
     :param sms_campaign_of_current_user:
     :return:
     """
-    blast_obj = SmsCampaignBlast(campaign_id=sms_campaign_of_current_user.id)
-    SmsCampaignBlast.save(blast_obj)
-    return blast_obj.id
+    blast_obj = _create_blast(sms_campaign_of_current_user.id)
+
+    def fin():
+        _delete_blast(blast_obj)
+    request.addfinalizer(fin)
+    return blast_obj
+
+
+@pytest.fixture()
+def create_blast_for_not_owned_campaign(request, sms_campaign_of_other_user):
+    """
+    This creates a record in database table "sms_campaign_blast" for
+    a campaign for which logged-in user is not an owner.
+    :param sms_campaign_of_other_user:
+    :return:
+    """
+    blast_obj = _create_blast(sms_campaign_of_other_user.id)
+
+    def fin():
+        _delete_blast(blast_obj)
+    request.addfinalizer(fin)
+    return blast_obj
 
 
 @pytest.fixture()
@@ -339,12 +361,24 @@ def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign
     :param candidate_second: fixture to create another test candidate
     :return:
     """
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
                                                        candidate_first.id,
                                                        datetime.now())
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast,
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
+    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
                                                        candidate_second.id,
                                                        datetime.now())
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
+
+
+@pytest.fixture()
+def create_campaign_replies(candidate_phone_1, create_sms_campaign_blast):
+    """
+    This creates a record in database table "sms_campaign_reply"
+    """
+    SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast.id,
+                                         candidate_phone_1.id, 'Got it')
+    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, replies=True)
 
 
 @pytest.fixture()
@@ -359,6 +393,7 @@ def sample_smartlist_2(request, sample_user):
 
     def tear_down():
         _delete_smartlist(smartlist)
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -409,6 +444,7 @@ def candidate_phone_1(request, candidate_first):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -424,6 +460,7 @@ def candidate_phone_2(request, candidate_second):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -439,6 +476,7 @@ def candidate_invalid_phone(request, candidate_second):
 
     def tear_down():
         _delete_candidate_phone(candidate_phone)
+
     request.addfinalizer(tear_down)
     return candidate_phone
 
@@ -457,6 +495,7 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
     def tear_down():
         _delete_candidate_phone(cand_phone_1)
         _delete_candidate_phone(cand_phone_2)
+
     request.addfinalizer(tear_down)
     return cand_phone_1, cand_phone_2
 
@@ -473,6 +512,7 @@ def users_with_same_phone(request, sample_user, sample_user_2):
     def tear_down():
         _delete_user_phone(user_1)
         _delete_user_phone(user_2)
+
     request.addfinalizer(tear_down)
     return user_1, user_2
 
@@ -505,26 +545,18 @@ def url_conversion_by_send_test_sms_campaign(request,
      and returns the source URL from url_conversion database table.
     :return:
     """
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
-    sms_campaign_blast = \
-        SmsCampaignBlast.get_by_campaign_id(sms_campaign_of_current_user.id)
-    # get campaign sends
-    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
-    # get if of record of sms_campaign_send_url_conversion for this campaign
-    if not sms_campaign_sends:
-        raise ResourceNotFound('sms_campaign_sends record is empty')
-    campaign_send_url_conversions = SmsCampaignSendUrlConversion.get_by_campaign_send_id(
-        sms_campaign_sends[0].id)
-    # get URL conversion record from database table 'url_conversion'
-    url_conversion = UrlConversion.get_by_id(campaign_send_url_conversions[0].url_conversion_id)
+    sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
+    # get URL conversion record from relationship
+    url_conversion = \
+        sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0].url_conversion
 
     def tear_down():
         UrlConversion.delete(url_conversion)
-
     request.addfinalizer(tear_down)
     return url_conversion
 
@@ -662,6 +694,7 @@ def _delete_smartlist(smartlist_obj):
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
 
+
 def _create_sms_campaign_smartlist(campaign, smartlist):
     """
     This creates a smartlist for given campaign
@@ -672,3 +705,27 @@ def _create_sms_campaign_smartlist(campaign, smartlist):
                                                   sms_campaign_id=campaign.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
+
+
+def _create_blast(campaign_id):
+    """
+    This creates campaign blast object for given campaign id
+    :param campaign_id:
+    :return:
+    """
+    blast_obj = SmsCampaignBlast(campaign_id=campaign_id)
+    SmsCampaignBlast.save(blast_obj)
+    return blast_obj
+
+
+def _delete_blast(blast_obj):
+    """
+    This deletes the campaign blast obj from database.
+    :param blast_obj:
+    :return:
+    """
+    try:
+        SmsCampaignBlast.delete(blast_obj)
+    except Exception:  # resource may have been deleted in case of DELETE request
+        pass
+

@@ -25,17 +25,17 @@ from sms_campaign_service.common.campaign_services.custom_errors import (Campaig
                                                                          EmptyDestinationUrl)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound, InternalServerError,
-                                                        MethodNotAllowed, InvalidUsage)
+                                                        InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import (FrequencyIds, to_utc_str,
-                                                                          CampaignType)
+from sms_campaign_service.common.campaign_services.campaign_utils import (to_utc_str,
+                                                                          CampaignUtils)
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
 # Database Models
-from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.misc import UrlConversion, Frequency
 from sms_campaign_service.common.models.candidate import Candidate
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Service Specific
 from sms_campaign_service.common.models.db import db
@@ -66,14 +66,14 @@ class TestCeleryTasks(object):
         :return:
         """
         campaign = SmsCampaign.get_by_id(str(scheduled_sms_campaign_of_current_user.id))
-        campaign.update(body_text='Hi,all please visit http://www.abc.com or '
+        campaign.update(body_text='Hi all, please visit http://www.abc.com or '
                                   'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
@@ -88,7 +88,7 @@ class TestCeleryTasks(object):
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 1, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
@@ -105,7 +105,7 @@ class TestCeleryTasks(object):
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
@@ -125,7 +125,7 @@ class TestCeleryTasks(object):
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_multiple_smartlists(
             self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
@@ -143,7 +143,7 @@ class TestCeleryTasks(object):
             headers=dict(Authorization='Bearer %s' % auth_token))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(scheduled_sms_campaign_of_current_user.id))
+            sample_user.id, 1, scheduled_sms_campaign_of_current_user)
 
 
 class TestCampaignSchedule(object):
@@ -169,8 +169,8 @@ class TestCampaignSchedule(object):
         task_id = assert_campaign_schedule(response, sample_user.id,
                                            sms_campaign_of_current_user.id)
         time.sleep(2 * SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, str(sms_campaign_of_current_user.id))
+        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+                                                           sms_campaign_of_current_user)
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_periodic_campaign_schedule_and_validate_run(
@@ -182,7 +182,7 @@ class TestCampaignSchedule(object):
          response
         """
         data = generate_campaign_schedule_data().copy()
-        data['frequency_id'] = FrequencyIds.CUSTOM
+        data['frequency_id'] = Frequency.CUSTOM
         data['start_datetime'] = to_utc_str(datetime.utcnow())
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
@@ -191,10 +191,10 @@ class TestCampaignSchedule(object):
                                            sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
-                                                           str(sms_campaign_of_current_user.id))
+                                                           sms_campaign_of_current_user)
         time.sleep(SLEEP_TIME)
         assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
-                                                           str(sms_campaign_of_current_user.id))
+                                                           sms_campaign_of_current_user)
         delete_test_scheduled_task(task_id, valid_header)
 
 
@@ -204,26 +204,6 @@ class TestURLRedirectionApi(object):
     As response from Api endpoint is returned to candidate. So ,in case of any error,
     candidate should only get internal server error.
     """
-
-    def test_for_post(self, url_conversion_by_send_test_sms_campaign):
-        """
-        POST method should not be allowed at this endpoint.
-        :return:
-        """
-        response_post = _use_ngrok_or_local_address(
-            'post', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response_post.status_code == MethodNotAllowed.http_status_code(), \
-            'POST Method should not be allowed'
-
-    def test_for_delete(self, url_conversion_by_send_test_sms_campaign):
-        """
-        DELETE method should not be allowed at this endpoint.
-        :return:
-        """
-        response = _use_ngrok_or_local_address(
-            'delete', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response.status_code == MethodNotAllowed.http_status_code(), \
-            'DELETE Method should not be allowed'
 
     def test_for_get(self, sample_user,
                      url_conversion_by_send_test_sms_campaign,
@@ -360,14 +340,14 @@ class TestURLRedirectionMethods(object):
         _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
 
     def test_validate_blast_candidate_url_conversion_in_db_with_no_candidate(
-            self, scheduled_sms_campaign_of_current_user,
+            self, create_blast_for_not_owned_campaign,
             url_conversion_by_send_test_sms_campaign):
         """
-        Here we first delete the candidate, and then test functionality of
+        Here we pass None candidate, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
         It should give ResourceNotFound Error.
         """
-        blast_obj = SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
+        blast_obj = create_blast_for_not_owned_campaign
         _test_validate_blast_candidate_url_conversion_in_db(
             blast_obj, None, url_conversion_by_send_test_sms_campaign)
 
@@ -382,13 +362,13 @@ class TestURLRedirectionMethods(object):
             None, candidate_first, url_conversion_by_send_test_sms_campaign)
 
     def test_validate_blast_candidate_url_conversion_in_db_with_no_url_conversion(
-            self, candidate_first, scheduled_sms_campaign_of_current_user):
+            self, candidate_first, create_blast_for_not_owned_campaign):
         """
         Here we pass url_conversion obj  as None, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
         It should give ResourceNotFound Error.
         """
-        blast_obj = SmsCampaignBlast.get_by_campaign_id(scheduled_sms_campaign_of_current_user.id)
+        blast_obj = create_blast_for_not_owned_campaign
         _test_validate_blast_candidate_url_conversion_in_db(
             blast_obj, candidate_first, None)
 
@@ -503,7 +483,7 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    sms_campaign_blasts = SmsCampaignBlast.get_by_campaign_id(campaign.id)
+    sms_campaign_blasts = campaign.blasts[0]
     return url_conversion.hit_count, sms_campaign_blasts.clicks
 
 
@@ -529,7 +509,7 @@ def _call_process_url_redirect(url_conversion_obj):
     :return:
     """
     with app.app_context():
-        CampaignBase.process_url_redirect(url_conversion_obj.id, CampaignType.SMS)
+        CampaignBase.process_url_redirect(url_conversion_obj.id, CampaignUtils.SMS)
 
 
 def _call_pre_process_url_redirect(request_args, url):

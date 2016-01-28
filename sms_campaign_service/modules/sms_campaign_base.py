@@ -28,7 +28,7 @@ from dateutil.relativedelta import relativedelta
 
 # Database Models
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
                                                              SmsCampaignBlast, SmsCampaignReply,
@@ -39,11 +39,7 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (sign_redirect_url, CampaignType,
-     post_campaign_sent_processing,
-     get_campaign_for_ownership_validation, assert_is_instance_of_campaign_model)
-from sms_campaign_service.common.campaign_services.validators import \
-    validate_if_current_user_is_owner
+    (sign_redirect_url, post_campaign_sent_processing, CampaignUtils)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
@@ -75,7 +71,7 @@ class SmsCampaignBase(CampaignBase):
         of their responses. It uses Twilio API to send SMS.
 
     - This is inherited from CampaignBase defined inside
-        flask_common/common/utils/campaign_base.py. It implements abstract
+        app_common/common/utils/campaign_base.py. It implements abstract
         methods of base class and defines its own methods also.
 
     This class contains following methods:
@@ -189,7 +185,7 @@ class SmsCampaignBase(CampaignBase):
             camp_obj.process(campaign)
 
     **See Also**
-        .. see also:: CampaignBase class in flask_common/common/utils/campaign_base.py.
+        .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
 
     def __init__(self, user_id):
@@ -206,7 +202,8 @@ class SmsCampaignBase(CampaignBase):
         # If sms_body_test has some URL present in it, we process to make short URL
         # and this contains the updated text to be sent via SMS.
         # This is the id of record in sms_campaign_blast" database table
-        self.campaign_type = CampaignType.SMS
+        self.campaign_type = CampaignUtils.SMS
+        CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
 
     def get_user_phone(self):
         """
@@ -220,8 +217,8 @@ class SmsCampaignBase(CampaignBase):
         :return: UserPhone obj
         :rtype: UserPhone
         """
-        if not self.user:
-            raise InvalidUsage('User can not be None to get user_phone record')
+        if not isinstance(self.user, User):
+            raise InvalidUsage('User should be an instance of model User to get user_phone record.')
         # TWILIO is a name defined in config
         phone_label_id = PhoneLabel.phone_label_id_from_phone_label(TWILIO)
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user.id,
@@ -229,6 +226,7 @@ class SmsCampaignBase(CampaignBase):
         if len(user_phone) == 1:
             user_phone_value = user_phone[0].value
             if user_phone_value:
+                # TODO: save formatted number
                 get_formatted_phone_number(user_phone_value)
                 return user_phone[0]
         elif len(user_phone) > 1:
@@ -236,7 +234,7 @@ class SmsCampaignBase(CampaignBase):
                 'User(id:%s) has multiple phone numbers for phone label: %s'
                 % (self.user.id, TWILIO))
         else:
-            # User has no associated twilio number, need to buy one
+            # User has no associated Twilio number, need to buy one
             logger.debug('get_user_phone: User(id:%s) has no Twilio number associated.'
                          % self.user.id)
             return self.buy_twilio_mobile_number(phone_label_id)
@@ -375,7 +373,7 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: ScheduleSmsCampaign() method in v1_sms_campaign_api.py.
         """
         if not data_to_schedule or not isinstance(data_to_schedule, dict):
-            raise InvalidUsage('Data to schedule a task cannot be empty. It should be a dict.')
+            raise InvalidUsage('Data to schedule a task should be non-empty dictionary.')
         data_to_schedule.update(
             {'url_to_run_task': SmsCampaignApiUrl.SEND % self.campaign.id}
         )
@@ -386,7 +384,7 @@ class SmsCampaignBase(CampaignBase):
         return scheduler_task_id
 
     @staticmethod
-    def get_owner_user_id(campaign_obj, current_user_id):
+    def get_user_id_of_owner(campaign_obj, current_user_id):
         """
         This implements the base class method and returns the id of user who created the
         given campaign.
@@ -398,7 +396,7 @@ class SmsCampaignBase(CampaignBase):
         :return: id of owner user of given campaign
         :rtype: int | long
         """
-        assert_is_instance_of_campaign_model(campaign_obj)
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
         if not campaign_obj.user_phone_id:
             raise ForbiddenError('SMS campaign(id:%s) has no user_phone associated.'
                                  % campaign_obj.id)
@@ -411,7 +409,7 @@ class SmsCampaignBase(CampaignBase):
 
     def is_candidate_have_unique_mobile_phone(self, candidate):
         """
-        Here we validate that candidate has one unique mobile number associated.
+        Here we validate that if candidate has one unique mobile number associated.
         If candidate has only one unique mobile number associated, we return that candidate and
         its phone value.
         Otherwise we log the error.
@@ -432,11 +430,11 @@ class SmsCampaignBase(CampaignBase):
         if not isinstance(candidate, Candidate):
             raise InvalidUsage('parameter must be an instance of model Candidate')
         candidate_phones = candidate.candidate_phone
-        phone_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
+        mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
 
         # filter only mobile numbers
         candidate_mobile_phone = filter(lambda candidate_phone:
-                                        candidate_phone.phone_label_id == phone_label_id,
+                                        candidate_phone.phone_label_id == mobile_label_id,
                                         candidate_phones)
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception
@@ -506,6 +504,7 @@ class SmsCampaignBase(CampaignBase):
         # Celery app is not configured with flask app, so need to use app.app_context() here
         # so that Celery tasks know the config of flask app.
         with app.app_context():
+            # TODO: add validation, maybe format phone number earlier
             candidate, candidate_phone_value = candidate_and_phone
             candidate_phone_value = get_formatted_phone_number(candidate_phone_value)
             try:
@@ -524,10 +523,8 @@ class SmsCampaignBase(CampaignBase):
             # Create sms_campaign_send i.e. it will record that an SMS has been sent
             # to the candidate
             try:
-                sms_campaign_send_obj = \
-                    self.create_or_update_sms_campaign_send(self.campaign_blast_id,
-                                                            candidate.id,
-                                                            message_sent_datetime)
+                sms_campaign_send_obj = self.create_or_update_sms_campaign_send(
+                    self.campaign_blast_id, candidate.id, message_sent_datetime)
             except Exception:
                 logger.exception('send_campaign_to_candidate: Error saving '
                                  'record in sms_campaign_send')
@@ -649,7 +646,7 @@ class SmsCampaignBase(CampaignBase):
             # long_url looks like
             # http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
-            # Use Google's API to shorten the long Url
+            # Use Google's API to shorten the long URL
             short_url, error = url_conversion(long_url)
             logger.info("url_conversion: Long URL was: %s" % long_url)
             logger.info("url_conversion: Shortened URL is: %s" % short_url)
@@ -760,7 +757,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        data = {'sms_campaign_blast_id': campaign_blast_id,
+        data = {'blast_id': campaign_blast_id,
                 'candidate_id': candidate_id,
                 'sent_datetime': sent_datetime}
         record_in_db = SmsCampaignSend.get_by_blast_id_and_candidate_id(campaign_blast_id,
@@ -886,7 +883,7 @@ class SmsCampaignBase(CampaignBase):
                      NoCandidateAssociatedWithSmartlist(5012)
                      NoSMSCampaignSentToCandidate(5013)
                      NoUserFoundForPhoneNumber(5016)
-                     NoCandidateFoundForPhoneNumber (5017)
+                     NoCandidateFoundForPhoneNumber(5017)
 
         **See Also**
         .. see also:: sms_receive() function in sms_campaign_app/app.py
@@ -909,7 +906,7 @@ class SmsCampaignBase(CampaignBase):
                 % candidate_phone.candidate_id)
         # get SMS campaign blast
         sms_campaign_blast = SmsCampaignBlast.get_by_id(
-            sms_campaign_send.sms_campaign_blast_id)
+            sms_campaign_send.blast_id)
         # save candidate's reply
         sms_campaign_reply = cls.save_candidate_reply(sms_campaign_blast.id,
                                                       candidate_phone.id,
@@ -941,7 +938,7 @@ class SmsCampaignBase(CampaignBase):
         :type reply_body_text: str
         :return:
         """
-        sms_campaign_reply_obj = SmsCampaignReply(sms_campaign_blast_id=campaign_blast_id,
+        sms_campaign_reply_obj = SmsCampaignReply(blast_id=campaign_blast_id,
                                                   candidate_phone_id=candidate_phone_id,
                                                   body_text=reply_body_text,
                                                   added_datetime=datetime.now())
@@ -987,13 +984,13 @@ class SmsCampaignBase(CampaignBase):
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'reply_text': sms_campaign_reply.body_text,
                   'campaign_name': campaign.name}
-        user_access_token = cls.get_authorization_header(user_id)
+        auth_header = cls.get_authorization_header(user_id)
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_SMS_REPLY,
                             source_id=sms_campaign_reply.id,
                             source_table=SmsCampaignReply.__tablename__,
                             params=params,
-                            auth_header=user_access_token)
+                            auth_header=auth_header)
 
 
 def _get_valid_user_phone_value(user_phone_value):

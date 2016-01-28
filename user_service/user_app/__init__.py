@@ -22,6 +22,9 @@ try:
 
     from user_service.common.redis_cache import redis_store
     redis_store.init_app(app)
+    # noinspection PyProtectedMember
+    logger.debug("Redis connection pool: %s", repr(redis_store._redis_client.connection_pool))
+    logger.debug("Info on app startup: %s", redis_store._redis_client.info())
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
