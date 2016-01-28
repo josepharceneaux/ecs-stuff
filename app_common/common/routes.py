@@ -38,7 +38,7 @@ def _get_host_name(service_name, port_number):
     :param port_number: Port number of service
     :type service_name: str
     :type port_number: int
-    :return:
+    :return:  A string that looks like https://auth-service.gettalent.com%s
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env == 'dev':
@@ -47,11 +47,23 @@ def _get_host_name(service_name, port_number):
     elif env == 'jenkins':
         return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        # This looks like:  https://auth-service-staging.gettalent.com%s
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like https://auth-service.gettalent.com (for auth service)
+        # This looks like: https://auth-service.gettalent.com%s
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+
+
+def get_web_app_url():
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
+    if env in ('dev', 'jenkins'):
+        return LOCAL_HOST + ':3000'
+    elif env == 'qa':
+        return 'https://staging.gettalent.com'
+    elif env == 'prod':
+        return 'https://app.gettalent.com'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
 
