@@ -15,7 +15,8 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists,
+    get_json_if_exist
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -41,7 +42,6 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import DomainRole
-
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -75,9 +75,6 @@ class CandidatesResource(Resource):
 
         # Parse request body & validate data
         body_dict = request.get_json()
-        if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
-                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_get)
         except Exception as e:
@@ -128,7 +125,7 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
-        authed_user, body_dict = request.user, request.get_json()
+        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data
         try:

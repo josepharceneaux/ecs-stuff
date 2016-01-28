@@ -23,7 +23,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
     :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
-    :param allow_null_user: Is user is necessary for Authorization or not ?
+    :param allow_null_user: Is user necessary for Authorization or not ?
     """
 
     def auth_wrapper(func):

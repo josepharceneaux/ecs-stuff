@@ -10,9 +10,55 @@ from helpers import (
     response_info, request_to_candidates_resource, request_to_candidate_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Routes
+from candidate_service.common.routes import CandidateApiUrl
+# Custom Errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## Candidate ########################
+class TestGetCandidate(object):
+    @staticmethod
+    def create_candidate(access_token_first, user_first, talent_pool, data=None):
+        AddUserRoles.add(user=user_first)
+        if data is None:
+            data = generate_single_candidate_data([talent_pool.id])
+        return request_to_candidates_resource(access_token_first, 'post', data)
+
+    def test_create_candidate_with_empty_input(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Retrieve user's candidate(s) by providing empty string for data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user=user_first)
+        resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'content-type': 'application/json'}
+        )
+        print response_info(response=resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.MISSING_INPUT
+
+    def test_create_candidate_with_non_json_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Send post request with non json data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user=user_first)
+        resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'content-type': 'application/xml'},
+            data=generate_single_candidate_data([talent_pool.id])
+        )
+        print response_info(response=resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+
 def test_get_candidate_without_authed_user(access_token_first, user_first, talent_pool):
     """
     Test:   Attempt to retrieve candidate with no access token
