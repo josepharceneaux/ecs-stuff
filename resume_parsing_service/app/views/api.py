@@ -91,5 +91,6 @@ def process_batch_request(user_id):
     :param int user_id: The user who 'owns' the queue.
     :return: HTTP/JSON response containing parsed resume information.
     """
+    oauth = request.oauth_token
     parsing_response = _process_batch_item(user_id)
     return jsonify(**parsing_response), 200

@@ -26,7 +26,7 @@ from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_json
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -54,17 +54,17 @@ def process_resume(parse_params):
     # Parse the actual resume content.
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails are the ONLY thing required to create a candidate.
-    email_present = True if result_dict.get('emails') else False
+    email_present = True if result_dict['candidate'].get('emails') else False
     if create_candidate and email_present:
-        candidate_response = create_parsed_resume_candidate(result_dict,
-                                                            parse_params.get('oauth'))
+        candidate_response = create_parsed_resume_candidate(result_dict['candidate'],
+                                                            'bearer {}'.format(parse_params.get('oauth')))
         # TODO: Check for good response code!
         response_dict = json.loads(candidate_response)
         if 'error' in candidate_response:
             raise InvalidUsage(response_dict['error']['message'])
         candidate_id = response_dict.get('candidates')
-        result_dict['id'] = candidate_id[0]['id'] if candidate_id else None
-    return {'candidate': result_dict}
+        result_dict['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
+    return result_dict
 
 
 def parse_resume(file_obj, filename_str):
@@ -151,8 +151,8 @@ def parse_resume(file_obj, filename_str):
         "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
         time() - start_time)
     if optic_response:
-        candidate_data = parse_optic_json(optic_response)
-        return candidate_data
+        candidate_data = parse_optic_xml(optic_response)
+        return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
         return dict(error='No XML text')
 

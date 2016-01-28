@@ -39,8 +39,10 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
                 "url": "{}/{}".format(ResumeApiUrl.BATCH_URL, user_id),
             })
             scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
-                                              headers={'Authorization': token_str,
-                                                       'Content-Type': 'application/json'})
+                                              headers={
+                                                  'Authorization': 'bearer {}'.format(token_str),
+                                                  'Content-Type': 'application/json'
+                                              })
             if scheduler_request.status_code != 201:
                 raise TalentError("Issue scheduling resume parsing {}".format(
                     scheduler_request.content))
@@ -67,6 +69,6 @@ def _process_batch_item(user_id, create_candidate=True):
     parse_params = {
         'filepicker_key': fp_key,
         'create_candidate': create_candidate,
-        'oauth': oauth_token
+        'oauth': oauth_token.access_token
     }
     return process_resume(parse_params)

@@ -130,9 +130,10 @@ def test_batch_processing(user_fixture, token_fixture):
     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEP], user_id, token_fixture.access_token)
     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     # mock hit from scheduler service.
-    response = requests.get(ResumeApiUrl.BATCH_URL + '/{}'.format(user_id),
-                            headers={'Authorization': 'Bearer %s' % token_fixture.access_token})
-    assert 'candidate' in response, "Candidate should be in response content"
+    batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
+                                  headers={'Authorization': 'bearer {}'.format(
+                                      token_fixture.access_token)})
+    assert 'candidate' in batch_response, "Candidate should be in response content"
 
 
 # Unittest Style - located here due to conversion to flask redis which requires app context.

@@ -54,7 +54,8 @@ def fetch_optic_response(resume):
     unescaped = html_parser.unescape(unquoted)
     return unescaped
 
-def parse_optic_json(resume_xml_unicode):
+
+def parse_optic_xml(resume_xml_unicode):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param str resume_xml_unicode: An XML tree represented in unicode format. It is a slightly
