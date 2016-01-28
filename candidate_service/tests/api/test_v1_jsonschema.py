@@ -12,24 +12,33 @@ from helpers import (
     response_info, request_to_candidates_resource, AddUserRoles
 )
 
-# ***** JSON Schema POST Validations *****
-def test_schema_validation(access_token_first, user_first, talent_pool):
-    # Create Candidate
-    AddUserRoles.add(user=user_first)
-    data = {'candidates': [
-        {
-            'talent_pool_ids': {'add': [talent_pool.id]},
-            'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
-            'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': {},
-            'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
-            'areas_of_interest': [], 'phones': []
-        }
-    ]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
 
+class TestSchemaValidationPost(object):
+    def test_schema_validation(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Schema validations for CandidatesResource/post()
+        Expect: 400 unless if a dict of CandidateObject is provided with at least
+                one talent_pool.id
+        """
+        # Create Candidate
+        AddUserRoles.add(user=user_first)
+        data = {}
+        resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(resp)
+        assert resp.status_code == 400
 
-# ***** JSONSCHEMA PATCH *****
-# ***** JSONSCHEMA GET *****
+        data['candidates'] = []
+        resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data['candidates'] = [{}]
+        resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data['candidates'] = [{'talent_pool_ids': {'add': [talent_pool.id]}}]
+        resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(resp)
+        assert resp.status_code == 201
+
