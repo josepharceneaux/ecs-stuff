@@ -2,6 +2,7 @@
     'use strict';
 
     angular.module('app.pipelines', [
-        'app.core'
+        'app.core',
+        'highcharts-ng'
     ]);
 })();

@@ -3,6 +3,8 @@
 
     angular.module('app.pipelines')
         .directive('gtPipelineDetail', directiveFunction)
+        .directive('d3Circle', circularChartDirective)
+        .directive('d3Bar', barChartDirective)
         .controller('PipelineDetailController', ControllerFunction);
 
     // ----- directiveFunction -----
@@ -139,6 +141,327 @@
                     value: 10
                 }
             ];
+
+            $('#pipelineDetailsViewChart').highcharts({
+                chart: {
+                    type: 'area',
+                    backgroundColor: null
+                },
+                title: {
+                    text: ''
+                },
+                lang: {
+                    decimalPoint: ',',
+                    thousandsSep: '.'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    lineColor: 'transparent',
+                    tickLength: 0,
+                    endOnTick: true,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        y: 24,
+                        style: {
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: "bold"
+                        },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    gridLineColor: '#fff',
+                    yDecimals: 2,
+                    gridLineWidth: 1.5,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        style: {
+                            color: '#adadad',
+                            fontSize: '12px',
+                            fontWeight: "bold"
+                        },
+                        formatter: function () {
+                            if (this.value != 0) {
+                              return this.value;
+                            } else {
+                              return null;
+                            }
+                        }
+                    }
+                },
+                exporting: {
+                    enabled: false
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    x: -8,
+                    y: -10,
+                    floating: true,
+                    width: 170,
+                    symbolWidth: 12,
+                    itemMarginTop: 5,
+                    itemMarginBottom: 5,
+                    padding: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderColor: '#D9D9D9',
+                    borderWidth: 1
+                },
+                tooltip: {
+                    borderWidth:0,
+                    borderRadius:0,
+                    backgroundColor: null,
+                    shadow:false,
+                    useHTML: true,
+                    formatter: function() {
+                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
+                        $.each(this.points, function () {
+                            s += this.series.name + ': ' + this.y + '<br/>';
+                        });
+                        return s;
+                    },
+                    shared: true,
+                    crosshairs: {
+                        color: 'white',
+                        dashStyle: 'solid'
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        animation: true,
+                        fillOpacity: 0.2,
+                        lineWidth: 0.2,
+                        marker: {
+                            enabled: false,
+                            symbol: 'circle',
+                            radius: 2,
+                            states: {
+                                hover: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                lineWidth: 0.2
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Legend 1',
+                    color: '#907f90',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
+                }, {
+                    name: 'Legend 2',
+                    color: '#97b99b',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
+                }, {
+                    name: 'Legend 3',
+                    color: '#6ba5ae',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                }]
+            });
         }
+    }
+
+     // ----- circularChartDirective -----
+    circularChartDirective.$inject = [];
+    function circularChartDirective() {
+
+        var directive = {
+            restrict: 'EA',
+            scope: {},
+            link: function (scope, element, attrs) {
+
+                var angle = parseFloat(attrs.angle) || 75;
+                var value = attrs.value || 0
+
+                var svg = d3.select($(element).children()[0])
+                    .append('svg')
+                    .attr("width", '360')
+                    .attr("height", '360px')
+                    .append("g")
+                    .attr("transform", "translate(180,150)");
+
+
+                var arc = d3.svg.arc()
+                    .innerRadius(85)
+                    .outerRadius(115)
+                    .startAngle(0)
+                    .endAngle((angle / 100 ) * 2 * Math.PI);
+
+                var inner_circle = d3.svg.arc()
+                    .innerRadius(0)
+                    .outerRadius(80)
+                    .startAngle(0)
+                    .endAngle(2 * Math.PI);
+
+                svg.append("path")
+                    .attr("class", "path path--background")
+                    .attr("d", arc);
+
+                svg.append("path")
+                    .attr("class", "path path--foreground")
+                    .attr("d", inner_circle);
+
+                var label = svg.append("text")
+                    .attr("class", "label")
+                    .attr("dy", ".25em")
+                    .attr("dx", ".2em")
+                    .text(angle + '%');
+
+                svg.append("text")
+                    .attr("class", "inner-label")
+                    .attr("dy", "2em")
+                    .attr("dx", ".1em")
+                    .text('(' + value + ')');
+
+                svg.append("text")
+                    .attr("width", "200")
+                    .attr("class", "legend label")
+                    .attr("height", "12")
+                    .attr("x", '-43')
+                    .attr("y", '10.3em')
+                    .text("Candidates Used In [segment]");
+
+                svg.append("rect")
+                    .attr("class", "legend off-white")
+                    .attr("width", "12")
+                    .attr("height", "12")
+                    .attr("x", '-165')
+                    .attr("y", '9em');
+
+                svg.append("text")
+                    .attr("width", "200")
+                    .attr("class", "legend label")
+                    .attr("height", "12")
+                    .attr("x", '-30')
+                    .attr("y", '11.7em')
+                    .text("Candidates Available from [Parent]");
+
+                svg.append("rect")
+                    .attr("class", "legend purple")
+                    .attr("width", "12")
+                    .attr("height", "12")
+                    .attr("x", '-165')
+                    .attr("y", '10.3em');
+
+
+
+            }
+        };
+
+        return directive;
+    }
+
+     // ----- barChartDirective -----
+    barChartDirective.$inject = [];
+    function barChartDirective() {
+
+        var directive = {
+            restrict: 'EA',
+            scope: {},
+            link: function (scope, element, attrs) {
+
+                var barHeight = parseInt(attrs.barHeight) || 20;
+                var barSpacing = parseInt(attrs.barSpacing) || 5;
+
+                var svg = d3.select($(element).children()[0])
+                    .append('svg')
+                    .attr("width", '100%');
+
+                scope.data = [
+                    {
+                        title: 'Java Develope',
+                        value: '2000',
+                        percentage: '89'
+                    },
+                    {
+                        title: 'Rails Develop',
+                        value: '1600',
+                        percentage: '70'
+                    },
+                    {
+                        title: 'Angular Developer',
+                        value: '900',
+                        percentage: '60'
+                    },
+                    {
+                        title: 'Python Developer',
+                        value: '800',
+                        percentage: '80'
+                    },
+                    {
+                        title: 'Perl Developer',
+                        value: '200',
+                        percentage: '50'
+                    }
+                ];
+                var xScale = d3.scale.linear().domain([0, 100]).range([0, '100%']),
+                    height = scope.data.length * (barHeight + barSpacing);
+
+                svg.attr('height', height);
+
+                svg.selectAll('rect')
+                    .data(scope.data).enter()
+                    .append('rect')
+                    .attr('height', barHeight)
+                    .attr('width', 0)
+                    .attr('y', function(d,i) {
+                      return i * (barHeight) + (i + 1) * barSpacing;
+                    })
+                    .attr('fill', '#d2d7d3')
+                    .transition()
+                    .duration(1000)
+                    .attr('width', function(d) {
+                        return xScale(d.percentage);
+                    });
+
+                svg.selectAll('text')
+                    .data(scope.data).enter()
+                    .append('text')
+                    .attr('x', 0)
+                    .attr("dx", -35)
+                    .attr("dy", ".35em")
+                    .attr('y', function(d,i) {
+                      return i * (barHeight) + (i + 1) * barSpacing + (barHeight/2);
+                    })
+                    .attr('fill', '#fff')
+                    .transition()
+                    .duration(1000)
+                    .attr('x', function(d) {
+                        return xScale(d.percentage);
+                    })
+                    .text(function(d) {
+                        return d.percentage + '%';
+                    });
+
+                scope.data.forEach(function(d, i){
+                    svg.append('text')
+                    .attr('y', i * (barHeight) + (i + 1) * barSpacing - 6)
+                    .attr('fill', '#777')
+                    .text(d.title + ' (' + d.value + ')');
+                });
+            }
+        };
+        return directive;
     }
 })();

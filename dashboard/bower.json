@@ -34,6 +34,8 @@
     "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",
     "highlightjs": "~9.0.0",
+    "highcharts": "~4.2.1",
+    "highcharts-ng": "~0.0.11",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
     "ng-pickadate": "~0.3.0",
