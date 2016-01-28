@@ -9,6 +9,7 @@ from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.tests.api.helpers import response_info, AddUserRoles
 import random
 import datetime
 import uuid
@@ -18,10 +19,14 @@ import requests
 SEARCH_URI = CandidateApiUrl.CANDIDATE_SEARCH_URI
 
 
+class TestCandidateSearchGet(object):
+    pass
+
 def test_search_all_candidates_in_domain(user_first, access_token_first):
     """
     Test to search all candidates under the same domain
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id)
     response = get_response_from_authorized_user(access_token_first, '')
     _assert_results(candidate_ids, response.json())
@@ -352,4 +357,6 @@ def get_response_from_authorized_user(access_token, arguments_to_url):
         url=SEARCH_URI + arguments_to_url,
         headers={'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
     )
+    print "url: {}".format(SEARCH_URI + arguments_to_url)
+    print response_info(response=response)
     return response

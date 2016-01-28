@@ -1,6 +1,8 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
+# Flask Specific
+from flask import request
 import json
 from candidate_service.common.models.db import db
 from candidate_service.candidate_app import logger
@@ -14,6 +16,21 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+
+
+def get_json_if_exist(_request):
+    """ Function will ensure data's content-type is JSON, and it isn't empty
+    :type _request:  request
+    :rtype:  dict|str
+    """
+    if _request.content_type != "application/json":
+        raise InvalidUsage("Request body must be a JSON object",
+                           error_code=custom_error.INVALID_INPUT)
+    request_body = _request.get_data()
+    if not request_body:
+        raise InvalidUsage("Request body cannot be empty", error_code=custom_error.MISSING_INPUT)
+
+    return request_body
 
 
 def get_candidate_if_exists(candidate_id):
