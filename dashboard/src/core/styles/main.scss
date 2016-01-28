@@ -34,7 +34,6 @@
 @import 'includes/col';
 
 @import 'vendor/pickadate/pickadate';
-@import 'vendor/magnific-popup/magnific-popup';
 @import 'vendor/angular-bootstrap/bootstrap';
 @import 'vendor/angular-toastr/toastr';
 
@@ -48,9 +47,14 @@
 @import 'modules/header';
 @import 'modules/footer';
 @import 'modules/view';
-//@import 'modules/icon';
+//@import 'modules/icon'; // DO NOT USE
 @import '../icon-font/gettalent-icons';
 @import 'modules/box';
+@import 'modules/info-tooltip';
+@import 'modules/mobileMenu';
+@import 'modules/navigation';
+@import 'modules/feed';
+
 @import 'modules/label';
 @import 'modules/table';
 @import 'modules/figure';
@@ -70,17 +74,11 @@
 @import 'modules/pagination';
 @import 'modules/social';
 @import 'modules/notes';
-@import 'modules/team-views';
-@import 'modules/recent-engagements';
-@import 'modules/contact-info';
-@import 'modules/candidate-portrait';
-@import 'modules/candidate-jobs';
-@import 'modules/candidate-search-results';
 @import 'modules/pipeline-inclusion';
-@import 'modules/search-filters';
-@import 'modules/available-candidates';
-@import 'modules/create-pipeline-smartlist';
-@import 'modules/campaign-detail';
-@import 'modules/info-tooltip';
 
 @import 'modules/styleguide';
+
+// -----
+// Page specific overrides go here
+// -----
+

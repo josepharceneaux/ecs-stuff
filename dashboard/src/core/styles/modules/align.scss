@@ -17,3 +17,14 @@
     text-align: right;
   }
 }
+
+.align--iconRight {
+  text-align: right;
+
+  .icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 0;
+  }
+}
