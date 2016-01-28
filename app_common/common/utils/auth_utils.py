@@ -15,7 +15,7 @@ from ..error_handling import *
 from ..routes import AuthApiUrl
 
 
-def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
@@ -72,7 +72,6 @@ def require_all_roles(*role_names):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
@@ -99,7 +98,6 @@ def require_any_role(*role_names):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
             user_roles.append('SELF')

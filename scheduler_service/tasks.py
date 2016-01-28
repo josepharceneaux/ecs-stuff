@@ -15,15 +15,16 @@ For Scheduler Service, celery flower is =>
     localhost:5511
 
 """
-# Application imports
+# Std imports
 import json
 
+# Application imports
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service import celery_app as celery, flask_app as app, TalentConfigKeys
 
 
 @celery.task(name="send_request")
-def send_request(access_token, secret_key_id, url, content_type, post_data):
+def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
@@ -35,15 +36,19 @@ def send_request(access_token, secret_key_id, url, content_type, post_data):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
-        logger.info("Celery running....")
         headers = {
             'Content-Type': content_type,
             'Authorization': access_token
         }
+        # If content_type is json then it should dump json data
         if content_type == 'application/json':
             post_data = json.dumps(post_data)
         if secret_key_id:
             headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
+            # If user doesn't want to send jwt request, then delete 'X-Talent-Secret-Key-ID' key to avoid jwt auth
+            if not is_jwt_request:
+                del headers['X-Talent-Secret-Key-ID']
+
         # Send request to URL with job post data
         logger.info("Sending post request to %s" % url)
         response = http_request(method_type='POST', url=url, data=post_data, headers=headers)

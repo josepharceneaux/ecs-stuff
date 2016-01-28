@@ -1,6 +1,6 @@
 """
-Pause jobs which are already scheduled and in running state.
-Also try to pause jobs without using token and it should give 401 status code
+Resume jobs which are already scheduled and in paused state.
+Also try to resume the jobs without using token and it should give 401 status code
 """
 
 # Third party imports
@@ -14,12 +14,12 @@ from scheduler_service.custom_exceptions import SchedulerServiceApiException
 __author__ = 'saad'
 
 
-class TestSchedulerPause(object):
+class TestSchedulerResume(object):
 
     def test_single_job(self, auth_header, job_config, job_cleanup):
         """
-        Create a job by hitting endpoint. Then stop it using endpoint. We then stop it again and
-        it should give error (6053).
+        Create and pause a job using service endpoints and then after it is paused, resume the job and check its
+        next_run_datetime is not None (Running Job has next_run_datetime equal to next running datetime)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -40,38 +40,50 @@ class TestSchedulerPause(object):
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
-        # Paused jobs have their 'next_run_datetime' set to 'None'
+        # Paused jobs have their next_run_datetime set to 'None'
         response = requests.get(SchedulerApiUrl.TASK % job_id, headers=auth_header)
         next_run_datetime = response.json()['task']['next_run_datetime']
         assert next_run_datetime is None
 
-        # Try stopping again, it should throw exception
-        response_stop_again = requests.post(SchedulerApiUrl.PAUSE_TASK % job_id,
-                                            headers=auth_header)
-        assert response_stop_again.status_code == 500 and \
-               response_stop_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_PAUSED
+        # Resume job stop request
+        response_resume = requests.post(SchedulerApiUrl.RESUME_TASK % job_id,
+                                        headers=auth_header)
+        assert response_resume.status_code == 200
+
+        # Normal jobs don't have their next_run_datetime set to 'None'
+        response = requests.get(SchedulerApiUrl.TASK % job_id, headers=auth_header)
+        next_run_datetime = response.json()['task']['next_run_datetime']
+        assert next_run_datetime != 'None'
+
+        # Resume job stop request again - does not affect
+        response_resume_again = requests.post(SchedulerApiUrl.RESUME_TASK % job_id,
+                                              headers=auth_header)
+        assert response_resume_again.status_code == 400 and \
+               response_resume_again.json()['error']['code'] == SchedulerServiceApiException.CODE_ALREADY_RUNNING
 
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.TASK % job_id,
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
+        # Delete job id which is deleted
         del jobs[:1]
-        # Check if rest of the jobs are okay
+
+        # Get all jobs except for the one which we just deleted
         for job_id in jobs:
             response_get = requests.get(SchedulerApiUrl.TASK % job_id,
                                         headers=auth_header)
             assert response_get.json()['task']['id'] == job_id and \
                    response_get.json()['task']['next_run_datetime']
 
-        # Let's delete jobs now
+        # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs
 
     def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
-        Pause already running scheduled jobs and then see it returns 200 status code and also get jobs
-        and check their next_run_datetime is none (Paused job has next_run_datetime equal to None)
+        Create and pause 10 job using service endpoints and then after they are paused, resume all jobs and check their
+        next_run_datetime which should not be None (Running Job has next_run_datetime equal to next running datetime)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -86,32 +98,35 @@ class TestSchedulerPause(object):
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
-        # Send job stop request
+        # Send job stop request i.e. stop all jobs
         response_stop = requests.post(SchedulerApiUrl.PAUSE_TASKS, data=json.dumps(dict(ids=jobs_id)),
                                       headers=auth_header)
         assert response_stop.status_code == 200
 
-        jobs = []
-        # Paused jobs have their next_run_datetime set to 'None'
+        # Resume all jobs
+        response_resume = requests.post(SchedulerApiUrl.RESUME_TASKS, data=json.dumps(dict(ids=jobs_id)),
+                                        headers=auth_header)
 
-        # Get jobs
+        assert response_resume.status_code == 200
+
+        jobs = []
+        # Resume jobs have their next_run_datetime set to not 'None'
         for job_id in jobs_id:
-            response_get = requests.get(SchedulerApiUrl.TASK % job_id, data=json.dumps(dict(ids=jobs_id)),
+            response_get = requests.get(SchedulerApiUrl.TASK % job_id,
                                         headers=auth_header)
             jobs.append(response_get.json()['task'])
 
-        # Now after getting jobs check their next run time
         for res in jobs:
             next_run_datetime = res['next_run_datetime']
-            assert next_run_datetime is None
+            assert next_run_datetime is not 'None'
 
         # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_single_pause_job_without_token(self, auth_header, job_config):
+    def test_single_resume_job_without_token(self, auth_header, job_config):
         """
-        Try to pause an already scheduled job using invalid or no token, then check if it shows 401 response
+        Resume job without using bearer token, it should throw 401 status code
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -125,14 +140,20 @@ class TestSchedulerPause(object):
         data = json.loads(response.text)
         assert data['id']
 
+        # Send job stop request
+        response_stop = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
+                                      headers=auth_header)
+        assert response_stop.status_code == 200
+
         invalid_header = auth_header.copy()
         # Set the token to invalid
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
-        # Send job stop request
-        response_stop = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
-                                      headers=invalid_header)
-        assert response_stop.status_code == 401
+        # Now try resume with invalid token
+        response_get = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
+                                     headers=invalid_header)
+
+        assert response_get.status_code == 401
 
         # Let's delete jobs now
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
@@ -143,10 +164,10 @@ class TestSchedulerPause(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_pause_jobs_without_token(self, auth_header, job_config, job_cleanup):
+    def test_multiple_resume_jobs_without_token(self, auth_header, job_config, job_cleanup):
         """
-        Pause multiple jobs which are already scheduled and running without using token and then check
-        if the response is 401
+        Resume multiple jobs using ids as a list of job_ids that were created using service endpoints.
+        Then pause them and resume them without using bearer token, it should give 401 status code
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -161,28 +182,33 @@ class TestSchedulerPause(object):
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
+        # Stop all jobs
+        response_stop = requests.post(SchedulerApiUrl.PAUSE_TASKS, data=json.dumps(dict(ids=jobs_id)),
+                                      headers=auth_header)
+        assert response_stop.status_code == 200
+
         invalid_header = auth_header.copy()
         invalid_header['Authorization'] = 'Bearer invalid_token'
 
-        # Send job stop request with invalid token
-        response_stop = requests.post(SchedulerApiUrl.PAUSE_TASKS, data=json.dumps(dict(ids=jobs_id)),
-                                      headers=invalid_header)
-        assert response_stop.status_code == 401
+        # Then try to resume all jobs with invalid token
+        response_resume = requests.post(SchedulerApiUrl.RESUME_TASKS, data=json.dumps(dict(ids=jobs_id)),
+                                        headers=invalid_header)
 
-        # Paused jobs have their next_run_datetime set to 'None'
+        assert response_resume.status_code == 401
+
         jobs = []
+        # Paused jobs have their next_run_datetime set to next time
 
         # Get all jobs
         for job_id in jobs_id:
             response_get = requests.get(SchedulerApiUrl.TASK % job_id, data=json.dumps(dict(ids=jobs_id)),
                                         headers=auth_header)
-            assert response_get.status_code == 200
             jobs.append(response_get.json())
 
-        # Now check if their next run time is None
+        # Paused jobs should have their next run time set to None
         for res in jobs:
             next_run_datetime = res['task']['next_run_datetime']
-            assert next_run_datetime != 'None'
+            assert next_run_datetime is None
 
         # Delete all jobs
         job_cleanup['header'] = auth_header
