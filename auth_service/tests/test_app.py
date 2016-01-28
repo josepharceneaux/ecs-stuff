@@ -5,11 +5,11 @@ from urllib import urlencode
 
 import pytest
 import requests
-from werkzeug.security import generate_password_hash, gen_salt
+from werkzeug.security import gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
 from auth_service.common.routes import AuthApiUrl
-
+from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
 
 class AuthServiceTestsContext:
     def __init__(self):
@@ -39,7 +39,7 @@ class AuthServiceTestsContext:
 
         test_user = User(
             email=self.email,
-            password=generate_password_hash(self.password, method='pbkdf2:sha512'),
+            password=gettalent_generate_password_hash(self.password),
             domain_id=self.test_domain,
             first_name=first_name,
             last_name=last_name,

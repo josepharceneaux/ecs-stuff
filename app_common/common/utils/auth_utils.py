@@ -1,12 +1,15 @@
 """Helper functions related to the authentication of GT users."""
+
 __author__ = 'erikfarmer'
 
 # Standard Library
-import datetime
-from functools import wraps
 import json
+from functools import wraps
+
 # Third Party
 import requests
+from werkzeug.security import generate_password_hash
+
 # Application/Module Specific
 from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
@@ -22,6 +25,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user is necessary for Authorization or not ?
     """
+
     def auth_wrapper(func):
         @wraps(func)
         def authenticate(*args, **kwargs):
@@ -61,11 +65,13 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                 return func(*args, **kwargs)
 
         return authenticate
+
     return auth_wrapper
 
 
 def require_all_roles(*role_names):
     """ This method ensures that user should have all roles given in roles list"""
+
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
@@ -82,7 +88,9 @@ def require_all_roles(*role_names):
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
             return func(*args, **kwargs)
+
         return authenticate_roles
+
     return domain_roles
 
 
@@ -91,6 +99,7 @@ def require_any_role(*role_names):
     This method ensures that user should have at least one role from given roles list and set
     request.domain_independent_role to true if user has some domain independent (ADMIN) role
     """
+
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
@@ -111,11 +120,13 @@ def require_any_role(*role_names):
                     if role_name in user_roles:
                         valid_domain_roles.append(role_name)
                 if valid_domain_roles:
-                        request.valid_domain_roles = valid_domain_roles
-                        return func(*args, **kwargs)
+                    request.valid_domain_roles = valid_domain_roles
+                    return func(*args, **kwargs)
                 raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                       "perform this operation")
+
         return authenticate_roles
+
     return domain_roles
 
 
@@ -132,7 +143,7 @@ def authenticate_oauth_user(request, token=None):
         try:
             oauth_token = request.headers['Authorization']
         except KeyError:
-            return {'error': {'code': None, 'message':'No Authorization set', 'http_code': 400}}
+            return {'error': {'code': None, 'message': 'No Authorization set', 'http_code': 400}}
     r = requests.get(app.config['OAUTH_AUTHORIZE_URI'], headers={'Authorization': 'bearer {}'.format(oauth_token)})
     if r.status_code != 200:
         return {'error': {'code': 3, 'message': 'Not authorized', 'http_code': 401}}
@@ -140,7 +151,7 @@ def authenticate_oauth_user(request, token=None):
     if not valid_user_id:
         return {'error': {'code': 25,
                           'message': "Access token is invalid. Please refresh your token"},
-                          'http_code': 400}
+                'http_code': 400}
     return {'user_id': valid_user_id}
 
 
@@ -170,3 +181,13 @@ def refresh_expired_token(token, client_id, client_secret):
     r = requests.post(AuthApiUrl.TOKEN_CREATE, data=payload)
     # TODO: Add bad request handling.
     return json.loads(r.text)['access_token']
+
+
+def gettalent_generate_password_hash(new_password):
+    """
+    Wrapper around werkzeug.security.generate_password_hash
+
+    :param str new_password: Password to hash according to gT security standards.
+    :rtype: basestring
+    """
+    return generate_password_hash(new_password, method='pbkdf2:sha512:2000', salt_length=32)
