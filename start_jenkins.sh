@@ -16,6 +16,7 @@ cd candidate_service && tar -czh . | docker build -t gettalent/candidate-service
 cd candidate_pool_service && tar -czh . | docker build -t gettalent/candidate-pool-service:latest - && cd ../
 cd spreadsheet_import_service && tar -czh . | docker build -t gettalent/spreadsheet-import-service:latest - && cd ../
 cd scheduler_service && tar -czh . | docker build -t gettalent/scheduler-service:latest - && cd ../
+cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campaign-service:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
@@ -25,9 +26,9 @@ python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("CLOUD_SEARCH_DOMAIN" "CLOUD_SEARCH_REGION" "S3_BUCKET_NAME" "S3_FILEPICKER_BUCKET_NAME" "S3_BUCKET_REGION" "EMAIL" "GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY" "SECRET_KEY" "TWILIO_AUTH_TOKEN" "TWILIO_ACCOUNT_SID" "TWILIO_TEST_AUTH_TOKEN" "TWILIO_TEST_ACCOUNT_SID" "GOOGLE_URL_SHORTENER_API_KEY")
 
-FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service")
+FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "email-campaign-service")
 
-FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8008" "8009" "8011")
+FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8008" "8009" "8011" "8014")
 
 output=""
 
@@ -48,4 +49,4 @@ done
 
 sleep 10
 
-py.test -n 24 scheduler_service/tests/ auth_service/tests/ user_service/tests activity_service/tests/ resume_parsing_service/tests candidate_pool_service/tests/ candidate_service/tests spreadsheet_import_service/tests/
+py.test -n 24 scheduler_service/tests/ auth_service/tests/ user_service/tests activity_service/tests/ resume_parsing_service/tests candidate_pool_service/tests/ candidate_service/tests spreadsheet_import_service/tests/ email_campaign_service/tests/
