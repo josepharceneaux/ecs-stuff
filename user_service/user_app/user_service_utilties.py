@@ -1,10 +1,16 @@
 __author__ = 'ufarooqi'
 from flask import render_template
-from user_service.common.utils.amazon_ses import send_email
+from werkzeug.security import gen_salt
+
 from user_service.common.error_handling import InvalidUsage
-from user_service.common.models.user import db, Domain, User
 from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
-from werkzeug.security import generate_password_hash, gen_salt
+from user_service.common.models.user import db, Domain, User
+from user_service.common.utils.amazon_ses import send_email
+from user_service.common.utils.auth_utils import gettalent_generate_password_hash
+
+PASSWORD_RECOVERY_JWT_SALT = \
+    'yYut5isN6vLelCW4He0cHIXPSth7gY2OzOZKHS5uXbFvn84raYecMcdF002Br2ciexYfWOFKzZVU8M2rLJXql9vCLEmWlPIys118'
+PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS = 12 * 3600  # Password recovery token expires after 12 hours
 
 
 def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organization_id=1, default_tracking_code=None,
@@ -105,7 +111,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None, thumbnail_url=''):
 
     temp_password = gen_salt(20)
-    hashed_password = generate_password_hash(temp_password, method='pbkdf2:sha512')
+    hashed_password = gettalent_generate_password_hash(temp_password)
 
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
