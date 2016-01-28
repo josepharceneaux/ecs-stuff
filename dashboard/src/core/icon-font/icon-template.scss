@@ -5,16 +5,15 @@
     url('<%= fontPath %><%= fontName %>.woff') format('woff'), // standards
     url('<%= fontPath %><%= fontName %>.ttf') format('truetype'), // Safari, Android, iOS
     url('<%= fontPath %><%= fontName %>.svg#<%= fontName %>') format('svg'); // legacy iOS
+  font-style: normal;
+  font-weight: normal;
 }
 
 .<%= className %> {
   font-family: "<%= fontName %>";
-  font-style: normal;
-  font-weight: normal;
   font-variant: normal;
-  text-transform: none;
+  text-transform: none !important;
   speak: none;
-  display: inline;
 }
 
 <% _.each(glyphs, function(glyph) { %>.<%= className %>--<%= glyph.name %> { @extend .<%= className %>; &:after { content: "\<%= glyph.unicode[0].charCodeAt(0).toString(16).toUpperCase() %>" } }

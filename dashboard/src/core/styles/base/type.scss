@@ -6,6 +6,8 @@
 // Font embeds
 // -----
 
+@import url('https://fonts.googleapis.com/css?family=Roboto:400,500,700,300');
+
 //@include helper--embed-font('gettalent-icons', '../fonts/gettalent-icons');
 
 // -----
@@ -14,12 +16,12 @@
 
 ::selection {
   color: $color--white;
-  background-color: $color--blue;
+  background-color: $color--purple;
 }
 
 ::-moz-selection {
   color: $color--white;
-  background-color: $color--blue;
+  background-color: $color--purple;
 }
 
 * {
@@ -28,15 +30,15 @@
 }
 
 html {
-  font-size: $font-size--main;
-  font-weight: $font-weight--light;
-  color: $color--darkerGray;
+  font-size: $font-size--smaller;
+  font-weight: $font-weight--regular;
+  color: $color--nearBlack;
   font-family: $font--main;
 }
 
 h1,h2,h3,h4,h5,h6 {
   font-family: $font--main;
-  font-weight: $font-weight--light;
+  font-weight: $font-weight--regular;
 }
 
 h1,
@@ -87,7 +89,7 @@ a {
   transition: color $easing--normal;
 
   &:hover {
-    color: $color--green;
+    color: $color--lightBlue;
   }
 }
 
