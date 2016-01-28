@@ -21,6 +21,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
 
 #TODO: write tests for this.
 def get_users_talent_pools(formatted_token_str):
+    #TODO: add bad request handlet here.
     talent_pool_request = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
                                        headers={'Authorization': formatted_token_str})
     talent_pools = json.loads(talent_pool_request.content)

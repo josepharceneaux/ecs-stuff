@@ -42,63 +42,83 @@ def test_base_url():
     assert ResumeApi.PARSE in base_response.content
 
 
-def test_doc_from_fp_key(token_fixture):
+def test_doc_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_fp_key_response(token_fixture, DOC_FP_KEY)
     assert 'candidate' in response, "Candidate should be in response content"
 
 
 
-def test_doc_by_post(token_fixture):
+def test_doc_by_post(token_fixture, user_fixture):
     """Test that .doc files that are posted to the end point can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, 'test_bin.docx')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_v15_pdf_from_fp_key(token_fixture):
+def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEP)
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_v14_pdf_from_fp_key(token_fixture):
+def test_v14_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.4 pdf files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_fp_key_response(token_fixture, 'test_bin_14.pdf')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_v13_pdf_from_fp_key(token_fixture):
+def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.3 pdf files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_fp_key_response(token_fixture, 'test_bin_13.pdf')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_v14_pdf_by_post(token_fixture):
+def test_v14_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.4 pdf files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, 'test_bin_14.pdf')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_v13_pdf_by_post(token_fixture):
+def test_v13_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_jpg_from_fp_key(token_fixture):
+def test_jpg_from_fp_key(token_fixture, user_fixture):
     """Test that jpg files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_jpg_by_post(token_fixture):
+def test_jpg_by_post(token_fixture, user_fixture):
     """Test that jpg files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, 'test_bin.jpg')
     assert 'candidate' in response, "Candidate should be in response content"
 
 
-def test_2448_3264_jpg_by_post(token_fixture):
+def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     """Test that large jpgs files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, '2448_3264.jpg')
     assert 'candidate' in response, "Candidate should be in response content"
 
@@ -133,6 +153,8 @@ def test_v15_pdf_by_post(token_fixture, user_fixture):
 def test_batch_processing(user_fixture, token_fixture):
     # create a single file queue
     user_id = user_fixture.id
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEP], user_id, token_fixture.access_token)
     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
@@ -140,7 +162,8 @@ def test_batch_processing(user_fixture, token_fixture):
     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
                                   headers={'Authorization': 'bearer {}'.format(
                                       token_fixture.access_token)})
-    assert 'candidate' in batch_response, "Candidate should be in response content"
+    formatted_response = json.loads(batch_response.content)
+    assert 'candidate' in formatted_response, "Candidate should be in response content"
 
 
 # Unittest Style - located here due to conversion to flask redis which requires app context.
