@@ -12,7 +12,7 @@ import scheduler_service.common.error_handling
 __author__ = 'saad'
 
 
-class SchedulerServiceApiException(scheduler_service.common.error_handling.InternalServerError):
+class SchedulerServiceApiException(scheduler_service.common.error_handling.InvalidUsage):
     error_code = 6000
     CODE_SCHEDULER_NOT_RUNNING = 6051
     CODE_PENDING = 6052

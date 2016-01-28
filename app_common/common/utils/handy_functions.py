@@ -119,7 +119,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                             e.response.json().get('error_description'))
                     else:
                         error_message = e.message
-                except json.JSONDecoder:
+                except AttributeError:
                     error_message = e.message
             else:
                 # raise any Server error
