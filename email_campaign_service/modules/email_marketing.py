@@ -28,7 +28,7 @@ from email_campaign_service.common.utils.candidate_service_calls import get_cand
 __author__ = 'jitesh'
 
 
-def create_email_campaign_smart_lists(smartlist_ids, email_campaign_id):
+def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     """ Maps smart lists to email campaign
     :param smartlist_ids:
     :type smartlist_ids: list[int | long]
@@ -37,10 +37,10 @@ def create_email_campaign_smart_lists(smartlist_ids, email_campaign_id):
     """
     if type(smartlist_ids) in (int, long):
         smartlist_ids = [smartlist_ids]
-    for smart_list_id in smartlist_ids:
-        email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=smart_list_id,
+    for smartlist_id in smartlist_ids:
+        email_campaign_smartlist = EmailCampaignSmartList(smartlist_id=smartlist_id,
                                                            email_campaign_id=email_campaign_id)
-        db.session.add(email_campaign_smart_list)
+        db.session.add(email_campaign_smartlist)
     db.session.commit()
 
 
@@ -83,8 +83,8 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                  source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
                  params=dict(id=email_campaign.id, name=email_campaign_name))
 
-    # create email_campaign_smart_list record
-    create_email_campaign_smart_lists(smartlist_ids=list_ids,
+    # create email_campaign_smartlist record
+    create_email_campaign_smartlists(smartlist_ids=list_ids,
                                       email_campaign_id=email_campaign.id)
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.

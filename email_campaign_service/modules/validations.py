@@ -103,10 +103,10 @@ def validate_lists_belongs_to_domain(list_ids, user_id):
     :return:False, if any of list given not belongs to current user domain else True
     """
     user = User.query.get(user_id)
-    smart_lists = Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(
+    smartlists = Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(
         User.domain_id == user.domain_id).all()
 
-    smart_list_ids = [smart_list.id for smart_list in smart_lists]
-    list_ids_not_in_domain = set(list_ids) - set(smart_list_ids)
+    smartlist_ids = [smartlist.id for smartlist in smartlists]
+    list_ids_not_in_domain = set(list_ids) - set(smartlist_ids)
     if not len(list_ids_not_in_domain) == 0:
         raise ForbiddenError("list ids: %s does not belong to user's domain" % list_ids_not_in_domain)

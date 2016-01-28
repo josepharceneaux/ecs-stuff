@@ -5,21 +5,15 @@ import time
 import email
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
-from email_campaign_service.common.routes import CandidateApiUrl, EmailCampaignUrl, CandidatePoolApiUrl
+from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.models.email_marketing import EmailCampaign
-from email_campaign_service.modules.email_marketing import create_email_campaign_smart_lists
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
 
 __author__ = 'jitesh'
-
-# EMAIL_CAMPAIGN_URI = "http://127.0.0.1:8014/email_campaign"
-# CANDIDATE_SERVICE_BASE_URI = "http://127.0.0.1:8005/v1/"
-# CREATE_CANDIDATE_URI = CandidateApiUrl.CANDIDATES
-# CREATE_SMARTLIST_URI = CANDIDATE_SERVICE_BASE_URI + "smartlist"
 
 
 def test_get_all_email_campaigns(user_first, access_token_first, talent_pool):
@@ -43,7 +37,7 @@ def test_get_all_email_campaigns(user_first, access_token_first, talent_pool):
                                    )
     db.session.add(email_campaign)
     db.session.commit()
-    create_email_campaign_smart_lists(smartlist_ids=[smartlist_id],
+    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                       email_campaign_id=email_campaign.id)
     # Test GET api of email campaign
     response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
@@ -110,14 +104,14 @@ def test_create_email_campaign_whitespace_campaign_name(user_first, access_token
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    smart_list_id = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
+    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
     data = {'email_campaign_name': email_campaign_name,
             'email_subject': email_subject,
             'email_from': email_from,
             'email_reply_to': email_reply_to,
             'email_body_html': email_body_html,
             'email_body_text': email_body_text,
-            'list_ids': [smart_list_id]
+            'list_ids': [smartlist_id]
             }
     r = requests.post(
         url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
