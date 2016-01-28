@@ -1,23 +1,14 @@
-/** To be moved over to base styles w breakpoints **/
-
-.system-alerts {
-    background-color: darken($color--blue, 10%);
-    text-align:center;
-    font-weight:$font-weight--regular;
-    font-size: $font-size--main;
-    color: $color--white;
-    padding: $padding--small;
-    a {
-        color: lighten($color--blue, 20%);
-    }
+body {
+    font-weight: 400;
+    color: #555;
 }
 
-
-
-/** Angular Material Overrides **/
-
-body {
-    font-weight:300;
+.view__main,
+.view__main--pipelines,
+.view__main--user,
+.view__wrapper--pipelines,
+.view__wrapper--user {
+    background: #efefef;
 }
 
 #toast-container {
@@ -31,7 +22,7 @@ body {
         box-shadow:0 0 4px rgba(0,0,0,.10);
         font-size: 15px;
         &:hover {
-            box-shadow:0 0 4px rgba(0,0,0,.20);
+            box-shadow:0 0 4px rgba(0,0,0,.10);
         }
         strong {
             color: $color--blue;
@@ -47,28 +38,151 @@ body {
     }
 }
 
-.view__main,
-.view__main--pipelines,
-.view__main--user,
-.view__wrapper--pipelines,
-.view__wrapper--user {
-    background: #efefef;
+
+.system-alerts {
+    background-color: darken($color--blue, 10%);
+    text-align:center;
+    font-weight:$font-weight--regular;
+    font-size: $font-size--main;
+    color: $color--white;
+    padding: $padding--small;
+    a {
+        color: lighten($color--blue, 20%);
+    }
 }
 
-md-card {
+.fa-info-circle {
+    color:#ccc;
+    margin:0 0 0 3px;
+    top:-5px;
+    font-size:13px;
+    position:relative;
+}
+
+.tooltip--info {
+    .tooltip-inner {
+        padding:20px;
+        text-align:left;
+        border:1px #ccc solid;
+        box-shadow: 0 1px 6px 1px rgba(0,0,0,0.15);
+        background:rgba(255,255,255,.5);
+    }
+}
+
+.page-title-icon {
+    display:inline-block;
+    border-radius:50px;
+    overflow:hidden;
+    margin-right:15px;
+}
+
+
+
+
+/** Angular Material Overrides **/
+
+.md-margin-wrapper {
+    margin: 8px;
+}
+
+md-content {
+    padding: 30px;
+    border-radius: 3px;
+}
+
+md-toolbar.md-table-toolbar form {
+    input {
+        width: 100%;
+        margin: 0;
+        border: none;
+        color: rgba(0, 0, 0, 0.87);
+
+        &:focus {
+            outline: none;
+        }
+
+        &::placeholder {
+            color: rgba(0, 0, 0, 0.26);
+            font-weight: 300;
+        }
+    }
+}
+
+#v2-pipeline-summaries {
+    md-card {
+        min-height: 450px;
+        height: 450px;
+
+        .card-top-right-button {
+            max-width: 60px;
+            text-align: right;
+        }
+    }
+}
+
+#v2-activity-feed {
+    .v2-feed {
+        background-color: #eee;
+        padding: 16px;
+        margin: 8px 0;
+    }
+}
+
+.v2-h-barchart {
+    .v2-bar {
+        background: #888;
+        color: #fff;
+        margin: 8px 0;
+    }
+}
+
+#v2-candidate-breakdown {
+    md-list-item {
+        min-height: 36px;
+    }
+}
+
+#v2-team-contributors {
+    .v2-contributor {
+        background-color: #eee;
+        margin: 8px 0 8px 20px;
+
+        .md-avatar {
+            margin-left: -36px;
+        }
+    }
+}
+
+@mixin card {
     border-radius: 3px;
     box-shadow:none;
     border-right: solid 1px #e2e2e2;
     border-bottom: solid 1px #e2e2e2;
+    color:#444;
+    padding:8px 8px;
+    background-color:#ffffff;
+}
+
+.md-whiteframe-gt {
+    @include card;
+}
+
+md-card {
+    @include card;
+    .md-subhead {
+        padding-top:0px;
+    }
     md-card-content {
 
     }
-}
+    .md-card-title {
 
-.md-title {
-    font-weight:300;
-    font-size: 1.1em;
-    .fa-info {
-
+    }
+    .md-title {
+        font-weight:500;
+        font-size: 1.4em;
+    }
+    .md-subhead-alt {
+        margin-top:4px;
     }
 }

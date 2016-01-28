@@ -1,6 +1,3 @@
-"""
-
-"""
 from user_service.user_app import app
 from user_service.common.models.db import db
 from user_service.common.models.user import (
@@ -12,7 +9,7 @@ from user_service.common.models.talent_pools_pipelines import (
 
 
 def get_role_names():
-    constants = DomainRole.RoleNames.__dict__.keys()
+    constants = DomainRole.Roles.__dict__.keys()
     for constant in constants.__iter__():
         if "__" in constant:
             constants.remove(constant)
@@ -56,26 +53,6 @@ def add_user_group_to_domains():
             db.session.commit()
 
 
-def add_talent_pool():
-    print "running: add_talent_pool()"
-    users = User.query.all()
-    for user in users:
-        talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id,
-                                                 owner_user_id=user.id).first()
-        if not talent_pool:
-            talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id,
-                                     name='default')
-            db.session.add(talent_pool)
-            db.session.flush()
-
-            user_candidates = user.candidates
-            for candidate in user_candidates:
-                print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
-                db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
-                                                   candidate_id=candidate.id))
-                db.session.commit()
-
-
 def update_users_group_id():
     """
     Users.user_group_id will be updated if user is not already assocaited with a UserGroup.id
@@ -89,6 +66,40 @@ def update_users_group_id():
                 print "user_id: {}, user_group_id: {}".format(user.id, user_group.id)
                 user.user_group_id = user_group.id
                 db.session.commit()
+
+
+def add_talent_pool():
+    print "running: add_talent_pool()"
+    users = User.query.all()
+    for user in users:
+        talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id,
+                                                 owner_user_id=user.id).first()
+        if not talent_pool:
+            talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id,
+                                     name='default')
+            print "user_domain_id: {}, user_id: {}".format(user.domain_id, user.id)
+            db.session.add(talent_pool)
+            db.session.commit()
+
+            user_candidates = user.candidates
+            for candidate in user_candidates:
+                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
+                                                                talent_pool_id=talent_pool.id)
+                if not talent_pool_candidate:
+                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
+                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
+                                                       candidate_id=candidate.id))
+                    db.session.commit()
+        else:
+            user_candidates = user.candidates
+            for candidate in user_candidates:
+                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
+                                                                talent_pool_id=talent_pool.id)
+                if not talent_pool_candidate:
+                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
+                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
+                                                       candidate_id=candidate.id))
+                    db.session.commit()
 
 
 def add_talent_pool_group():
@@ -109,6 +120,7 @@ def add_talent_pool_group():
 
 if __name__ == '__main__':
     print "***** starting role updates *****"
+    print "database: {}".format(db)
     try:
         add_domain_roles()
         print "completed: add_domain_roles()"
@@ -116,10 +128,10 @@ if __name__ == '__main__':
         print "completed: add_user_roles()"
         add_user_group_to_domains()
         print "completed: add_user_group_to_domains()"
-        add_talent_pool()
-        print "completed: add_talent_pool()"
         update_users_group_id()
         print "completed: update_users_group_id()"
+        add_talent_pool()
+        print "completed: add_talent_pool()"
         add_talent_pool_group()
         print "completed: add_talent_pool_group()"
     except Exception as e:

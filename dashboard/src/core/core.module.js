@@ -16,11 +16,13 @@
         'angularUtils.directives.dirPagination',
         'hljs',
         'ngMaterial',
+        'md.data.table',
         'ngTagsInput',
         'pickadate',
         'restangular',
         'toastr',
         'ui.bootstrap',
-        'ui.router'
+        'ui.router',
+        'ncy-angular-breadcrumb'
     ]);
 })();

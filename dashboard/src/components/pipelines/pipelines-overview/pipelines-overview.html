@@ -1,234 +1,140 @@
 <section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
-    <div>
-        <div layout-margin>
+    <div layout="column" layout-margin>
+        
+        <!-- Navigation path -->
+        <div layout="row">
+            <div ncy-breadcrumb></div>
+        </div>
+        <!-- End: Navigation path -->
 
-            <div layout-margin layout="row">
-                <div flex="100" class="v2-font__sm v2-margin-top__20"><a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb</div>
+        <!-- Header -->
+        <md-content layout="row" layout-xs="column" layout-align="center center" >
+            <div flex>
+                <h3 class="md-title">My Pipelines</h3>
             </div>
-
-            <header layout-margin layout="row" class="v2-page-header">
-                <div flex class="module">
-                    <div class="v2-align__vertical">
-                        <div class="page-title-icon">
-                            <img src="//placehold.it/80x80" />
-                        </div>
-                        <div>
-                            <div class="v2-font__xlg">Pipeline Name</div>
-                            <div class="v2-font__sm v2-line-height__2">Created by <a href="">Jason Provencher</a> on 5/22/16</div>
-                        </div>
-                        <div class="v2-align__right">
-
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <div layout-margin layout="row">
-                <div flex="100" class="module" style="background:none; border:none;">
-                    <div style="height:400px;">Hero Chart</div>
-                </div>
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <md-button class="md-raised md-primary">+</md-button>
             </div>
-            <div layout-margin>
-                <div layout="row" layout-xs="column" class="v2-align__center">
-                    <div flex layout="row" layout-xs="column" layout-sm="column">
-                        <div flex flex-xs class="module">
-                            <div>
-                                <div>Callout Box 1 <i class="fa fa-info-circle" uib-tooltip="Here's some more info. Just need to be styled how you want me!" tooltip-class="tooltip--info"></i></div>
-                                <div class="v2-font__xxlg">42.5%</div>
-                                <div class="v2-font__med">Call-out Secondary Meta</div>
-                            </div>
-                        </div>
-                        <div flex flex-xs class="module">
-                            <div>
-                                <div>Callout Box 1 <i class="fa fa-info-circle" uib-tooltip="Here's some more info. Just need to be styled how you want me!" tooltip-class="tooltip--info"></i></div>
-                                <div class="v2-font__xxlg">42.5%</div>
-                                <div class="v2-font__med">Call-out Secondary Meta</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div flex layout="row" layout-xs="column" layout-sm="column">
-                        <div flex flex-xs="100" class="module">
-                            <div>
-                                <div>Callout Box 1 <i class="fa fa-info-circle" uib-tooltip="Here's some more info. Just need to be styled how you want me!" tooltip-class="tooltip--info"></i></div>
-                                <div class="v2-font__xxlg">42.5%</div>
-                                <div class="v2-font__med">Call-out Secondary Meta</div>
-                            </div>
-                        </div>
-                        <div flex flex-xs="100" class="module">
-                            <div>
-                                <div>Callout Box 1 <i class="fa fa-info-circle" uib-tooltip="Here's some more info. Just need to be styled how you want me!" tooltip-class="tooltip--info"></i></div>
-                                <div class="v2-font__xxlg">42.5%</div>
-                                <div class="v2-font__med">Call-out Secondary Meta</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        </md-content>
+        <!-- End: Header -->
+
+        <!-- Growth graph -->
+        <md-content layout="row" >
+            <div style="height:400px;">Candidate Growth Chart</div>
+        </md-content>
+        <!-- End: Growth graph -->
+
+        <!-- Call-outs -->
+        <div layout="row" layout-wrap>
+            <div flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center">
+                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{callout.value}}</h3>
+                </md-content>
             </div>
         </div>
+        <!-- End: Call-outs -->
 
-        <div layout-margin layout="row" layout-xs="column" layout-sm="column">
-
-            <div layout-margin flex="66" flex-xs="100" flex-sm="100" layout="column" flex-order-xs="2" flex-order-sm="2">
-                <div flex="initial" class="module">
-                    <div>
-                        <div class="v2-module-header v2-clear-fix">
-                            <div class="v2-float__left">
-                                <div class="v2-margin-bottom__5">Module Header</div>
-                                <div class="v2-font__xs">This is a subsection header title that can be long or short</div>
+        <!-- Tables & Cards -->
+        <div layout="row" layout-wrap layout-fill>
+            <!-- Top Pipelines Table -->
+            <div id="v2-pipelines-table" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+                <md-card flex class="md-margin">
+                    <md-card-content>
+                        <md-toolbar class="md-table-toolbar md-default">
+                            <div class="md-toolbar-tools">
+                                <h2 class="md-title">Top Pipelines</h2>
+                                <div flex></div>
+                                
+                                <md-icon>search</md-icon>
+                                <form flex name="vm.tableData.filter.form" layout-align="start start">                                                                    
+                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search">
+                                </form>
+                                <md-button class="md-icon-button" ng-click="vm.removeFilter()">
+                                    <md-icon>close</md-icon>
+                                </md-button>
                             </div>
-                        </div>
-                        <div class="box__table">
-                            <table class="table">
-
-                                <tr class="table__row">
-                                    <th class="table__header">Pipeline <i class="fa fa-sort-desc"></i></th>
-                                    <th class="table__header">Candidates <i class="fa fa-sort-desc"></i></th>
-                                    <th hide-xs class="table__header">Created <i class="fa fa-sort-desc"></i></th>
-                                    <th hide-xs hide-sm class="table__header">Growth <i class="fa fa-sort-desc"></i></th>
-                                    <th hide-xs hide-sm hide-md class="table__header">Engagement <i class="fa fa-sort-desc"></i></th>
+                        </md-toolbar>
+                        
+                        <md-table-container>
+                            <table md-table md-progress="vm.promise">
+                                <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
+                                <tr md-row>
+                                    <th md-column md-order-by="name"><span>Pipeline</span></th>
+                                    <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>New Candidates(last 30)</span></th>
+                                    <th md-column md-numeric md-order-by="created"><span>Created</span></th>
                                 </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Python developer</td>
-                                    <td class="table__col">608</td>
-                                    <td hide-xs class="table__col">03/02/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+67</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">20%</td>
+                                </thead>
+                                <tbody md-body>
+                                <tr md-row
+                                    ng-repeat="p in vm.tableData.pipelines.data 
+                                    | filter: vm.tableData.query.filter
+                                    | orderBy: vm.tableData.query.order 
+                                    | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
+                                    <td md-cell>{{p.name}}</td>
+                                    <td md-cell>{{p.candidates}}</td>
+                                    <td md-cell>{{p.newCandidates}}</td>
+                                    <td md-cell>{{p.created | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
                                 </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Site Reliability Engineers</td>
-                                    <td class="table__col">23</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-                                <tr class="table__row">
-                                    <td class="table__col">Engineering Manager</td>
-                                    <td class="table__col">502</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Python developer in SF</td>
-                                    <td class="table__col">230</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Finance Analyst</td>
-                                    <td class="table__col">608</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Sr. iOS Developer</td>
-                                    <td class="table__col">20</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Java Developers</td>
-                                    <td class="table__col">25</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Sr. QA Engineer</td>
-                                    <td class="table__col">132</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Android developers</td>
-                                    <td class="table__col">14</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Dev Ops</td>
-                                    <td class="table__col">372</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">Javascript & Web Devs</td>
-                                    <td class="table__col">462</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row">
-                                    <td class="table__col">IT Manager</td>
-                                    <td class="table__col">156</td>
-                                    <td hide-xs class="table__col">06/06/2015</td>
-                                    <td hide-xs hide-sm class="table__col">+12</td>
-                                    <td hide-xs hide-sm hide-md class="table__col">50%</td>
-                                </tr>
-
-                                <tr class="table__row" dir-paginate="item in vm.talentPipelines | itemsPerPage: vm.pipelinesPerPage track by item.id" pagination-id="talentPipelinesPagination">
-                                    <td class="table__col--morePadding">{{item.name}}</td>
-                                    <td class="table__col--morePadding">{{item.totalCandidates}}</td>
-                                    <td class="table__col--morePadding">{{item.dateCreated | date : 'MM/dd/yyyy'}}</td>
-                                    <td class="table__col--morePadding">{{item.growth}}</td>
-                                    <td class="table__col--morePadding">{{item.engagement}}</td>
-                                </tr>
+                                </tbody>
                             </table>
-                            <div class="pagination__controls col--12">
-                                <div class="col--large-2">
-                                    <select ng-model="vm.pipelinesPerPage" ng-options="option.value as option.name for option in vm.itemsPerPageOptions"
-                                            id="pipelinesPerPage" class="form__input--select" name="pipelinesPerPage">
-                                    </select>
-                                </div>
-                                <div class="col--large-10 align--right">
-                                    <dir-pagination-controls direction-links="false" boundary-links="false" pagination-id="talentPipelinesPagination"></dir-pagination-controls>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                        </md-table-container>
+
+                        <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
+                                             md-page-select md-boundary-links
+                                             md-on-paginate="vm.logPagination"></md-table-pagination>
+                    </md-card-content>
+                </md-card>
             </div>
+            <!-- End: Top Pipelines Table -->
 
-            <div layout-margin flex="33" layout="column" layout-xs="column" layout-sm="row" flex-xs="100" flex-sm="100" flex-order-xs="1" flex-order-sm="1">
-
-                <div flex="initial" flex-xs="100" flex-sm="50" class="module">
-                    <div class="v2-module-header v2-clear-fix">
-                        <div class="v2-float__left">
-                            <div class="v2-margin-bottom__5">Module Header</div>
-                            <div class="v2-font__xxs">This is a subsection header title that can be long or short</div>
+            <!-- Cards -->
+            <div id="v2-pipeline-cards" flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+                
+                <!-- Current Candidate Usage -->
+                <md-card flex="none" class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <div style="height: 200px; background: #eee">
+                            <span class="md-body-1">Usage chart</span>
                         </div>
-                    </div>
-                </div>
+                    </md-card-content>
+                </md-card>
+                <!-- End: Current Candidate Usage -->
 
-                <div flex="initial" flex-xs="100" flex-sm="50" class="module">
-                    <div class="v2-module-header v2-clear-fix">
-                        <div class="v2-float__left">
-                            <div class="v2-margin-bottom__5">Module Header</div>
-                            <div class="v2-font__xxs">This is a subsection header title that can be long or short</div>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- Top Performing Campaigns -->
+                <md-card flex="none" class="md-margin">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
+                            <span class="md-subhead">By Candidate Growth</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <md-list class="v2-h-barchart">
+                            <md-list-item class="v2-bar" ng-style="{width: pipeline.width + '%'}" ng-repeat="pipeline in vm.pipelines">
+                                <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                    <h4>{{pipeline.title}}</h4>
+                                    <h4>{{pipeline.value}}</h4>
+                                </div>
+                            </md-list-item>
+                        </md-list>
+                    </md-card-content>
+                </md-card>
+                <!-- End: Top Performing Campaigns -->
+            
             </div>
-
+            <!-- End: Cards -->
         </div>
+        <!-- End: Tables & Cards -->
+
     </div>
+    
 </section>
