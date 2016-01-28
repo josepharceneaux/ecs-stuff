@@ -551,6 +551,8 @@ def fetch_candidate_subscription_preference(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
+    if not candidate_subs_pref:
+        return {}
     return {'id': candidate_subs_pref.id, 'frequency_id': candidate_subs_pref.frequency_id}
 
 

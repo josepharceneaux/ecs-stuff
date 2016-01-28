@@ -66,6 +66,13 @@ class ForbiddenError(TalentError):
         return 403
 
 
+class UnprocessableEntity(TalentError):
+    """https://tools.ietf.org/html/rfc4918#section-11.2"""
+    @classmethod
+    def http_status_code(cls):
+        return 422
+
+
 class ResourceNotFound(TalentError):
     @classmethod
     def http_status_code(cls):
@@ -117,6 +124,12 @@ def register_error_handlers(app, logger):
     @app.errorhandler(ForbiddenError)
     def handle_forbidden(error):
         logger.warn("Forbidden request format for app %s", app.import_name)
+        response = jsonify(error.to_dict())
+        return response, error.http_status_code()
+
+    @app.errorhandler(UnprocessableEntity)
+    def handle_unprocessable(error):
+        logger.warn("Unprocessable data for app %s", app.import_name)
         response = jsonify(error.to_dict())
         return response, error.http_status_code()
 

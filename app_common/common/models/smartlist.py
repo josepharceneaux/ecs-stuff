@@ -1,5 +1,6 @@
 from db import db
 import datetime
+from talent_pools_pipelines import TalentPipeline
 
 __author__ = 'jitesh'
 
