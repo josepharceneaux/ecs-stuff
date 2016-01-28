@@ -9,9 +9,12 @@
         <!-- End: Navigation path -->
 
         <!-- Header -->
-        <md-content layout="row" layout-xs="column" layout-align="center center" >
+        <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+            <div>
+                <img src="//placehold.it/80x80" />
+            </div>
             <div flex>
-                <h3 class="md-title">My Pipelines</h3>
+                <h2 class="md-title">My Pipelines</h2>
             </div>
             <div layout="row" layout-xs="column" layout-sm="column">
                 <md-button class="md-raised md-primary">+</md-button>
@@ -19,17 +22,17 @@
         </md-content>
         <!-- End: Header -->
 
-        <!-- Growth graph -->
-        <md-content layout="row" >
+        <!-- Section overview graph -->
+        <md-content class="md-whiteframe-gt module-padding" layout="row" >
             <div style="height:400px;">Candidate Growth Chart</div>
         </md-content>
         <!-- End: Growth graph -->
 
         <!-- Call-outs -->
-        <div layout="row" layout-wrap>
-            <div flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
+        <div class="stat-row" layout="row" layout-wrap>
+            <div class="md-whiteframe-gt module-padding" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
                 <md-content layout="column" layout-align="center center">
-                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
                     <h3 class="md-display-3">{{callout.value}}</h3>
                 </md-content>
             </div>
@@ -39,12 +42,13 @@
         <!-- Tables & Cards -->
         <div layout="row" layout-wrap layout-fill>
             <!-- Top Pipelines Table -->
-            <div id="v2-pipelines-table" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+
                 <md-card flex class="md-margin">
                     <md-card-content>
                         <md-toolbar class="md-table-toolbar md-default">
                             <div class="md-toolbar-tools">
-                                <h2 class="md-title">Top Pipelines</h2>
+                                <h2 class="md-title">Pipelines</h2>
                                 <div flex></div>
                                 
                                 <md-icon>search</md-icon>
@@ -63,7 +67,7 @@
                                 <tr md-row>
                                     <th md-column md-order-by="name"><span>Pipeline</span></th>
                                     <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
-                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>New Candidates(last 30)</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
                                     <th md-column md-numeric md-order-by="created"><span>Created</span></th>
                                 </tr>
                                 </thead>
@@ -76,7 +80,7 @@
                                     <td md-cell>{{p.name}}</td>
                                     <td md-cell>{{p.candidates}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
-                                    <td md-cell>{{p.created | date:'yyyy-MM-dd HH:mm:ss Z'}}</td>
+                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -97,14 +101,12 @@
                 <md-card flex="none" class="md-margin">
                     <md-card-title flex="none">
                         <md-card-title-text>
-                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"></i></span>
+                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
                             <span class="md-subhead">Used vs Available (Talent Pools)</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        <div style="height: 200px; background: #eee">
-                            <span class="md-body-1">Usage chart</span>
-                        </div>
+                        D3 % Chart
                     </md-card-content>
                 </md-card>
                 <!-- End: Current Candidate Usage -->
@@ -113,19 +115,12 @@
                 <md-card flex="none" class="md-margin">
                     <md-card-title flex="none">
                         <md-card-title-text>
-                            <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
+                            <span class="md-title">Top Campaigns<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
                             <span class="md-subhead">By Candidate Growth</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        <md-list class="v2-h-barchart">
-                            <md-list-item class="v2-bar" ng-style="{width: pipeline.width + '%'}" ng-repeat="pipeline in vm.pipelines">
-                                <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                    <h4>{{pipeline.title}}</h4>
-                                    <h4>{{pipeline.value}}</h4>
-                                </div>
-                            </md-list-item>
-                        </md-list>
+                        D3 Bar Chart
                     </md-card-content>
                 </md-card>
                 <!-- End: Top Performing Campaigns -->

@@ -1,0 +1,56 @@
+// ---------------------------------------------------
+// Modules / Table-MD-Data
+// ---------------------------------------------------
+
+table {
+  &.md-table {
+
+    .md-head {
+      .md-row {
+        border-bottom:1px solid #efefef;
+        td.md-cell {
+          border-bottom:1px solid #efefef;
+        }
+      }
+    }
+
+    th {
+      &.md-column {
+        &.md-active {
+          color: $color--blue;
+          md-icon {
+            color: $color--blue;
+          }
+        }
+      }
+    }
+
+    .md-row {
+      &:nth-child(even) {
+        background:lighten(#d0d6d1, 13%);
+      }
+      td.md-cell {
+        border:none;
+      }
+    }
+
+  }
+}
+
+md-toolbar.md-table-toolbar form {
+  input {
+    width: 100%;
+    margin: 0;
+    border: none;
+    color: rgba(0, 0, 0, 0.87);
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.26);
+      font-weight: 300;
+    }
+  }
+}

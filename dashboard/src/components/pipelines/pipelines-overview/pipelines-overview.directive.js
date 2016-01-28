@@ -81,7 +81,7 @@
                     value: '800'
                 },
                 {
-                    name: 'Candidates Added Today',
+                    name: 'Candidates Today',
                     value: '10'
                 }
             ];
@@ -167,13 +167,13 @@
                             created: new Date('2015-09-12T03:24:00')
                         }, {
                             id: 7,
-                            name: 'Angular Developer',
+                            name: 'Angular Dev',
                             candidates: 189,
                             newCandidates: 34,
                             created: new Date('2015-03-17T03:24:00')
                         }, {
                             id: 8,
-                            name: 'Backbone Developer',
+                            name: 'Backbone Dev',
                             candidates: 369,
                             newCandidates: 77,
                             created: new Date('2015-04-17T03:24:00')
@@ -239,7 +239,7 @@
                             created: new Date('2015-06-27T03:24:00')
                         }, {
                             id: 19,
-                            name: 'Business Administrator',
+                            name: 'Business Admin',
                             candidates: 563,
                             newCandidates: 98,
                             created: new Date('2015-08-27T03:24:00')
