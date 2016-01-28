@@ -99,7 +99,6 @@
   width: 100%;
   bottom: 0;
   position: fixed;
-  overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
     width: 3em;
@@ -120,7 +119,7 @@
   @extend .view__sidebar;
 
   background-color: $color--white;
-  top: -2.75em;
+  top: -$misc--topNavMenuHeight;
   z-index: 900;
   width: 0;
   position: relative;

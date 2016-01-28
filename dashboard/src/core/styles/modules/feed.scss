@@ -7,12 +7,10 @@
   top: 0;
   right: 0;
   height: 100%;
-  z-index: $z-index--2;
+  z-index: $z-index--3;
   box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
 
   @include helper--media($breakpoint--full) {
-    z-index: $z-index--3;
-    top: -2.71em;
     position: relative;
   }
 }
@@ -24,6 +22,9 @@
 .feed__inner {
   animation: animation--hide $easing--slow;
   display: none;
+  position: absolute;
+  top: -$misc--topNavMenuHeight;
+  background-color: $color--white;
 }
 
 .feed__inner--active {
