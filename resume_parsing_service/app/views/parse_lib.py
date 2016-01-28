@@ -41,6 +41,7 @@ def process_resume(parse_params):
     """
     filepicker_key = parse_params.get('filepicker_key')
     create_candidate = parse_params.get('create_candidate')
+    talent_pools = parse_params.get('talent_pools')
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
@@ -53,11 +54,12 @@ def process_resume(parse_params):
         raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
     result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    # Emails are the ONLY thing required to create a candidate.
+    # Emails and talent pools are the ONLY thing required to create a candidate.
     email_present = True if result_dict['candidate'].get('emails') else False
-    if create_candidate and email_present:
+    if create_candidate and email_present and talent_pools:
+        result_dict['candidate']['talent_pool_ids']['add'] = talent_pools
         candidate_response = create_parsed_resume_candidate(result_dict['candidate'],
-                                                            'bearer {}'.format(parse_params.get('oauth')))
+                                                            parse_params.get('oauth'))
         # TODO: Check for good response code!
         response_dict = json.loads(candidate_response)
         if 'error' in candidate_response:

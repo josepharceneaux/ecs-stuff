@@ -10,6 +10,7 @@ from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.app.views.batch_lib import _process_batch_item
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 from resume_parsing_service.app.views.parse_lib import process_resume
+from resume_parsing_service.app.views.utils import get_users_talent_pools
 from resume_parsing_service.common.utils.auth_utils import require_oauth
 from resume_parsing_service.common.routes import ResumeApi
 
@@ -43,6 +44,7 @@ def resume_post_reciever():
     filepicker_key = request.form.get('filepicker_key')
     create_candidate = request.form.get('create_candidate')
     oauth = request.oauth_token
+    talent_pools = get_users_talent_pools(oauth)
     if filepicker_key:
         resume_file = None
         filename_str = str(filepicker_key)
@@ -56,7 +58,8 @@ def resume_post_reciever():
         'resume_file': resume_file,
         'filename': filename_str,
         'create_candidate': create_candidate,
-        'oauth': oauth
+        'oauth': oauth,
+        'talent_pools': talent_pools
     }
     return jsonify(**process_resume(parse_params))
 
@@ -91,6 +94,6 @@ def process_batch_request(user_id):
     :param int user_id: The user who 'owns' the queue.
     :return: HTTP/JSON response containing parsed resume information.
     """
-    oauth = request.oauth_token
+    # TODO: add in TalentPool capturing.
     parsing_response = _process_batch_item(user_id)
     return jsonify(**parsing_response), 200

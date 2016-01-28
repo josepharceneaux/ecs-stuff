@@ -81,7 +81,8 @@ def parse_optic_xml(resume_xml_unicode):
         work_experiences=work_experiences,
         educations=educations,
         skills=skills,
-        addresses=addresses
+        addresses=addresses,
+        talent_pool_ids={'add': None}
     )
     return candidate
 

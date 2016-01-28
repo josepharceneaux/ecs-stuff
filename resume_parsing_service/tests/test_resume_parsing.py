@@ -21,10 +21,15 @@ from resume_parsing_service.tests.test_fixtures import email_label_fixture
 from resume_parsing_service.tests.test_fixtures import org_fixture
 from resume_parsing_service.tests.test_fixtures import token_fixture
 from resume_parsing_service.tests.test_fixtures import user_fixture
+from resume_parsing_service.tests.test_fixtures import user_group_fixture
 from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
+from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
+from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
 from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi
 
+from resume_parsing_service.common.models.user import DomainRole
+from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEP = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -116,8 +121,10 @@ def test_invalid_token_fails():
     assert 'error' in json_obj, "There should be an error if a bad token is provided"
 
 
-def test_v15_pdf_by_post(token_fixture):
+def test_v15_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
     assert 'candidate' in response, "Candidate should be in response content"
     assert 'id' in response['candidate'], "Candidate should contain id to signal creation."
