@@ -27,7 +27,7 @@
     </header>
 
     <!-- Navigation -->
-    <nav class="navigation" layout-gt-xs>
+    <nav class="navigation">
         <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
             <strong>Talent Pool:</strong> University Relations
             <nav class="js--mobileMenu-target navigation__subMenu">
@@ -42,7 +42,7 @@
                 </footer>
             </nav>
         </div>
-        <div flex-gt-xs layout-gt-xs class="navigation__items">
+        <div class="navigation__items">
             <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
             <div class="js--mobileMenu js--topNavItem navigation__item">
                 Pipelines
@@ -86,16 +86,10 @@
                     </footer>
                 </nav>
             </div>
-            <span flex></span>
-            <!-- Could look into adding our svg directly into md's icons for buttons -->
-            <!--<md-button class="md-icon-button" aria-label="Share">
-                <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
-            </md-button>
-            <md-button class="md-icon-button" aria-label="Upload">
-                <md-icon md-svg-icon="img/icons/more_vert.svg"></md-icon>
-            </md-button>-->
-            <a href="" class="navigation__link">Share</a>
-            <a href="" class="navigation__link">Upload</a>
+        </div>
+        <div class="navigation__buttons">
+          <a href=""><span class="icon--share">Share</span></a>
+          <a href=""><span class="icon--upload-2">Upload</span></a>
         </div>
     </nav>
 

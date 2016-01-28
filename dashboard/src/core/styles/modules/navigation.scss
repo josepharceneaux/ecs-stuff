@@ -1,0 +1,528 @@
+// ---------------------------------------------------
+// Modules / Navigation
+// ---------------------------------------------------
+
+.navigation {
+  @include inc--align--clearfix;
+
+  z-index: $z-index--3;
+  background-color: $color--purple;
+  background-color: $color--darkGray;
+  position: relative;
+  bottom: 0;
+}
+
+.navigation--sidebar {
+  @extend .row--expanded;
+
+  width: 100%;
+
+  @include helper--media($breakpoint--medium) {
+    height: 100%;
+    display: table;
+    position: relative;
+  }
+}
+
+// -----
+// Buttons
+// -----
+
+.navigation__buttons {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  line-height: 2.5em;
+
+  a {
+    color: $color--white;
+    padding-left: $padding--small;
+    padding-right: $padding--small;
+    padding-top: .5em;
+    padding-bottom: .5em;
+    font-size: 1.1em;
+
+    &:hover {
+      color: $color--blue;
+    }
+  }
+}
+
+// -----
+// Items
+// -----
+
+.navigation__items {
+  background-color: $color--purple;
+  z-index: $z-index--3;
+  position: fixed;
+  white-space: nowrap;
+  width: 100%;
+  bottom: 3.5em;
+
+  @include helper--media($breakpoint--medium) {
+    background-color: $color--darkGray;
+    white-space: normal;
+    overflow-x: visible;
+    overflow-y: visible;
+    position: static;
+  }
+}
+
+// -----
+// Item
+// -----
+
+.navigation__item {
+  @extend .icon--caret;
+
+  transition: background-color $easing--slow;
+  padding-top: $padding--small;
+  padding-bottom: $padding--small;
+  padding-left: $padding--normal;
+  padding-right: $padding--normal;
+  padding-right: $padding--mega;
+  color: $color--white;
+  font-weight: $font-weight--regular;
+  font-size: .95em;
+  margin: 0;
+  display: block;
+  float: left;
+  position: relative;
+
+  &:hover {
+    background-color: $color--purple;
+    cursor: pointer;
+
+    &:after {
+      color: $color--white;
+    }
+  }
+
+  &:after {
+    transition: color $easing--slow;
+    color: $color--white;
+    font-size: 5px;
+    right: 20px;
+    line-height: 1;
+    width: 0;
+    height: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    position: absolute;
+
+    @include helper--media($breakpoint--medium) {
+      color: $color--lightGray;
+    }
+  }
+}
+
+.navigation__item--pipeline {
+  @extend .navigation__item;
+
+  background-color: $color--nearBlack;
+  width: 100%;
+  text-align: center;
+
+  @include helper--media($breakpoint--medium) {
+    width: auto;
+    text-align: left;
+  }
+
+  &:after {
+    @include helper--media($breakpoint--medium) {
+      color: $color--lightGray;
+    }
+  }
+}
+
+.navigation__item--active {
+  background-color: $color--purple;
+
+  .navigation__subMenu {
+    opacity: 1;
+    position: absolute;
+    height: auto;
+    top: -100%;
+
+    @include helper--media($breakpoint--medium) {
+      top: 100%;
+    }
+  }
+
+  &:after {
+    border-bottom-color: $color--lightGray;
+    color: $color--white;
+    border-top-color: transparent;
+    border-top-style: none;
+    border-bottom-style: solid;
+  }
+}
+
+.navigation__item--sidebar {
+  transition: color $easing--slow;
+  padding-top: $padding--tiny;
+  padding-bottom: $padding--tiny;
+  color: $color--lightGray;
+  width: 19%;
+  text-decoration: inherit;
+  display: inline-block;
+  text-align: center;
+
+  @include helper--media($breakpoint--medium) {
+    padding-top: $padding--normal;
+    padding-bottom: $padding--normal;
+    padding-left: .95em;
+    padding-right: .95em;
+    width: 100%;
+    display: table;
+    text-align: left;
+  }
+
+  &:hover {
+    color: $color--white;
+  }
+
+  &.navigation__item--active {
+    background: none;
+    color: $color--white;
+  }
+}
+
+.navigation__item--settings {
+  @extend .navigation__item--sidebar;
+
+  @include helper--media($breakpoint--medium) {
+    background-color: $color--nearBlack;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 3.6em;
+  }
+}
+
+.navigation__item__icon {
+  font-size: $font-size--large;
+  width: 100%;
+  display: block;
+  text-align: center;
+}
+
+// -----
+// Parent
+// -----
+
+.navigation__parent {
+  @extend .col--medium-3;
+
+  transition: width $easing--normal, color $easing--normal, background $easing--normal;
+  font-size: $font-size--main;
+  padding-top: $padding--tiny;
+  padding-bottom: $padding--tiny;
+  color: inherit;
+  overflow: hidden;
+  text-align: center;
+
+  @include helper--media($breakpoint--medium) {
+    width: 2.25em;
+    float: none;
+    display:  table-cell;
+    vertical-align: top;
+    text-align: left;
+  }
+}
+
+// -----
+// Sub Menu
+// -----
+
+.navigation__subMenu {
+  transition: opacity $easing--slow;
+  z-index: $z-index--1;
+  background-color: $color--white;
+  color: $color--nearBlack;
+  padding-left: $padding--large;
+  padding-right: $padding--large;
+  font-size: .9em;
+  min-width: 100%;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-align: left;
+  display: none;
+
+  @include helper--media($breakpoint--medium) {
+    position: absolute;
+    display: block;
+    z-index: $z-index--1;
+    min-width: 110%;
+    top: 100%;
+    opacity: 0;
+    height: 0;
+  }
+
+  a {
+    margin-top: $padding--small;
+    margin-bottom: $padding--small;
+    line-height: 1.5em;
+    display: block;
+    color: inherit;
+
+    &:hover {
+      color: $color--lightPurple;
+    }
+  }
+}
+
+.navigation__subMenu__header {
+  padding-top: $padding--normal;
+  padding-bottom: $padding--normal;
+  padding-left: $padding--small;
+  padding-right: $padding--small;
+  margin-bottom: $padding--small;
+  border-width: $border-width--normal;
+  border-color: $color--gray;
+  padding-left: 2.5em;
+  border-bottom-style: solid;
+  position: relative;
+
+  .icon {
+    background-color: $color--purple;
+    color: $color--white;
+    display: inline-block;
+    position: absolute;
+    text-align: center;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    border-radius: 50%;
+    width: 1.8em;
+    height: 1.8em;
+
+    &:after {
+      font-size: $font-size--small;
+      top: 50%;
+      left: 0;
+      right: 2px;
+      transform: translateY(-50%);
+      position: absolute;
+    }
+  }
+}
+
+.navigation__subMenu__footer {
+  font-size: $font-size--smaller;
+  padding-top: $padding--small;
+  padding-bottom: $padding--small;
+  border-width: $border-width--normal;
+  border-color: $color--gray;
+  border-top-style: solid;
+  text-align: right;
+
+  a {
+    color: $color--purple;
+    margin: 0;
+  }
+}
+
+// -----
+// Child
+// -----
+
+.navigation__child {
+  @include inc--align--left;
+  @extend .col--medium-9;
+
+  color: $color--lightPurple;
+  background-color: $color--purple;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  display: none; //TEMPORARY
+
+  @include helper--media($breakpoint--medium) {
+    position: relative;
+    vertical-align: top;
+    display: table-cell;
+    vertical-align: top;
+    float: none;
+  }
+}
+
+// -----
+// Child Item
+// -----
+
+.navigation__childItem {
+  // animation: animation--hide $easing--slow;
+  background-color: $color--purple;
+  color: $color--white;
+  position: absolute;
+  white-space: nowrap;
+  font-size:  1.15em;
+  width: 100%;
+  right: 0;
+  display: none;
+}
+
+.navigation__childItem--active {
+  // animation: animation--show $easing--slow;
+  display: block;
+}
+
+.navigation__childItem__header {
+  transition: background-color $easing--slow;
+  color: $color--white;
+  padding-top: $padding--normal;
+  padding-bottom: $padding--normal;
+  padding-left: $padding--huge;
+  padding-right: $padding--huge;
+  background-color: $color--lightPurple;
+  position: relative;
+
+  &:hover {
+    background-color: lighten($color--lightPurple, 5%);
+    cursor: pointer;
+  }
+}
+
+.navigation__childItem__buttons {
+  padding-left: $padding--huge;
+  padding-right: $padding--huge;
+  margin-top: $padding--huge;
+  margin-bottom: $padding--huge;
+
+  a {
+    transition: background-color $easing--slow;
+    background-color: $color--lightPurple;
+    color: $color--white;
+    font-size: $font-size--main;
+    margin-left: .2em;
+    margin-right: .2em;
+    width: 3.2em;
+    height: 3.2em;
+    border-radius: 50%;
+    position: relative;
+    display: inline-block;
+
+    &:hover {
+      background-color: lighten($color--lightPurple, 5%);
+      cursor: pointer;
+    }
+  }
+
+  .icon {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    text-align: center;
+  }
+}
+
+.navigation__childItem__content {
+  padding-left: $padding--huge;
+  padding-right: $padding--huge;
+  margin-top: $padding--huge;
+  margin-bottom: $padding--huge;
+  color: $color--white;
+  font-size: $font-size--smaller;
+
+  @include helper--media($breakpoint--medium) {
+    width: 15.85em;
+  }
+
+  strong {
+    color: $color--white;
+    font-weight: $font-weight--regular;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+  }
+
+  li {
+    margin-top: $margin--line;
+    margin-bottom: $margin--line;
+    line-height: 1.2em;
+    padding-left: 2em;
+    padding-right: 0;
+    list-style-type: none;
+    white-space: normal;
+    position: relative;
+
+    .icon {
+      font-size: $font-size--small;
+      position: absolute;
+      left: 0;
+      top: .21m;
+    }
+  }
+
+  a {
+    transition: color $easing--slow;
+    color: $color--lighterPurple;
+
+    &:hover {
+      color: $color--white;
+    }
+  }
+}
+
+// -----
+// View All
+// -----
+
+.navigation__childItem__viewAll {
+  margin-top: $margin--row;
+  display: block;
+  text-align: right;
+
+  .icon--right {
+    font-size: .5em;
+    margin-left: .5em;
+  }
+}
+
+// -----
+// Combo
+// -----
+
+.navigation__childItem__combo {
+  margin-bottom: $margin--row;
+
+  h3 {
+    position: relative;
+  }
+
+  .icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
+// -----
+// Link
+// -----
+
+.navigation__link {
+  @extend .navigation__item;
+
+  padding-right: $padding--normal;
+
+  &:after {
+    display: none;
+  }
+
+  &:hover {
+    color: $color--white;
+  }
+}

@@ -1,3 +1,8 @@
+// DO NOT USE
+// This is for reference only of what Cosmic names their icons for any markup
+// of theirs they may use. So that either icon or its respective class can be renamed.
+// Icons fonts and scss are generated under /src/core/icon-font/
+
 // ---------------------------------------------------
 // Modules / Icons
 // ---------------------------------------------------
@@ -11,78 +16,63 @@
        url("../fonts/gettalent.svg#gettalent") format("svg");
   font-weight: normal;
   font-style: normal;
-
 }
 
 .icon {
-  font-family: "gettalent" !important;
-  font-style: normal !important;
-  font-weight: normal !important;
-  font-variant: normal !important;
+  font-family: "gettalent-icons";
   text-transform: none !important;
   speak: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-
-.icon--dropbox        { @extend .icon; &:after { content: ''; } }
-.icon--box            { @extend .icon; &:after { content: ''; } }
-.icon--googleDrive    { @extend .icon; &:after { content: ''; } }
-
-
-.icon--stack                { @extend .icon; &:after { content: "\61"; } }
-.icon--twitter-filled       { @extend .icon; &:after { content: "\62"; } }
-.icon--twitter              { @extend .icon; &:after { content: "\64"; } }
-.icon--locked               { @extend .icon; &:after { content: "\65"; } }
-.icon--search               { @extend .icon; &:after { content: "\66"; } }
-.icon--unlocked             { @extend .icon; &:after { content: "\67"; } }
-.icon--raised-hand          { @extend .icon; &:after { content: "\68"; } }
-.icon--thumbs-up            { @extend .icon; &:after { content: "\69"; } }
-.icon--thumbs-down          { @extend .icon; &:after { content: "\6a"; } }
-.icon--speech               { @extend .icon; &:after { content: "\6b"; } }
-.icon--phone                { @extend .icon; &:after { content: "\6c"; } }
-.icon--engage               { @extend .icon; &:after { content: "\6d"; } }
-.icon--mail                 { @extend .icon; &:after { content: "\6e"; } }
-.icon--mail-open            { @extend .icon; &:after { content: "\6f"; } }
-.icon--people               { @extend .icon; &:after { content: "\70"; } }
-.icon--person               { @extend .icon; &:after { content: "\73"; } }
-.icon--build                { @extend .icon; &:after { content: "\74"; } }
-.icon--work                 { @extend .icon; &:after { content: "\75"; } }
-.icon--unchecked            { @extend .icon; &:after { content: "\76"; } }
-.icon--download             { @extend .icon; &:after { content: "\77"; } }
-.icon--upload               { @extend .icon; &:after { content: "\78"; } }
-.icon--notes                { @extend .icon; &:after { content: "\79"; } }
-.icon--file                 { @extend .icon; &:after { content: "\7a"; } }
-.icon--close                { @extend .icon; &:after { content: "\41"; } }
-.icon--checked              { @extend .icon; &:after { content: "\42"; } }
-.icon--tools                { @extend .icon; &:after { content: "\43"; } }
-.icon--settings             { @extend .icon; &:after { content: "\44"; } }
-.icon--calander             { @extend .icon; &:after { content: "\45"; } }
-.icon--location             { @extend .icon; &:after { content: "\46"; } }
-.icon--organize             { @extend .icon; &:after { content: "\47"; } }
-.icon--save                 { @extend .icon; &:after { content: "\48"; } }
-.icon--computer             { @extend .icon; &:after { content: "\49"; } }
-.icon--custom-fields        { @extend .icon; &:after { content: "\4a"; } }
-.icon--education            { @extend .icon; &:after { content: "\4b"; } }
-.icon--progress             { @extend .icon; &:after { content: '\56'; } }
-.icon--cloud                { @extend .icon; &:after { content: "\4c"; } }
-.icon--overview             { @extend .icon; &:after { content: "\63"; } }
-.icon--linkedin-filled      { @extend .icon; &:after { content: "\71"; } }
-.icon--linkedin             { @extend .icon; &:after { content: '\55'; } }
-.icon--stack-overflow       { @extend .icon; &:after { content: "\52"; } }
-.icon--checked-box          { @extend .icon; &:after { content: "\51"; } }
-.icon--unchecked-box        { @extend .icon; &:after { content: "\58"; } }
-.icon--grid                 { @extend .icon; &:after { content: "\59"; } }
-.icon--list                 { @extend .icon; &:after { content: "\5a"; } }
-.icon--facebook-filled      { @extend .icon; &:after { content: "\30"; } }
-
-
-.icon--github               { @extend .icon; &:after { content: "\57"; } }
-.icon--github-comment       { @extend .icon; &:after { content: "\72"; } }
-.icon--github-branch        { @extend .icon; &:after { content: "\4e"; } }
-.icon--github-commit        { @extend .icon; &:after { content: "\4f"; } }
-.icon--github-compare       { @extend .icon; &:after { content: "\50"; } }
-.icon--github-merge         { @extend .icon; &:after { content: "\53"; } }
-.icon--github-pull-request  { @extend .icon; &:after { content: "\54"; } }
-.icon--github-star          { @extend .icon; &:after { content: "\4d"; } }
+.icon--announcements { @extend .icon; &:after { content: "\EA01" } }
+.icon--bars { @extend .icon; &:after { content: "\EA02" } }
+.icon--bell { @extend .icon; &:after { content: "\EA03" } }
+.icon--box { @extend .icon; &:after { content: "\EA04" } }
+.icon--build { @extend .icon; &:after { content: "\EA05" } }
+.icon--calendar { @extend .icon; &:after { content: "\EA06" } }
+.icon--campaigns { @extend .icon; &:after { content: "\EA07" } }
+.icon--caret { @extend .icon; &:after { content: "\EA08" } }
+.icon--checked { @extend .icon; &:after { content: "\EA09" } }
+.icon--close { @extend .icon; &:after { content: "\EA0A" } }
+.icon--cloud { @extend .icon; &:after { content: "\EA0B" } }
+.icon--cog { @extend .icon; &:after { content: "\EA0C" } }
+.icon--computer { @extend .icon; &:after { content: "\EA0D" } }
+.icon--custom-fields { @extend .icon; &:after { content: "\EA0E" } }
+.icon--download { @extend .icon; &:after { content: "\EA0F" } }
+.icon--dropbox { @extend .icon; &:after { content: "\EA10" } }
+.icon--education { @extend .icon; &:after { content: "\EA11" } }
+.icon--file { @extend .icon; &:after { content: "\EA12" } }
+.icon--google-drive { @extend .icon; &:after { content: "\EA13" } }
+.icon--hamburger { @extend .icon; &:after { content: "\EA14" } }
+.icon--linkedin { @extend .icon; &:after { content: "\EA15" } }
+.icon--list { @extend .icon; &:after { content: "\EA16" } }
+.icon--location { @extend .icon; &:after { content: "\EA17" } }
+.icon--lock { @extend .icon; &:after { content: "\EA18" } }
+.icon--mag { @extend .icon; &:after { content: "\EA19" } }
+.icon--mail-open { @extend .icon; &:after { content: "\EA1A" } }
+.icon--mail { @extend .icon; &:after { content: "\EA1B" } }
+.icon--notes { @extend .icon; &:after { content: "\EA1C" } }
+.icon--overview { @extend .icon; &:after { content: "\EA1D" } }
+.icon--people { @extend .icon; &:after { content: "\EA1E" } }
+.icon--person { @extend .icon; &:after { content: "\EA1F" } }
+.icon--phone { @extend .icon; &:after { content: "\EA20" } }
+.icon--pipeline { @extend .icon; &:after { content: "\EA21" } }
+.icon--pipelines { @extend .icon; &:after { content: "\EA22" } }
+.icon--plus { @extend .icon; &:after { content: "\EA23" } }
+.icon--progress { @extend .icon; &:after { content: "\EA24" } }
+.icon--raised-hand { @extend .icon; &:after { content: "\EA25" } }
+.icon--right { @extend .icon; &:after { content: "\EA26" } }
+.icon--save { @extend .icon; &:after { content: "\EA27" } }
+.icon--search { @extend .icon; &:after { content: "\EA28" } }
+.icon--settings { @extend .icon; &:after { content: "\EA29" } }
+.icon--share { @extend .icon; &:after { content: "\EA2A" } }
+.icon--speech { @extend .icon; &:after { content: "\EA2B" } }
+.icon--thumbs-up { @extend .icon; &:after { content: "\EA2C" } }
+.icon--tools { @extend .icon; &:after { content: "\EA2D" } }
+.icon--twitter { @extend .icon; &:after { content: "\EA2E" } }
+.icon--unchecked { @extend .icon; &:after { content: "\EA2F" } }
+.icon--upload-2 { @extend .icon; &:after { content: "\EA30" } }
+.icon--upload { @extend .icon; &:after { content: "\EA31" } }
+.icon--work { @extend .icon; &:after { content: "\EA32" } }
