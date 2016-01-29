@@ -4,11 +4,11 @@ Helper functions for tests written for the candidate_service
 # Standard library
 import requests
 import json
-
-# Candidate's sample data
-from candidate_sample_data import generate_single_candidate_data
+# Models
+from candidate_service.common.models.user import DomainRole
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
+# User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
@@ -18,37 +18,42 @@ class AddUserRoles(object):
     """
     @staticmethod
     def get(user):
-        return add_role_to_test_user(user, ['CAN_GET_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES])
 
     @staticmethod
     def edit(user):
-        return add_role_to_test_user(user, ['CAN_EDIT_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def delete(user):
-        return add_role_to_test_user(user, ['CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_and_get(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add_and_delete(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_get_edit(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-                                            'CAN_EDIT_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES,
+                                            DomainRole.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def all_roles(user):
-        return add_role_to_test_user(user, ['CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-                                            'CAN_EDIT_CANDIDATES', 'CAN_DELETE_CANDIDATES'])
+        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                            DomainRole.Roles.CAN_GET_CANDIDATES,
+                                            DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
 
 def define_and_send_request(access_token, request, url, data=None):
@@ -85,43 +90,6 @@ def response_info(response):
     return content.format(url, request, status_code, _json)
 
 
-def post_to_candidate_resource(access_token, data=None, domain_id=None):
-    """
-    Function sends a request to CandidateResource/post()
-    If domain_id is provided, data will include candidate aoi & custom fields
-    """
-    if not data and domain_id:
-        data = generate_single_candidate_data(domain_id=domain_id)
-    elif data and not domain_id:
-        data = data
-    else:
-        data = generate_single_candidate_data()
-
-    resp = requests.post(
-        url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
-        data=json.dumps(data)
-    )
-    return resp
-
-
-def get_from_candidate_resource(access_token, candidate_id=None, candidate_email=None):
-    """
-    Function sends a get request to CandidateResource/get()
-    :type access_token:     basestring
-    :type candidate_id:     int|long
-    :type candidate_email:  basestring
-    """
-    url = CandidateApiUrl.CANDIDATES
-    if candidate_id:
-        url = url + '/%s' % candidate_id
-    elif candidate_email:
-        url = url + '/%s' % candidate_email
-
-    resp = requests.get(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-    return resp
-
-
 def request_to_candidates_resource(access_token, request, data=None):
     """
     Function sends a get request to CandidatesResource NOT CandidateResource
@@ -129,20 +97,11 @@ def request_to_candidates_resource(access_token, request, data=None):
     :type request: str
     :type data: dict
     """
+    if request.lower() == 'post':
+        assert data is not None
+
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
-
-
-def patch_to_candidate_resource(access_token, data):
-    """
-    Function sends a request to CandidateResource/patch()
-    """
-    resp = requests.patch(
-        url=CandidateApiUrl.CANDIDATES,
-        headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
-        data=json.dumps(data)
-    )
-    return resp
 
 
 def request_to_candidate_resource(access_token, request, candidate_id='', candidate_email=''):
@@ -340,7 +299,8 @@ def request_to_candidate_preferred_location_resource(access_token, request, cand
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_skill_resource(access_token, request, candidate_id='', all_skills=False, skill_id=''):
+def request_to_candidate_skill_resource(access_token, request, candidate_id='',
+                                        all_skills=False, skill_id=''):
     """
     Function sends a request to CandidateSkillResource
     If all_skills is True, the request will hit /.../skills endpoint.
@@ -407,26 +367,7 @@ def request_to_candidate_preference_resource(token, request, candidate_id='', da
     return define_and_send_request(token, request, url, data)
 
 
-def create_same_candidate(access_token):
-    """
-    Function will attempt to create the same Candidate twice
-    """
-    # Create Candidate
-    resp = post_to_candidate_resource(access_token)
-    resp_dict = resp.json()
-    candidate_id = resp_dict['candidates'][0]['id']
-
-    # Fetch Candidate\
-    resp = get_from_candidate_resource(access_token, candidate_id)
-    resp_dict = resp.json()
-
-    # Create Candidate again
-    resp = post_to_candidate_resource(access_token, resp_dict)
-
-    return resp
-
-
-def check_for_id(_dict):
+def check_for_id(_dict): #TODO: must be updated to account for talen_pool_ids
     """
     Checks for id-key in candidate_dict and all its nested objects that must have an id-key
     :type _dict:    dict
@@ -446,6 +387,8 @@ def check_for_id(_dict):
     # Remove contact_history key since it will not have an id-key to begin with
     if 'contact_history' in top_level_keys:
         top_level_keys.remove('contact_history')
+    if 'talent_pool_ids' in top_level_keys:
+        top_level_keys.remove('talent_pool_ids')
 
     for key in top_level_keys:
         obj = _dict[key]
@@ -497,6 +440,8 @@ def remove_id_key(_dict):
     # Remove contact_history key since it will not have an id-key to begin with
     if 'contact_history' in _dict:
         del _dict['contact_history']
+    if 'talent_pool_ids' in _dict:
+        del _dict['talent_pool_ids']
 
     # Remove id-key from top level dict
     if 'id' in _dict:
@@ -529,22 +474,3 @@ def remove_id_key(_dict):
                         for i in range(0, len(dictionary[_key])):
                             remove_id_key(_dict=dictionary[_key][i])  # recurse
     return _dict
-
-
-# # TODO: what if end_date is provided only?
-# def is_candidate_experience_ordered_correctly(experiences):
-#     """
-#     Function will check to see if candidate experience was ordered correctly in return object.
-#     CandidateExperience must be returned in descending order based on start_date
-#     :rtype  bool
-#     """
-#     assert isinstance(experiences, list)
-#
-#     latest= experiences[0].get('start_date')
-#     for i, experience in enumerate(experiences):
-#         if experience['is_current'] and i != 0:
-#             return False
-#         if experience['start_date'] > latest:
-#             return False
-#
-#     return True

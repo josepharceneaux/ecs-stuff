@@ -144,22 +144,24 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
     :param access_token: Bearer token for Authorization when sending request to url
     :param url: url to send post request
     :param content_type: format of post data
-    :param kwargs: post data like campaign name, smartlist ids etc
+    :param post_data: post data like campaign name, smartlist ids etc
+    :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
     :return:
     """
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
     secret_key_id = None
-    if not access_token:
-        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
-    else:
+    if not user_id:
+        secret_key_id, access_token = User.generate_jw_token()
+    # If is_jwt_request parameter is false then send an auth service token request
+    elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         db.db.session.commit()
         token = Token.get_token(access_token=access_token.split(' ')[1])
@@ -179,10 +181,13 @@ def run_job(user_id, access_token, url, content_type, post_data, **kwargs):
                                     data=urlencode(data))
                 logger.info('Token refreshed %s' % resp.json()['expires_at'])
                 access_token = "Bearer " + resp.json()['access_token']
+    # If is_jwt_request parameter is true then send jwt token request
+    elif is_jwt_request:
+        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
 
     logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE)
 
@@ -214,6 +219,10 @@ def schedule_job(data, user_id=None, access_token=None):
             raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
     else:
         job_config['task_name'] = None
+        is_jwt_request = data.get('is_jwt_request')
+        if is_jwt_request and (str(is_jwt_request).lower() not in ['true', 'false']):
+            raise InvalidUsage('is_jwt_request(Optional) value is invalid. It should be either True or False')
+        job_config['is_jwt_request'] = is_jwt_request if is_jwt_request and str(is_jwt_request).lower() == 'true' else None
 
     trigger = str(job_config['task_type']).lower().strip()
 
@@ -229,7 +238,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data']]
+                                          job_config['post_data'], job_config.get('is_jwt_request')]
                                     )
 
             current_datetime = datetime.datetime.utcnow()
@@ -239,7 +248,7 @@ def schedule_job(data, user_id=None, access_token=None):
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
             if job_start_time < current_datetime:
-                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'])
+                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception as e:
             raise JobNotCreatedError("Unable to create the job.")
@@ -253,7 +262,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data']]
+                                          job_config['post_data'], job_config.get('is_jwt_request')]
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
@@ -283,7 +292,7 @@ def serialize_task(task):
     """
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
-                 task.args: user_id, access_token, url, content_type, post_data
+                 task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
     :return: JSON converted dict object
     """
     task_dict = None
@@ -297,6 +306,7 @@ def serialize_task(task):
                 next_run_datetime=task.next_run_time,
                 frequency=dict(seconds=task.trigger.interval_length),
                 post_data=task.args[4],
+                is_jwt_request=task.args[5],
                 pending=task.pending,
                 task_type=SchedulerUtils.PERIODIC
         )
@@ -316,6 +326,7 @@ def serialize_task(task):
                 url=task.args[2],
                 run_datetime=task.trigger.run_date,
                 post_data=task.args[4],
+                is_jwt_request=task.args[5],
                 pending=task.pending,
                 task_type=SchedulerUtils.ONE_TIME
         )

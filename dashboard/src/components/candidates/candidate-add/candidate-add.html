@@ -1,11 +1,39 @@
 <section id="candidate-add-view" class="view__main">
+    <script type="text/javascript" src="api.filepicker.io/v2/filepicker.js"></script>
 
     <div class="row--widget">
         <div class="col--full-12 box">
             <header class="box__header">
                 <h2>Add Candidate</h2>
             </header>
-            </div>
+        </div>
+    </div>
+
+    <div class="row--widget">
+        <div class="col--full-12 box">
+            <header class="box__header">
+                <h2>Upload Candidate File(s)</h2>
+            </header>
+            <button ng-click="vm.fpInit()">Upload!</button>
+        </div>
+    </div>
+    <!--<input type="filepicker-dragdrop" data-fp-apikey="Ay99lw0fFRXKz5n4qpXCmz" data-fp-mimetypes="*/*" data-fp-container="modal" data-fp-multiple="true" data-fp-store-location="s3" data-fp-services="BOX,CLOUDDRIVE,COMPUTER,DROPBOX,FACEBOOK,GITHUB,GOOGLE_DRIVE,FLICKR,EVERNOTE,GMAIL,INSTAGRAM,SKYDRIVE,IMAGE_SEARCH,URL,WEBCAM" onchange="out='';for(var i=0;i<event.fpfiles.length;i++){out+=event.fpfiles[i].url;out+=' '};alert(out)">-->
+
+    <div class="row--widget">
+        <div class="col--full-12 box">
+            <header class="box__header">
+                <h2>Manually Add a Candidate</h2>
+            </header>
+            {{vm}}
+            <form ng-submit="vm.manualSubmit()">
+                <input type="text" ng-model="vm.candidateForm.firstName"
+                       ng-required placeholder="First Name">
+                <input type="text" ng-model="vm.candidateForm.lastName"
+                       ng-required placeholder="Last Name">
+                <input type="text" ng-model="vm.candidateForm.email"
+                       ng-required="" placeholder="Email">
+                <button>Submit</button>
+            </form>
         </div>
     </div>
 

@@ -644,7 +644,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     # Return data dictionary. Initializing here, to have standard return type across the function
     search_results = dict(total_found=0,
-                          total_count=0,
                           candidates=[],
                           max_score=0,
                           max_pages=0,

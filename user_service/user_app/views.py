@@ -1,4 +1,3 @@
-
 __author__ = 'ufarooqi'
 
 import random
@@ -7,13 +6,14 @@ from . import app
 from flask import request, url_for, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
-from user_service_utilties import send_reset_password_email
+from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_JWT_SALT, \
+    PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS
 from user_service.common.error_handling import *
-from user_service.common.routes import UserServiceApi
+from user_service.common.routes import UserServiceApi, get_web_app_url
 from user_service.common.utils.validators import is_valid_email
 from user_service.common.models.user import Domain, DomainRole, Token, db
-from werkzeug.security import generate_password_hash, check_password_hash
-from user_service.common.utils.auth_utils import require_oauth, require_all_roles
+from werkzeug.security import check_password_hash
+from user_service.common.utils.auth_utils import require_oauth, require_all_roles, gettalent_generate_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
@@ -21,7 +21,7 @@ users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
 
 @users_utilities_blueprint.route(UserServiceApi.DOMAIN_ROLES, methods=['GET'])
 @require_oauth()
-@require_all_roles('CAN_GET_DOMAIN_ROLES')
+@require_all_roles(DomainRole.Roles.CAN_GET_DOMAIN_ROLES)
 def get_all_roles_of_domain(domain_id):
     # if logged-in user should belong to same domain as input domain_id
     if Domain.query.get(domain_id) and (request.user.domain_id == domain_id):
@@ -42,34 +42,40 @@ def update_password():
     :rtype: dict
     """
 
+    # Validate inputs
     posted_data = request.get_json()
-    if posted_data:
-        old_password = posted_data.get('old_password', '')
-        new_password = posted_data.get('new_password', '')
-        if not old_password or not new_password:
-            raise NotFoundError(error_message="Either old or new password is missing")
-        old_password_hashed = request.user.password
-        # If password is hashed in web2py app
-        if 'pbkdf2:sha512:1000' not in old_password_hashed and old_password_hashed.count('$') == 2:
-            (digest_alg, salt, hash_key) = request.user.password.split('$')
-            old_password_hashed = 'pbkdf2:sha512:1000$%s$%s' % (salt, hash_key)
-        if check_password_hash(old_password_hashed, old_password):
-            # Change user's password
-            request.user.password = generate_password_hash(new_password, method='pbkdf2:sha512')
-            # Delete any tokens associated with him as password is changed now
-            Token.query.filter_by(user_id=request.user.id).delete()
-            db.session.commit()
-            return jsonify(dict(success="Your password has been changed successfully"))
-        else:
-            raise UnauthorizedError(error_message="Old password is not correct")
-    else:
+    if not posted_data:
         raise InvalidUsage(error_message='No request data is found')
+    old_password = posted_data.get('old_password', '')
+    new_password = posted_data.get('new_password', '')
+    if not old_password or not new_password:
+        raise NotFoundError(error_message="Either old or new password is missing")
+    old_password_hashed = request.user.password
+
+    # If password is hashed in web2py (old framework) format, change it to werkzeug.security format
+    if 'pbkdf2:sha512:1000' not in old_password_hashed and old_password_hashed.count('$') == 2:
+        (digest_alg, salt, hash_key) = request.user.password.split('$')
+        old_password_hashed = 'pbkdf2:sha512:1000$%s$%s' % (salt, hash_key)
+
+    # Verify old password hash
+    if not check_password_hash(old_password_hashed, old_password):
+        raise UnauthorizedError(error_message="Old password is not correct")
+
+    # Change user's password & clear out all user's access tokens
+    request.user.password = gettalent_generate_password_hash(new_password)
+    Token.query.filter_by(user_id=request.user.id).delete()
+
+    return jsonify(dict(success="Your password has been changed successfully"))
 
 
 @users_utilities_blueprint.route(UserServiceApi.FORGOT_PASSWORD, methods=['POST'])
 def forgot_password():
 
-    email = request.form.get('username')
+    posted_data = request.get_json()
+    if not posted_data:
+        raise InvalidUsage(error_message="No request data is found")
+
+    email = posted_data.get('username', '')
     if not email or not is_valid_email(email):
         raise InvalidUsage("A valid username should be provided")
 
@@ -77,7 +83,7 @@ def forgot_password():
     if not user:
         raise NotFoundError(error_message="User with username: %s doesn't exist" % email)
 
-    token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt='recover-key')
+    token = URLSafeTimedSerializer(app.config["SECRET_KEY"]).dumps(email, salt=PASSWORD_RECOVERY_JWT_SALT)
 
     user.reset_password_key = token
     db.session.commit()
@@ -85,8 +91,9 @@ def forgot_password():
     # Create 6-digit numeric token for mobile app and store it into cache
     six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
 
-    redis_store.setex(six_digit_token, token, 46400)  # Key-value pair will be removed after 12 hours
-    reset_password_url = url_for('.reset_password', token=token, _external=True)
+    redis_store.setex(six_digit_token, token, PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
+
+    reset_password_url = get_web_app_url() + "/reset-password/%s" % token
 
     name = user.first_name or user.last_name or 'User'
     send_reset_password_email(email, name, reset_password_url, six_digit_token)
@@ -98,13 +105,14 @@ def forgot_password():
 def reset_password(token):
 
     try:
-        # Check if token is six digit long (For Mobile)
-        six_digit_token = ''
+        # Check if token is six digit long (For Mobile).  If so, it's actually the token key
+        six_digit_token_key = ''
         if len(token) == 6:
-            six_digit_token = token
-            token = redis_store.get(six_digit_token)
+            six_digit_token_key = token
+            token = redis_store.get(six_digit_token_key)
 
-        email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt='recover-key', max_age=46400)
+        email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
+                                                                       max_age=PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
 
         user = User.query.filter_by(email=email).first()
         if user.reset_password_key != token:
@@ -114,21 +122,27 @@ def reset_password(token):
         raise ForbiddenError(error_message="Your encrypted token has been expired")
     except BadSignature:
         raise ForbiddenError(error_message="Your encrypted token is not valid")
-    except:
-        raise ForbiddenError(error_message="Your encrypted token is not valid")
+    except Exception as e:
+        raise InternalServerError(error_message="Your encrypted token could not be decrypted",
+                                  additional_error_info={"exception": e.message})
 
     if request.method == 'GET':
         return '', 204
     else:
-        if not request.form.get('password'):
+        posted_data = request.get_json()
+        if not posted_data:
+            raise InvalidUsage(error_message="No request data is found")
+
+        password = posted_data.get('password', '')
+        if not password:
             raise InvalidUsage(error_message="A valid password should be provided")
 
         # Remove key-value pair from redis-cache
-        if six_digit_token:
-            redis_store.delete(six_digit_token)
+        if six_digit_token_key:
+            redis_store.delete(six_digit_token_key)
 
         user.reset_password_key = ''
-        user.password = generate_password_hash(request.form.get('password'), method='pbkdf2:sha512')
+        user.password = gettalent_generate_password_hash(password)
         db.session.commit()
         return '', 204
 

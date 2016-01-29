@@ -1,0 +1,96 @@
+// ---------------------------------------------------
+// Modules / Angular Material Override
+// ---------------------------------------------------
+
+.module-padding {
+    padding: $padding--module;
+}
+
+@mixin card {
+    border-radius: $border-radius--base;
+    box-shadow:none;
+    border-right: solid 1px #e2e2e2;
+    border-bottom: solid 1px #e2e2e2;
+    background-color:#ffffff;
+}
+
+.md-whiteframe-gt {
+    @include card;
+}
+
+md-card {
+    @include card;
+    .md-subhead {
+        padding-top:0px;
+    }
+    md-card-content {
+
+    }
+    .md-card-title {
+
+    }
+    .md-title {
+        font-weight:500;
+        font-size: 1.4em;
+    }
+    .md-subhead-alt {
+        margin-top:4px;
+    }
+}
+
+md-content {
+    border-radius: $border-radius--base;
+
+    .view__main > & {
+        padding: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+}
+
+
+
+
+/** Move over to modules when styling **/
+
+
+#v2-pipeline-summaries {
+    md-card {
+        min-height: 450px;
+        height: 450px;
+
+        .card-top-right-button {
+            max-width: 60px;
+            text-align: right;
+        }
+    }
+}
+
+#v2-activity-feed {
+    .v2-feed {
+        background-color: #eee;
+        padding: 16px;
+        margin: 8px 0;
+    }
+}
+
+
+#v2-candidate-breakdown {
+    md-list-item {
+        min-height: 36px;
+    }
+}
+
+#v2-team-contributors {
+    .v2-contributor {
+        background-color: #eee;
+        margin: 8px 0 8px 20px;
+
+        .md-avatar {
+            margin-left: -36px;
+        }
+    }
+}
+
+
+

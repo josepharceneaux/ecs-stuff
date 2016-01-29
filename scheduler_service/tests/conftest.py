@@ -10,7 +10,7 @@ from datetime import timedelta
 import requests
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture
+    test_org, test_culture, first_group, domain_first
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -28,7 +28,7 @@ def job_config_periodic(request):
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "text to be sent as sms",
         }
     }
@@ -44,7 +44,7 @@ def job_config_one_time(request):
         "post_data": {
             "campaign_name": "Email Campaign",
             "email_id": "abc@hotmail.com",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "content to be sent as email",
         }
     }
@@ -96,7 +96,7 @@ def job_config(request, job_config_periodic):
     :return:
     """
     temp_job_config = job_config_periodic.copy()
-    start_date = datetime.utcnow() + timedelta(seconds=20)
+    start_date = datetime.utcnow() + timedelta(minutes=20)
     end_date = start_date + timedelta(days=2)
     temp_job_config['post_data'] = job_config_periodic['post_data']
     temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -138,7 +138,7 @@ def job_config_one_time_task(request, job_config_one_time):
     :return:
     """
     temp_job_config = job_config_one_time.copy()
-    run_datetime = datetime.utcnow() + timedelta(seconds=10)
+    run_datetime = datetime.utcnow() + timedelta(minutes=10)
     temp_job_config['url'] = SchedulerApiUrl.TEST_TASK
     temp_job_config['post_data'] = job_config_one_time['post_data']
     temp_job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')

@@ -1,19 +1,43 @@
 <!-- Sidebar -->
-<div>
-    <div class="mock-pipeline-nav" style="background:#666;">
-        <div style="padding:10px; color:white; font-weight:bold; font-size:11px;" >Pipeline Menu</div>
-        <hr />
-        <a style="padding:10px;" href="/">Detail</a>
-        <hr />
-        <a style="padding:10px;" href="">Campaigns</a>
-        <hr />
-        <a style="padding:10px;" href="/">Smart Lists</a>
-        <hr />
-        <a style="padding:10px;" href="/">Team</a>
-        <hr />
-        <a style="padding:10px;" href="/pipelines/[pipeline-id]/settings">Settings</a>
-        <hr />
-    </div>
+
+    <section class="view__sidebar view__sidebar--active">
+        <nav class="navigation--sidebar">
+            <div class="navigation__parent">
+                <a href="#" class="navigation__item--sidebar" uib-tooltip="Pipelines">
+                    <span class="navigation__item__icon icon--pipeline"></span>
+                </a>
+                <a href="#" class="navigation__item--sidebar" uib-tooltip="Campaigns">
+                    <span class="navigation__item__icon icon--announcements"></span>
+                </a>
+                <a href="#" class="navigation__item--sidebar" uib-tooltip="Smartlists">
+                    <span class="navigation__item__icon icon--list"></span>
+                </a>
+                <a href="#" class="navigation__item--sidebar" uib-tooltip="Talent Pools">
+                    <span class="navigation__item__icon icon--people"></span>
+                </a>
+                <a href="#" class="navigation__item--settings" uib-tooltip="Settings">
+                    <span class="navigation__item__icon icon--cog"></span>
+                </a>
+            </div>
+            <div class="navigation__child">
+                <div class="navigation__childItem navigation__childItem--active">
+                    <header class="navigation__childItem__header">
+                        <h3>Campaigns</h3>
+                    </header>
+                    <section class="navigation__childItem__content">
+                        <strong>Recent</strong>
+                        <ul>
+                            <li><a href="#">Event in SF</a></li>
+                            <li><a href="#">We are Hiring</a></li>
+                            <li><a href="#">Calling all Vets</a></li>
+                            <li><a href="#">Now Hiring!</a></li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </nav>
+    </section>
+
     <!--
     <nav class="view__sidebar__nav row--expanded">
         <div class="js--nav view__sidebar__navParent">
@@ -45,6 +69,4 @@
             </div>
         </div>
         -->
-</div>
-
 <!-- End Sidebar -->

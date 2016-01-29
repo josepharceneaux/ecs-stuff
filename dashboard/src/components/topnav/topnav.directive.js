@@ -18,7 +18,8 @@
             replace: true,
             scope: {},
             controller: 'TopnavController',
-            controllerAs: 'vm'
+            controllerAs: 'vm',
+            link: linkFunction
         };
 
         return directive;
@@ -116,5 +117,67 @@
 
             systemAlertsService.createAlert(messages[Math.round((messages.length - 1) * Math.random())]);
         }
+
+
+    }
+
+    function linkFunction() {
+        var self = {};
+
+        self.navItem   = $('.js--topNavItem');
+
+        let navClickout = function(target, $menu) {
+            // console.log(menu.is(target), !!menu.has(target).length)
+
+            if(!!$menu.has(target).length) return;
+
+            return closeSubMenu($menu);
+        }
+
+        let openSubMenu = function($menu) {
+            setTimeout(function() {
+                $('body').bind('click.clickout', function(e) {
+                    navClickout(e.target, $menu)
+                })
+            });
+
+            return $menu.addClass('navigation__item--active')
+        }
+
+        let closeSubMenu = function($menu) {
+            $('body').unbind('click.clickout')
+            return $menu.removeClass('navigation__item--active')
+        }
+
+        // -----
+        // Public Methods
+        // -----
+
+        self.toggleSubMenu = function(element) {
+            let $this = element;
+            let $subMenu = $this.find('.navigation__subMenu')
+
+            if(!$subMenu.length) return false;
+
+            if($this.hasClass('navigation__item--active')) {
+                return closeSubMenu($this)
+            } else {
+                return openSubMenu($this)
+            }
+        };
+
+
+        self.init = function() {
+            $(self.navItem).on('click', function(e) {
+                e.preventDefault();
+                self.toggleSubMenu($(this));
+            });
+        };
+
+        (function() {
+            self.init();
+        })();
+
+        return self;
     }
 })();
