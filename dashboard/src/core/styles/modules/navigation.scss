@@ -2,6 +2,22 @@
 // Modules / Navigation
 // ---------------------------------------------------
 
+#top-nav {
+  position:fixed;
+  width:100%;
+  top:0px;
+  left:0px;
+  z-index:1000;
+}
+
+.view__sidebar {
+  position:fixed;
+  top:0px;
+  left:0px;
+  margin-top:118px;
+  z-index:1000;
+}
+
 .navigation {
   @include inc--align--clearfix;
 
