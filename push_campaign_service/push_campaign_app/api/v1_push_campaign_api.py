@@ -186,7 +186,8 @@ class PushCampaignsResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        campaigns = [campaign.to_json() for campaign in PushCampaign.get_by_user_id(user.id)]
+        campaigns = PushCampaign.get_by_user_id(user.id)
+        campaigns = [campaign.to_json() for campaign in campaigns]
         return dict(campaigns=campaigns, count=len(campaigns)), 200
 
     def post(self):

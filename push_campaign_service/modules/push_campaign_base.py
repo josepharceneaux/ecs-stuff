@@ -44,9 +44,7 @@ from push_campaign_service.push_campaign_app import logger, celery_app, app
 from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from push_campaign_service.common.campaign_services.campaign_utils import (post_campaign_sent_processing,
-                                                                           CampaignUtils,
-                                                                           sign_redirect_url)
+from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
 
@@ -79,6 +77,12 @@ class PushCampaignBase(CampaignBase):
         :rtype: list
         """
         return PushCampaign.get_by_user_id(self.user_id)
+
+    def get_campaign_type(self):
+        """
+        This sets the value of self.campaign_type to be 'sms_campaign'.
+        """
+        return CampaignUtils.PUSH
 
     def schedule(self, data_to_schedule):
         """
@@ -162,7 +166,7 @@ class PushCampaignBase(CampaignBase):
                     redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion_id
                     # expiry duration is of one year
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
-                    signed_url = sign_redirect_url(redirect_url, expiry_time)
+                    signed_url = CampaignUtils.sign_redirect_url(redirect_url, expiry_time)
                     if app.config[TalentConfigKeys.IS_DEV]:
                         # update the 'source_url' in "url_conversion" record.
                         # Source URL should not be saved in database. But we have tests written
@@ -190,7 +194,7 @@ class PushCampaignBase(CampaignBase):
                         response = response.json()
                         errors = response['errors']
                         logger.error('Error while sending push notification to candidate (id: %s),'
-                                     'Errors: %s' % errors)
+                                     'Errors: %s' % (candidate_id, errors))
                         UrlConversion.delete(url_conversion_id)
 
                 except Exception as e:
@@ -226,7 +230,7 @@ class PushCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
-            post_campaign_sent_processing(CampaignBase, sends_result, user_id, campaign_type,
+            CampaignUtils.post_campaign_sent_processing(CampaignBase, sends_result, user_id, campaign_type,
                                           blast_id, auth_header)
 
     @staticmethod

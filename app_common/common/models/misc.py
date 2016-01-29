@@ -389,6 +389,10 @@ class UrlConversion(db.Model):
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+    push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
+                                                       cascade='all,delete-orphan',
+                                                       passive_deletes=True,
+                                                       backref='url_conversion')
 
     def __repr__(self):
         return "<UrlConversion (id=' %r')>" % self.id
