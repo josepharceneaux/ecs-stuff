@@ -18,8 +18,12 @@
                         <span class="md-display-1">Login To Your Account</span>
                     </div>
 
+                    <div layout="row" layout-align="center center" ng-if="vm.errorMessage">
+                        <span class="login-error-message">{{vm.errorMessage}}</md-text-float>
+                    </div>
+
                     <form name="loginForm" ng-submit="vm.login()">
-                         <md-input-container md-no-float class="md-block">                            
+                         <md-input-container md-no-float class="md-block">
                             <input required
                                 type="email"                                
                                 name="username" 
