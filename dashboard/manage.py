@@ -1,10 +1,12 @@
 #!/usr/bin/python
 """
 Use this for:
+-Installing any necessary frontend packages & updating them
 -Env-specific building frontend assets
 -Env-specific deployments to S3 Static Websites.
 
 Usage examples:
+./manage.py --update
 ./manage.py --build dev
 ./manage.py --deploy staging
 

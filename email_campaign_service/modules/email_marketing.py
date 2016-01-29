@@ -398,15 +398,6 @@ def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_para
             "Failed to send marketing email to candidate_id=%s, to_addresses=%s" % (candidate.id, to_addresses))
 
 
-def get_email_campaign_object(email_campaign):
-    return {"id": email_campaign.id,
-            "user_id": email_campaign.user_id,
-            "name": email_campaign.name,
-            "frequency": email_campaign.frequency.name if email_campaign.frequency else None,
-            "list_ids": EmailCampaignSmartList.get_smartlists_of_campaign(email_campaign.id, smartlist_ids_only=True)
-            }
-
-
 def update_hit_count(url_conversion):
     try:
         # Increment hit count for email marketing

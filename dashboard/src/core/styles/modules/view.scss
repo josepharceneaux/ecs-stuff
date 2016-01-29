@@ -107,6 +107,7 @@
     height: 100%;
     position: relative;
     vertical-align: top;
+    overflow: visible;
   }
 }
 
@@ -120,7 +121,7 @@
   @extend .view__sidebar;
 
   background-color: $color--white;
-  top: -2.75em;
+  top: -$misc--topNavMenuHeight;
   z-index: 900;
   width: 0;
   position: relative;
@@ -133,5 +134,15 @@
     @include helper--media($breakpoint--medium) {
       width: 20em;
     }
+  }
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -$misc--topNavMenuHeight;
+    display: block;
+    width: 100%;
+    height: $misc--topNavMenuHeight;
+    background: $color--white;
   }
 }
