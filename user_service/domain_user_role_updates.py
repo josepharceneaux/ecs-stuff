@@ -1,3 +1,4 @@
+import time
 from user_service.user_app import app
 from user_service.common.models.db import db
 from user_service.common.models.user import (
@@ -122,18 +123,30 @@ if __name__ == '__main__':
     print "***** starting role updates *****"
     print "database: {}".format(db)
     try:
+        start_time = time.time()
         add_domain_roles()
-        print "completed: add_domain_roles()"
+        print "completed: add_domain_roles()\ntime: {}".format(time.time() - start_time)
+
+        time_1 = time.time()
         add_user_roles()
-        print "completed: add_user_roles()"
+        print "completed: add_user_roles()\ntime: {}".format(time.time() - time_1)
+
+        time_2 = time.time()
         add_user_group_to_domains()
-        print "completed: add_user_group_to_domains()"
+        print "completed: add_user_group_to_domains()\ntime: {}".format(time.time() - time_2)
+
+        time_3 = time.time()
         update_users_group_id()
-        print "completed: update_users_group_id()"
+        print "completed: update_users_group_id()\ntime: {}".format(time.time() - time_3)
+
+        time_4 = time.time()
         add_talent_pool()
-        print "completed: add_talent_pool()"
+        print "completed: add_talent_pool()\ntime: {}".format(time.time() - time_4)
+
+        time_5 = time.time()
         add_talent_pool_group()
-        print "completed: add_talent_pool_group()"
+        print "completed: add_talent_pool_group()\ntime: {}".format(time.time() - time_5)
+        print "total time: {}".format(time.time() - start_time)
     except Exception as e:
         db.session.rollback()
         print "\nUpdates failed: {}".format(e.message)
