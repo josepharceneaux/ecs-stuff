@@ -2,79 +2,60 @@
 
     <div layout="column" layout-margin>
 
-        <!-- Begin: Page Header -->
-        <div>
-            <p class="md-caption">
-                <a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb
-            </p>            
-        </div>
-
-        
-        <md-card-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
-            <div class="page-title-icon">
-                <img src="//placehold.it/80x80" />
+            <!-- Navigation path -->
+            <div layout="row" class="md-margin">
+                <div ncy-breadcrumb></div>
             </div>
-            <div flex>
-                <h3 class="md-title"> [smart list name]</h3>
-            </div>
-            <div layout="row" layout-xs="column" layout-sm="column">
-                <a ui-sref="pipelines.pipeline.smartLists.create"><md-button class="md-raised md-primary">Create Campaign</md-button></a>
-            </div>
-        </md-card-content>
-        <!-- End: Page Header -->
+            <!-- End: Navigation path -->
 
-        <div layout="row" layout-wrap layout-fill>
+            <!-- Header -->
+            <md-content class="page-title md-whiteframe-gt module-padding md-margin" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--list"></div>
+                <div flex>
+                    <h2 class="md-title">North Bay</h2>
+                    <div class="md-subhead">This is a sub title for the title bar</div>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--list-add"></div></a>
+                </div>
+            </md-content>
+            <!-- End: Header -->
 
-            <div flex-gt-xs="100" flex-gt-md="66" layout="column">
-                <!-- Begin: Candidate Search -->
-                <md-card flex="none" class="md-margin">
+        <!-- Tables & Cards -->
+        <div layout="row" layout-wrap>
+            <!-- Top Pipelines Table -->
+            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+                <md-card flex >
                     <md-card-content>
-                        Candidate Search
+                    Candidate Search
                     </md-card-content>
                 </md-card>
-                <!-- End: Candidate Search -->
-
-                <!-- Begin: Candidate Results -->
-                <md-card flex="none" class="md-margin">
-                    <md-card-content>
-                        Candidate results
-                    </md-card-content>
-                </md-card>
-                <!-- End: Candidate Search -->
             </div>
+            <!-- End: Top Pipelines Table -->
 
-            <div flex-gt-xs="100" flex-gt-md="33" layout="column">                
-                <md-card flex class="md-margin">
+            <!-- Cards -->
+            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+
+                <!-- Current Candidate Usage -->
+                <md-card flex="none" class="md-padding">
                     <md-card-title flex="none">
                         <md-card-title-text>
-                            <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
-                            <span class="md-subhead">Sub header if needed</span>
+                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
+                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        Candidate Usage D3
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-circle-graph>
                     </md-card-content>
-                    <md-card-actions layout="row" layout-align="end center">
-                    </md-card-actions>
-                </md-card>                
-                
-                <md-card flex class="md-margin">
-                    <md-card-title flex="none">
-                        <md-card-title-text>
-                            <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
-                            <span class="md-subhead">Sub header if needed</span>
-                        </md-card-title-text>
-                    </md-card-title>
-                    <md-card-content flex>
-                        Candidate Usage D3
-                    </md-card-content>
-                    <md-card-actions layout="row" layout-align="end center">
-                    </md-card-actions>
-                </md-card>                
+                </md-card>
+                <!-- End: Current Candidate Usage -->
+
             </div>
-
-
+            <!-- End: Cards -->
         </div>
+        <!-- End: Tables & Cards -->
 
     </div>
 

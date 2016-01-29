@@ -1,10 +1,12 @@
 #!/usr/bin/python
 """
 Use this for:
+-Installing any necessary frontend packages & updating them
 -Env-specific building frontend assets
 -Env-specific deployments to S3 Static Websites.
 
 Usage examples:
+./manage.py --update
 ./manage.py --build dev
 ./manage.py --deploy staging
 
@@ -20,12 +22,15 @@ parser.add_argument('--build', nargs=1, choices=['local', 'dev', 'staging', 'pro
 parser.add_argument('--deploy', nargs=1, choices=['dev', 'staging', 'prod'],
                     help='Deploys assets in build/ to S3 Static Website bucket for given environment, if you'
                          'have permissions')
+parser.add_argument('--update', action='store_true',
+                    help='Installs any necessary Bower packages & updates Bower')
 args = parser.parse_args()
 
 if args.deploy:
     env = args.deploy[0]
 
     build_dir_path = os.getcwd() + '/build'
+    s3_bucket_name = 'app' if env == 'prod' else env
 
     print 'Changing directory to pyenv 2.7.9 directory to access AWS CLI'
     python_bin_path = os.path.expanduser("~/.pyenv/versions/2.7.9/bin")
@@ -34,7 +39,7 @@ if args.deploy:
     os.chdir(python_bin_path)
 
     print 'Uploading to %s bucket' % env
-    command = 'aws s3 sync %(build_dir_path)s s3://%(env)s.gettalent.com --region us-east-1 --acl public-read' % locals()
+    command = 'aws s3 sync %(build_dir_path)s s3://%(s3_bucket_name)s.gettalent.com --region us-east-1 --acl public-read' % locals()
     print ' > ', command
     call(command, shell=True)
 
@@ -54,3 +59,13 @@ if args.build:
     call(command, shell=True)
 
 
+if args.update:
+    print 'Installing Bower packages'
+    command = 'bower install'
+    print ' > ', command
+    call(command, shell=True)
+
+    print 'Updating Bower'
+    command = 'npm install -g bower'
+    print ' > ', command
+    call(command, shell=True)

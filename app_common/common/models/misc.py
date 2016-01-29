@@ -211,6 +211,31 @@ class ZipCode(db.Model):
         return "<Zipcode (code=' %r')>" % self.code
 
 
+class Frequency(db.Model):
+    __table_name__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Description', db.String(10), nullable=False)
+
+    @property
+    def in_seconds(self):
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds), will return 0.
+        """
+        frequency_in_seconds = self.standard_frequencies()
+        return frequency_in_seconds.get(self.name.lower(), 0)
+
+    @classmethod
+    def standard_frequencies(self):
+        """Returns a dict of system wide standard frequency names and period in seconds"""
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
+                'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+
+    @classmethod
+    def get_frequency_from_name(cls, frequency_name):
+        """Returns frequency object wrt given name(case insensitive) """
+        return cls.query.filter_by(name=frequency_name).first()
+
+
+
 class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
@@ -268,7 +293,6 @@ class EmailTemplateFolder(db.Model):
     domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
-
 
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'

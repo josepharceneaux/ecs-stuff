@@ -1,7 +1,3 @@
-
-/*  GetTalent
-    Design By Cosmic 2015 */
-
 // ---------------------------------------------------
 //  This is the master import file for the SCSS stylesheets.
 //  Please preserve the order of vendor, base, pieces, and modules.
@@ -34,7 +30,6 @@
 @import 'includes/col';
 
 @import 'vendor/pickadate/pickadate';
-@import 'vendor/magnific-popup/magnific-popup';
 @import 'vendor/angular-bootstrap/bootstrap';
 @import 'vendor/angular-toastr/toastr';
 
@@ -48,13 +43,18 @@
 @import 'modules/header';
 @import 'modules/footer';
 @import 'modules/view';
-//@import 'modules/icon';
+//@import 'modules/icon'; // DO NOT USE
 @import '../icon-font/gettalent-icons';
 @import 'modules/box';
+//@import 'modules/info-tooltip';
+@import 'modules/mobileMenu';
+@import 'modules/navigation';
+@import 'modules/feed';
+
 @import 'modules/label';
-@import 'modules/table';
+//@import 'modules/table';
 @import 'modules/figure';
-@import 'modules/graph';
+//@import 'modules/graph';
 @import 'modules/excerpt';
 @import 'modules/form';
 @import 'modules/button';
@@ -70,17 +70,33 @@
 @import 'modules/pagination';
 @import 'modules/social';
 @import 'modules/notes';
-@import 'modules/team-views';
-@import 'modules/recent-engagements';
-@import 'modules/contact-info';
-@import 'modules/candidate-portrait';
-@import 'modules/candidate-jobs';
-@import 'modules/candidate-search-results';
 @import 'modules/pipeline-inclusion';
-@import 'modules/search-filters';
-@import 'modules/available-candidates';
-@import 'modules/create-pipeline-smartlist';
-@import 'modules/campaign-detail';
-@import 'modules/info-tooltip';
+@import 'modules/charts';
 
 @import 'modules/styleguide';
+
+// -----
+// v2 GT Modules
+// -----
+
+@import "modules/angular-material-override";
+@import "modules/cards";
+@import "modules/user-activity-system";
+@import "modules/system-alerts";
+@import "modules/modals";
+@import "modules/tool-tips";
+
+@import "modules/table-md-data.scss";
+@import "modules/charts";
+
+@import "modules/page-title";
+@import "modules/dashboard";
+@import "modules/breadcrumb";
+@import "modules/overview-area-graph";
+@import "modules/stat-row";
+@import "modules/activity-feed";
+@import "modules/chart-area-graph";
+
+
+
+

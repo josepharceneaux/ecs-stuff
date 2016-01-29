@@ -14,8 +14,11 @@
 
         // 3rd Party modules
         'angularUtils.directives.dirPagination',
+        'highcharts-ng',
         'hljs',
         'ngMaterial',
+        'md.data.table',
+        'ncy-angular-breadcrumb',
         'ngTagsInput',
         'pickadate',
         'restangular',

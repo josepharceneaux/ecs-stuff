@@ -1,0 +1,111 @@
+// ------------
+// Modules / Feed
+// ------------
+
+.feed {
+  position: absolute;
+  top: -$misc--topNavMenuHeight;
+  right: 0;
+  height: 100%;
+  z-index: $z-index--3;
+  box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
+
+  @include helper--media($breakpoint--full) {
+    position: relative;
+  }
+}
+
+// -----
+// Inner
+// -----
+
+.feed__inner {
+  animation: animation--hide $easing--slow;
+  display: none;
+}
+
+.feed__inner--active {
+  animation: animation--show $easing--slow;
+  display: block;
+}
+
+// -----
+// Header
+// -----
+
+.feed__header {
+  @extend .icon--bars;
+
+  transition: background-color $easing--slow;
+  padding-top: $padding--normal;
+  padding-bottom: $padding--normal;
+  padding-left: $padding--huge;
+  padding-right: $padding--huge;
+  background-color: $color--nearWhite;
+  outline: none;
+
+  @include helper--media($breakpoint--medium) {
+    background-color: transparent;
+  }
+
+  h3 {
+    font-weight: $font-weight--bold;
+    padding-left: $padding--mega;
+  }
+
+  &:after {
+    color: $color--gray;
+    font-size: $font-size--big;
+    left: $padding--huge;
+    top: $padding--normal;
+    width: 0;
+    height: 0;
+    position: absolute;
+  }
+
+  &:hover {
+    background-color: $color--nearWhite;
+    cursor: pointer;
+  }
+}
+
+// -----
+// Item
+// -----
+
+.feed__item {
+  border-bottom-color: $color--nearWhite;
+  border-width: $border-width--medium;
+  padding-top: $padding--jumbo;
+  padding-bottom: $padding--jumbo;
+  margin-right: $padding--large;
+  margin-left: 5em;
+  font-size: .9em;
+  color: inherit;
+  border-bottom-style: solid;
+  display: block;
+  position: relative;
+
+  a {
+    font-weight: $font-weight--bold;
+  }
+
+  p {
+    margin-top: .3em;
+  }
+
+  .icon {
+    position: absolute;
+    left: -2.25em;
+    top: 2.5em;
+    color: $color--gray;
+    font-size: $font-size--large;
+  }
+}
+
+.feed__item__sub {
+  color: $color--gray;
+  font-weight: $font-weight--bold;
+  font-size: .9em;
+  font-style: italic;
+}

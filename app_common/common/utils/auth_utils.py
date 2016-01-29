@@ -1,10 +1,10 @@
 """Helper functions related to the authentication of GT users."""
+
 __author__ = 'erikfarmer'
 
 # Standard Library
-import datetime
-from functools import wraps
 import json
+from functools import wraps
 # Third Party
 import requests
 # Application/Module Specific
@@ -15,13 +15,14 @@ from ..error_handling import *
 from ..routes import AuthApiUrl
 
 
-def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
     :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user is necessary for Authorization or not ?
     """
+
     def auth_wrapper(func):
         @wraps(func)
         def authenticate(*args, **kwargs):
@@ -61,18 +62,19 @@ def require_oauth(allow_jwt_based_auth=False, allow_null_user=False):
                 return func(*args, **kwargs)
 
         return authenticate
+
     return auth_wrapper
 
 
 def require_all_roles(*role_names):
     """ This method ensures that user should have all roles given in roles list"""
+
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-
             if not role_names:
                 # Roles list is empty so it means func is not roles protected
                 return func(*args, **kwargs)
@@ -83,7 +85,9 @@ def require_all_roles(*role_names):
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
             return func(*args, **kwargs)
+
         return authenticate_roles
+
     return domain_roles
 
 
@@ -92,6 +96,7 @@ def require_any_role(*role_names):
     This method ensures that user should have at least one role from given roles list and set
     request.domain_independent_role to true if user has some domain independent (ADMIN) role
     """
+
     def domain_roles(func):
         @wraps(func)
         def authenticate_roles(*args, **kwargs):
@@ -99,7 +104,6 @@ def require_any_role(*role_names):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-
             user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
                           UserScopedRoles.get_all_roles_of_user(request.user.id)]
             user_roles.append('SELF')
@@ -113,11 +117,13 @@ def require_any_role(*role_names):
                     if role_name in user_roles:
                         valid_domain_roles.append(role_name)
                 if valid_domain_roles:
-                        request.valid_domain_roles = valid_domain_roles
-                        return func(*args, **kwargs)
+                    request.valid_domain_roles = valid_domain_roles
+                    return func(*args, **kwargs)
                 raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                       "perform this operation")
+
         return authenticate_roles
+
     return domain_roles
 
 
@@ -147,3 +153,13 @@ def refresh_expired_token(token, client_id, client_secret):
     r = requests.post(AuthApiUrl.TOKEN_CREATE, data=payload)
     # TODO: Add bad request handling.
     return json.loads(r.text)['access_token']
+
+
+def gettalent_generate_password_hash(new_password):
+    """
+    Wrapper around werkzeug.security.generate_password_hash
+
+    :param str new_password: Password to hash according to gT security standards.
+    :rtype: basestring
+    """
+    return generate_password_hash(new_password, method='pbkdf2:sha512:2000', salt_length=32)
