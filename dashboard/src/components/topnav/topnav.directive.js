@@ -126,7 +126,7 @@
 
         self.navItem   = $('.js--topNavItem');
 
-        var navClickout = function(target, $menu) {
+        function navClickout(target, $menu) {
             // console.log(menu.is(target), !!menu.has(target).length)
 
             if(!!$menu.has(target).length) return;
@@ -134,7 +134,7 @@
             return closeSubMenu($menu);
         }
 
-        var openSubMenu = function($menu) {
+        function openSubMenu($menu) {
             setTimeout(function() {
                 $('body').bind('click.clickout', function(e) {
                     navClickout(e.target, $menu)
@@ -144,7 +144,7 @@
             return $menu.addClass('navigation__item--active')
         }
 
-        var closeSubMenu = function($menu) {
+        function closeSubMenu($menu) {
             $('body').unbind('click.clickout')
             return $menu.removeClass('navigation__item--active')
         }
