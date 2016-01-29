@@ -196,3 +196,24 @@ md-card {
 .dashboard-wrapper {
     background: transparent;
 }
+
+
+// Log in
+.view--login {
+
+    .login-header {
+        margin-bottom: 30px;
+    }
+
+    md-content {
+        min-height: 300px;
+        padding: 30px;
+
+        .md-input {
+            height: 50px;
+
+            border-left: 5px solid #eee !important;
+            padding-left: 20px;
+        }
+    }
+}
