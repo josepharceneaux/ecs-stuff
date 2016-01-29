@@ -4,7 +4,7 @@
 
 .feed {
   position: absolute;
-  top: 0;
+  top: -$misc--topNavMenuHeight;
   right: 0;
   height: 100%;
   z-index: $z-index--3;
@@ -22,9 +22,6 @@
 .feed__inner {
   animation: animation--hide $easing--slow;
   display: none;
-  position: absolute;
-  top: -$misc--topNavMenuHeight;
-  background-color: $color--white;
 }
 
 .feed__inner--active {
