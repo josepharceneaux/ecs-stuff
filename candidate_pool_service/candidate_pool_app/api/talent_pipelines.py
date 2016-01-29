@@ -20,14 +20,13 @@ from candidate_pool_service.common.models.email_marketing import EmailCampaignSe
 from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (TALENT_PIPELINE_SEARCH_PARAMS,
-                                                                                        get_candidates_of_talent_pipeline)
-
+                                                                                        get_candidates_of_talent_pipeline,
+                                                                                        get_campaigns_of_talent_pipeline)
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
 
 class TalentPipelineApi(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 
@@ -62,7 +61,8 @@ class TalentPipelineApi(Resource):
                     'description': talent_pipeline.description,
                     'user_id': talent_pipeline.owner_user_id,
                     'positions': talent_pipeline.positions,
-                    'search_params': json.loads(talent_pipeline.search_params) if talent_pipeline.search_params else None,
+                    'search_params': json.loads(
+                        talent_pipeline.search_params) if talent_pipeline.search_params else None,
                     'talent_pool_id': talent_pipeline.talent_pool_id,
                     'date_needed': str(talent_pipeline.date_needed),
                     'added_time': str(talent_pipeline.added_time),
@@ -80,14 +80,15 @@ class TalentPipelineApi(Resource):
                         'description': talent_pipeline.description,
                         'user_id': talent_pipeline.owner_user_id,
                         'positions': talent_pipeline.positions,
-                        'search_params': json.loads(talent_pipeline.search_params) if talent_pipeline.search_params else None,
+                        'search_params': json.loads(
+                            talent_pipeline.search_params) if talent_pipeline.search_params else None,
                         'talent_pool_id': talent_pipeline.talent_pool_id,
                         'date_needed': str(talent_pipeline.date_needed),
                         'added_time': str(talent_pipeline.added_time),
                         'updated_time': str(talent_pipeline.updated_time)
 
                     } for talent_pipeline in talent_pipelines
-                ]
+                    ]
             }
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
@@ -307,7 +308,6 @@ class TalentPipelineApi(Resource):
 
 
 class TalentPipelineSmartListApi(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 
@@ -344,7 +344,7 @@ class TalentPipelineSmartListApi(Resource):
 
                 }
                 for smartlist in smartlists
-            ]
+                ]
         }
 
     @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS)
@@ -467,7 +467,6 @@ class TalentPipelineSmartListApi(Resource):
 
 
 class TalentPipelineCandidates(Resource):
-
     # Access token decorator
     decorators = [require_oauth()]
 
@@ -493,6 +492,34 @@ class TalentPipelineCandidates(Resource):
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
         return get_candidates_of_talent_pipeline(talent_pipeline)
+
+
+class TalentPipelineCampaigns(Resource):
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    # TODO: Add Role here for CAN_GET_EMAIL_CAMPAIGNS once it becomes available.
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    def get(self, **kwargs):
+        """
+        GET /talent-pipeline/<id>/campaigns  Fetch all candidates of a talent-pipeline
+
+        :return A dictionary containing list of campaigns belonging to a talent-pipeline
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        return {"email_campaigns": get_campaigns_of_talent_pipeline(talent_pipeline)}
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
@@ -525,7 +552,7 @@ def update_talent_pipelines_stats():
                 number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
                         EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).count()
 
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
+            percentage_candidates_engagement = int(float(number_of_engaged_candidates) / total_candidates * 100) if \
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
@@ -580,8 +607,9 @@ def get_talent_pipeline_stats(talent_pipeline_id):
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     talent_pipeline_stats = TalentPipelineStats.query.filter(
-        TalentPipelineStats.talent_pipeline_id == talent_pipeline_id, TalentPipelineStats.added_datetime >= from_date,
-        TalentPipelineStats.added_datetime <= to_date).all()
+            TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
+            TalentPipelineStats.added_datetime >= from_date,
+            TalentPipelineStats.added_datetime <= to_date).all()
 
     return jsonify({'talent_pipeline_data': [
         {
@@ -591,9 +619,11 @@ def get_talent_pipeline_stats(talent_pipeline_id):
             'candidates_engagement': talent_pipeline_stat.candidates_engagement
         }
         for talent_pipeline_stat in talent_pipeline_stats
-    ]})
+        ]})
+
 
 api = TalentApi(talent_pipeline_blueprint)
-api.add_resource(TalentPipelineApi,CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
+api.add_resource(TalentPipelineApi, CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
 api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
 api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
+api.add_resource(TalentPipelineCampaigns, CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)

@@ -5,7 +5,7 @@ using blueprint.
 import json
 from flask import request, Blueprint, redirect
 from flask_restful import Resource
-from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count, get_email_campaign_object)
+from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
 from ...modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
@@ -32,17 +32,18 @@ class EmailCampaignApi(Resource):
         email_campaign_id = kwargs.get('id')
         if email_campaign_id:
             email_campaign = EmailCampaign.query.get(email_campaign_id)
+            """:type : email_campaign_service.common.models.email_marketing.EmailCampaign"""
+
             if not email_campaign:
                 raise NotFoundError("Email campaign with id: %s does not exists" % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-            email_campaign_object = get_email_campaign_object(email_campaign)
+            email_campaign_object = email_campaign.to_json()
             return {"email_campaign": email_campaign_object}
         else:
             # Get all email campaigns from logged in user's domain
             email_campaigns = EmailCampaign.query.filter(EmailCampaign.user_id == user.id)
-            return {"email_campaigns": [get_email_campaign_object(email_campaign)
-                                        for email_campaign in email_campaigns]}
+            return {"email_campaigns": [email_campaign.to_dict() for email_campaign in email_campaigns]}
 
     def post(self):
         """
