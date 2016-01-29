@@ -23,9 +23,11 @@
   "dependencies": {
     "angular": "~1.4.8",
     "angular-bootstrap": "~1.0.0",
+    "angular-breadcrumb": "~0.4.1",
     "angular-cookies": "~1.4.8",
     "angular-highlightjs": "~0.5.1",
     "angular-material": "~1.0.1",
+    "angular-material-data-table": "~0.9.9",
     "angular-moment": "~0.10.3",
     "angular-oauth2": "~3.0.1",
     "angular-sanitize": "~1.4.8",
@@ -33,7 +35,7 @@
     "angular-ui-router": "~0.2.15",
     "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",
-    "highcharts": "~4.2.1",
+    "font-awesome": "~4.5.0",
     "highlightjs": "~9.0.0",
     "highcharts": "~4.2.1",
     "highcharts-ng": "~0.0.11",
@@ -42,10 +44,6 @@
     "ng-pickadate": "~0.3.0",
     "ng-tags-input": "~3.0.0",
     "restangular": "~1.5.1",
-    "velocity": "~1.2.3",
-    "font-awesome": "~4.5.0",
-    "angular-breadcrumb": "~0.4.1",
-    "angular-material-data-table": "~0.9.9",
-    "highcharts-ng": "~0.0.11"
+    "velocity": "~1.2.3"
   }
 }
