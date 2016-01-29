@@ -120,6 +120,8 @@
   background-color: $color--darkGray;
   z-index: $z-index--2;
   width: 100%;
+  bottom: 0;
+  position: fixed;
   overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
