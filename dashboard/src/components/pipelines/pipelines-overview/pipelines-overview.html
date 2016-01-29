@@ -15,12 +15,9 @@
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
                     <h2 class="md-title">My Pipelines</h2>
-                    <div class="md-subhead">This is a sub title for the title bar</div>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
-                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
-                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
+                    <a ui-sref="/pipelines/[pipeline-id]/smart-lists/create"><div class="gt-menu-icon icon--list-add"></div></a>
                 </div>
             </md-content>
             <!-- End: Header -->
@@ -139,7 +136,7 @@
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        <gt-bar-graph angle="75" value="3000" class="gt-circle-graph">
+                        <gt-bar-graph angle="75" value="3000" class="gt-bar-graph">
                             <div></div>
                         </gt-bar-graph>
                     </md-card-content>

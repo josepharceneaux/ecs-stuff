@@ -27,7 +27,7 @@
     ControllerFunction.$inject = ['logger', '$mdEditDialog', '$q'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $mdEditDialog, $q) {
+    function ControllerFunction(logger) {
         var vm = this;
 
         init();

@@ -2,6 +2,16 @@
 // Modules / Dashboards
 // ---------------------------------------------------
 
-.dashboard-wrapper {
-  background: transparent;
+.dashboard {
+  background: darken(#373437, 5%);
+  md-card {
+    background: lighten(#373437,2%);
+    border-right: 1px darken(#373437, 8%) solid;
+    border-bottom: 1px darken(#373437, 8%)  solid;
+    color:#ccc;
+    .md-headline {
+      font-weight:300;
+      font-size:1.5em;
+    }
+  }
 }
