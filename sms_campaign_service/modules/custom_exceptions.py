@@ -17,18 +17,17 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     """
     error_code = 5000
     # only used as error codes
-    ERROR_DELETING_SMS_CAMPAIGN = 5001
-    INVALID_URL_FORMAT = 5002
+    INVALID_URL_FORMAT = 5001
 
     # used as custom exceptions
-    MULTIPLE_TWILIO_NUMBERS = 5003
-    TWILIO_API_ERROR = 5004
-    GOOGLE_SHORTEN_URL_API_ERROR = 5005
-    MULTIPLE_USERS_FOUND = 5006
-    NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5007
-    ERROR_UPDATING_BODY_TEXT = 5008
-    NO_CANDIDATE_FOR_PHONE_NUMBER = 5009
-    NO_USER_FOR_PHONE_NUMBER = 5010
+    MULTIPLE_TWILIO_NUMBERS = 5002
+    TWILIO_API_ERROR = 5003
+    GOOGLE_SHORTEN_URL_API_ERROR = 5004
+    MULTIPLE_USERS_FOUND = 5005
+    NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5006
+    ERROR_UPDATING_BODY_TEXT = 5007
+    NO_CANDIDATE_FOR_PHONE_NUMBER = 5008
+    NO_USER_FOR_PHONE_NUMBER = 5009
 
     def to_dict(self):
         error_dict = super(SmsCampaignApiException, self).to_dict()

@@ -4,17 +4,15 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This module contains the code which is common for different tests.
 """
 # Standard Import
-import re
 import time
 
 # Common Utils
-
 from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from sms_campaign_service.common.campaign_services.campaign_utils import delete_scheduled_task
-from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply, SmsCampaignSend)
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 SLEEP_TIME = 30
 
@@ -62,7 +60,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     sms_campaign_blast = campaign.blasts[0]
     assert sms_campaign_blast.sends == expected_count
     # assert on sends
-    sms_campaign_sends = SmsCampaignSend.get_by_blast_id(str(sms_campaign_blast.id))
+    sms_campaign_sends = sms_campaign_blast.blast_sends
     assert len(sms_campaign_sends) == expected_count
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
@@ -147,7 +145,7 @@ def delete_test_scheduled_task(task_id, headers):
     :return:
     """
     with app.app_context():
-        delete_scheduled_task(task_id, headers)
+        CampaignUtils.delete_scheduled_task(task_id, headers)
 
 
 def assert_ok_response_and_counts(response, count=0, entity='sends', check_count=True):

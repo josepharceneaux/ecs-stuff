@@ -25,7 +25,6 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.misc import (UrlConversion, Frequency)
@@ -35,16 +34,11 @@ from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
+from campaign_utils import (get_model, CampaignUtils)
 from ..utils.activity_utils import ActivityMessageIds
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
-from campaign_utils import (get_model, validate_signed_url, delete_scheduled_task,
-                            get_candidate_url_conversion_campaign_send_and_blast_obj,
-                            get_activity_message_name, get_activity_message_id_from_name,
-                            get_campaign_type_prefix, CampaignUtils,
-                            get_campaign_for_ownership_validation,
-                            )
 from validators import (validate_datetime_format, validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
@@ -210,10 +204,20 @@ class CampaignBase(object):
         self.user = user_obj
         # This gets the access_token of current user to communicate with other services.
         self.oauth_header = self.get_authorization_header(user_id)
-        self.campaign = None  # It will be instance of model e.g. SmsCampaign
-        # or PushNotification etc.
+        # It will be instance of model e.g. SmsCampaign or PushNotification etc.
+        self.campaign = None
         self.campaign_blast_id = None  # Campaign's blast id in database
-        self.campaign_type = ''  # Child classes will set this e.g. sms_campaign
+        self.campaign_type = self.get_campaign_type()
+        CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
+
+    @abstractmethod
+    def get_campaign_type(self):
+        """
+        This method will be implemented by child to set value of campaign_type.
+        campaign_type will be 'sms_campaign', 'push_campaign' etc.
+        :rtype: str
+        """
+        pass
 
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
@@ -352,7 +356,7 @@ class CampaignBase(object):
         :param campaign: sms_campaign obj
         :param smartlist_ids: ids of smartlists
         :exception: InvalidUsage
-        :type campaign: SmsCampaign
+        :type campaign: SmsCampaign | PushCampaign etc
         :type smartlist_ids: list
 
         **See Also**
@@ -362,9 +366,9 @@ class CampaignBase(object):
         campaign_type = campaign.__tablename__
         campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
         for smartlist_id in smartlist_ids:
-            data = {'smartlist_id': smartlist_id, 'sms_campaign_id': campaign.id}
-            db_record = campaign_smartlist_model.get_by_campaign_id_and_smartlist_id(campaign.id,
-                                                                                     smartlist_id)
+            data = {'smartlist_id': smartlist_id, 'campaign_id': campaign.id}
+            db_record = CampaignUtils.get_campaign_smartlist_obj_by_campaign_and_smartlist_id(
+                campaign_smartlist_model, campaign.id, smartlist_id)
             if not db_record:
                 new_record = campaign_smartlist_model(**data)
                 campaign_smartlist_model.save(new_record)
@@ -389,11 +393,10 @@ class CampaignBase(object):
         raise_if_not_instance_of(user, User)
         # set params
         params = {'username': user.name, 'campaign_name': source.name,
-                  'campaign_type': get_campaign_type_prefix(source.__tablename__)}
+                  'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(user.id,
                             _type=ActivityMessageIds.CAMPAIGN_CREATE,
-                            source_id=source.id,
-                            source_table=source.__tablename__,
+                            source=source,
                             params=params,
                             auth_header=oauth_header)
 
@@ -432,8 +435,9 @@ class CampaignBase(object):
         :rtype: SmsCampaign or some other campaign obj
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
-        campaign_obj = get_campaign_for_ownership_validation(campaign_id, current_user_id,
-                                                             campaign_type)
+        campaign_obj = CampaignUtils.get_campaign_for_ownership_validation(campaign_id,
+                                                                           current_user_id,
+                                                                           campaign_type)
         campaign_user_id = cls.get_user_id_of_owner(campaign_obj, current_user_id)
         if campaign_user_id == current_user_id:
             return campaign_obj
@@ -506,7 +510,7 @@ class CampaignBase(object):
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
-            unscheduled = delete_scheduled_task(scheduled_task['id'], oauth_header)
+            unscheduled = CampaignUtils.delete_scheduled_task(scheduled_task['id'], oauth_header)
             if not unscheduled:
                 return False
         campaign_model = get_model(campaign_type, campaign_type)
@@ -545,12 +549,11 @@ class CampaignBase(object):
         raise_if_not_instance_of(user, User)
         # Activity message looks like %(username)s deleted a campaign: %(name)s"
         params = {'username': user.name, 'name': source.name,
-                  'campaign_type': get_campaign_type_prefix(source.__tablename__)}
+                  'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(
             user.id,
             _type=ActivityMessageIds.CAMPAIGN_DELETE,
-            source_id=source.id,
-            source_table=source.__tablename__,
+            source=source,
             params=params,
             auth_header=oauth_header
         )
@@ -769,12 +772,11 @@ class CampaignBase(object):
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(user, User)
         params = {'username': user.name,
-                  'campaign_type': get_campaign_type_prefix(source.__tablename__),
+                  'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__),
                   'campaign_name': source.name}
         cls.create_activity(user.id,
                             _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
-                            source_id=source.id,
-                            source_table=source.__tablename__,
+                            source=source,
                             params=params,
                             auth_header=oauth_header)
 
@@ -803,7 +805,7 @@ class CampaignBase(object):
         campaign_obj, scheduled_task, oauth_header = \
             cls.get_campaign_and_scheduled_task(campaign_id, request.user.id, campaign_type)
         if scheduled_task:
-            is_deleted = delete_scheduled_task(scheduled_task['id'], oauth_header)
+            is_deleted = CampaignUtils.delete_scheduled_task(scheduled_task['id'], oauth_header)
             campaign_obj.update(scheduler_task_id=None) if is_deleted else None
         return is_deleted
 
@@ -837,6 +839,7 @@ class CampaignBase(object):
                         "task_type": "periodic"
                     }
             }
+
         So, to re-schedule a task, we do the following:
         1- Check if task is not present on redis job store, return None
         2- Check if already scheduled task is one_time
@@ -852,7 +855,15 @@ class CampaignBase(object):
             Then move on to delete already scheduled task and create new one
         Otherwise, return the id of already scheduled task. This means task is already
         scheduled with the given parameters.
-        :param pre_processed_data:
+        :param pre_processed_data: It looks like
+
+                        {
+                            'campaign': campaign_obj,
+                            'data_to_schedule': data_to_schedule_campaign,
+                            'scheduled_task': scheduled_task,
+                            'oauth_header': oauth_header
+                        }
+
         :return: id of task on scheduler_service
         :rtype: str
         :exception: Invalid usage
@@ -888,7 +899,7 @@ class CampaignBase(object):
                 need_to_create_new_task = True
         if need_to_create_new_task:
             # First delete the old schedule of campaign
-            unscheduled = delete_scheduled_task(scheduled_task['id'],
+            unscheduled = CampaignUtils.delete_scheduled_task(scheduled_task['id'],
                                                 pre_processed_data['oauth_header'])
             if not unscheduled:
                 return None
@@ -956,14 +967,15 @@ class CampaignBase(object):
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
         campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
-        smartlists = campaign_smartlist_model.get_by_campaign_id(campaign.id)
+        smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
+            campaign_smartlist_model, campaign.id)
         if not smartlists:
             raise InvalidUsage(
                 'No smartlist is associated with %s(id:%s). (User(id:%s))'
                 % (campaign_type, campaign.id, self.user.id),
                 error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         # get candidates from search_service and filter the None records
-        candidates = sum(filter(None, map(self.get_smartlist_candidates, smartlists)), [])
+        candidates = sum(map(self.get_smartlist_candidates, smartlists), [])
         if not candidates:
             raise InvalidUsage(
                 'No candidate is associated with smartlist(s). %s(id:%s). '
@@ -1137,6 +1149,75 @@ class CampaignBase(object):
         """
         pass
 
+    def create_or_update_campaign_send(self, campaign_blast_id, candidate_id, sent_datetime,
+                                       campaign_send_model=None):
+        """
+        Here we add an entry in campaign send model e.g. "sms_campaign_send" db table
+            for campaign send to each candidate.
+        This method is called from send_campaign_to_candidate() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+
+        :param campaign_blast_id: id of sms_campaign_blast
+        :param candidate_id: id of candidate to which SMS is supposed to be sent
+        :param sent_datetime: Time of sent SMS
+        :param campaign_send_model: campaign_send_model of respective campaign | None
+        :type campaign_blast_id: int
+        :type candidate_id: int
+        :type sent_datetime: datetime
+        :type campaign_send_model: SmsCampaignSend etc or None
+        :return: "sms_campaign_send" record
+        :rtype: SmsCampaignSend
+
+        **See Also**
+        .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_blast_id=campaign_blast_id,
+                                                      candidate_id=candidate_id))
+        raise_if_not_instance_of(sent_datetime, datetime)
+        # If model is not passed, we import respective model here
+        if not campaign_send_model:
+            campaign_send_model = get_model(self.campaign_type, self.campaign_type + '_send')
+        data = {'blast_id': campaign_blast_id,
+                'candidate_id': candidate_id,
+                'sent_datetime': sent_datetime}
+        record_in_db = CampaignUtils.get_send_obj_by_blast_id_and_candidate_id(campaign_send_model,
+                                                                               campaign_blast_id,
+                                                                               candidate_id)
+        if record_in_db:
+            record_in_db.update(**data)
+            return record_in_db
+        else:
+            new_record = campaign_send_model(**data)
+            campaign_send_model.save(new_record)
+            return new_record
+
+    def create_or_update_send_url_conversion(self, campaign_send_obj, url_conversion_id):
+        """
+        For every campaign, we need URL conversion to redirect candidate to our app.
+        So, For each campaign send, here we add an entry in campaign_send_url_conversion database
+            table e.g "sms_campaign_send_url_conversion" etc.
+        This method is called from send_campaign_to_candidate() method of class
+            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+        :param campaign_send_obj: sms_campaign_send obj
+        :param url_conversion_id: id of url_conversion record
+        :type campaign_send_obj: SmsCampaignSend
+        :type url_conversion_id: int
+
+        **See Also**
+        .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(url_conversion_id=url_conversion_id))
+        raise_if_not_instance_of(campaign_send_obj, CampaignUtils.SEND_MODELS)
+        # get campaign_send_url_conversion model
+        send_url_conversion_model = CampaignUtils.get_send_url_conversion_model(self.campaign_type)
+        data = {'send_id': campaign_send_obj.id, 'url_conversion_id': url_conversion_id}
+        # get campaign_send_url_conversion object
+        record_in_db = CampaignUtils.get_send_url_con_obj_by_send_id_and_url_conversion_id(
+            send_url_conversion_model, campaign_send_obj.id, url_conversion_id)
+        if not record_in_db:
+            new_record = send_url_conversion_model(**data)
+            send_url_conversion_model.save(new_record)
+
     @classmethod
     def create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
         """
@@ -1162,11 +1243,11 @@ class CampaignBase(object):
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
+        raise_if_not_instance_of(num_candidates, (int, long))
         params = {'name': source.name, 'num_candidates': num_candidates}
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_SEND,
-                            source_id=source.id,
-                            source_table=source.__tablename__,
+                            source=source,
                             params=params,
                             auth_header=oauth_header)
 
@@ -1187,8 +1268,7 @@ class CampaignBase(object):
             raise InvalidUsage('Requested URL %s has required field(s) missing. %s'
                                % (requested_url, missing_item),
                                error_code=InvalidUsage.http_status_code())
-        result = validate_signed_url(request_args)
-        if not result:
+        if not CampaignUtils.if_valid_signed_url(request_args):
             raise InvalidUsage("Cannot validate the request from URL %s." % requested_url,
                                error_code=InvalidUsage.http_status_code())
         current_app.config[TalentConfigKeys.LOGGER].info("Requested URL %s has been verified."
@@ -1276,18 +1356,25 @@ class CampaignBase(object):
                      % url_conversion_id)
         if verify_signature:  # Need to validate the signed URL
             cls.pre_process_url_redirect(request_args, requested_url)
-        campaign_send_url_conversion_model = get_model(campaign_type,
-                                                       campaign_type + '_send_url_conversion')
-        campaign_send_url_conversion_obj = campaign_send_url_conversion_model.query.filter_by(
-            url_conversion_id=url_conversion_id).first()
-        if not campaign_send_url_conversion_obj:
+        # get send_url_conversion model for respective campaign
+        send_url_conversion_model = CampaignUtils.get_send_url_conversion_model(campaign_type)
+        # get send_url_conversion object for respective campaign model
+        send_url_conversion_obj = \
+            CampaignUtils.get_send_url_conversion_obj_by_url_conversion_id(
+                send_url_conversion_model,  url_conversion_id)
+        if not send_url_conversion_obj:
             raise ResourceNotFound(
                 'process_url_redirect: campaign_send_url_conversion_obj not found for '
                 'url_conversion(id:%s)' % url_conversion_id)
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
-        candidate_obj, url_conversion_obj, campaign_send_obj, campaign_blast_obj = \
-            get_candidate_url_conversion_campaign_send_and_blast_obj(
-                campaign_send_url_conversion_obj)
+        # get url_conversion obj
+        url_conversion_obj = send_url_conversion_obj.url_conversion
+        # get campaign_send object
+        campaign_send_obj = send_url_conversion_obj.send
+        # get campaign_blast object
+        campaign_blast_obj = campaign_send_obj.blast
+        # get candidate object
+        candidate_obj = campaign_send_obj.candidate
         # Validate if all the required items are present in database.
         campaign_obj = validate_blast_candidate_url_conversion_in_db(campaign_blast_obj,
                                                                      candidate_obj,
@@ -1331,8 +1418,8 @@ class CampaignBase(object):
         # get oauth_header
         oauth_header = cls.get_authorization_header(candidate.user_id)
         # get activity type id to create activity
-        _type = get_activity_message_id_from_name(
-            get_activity_message_name(campaign_obj.__tablename__, 'CLICK'))
+        _type = CampaignUtils.get_activity_message_id_from_name(
+            CampaignUtils.get_activity_message_name(campaign_obj.__tablename__, 'CLICK'))
         # create_activity
         try:
             cls.create_campaign_clicked_activity(campaign_obj, candidate, _type, oauth_header)
@@ -1368,8 +1455,7 @@ class CampaignBase(object):
         # call activity_service to create activity
         cls.create_activity(candidate.user_id,
                             _type=_type,
-                            source_id=source.id,
-                            source_table=source.__tablename__,
+                            source=source,
                             params=params,
                             auth_header=oauth_header)
         current_app.config[TalentConfigKeys.LOGGER].info(
@@ -1423,9 +1509,7 @@ class CampaignBase(object):
                 del kwargs[not_found_attr]
         if kwargs:
             # Update the campaign_blast stats like sends, clicks
-            # TODO: add comment why can't help it
-            campaign_blast_obj.query.filter_by(id=campaign_blast_obj.id).update(kwargs)
-            db.session.commit()
+            CampaignUtils.update_blast(campaign_blast_obj, kwargs)
 
     @staticmethod
     def create_or_update_url_conversion(destination_url=None, source_url=None, hit_count=0,
@@ -1473,7 +1557,7 @@ class CampaignBase(object):
                     'create_or_update_url_conversion: '
                     'url_conversion(id:%s) not found' % url_conversion_id)
         else:
-            missing_required_fields = find_missing_items(data, verify_values_of_all_keys=True)
+            missing_required_fields = find_missing_items(data, verify_all=True)
             if len(missing_required_fields) == len(data.keys()):
                 raise ForbiddenError('destination_url/source_url cannot be None.')
             else:
@@ -1483,7 +1567,7 @@ class CampaignBase(object):
         return url_conversion_id
 
     @staticmethod
-    def create_activity(user_id, _type, source_table, source_id, params, auth_header):
+    def create_activity(user_id, _type, source, params, auth_header):
         """
         - Once we have all the parameters to save the activity in database table "Activity",
             we call "activity_service"'s endpoint /activities/ with HTTP POST call
@@ -1495,14 +1579,12 @@ class CampaignBase(object):
 
         :param user_id: id of user
         :param _type: type of activity (using underscore with type as "type" reflects built in name)
-        :param source_table: source table name of activity
-        :param source_id: source id of activity
+        :param source: source object. Basically it will be Model object.
         :param params: params to store for activity
         :param auth_header: Authorization header to make HTTP POST call on activity_service
         :type user_id: int
-        :type _type: int
-        :type source_table: str
-        :type source_id: int
+        :type _type: int,
+        :type source: SmsCampaign | SmsCampaignBlast etc.
         :type params: dict
         :type auth_header: dict
         :exception: ForbiddenError
@@ -1514,9 +1596,9 @@ class CampaignBase(object):
             raise InvalidUsage('params should be dictionary.')
         if not isinstance(auth_header, dict) or not auth_header:
             raise InvalidUsage('auth_header should be dictionary and cannot be empty.')
-        raise_if_dict_values_are_not_int_or_long(dict(source_id=source_id, type=_type))
-        json_data = json.dumps({'source_table': source_table,
-                                'source_id': source_id,
+        raise_if_dict_values_are_not_int_or_long(dict(source_id=source.id, type=_type))
+        json_data = json.dumps({'source_table': source.__tablename__,
+                                'source_id': source.id,
                                 'type': _type,
                                 'params': params})
         auth_header.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header

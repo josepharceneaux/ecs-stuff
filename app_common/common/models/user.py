@@ -15,6 +15,7 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
+from sms_campaign import SmsCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 from werkzeug.security import generate_password_hash
 
@@ -150,29 +151,31 @@ class UserPhone(db.Model):
     phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
     value = db.Column(db.String(50), nullable=False)
 
+    # Relationship
+    sms_campaigns = relationship('SmsCampaign', backref='user_phone')
+
     def __repr__(self):
         return "<UserPhone (value=' %r')>" % self.value
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        assert user_id, 'No user_id provided'
-        return cls.query.filter(cls.user_id == user_id).all()
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        return cls.query.filter_by(user_id=user_id).all()
 
     @classmethod
     def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
-        assert user_id, 'No user_id provided'
-        assert phone_label_id, 'No phone_label_id provided'
-        return cls.query.filter(
-            and_(
-                UserPhone.user_id == user_id,
-                UserPhone.phone_label_id == phone_label_id
-            )
-        ).all()
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        if not isinstance(phone_label_id, (int, long)):
+            raise InvalidUsage('Invalid phone_label_id provided')
+        return cls.query.filter_by(user_id=user_id, phone_label_id=phone_label_id).all()
 
     @classmethod
     def get_by_phone_value(cls, phone_value):
-        assert phone_value, "phone_value isn't valid"
-        return cls.query.filter(cls.value == phone_value).all()
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage("phone_value is invalid")
+        return cls.query.filter_by(value=phone_value).all()
 
 
 class Domain(db.Model):

@@ -83,7 +83,6 @@ from flask.ext.restful import Resource
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.modules.handy_functions import (request_from_google_shorten_url_api,
                                                           get_valid_blast_obj)
 
@@ -98,6 +97,8 @@ from sms_campaign_service.common.campaign_services.campaign_base import Campaign
 from sms_campaign_service.common.campaign_services.validators import get_valid_json_data
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (CampaignUtils, raise_if_dict_values_are_not_int_or_long)
+from sms_campaign_service.common.campaign_services.custom_errors import CampaignException
+
 
 # creating blueprint
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
@@ -171,7 +172,7 @@ class SMSCampaigns(Resource):
         all_campaigns = [campaign.to_json() for campaign in camp_obj.get_all_campaigns()]
         return dict(count=len(all_campaigns), campaigns=all_campaigns), 200
 
-    def post(self, *args, **kwargs):
+    def post(self):
         """
         This method takes data to create SMS campaign in database table 'sms_campaign'.
         :return: id of created campaign
@@ -190,7 +191,9 @@ class SMSCampaigns(Resource):
         >>>                  "smartlist_ids": [1, 25]
         >>>                  }
         >>> data = json.dumps(campaign_data)
-        >>> response = requests.post(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
+        >>> response = requests.post(SmsCampaignApiUrl.CAMPAIGNS, headers=headers,
+        >>>                         data=data)
+
 
         .. Response::
 
@@ -213,12 +216,12 @@ class SMSCampaigns(Resource):
         headers = {'Location': '/campaigns/%s' % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         if not_found_smartlist_ids or invalid_smartlist_ids:
-            return ApiResponse(dict(sms_campaign_id=campaign_id,
+            return ApiResponse(dict(id=campaign_id,
                                     not_found_smartlist_ids=not_found_smartlist_ids,
                                     invalid_smartlist_ids=invalid_smartlist_ids),
                                status=207, headers=headers)
         else:
-            return ApiResponse(dict(sms_campaign_id=campaign_id),
+            return ApiResponse(dict(id=campaign_id),
                                status=201, headers=headers)
 
     def delete(self):
@@ -236,7 +239,9 @@ class SMSCampaigns(Resource):
         >>>           }
         >>> campaign_ids = {'ids': [1, 2, 3]}
         >>> data = json.dumps(campaign_ids)
-        >>> response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
+        >>> response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS, headers=headers,
+        >>>                            data=data)
+
 
         .. Response::
 
@@ -263,6 +268,9 @@ class SMSCampaigns(Resource):
             raise InvalidUsage('Bad request, campaign_ids must be integer',
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
+        not_found = []
+        not_owner = []
+        status_code = None
         for campaign_id in campaign_ids:
             campaign_obj = SmsCampaignBase(request.user.id)
             try:
@@ -270,16 +278,24 @@ class SMSCampaigns(Resource):
                 if not deleted:
                     # error has been logged inside delete()
                     not_deleted.append(campaign_id)
-            except ForbiddenError or ResourceNotFound or InvalidUsage:
-                if len(campaign_ids) == 1:
-                    raise
-                # error has been logged inside delete()
+            except ForbiddenError:
+                status_code = ForbiddenError.http_status_code()
+                not_owner.append(campaign_id)
+            except ResourceNotFound:
+                status_code = ResourceNotFound.http_status_code()
+                not_found.append(campaign_id)
+            except InvalidUsage:
+                status_code = InvalidUsage.http_status_code()
                 not_deleted.append(campaign_id)
-        if not not_deleted:
-            return dict(message='%s campaign(s) deleted successfully.' % len(campaign_ids)), 200
+        if status_code and len(campaign_ids) == 1:  # It means only one campaign_id was provided
+            return dict(message='Unable to delete campaign.'), status_code
+        if not_deleted or not_owner or not_found:
+            return dict(message='Unable to delete %d campaign(s).'
+                                % (len(not_deleted) + len(not_found) + len(not_owner)),
+                        not_deleted_ids=not_deleted, not_found_ids=not_found,
+                        not_owned_ids=not_owner), 207
         else:
-            return dict(message='Unable to delete %s campaign(s).' % len(not_deleted),
-                        not_deleted_ids=not_deleted), 207
+            return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), 200
 
 
 @api.route(SmsCampaignApi.SCHEDULE)
@@ -298,6 +314,10 @@ class ScheduleSmsCampaign(Resource):
         It schedules an SMS campaign using given campaign_id by making HTTP POST request to
          scheduler_service.
 
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :type campaign_id: int | long
+        :return: JSON containing message and task_id.
+
         :Example:
 
         >>> import json
@@ -313,7 +333,9 @@ class ScheduleSmsCampaign(Resource):
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
-        >>> response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers)
+        >>> response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers,
+        >>>                         data=data)
+
 
         .. Response::
 
@@ -328,9 +350,6 @@ class ScheduleSmsCampaign(Resource):
                     403 (Forbidden Error)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
-        :return: JSON containing message and task_id.
         """
         # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
@@ -352,7 +371,12 @@ class ScheduleSmsCampaign(Resource):
         Otherwise, remove the task from scheduler_service and remove task_id from  database table
         'sms_campaign' as well.
 
+        :param campaign_id: integer, unique id representing campaign in getTalent's database
+        :type campaign_id: int | long
+        :return: JSON containing message and task_id.
+
         :Example:
+
         >>> import json
         >>> import requests
 
@@ -366,7 +390,8 @@ class ScheduleSmsCampaign(Resource):
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
-        >>> response = requests.put(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers)
+        >>> response = requests.put(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers,
+        >>>                         data=data)
 
         .. Response::
 
@@ -387,9 +412,6 @@ class ScheduleSmsCampaign(Resource):
                     403 (Forbidden Error)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
-        :return: JSON containing message and task_id.
         """
         # validate data to schedule
         pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
@@ -415,6 +437,7 @@ class ScheduleSmsCampaign(Resource):
         from getTalent's database.
 
         :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
+        :type campaign_id: int | long
 
         :Example:
 
@@ -456,6 +479,9 @@ class CampaignById(Resource):
     def get(self, campaign_id):
         """
         Returns campaign object with given id
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :type campaign_id: int | long
+        :return: JSON for required campaign
 
         :Example:
 
@@ -486,9 +512,6 @@ class CampaignById(Resource):
                     403 (Forbidden: Current user cannot get SMS campaign record)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
-        :return: JSON for required campaign
         """
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
                                                                   CampaignUtils.SMS)
@@ -497,7 +520,9 @@ class CampaignById(Resource):
     def put(self, campaign_id):
         """
         Updates campaign in getTalent's database
+
         :param campaign_id: id of campaign on getTalent database
+        :type campaign_id: int | long
 
         :Example:
 
@@ -513,7 +538,8 @@ class CampaignById(Resource):
         >>>                  }
         >>> data = json.dumps(campaign_data)
         >>> campaign_id = 1
-        >>> response = requests.put(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
+        >>> response = requests.put(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers,
+        >>>                         data=data)
 
         ..Response::
                     {
@@ -549,6 +575,7 @@ class CampaignById(Resource):
         """
         Removes a single campaign from getTalent's database.
         :param campaign_id: (Integer) unique id in sms_campaign table on GT database.
+        :type campaign_id: int | long
 
         :Example:
 
@@ -578,7 +605,7 @@ class CampaignById(Resource):
         else:
             raise InternalServerError(
                 'Campaign(id:%s) was not deleted.' % campaign_id,
-                error_code=SmsCampaignApiException.ERROR_DELETING_SMS_CAMPAIGN)
+                error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
 
 
 @api.route(SmsCampaignApi.SEND)
@@ -593,6 +620,9 @@ class SendSmsCampaign(Resource):
         """
         It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :type campaign_id: int | long
 
         :Example:
 
@@ -619,8 +649,6 @@ class SendSmsCampaign(Resource):
                          5003 (TwilioApiError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
         """
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.send(campaign_id)
@@ -635,6 +663,10 @@ class SmsCampaignUrlRedirection(Resource):
     def get(self, url_conversion_id):
         """
         This endpoint is /v1/redirect/:id
+
+        :param url_conversion_id: id of url_conversion record in db
+        :type url_conversion_id: int
+        :return: redirects to the destination URL else raises exception
 
         When recruiter(user) adds some URL in SMS body text, we save the original URL as
         destination URL in "url_conversion" database table. Then we create a new URL (which is
@@ -664,10 +696,6 @@ class SmsCampaignUrlRedirection(Resource):
 
         ., Error codes::
                     5005 (EmptyDestinationUrl)
-
-        :param url_conversion_id: id of url_conversion record in db
-        :type url_conversion_id: int
-        :return: redirects to the destination URL else raises exception
         """
         # Google's shorten URL API hits this end point while converting long_url to shorter version.
         if request_from_google_shorten_url_api(request.headers.environ):
@@ -751,6 +779,7 @@ class SmsCampaignBlasts(Resource):
         SMS campaign.
 
         :param campaign_id: int, unique id of a SMS campaign
+        :type campaign_id: int | long
         :return: JSON data containing list of blasts and their counts
 
         :Example:
@@ -817,6 +846,8 @@ class SmsCampaignBlastById(Resource):
         we can extract sends, clicks and replies.
         :param campaign_id: int, unique id of a SMS campaign
         :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
         :return: JSON data containing list of blasts and their counts
 
         :Example:
@@ -869,6 +900,14 @@ class SmsCampaignBlastSends(Resource):
         """
         Returns Campaign sends for given campaign_id and blast_id
 
+        :param campaign_id: int, unique id of a SMS campaign
+        :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
+        :return: dictionary containing  1- count of campaign sends and
+                                        2- SMS campaign sends records as dict
+        :rtype: dict
+
         :Example:
 
         >>> import requests
@@ -907,9 +946,6 @@ class SmsCampaignBlastSends(Resource):
                     403 (Not owner of campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
-        :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
@@ -933,8 +969,11 @@ class SmsCampaignBlastReplies(Resource):
         """
         This endpoint returns a blast object for a given campaign_id and blast_id. From which
         we can extract sends, clicks and replies.
+
         :param campaign_id: int, unique id of a SMS campaign
         :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
         :return: JSON data containing list of blasts and their counts
 
         :Example:
@@ -996,6 +1035,11 @@ class SmsCampaignSends(Resource):
     def get(self, campaign_id):
         """
         Returns Campaign sends for given campaign id
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :type campaign_id: int | long
+        :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
+
 
         :Example:
 
@@ -1059,6 +1103,10 @@ class SmsCampaignReplies(Resource):
         """
         Returns Campaign replies for given campaign id
 
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :type campaign_id: int | long
+        :return: 1- count of campaign replies and 2- SMS campaign replies records as dict
+
         :Example:
 
         >>> import requests
@@ -1094,9 +1142,6 @@ class SmsCampaignReplies(Resource):
                     403 (Not owner of campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in GT database
-        :return: 1- count of campaign replies and 2- SMS campaign replies records as dict
         """
         # Get a campaign that was created by this user
         campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,

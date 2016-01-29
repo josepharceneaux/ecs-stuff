@@ -17,9 +17,10 @@ from twilio.rest import TwilioRestClient
 
 
 # Service specific
+from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.sms_campaign_app import flask_app, logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioApiError
-from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL
+from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL, TWILIO_TEST_NUMBER
 
 # Common utils
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -28,6 +29,7 @@ from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNo
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     raise_if_dict_values_are_not_int_or_long
+from sms_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
@@ -61,11 +63,12 @@ class TwilioSMS(object):
         self.sms_method = 'POST'
 
     def validate_a_number(self, phone_number):
-        # -------------------------------------
-        # sends SMS to given number
-        # -------------------------------------
-        if not isinstance(phone_number, basestring):
-            raise InvalidUsage('Include phone number as str')
+        """
+        This method is used to validate a given phone number.
+        :param phone_number: phone number
+        :type phone_number: basestring
+        """
+        raise_if_not_instance_of(phone_number, basestring)
         try:
             # This does not work with Test Credentials
             response = self.client.caller_ids.validate(phone_number)
@@ -76,25 +79,33 @@ class TwilioSMS(object):
         return False
 
     def send_sms(self, body_text, sender_phone, receiver_phone):
-        # -------------------------------------
-        # sends SMS to given number
-        # -------------------------------------
+        """
+        This method sends SMS from sender_phone to receiver_phone.
+        :param body_text: body text to be sent in SMS
+        :param sender_phone: phone number of sender
+        :param receiver_phone: phone number of receiver
+        :type body_text: basestring
+        :type sender_phone: basestring
+        :type receiver_phone: basestring
+        """
         try:
             message = self.client.messages.create(
                 body=body_text,
                 to=receiver_phone,
                 from_=sender_phone
             )
-            # TODO: assert on sid
-            return message
+            if message.sid:
+                return message
+            else:
+                raise TwilioApiError('sent SMS has no SID associated.')
         except twilio.TwilioRestException as error:
             raise TwilioApiError('Cannot send SMS. Error is "%s"'
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_available_numbers(self):
-        # -------------------------------------
-        # get list of available numbers
-        # -------------------------------------
+        """
+        This method returns available numbers on Twilio API to be purchase.
+        """
         try:
             phone_numbers = self.client.phone_numbers.search(
                 country=self.country,
@@ -107,9 +118,11 @@ class TwilioSMS(object):
         return phone_numbers
 
     def purchase_twilio_number(self, phone_number):
-        # --------------------------------------
-        # Purchase a number
-        # --------------------------------------
+        """
+        This method purchases given phone number
+        :param phone_number: phone number to be purchase
+        :type phone_number: basestring
+        """
         try:
             response = self.client.phone_numbers.purchase(friendly_name=phone_number,
                                                           phone_number=phone_number,
@@ -122,11 +135,14 @@ class TwilioSMS(object):
                                  % error.msg if hasattr(error, 'msg') else error.message)
         return response
 
-    def update_sms_call_back_url(self, phone_number_sid):
-        # --------------------------------------
-        # Updates SMS callback URL of a number
-        # --------------------------------------
+    def update_sms_call_back_url(self, phone_number):
+        """
+        This method updates Callback URL for a particular Twilio number.
+        :param phone_number: Given phone number
+        :type phone_number: basestring
+        """
         try:
+            phone_number_sid = self.get_sid(phone_number)
             number = self.client.phone_numbers.update(phone_number_sid,
                                                       sms_url=self.sms_call_back_url)
             logger.info('SMS call back URL has been set to: %s' % number.sms_url)
@@ -135,9 +151,11 @@ class TwilioSMS(object):
                                  % error.msg if hasattr(error, 'msg') else error.message)
 
     def get_sid(self, phone_number):
-        # --------------------------------------
-        # Gets sid of a given number
-        # --------------------------------------
+        """
+        This returns the SID of a given Twilio number
+        :param phone_number: phone number
+        :type phone_number: basestring
+        """
         try:
             number = self.client.phone_numbers.list(phone_number=phone_number)
             if len(number) == 1:
@@ -197,6 +215,7 @@ def search_urls_in_text(text):
     :return: list of all URLs present in given text | []
     :rtype: list
     """
+    raise_if_not_instance_of(text, basestring)
     return re.findall(r'(?:http|ftp)s?://[^\s<>"]+|www\.[^\s<>"]+', text)
 
 
@@ -228,7 +247,8 @@ def get_valid_blast_obj(blast_id, requested_campaign_id):
     :return: campaign blast object
     :rtype: SmsCampaignBlast
     """
-    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id, blast_id=blast_id))
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
+                                                  blast_id=blast_id))
     blast_obj = SmsCampaignBlast.get_by_id(blast_id)
     if not blast_obj:
         raise ResourceNotFound("SMS campaign's Blast(id:%s) does not exists in database."
@@ -237,3 +257,26 @@ def get_valid_blast_obj(blast_id, requested_campaign_id):
         raise ForbiddenError("SMS campaign's Blast(id:%s) is not associated with campaign(id:%s)."
                              % (blast_id, requested_campaign_id))
     return blast_obj
+
+
+def get_formatted_phone_number(phone_number):
+    """
+    This function formats the given phone number using format_phone_number() defined in
+    common/utils/validators.py
+    :param phone_number:
+    :return:
+    """
+    raise_if_not_instance_of(phone_number, basestring)
+    try:
+        formatted_phone_number = format_phone_number(phone_number)
+        if isinstance(formatted_phone_number, dict):
+            formatted_phone_number = formatted_phone_number['formatted_number']
+    except InvalidUsage:
+        # Adding this condition here so that in tests, fake.phone_number()
+        # does not always generate American/Canadian number, so format_phone_number()
+        # throws Invalid usage error. In that case we assign Twilio's Test phone number.
+        if not app.config[TalentConfigKeys.IS_DEV]:
+            logger('get_formatted_phone_number: Given phone %s number is invalid.' % phone_number)
+            raise
+        formatted_phone_number = TWILIO_TEST_NUMBER
+    return formatted_phone_number

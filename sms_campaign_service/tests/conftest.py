@@ -35,7 +35,7 @@ from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
 from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
-                                                             SmsCampaignBlast)
+                                                             SmsCampaignBlast, SmsCampaignSend)
 # Common Utils
 from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                                                to_utc_str)
@@ -354,20 +354,21 @@ def create_blast_for_not_owned_campaign(request, sms_campaign_of_other_user):
 
 
 @pytest.fixture()
-def create_campaign_sends(candidate_first, candidate_second, create_sms_campaign_blast):
+def create_campaign_sends(sample_user, candidate_first, candidate_second,
+                          create_sms_campaign_blast):
     """
     This creates a record in database table "sms_campaign_send"
     :param candidate_first: fixture to create test candidate
     :param candidate_second: fixture to create another test candidate
     :return:
     """
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
-                                                       candidate_first.id,
-                                                       datetime.now())
+    camp_obj = SmsCampaignBase(sample_user.id)
+
+    camp_obj.create_or_update_campaign_send(create_sms_campaign_blast.id, candidate_first.id,
+                                            datetime.now(), SmsCampaignSend)
     SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
-    SmsCampaignBase.create_or_update_sms_campaign_send(create_sms_campaign_blast.id,
-                                                       candidate_second.id,
-                                                       datetime.now())
+    camp_obj.create_or_update_campaign_send(create_sms_campaign_blast.id, candidate_second.id,
+                                            datetime.now(), SmsCampaignSend)
     SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, sends=True)
 
 
@@ -428,7 +429,7 @@ def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_curre
     """
     sms_campaign_smartlist = SmsCampaignSmartlist(
         smartlist_id=sample_smartlist_2.id,
-        sms_campaign_id=scheduled_sms_campaign_of_current_user.id)
+        campaign_id=scheduled_sms_campaign_of_current_user.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
 
@@ -702,7 +703,7 @@ def _create_sms_campaign_smartlist(campaign, smartlist):
     :return:
     """
     sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=smartlist.id,
-                                                  sms_campaign_id=campaign.id)
+                                                  campaign_id=campaign.id)
     SmsCampaignSmartlist.save(sms_campaign_smartlist)
     return sms_campaign_smartlist
 

@@ -1,9 +1,11 @@
+
 __author__ = 'basit'
 
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
 from candidate import Candidate
+from ..error_handling import InvalidUsage
 
 
 class SmsCampaign(db.Model):
@@ -20,7 +22,6 @@ class SmsCampaign(db.Model):
     scheduler_task_id = db.Column(db.String(255))
 
     # Relationships
-    user_phone = relationship('UserPhone', backref='campaign')
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
@@ -31,7 +32,8 @@ class SmsCampaign(db.Model):
 
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):
-        assert user_phone_id, 'No user_phone_id given'
+        if not isinstance(user_phone_id, (int, long)):
+            raise InvalidUsage('Invalid user_phone_id given')
         return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
 
@@ -73,26 +75,11 @@ class SmsCampaignSend(db.Model):
         return "<SmsCampaignSend (id = %r)>" % self.id
 
     @classmethod
-    def get_by_blast_id_and_candidate_id(cls, campaign_blast_id, candidate_id):
-        assert campaign_blast_id, 'No campaign_blast_id given'
-        assert candidate_id, 'No candidate_id given'
-        return cls.query.filter(
-            db.and_(
-                cls.blast_id == campaign_blast_id,
-                cls.candidate_id == candidate_id,
-            )
-        ).first()
-
-    @classmethod
-    def get_by_candidate_id(cls, candidate_id):
-        assert candidate_id, 'No candidate_id given'
+    def get_latest_campaign_by_candidate_id(cls, candidate_id):
+        if not isinstance(candidate_id, (int, long)):
+            raise InvalidUsage('Invalid candidate_id given')
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
-
-    @classmethod
-    def get_by_blast_id(cls, campaign_blast_id):
-        assert campaign_blast_id, 'No campaign_blast_id given'
-        return cls.query.filter(cls.blast_id == campaign_blast_id).all()
 
 
 class SmsCampaignReply(db.Model):
@@ -105,19 +92,13 @@ class SmsCampaignReply(db.Model):
     added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<SmsCampaignReply (id = %r)>" % self.id
-
-    @classmethod
-    def get_by_blast_id_and_candidate_phone_id(cls, campaign_blast_id, candidate_phone_id):
-        assert campaign_blast_id, 'No campaign_blast_id given'
-        assert candidate_phone_id, 'No candidate_phone_id given'
-        return cls.query.filter_by(blast_id=campaign_blast_id,
-                                   candidate_phone_id=candidate_phone_id).first()
+        return "<SmsCampaignReply(id = %r)>" % self.id
 
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):
-        assert candidate_phone_id, 'No candidate_phone_id given'
-        return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).first()
+        if not isinstance(candidate_phone_id, (int, long)):
+            raise InvalidUsage('Invalid candidate_phone_id given')
+        return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).all()
 
 
 class SmsCampaignSmartlist(db.Model):
@@ -125,57 +106,23 @@ class SmsCampaignSmartlist(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.id", ondelete='CASCADE'),
                              nullable=False)
-    sms_campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
-                                nullable=False)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
+                            nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return '<SmsCampaignSmartlist (id = %r)>' % self.id
-
-    @classmethod
-    def get_by_campaign_id(cls, campaign_id):
-        assert campaign_id, 'No campaign_id given'
-        return cls.query.filter(cls.sms_campaign_id == campaign_id).all()
-
-    @classmethod
-    def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
-        assert campaign_id, 'No campaign_id given'
-        assert smartlist_id, 'No smartlist_id given'
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_id == campaign_id,
-                cls.smartlist_id == smartlist_id,
-            )
-        ).first()
+        return '<SmsCampaignSmartlist(id = %r)>' % self.id
 
 
 class SmsCampaignSendUrlConversion(db.Model):
     __tablename__ = 'sms_campaign_send_url_conversion'
     id = db.Column(db.Integer, primary_key=True)
-    sms_campaign_send_id = db.Column(db.Integer,
-                                     db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
-                                     nullable=False)
+    send_id = db.Column(db.Integer,
+                                 db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
+                                 nullable=False)
     url_conversion_id = db.Column(db.Integer,
                                   db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
                                   nullable=False)
 
     def __repr__(self):
-        return '<SmsCampaignSendUrlConversion (id = %r)>' % self.id
-
-    @classmethod
-    def get_by_campaign_send_id_and_url_conversion_id(cls,
-                                                      campaign_send_id,
-                                                      url_conversion_id):
-        assert campaign_send_id, 'No campaign_send_id given'
-        assert url_conversion_id, 'No url_conversion_id given'
-        return cls.query.filter(
-            db.and_(
-                cls.sms_campaign_send_id == campaign_send_id,
-                cls.url_conversion_id == url_conversion_id
-            )
-        ).first()
-
-    @classmethod
-    def get_by_campaign_send_id(cls, campaign_send_id):
-        assert campaign_send_id, 'No campaign_send_id given'
-        return cls.query.filter(cls.sms_campaign_send_id == campaign_send_id).all()
+        return '<SmsCampaignSendUrlConversion(id = %r)>' % self.id

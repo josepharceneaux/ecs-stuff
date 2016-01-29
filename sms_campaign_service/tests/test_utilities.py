@@ -10,6 +10,7 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
@@ -26,7 +27,8 @@ from sms_campaign_service.common.tests.conftest import fake
 from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
 from sms_campaign_service.common.utils.handy_functions import url_conversion
 from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
-from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids
+from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
+    CampaignsCommonTests
 
 
 # Test for healthcheck
@@ -46,7 +48,7 @@ TEST_DATA = dict(
     multiple_urls='Dear candidates, please apply at http://www.example.com or www.example.com '
                   'or https://www.example.com',
     valid_url='https://www.google.com',
-    invalid_url=fake.words())
+    invalid_url=fake.word())
 
 
 class TestSearchUrlInText(object):
@@ -276,7 +278,7 @@ class TestTSmsCampaignBase(object):
         Creating object of SmsCampaignBase class with non-existing user_ids.
         :return:
         """
-        last_campaign_id_in_db = User.query.order_by(User.id.desc()).first().id
+        last_campaign_id_in_db = CampaignsCommonTests.get_last_id(User)
         ids = get_invalid_ids(last_campaign_id_in_db)
         error_message = None
         for _id in ids:
