@@ -1,9 +1,9 @@
 (function () {
     'use strict';
 
-    angular.module('app.smartLists')
-        .directive('gtSmartLists', directiveFunction)
-        .controller('SmartListsController', ControllerFunction);
+    angular.module('app.smartlists')
+        .directive('gtSmartlists', directiveFunction)
+        .controller('SmartlistsController', ControllerFunction);
 
     // ----- directiveFunction -----
     directiveFunction.$inject = [];
@@ -13,10 +13,10 @@
 
         var directive = {
             restrict: 'E',
-            templateUrl: 'components/smart-lists/smart-lists.html',
+            templateUrl: 'components/smartlists/smartlists.html',
             replace: true,
             scope: {},
-            controller: 'SmartListsController',
+            controller: 'SmartlistsController',
             controllerAs: 'vm'
         };
 
@@ -35,7 +35,7 @@
         activate();
 
         function activate() {
-            logger.log('Activated Smart Lists View');
+            logger.log('Activated Smartlists View');
         }
 
         function init() {
