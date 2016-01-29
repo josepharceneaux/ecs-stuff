@@ -48,7 +48,7 @@
         var innerCircle;
         var label;
 
-        svg = d3.select($(element).children()[0])
+        svg = d3.select($(elem).children()[0])
             .append('svg')
             .attr("width", '360')
             .attr("height", '360px')

@@ -44,7 +44,7 @@
         var barHeight = parseInt(attrs.barHeight) || 20;
         var barSpacing = parseInt(attrs.barSpacing) || 5;
 
-        var svg = d3.select($(element).children()[0])
+        var svg = d3.select($(elem).children()[0])
             .append('svg')
             .attr("width", '100%');
 
