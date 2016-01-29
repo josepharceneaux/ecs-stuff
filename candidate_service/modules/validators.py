@@ -21,7 +21,6 @@ from datetime import datetime
 def get_json_if_exist(_request):
     """ Function will ensure data's content-type is JSON, and it isn't empty
     :type _request:  request
-    :rtype:  dict|str
     """
     if _request.content_type != "application/json":
         raise InvalidUsage("Request body must be a JSON object",
