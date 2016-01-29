@@ -1,8 +1,8 @@
 from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
-from flask_common.common.models.db import db
-from flask_common.common.models import (
+from app_common.common.models.db import db
+from app_common.common.models import (
     associations,
     candidate,
     candidate_edit,
@@ -19,7 +19,7 @@ from flask_common.common.models import (
     venue,
     widget
 )
-from flask_common.common.talent_config_manager import load_gettalent_config
+from app_common.common.talent_config_manager import load_gettalent_config
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
