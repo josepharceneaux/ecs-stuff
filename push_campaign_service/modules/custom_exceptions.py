@@ -23,27 +23,3 @@ class PushNotificationApiException(push_campaign_service.common.error_handling.I
         error_dict = super(PushNotificationApiException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return json.dumps(error_dict)
-
-
-class PushNotificationNotCreated(PushNotificationApiException):
-    error_code = PUSH_NOTIFICATION_NOT_CREATED
-
-
-class NoSmartlistAssociated(PushNotificationApiException):
-    error_code = NO_SMARTLIST_ASSOCIATED
-
-
-class RequiredFieldsMissing(PushNotificationApiException):
-    error_code = REQUIRED_FIELDS_MISSING
-
-
-class InvalidFrequency(PushNotificationApiException):
-    error_code = INVALID_FREQUENCY
-
-
-class FailedToSchedule(PushNotificationApiException):
-    error_code = FAILED_TO_SCHEDULE
-
-
-class InvalidField(PushNotificationApiException):
-    error_code = INVALID_FIELD

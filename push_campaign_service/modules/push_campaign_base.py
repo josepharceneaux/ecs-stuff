@@ -4,31 +4,51 @@ This module contain PushCampaignVase class which is sub class of CamapignBase.
     PushCampaignBase class contains method that do following actions:
         - __init__():
             Constructor calls supper method to intiliaze default values for a push campaign
-        -
 
+        - get_all_campaigns():
+            This method retrieves all push campaigns from getTalent push_campaign table.
+
+        - schedule():
+            This method schedules a campaign using Scheduler Service
+
+        - pre_process_celery_task():
+            This method is to transform data required for celery tasks to run on.
+            In this case, it is creating a list of candidate_ids from candidates,
+            as SqlAlchemy objects do not behave well across different sessions
+
+        - send_campaign_to_candidate():
+            This method is core of the whole service. It receives a candidate id,
+            retrieves candidate, campaign. It creates a blast and then updates it
+            after sending a campaign.
+
+        - callback_campaign_sent():
+            This method is invoked when campaign has been sent to all associated campaigns.
+            This method creates activity for campaign sent.
+
+        - celery_error_handler():
+            This method is invoked if some error occurs during sending a campaign
+            in celery task. It then rollbacks that transaction.
+            (Celery task has it's own scoped session)
 """
 
 # Third Party
 from dateutil.relativedelta import relativedelta
 
 # Application Specific
-from push_campaign_service.common.error_handling import *
+from one_signal_sdk import OneSignalSdk
+# Import all model classes from push_campaign module
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.misc import UrlConversion
-from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
-from push_campaign_service.common.talent_config_manager import TalentConfigKeys
-from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.routes import PushCampaignApiUrl
-
-from push_campaign_service.common.models.push_campaign import PushCampaign
 from push_campaign_service.push_campaign_app import logger, celery_app, app
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys
+from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
+from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import (post_campaign_sent_processing,
                                                                            CampaignUtils,
                                                                            sign_redirect_url)
-from custom_exceptions import *
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
-from one_signal_sdk import OneSignalSdk
+
 
 one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                  rest_key=ONE_SIGNAL_REST_API_KEY)
@@ -39,6 +59,7 @@ class PushCampaignBase(CampaignBase):
     def __init__(self, user_id, *args, **kwargs):
         """
         Here we set the "user_id" by calling super constructor.
+        In this method, initialize all instance attributes.
         :param args:
         :param kwargs:
         :return:
@@ -47,6 +68,7 @@ class PushCampaignBase(CampaignBase):
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.campaign_blast = None
         self.campaign_blast_id = None
+        self.campaign_id = None
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
 
@@ -58,34 +80,28 @@ class PushCampaignBase(CampaignBase):
         """
         return PushCampaign.get_by_user_id(self.user_id)
 
-    # @staticmethod
-    # def validate_ownership_of_campaign(campaign_id, current_user_id):
-    #     """
-    #     This function returns True if the current user is an owner for given
-    #     campaign_id. Otherwise it raises the Forbidden error.
-    #     :param campaign_id: id of campaign form getTalent database
-    #     :param current_user_id: Id of current user
-    #     :exception: InvalidUsage
-    #     :exception: ResourceNotFound
-    #     :exception: ForbiddenError
-    #     :return: Campaign obj if current user is an owner for given campaign.
-    #     :rtype: PushNotification
-    #     """
-    #     if not isinstance(campaign_id, (int, long)):
-    #         raise InvalidUsage(error_message='Include campaign_id as int|long')
-    #     campaign_obj = PushCampaign.get_by_id(campaign_id)
-    #     if not campaign_obj:
-    #         raise ResourceNotFound(error_message='Push Campaign (id=%s) not found.' % campaign_id)
-    #     if campaign_obj.user_id == current_user_id:
-    #         return campaign_obj
-    #     else:
-    #         raise ForbiddenError(error_message='You are not the owner of Push campaign(id:%s)' % campaign_id)
-
     def schedule(self, data_to_schedule):
         """
-        This method schedules a campaign by sending a POST request to scheduler service.
-        :param data_to_schedule:
-        :return:
+        This overrides the CampaignBase class method schedule().
+        Here we set the value of dict "data_to_schedule" and pass it to
+        super constructor to get task_id for us. Finally we update the Push campaign
+        record in database table "push_campaign" with
+            1- frequency_id
+            2- start_datetime
+            3- end_datetime
+            4- task_id (Task created on APScheduler)
+        Finally we return the "task_id".
+
+        - This method is called from the endpoint /v1/campaigns/:id/schedule on HTTP method POST/PUT
+
+        :param data_to_schedule: required data to schedule an Push campaign
+        :type data_to_schedule: dict
+        :return: task_id (Task created on APScheduler), and status of task(already scheduled
+                            or new scheduled)
+        :rtype: tuple
+
+        **See Also**
+        .. see also:: SchedulePushCampaignResource  in v1_push_campaign_api.py.
         """
         data_to_schedule.update(
             {'url_to_run_task': PushCampaignApiUrl.SEND % self.campaign.id}
@@ -97,35 +113,38 @@ class PushCampaignBase(CampaignBase):
         self.campaign.update(scheduler_task_id=task_id)
         return task_id
 
-    def process_send(self, campaign):
-        if not isinstance(campaign, PushCampaign):
-            raise InvalidUsage('campaign should be instance of PushCampaign model')
-
-        self.campaign = campaign
-        self.campaign_blast = PushCampaignBlast(campaign_id=self.campaign.id)
-        PushCampaignBlast.save(self.campaign_blast)
-        self.campaign_blast_id = self.campaign_blast.id
-        smartlists = campaign.smartlists.all()
-        if not smartlists:
-            raise NoSmartlistAssociated('No smartlist is associated with Push Campaign (id:%s). '
-                                        '(User(id:%s))' % (campaign.id, self.user.id))
-        candidates = []
-        for smartlist in smartlists:
-            try:
-                candidates += self.get_smartlist_candidates(smartlist)
-            except:
-                pass
-        if not candidates:
-            raise InternalServerError('No candidate associated to campaign', error_code=NO_CANDIDATE_ASSOCIATED)
-        print('Sending campaign to candidates')
-        self.send_campaign_to_candidates(candidates)
+    def pre_process_celery_task(self, candidates):
+        """
+        Here we do any necessary processing before assigning task to Celery. Child classes
+        will override this if needed.
+        :param candidates: list of candidates
+        :type candidates: list
+        :return:
+        """
+        return (candidate.id for candidate in candidates)
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, candidate):
+    def send_campaign_to_candidate(self, candidate_id):
+        """
+        This method sends campaign to a single candidate. It gets the devices associated with
+        the candidate and sends this campaign to all devices using OneSignal Restful Api.
+        Destination url is first converted to something like http://127.0.0.1:8012/redirect/1
+        which is then signed
+            http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
+            #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
+
+        This url is sent to candidate in push notification and when user clicks on notification
+        he is redirected to our url redirection endpoint, which after updating campaign stats,
+        redirected to original url given for campaign owner.
+        :param candidate_id: id of candidate in candidate table in getTalent database
+        :return:
+        """
         with app.app_context():
-            assert isinstance(candidate, Candidate), '"candidate" should be instance of Candidate Model'
-            print('Sending campaign to one candidate')
-            logger.info('Going to send campaign to candidate (id: %s)' % candidate.id)
+            candidate = Candidate.get_by_id(candidate_id)
+            self.campaign = PushCampaign.get_by_id(self.campaign_id)
+            assert isinstance(candidate, Candidate), \
+                'candidate should be instance of Candidate Model'
+            logger.info('Going to send campaign to candidate')
             # A device is actually candidate's desktop, android or ios machine where
             # candidate will receive push notifications. Device id is given by OneSignal.
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
@@ -141,13 +160,14 @@ class PushCampaignBase(CampaignBase):
                     # url_conversion = UrlConversion(source_url='', destination_url=destination_url)
                     # UrlConversion.save(url_conversion)
                     redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion_id
+                    # expiry duration is of one year
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
-                    # signed_url = sign_redirect_url(redirect_url, expiry_time)
                     signed_url = sign_redirect_url(redirect_url, expiry_time)
                     if app.config[TalentConfigKeys.IS_DEV]:
                         # update the 'source_url' in "url_conversion" record.
                         # Source URL should not be saved in database. But we have tests written
-                        # for Redirection endpoint. That's why in case of DEV, I am saving source URL here.
+                        # for Redirection endpoint. That's why in case of DEV,
+                        # I am saving source URL here.
                         self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                              source_url=signed_url)
                     # url_conversion.update(source_url=signed_url)
@@ -192,7 +212,7 @@ class PushCampaignBase(CampaignBase):
 
         :param sends_result: Result of executed task
         :param user_id: id of user (owner of campaign)
-        :param campaign_type: type of campaign. i.e. sms_campaign or push_campaign
+        :param campaign_type: type of campaign. i.e. push_campaign
         :param blast_id: id of blast object
         :param auth_header: auth header of current user to make HTTP request to other services
         :type sends_result: list
@@ -209,102 +229,13 @@ class PushCampaignBase(CampaignBase):
             post_campaign_sent_processing(CampaignBase, sends_result, user_id, campaign_type,
                                           blast_id, auth_header)
 
-    @classmethod
-    def create_campaign_send_activity(cls, user_id, source, auth_header, num_candidates):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for Campaign sent.
-
-        - Activity will appear as "Push Notification %(campaign_name)s has been sent to %(num_candidates)s candidates".
-
-        - This method is called from send_sms_campaign_to_candidates() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
-
-        :param user_id: id of user
-        :param source: Source row
-        :param auth_header: Authorization header
-        :param num_candidates: number of candidates to which campaign is sent
-        :type user_id: int
-        :type source: row
-        :type auth_header: dict
-        :type num_candidates: int
-
-        **See Also**
-        .. see also:: send_push_notification_campaign_to_candidates() method in PushNotificationCampaign class.
-        """
-        if not isinstance(source, PushCampaign):
-            raise InvalidUsage(error_message='source should be an instance of model PushCampaign')
-        params = {'campaign_name': source.name,
-                  'num_candidates': num_candidates}
-        cls.create_activity(user_id,
-                            _type=ActivityMessageIds.CAMPAIGN_PUSH_SEND,
-                            source_id=source.id,
-                            source_table=PushCampaign.__tablename__,
-                            params=params,
-                            headers=auth_header)
-
-    def campaign_create_activity(self, source):
-        """
-        - Here we set "params" and "type" of activity to be stored in db table "Activity"
-            for created Campaign.
-
-        - Activity will appear as (e.g)
-           "'Harvey Specter' created an Push campaign: 'Hiring at getTalent'"
-
-        - This method is called from save() method of class
-            PushCampaignBase inside push_campaign_service/modules/push_campaign_base.py.
-
-        :param source: "push_campaign" obj
-        :type source: PushCampaign
-        :exception: InvalidUsage
-
-        **See Also**
-        .. see also:: save() method in SmsCampaignBase class.
-        """
-        if not isinstance(source, PushCampaign):
-            raise InvalidUsage('source should be an instance of model push_campaign')
-        # set params
-        params = {'user_name': self.user.name,
-                  'campaign_name': source.name}
-
-        self.create_activity(self.user_id,
-                             _type=ActivityMessageIds.CAMPAIGN_PUSH_CREATE,
-                             source_id=source.id,
-                             source_table=PushCampaign.__tablename__,
-                             params=params,
-                             headers=self.oauth_header)
-
-    def save(self, form_data):
-        """
-        This saves the campaign in database table sms_campaign in following steps:
-
-            1- Save campaign in database
-            2- Create activity that (e,g)
-                "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
-
-        :param form_data: data from UI
-        :type form_data: dict
-        :return: id of sms_campaign in db
-        :rtype: int
-        """
-        pass
-    #     if not form_data:
-    #         logger.error('save: No data received from UI. (User(id:%s))' % self.user_id)
-    #     else:
-    #         # Save Campaign in database table "sms_campaign"
-    #         form_data['user_phone_id'] = self.user_phone.id
-    #         push_campaign = self.create_or_update_push_campaign(form_data)
-    #         # Create record in database table "sms_campaign_smartlist"
-    #         self.create_or_update_push_campaign_smartlist(push_campaign,
-    #                                                      form_data.get('smartlist_ids'))
-    #         # Create Activity
-    #         self.campaign_create_activity(push_campaign)
-    #         return push_campaign.id
-
     @staticmethod
     @celery_app.task(name='celery_error_handler')
     def celery_error_handler(uuid):
+        """
+        This method is invoked whenever some error occurs.
+        It rollbacks the transaction otherwise it will cause other transactions (if any) to fail.
+        :param uuid:
+        :return:
+        """
         db.session.rollback()
-
-
-

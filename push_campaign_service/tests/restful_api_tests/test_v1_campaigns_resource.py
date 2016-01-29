@@ -10,15 +10,17 @@ from push_campaign_service.tests.test_utilities import (invalid_data_test,
                                                         send_request, OK)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
+URL = PushCampaignApiUrl.CAMPAIGNS
+
 
 class TestCreateCampaign(object):
 
     # URL: /v1/campaigns [POST]
     def test_create_campaign_with_invalid_token(self, campaign_data):
-        unauthorize_test('post', PushCampaignApiUrl.CAMPAIGNS, 'invalid_token', campaign_data)
+        unauthorize_test('post', URL, 'invalid_token', campaign_data)
 
     def test_create_campaign_with_invalid_data(self, token):
-        invalid_data_test('post', PushCampaignApiUrl.CAMPAIGNS, token)
+        invalid_data_test('post', URL, token)
 
     def test_create_campaign_with_missing_fields(self, token, campaign_data,
                                                  test_smartlist):
@@ -40,7 +42,7 @@ class TestCreateCampaign(object):
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()
         data['smartlist_ids'] = [test_smartlist.id]
-        response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
+        response = send_request('post', URL, token, data)
         assert response.status_code == 201, 'Push campaign has been created'
         json_response = response.json()
         _id = json_response['id']
@@ -53,7 +55,7 @@ class TestGetListOfCampaigns(object):
 
     # URL: /v1/campaigns/ [GET]
     def test_get_list_with_invalid_token(self):
-        unauthorize_test('get', PushCampaignApiUrl.CAMPAIGNS, 'invalid_token')
+        unauthorize_test('get', URL, 'invalid_token')
 
     def test_get_list_of_zero_campaigns(self, token):
         """
@@ -62,7 +64,7 @@ class TestGetListOfCampaigns(object):
         :param token: auth token
         :return:
         """
-        response = send_request('get', PushCampaignApiUrl.CAMPAIGNS, token)
+        response = send_request('get', URL, token)
         assert response.status_code == OK, 'Status code is not 200'
         json_response = response.json()
 
@@ -80,7 +82,7 @@ class TestGetListOfCampaigns(object):
         :type campaign_in_db: PushCampaign
         :return:
         """
-        response = send_request('get', PushCampaignApiUrl.CAMPAIGNS, token)
+        response = send_request('get', URL, token)
         assert response.status_code == OK, 'Status code ok'
         json_response = response.json()
 

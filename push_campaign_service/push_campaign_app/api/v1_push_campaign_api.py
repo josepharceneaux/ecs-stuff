@@ -14,43 +14,76 @@ A brief overview of all endpoints is as follows:
 
         To get all campaigns of a user, send a GET request to this endpoint
 
-    3. Schedule a campaign
-        URL: /v1/campaigns/<int:campaign_id>/schedule [POST]
+    3. Delete multiple campaigns of a user
+        URL: /v1/campaigns [DELETE]
+
+        APi user can send a DELETE request to this endpoint with campaign ids as list
+        { ids: [1,2,3]}  to delete multiple campaigns.
+
+    4. Get a single campaign of a user
+        URL: /v1/campaigns/:id [GET]
+
+        To get a specific campaign of a user, send a GET request to this endpoint
+
+    5. Update a specific campaign of a user
+        URL: /v1/campaigns/:id [PUT]
+
+        To update a specific campaign of a user, send a PUT request to this endpoint
+
+    6. Delete a specific campaign of a user
+        URL: /v1/campaigns/:id [DELETE]
+
+        To delete a specific campaign of a user, send a DELETE request to this endpoint
+
+    7. Schedule a campaign
+        URL: /v1/campaigns/:id/schedule [POST]
 
         User can schedule a campaign by sending a POST request to this endpoint with frequency,
         start_datetime and end_datetime.
 
-    4. Reschedule a campaign
-        URL: /v1/campaigns/<int:campaign_id>/schedule [PUT]
+    8. Reschedule a campaign
+        URL: /v1/campaigns/:id/schedule [PUT]
 
         User can reschedule his campaign by updating the frequency, start_datetime or end_datetime
         by sending a PUT request to this point.
 
-    5. Send a campaign
-        URL: /v1/campaigns/<int:campaign_id>/send [POST]
+    9. Unschedule a campaign
+        URL: /v1/campaigns/:id/schedule [DELETE]
+
+        User can unschedule his campaign by by sending a DELETE request to this point.
+
+    10. Send a campaign
+        URL: /v1/campaigns/:id/send [POST]
 
         This endpoint is used to send a campaign (that has already been created) to associated
         candidates by send a POST request to this endpoint.
 
-    6. Get `Sends` of a Blast
-        URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
+    12. Get `Sends` of a Blast
+        URL: /v1/campaigns/:id/blasts/:blast_id/sends [GET]
 
         A campaign can have multiple blast. To get sends of a single blast for a specific campaign
         send a GET request to this endpoint.
 
-    7. Get `Sends` of a campaign
+    13. Get `Sends` of a campaign
         URL: /v1/campaigns/<int:campaign_id>/sends [GET]
 
         To get all sends of a campaign, use this endpoint
 
-    8. Get `Blasts` of a campaign
-        URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
+    14. Get `Blasts` of a campaign
+        URL: /v1/campaigns/:id/blasts [GET]
 
         To get a list of all blasts associated to a campaign, send a GET request
         to this endpoint.A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
 
-    9. Register a device for candidate
+    15. Get a specific `Blast` of a campaign
+        URL: /v1/campaigns/:id/blasts/:blast_id [GET]
+
+        To get details of a specific blast associated to a campaign, send a GET request
+        to this endpoint.A blast contains statistics of a campaign when a campaign
+        is sent once to associated candidates.
+
+    16. Register a device for candidate
         URL: /v1/devices [POST]
 
         Push notifications are sent to candidate devices using OneSignal API. One signal
@@ -72,10 +105,12 @@ from flask.ext.restful import Resource
 
 # Application Specific
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from push_campaign_service.common.campaign_services.campaign_utils import CampaignType
+from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from push_campaign_service.common.campaign_services.custom_errors import CampaignException
+from push_campaign_service.common.campaign_services.validators import get_valid_json_data
 from push_campaign_service.common.error_handling import *
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import PushCampaignApi
+from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
 
@@ -87,8 +122,7 @@ from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.constants import (ONE_SIGNAL_REST_API_KEY,
                                                      ONE_SIGNAL_APP_ID)
-from push_campaign_service.modules.utilities import (get_valid_json_data,
-                                                     associate_smart_list_with_campaign)
+from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
 from push_campaign_service.push_campaign_app import logger
 
 # creating blueprint
@@ -108,14 +142,16 @@ class PushCampaignsResource(Resource):
 
     def get(self, *args, **kwargs):
         """
-        This action returns a list of all Campaigns for current user.
+        This action returns a list of all push campaigns for current user.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
         :rtype json
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/campaigns/', headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> response = requests.get(PushCampaignApiUrl.CAMPAIGNS, headers=headers)
 
         .. Response::
 
@@ -162,29 +198,30 @@ class PushCampaignsResource(Resource):
 
         :Example:
 
-            campaign_data = {
-                                "name": "QC Technologies",
-                                "body_text": "New job openings...",
-                                "url": "https://www.qc-technologies.com",
-                                "smartlist_ids": [1, 2, 3]
-                             }
-
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'content-type': 'application/json'
-
-                       }
-            data = json.dumps(campaign_data)
-            response = requests.post(
-                                        API_URL + '/v1/campaigns/',
-                                        data=data,
-                                        headers=headers,
-                                    )
+            >>> import json
+            >>> import requests
+            >>> campaign_data = {
+            >>>                    "name": "QC Technologies",
+            >>>                    "body_text": "New job openings...",
+            >>>                    "url": "https://www.qc-technologies.com",
+            >>>                    "smartlist_ids": [1, 2, 3]
+            >>>                 }
+            >>> headers = {
+            >>>               "Authorization": "Bearer <access_token>",
+            >>>                "content-type": "application/json"
+            >>>           }
+            >>> data = json.dumps(campaign_data)
+            >>> response = requests.post(
+            >>>                             PushCampaignApiUrl.CAMPAIGNS,
+            >>>                             data=data,
+            >>>                             headers=headers,
+            >>>                         )
 
         .. Response::
 
             {
-                id: 11
+                "id": 11,
+                "message": "Push campaign was created successfully"
             }
 
         .. Status:: 201 (Resource Created)
@@ -199,8 +236,9 @@ class PushCampaignsResource(Resource):
         missing_fields = [key for key in ['name', 'body_text',
                                           'url', 'smartlist_ids'] if key not in data or not data[key]]
         if missing_fields:
-            raise RequiredFieldsMissing('Some required fields are missing',
-                                        additional_error_info=dict(missing_fields=missing_fields))
+            raise InvalidUsage('Some required fields are missing',
+                               additional_error_info=dict(missing_fields=missing_fields),
+                               error_code=CampaignException.MISSING_REQUIRED_FIELD)
         push_campaign = PushCampaign(body_text=data['body_text'], url=data['url'],
                                      name=data['name'], user_id=user.id)
         PushCampaign.save(push_campaign)
@@ -213,6 +251,79 @@ class PushCampaignsResource(Resource):
         response = json.dumps(response)
         headers = dict(Location='/%s/campaigns/%s' % (PushCampaignApi.VERSION, push_campaign.id))
         return ApiResponse(response, headers=headers, status=201)
+
+    def delete(self):
+        """
+        Deletes multiple campaigns using ids given in list in request data.
+        :return:
+
+        :Example:
+
+            >>> import json
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>',
+            >>>             'content-type': 'application/json'
+            >>>           }
+            >>> campaign_ids = {'ids': [1, 2, 3]}
+            >>> data = json.dumps(campaign_ids)
+            >>> response = requests.delete(PushCampaignApiUrl.CAMPAIGNS, headers=headers, data=data)
+
+        .. Response::
+
+            {
+                'message': '3 Campaigns have been deleted successfully'
+            }
+
+        .. Status:: 200 (Resource deleted)
+                    207 (Not all deleted)
+                    400 (Bad request)
+                    403 (Forbidden error)
+                    500 (Internal Server Error)
+        """
+        req_data = get_valid_json_data(request)
+        campaign_ids = req_data['ids'] if 'ids' in req_data else []
+        if not isinstance(req_data['ids'], list):
+            raise InvalidUsage('Bad request, include campaign_ids as list data',
+                               error_code=InvalidUsage.http_status_code())
+        # check if campaigns_ids list is not empty
+        if not campaign_ids:
+            return dict(message='No campaign id provided to delete'), 200
+
+        if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+            raise InvalidUsage('Bad request, campaign_ids must be integer',
+                               error_code=InvalidUsage.http_status_code())
+        not_deleted = []
+        not_found = []
+        not_owner = []
+        for campaign_id in campaign_ids:
+            campaign_obj = PushCampaignBase(request.user.id)
+            try:
+                deleted = campaign_obj.delete(campaign_id)
+                if not deleted:
+                    # error has been logged inside delete()
+                    not_deleted.append(campaign_id)
+            except ForbiddenError:
+                if len(campaign_ids) == 1:
+                    raise
+                # error has been logged inside delete()
+                not_owner.append(campaign_id)
+            except ResourceNotFound:
+                if len(campaign_ids) == 1:
+                    raise
+                # error has been logged inside delete()
+                not_found.append(campaign_id)
+            except InvalidUsage:
+                if len(campaign_ids) == 1:
+                    raise
+                # error has been logged inside delete()
+                not_deleted.append(campaign_id)
+        if not_deleted or not_owner or not_found:
+            return dict(message='Unable to delete %d campaign(s).'
+                                % (len(not_deleted) + len(not_found) + len(not_owner)),
+                        not_deleted_ids=not_deleted, not_found_ids=not_found,
+                        not_owned_ids=not_owner), 207
+        else:
+            return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), 200
 
 
 @api.route(PushCampaignApi.CAMPAIGN)
@@ -228,10 +339,12 @@ class CampaignByIdResource(Resource):
         :rtype json
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/campaigns/%s' % campaign_id,
-                                    headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> response = requests.get(PushCampaignApiUrl.CAMPAIGN % campaign_id,
+            >>>                        headers=headers)
 
         .. Response::
 
@@ -253,7 +366,8 @@ class CampaignByIdResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         response = dict(campaign=campaign.to_json())
         return response, 200
 
@@ -268,25 +382,25 @@ class CampaignByIdResource(Resource):
 
         :Example:
 
-            campaign_data = {
-                                "name": "QC Technologies",
-                                "body_text": "New job openings...",
-                                "url": "https://www.qc-technologies.com",
-                                "smartlist_ids": [1, 2, 3]
-                             }
-
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                        'content-type': 'application/json'
-
-                       }
-            campaign_id = 1
-            data = json.dumps(campaign_data)
-            response = requests.put(
-                                        API_URL + '/v1/campaigns/%s' % campaign_id ,
-                                        data=data,
-                                        headers=headers,
-                                    )
+            >>> import json
+            >>> import requests
+            >>> campaign_data = {
+            >>>                     "name": "QC Technologies",
+            >>>                     "body_text": "New job openings...",
+            >>>                     "url": "https://www.qc-technologies.com",
+            >>>                     "smartlist_ids": [1, 2, 3]
+            >>>                  }
+            >>> headers = {
+            >>>             "Authorization": "Bearer <access_token>",
+            >>>             "content-type": "application/json"
+            >>>            }
+            >>> campaign_id = 1
+            >>> data = json.dumps(campaign_data)
+            >>> response = requests.put(
+            >>>                             PushCampaignApiUrl.CAMPAIGN % campaign_id ,
+            >>>                             data=data,
+            >>>                             headers=headers,
+            >>>                         )
 
         .. Response::
 
@@ -305,7 +419,8 @@ class CampaignByIdResource(Resource):
         data = get_valid_json_data(request)
         if not campaign_id > 0:
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         for key, value in data.items():
             if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
                 raise InvalidUsage('Invalid field in campaign data',
@@ -313,7 +428,8 @@ class CampaignByIdResource(Resource):
             if not value:
                 raise InvalidUsage('Invalid value for field in campaign data',
                                    additional_error_info=dict(field=key,
-                                                              invalid_value=value))
+                                                              invalid_value=value),
+                                   error_code=CampaignException.MISSING_REQUIRED_FIELD)
 
         data['user_id'] = user.id
         # We are confirmed that this key has some value after above validation
@@ -332,6 +448,43 @@ class CampaignByIdResource(Resource):
         response = dict(message='Push campaign was updated successfully')
         return response, 200
 
+    def delete(self, campaign_id):
+        """
+        Removes a single campaign from getTalent's database.
+        :param campaign_id: (Integer) unique id in push_campaign table on GT database.
+
+        :Example:
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> response = requests.delete(PushCampaignApiUrl.CAMPAIGN % campaign_id,
+            >>>                            headers=headers)
+
+        .. Response::
+
+            {
+                'message': 'Campaign(id:125) has been deleted successfully'
+            }
+        .. Status:: 200 (Resource Deleted)
+                    400 (Bad request)
+                    403 (Forbidden: Current user cannot delete Push campaign)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        ..Error codes::
+                    5010 (ERROR_DELETING_CAMPAIGN)
+        """
+        campaign_obj = PushCampaignBase(request.user.id)
+        campaign_deleted = campaign_obj.delete(campaign_id)
+        if campaign_deleted:
+            return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
+        else:
+            # TODO: replace with actual error code from common campaign code
+            raise InternalServerError(
+                'Campaign(id:%s) was not deleted.' % campaign_id,
+                error_code=8020)
+
 
 @api.route(PushCampaignApi.SCHEDULE)
 class SchedulePushCampaignResource(Resource):
@@ -345,20 +498,20 @@ class SchedulePushCampaignResource(Resource):
 
         :Example:
 
-            headers = {'Authorization': 'Bearer <access_token>',
-                       'Content-type': 'application/json'}
-
-            schedule_data =
-                        {
-                            "frequency_id": 2,
-                            "start_datetime": "2015-11-26T08:00:00Z",
-                            "end_datetime": "2015-11-30T08:00:00Z"
-                        }
-
-            campaign_id = 1
-
-            response = requests.post(API_URL + '/v1/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers, data=schedule_data)
+            >>> import json
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>',
+            >>>            'Content-type': 'application/json'}
+            >>> schedule_data =
+            >>>             {
+            >>>                 "frequency_id": 2,
+            >>>                 "start_datetime": "2015-11-26T08:00:00Z",
+            >>>                 "end_datetime": "2015-11-30T08:00:00Z"
+            >>>             }
+            >>> campaign_id = str(1)
+            >>> schedule_data = json.dumps(schedule_data)
+            >>> response = requests.post(API_URL + '/v1/campaigns/' + campaign_id + '/schedule',
+            >>>                             headers=headers, data=schedule_data)
 
         .. Response::
 
@@ -385,7 +538,7 @@ class SchedulePushCampaignResource(Resource):
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                   CampaignType.PUSH)
+                                                                   CampaignUtils.PUSH)
         campaign_obj = PushCampaignBase(user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
@@ -399,20 +552,20 @@ class SchedulePushCampaignResource(Resource):
 
         :Example:
 
-            headers = {'Authorization': 'Bearer <access_token>',
-                       'Content-type': 'application/json'}
-
-            schedule_data =
-                        {
-                            "frequency_id": 2,
-                            "start_datetime": "2015-11-26T08:00:00Z",
-                            "end_datetime": "2015-11-30T08:00:00Z"
-                        }
-
-            campaign_id = 1
-
-            response = requests.put(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers, data=schedule_data)
+            >>> import json
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>',
+            >>>            'Content-type': 'application/json'}
+            >>> schedule_data =
+            >>>             {
+            >>>                 "frequency_id": 2,
+            >>>                 "start_datetime": "2015-11-26T08:00:00Z",
+            >>>                 "end_datetime": "2015-11-30T08:00:00Z"
+            >>>             }
+            >>> campaign_id = 1
+            >>> data = json.dumps(schedule_data)
+            >>> response = requests.put(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+            >>>                             headers=headers, data=data)
 
         .. Response::
 
@@ -435,7 +588,7 @@ class SchedulePushCampaignResource(Resource):
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                   CampaignType.PUSH)
+                                                                   CampaignUtils.PUSH)
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
@@ -451,14 +604,15 @@ class SchedulePushCampaignResource(Resource):
         :param campaign_id: (Integer) unique id in push_campaign table on GT database.
 
         :Example:
-            headers = {
-                        'Authorization': 'Bearer <access_token>',
-                       }
 
-            campaign_id = 1
-            response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
-                                        headers=headers,
-                                    )
+            >>> import requests
+            >>> headers = {
+            >>>             'Authorization': 'Bearer <access_token>',
+            >>>            }
+            >>> campaign_id = 1
+            >>> response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+            >>>                             headers=headers,
+            >>>                         )
 
         .. Response::
 
@@ -473,7 +627,7 @@ class SchedulePushCampaignResource(Resource):
         """
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignType.PUSH)
+        task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignUtils.PUSH)
         if task_unscheduled:
             return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
         else:
@@ -491,10 +645,12 @@ class SendPushCampaign(Resource):
             associated with given campaign.
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.post(API_URL + '/v1/campaigns/' + str(campaign_id)
-                                + '/send', headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> response = requests.post(API_URL + '/v1/campaigns/' + str(campaign_id)
+            >>>                     + '/send', headers=headers)
 
         .. Response::
 
@@ -507,26 +663,76 @@ class SendPushCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
-        .. Error Codes:: 7002 (NoSmartlistAssociated)
+        .. Error Codes:: 5102 (NoSmartlistAssociated)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
         campaign_obj = PushCampaignBase(user_id=user.id)
-        campaign_obj.process_send(campaign)
+        campaign_obj.campaign_id = campaign_id
+        campaign_obj.send(campaign_id)
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
 @api.route(PushCampaignApi.BLAST_SENDS)
 class PushCampaignBlastSends(Resource):
+    """
+    Endpoint looks like /v1/campaigns/:id/blasts/:id/sends
+    This resource is used to GET Campaign "sends" for one particular blast of a given campaign.
+    """
 
     decorators = [require_oauth()]
 
     def get(self, campaign_id, blast_id):
+        """
+        Returns Campaign sends for given campaign_id and blast_id
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
+        >>>                         headers=headers)
+
+        .. Response::
+
+            {
+                "sends":
+                        [
+                            {
+                              "candidate_id": 1,
+                              "id": 9,
+                              "sent_datetime": "2015-11-23 18:25:09",
+                              "blast_id": 1,
+                              "updated_time": "2015-11-23 18:25:08"
+                            },
+                            {
+                              "candidate_id": 2,
+                              "id": 10,
+                              "sent_datetime": "2015-11-23 18:25:13",
+                              "blast_id": 1,
+                              "updated_time": "2015-11-23 18:25:13"
+                           }
+                        ],
+                "count": 2
+            }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Not owner of campaign)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+
+        :param campaign_id: integer, unique id representing campaign in GT database
+        :return: 1- count of campaign sends and 2- Push campaign sends records as dict
+        """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         blast = PushCampaignBlast.get_by_id(blast_id)
         if not blast:
             raise ResourceNotFound('Campaign Blast not found with id: %s' % blast_id)
@@ -541,6 +747,10 @@ class PushCampaignBlastSends(Resource):
 
 @api.route(PushCampaignApi.SENDS)
 class PushCampaignSends(Resource):
+    """
+    Endpoint looks like /v1/campaigns/:id/sends
+    This resource is used to GET Campaign sends
+    """
 
     decorators = [require_oauth()]
 
@@ -552,10 +762,12 @@ class PushCampaignSends(Resource):
         :return: 1- count of campaign sends and 2- Push campaign sends
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)
-                                + '/sends/', headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)
+            >>>                     + '/sends/', headers=headers)
 
         .. Response::
 
@@ -585,7 +797,8 @@ class PushCampaignSends(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         sends = []
         # Add sends for every blast to `sends` list to get all sends of a campaign.
         # A campaign can have multiple blasts
@@ -598,7 +811,10 @@ class PushCampaignSends(Resource):
 
 @api.route(PushCampaignApi.BLASTS)
 class PushCampaignBlasts(Resource):
-
+    """
+    Endpoint looks like /v1/campaigns/:id/blasts.
+    This class returns all the blast objects associated with given campaign.
+    """
     decorators = [require_oauth()]
 
     def get(self, campaign_id):
@@ -610,10 +826,12 @@ class PushCampaignBlasts(Resource):
 
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts',
-                                    headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts',
+            >>>                         headers=headers)
 
         .. Response::
 
@@ -645,7 +863,8 @@ class PushCampaignBlasts(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts.all()]
         response = dict(blasts=blasts, count=len(blasts))
@@ -668,12 +887,14 @@ class PushCampaignBlastById(Resource):
 
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            campaign_id = 1
-            blast_id = 3
-            response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ \
-                                    '/blasts/' + str(blast_id),
-                                    headers=headers)
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> blast_id = 3
+            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ \
+            >>>                         '/blasts/' + str(blast_id),
+            >>>                         headers=headers)
 
         .. Response::
 
@@ -695,7 +916,8 @@ class PushCampaignBlastById(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = PushCampaignBase.validate_ownership_of_campaign(campaign_id, user.id)
+        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
+                                                               CampaignUtils.PUSH)
         # Serialize blasts of a campaign
         blast = campaign.blasts.filter_by(id=blast_id).first()
         if blast:
@@ -719,15 +941,18 @@ class AssociateDevice(Resource):
         https://documentation.onesignal.com/docs/website-sdk-api#getIdsAvailable
 
         :Example:
-            headers = {'Authorization': 'Bearer <access_token>'}
-            data = {
-                    "candidate_id": 268,
-                    "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
 
-                }
-            data = json.dumps(data)
-            campaign_id = 1
-            response = requests.post(API_URL + '/v1/devices, data=data, headers=headers)
+            >>> import json
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> data = {
+            >>>            "candidate_id": 268,
+            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
+            >>>         }
+            >>> data = json.dumps(data)
+            >>> campaign_id = 1
+            >>> response = requests.post(PushCampaignApiUrl.DEVICES, data=data,
+            >>>                          headers=headers)
 
         .. Response::
 
@@ -808,7 +1033,7 @@ class PushCampaignUrlRedirection(Resource):
         :return: redirects to the destination URL else raises exception
         """
         try:
-            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignType.PUSH,
+            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignUtils.PUSH,
                                                                 verify_signature=True,
                                                                 request_args=request.args,
                                                                 requested_url=request.full_path)

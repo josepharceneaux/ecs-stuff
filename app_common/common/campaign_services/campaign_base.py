@@ -364,7 +364,7 @@ class CampaignBase(object):
         campaign_type = campaign.__tablename__
         campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
         for smartlist_id in smartlist_ids:
-            data = {'smartlist_id': smartlist_id, 'sms_campaign_id': campaign.id}
+            data = {'smartlist_id': smartlist_id, 'campaign_id': campaign.id}
             db_record = campaign_smartlist_model.get_by_campaign_id_and_smartlist_id(campaign.id,
                                                                                      smartlist_id)
             if not db_record:
@@ -444,7 +444,6 @@ class CampaignBase(object):
                                  % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
 
     @staticmethod
-    @abstractmethod
     def get_user_id_of_owner(campaign_obj, current_user_id):
         """
         This returns the id of user who created the given campaign. Child classes will implement
@@ -462,7 +461,12 @@ class CampaignBase(object):
         **See Also**
             .. see also:: get_user_id_of_owner() in SmsCampaignBase class.
         """
-        pass
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
+        user_id = campaign_obj.user_id
+        if not user_id:
+            raise ForbiddenError('%s(id:%s) has no user_id associated.'
+                                 % (campaign_obj.__tablename__, campaign_obj.id))
+        return user_id
 
     def delete(self, campaign_id):
         """
@@ -521,7 +525,7 @@ class CampaignBase(object):
             # In case activity_service is not running, we proceed normally and log the error.
             logger.exception('delete: Error creating campaign delete activity.')
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (campaign_type,
-                                                                          campaign_obj.id))
+                                                                          campaign_id))
         return True
 
     @classmethod

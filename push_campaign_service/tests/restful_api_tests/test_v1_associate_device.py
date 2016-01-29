@@ -8,23 +8,23 @@ from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.models.candidate import Candidate
-from push_campaign_service.modules.constants import TEST_DEVICE_ID
+from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 
+URL = PushCampaignApiUrl.DEVICES
 
 class TestRegisterCandidateDevice(object):
 
     def test_associate_device_with_invalid_token(self, test_candidate):
         # We are testing 401 here. so campaign and blast ids will not matter.
-        unauthorize_test('post',  PushCampaignApiUrl.DEVICES, 'invalid_token')
+        unauthorize_test('post',  URL, 'invalid_token')
 
     def test_associate_device_with_invalid_data(self, token, test_candidate):
-        invalid_data_test('post', PushCampaignApiUrl.DEVICES, token)
+        invalid_data_test('post', URL, token)
 
     # Test URL: /v1/devices [POST]
     def test_associate_device_with_invalid_candidate_id(self, token, test_candidate):
-        last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
-        invalid_candiate_id = last_candidate.id + 100
-        valid_device_id = TEST_DEVICE_ID
+        invalid_candiate_id = get_non_existing_id(Candidate)
+        valid_device_id = PUSH_DEVICE_ID
         invalid_candidate_data = {
             '': (INVALID_USAGE, 'candidate_id is not given in post data'),
             0: (INVALID_USAGE, 'candidate_id is not given in post data'),
@@ -34,7 +34,7 @@ class TestRegisterCandidateDevice(object):
         }
         for key in invalid_candidate_data:
             data = dict(candidate_id=key, device_id=valid_device_id)
-            response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+            response = send_request('post', URL, token, data)
             status_code, message = invalid_candidate_data[key]
             assert response.status_code == status_code, 'exception raised'
             error = response.json()['error']
@@ -49,15 +49,15 @@ class TestRegisterCandidateDevice(object):
             }
         for key in invalid_device_data:
             data = dict(candidate_id=test_candidate.id, device_id=key)
-            response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+            response = send_request('post', URL, token, data)
             status_code, message = invalid_device_data[key]
             assert response.status_code == status_code, 'exception raised'
             error = response.json()['error']
             assert error['message'] == message
 
     def test_associate_a_device_to_candidate(self, token, test_candidate):
-        data = dict(candidate_id=test_candidate.id, device_id=TEST_DEVICE_ID)
-        response = send_request('post', PushCampaignApiUrl.DEVICES, token, data)
+        data = dict(candidate_id=test_candidate.id, device_id=PUSH_DEVICE_ID)
+        response = send_request('post', URL, token, data)
         assert response.status_code == OK, 'Could not associate device to candidate'
         response = response.json()
         assert response['message'] == 'Device registered successfully with candidate (id: %s)' \
@@ -69,4 +69,4 @@ class TestRegisterCandidateDevice(object):
         devices = test_candidate.devices.all()
         assert len(devices) == 1, 'One device should be associated to this test candidate'
         device = devices[0]
-        assert device.one_signal_device_id == TEST_DEVICE_ID
+        assert device.one_signal_device_id == PUSH_DEVICE_ID

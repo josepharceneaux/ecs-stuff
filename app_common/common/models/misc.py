@@ -197,6 +197,7 @@ class Frequency(db.Model):
         assert desc, 'No description given'
         return cls.query.filter(cls.description == desc.lower()).first().id
 
+    @classmethod
     def get_seconds_from_id(cls, frequency_id):
         """
         This gives us the number of seconds for given frequency_id.

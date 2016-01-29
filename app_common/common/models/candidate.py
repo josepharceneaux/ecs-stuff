@@ -8,7 +8,6 @@ from email_marketing import EmailCampaign, EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
-from push_campaign import PushCampaignSend
 
 class Candidate(db.Model):
     __tablename__ = 'candidate'

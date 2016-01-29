@@ -10,6 +10,8 @@ from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import SchedulerApiUrl
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
+URL = PushCampaignApiUrl.SCHEDULE
+
 
 class TestScheduleCampaignUsingPOST(object):
 
@@ -18,21 +20,20 @@ class TestScheduleCampaignUsingPOST(object):
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
-        unauthorize_test('post',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id,
+        unauthorize_test('post',  URL % campaign_in_db.id,
                          'invalid_token', data)
 
     def test_schedule_campaign_with_invalid_data(self, token, campaign_in_db, test_smartlist):
-        invalid_data_test('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
+        invalid_data_test('post', URL % campaign_in_db.id, token)
 
     def test_schedule_campaign_with_invalid_campaign_id(self, token, campaign_in_db, test_smartlist):
         data = generate_campaign_schedule_data()
         # Test with invalid or non-existing id
-        last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
-        non_existing_id = last_campaign.id + 100
+        non_existing_id = get_non_existing_id(PushCampaign)
         invalid_ids = [(0, INVALID_USAGE),
                        (non_existing_id, NOT_FOUND)]
         for _id, status_code in invalid_ids:
-            response = send_request('post', PushCampaignApiUrl.SCHEDULE % _id, token, data)
+            response = send_request('post', URL % _id, token, data)
             assert response.status_code == status_code
 
     def test_schedule_campaign_with_other_user(self, token2, campaign_in_db):
@@ -40,7 +41,7 @@ class TestScheduleCampaignUsingPOST(object):
         # Here we created campaign with user whose Auth token is "token"
         # and we want to schedule this campaign with other user with token "token2"
         data = generate_campaign_schedule_data()
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token2, data)
         assert response.status_code == FORBIDDEN
 
@@ -48,7 +49,7 @@ class TestScheduleCampaignUsingPOST(object):
         # Test forbidden error. To schedule a task first time, we have to send POST,
         # but we will send request using PUT which is for update and will validate error
         data = generate_campaign_schedule_data()
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == FORBIDDEN
 
@@ -57,13 +58,13 @@ class TestScheduleCampaignUsingPOST(object):
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data()
         del data['start_datetime']
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
 
         data = generate_campaign_schedule_data()
         del data['end_datetime']
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -74,7 +75,7 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         start = datetime.datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -83,7 +84,7 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         end = datetime.datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -92,7 +93,7 @@ class TestScheduleCampaignUsingPOST(object):
     def test_schedule_a_campaign_with_valid_data(self, token, campaign_in_db, test_smartlist):
 
         data = generate_campaign_schedule_data()
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == OK
         response = response.json()
@@ -124,7 +125,7 @@ class TestRescheduleCampaignUsingPUT(object):
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
-        unauthorize_test('put',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id,
+        unauthorize_test('put',  URL % campaign_in_db.id,
                          'invalid_token', data)
 
     def test_reschedule_campaign_with_other_user(self, token2, campaign_in_db):
@@ -132,12 +133,12 @@ class TestRescheduleCampaignUsingPUT(object):
         # Here we created campaign with user whose Auth token is "token"
         # and we want to reschedule this campaign using different token "token2"
         data = generate_campaign_schedule_data()
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token2, data)
         assert response.status_code == FORBIDDEN
 
     def test_reschedule_campaign_with_invalid_data(self, token, campaign_in_db, test_smartlist):
-        invalid_data_test('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token)
+        invalid_data_test('put', URL % campaign_in_db.id, token)
 
     def test_reschedule_campaign_with_invalid_campaign_id(self, token, campaign_in_db,
                                                           test_smartlist,
@@ -146,12 +147,11 @@ class TestRescheduleCampaignUsingPUT(object):
 
         # Test with invalid integer id
         # Test for 404, Schedule a campaign which does not exists or id is invalid
-        last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
-        non_existing_id = last_campaign.id + 100
+        non_existing_id = get_non_existing_id(PushCampaign)
         invalid_ids = [(0, INVALID_USAGE),
                        (non_existing_id, NOT_FOUND)]
         for _id, status_code in invalid_ids:
-            response = send_request('put', PushCampaignApiUrl.SCHEDULE % _id, token, data)
+            response = send_request('put', URL % _id, token, data)
             assert response.status_code == status_code
 
     def test_reschedule_campaign_with_post_method(self, token, campaign_in_db, test_smartlist,
@@ -159,7 +159,7 @@ class TestRescheduleCampaignUsingPUT(object):
         # Test forbidden error. To schedule a task first time, we have to send POST,
         # but we will send request using PUT which is for update and will validate error
         data = schedule_a_campaign
-        response = send_request('post', PushCampaignApiUrl.SCHEDULE
+        response = send_request('post', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == FORBIDDEN
 
@@ -169,7 +169,7 @@ class TestRescheduleCampaignUsingPUT(object):
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data()
         del data['start_datetime']
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -177,7 +177,7 @@ class TestRescheduleCampaignUsingPUT(object):
 
         data = generate_campaign_schedule_data()
         del data['end_datetime']
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -188,7 +188,7 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data()
         start = datetime.datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -199,7 +199,7 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data()
         end = datetime.datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == INVALID_USAGE
         error = response.json()['error']
@@ -209,7 +209,7 @@ class TestRescheduleCampaignUsingPUT(object):
                                                  schedule_a_campaign):
 
         data = generate_campaign_schedule_data()
-        response = send_request('put', PushCampaignApiUrl.SCHEDULE
+        response = send_request('put', URL
                                 % campaign_in_db.id, token, data)
         assert response.status_code == OK
         response = response.json()
@@ -243,38 +243,37 @@ class TestUnscheduleCamapignUsingDELETE(object):
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
-        unauthorize_test('delete',  PushCampaignApiUrl.SCHEDULE % campaign_in_db.id,
+        unauthorize_test('delete',  URL % campaign_in_db.id,
                          'invalid_token', data)
 
     def test_unschedule_campaign_with_other_user(self, token2, campaign_in_db):
         # Test with a valid campaign but user is not owner of campaign
         # Here we created campaign with user whose Auth token is "token"
         # and we have a a test user token "test_auth_token" to test ownership
-        response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+        response = send_request('delete', URL
                                 % campaign_in_db.id, token2)
         assert response.status_code == FORBIDDEN
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token):
         # Test with invalid integer id
-        last_campaign = PushCampaign.query.order_by(PushCampaign.id.desc()).first()
-        non_existing_id = last_campaign.id + 100
+        non_existing_id = get_non_existing_id(PushCampaign)
         invalid_ids = [(0, INVALID_USAGE),
                        (non_existing_id, NOT_FOUND)]
         for _id, status_code in invalid_ids:
-            response = send_request('delete', PushCampaignApiUrl.SCHEDULE % _id, token)
+            response = send_request('delete', URL % _id, token)
             assert response.status_code == status_code
 
     def test_unschedule_a_campaign(self, token, campaign_in_db, test_smartlist,
                                    schedule_a_campaign):
 
-        response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+        response = send_request('delete', URL
                                 % campaign_in_db.id, token)
         assert response.status_code == OK
         response = response.json()
         assert response['message'] == 'Campaign(id:%s) has been unschedule.' \
                                       % campaign_in_db.id
 
-        response = send_request('delete', PushCampaignApiUrl.SCHEDULE
+        response = send_request('delete', URL
                                 % campaign_in_db.id, token)
         assert response.status_code == OK
         response = response.json()

@@ -1,6 +1,6 @@
 """ Initializer for Push Campaign Service App.
 """
-
+__author__ = 'Zohaib Ijaz <mzohaib.qc@gnail.com>'
 # Third Party
 from flask import Flask
 from celery import Celery
@@ -21,11 +21,24 @@ logger = flask_app.config['LOGGER']
 health = HealthCheck(flask_app, "/healthcheck")
 
 
-logger.info("push_campaign_service is running in %s environment" % flask_app.config[TalentConfigKeys.ENV_KEY])
-app = init_talent_app(flask_app, logger)
-CORS(app)
-# Celery settings
-celery_app = Celery(app, broker=app.config['CELERY_RESULT_BACKEND_URL'],
-                    backend=app.config['CELERY_RESULT_BACKEND_URL'],
-                    include=['push_campaign_service.modules.push_campaign_base'])
+def init_push_campaign_app_and_celery_app():
+    """
+    Call this method at the start of app
+    :return:
+    """
+    logger.info("push_campaign_service is running in %s environment"
+                % flask_app.config[TalentConfigKeys.ENV_KEY])
+    initialized_app = init_talent_app(flask_app, logger)
+    # Celery settings
+    celery_app = Celery(initialized_app, broker=initialized_app.config['REDIS_URL'],
+                        backend=initialized_app.config['CELERY_RESULT_BACKEND_URL'],
+                        include=['push_campaign_service.modules.push_campaign_base'])
+    return initialized_app, celery_app
+
+try:
+    # Initializing App. This line should come before any imports from models
+    app, celery_app = init_push_campaign_app_and_celery_app()
+except Exception as e:
+    logger.exception("Couldn't start push_campaign_service in %s environment."
+                     % (flask_app.config[TalentConfigKeys.ENV_KEY]))
 

@@ -1,5 +1,7 @@
 """
 This module contains code which implements Api calls for OneSignal Rest API.
+
+    Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@@gmail.com>
 """
 import json
 

@@ -46,7 +46,7 @@ other model classes inherit. But this changes will only effect this app or the a
 from types import MethodType
 
 # Third Party
-from flask import current_app
+from flask import current_app, Flask
 from flask.ext.cors import CORS
 
 # Application Specific
@@ -170,11 +170,13 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def delete(cls, ref):
+def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
     :param ref: id for instance | model instance
     :type ref: int | model object
+    :param app: flask app, if someone wants to run this method using app_context
+    :type app: Flask obj
     :return: Boolean
     :rtype: bool
     """
@@ -186,8 +188,10 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].error(
-            "Couldn't delete record from db. Error is: %s" % error.message)
+        if isinstance(app, Flask):
+            with app.app_context():
+                current_app.config[TalentConfigKeys.LOGGER].error(
+                    "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 
