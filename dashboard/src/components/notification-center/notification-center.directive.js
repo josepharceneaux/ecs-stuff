@@ -19,6 +19,7 @@
             scope: {},
             controller: 'NotificationCenterController',
             controllerAs: 'vm',
+            link: linkFunction
         };
 
         return directive;
@@ -56,5 +57,49 @@
                 }
             });
         }
+    }
+
+    function linkFunction(scope, elem, attrs) {
+        var self = {};
+
+        self.$el = {
+            feed      : $('.feed'),
+            feedInner : $('.feed__inner'),
+            toggle    : $('.js--toggleFeed')
+        };
+
+        self.open = function () {
+            setTimeout(function () {
+                self.$el.feed.addClass('view__sidebar--active');
+            });
+            setTimeout(function () {
+                self.$el.feedInner.addClass('feed__inner--active');
+            }, 200);
+        };
+
+        self.close = function () {
+            setTimeout(function () {
+                self.$el.feedInner.removeClass('feed__inner--active');
+            });
+            setTimeout(function () {
+                self.$el.feed.removeClass('view__sidebar--active');
+            });
+        };
+
+        self.toggle = function () {
+            if (self.$el.feedInner.hasClass('feed__inner--active') &&
+                    self.$el.feed.hasClass('view__sidebar--active')) {
+                return self.close();
+            }
+
+            return self.open();
+        }
+
+        angular.element(document).ready(function() {
+            if (!self.$el.toggle.length) return;
+            self.$el.toggle.click(self.toggle);
+        })
+
+        return self;
     }
 })();
