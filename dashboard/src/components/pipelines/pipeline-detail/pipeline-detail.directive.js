@@ -143,7 +143,14 @@
             $('#pipelineDetailsViewChart').highcharts({
                 chart: {
                     type: 'area',
-                    backgroundColor: null
+                    backgroundColor: null,
+                    spacingLeft: 40,
+                    spacingRight: 40,
+                    spacingTop: 50,
+                    style: {
+                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: 300
+                    }
                 },
                 title: {
                     text: ''
@@ -204,8 +211,8 @@
                     layout: 'vertical',
                     align: 'right',
                     verticalAlign: 'top',
-                    x: -8,
-                    y: -10,
+                    x: -30,
+                    y: 0,
                     floating: true,
                     width: 170,
                     symbolWidth: 12,
@@ -213,8 +220,16 @@
                     itemMarginBottom: 5,
                     padding: 12,
                     backgroundColor: '#FFFFFF',
-                    borderColor: '#D9D9D9',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderColor: "#cccccc",
+                    itemStyle: {
+                        "fontWeight":"300"
+                    },
+                    navigation: {
+                        style: {
+                            fontWeight: '400',
+                        }
+                    }
                 },
                 tooltip: {
                     borderWidth:0,
