@@ -28,10 +28,10 @@
         </div>
 
         <!-- Section overview graph -->
-        <div class="area-chart">
-            <div>
+        <div class="area-chart chart-container">
+            <div class="">
                 <div class="chart-title">
-                    <span class="md-title">
+                    <span>
                         Candidates Added Per Month
                         <i class="fa fa-info-circle"></i>
                     </span>
@@ -123,7 +123,9 @@
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        D3 % Chart
+                        <gt-circle-graph angle="75" value="3000" class="d3-circle">
+                            <div></div>
+                        </gt-circle-graph>
                     </md-card-content>
                 </md-card>
                 <!-- End: Current Candidate Usage -->
@@ -137,7 +139,7 @@
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        D3 Bar Chart
+
                     </md-card-content>
                 </md-card>
                 <!-- End: Top Performing Campaigns -->

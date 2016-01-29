@@ -42,7 +42,14 @@
             $('#pipelineDetailsViewChart').highcharts({
                 chart: {
                     type: 'area',
-                    backgroundColor: null
+                    backgroundColor: null,
+                    spacingLeft: 40,
+                    spacingRight: 40,
+                    spacingTop: 50,
+                    style: {
+                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: 300
+                    }
                 },
                 title: {
                     text: ''
@@ -63,8 +70,8 @@
                         y: 24,
                         style: {
                             color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: "bold"
+                            fontSize: '14px',
+                            fontWeight: "400"
                         },
                         formatter: function() {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
@@ -74,15 +81,15 @@
                 yAxis: {
                     gridLineColor: '#fff',
                     yDecimals: 2,
-                    gridLineWidth: 1.5,
+                    gridLineWidth: 1,
                     title : {
                         text: ""
                     },
                     labels: {
                         style: {
                             color: '#adadad',
-                            fontSize: '12px',
-                            fontWeight: "bold"
+                            fontSize: '14px',
+                            fontWeight: "400"
                         },
                         formatter: function () {
                             if (this.value != 0) {
@@ -103,8 +110,8 @@
                     layout: 'vertical',
                     align: 'right',
                     verticalAlign: 'top',
-                    x: -8,
-                    y: -10,
+                    x: 10,
+                    y: 0,
                     floating: true,
                     width: 170,
                     symbolWidth: 12,
@@ -112,8 +119,16 @@
                     itemMarginBottom: 5,
                     padding: 12,
                     backgroundColor: '#FFFFFF',
-                    borderColor: '#D9D9D9',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderColor: "#cccccc",
+                    itemStyle: {
+                      "fontWeight":"300"
+                    },
+                    navigation: {
+                        style: {
+                            fontWeight: '400',
+                        }
+                    }
                 },
                 tooltip: {
                     borderWidth:0,
