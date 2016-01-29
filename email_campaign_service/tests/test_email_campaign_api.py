@@ -5,7 +5,7 @@ import time
 import email
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignUrl, CandidatePoolApiUrl
 from email_campaign_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
@@ -16,7 +16,7 @@ from email_campaign_service.common.utils.handy_functions import add_role_to_test
 __author__ = 'jitesh'
 
 
-def test_get_all_email_campaigns(user_first, access_token_first, talent_pool):
+def test_get_all_email_campaigns(user_first, access_token_first, talent_pool, talent_pipeline):
     """
     Test GET API of email_campaigns for getting all campaigns
     """
@@ -49,6 +49,26 @@ def test_get_all_email_campaigns(user_first, access_token_first, talent_pool):
     for email_campaign in email_campaigns:
         assert 'id' in email_campaign
         assert resp['email_campaigns']
+
+    # Test GET api of email campaign
+    response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+                 headers={'Authorization': 'Bearer %s' % access_token_first})
+    assert response.status_code == 200
+    resp = response.json()
+    assert 'email_campaigns' in resp
+    email_campaigns = resp['email_campaigns']
+    for email_campaign in email_campaigns:
+        assert 'id' in email_campaign
+        assert resp['email_campaigns']
+
+    # Test GET api of talent-pipelines/:id/campaigns
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
+                            headers={'Authorization': 'Bearer %s' % access_token_first})
+    assert response.status_code == 200
+    resp = response.json()
+    print "Response of talent pipelines/candidates call: ", resp
+    assert 'email_campaigns' in resp
+
 
 
 def create_smartlist_with_candidate(user, access_token, talent_pool):
