@@ -3,39 +3,49 @@ import os
 from subprocess import check_output
 from sys import exit, platform as _platform
 
+from app_common.common.routes import GTApis
+
 VM_NOT_RUNNING_ERROR_MESSAGE = 'Virtual Machine is not running. Please start it with docker-machine start VM_NAME'
 SERVICE_TO_REPO_NAME = {'base_service_container': 'base-service-container',
-                        'auth_service': 'auth-service',
-                        'activity_service': 'activity-service',
-                        'resume_parsing_service': 'resume-parsing-service',
-                        'user_service': 'user-service',
-                        'candidate_service': 'candidate-service',
-                        'social_network_service': 'social-network-service',
-                        'widget_service': 'widget-service',
-                        'candidate_pool_service': 'candidate-pool-service',
-                        'spreadsheet_import_service': 'spreadsheet-import-service',
-                        'scheduler_service': 'scheduler_service',
-                        'sms_campaign_service': 'sms-campaign-service'
+                        'auth_service': GTApis.AUTH_SERVICE_NAME,
+                        'activity_service': GTApis.ACTIVITY_SERVICE_NAME,
+                        'resume_parsing_service': GTApis.RESUME_PARSING_SERVICE_NAME,
+                        'user_service': GTApis.USER_SERVICE_NAME,
+                        'candidate_service': GTApis.CANDIDATE_SERVICE_NAME,
+                        'social_network_service': GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                        'widget_service': GTApis.WIDGET_SERVICE_NAME,
+                        'candidate_pool_service': GTApis.CANDIDATE_POOL_SERVICE_NAME,
+                        'spreadsheet_import_service': GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
+                        'scheduler_service': GTApis.SCHEDULER_SERVICE_NAME,
+                        'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                        'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_NAME
                         }
 
-SERVICE_TO_PORT_NUMBER = {'auth_service': 8001,
-                          'activity_service': 8002,
-                          'resume_parsing_service': 8003,
-                          'user_service': 8004,
-                          'candidate_service': 8005,
-                          'social_network_service': 8006,
-                          'widget_service': 8007,
-                          'candidate_pool_service': 8008,
-                          'spreadsheet_import_service': 8009,
-                          'scheduler_service': 8011,
-                          'sms_campaign_service': 8012}
+SERVICE_TO_PORT_NUMBER = {'auth_service': GTApis.AUTH_SERVICE_PORT,
+                          'activity_service': GTApis.ACTIVITY_SERVICE_PORT,
+                          'resume_parsing_service': GTApis.RESUME_PARSING_SERVICE_PORT,
+                          'user_service': GTApis.USER_SERVICE_PORT,
+                          'candidate_service': GTApis.CANDIDATE_SERVICE_PORT,
+                          'social_network_service': GTApis.SOCIAL_NETWORK_SERVICE_PORT,
+                          'widget_service': GTApis.WIDGET_SERVICE_PORT,
+                          'candidate_pool_service': GTApis.CANDIDATE_POOL_SERVICE_PORT,
+                          'spreadsheet_import_service': GTApis.SPREADSHEET_IMPORT_SERVICE_PORT,
+                          'scheduler_service': GTApis.SCHEDULER_SERVICE_PORT,
+                          'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_PORT,
+                          'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_PORT
+                          }
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')
-parser.add_argument('--build', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Invokes the Docker build action for given service')
-parser.add_argument('--build-all', action='store_true', help='Invokes the Docker build action for all services except base_service_container')
-parser.add_argument('--push-ecr', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Pushes image to Amazon EC2 Container Registry (ECR)')
-parser.add_argument('--push-ecr-all', action='store_true', help='Pushes all images to Amazon EC2 Container Registry (ECR) except base_service_container')
-parser.add_argument('--run', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(), help='Runs the container locally for given service')
+parser.add_argument('--build', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(),
+                    help='Invokes the Docker build action for given service')
+parser.add_argument('--build-all', action='store_true',
+                    help='Invokes the Docker build action for all services except base_service_container')
+parser.add_argument('--push-ecr', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(),
+                    help='Pushes image to Amazon EC2 Container Registry (ECR)')
+parser.add_argument('--push-ecr-all', action='store_true',
+                    help='Pushes all images to Amazon EC2 Container Registry (ECR) except base_service_container')
+parser.add_argument('--run', nargs=1, choices=SERVICE_TO_REPO_NAME.keys(),
+                    help='Runs the container locally for given service')
 args = parser.parse_args()
 
 
@@ -132,7 +142,6 @@ if args.build:
     service_name = args.build[0]
     build_docker_image(service_name)
 
-
 if args.build_all:
     for service_name in SERVICE_TO_REPO_NAME.keys():
         if service_name == "base_service_container":
@@ -140,7 +149,6 @@ if args.build_all:
             continue
         print "Building Docker image for %s" % service_name
         build_docker_image(service_name)
-
 
 if args.run:
     if 1 == 1:  # To get past PyCharm's "Code unreachable" warning.  (Only temporary)
@@ -156,6 +164,7 @@ if args.run:
     # from urllib2 import urlopen
     # my_ip = urlopen('http://ip.42.pl/raw').read()
     import socket
+
     my_ip = socket.gethostbyname(socket.gethostname())
 
     command = 'docker run -p %s:80 -d -e "GT_ENVIRONMENT=dev" --add-host=mysql_host:%s %s' % (
@@ -164,11 +173,9 @@ if args.run:
         repo_name)
     _execute_command_or_exit(command)
 
-
 if args.push_ecr:
     service_name = args.push_ecr[0]
     push_image_to_ecr(service_name)
-
 
 if args.push_ecr_all:
     for service_name in SERVICE_TO_REPO_NAME.keys():

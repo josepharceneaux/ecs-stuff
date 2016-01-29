@@ -10,18 +10,18 @@ import json
 import requests
 
 # Service Specific
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.tests.sample_data import fake
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
+from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete
 
 # Common Utils
+from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 
 
 class TestSmsCampaignWithIdHTTPGET(object):

@@ -115,13 +115,21 @@ class CampaignsCommonTests(object):
     def request_with_invalid_campaign_id(cls, model, method, url, token, data):
         # Test with invalid integer id
         # Test for 404, Schedule a campaign which does not exists or id is invalid
-        last_campaign_id_in_db = model.query.order_by(model.id.desc()).first().id
+        last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
         for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, token, data)
             assert response.status_code == status_code
-    
+
+    @classmethod
+    def get_last_id(cls, model):
+        last_obj = model.query.order_by(model.id.desc()).first()
+        if last_obj:
+            return last_obj.id
+        else:
+            return 1000
+
     @classmethod
     def reschedule_with_post_method(cls, url, token, data):
         # Test forbidden error. To schedule a task first time, we have to send POST,

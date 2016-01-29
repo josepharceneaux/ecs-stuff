@@ -113,7 +113,7 @@ def snake_case_to_pascal_case(name):
                 result = snake_case_to_camel_case('social_network_id')
                 assert result == 'SocialNetworkId'
     """
-    if not isinstance(name, str):
+    if not isinstance(name, basestring):
         raise InvalidUsage('Include name as str.')
     splitted_string = name.split('_')
     # use string's class to work on the string to keep its type
@@ -247,7 +247,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                             json_response['error_description'])
                     else:
                         error_message = e.message
-                except json.JSONDecoder:
+                except AttributeError:
                     error_message = e.message
             else:
                 # raise any Server error
@@ -292,7 +292,7 @@ def validate_required_fields(data_dict, required_fields):
                            error_code=InvalidUsage.http_status_code())
 
 
-def find_missing_items(data_dict, required_fields=None, verify_values_of_all_keys=False):
+def find_missing_items(data_dict, required_fields=None, verify_all=False):
     """
     This function is used to find the missing items (either key or its value)in given
     data_dict. If verify_all is true, this function checks all the keys present in data_dict
@@ -307,17 +307,19 @@ def find_missing_items(data_dict, required_fields=None, verify_values_of_all_key
          Output will be ['type']
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
-    :param verify_values_of_all_keys: indicator if we want to check values of all keys or only keys
+    :param verify_all: indicator if we want to check values of all keys or only keys
                             present in required_fields
     :type data_dict: dict
     :type required_fields: list | None
-    :type verify_values_of_all_keys: bool
+    :type verify_all: bool
     :return: list of missing items
     :rtype: list
     """
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('include data_dict as dict.')
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
-    elif verify_values_of_all_keys:
+    elif verify_all:
         # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if not value and not value == 0]
@@ -335,16 +337,22 @@ def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
     This validates that given object is an instance of given instance. If it is not, it raises
     the given exception.
     :param obj: obj e,g. User object
-    :param instance: Class for which given object is expected to be an instance.
+    :param instances: Class for which given object is expected to be an instance.
     :param exception: Exception to be raised
     :type obj: object
-    :type instance: class
+    :type instances: class
     :type exception: Exception
     :exception: Invalid Usage
     """
     if not isinstance(obj, instances):
-        raise exception('Given object must be an instance of %s.'
-                        % ", ".join([instance.__name__ for instance in instances]))
+        given_obj_name = dict(obj=obj).keys()[0]
+        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
+        if isinstance(instances, (list, tuple)):
+            raise exception(error_message % ", ".join([instance.__name__
+                                                       for instance in instances]))
+        else:
+            raise exception(error_message % instances.__name__)
+
 
 def sample_phone_number():
     """Create random phone number.

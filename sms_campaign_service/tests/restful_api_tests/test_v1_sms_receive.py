@@ -176,11 +176,12 @@ class TestSmsReceive(object):
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
         campaign_reply_in_db = get_reply_text(candidate_phone_1)
-        assert campaign_reply_in_db.body_text == reply_text
+        assert len(campaign_reply_in_db) == 1
+        assert campaign_reply_in_db[0].body_text == reply_text
         reply_count_after = get_replies_count(sms_campaign_of_current_user)
         assert reply_count_after == reply_count_before + 1
         assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
-                            campaign_reply_in_db.id)
+                            campaign_reply_in_db[0].id)
 
 
 def get_replies_count(campaign):

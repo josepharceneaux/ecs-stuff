@@ -12,6 +12,9 @@ from werkzeug.security import gen_salt
 
 
 # Service Specific
+from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
+    CampaignsCommonTests
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
@@ -162,7 +165,7 @@ class TestSmsCampaignHTTPPost(object):
             'Should be a bad request (400)'
 
     def test_campaign_creation_with_missing_body_text_in_data(self, campaign_data_unknown_key_text,
-                                                         valid_header, user_phone_1):
+                                                              valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid data (unknown key "text") was sent.
         It should get Invalid usage error.
@@ -210,7 +213,7 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data,
-                                                          valid_header, user_phone_1):
+                                                             valid_header, user_phone_1):
         """
         User has one phone value, valid header and invalid URL in body text(random word).
         It should get Invalid url error, Custom error should be INVALID_URL_FORMAT.
@@ -354,7 +357,7 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': ['a', 'b', 1]
+                                       'ids': ['a', 'b', 'c']
                                    }))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
@@ -373,8 +376,8 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert_campaign_delete(response, sample_user.id, sms_campaign_of_current_user.id)
 
-    def test_campaigns_delete_with_unauthorized_ids(self, valid_header,
-                                                    sms_campaign_of_other_user):
+    def test_campaigns_delete_with_unauthorized_id(self, valid_header,
+                                                   sms_campaign_of_other_user):
         """
         User auth token is valid, data type is valid and ids are of those SMS campaigns that
         belong to some other user. It should get unauthorized error.
@@ -403,9 +406,45 @@ class TestSmsCampaignHTTPDelete(object):
                                                sms_campaign_of_current_user.id]
                                    }))
         assert response.status_code == 207
-        assert sms_campaign_of_other_user.id in response.json()['not_deleted_ids']
+        assert sms_campaign_of_other_user.id in response.json()['not_owned_ids']
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
+
+    def test_campaigns_delete_with_existing_and_non_existing_ids(self, valid_header, sample_user,
+                                                                 sms_campaign_of_current_user):
+        """
+        Test with one existing, one invalid id and one non existing ids of SMS campaign.
+        It should get 207 status code.
+        :return:
+        """
+        last_id = CampaignsCommonTests.get_last_id(SmsCampaign)
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
+                                   headers=valid_header,
+                                   data=json.dumps({
+                                       'ids': [last_id, sms_campaign_of_current_user.id]
+                                   }))
+        assert response.status_code == 207
+        assert last_id in response.json()['not_found_ids']
+        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_DELETE,
+                            sms_campaign_of_current_user.id)
+
+    def test_campaigns_delete_with_valid_and_invalid_ids(self, valid_header, sample_user,
+                                                         sms_campaign_of_current_user):
+        """
+        Test with one valid, and one invalid id of SMS campaign.
+        It should get 207 status code.
+        :return:
+        """
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
+                                   headers=valid_header,
+                                   data=json.dumps({
+                                       'ids': [0, sms_campaign_of_current_user.id]
+                                   }))
+        assert response.status_code == 207
+        assert 0 in response.json()['not_deleted_ids']
+        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_DELETE,
+                            sms_campaign_of_current_user.id)
+
 
     def test_campaigns_delete_with_deleted_record(self, valid_header, sample_user,
                                                   sms_campaign_of_current_user):
@@ -458,8 +497,8 @@ def _assert_campaign_creation(response, user_id, expected_status_code):
     assert response.json()
     resp = response.json()
     assert 'location' in response.headers
-    assert 'sms_campaign_id' in resp
-    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_CREATE, resp['sms_campaign_id'])
+    assert 'id' in resp
+    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_CREATE, resp['id'])
 
 
 def _delete_created_number_of_user(user):

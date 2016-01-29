@@ -23,10 +23,11 @@ class CampaignException(InternalServerError):
     NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN = 5102
     NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST = 5103
     MISSING_REQUIRED_FIELD = 5104
+    ERROR_DELETING_CAMPAIGN = 5015
 
     # used as custom exceptions
-    MULTIPLE_CANDIDATES_FOUND = 5015
-    EMPTY_DESTINATION_URL = 5016
+    MULTIPLE_CANDIDATES_FOUND = 5016
+    EMPTY_DESTINATION_URL = 5017
 
     def to_dict(self):
         error_dict = super(CampaignException, self).to_dict()

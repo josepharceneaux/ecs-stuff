@@ -12,15 +12,15 @@
             </button>
         </form>
         <nav class="header__actions">
-            <a href="#" class="header__notifications--mobile">
+            <a href="" class="header__notifications--mobile">
                 <span class="header__notifications__icon icon--hamburger"></span>
                 <span class="header__notifications__count">1</span>
             </a>
-            <a href="#" class="header__notifications">
+            <a href="" class="header__notifications" ng-click="vm.toggleNotificationCenter()">
                 <span class="header__notifications__icon icon--bell"></span>
                 <span class="header__notifications__count">1</span>
             </a>
-            <a href="#" class="header__profile">
+            <a href="" class="header__profile">
                 <img src="/images/placeholder/profile.png" alt="Change settings">
             </a>
         </nav>
@@ -28,36 +28,68 @@
 
     <!-- Navigation -->
     <nav class="navigation">
-        <li class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+        <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
             <strong>Talent Pool:</strong> University Relations
             <nav class="js--mobileMenu-target navigation__subMenu">
                 <header class="navigation__subMenu__header">
                     <span class="icon--pipeline"></span> Choose a Pipeline
                 </header>
-                <a href="#">Loremipsu</a>
-                <a href="#">M'dolor Sitam</a>
-                <a href="#">Etconsecte Teur</a>
+                <a href="">Loremipsu</a>
+                <a href="">M'dolor Sitam</a>
+                <a href="">Etconsecte Teur</a>
                 <footer class="navigation__subMenu__footer">
-                    <a href="#">See All</a>
+                    <a href="">See All</a>
                 </footer>
             </nav>
-        </li>
+        </div>
         <div class="navigation__items">
             <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
-            <li class="js--mobileMenu js--topNavItem navigation__item">
+            <div class="js--mobileMenu js--topNavItem navigation__item">
                 Pipelines
                 <nav class="js--mobileMenu-target navigation__subMenu">
                     <header class="navigation__subMenu__header">
                         <span class="icon--announcements"></span> Recent Campaigns
                     </header>
-                    <a href="#">Loremipsu</a>
-                    <a href="#">M'dolor Sitam</a>
-                    <a href="#">Etconsecte Teur</a>
+                    <a href="">Loremipsu</a>
+                    <a href="">M'dolor Sitam</a>
+                    <a href="">Etconsecte Teur</a>
                     <footer class="navigation__subMenu__footer">
-                        <a href="#">See All</a>
+                        <a href="">See All</a>
                     </footer>
                 </nav>
-            </li>
+            </div>
+            <div class="js--mobileMenu js--topNavItem navigation__item">
+                Candidates
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--announcements"></span> Recent Campaigns
+                    </header>
+                    <a href="">Loremipsu</a>
+                    <a href="">M'dolor Sitam</a>
+                    <a href="">Etconsecte Teur</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a href="">See All</a>
+                    </footer>
+                </nav>
+            </div>
+            <div class="js--mobileMenu js--topNavItem navigation__item">
+                Team
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--announcements"></span> Recent Campaigns
+                    </header>
+                    <a href="">Loremipsu</a>
+                    <a href="">M'dolor Sitam</a>
+                    <a href="">Etconsecte Teur</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a href="">See All</a>
+                    </footer>
+                </nav>
+            </div>
+        </div>
+        <div class="navigation__buttons">
+          <a href=""><span class="icon--share">Share</span></a>
+          <a href=""><span class="icon--upload-2">Upload</span></a>
         </div>
     </nav>
 
