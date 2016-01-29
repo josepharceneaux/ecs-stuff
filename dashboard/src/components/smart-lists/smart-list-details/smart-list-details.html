@@ -1,143 +1,61 @@
-<section id="smart-list-details-view" class="view-wrapper view__main--smart-list" layout-margin>
+<section id="smart-list-details-view" class="view-wrapper view__main--smart-list">
 
-    <div layout="column">
+    <div layout="column" layout-margin>
 
-        <!-- Navigation path -->
-        <div layout="row" layout-margin>
-            <div flex ncy-breadcrumb></div>
-        </div>
-        <!-- End: Navigation path -->
+            <!-- Navigation path -->
+            <div layout="row">
+                <div ncy-breadcrumb></div>
+            </div>
+            <!-- End: Navigation path -->
 
-        <div layout="column" flex>
-            <md-card flex="none">
-                <md-card-content layout="row" layout-xs="column" layout-align="center center">
-                    <div class="page-title-icon">
-                        <img src="//placehold.it/80x80" />
-                    </div>
-                    <div flex>
-                        <div class="md-title"> Java Developers in California</div>
-                    </div>
-                </md-card-content>
-            </md-card>
-        </div>
-        <!-- End: Page Header -->
+            <!-- Header -->
+            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--list"></div>
+                <div flex>
+                    <h2 class="md-title">North Bay</h2>
+                    <div class="md-subhead">This is a sub title for the title bar</div>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--list-add"></div></a>
+                </div>
+            </md-content>
+            <!-- End: Header -->
 
-        <div layout="row">
-
-            <div layout="column" flex="66">
-                <!-- Begin: Candidate Search -->
-                <md-card flex="none">
+        <!-- Tables & Cards -->
+        <div layout="row" layout-wrap>
+            <!-- Top Pipelines Table -->
+            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+                <md-card flex >
                     <md-card-content>
-                        Candidate Search
+                    Candidate Search
                     </md-card-content>
                 </md-card>
-                <!-- End: Candidate Search -->
+            </div>
+            <!-- End: Top Pipelines Table -->
 
-                <!-- Begin: Candidate Results -->
-                <md-card flex="none">
-                    <md-card-content>
-                        Candidate results
+            <!-- Cards -->
+            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+
+                <!-- Current Candidate Usage -->
+                <md-card flex="none" class="md-padding">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
+                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-circle-graph>
                     </md-card-content>
                 </md-card>
-                <!-- End: Candidate Search -->
+                <!-- End: Current Candidate Usage -->
+
             </div>
-
-            <div layout="column" flex="33">
-                <div flex>
-                    <md-card flex class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
-                                <span class="md-subhead-alt">Sub header if needed</span>
-                            </md-card-title-text>
-                        </md-card-title>
-                        <md-card-content flex>
-                            <div id="chart-placeholder">Placeholder</div>
-                        </md-card-content>
-                        <md-card-actions layout="row" layout-align="end center">
-                        </md-card-actions>
-                    </md-card>
-                </div>
-
-                <div flex>
-                    <md-card flex="initial" class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle" uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info"></i></span>
-                            </md-card-title-text>
-                        </md-card-title>
-                        <md-card-content flex>
-                            <!-- Candidate Breakdown -->
-                            <md-tabs md-stretch-tabs="always" md-dynamic-height md-border-bottom>
-                                <md-tab>
-                                    <md-tab-label>Typical</md-tab-label>
-                                    <md-tab-body>
-                                        <md-list>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Experience:</span>
-                                                    <span flex class="md-body-2">10-12 Years</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Job Length:</span>
-                                                    <span flex class="md-body-2">16 Months</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Education:</span>
-                                                    <span flex class="md-body-2">Bachelors Degree</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Relocation:</span>
-                                                    <span flex class="md-body-2">No</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Requires Sponsor:</span>
-                                                    <span flex class="md-body-2">No</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Income:</span>
-                                                    <span flex class="md-body-2">$90,000 p/y</span>
-                                                </div>
-                                            </md-list-item>
-                                        </md-list>
-                                    </md-tab-body>
-                                </md-tab>
-                                <md-tab>
-                                    <md-tab-label>Locations</md-tab-label>
-                                    <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by locations</span>
-                                        </md-content>
-                                    </md-tab-body>
-                                </md-tab>
-                                <md-tab>
-                                    <md-tab-label>Resources</md-tab-label>
-                                    <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by resources</span>
-                                        </md-content>
-                                    </md-tab-body>
-                                </md-tab>
-                            </md-tabs>
-                        </md-card-content>
-                        <md-card-actions layout="row" layout-align="end center">
-                        </md-card-actions>
-                    </md-card>
-                </div>
-            </div>
-
-
+            <!-- End: Cards -->
         </div>
+        <!-- End: Tables & Cards -->
 
     </div>
 
