@@ -26,15 +26,16 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService', 'notificationCenterService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuth, toastr, systemAlertsService) {
+    function ControllerFunction($state, OAuth, toastr, systemAlertsService, notificationCenterService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
         vm.notifyUser = notifyUser;
         vm.createSystemAlert = createSystemAlert;
+        vm.toggleNotificationCenter = notificationCenterService.toggle;
 
         init();
 

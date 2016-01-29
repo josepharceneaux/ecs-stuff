@@ -42,6 +42,7 @@
   padding-left: $padding--huge;
   padding-right: $padding--huge;
   background-color: $color--nearWhite;
+  outline: none;
 
   @include helper--media($breakpoint--medium) {
     background-color: transparent;

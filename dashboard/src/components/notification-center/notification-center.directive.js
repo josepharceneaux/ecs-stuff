@@ -16,9 +16,12 @@
             restrict: 'E',
             templateUrl: 'components/notification-center/notification-center.html',
             replace: true,
-            scope: {},
+            scope: {
+                isOpen: '=open'
+            },
             controller: 'NotificationCenterController',
             controllerAs: 'vm',
+            bindToController: true,
             link: linkFunction
         };
 
@@ -26,11 +29,13 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', 'toastr', 'notificationService'];
+    ControllerFunction.$inject = ['$timeout', 'logger', 'toastr', 'notificationService', 'notificationCenterService'];
 
     /* @ngInject */
-    function ControllerFunction(logger, toastr, notificationService) {
+    function ControllerFunction($timeout, logger, toastr, notificationService, notificationCenterService) {
         var vm = this;
+
+        vm.toggleNotificationCenter = notificationCenterService.toggle;
 
         activate();
         init();
@@ -40,6 +45,12 @@
         }
 
         function init() {
+            notificationCenterService.addListener('openStateChanged', setOpen);
+            notificationCenterService.setOpen(vm.isOpen);
+            getActivity();
+        }
+
+        function getActivity() {
             var activityRequest = notificationService.getActivity()
             vm.activity = activityRequest.$object;
             vm.unreadActivity = [];
@@ -57,49 +68,29 @@
                 }
             });
         }
+
+        function setOpen(value) {
+            if (value) {
+                open();
+            } else {
+                close();
+            }
+        }
+
+        function open() {
+            vm.isBarOpen = true;
+            $timeout(function () {
+                vm.isInnerOpen = true;
+            }, 200);
+        }
+
+        function close() {
+            vm.isBarOpen = false;
+            vm.isInnerOpen = false;
+        }
     }
 
     function linkFunction(scope, elem, attrs) {
-        var self = {};
-
-        self.$el = {
-            feed      : $('.feed'),
-            feedInner : $('.feed__inner'),
-            toggle    : $('.js--toggleFeed')
-        };
-
-        self.open = function () {
-            setTimeout(function () {
-                self.$el.feed.addClass('view__sidebar--active');
-            });
-            setTimeout(function () {
-                self.$el.feedInner.addClass('feed__inner--active');
-            }, 200);
-        };
-
-        self.close = function () {
-            setTimeout(function () {
-                self.$el.feedInner.removeClass('feed__inner--active');
-            });
-            setTimeout(function () {
-                self.$el.feed.removeClass('view__sidebar--active');
-            });
-        };
-
-        self.toggle = function () {
-            if (self.$el.feedInner.hasClass('feed__inner--active') &&
-                    self.$el.feed.hasClass('view__sidebar--active')) {
-                return self.close();
-            }
-
-            return self.open();
-        }
-
-        angular.element(document).ready(function() {
-            if (!self.$el.toggle.length) return;
-            self.$el.toggle.click(self.toggle);
-        })
-
-        return self;
+        //
     }
 })();
