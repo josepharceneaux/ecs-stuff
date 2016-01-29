@@ -41,8 +41,8 @@
     }
 
     function linkFunction(scope, elem, attrs, ctrls) {
-        var barHeight = parseInt(attrs.barHeight) || 20;
-        var barSpacing = parseInt(attrs.barSpacing) || 5;
+        var barHeight = parseInt(attrs.barHeight) || 40;
+        var barSpacing = parseInt(attrs.barSpacing) || 10;
 
         var svg = d3.select($(elem).children()[0])
             .append('svg')

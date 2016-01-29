@@ -11,6 +11,10 @@
   height: 100%;
 }
 
+#app-content {
+  margin-top:118px;
+}
+
 .view {
   position: relative;
   display: table;
@@ -25,6 +29,29 @@
   background-image: url('../images/backgrounds/login-peaks.png');
   background-position: bottom;
   background-size: cover;
+  .header--login {
+    margin-bottom:0px;
+  }
+  .box {
+    padding:50px;
+    border-right:darken($color--blue, 5%) 1px solid;
+    border-bottom:darken($color--blue, 5%) 1px solid;
+  }
+  .row--skinny {
+    margin-top:0px;
+    margin-bottom:0px;
+  }
+
+  .form__input--icon--password,
+  .form__input--icon--email
+  {
+    border: 1px solid #efefef;
+    padding: 1em 3em;
+  }
+  .alert {
+    color:red;
+    margin:5px 0px;
+  }
 }
 
 .view--pipelines {

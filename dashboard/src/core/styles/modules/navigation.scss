@@ -2,6 +2,22 @@
 // Modules / Navigation
 // ---------------------------------------------------
 
+#top-nav {
+  position:fixed;
+  width:100%;
+  top:0px;
+  left:0px;
+  z-index:2000;
+}
+
+.view__sidebar {
+  position:fixed;
+  top:0px;
+  left:0px;
+  margin-top:118px;
+  z-index:500;
+}
+
 .navigation {
   @include inc--align--clearfix;
 
@@ -40,7 +56,7 @@
     padding-left: $padding--small;
     padding-right: $padding--small;
     padding-top: .5em;
-    padding-bottom: .5em;
+    padding-bottom: .9em;
     font-size: 1.1em;
 
     &:hover {
@@ -79,9 +95,8 @@
 
   transition: background-color $easing--slow;
   padding-top: $padding--small;
-  padding-bottom: $padding--small;
+  padding-bottom: .95em;
   padding-left: $padding--normal;
-  padding-right: $padding--normal;
   padding-right: $padding--mega;
   color: $color--white;
   font-weight: $font-weight--regular;
@@ -145,9 +160,16 @@
     position: absolute;
     height: auto;
     top: -100%;
+    padding:10px 25px;
 
     @include helper--media($breakpoint--medium) {
       top: 100%;
+    }
+    a {
+      padding:5px 20px 0px 0px;
+    }
+    .navigation__subMenu__footer {
+      margin-top:10px;
     }
   }
 

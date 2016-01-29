@@ -55,7 +55,7 @@
                     $state.go('dashboard');
                 }
             }, function() {
-                vm.errorMessage = 'Authentication failed.';
+                vm.errorMessage = 'Incorrect email or password, please try again';
             });
         }
     }
