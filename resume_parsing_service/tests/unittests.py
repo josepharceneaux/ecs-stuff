@@ -22,7 +22,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_pho
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 
 
-EDUCATIONS_KEYS = ('bullets', 'city', 'country', 'degrees', 'state', 'school_name')
+EDUCATIONS_KEYS = ('city', 'country', 'degrees', 'state', 'school_name')
 WORK_EXPERIENCES_KEYS = ('bullets', 'city', 'country', 'end_month', 'end_year', 'is_current',
                          'organization', 'position', 'start_month', 'start_year', 'state')
 ADDRESS_KEYS = ('address_line_1', 'city', 'country', 'state', 'zip_code')
@@ -131,6 +131,7 @@ def test_education_parsing():
         # Very each dict in list has proper keys
         for education in educations:
             assert all(k in education for k in EDUCATIONS_KEYS if education)
+        assert type(education['degrees'] == list())
 
 
 def test_skill_parsing():

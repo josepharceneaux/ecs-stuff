@@ -27,7 +27,7 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
     """
     # Dirty hack for the time being. Need to go over API consistency after crunch period (1/28/16)
     if 'bearer' not in token_str:
-        token_str = 'bearer: {}'.format(token_str)
+        token_str = 'bearer {}'.format(token_str)
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     list_length = redis_store.rpush(queue_string, *filepicker_keys)
     batches = grouper(filepicker_keys, 100)
