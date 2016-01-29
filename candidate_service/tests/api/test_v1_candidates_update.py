@@ -17,6 +17,7 @@ from candidate_sample_data import (
     candidate_educations, candidate_experience, candidate_work_preference, candidate_emails,
     candidate_phones, candidate_areas_of_interest
 )
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## Candidate ########################
@@ -38,7 +39,8 @@ def test_update_candidate_outside_of_domain(access_token_first, user_first, tale
     data = {'candidates': [{'id': candidate_id, 'first_name': 'moron'}]}
     update_resp = request_to_candidates_resource(access_token_second, 'patch', data)
     print response_info(update_resp)
-    assert update_resp.status_code == 403 and update_resp.json()['error']['code'] == 3012
+    assert update_resp.status_code == 403
+    assert update_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 # def test_update_existing_candidate(access_token_first, user_first, talent_pool):
@@ -95,7 +97,8 @@ def test_update_candidate_without_id(access_token_first, user_first, talent_pool
     resp = request_to_candidates_resource(access_token_first, 'patch', data)
 
     print response_info(resp)
-    assert resp.status_code == 400 and resp.json()['error']['code'] == 3000
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_data_validations(access_token_first, user_first, talent_pool):
@@ -189,7 +192,8 @@ def test_update_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     print response_info(update_resp)
 
     # Candidates' emails must remain unchanged
-    assert update_resp.status_code == 400 and update_resp.json()['error']['code'] == 3072
+    assert update_resp.status_code == 400
+    assert update_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
     assert CandidateEmail.get_by_id(_id=email_1_id).address == email_1
     assert CandidateEmail.get_by_id(_id=email_2_id).address == email_2
 
@@ -262,7 +266,8 @@ def test_update_an_existing_address(access_token_first, user_first, talent_pool)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
+    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']
     candidate_address = candidate_dict['addresses'][0]
 
     # Update one of Candidate's addresses
@@ -421,7 +426,7 @@ def test_update_education_of_a_diff_candidate(access_token_first, user_first, ta
     updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == 3050
+    assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
 
 def test_update_education_primary_info(access_token_first, user_first, talent_pool):
@@ -658,7 +663,8 @@ def test_add_multiple_work_preference(access_token_first, user_first, talent_poo
     data = candidate_work_preference(candidate_id)
     updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 400 and updated_resp.json()['error']['code'] == 3132
+    assert updated_resp.status_code == 400
+    assert updated_resp.json()['error']['code'] == custom_error.WORK_PREF_EXISTS
 
 
 def test_update_work_preference(access_token_first, user_first, talent_pool):

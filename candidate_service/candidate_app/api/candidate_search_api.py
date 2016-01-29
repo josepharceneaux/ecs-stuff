@@ -38,8 +38,8 @@ class CandidateSearch(Resource):
         if request.content_type != "application/json":
             raise InvalidUsage("Request body must be a JSON object", custom_error.INVALID_INPUT)
 
-        body_dict = request.get_data()  # In case req-body is empty
-        if body_dict:
+        if request.get_data():  # In case req-body is empty
+            body_dict = request.get_json()
             try:
                 validate(instance=body_dict, schema=candidates_resource_schema_get)
             except Exception as e:

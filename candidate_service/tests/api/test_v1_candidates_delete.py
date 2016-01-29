@@ -20,6 +20,8 @@ from helpers import (
     request_to_candidate_custom_field_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## Candidate ########################
@@ -36,7 +38,8 @@ def test_delete_non_existing_candidate(access_token_first, user_first, talent_po
     # Delete non existing candidate via ID
     resp = request_to_candidate_resource(access_token_first, 'delete', non_existing_candidate_id)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
     # Delete non existing candidate via Email
     bogus_email = '{}_{}'.format(fake.word(), fake.safe_email())
@@ -44,7 +47,8 @@ def test_delete_non_existing_candidate(access_token_first, user_first, talent_po
 
     resp = request_to_candidate_resource(access_token_first, 'delete', bogus_email)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.EMAIL_NOT_FOUND
 
 
 def test_delete_candidate_and_retrieve_it(access_token_first, user_first, talent_pool):
@@ -67,7 +71,7 @@ def test_delete_candidate_and_retrieve_it(access_token_first, user_first, talent
     get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
     print response_info(get_resp)
     assert get_resp.status_code == 404
-    assert get_resp.json()['error']['code'] == 3011
+    assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
 
 
 def test_delete_candidate_via_email(access_token_first, user_first, talent_pool):
@@ -103,7 +107,8 @@ def test_delete_candidate_via_unrecognized_email(access_token_first, user_first,
     resp = request_to_candidate_resource(access_token_first, 'delete',
                                          candidate_email='email_not_found_45623@simple.com')
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3071
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.EMAIL_NOT_FOUND
 
 
 def test_delete_candidate_from_a_diff_domain(access_token_first, user_first, talent_pool,
@@ -127,7 +132,8 @@ def test_delete_candidate_from_a_diff_domain(access_token_first, user_first, tal
     # Delete (hide) Candidate with user_second
     resp = request_to_candidate_resource(access_token_second, 'delete', candidate_dict['id'])
     print response_info(resp)
-    assert resp.status_code == 403 and resp.json()['error']['code'] == 3012
+    assert resp.status_code == 403
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 ######################## CandidateAddress ########################
@@ -207,7 +213,8 @@ def test_delete_address_of_a_diff_candidate(access_token_first, user_first, tale
                                                          candidate_1_id,
                                                          address_id=can_2_addresses[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3021
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.ADDRESS_FORBIDDEN
 
 
 def test_delete_candidate_address_with_no_id(access_token_first, user_first, talent_pool):
@@ -322,7 +329,8 @@ def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(access_token_fir
     updated_resp = request_to_candidate_aoi_resource(access_token_second, 'delete',
                                                      candidate_1_id, all_aois=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_candidate_aoi_with_no_id(access_token_first, user_first, talent_pool):
@@ -451,7 +459,8 @@ def test_delete_custom_fields_of_a_candidate_belonging_to_a_diff_user(access_tok
     updated_resp = request_to_candidate_custom_field_resource(
             access_token_second, 'delete', candidate_1_id, all_custom_fields=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_candidate_custom_fields_with_no_id(access_token_first, user_first, talent_pool):
@@ -573,7 +582,8 @@ def test_delete_education_of_a_candidate_in_same_domain(access_token_first, user
     updated_resp = request_to_candidate_education_resource(access_token_second, 'delete', candidate_1_id,
                                                            all_educations=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_education_of_a_different_candidate(access_token_first, user_first, talent_pool):
@@ -599,7 +609,7 @@ def test_delete_education_of_a_different_candidate(access_token_first, user_firs
                                                            education_id=can_2_educations[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == 3050
+    assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
 
 def test_delete_candidate_education_with_no_id(access_token_first, user_first, talent_pool):
@@ -722,7 +732,8 @@ def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(access_token_
             access_token_second, 'delete', candidate_1_id,
             education_id=can_1_edu_id, all_degrees=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_education_degree_of_a_different_candidate(access_token_first, user_first,
@@ -749,7 +760,8 @@ def test_delete_education_degree_of_a_different_candidate(access_token_first, us
             access_token_first, 'delete', candidate_1_id,
             can_2_educations[0]['id'], all_degrees=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3050
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
 
 def test_delete_candidate_edu_degree_with_no_id(access_token_first, user_first, talent_pool):
@@ -881,7 +893,8 @@ def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(
             access_token_second, 'delete', candidate_1_id, can_1_educations[0]['id'],
             can_1_educations[0]['degrees'][0]['id'], all_bullets=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_can_edu_degree_bullets_of_a_different_candidate(access_token_first, user_first, talent_pool):
@@ -909,7 +922,8 @@ def test_delete_can_edu_degree_bullets_of_a_different_candidate(access_token_fir
             access_token_first, 'delete', candidate_1_id, can_2_edu['id'],
             can_2_edu_degree['id'], bullet_id=can_2_edu_degree_bullet['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 404 and updated_resp.json()['error']['code'] == 3053
+    assert updated_resp.status_code == 404
+    assert updated_resp.json()['error']['code'] == custom_error.DEGREE_NOT_FOUND
 
 
 def test_delete_candidate_edu_degree_bullet_with_no_id(access_token_first, user_first, talent_pool):
@@ -917,8 +931,6 @@ def test_delete_candidate_edu_degree_bullet_with_no_id(access_token_first, user_
     Test:   Attempt to delete Candidate's degree-bullet without providing bullet_id
     Expect: 404
     """
-
-
     # Remove one of Candidate's degree-bullets without an id
     candidate_id, education_id, degree_id = 5, 5, 5 # This is arbitrary since a 404 is expected
     updated_resp = request_to_candidate_education_degree_bullet_resource(

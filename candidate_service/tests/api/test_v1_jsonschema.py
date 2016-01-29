@@ -3,14 +3,14 @@ Test cases for testing jsonschema validations
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
-
 # Conftest
 from candidate_service.common.tests.conftest import *
-
 # Helper functions
 from helpers import (
     response_info, request_to_candidates_resource, AddUserRoles
 )
+# Custom errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 class TestSchemaValidationPost(object):
@@ -26,16 +26,19 @@ class TestSchemaValidationPost(object):
         resp = request_to_candidates_resource(access_token_first, 'post', data)
         print response_info(resp)
         assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
         data['candidates'] = []
         resp = request_to_candidates_resource(access_token_first, 'post', data)
         print response_info(resp)
         assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
         data['candidates'] = [{}]
         resp = request_to_candidates_resource(access_token_first, 'post', data)
         print response_info(resp)
         assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
         data['candidates'] = [{'talent_pool_ids': {'add': [talent_pool.id]}}]
         resp = request_to_candidates_resource(access_token_first, 'post', data)

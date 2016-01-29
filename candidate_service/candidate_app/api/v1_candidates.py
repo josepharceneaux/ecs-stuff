@@ -58,57 +58,6 @@ from candidate_service.modules.talent_openweb import find_candidate_from_openweb
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
-        """
-        Endpoint:  GET /v1/candidates
-        Optional-input:  {'candidate_ids': [int, int, int, ...]}
-
-        Function retrieves candidates via two methods:
-             i. Candidates from a list of candidate IDs, OR
-            ii. If nothing is provided, all of user's candidates will be returned
-
-        :return     [dict] -> list of candidate-dicts
-        """
-        # Authenticated user
-        authed_user= request.user
-
-        # Parse request body & validate data
-        body_dict = request.get_json()
-        try:
-            validate(instance=body_dict, schema=candidates_resource_schema_get)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
-
-        get_all_domain_candidates = True if not body_dict else False
-        if get_all_domain_candidates:  # Retrieve user's candidates
-            candidates = authed_user.candidates
-
-            retrieved_candidates = []
-            for candidate in candidates:
-
-                # If Candidate is web hidden, it is assumed "deleted"
-                if candidate.is_web_hidden:
-                    raise NotFoundError('Candidate not found', custom_error.CANDIDATE_IS_HIDDEN)
-
-                retrieved_candidates.append(fetch_candidate_info(candidate))
-
-        else:  # Retrieve via a list of candidate IDs
-            candidate_ids = body_dict.get('candidate_ids')
-
-            # Candidate IDs must belong to user's domain
-            if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
-                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-            retrieved_candidates = []
-            for candidate_id in candidate_ids:
-
-                # Check for candidate's existence and web-hidden status
-                candidate = get_candidate_if_exists(candidate_id=candidate_id)
-                retrieved_candidates.append(fetch_candidate_info(candidate))
-
-        return {'candidates': retrieved_candidates}
-
     @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
@@ -239,7 +188,7 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticated user
-        authed_user, body_dict = request.user, request.get_json()
+        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data
         try:
@@ -1222,10 +1171,7 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        body_dict = request.get_json()
-        if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content type must be JSON",
-                               error_code=custom_error.MISSING_INPUT)
+        body_dict = get_json_if_exist(_request=request)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
@@ -1262,10 +1208,7 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        body_dict = request.get_json()
-        if not body_dict:
-            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
-                               error_code=custom_error.MISSING_INPUT)
+        body_dict = get_json_if_exist(_request=request)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:

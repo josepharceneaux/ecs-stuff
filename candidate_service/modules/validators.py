@@ -26,11 +26,10 @@ def get_json_if_exist(_request):
     if _request.content_type != "application/json":
         raise InvalidUsage("Request body must be a JSON object",
                            error_code=custom_error.INVALID_INPUT)
-    request_body = _request.get_data()
-    if not request_body:
+    if not _request.get_data():
         raise InvalidUsage("Request body cannot be empty", error_code=custom_error.MISSING_INPUT)
 
-    return request_body
+    return _request.get_json()
 
 
 def get_candidate_if_exists(candidate_id):
