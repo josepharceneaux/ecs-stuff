@@ -5,37 +5,49 @@
         <div layout="row" layout-align="center center">
             <div flex-sm="90" flex-gt-sm="70" flex-gt-md="30" layout="column">
 
-                <div layout="row" layout-align="center center" class="header-login">
+                <!-- Header -->
+                <div layout="row" layout-align="center center" class="login-header">
                     <img ng-src="../images/logo--main--white.svg" width="180">
                 </div>
+                <!-- Header -->
                 
-                <md-content layout="column" class="md-whiteframe-z2" style="min-height: 300px; padding: 30px;">
+                <!-- Form wrap -->
+                <md-content layout="column" layout-align="space-between stretch" class="md-whiteframe-z2 login-form-wrap">
+                    
                     <div layout="row" layout-align="center center">
                         <span class="md-display-1">Login To Your Account</span>
                     </div>
 
-                    <div flex></div>
-
                     <form name="loginForm" ng-submit="vm.login()">
-                         <md-input-container md-no-float class="md-block">
-                            <input type="email" name="username" placeholder="User Name" ng-model="vm.username" required>
+                         <md-input-container md-no-float class="md-block">                            
+                            <input required
+                                type="email"                                
+                                name="username" 
+                                placeholder="User Name" 
+                                ng-model="vm.username" />
                             <div ng-messages="loginForm.username.$error">
-                                <div ng-message="required">This is required!</div>
+                                <div ng-message="required">This is required.</div>
+                                <div ng-message="email">It must be an e-mail address.</div>
                             </div>
                         </md-input-container>
                         
                         <md-input-container md-no-float class="md-block">
                             <input type="password" name="password" placeholder="Password" ng-model="vm.password" required>
                             <div ng-messages="loginForm.password.$error">
-                                <div ng-message="required">This is required!</div>
+                                <div ng-message="required">This is required.</div>
                             </div>
                         </md-input-container>
+
+                        <div layout="row" layout-align="end start" class="forogt-password-wrap">
+                            <a class="md-body-1" ui-sref="forgotPassword">Forgot Your Password?</a>
+                        </div>
 
                         <div layout="row" layout-align="center center">
                             <md-button type="submit" class="md-primary md-raised">Log in</md-button>
                         </div>
                     </form>
                 </md-content>
+                <!-- End: Form wrap -->
             
             </div>
         </div>

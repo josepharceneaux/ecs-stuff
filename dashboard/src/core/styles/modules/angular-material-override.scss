@@ -197,23 +197,39 @@ md-card {
     background: transparent;
 }
 
-
 // Log in
-.view--login {
+.view--login {    
 
     .login-header {
-        margin-bottom: 30px;
+        margin-bottom: 50px;
     }
 
-    md-content {
-        min-height: 300px;
-        padding: 30px;
+    .login-form-wrap {
+        height: 420px;
+        padding: 50px 50px 30px 50px;
 
-        .md-input {
-            height: 50px;
+        md-input-container {
+            margin: 0;
 
-            border-left: 5px solid #eee !important;
-            padding-left: 20px;
+            &:before {
+                content: ' ';
+                display: block;
+                width: 5px;
+                height: 50px;
+                background: #888;
+                position: absolute;
+                top: 2px;
+                left: 2px;
+            }
+
+            .md-input {
+                height: 50px;
+                padding-left: 20px;
+            }
+        }
+
+        .forogt-password-wrap {
+            height: 40px;
         }
     }
 }

@@ -23,6 +23,7 @@
         'toastr',
         'ui.bootstrap',
         'ui.router',
-        'ncy-angular-breadcrumb'
+        'ncy-angular-breadcrumb',
+        'ngMessages'
     ]);
 })();
