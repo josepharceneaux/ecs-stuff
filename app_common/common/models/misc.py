@@ -175,7 +175,6 @@ class Frequency(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    email_campaigns = relationship('EmailCampaign', backref='frequency')
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
 
     # frequency Ids

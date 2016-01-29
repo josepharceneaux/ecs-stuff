@@ -275,6 +275,8 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     :return: list of missing items
     :rtype: list
     """
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('include data_dict as dict.')
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_all:

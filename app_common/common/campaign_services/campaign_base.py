@@ -1033,7 +1033,7 @@ class CampaignBase(object):
         # other campaigns need to update this
         raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        params = {'return': 'all'}
+        params = {'fields': 'candidate_ids_only'}
         # HTTP GET call to candidate_service to get candidates associated with given smartlist id.
         response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
                                 % campaign_smartlist.smartlist_id,
