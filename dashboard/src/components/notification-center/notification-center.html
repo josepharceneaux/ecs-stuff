@@ -1,5 +1,27 @@
-<section class="notification-center">
-
-    <!-- -->
-
+<section class="view__sidebar--feed feed" ng-class="{'view__sidebar--active': vm.isBarOpen}">
+    <div class="feed__inner" ng-class="{'feed__inner--active': vm.isInnerOpen}">
+        <header class="feed__header" ng-click="vm.toggleNotificationCenter()">
+            <h3>Activity Feed</h3>
+        </header>
+        <div class="feed__item">
+            <span class="icon--announcements"></span>
+            <span class="feed__item__sub">23 Minutes ago</span>
+            <p><a href="#">Jason Provencher</a> just added 22 candidates to <a href="#">Java Developers</a></p>
+        </div>
+        <div class="feed__item">
+            <span class="icon--list"></span>
+            <span class="feed__item__sub">23 Minutes ago</span>
+            <p><a href="#">Jason Provencher</a> just added 22 candidates to <a href="#">Java Developers</a></p>
+        </div>
+        <div class="feed__item">
+            <span class="icon--announcements"></span>
+            <span class="feed__item__sub">23 Minutes ago</span>
+            <p><a href="#">Jason Provencher</a> just added 22 candidates to <a href="#">Java Developers</a></p>
+        </div>
+        <div class="feed__item">
+            <span class="icon--list"></span>
+            <span class="feed__item__sub">23 Minutes ago</span>
+            <p><a href="#">Jason Provencher</a> just added 22 candidates to <a href="#">Java Developers</a></p>
+        </div>
+    </div>
 </section>

@@ -4,15 +4,13 @@
 
 .feed {
   position: absolute;
-  top: 0;
+  top: -$misc--topNavMenuHeight;
   right: 0;
   height: 100%;
-  z-index: $z-index--2;
+  z-index: $z-index--3;
   box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
 
   @include helper--media($breakpoint--full) {
-    z-index: $z-index--3;
-    top: -2.71em;
     position: relative;
   }
 }
@@ -44,6 +42,7 @@
   padding-left: $padding--huge;
   padding-right: $padding--huge;
   background-color: $color--nearWhite;
+  outline: none;
 
   @include helper--media($breakpoint--medium) {
     background-color: transparent;
