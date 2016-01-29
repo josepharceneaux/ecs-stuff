@@ -519,7 +519,7 @@
                 }
             })
             .state('pipelines.pipeline.smartlists.smartlist', {
-                url: '/:pipelineId',
+                url: '/:smartlistId',
                 redirectTo: 'pipelines.pipeline.smartlists.smartlist.detail'
             })
             .state('pipelines.pipeline.smartlists.smartlist.detail', {

@@ -2,19 +2,19 @@
 <section class="js--nav view__sidebar">
     <nav class="navigation--sidebar">
         <div class="navigation__parent">
-            <a href="/pipelines/[pipeline-id]" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--1" data-mm-target="js--mobileMenu--1" uib-tooltip="Pipelines">
+            <a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--1" data-mm-target="js--mobileMenu--1" uib-tooltip="Pipelines">
                 <span class="navigation__item__icon icon--pipeline"></span>
             </a>
-            <a ui-sref="campaigns.campaign" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--2" data-mm-target="js--mobileMenu--2" uib-tooltip="Campaigns">
+            <a ui-sref="campaigns" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--2" data-mm-target="js--mobileMenu--2" uib-tooltip="Campaigns">
                 <span class="navigation__item__icon icon--announcements"></span>
             </a>
-            <a ui-sref="pipelines.pipeline.smartlists" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--3" data-mm-target="js--mobileMenu--3" uib-tooltip="Smartlists">
+            <a ui-sref="pipelines.pipeline.smartlists({ pipelineId: '2892365a' })" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--3" data-mm-target="js--mobileMenu--3" uib-tooltip="Smartlists">
                 <span class="navigation__item__icon icon--list"></span>
             </a>
-            <a hide href="" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--4" data-mm-target="js--mobileMenu--4" uib-tooltip="Talent Pools">
+            <a hide ui-sref="talentPools" class="js--mobileMenu js--navItem navigation__item--sidebar" data-target="js--subMenu--4" data-mm-target="js--mobileMenu--4" uib-tooltip="Talent Pools">
                 <span class="navigation__item__icon icon--people"></span>
             </a>
-            <a ui-sref="pipelines.pipeline.settings" class="js--mobileMenu navigation__item--settings" data-target="js--subMenu--5" data-mm-target="js--mobileMenu--5" uib-tooltip="Settings">
+            <a ui-sref="pipelines.pipeline.settings({ pipelineId: '2892365a' })" class="navigation__item--settings" uib-tooltip="Settings">
                 <span class="navigation__item__icon icon--cog"></span>
             </a>
         </div>
@@ -25,15 +25,15 @@
                 </header>
                 <div class="navigation__childItem__content">
                     <div class="navigation__childItem__combo">
-                        <h3>Recent Campaigns<a href=""><span class="icon--plus"></span></a></h3>
+                        <h3>Recent <a href=""><span class="icon--plus"></span></a></h3>
                     </div>
                     <ul>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>North Bay</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Valley Area</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Python Developers</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>East Bay</a></li>
+                        <li><a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })"><span class="icon--list"></span>North Bay</a></li>
+                        <li><a ui-sref="pipelines.pipeline({ pipelineId: 'd92f9a8e' })"><span class="icon--list"></span>Valley Area</a></li>
+                        <li><a ui-sref="pipelines.pipeline({ pipelineId: 'bea68b3e' })"><span class="icon--list"></span>Python Developers</a></li>
+                        <li><a ui-sref="pipelines.pipeline({ pipelineId: 'be95a5e1' })"><span class="icon--list"></span>East Bay</a></li>
                     </ul>
-                    <a href="/pipelines" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
+                    <a ui-sref="pipelines" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
                 </div>
             </div>
             <div class="js--subMenu--2 js--mobileMenu--2 js--navChild navigation__childItem">
@@ -45,12 +45,12 @@
                         <h3>Recent <a href=""><span class="icon--plus"></span></a></h3>
                     </div>
                     <ul>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>North Bay</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Valley Area</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Python Developers</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>East Bay</a></li>
+                        <li><a ui-sref="campaigns.campaign({ campaignId: 'a98c89b3' })"><span class="icon--list"></span>North Bay</a></li>
+                        <li><a ui-sref="campaigns.campaign({ campaignId: 'b3bcea46' })"><span class="icon--list"></span>Valley Area</a></li>
+                        <li><a ui-sref="campaigns.campaign({ campaignId: 'db7827ea' })"><span class="icon--list"></span>Python Developers</a></li>
+                        <li><a ui-sref="campaigns.campaign({ campaignId: 'b12ba10a' })"><span class="icon--list"></span>East Bay</a></li>
                     </ul>
-                    <a href="/campaigns" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
+                    <a ui-sref="campaigns" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
                 </div>
             </div>
             <div class="js--subMenu--3 js--mobileMenu--3 js--navChild navigation__childItem">
@@ -62,12 +62,12 @@
                         <h3>Recent <a href=""><span class="icon--plus"></span></a></h3>
                     </div>
                     <ul>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>North Bay</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Valley Area</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>Python Developers</a></li>
-                        <li><a href="/pipelines/[pipeline-id]/smart-lists/[smart-list-id]"><span class="icon--list"></span>East Bay</a></li>
+                        <li><a ui-sref="pipelines.pipeline.smartlists.smartlist({ pipelineId: '2892365a', smartlistId: 'd73e0a0b' })"><span class="icon--list"></span>North Bay</a></li>
+                        <li><a ui-sref="pipelines.pipeline.smartlists.smartlist({ pipelineId: 'd92f9a8e', smartlistId: '098bcbe0' })"><span class="icon--list"></span>Valley Area</a></li>
+                        <li><a ui-sref="pipelines.pipeline.smartlists.smartlist({ pipelineId: 'bea68b3e', smartlistId: 'ab0b3829' })"><span class="icon--list"></span>Python Developers</a></li>
+                        <li><a ui-sref="pipelines.pipeline.smartlists.smartlist({ pipelineId: 'be95a5e1', smartlistId: 'd62ba9e2' })"><span class="icon--list"></span>East Bay</a></li>
                     </ul>
-                    <a ui-sref="pipelines.pipeline.smartlists" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
+                    <a ui-sref="pipelines.pipeline.smartlists({ pipelineId: '2892365a' })" class="navigation__childItem__viewAll">View All <span class="icon--right"></span></a>
                 </div>
             </div>
             <div class="js--subMenu--4 js--mobileMenu--4 js--navChild navigation__childItem">
