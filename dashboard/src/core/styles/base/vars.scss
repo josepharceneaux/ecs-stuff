@@ -7,7 +7,7 @@
 // -----
 
 $color--white:       #ffffff;
-$color--nearBlack:     #262626;
+$color--nearBlack:     #444444;
 $color--gray:          #c6c6c6;
 $color--darkGray:      #373437;
 $color--lightGray:     #6d6e71;
@@ -95,6 +95,8 @@ $padding--jumbo:  1.75em;
 $padding--giant:  2em;
 $padding--mega:   2.5em; // don't use often
 
+$padding--module:  30px;
+
 // -----
 // Border
 // -----
@@ -106,7 +108,7 @@ $border-width--medium: .2em;
 // Border Radius
 // -----
 
-$border-radius--base: 5px;
+$border-radius--base: 3px;
 $border-radius--button: $border-radius--base;
 $border-radius--container: $border-radius--base;
 
@@ -150,8 +152,8 @@ $easing--slow:   .5s ease;
 // Misc
 // -----
 
-$misc--headerHeight: 6.5em;
 $misc--sidebarWidth: 5em;
+$misc--topNavMenuHeight: 2.65em;
 
 // -----
 // Animations

@@ -34,6 +34,17 @@ class EmailCampaign(db.Model):
 
     frequency = relationship("Frequency", backref="frequency")
 
+    def to_dict(self, api_version=1):
+        """
+        :param int api_version: The API version that return dict will correspond to
+        :rtype: dict[str, T]
+        """
+        return {"id": self.id,
+                "user_id": self.user_id,
+                "name": self.name,
+                "frequency": self.frequency.name if self.frequency else None,
+                "list_ids": EmailCampaignSmartList.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
+
     def get_id(self):
         return unicode(self.id)
 

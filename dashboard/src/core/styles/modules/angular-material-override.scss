@@ -1,118 +1,86 @@
-body {
-    font-weight: 400;
-    color: #555;
+// ---------------------------------------------------
+// Modules / Angular Material Override
+// ---------------------------------------------------
+
+html, body {
+    color:#666;
 }
 
-.view__main,
-.view__main--pipelines,
-.view__main--user,
-.view__wrapper--pipelines,
-.view__wrapper--user {
-    background: #efefef;
+.module-padding {
+    padding: $padding--module;
 }
 
-#toast-container {
-    @include linear-gradient(to bottom, #ffffff, #dddddd);
-    & > div {
-        padding:40px 60px;
-        border-radius:0px;
-        background-color:transparent;
-        background-position: 25px center;
-        color:#666;
-        box-shadow:0 0 4px rgba(0,0,0,.10);
-        font-size: 15px;
-        &:hover {
-            box-shadow:0 0 4px rgba(0,0,0,.10);
+@mixin card {
+    border-radius: $border-radius--base;
+    box-shadow:none;
+    border-right: solid 1px #e2e2e2;
+    border-bottom: solid 1px #e2e2e2;
+    background-color:#ffffff;
+}
+
+.md-whiteframe-gt {
+    @include card;
+}
+
+md-card {
+    @include card;
+    .md-subhead {
+        padding-top:0px;
+    }
+    md-card-content {
+
+    }
+    .md-card-title {
+        .md-subhead{
+            color:red;
+            padding-top:5px;
         }
-        strong {
-            color: $color--blue;
-        }
-        .toast-close-button {
-            color:#999;
-            font-weight:300;
-            position:absolute;
-            top:10px;
-            right:10px;
-            font-size: 11px;
-        }
+    }
+    .md-title {
+        font-weight:400;
+        font-size: 1.3em;
+    }
+    .md-subhead {
+
     }
 }
 
 
-.system-alerts {
-    background-color: darken($color--blue, 10%);
-    text-align:center;
-    font-weight:$font-weight--regular;
-    font-size: $font-size--main;
-    color: $color--white;
-    padding: $padding--small;
-    a {
-        color: lighten($color--blue, 20%);
-    }
-}
-
-.fa-info-circle {
-    color:#ccc;
-    margin:0 0 0 3px;
-    top:-5px;
-    font-size:13px;
-    position:relative;
-}
-
-.tooltip--info {
-    .tooltip-inner {
-        padding:20px;
-        text-align:left;
-        border:1px #ccc solid;
-        box-shadow: 0 1px 6px 1px rgba(0,0,0,0.15);
-        background:rgba(255,255,255,.5);
-    }
-}
-
-.page-title-icon {
-    display:inline-block;
-    border-radius:50px;
-    overflow:hidden;
-    margin-right:15px;
-}
-
-
-
-
-/** Angular Material Overrides **/
-
-.md-margin-wrapper {
-    margin: 8px;
-}
 
 md-content {
-    padding: 30px;
-    border-radius: 3px;
+    border-radius: $border-radius--base;
 
     .view__main > & {
         padding: 0;
         border-radius: 0;
         background: transparent;
     }
+
 }
 
-md-toolbar.md-table-toolbar form {
-    input {
-        width: 100%;
-        margin: 0;
-        border: none;
-        color: rgba(0, 0, 0, 0.87);
-
-        &:focus {
-            outline: none;
-        }
-
-        &::placeholder {
-            color: rgba(0, 0, 0, 0.26);
-            font-weight: 300;
-        }
-    }
+.md-title {
+    color:#555;
+    font-weight:400;
 }
+
+.md-subhead {
+    color:#666;
+    font-weight:400;
+}
+
+.md-display-3 {
+    font-weight:300;
+    color:#666;
+}
+
+.md-margin {
+    margin:15px;
+}
+
+
+
+/** Move over to modules when styling **/
+
 
 #v2-pipeline-summaries {
     md-card {
@@ -134,13 +102,6 @@ md-toolbar.md-table-toolbar form {
     }
 }
 
-.v2-h-barchart {
-    .v2-bar {
-        background: #888;
-        color: #fff;
-        margin: 8px 0;
-    }
-}
 
 #v2-candidate-breakdown {
     md-list-item {
@@ -159,39 +120,6 @@ md-toolbar.md-table-toolbar form {
     }
 }
 
-@mixin card {
-    border-radius: 3px;
-    box-shadow:none;
-    border-right: solid 1px #e2e2e2;
-    border-bottom: solid 1px #e2e2e2;
-    color:#444;
-    padding:8px 8px;
-    background-color:#ffffff;
-}
-
-.md-whiteframe-gt {
-    @include card;
-}
-
-md-card {
-    @include card;
-    .md-subhead {
-        padding-top:0px;
-    }
-    md-card-content {
-
-    }
-    .md-card-title {
-
-    }
-    .md-title {
-        font-weight:500;
-        font-size: 1.4em;
-    }
-    .md-subhead-alt {
-        margin-top:4px;
-    }
-}
 
 .dashboard-wrapper {
     background: transparent;
@@ -251,3 +179,4 @@ md-card {
 .shake {
     animation: shake 400ms ease-in-out;
 }
+

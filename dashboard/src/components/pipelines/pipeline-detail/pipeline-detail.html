@@ -1,46 +1,57 @@
 <section id="pipeline-detail-view" class="view-wrapper view__main--pipelines">
 
-    <div layout="column" layout-margin>
-        
-        <!-- Navigation path -->
-        <div layout="row">
-            <div ncy-breadcrumb></div>
+    <div layout="column" class="overview-graph">
+
+        <div layout="column" layout-margin>
+
+            <!-- Navigation path -->
+            <div layout="row">
+                <div ncy-breadcrumb></div>
+            </div>
+            <!-- End: Navigation path -->
+
+            <!-- Header -->
+            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+                <div flex>
+                    <h2 class="md-title">Senior Java Engineer</h2>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="/pipelines/[pipeline-id]/smart-lists/create"><div class="gt-menu-icon icon--list-add"></div></a>
+                </div>
+            </md-content>
+            <!-- End: Header -->
+
         </div>
-        <!-- End: Navigation path -->
 
-        <!-- Header -->
-        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
-            <div class="page-title-icon">
-                <img src="//placehold.it/80x80" />
+        <!-- Section overview graph -->
+        <div class="area-chart chart-container">
+            <div class="">
+                <div class="chart-title">
+                    <span>
+                        Candidates Added Per Month
+                        <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                    </span>
+                </div>
+                <div id="pipelineDetailsViewChart" class="hero-chart"></div>
             </div>
-            <div flex>
-                <h3 class="md-title">Pipeline Name</h3>
-                <h3 class="md-body-1">Created by <a href="">Haohong Xu</a> on 5/22/16</h3>
-            </div>          
-            <div layout="row" layout-xs="column" layout-sm="column">
-                <md-button class="md-raised md-primary">Add Candidates</md-button>
-                <md-button class="md-raised md-primary">Create Campaign</md-button>
-                <md-button class="md-raised md-primary">Create Smartlist</md-button>
-            </div>
-        </md-content>
-        <!-- End: Header -->
-
-        <!-- Growth graph -->
-        <md-content layout="row" class="md-whiteframe-z1">
-            <div style="height:400px;">Pipeline Growth Chart</div>
-        </md-content>
+        </div>
         <!-- End: Growth graph -->
 
-        <!-- Callouts -->
-        <div layout="row" layout-wrap>
-            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100" ng-repeat="callout in vm.callouts">
-                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
-                    <h3 class="md-title">{{callout.name}} <i class="fa fa-info-circle"></i></h3>
+    </div>
+
+    <div layout="column" layout-margin>
+
+        <!-- Call-outs -->
+        <div class="stat-row" layout="row" layout-wrap>
+            <div class="md-whiteframe-gt" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center" class="module-padding">
+                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
                     <h3 class="md-display-3">{{callout.value}}</h3>
                 </md-content>
             </div>
         </div>
-        <!-- End: Callouts -->
+        <!-- End: Call-outs -->
 
         <!-- Summaries and Activity Feed -->
         <div layout="row" layout-wrap layout-fill>
@@ -48,27 +59,37 @@
             <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
 
                 <!-- Top Skills -->
-                <div id="v2-top-skills" flex="50" flex-xs="100" flex-sm="100">
+                <div id="topSkills" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
                         <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Top Skills<i class="fa fa-info-circle"></i></span>
+                                <span class="md-subhead">This is module description</span>
                             </md-card-title-text>
+                            <span class="md-caption card-top-right-button"></span>
                         </md-card-title>
-                        <md-card-content flex>
-                            <md-list class="v2-h-barchart">
-                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
-                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <h4>{{topSkill.title}}</h4>
-                                        <h4>{{topSkill.value}}</h4>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
+                        <gt-bar-graph bar-height="35" bar-spacing="30" class="gt-bar-graph">
+                            <div></div>
+                        </gt-bar-graph>
                     </md-card>
                 </div>
                 <!-- End: Top Skills -->
-                
+                <!-- Top Candidate Usage -->
+                <div id="candidateUsage" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
+                                <span class="md-subhead">This is module description</span>
+                            </md-card-title-text>
+                            <span class="md-caption card-top-right-button"></span>
+                        </md-card-title>
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-circle-graph>
+                    </md-card>
+                </div>
+                <!-- End: Top Candidate Usage -->
                 <!-- Candidate Breakdown -->
                 <div id="v2-candidate-breakdown" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
@@ -143,34 +164,7 @@
                     </md-card>
                 </div>
                 <!-- End: Candidate Breakdown -->
-                
-                <!-- Top Performing Campaigns -->
-                <div id="v2-top-campaigns" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Top Performing Campaigns<i class="fa fa-info-circle"></i></span>
-                                <span class="md-subhead">By Candidates Added</span>
-                            </md-card-title-text>
-                            <span class="md-caption card-top-right-button">Create Campaign</span>
-                        </md-card-title>
-                        <md-card-content flex>
-                            <md-list class="v2-h-barchart">
-                                <md-list-item class="v2-bar" ng-style="{width: topSkill.width + '%'}" ng-repeat="topSkill in vm.topSkills">
-                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <h4>{{topSkill.title}}</h4>
-                                        <h4>{{topSkill.value}}</h4>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
-                        <md-card-actions layout="row" layout-align="end center">
-                            <md-button>See more</md-button>
-                        </md-card-actions>
-                    </md-card>
-                </div>
-                <!-- End: Top Performing Campaigns -->
-                
+
                 <!-- Team Contributors -->
                 <div id="v2-team-contributors" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">

@@ -31,7 +31,7 @@ from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
-from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError
+from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError, TaskAlreadyScheduledError
 from scheduler_service.tasks import send_request
 
 # Set timezone to UTC
@@ -185,7 +185,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     elif is_jwt_request:
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
 
-    logger.info('User ID: %s, URL: %s, Content-Type: %s' % (user_id, url, content_type))
+    logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
     send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
                              serializer='json',
@@ -216,7 +216,7 @@ def schedule_job(data, user_id=None, access_token=None):
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
         # There should be a unique task named job. If a job already exist then it should raise error
         if jobs and len(jobs) == 1:
-            raise InvalidUsage('Task name %s is already scheduled' % jobs[0].name)
+            raise TaskAlreadyScheduledError('Task name %s is already scheduled' % jobs[0].name)
     else:
         job_config['task_name'] = None
         is_jwt_request = data.get('is_jwt_request')

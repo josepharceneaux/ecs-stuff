@@ -25,6 +25,29 @@
   background-image: url('../images/backgrounds/login-peaks.png');
   background-position: bottom;
   background-size: cover;
+  .header--login {
+    margin-bottom:0px;
+  }
+  .box {
+    padding:50px;
+    border-right:darken($color--blue, 5%) 1px solid;
+    border-bottom:darken($color--blue, 5%) 1px solid;
+  }
+  .row--skinny {
+    margin-top:0px;
+    margin-bottom:0px;
+  }
+
+  .form__input--icon--password,
+  .form__input--icon--email
+  {
+    border: 1px solid #efefef;
+    padding: 1em 3em;
+  }
+  .alert {
+    color:red;
+    margin:5px 0px;
+  }
 }
 
 .view--pipelines {
@@ -97,8 +120,6 @@
   background-color: $color--darkGray;
   z-index: $z-index--2;
   width: 100%;
-  bottom: 0;
-  position: fixed;
   overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
@@ -107,6 +128,7 @@
     height: 100%;
     position: relative;
     vertical-align: top;
+    overflow: visible;
   }
 }
 
@@ -120,7 +142,7 @@
   @extend .view__sidebar;
 
   background-color: $color--white;
-  top: -2.75em;
+  top: -$misc--topNavMenuHeight;
   z-index: 900;
   width: 0;
   position: relative;
@@ -133,5 +155,15 @@
     @include helper--media($breakpoint--medium) {
       width: 20em;
     }
+  }
+
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: -$misc--topNavMenuHeight;
+    display: block;
+    width: 100%;
+    height: $misc--topNavMenuHeight;
+    background: $color--white;
   }
 }

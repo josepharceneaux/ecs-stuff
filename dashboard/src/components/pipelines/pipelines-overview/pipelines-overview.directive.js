@@ -27,7 +27,7 @@
     ControllerFunction.$inject = ['logger', '$mdEditDialog', '$q'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $mdEditDialog, $q) {
+    function ControllerFunction(logger) {
         var vm = this;
 
         init();
@@ -38,6 +38,160 @@
         }
 
         function init() {
+
+            $('#pipelineDetailsViewChart').highcharts({
+                chart: {
+                    type: 'area',
+                    backgroundColor: null,
+                    spacingLeft: 40,
+                    spacingRight: 40,
+                    spacingTop: 50,
+                    style: {
+                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: 300
+                    }
+                },
+                title: {
+                    text: ''
+                },
+                lang: {
+                    decimalPoint: ',',
+                    thousandsSep: '.'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    lineColor: 'transparent',
+                    tickLength: 0,
+                    endOnTick: true,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        y: 24,
+                        style: {
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: "400"
+                        },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    gridLineColor: '#fff',
+                    yDecimals: 2,
+                    gridLineWidth: 1,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        style: {
+                            color: '#adadad',
+                            fontSize: '14px',
+                            fontWeight: "400"
+                        },
+                        formatter: function () {
+                            if (this.value != 0) {
+                                return this.value;
+                            } else {
+                                return null;
+                            }
+                        }
+                    }
+                },
+                exporting: {
+                    enabled: false
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    x: 10,
+                    y: 0,
+                    floating: true,
+                    width: 170,
+                    symbolWidth: 12,
+                    itemMarginTop: 5,
+                    itemMarginBottom: 5,
+                    padding: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: "#cccccc",
+                    itemStyle: {
+                      "fontWeight":"300"
+                    },
+                    navigation: {
+                        style: {
+                            fontWeight: '400',
+                        }
+                    }
+                },
+                tooltip: {
+                    borderWidth:0,
+                    borderRadius:0,
+                    backgroundColor: null,
+                    shadow:false,
+                    useHTML: true,
+                    formatter: function() {
+                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
+                        $.each(this.points, function () {
+                            s += this.series.name + ': ' + this.y + '<br/>';
+                        });
+                        return s;
+                    },
+                    shared: true,
+                    crosshairs: {
+                        color: 'white',
+                        dashStyle: 'solid'
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        animation: true,
+                        fillOpacity: 0.2,
+                        lineWidth: 0.2,
+                        marker: {
+                            enabled: false,
+                            symbol: 'circle',
+                            radius: 2,
+                            states: {
+                                hover: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                lineWidth: 0.2
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Legend 1',
+                    color: '#907f90',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
+                }, {
+                    name: 'Legend 2',
+                    color: '#97b99b',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
+                }, {
+                    name: 'Legend 3',
+                    color: '#6ba5ae',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                }]
+            });
+
             vm.totalCandidates = {
                 graph: {}
             };
@@ -81,7 +235,7 @@
                     value: '800'
                 },
                 {
-                    name: 'Candidates Added Today',
+                    name: 'Candidates Today',
                     value: '10'
                 }
             ];
@@ -167,13 +321,13 @@
                             created: new Date('2015-09-12T03:24:00')
                         }, {
                             id: 7,
-                            name: 'Angular Developer',
+                            name: 'Angular Dev',
                             candidates: 189,
                             newCandidates: 34,
                             created: new Date('2015-03-17T03:24:00')
                         }, {
                             id: 8,
-                            name: 'Backbone Developer',
+                            name: 'Backbone Dev',
                             candidates: 369,
                             newCandidates: 77,
                             created: new Date('2015-04-17T03:24:00')
@@ -239,7 +393,7 @@
                             created: new Date('2015-06-27T03:24:00')
                         }, {
                             id: 19,
-                            name: 'Business Administrator',
+                            name: 'Business Admin',
                             candidates: 563,
                             newCandidates: 98,
                             created: new Date('2015-08-27T03:24:00')

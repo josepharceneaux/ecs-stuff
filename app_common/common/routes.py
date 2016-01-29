@@ -38,7 +38,7 @@ def _get_host_name(service_name, port_number):
     :param port_number: Port number of service
     :type service_name: str
     :type port_number: int
-    :return:
+    :return:  A string that looks like https://auth-service.gettalent.com%s
     """
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env == 'dev':
@@ -47,11 +47,23 @@ def _get_host_name(service_name, port_number):
     elif env == 'jenkins':
         return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
     elif env == 'qa':
-        # This looks like https://auth-service-webdev.gettalent.com (for auth service)
+        # This looks like:  https://auth-service-staging.gettalent.com%s
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
     elif env == 'prod':
-        # This looks like https://auth-service.gettalent.com (for auth service)
+        # This looks like: https://auth-service.gettalent.com%s
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
+    else:
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+
+
+def get_web_app_url():
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
+    if env in ('dev', 'jenkins'):
+        return LOCAL_HOST + ':3000'
+    elif env == 'qa':
+        return 'https://staging.gettalent.com'
+    elif env == 'prod':
+        return 'https://app.gettalent.com'
     else:
         raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
 
@@ -307,6 +319,7 @@ class CandidatePoolApiWords(object):
     TALENT_PIPELINE = 'talent-pipeline'
     STATS = '/stats'
     CANDIDATES = '/candidates'
+    CAMPAIGNS = '/campaigns'
     GROUPS = 'groups'
     SMART_LISTS = '/smartlists'
 
@@ -327,10 +340,11 @@ class CandidatePoolApi(object):
     TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
     TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
-    # Talent Pipelines1
+    # Talent Pipelines
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
     TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.SMART_LISTS
     TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
     TALENT_PIPELINE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINE + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
     # Smartlists
@@ -361,6 +375,7 @@ class CandidatePoolApiUrl(object):
     TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
     TALENT_PIPELINE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_STATS
     TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.CAMPAIGNS)
     TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.SMART_LISTS)
     TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+"/%s"+CandidatePoolApiWords.STATS)
     # Smartlists
