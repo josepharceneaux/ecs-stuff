@@ -1,0 +1,10 @@
+// ---------------------------------------------------
+// Modules / Overview Area Graph
+// ---------------------------------------------------
+
+.overview-graph {
+  @include linear-gradient(to top, #ccc, #fff);
+  .area-chart {
+    background:transparent;
+  }
+}

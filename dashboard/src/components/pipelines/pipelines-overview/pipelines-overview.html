@@ -1,32 +1,41 @@
 <section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
-    <div layout="column" layout-margin>
-        
-        <!-- Navigation path -->
-        <div layout="row">
-            <div ncy-breadcrumb></div>
-        </div>
-        <!-- End: Navigation path -->
+    <div layout="column" class="overview-graph">
 
-        <!-- Header -->
-        <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
-            <div class="gt__icon-large">
-                <img src="//placehold.it/80x80" />
+        <div layout="column" layout-margin>
+
+            <!-- Navigation path -->
+            <div layout="row">
+                <div ncy-breadcrumb></div>
             </div>
-            <div flex>
-                <h2 class="md-title">My Pipelines</h2>
-            </div>
-            <div layout="row" layout-xs="column" layout-sm="column">
-                <md-button class="md-raised md-primary">+</md-button>
-            </div>
-        </md-content>
-        <!-- End: Header -->
+            <!-- End: Navigation path -->
+
+            <!-- Header -->
+            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+                <div flex>
+                    <h2 class="md-title">My Pipelines</h2>
+                    <div class="md-title-text">This is a sub title for the title bar</div>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
+                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
+                    <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
+                </div>
+            </md-content>
+            <!-- End: Header -->
+
+        </div>
 
         <!-- Section overview graph -->
-        <md-content class="md-whiteframe-gt module-padding" layout="row" >
-            <div style="height:400px;">Candidate Growth Chart</div>
-        </md-content>
+        <div class="module-padding area-chart" layout="row" >
+            <div style="height:500px;">Candidate Growth Chart</div>
+        </div>
         <!-- End: Growth graph -->
+
+    </div>
+
+    <div layout="column" layout-margin>
 
         <!-- Call-outs -->
         <div class="stat-row" layout="row" layout-wrap>
