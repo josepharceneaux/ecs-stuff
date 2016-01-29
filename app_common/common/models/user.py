@@ -6,6 +6,8 @@ from sqlalchemy import and_
 from flask import request
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.mysql import TINYINT
+from werkzeug.security import generate_password_hash
+
 from db import db
 from ..utils.validators import is_number
 from ..error_handling import *
@@ -17,7 +19,6 @@ from misc import AreaOfInterest
 from email_marketing import EmailCampaign
 from sms_campaign import SmsCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
-from werkzeug.security import generate_password_hash
 
 
 class User(db.Model):
@@ -132,6 +133,7 @@ class User(db.Model):
         Function creates a unique user for testing
         :rtype: User
         """
+
         user = User(
             email='{}@example.com'.format(uuid.uuid4().__str__()),
             password=generate_password_hash(password, method='pbkdf2:sha512'),

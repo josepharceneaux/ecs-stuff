@@ -12,7 +12,7 @@ import scheduler_service.common.error_handling
 __author__ = 'saad'
 
 
-class SchedulerServiceApiException(scheduler_service.common.error_handling.InternalServerError):
+class SchedulerServiceApiException(scheduler_service.common.error_handling.InvalidUsage):
     error_code = 6000
     CODE_SCHEDULER_NOT_RUNNING = 6051
     CODE_PENDING = 6052
@@ -20,6 +20,7 @@ class SchedulerServiceApiException(scheduler_service.common.error_handling.Inter
     CODE_ALREADY_RUNNING = 6054
     CODE_TRIGGER_TYPE = 6055
     CODE_NOT_CREATED_TYPE = 6056
+    CODE_TASK_ALREADY_SCHEDULED = 6057
 
     def to_dict(self):
         error_dict = super(SchedulerServiceApiException, self).to_dict()
@@ -54,3 +55,7 @@ class TriggerTypeError(SchedulerServiceApiException):
 
 class JobNotCreatedError(SchedulerServiceApiException):
     error_code = SchedulerServiceApiException.CODE_NOT_CREATED_TYPE
+
+
+class TaskAlreadyScheduledError(SchedulerServiceApiException):
+    error_code = SchedulerServiceApiException.CODE_TASK_ALREADY_SCHEDULED

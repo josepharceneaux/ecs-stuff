@@ -1,0 +1,27 @@
+// ---------------------------------------------------
+// Modules / Info (ui-bootstrap) Tooltip
+// ---------------------------------------------------
+
+.fa-info-circle {
+  color:#999;
+  margin:0 0 0 3px;
+  top:-5px;
+  font-size:13px;
+  position:relative;
+  &:hover {
+    color:#666;
+  }
+}
+
+.tooltip--info .tooltip-inner {
+  padding:20px;
+  text-align:left;
+  border:1px #ccc solid;
+  box-shadow: 0 1px 6px 1px rgba(0,0,0,0.15);
+  background:rgba(255,255,255,.95);
+  color: $color--nearBlack;
+}
+
+.tooltip--info .tooltip-arrow {
+  display: none;
+}

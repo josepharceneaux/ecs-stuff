@@ -38,10 +38,10 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateSubscriptionPreference
 )
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.misc import Frequency
 from candidate_service.common.models.user import DomainRole
+
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -75,6 +75,9 @@ class CandidatesResource(Resource):
 
         # Parse request body & validate data
         body_dict = request.get_json()
+        if not body_dict:
+            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_get)
         except Exception as e:
@@ -149,9 +152,9 @@ class CandidatesResource(Resource):
                                        error_code=custom_error.INVALID_EMAIL)
 
                 # Check for candidate's email in authed_user's domain
-                candidate_email_obj = CandidateEmail.query.join(Candidate)\
-                    .filter(Candidate.user_id==authed_user.id)\
-                    .filter(CandidateEmail.address==email_address).first()
+                candidate_email_obj = CandidateEmail.query.join(Candidate) \
+                    .filter(Candidate.user_id == authed_user.id) \
+                    .filter(CandidateEmail.address == email_address).first()
                 # If candidate's email is found, check if it's web-hidden
                 if candidate_email_obj:
                     candidate = Candidate.get_by_id(candidate_id=candidate_email_obj.candidate_id)
@@ -1223,15 +1226,20 @@ class CandidatePreferenceResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         body_dict = request.get_json()
+        if not body_dict:
+            raise InvalidUsage("Request body cannot be empty and its content type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
         if not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
+        # Candidate cannot have more than one subsctiption preference
         if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
             raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
                                custom_error.PREFERENCE_EXISTS)
@@ -1258,6 +1266,9 @@ class CandidatePreferenceResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         body_dict = request.get_json()
+        if not body_dict:
+            raise InvalidUsage("Request body cannot be empty and its content-type must be JSON",
+                               error_code=custom_error.MISSING_INPUT)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:

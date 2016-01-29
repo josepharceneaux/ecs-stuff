@@ -1,4 +1,5 @@
 from sqlalchemy import and_
+from app_common.common.models.db import db
 from db import db
 import datetime
 from sqlalchemy.orm import relationship
@@ -170,7 +171,7 @@ class Country(db.Model):
 class Frequency(db.Model):
     __tablename__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
-    description = db.Column('Description', db.String(10))
+    name = db.Column('Description', db.String(10), nullable=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -217,6 +218,25 @@ class Frequency(db.Model):
         if not seconds and seconds != 0:
             raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
         return seconds
+
+    @property
+    def in_seconds(self):
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds),
+         will return 0.
+        """
+        frequency_in_seconds = self.standard_frequencies()
+        return frequency_in_seconds.get(self.name.lower(), 0)
+
+    @classmethod
+    def standard_frequencies(self):
+        """Returns a dict of system wide standard frequency names and period in seconds"""
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600,
+                'biweekly': 2 * 7 * 24 * 3600, 'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+
+    @classmethod
+    def get_frequency_from_name(cls, frequency_name):
+        """Returns frequency object wrt given name(case insensitive) """
+        return cls.query.filter_by(name=frequency_name).first()
 
     @classmethod
     def get_by_id(cls, _id):
@@ -279,25 +299,6 @@ class ZipCode(db.Model):
 
     def __repr__(self):
         return "<Zipcode (code=' %r')>" % self.code
-
-
-class UrlConversion(db.Model):
-    __tablename__ = 'url_conversion'
-    id = db.Column(db.Integer, primary_key=True)
-    source_url = db.Column('sourceUrl', db.String(512))
-    destination_url = db.Column('destinationUrl', db.String(512))
-    hit_count = db.Column('hitCount', db.Integer)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    last_hit_time = db.Column('lastHitTime', db.DateTime)
-
-    # Relationships
-    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
-                                                      cascade='all,delete-orphan',
-                                                      passive_deletes=True,
-                                                      backref='url_conversion')
-
-    def __repr__(self):
-        return "<UrlConversion (id=' %r')>" % self.id
 
 
 class CustomField(db.Model):
@@ -365,3 +366,22 @@ class CustomFieldCategory(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+
+class UrlConversion(db.Model):
+    __tablename__ = 'url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    source_url = db.Column('sourceUrl', db.String(512))  # Ours
+    destination_url = db.Column('destinationUrl', db.String(512))  # Theirs
+    hit_count = db.Column('hitCount', db.Integer, default=0)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('lastHitTime', db.DateTime)
+
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='url_conversion')
+
+    def __repr__(self):
+        return "<UrlConversion (id=' %r')>" % self.id

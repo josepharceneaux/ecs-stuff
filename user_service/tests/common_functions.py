@@ -72,7 +72,9 @@ def user_groups(access_token, group_id, user_ids=[], action='GET'):
 def update_password(access_token, old_password, new_password):
     headers = {'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'}
     data = {"old_password": old_password, "new_password": new_password}
+    print 'Updating password at %s, post data: %s' % (UserServiceApiUrl.UPDATE_PASSWORD_API, json.dumps(data))
     response = requests.put(url=UserServiceApiUrl.UPDATE_PASSWORD_API, headers=headers, data=json.dumps(data))
+    print "Response:\n%s" % response.content
     return response.status_code
 
 
