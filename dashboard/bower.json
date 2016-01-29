@@ -33,6 +33,7 @@
     "angular-ui-router": "~0.2.15",
     "angularUtils-pagination": "angular-utils-pagination#~0.9.3",
     "d3": "~3.5.9",
+    "highcharts": "~4.2.1",
     "highlightjs": "~9.0.0",
     "jquery": "~2.1.4",
     "lodash": "~3.9.3",
@@ -43,5 +44,6 @@
     "font-awesome": "~4.5.0",
     "angular-breadcrumb": "~0.4.1",
     "angular-material-data-table": "~0.9.9"
+
   }
 }
