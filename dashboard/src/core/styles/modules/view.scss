@@ -99,6 +99,7 @@
   width: 100%;
   bottom: 0;
   position: fixed;
+  overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
     width: 3em;
@@ -106,6 +107,7 @@
     height: 100%;
     position: relative;
     vertical-align: top;
+    overflow: visible;
   }
 }
 
