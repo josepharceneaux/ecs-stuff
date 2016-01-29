@@ -192,6 +192,23 @@ def sample_smartlist(request, sample_user):
 
 
 @pytest.fixture()
+def smartlist_of_other_domain(request, user_from_diff_domain):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param sample_user:
+    :return:
+    """
+
+    smartlist = _create_smartlist(user_from_diff_domain)
+
+    def tear_down():
+        _delete_smartlist(smartlist)
+
+    request.addfinalizer(tear_down)
+    return smartlist
+
+@pytest.fixture()
 def sample_sms_campaign_candidates(sample_user,
                                    sample_smartlist,
                                    candidate_first,

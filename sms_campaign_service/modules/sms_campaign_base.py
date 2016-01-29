@@ -429,8 +429,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
         """
-        if not isinstance(candidate, Candidate):
-            raise InvalidUsage('parameter must be an instance of model Candidate')
+        raise_if_not_instance_of(candidate, Candidate)
         candidate_phones = candidate.candidate_phone
         mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
 

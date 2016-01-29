@@ -279,13 +279,13 @@ class CampaignBase(object):
         # if frequency_id not provided or is 0, set to id of ONCE
         if not campaign_data.get('frequency_id'):
             campaign_data.update({'frequency_id': Frequency.ONCE})
-        invalid_smartlist_ids, not_found_smartlist_ids = validate_form_data(campaign_data)
+        invalid_smartlist_ids = validate_form_data(campaign_data, self.user)
         logger.info('Campaign data has been validated.')
         campaign_model = get_model(self.campaign_type, self.campaign_type)
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        return campaign_model, validated_data, invalid_smartlist_ids, not_found_smartlist_ids
+        return campaign_model, validated_data, invalid_smartlist_ids
 
     def save(self, form_data):
         """
@@ -299,11 +299,11 @@ class CampaignBase(object):
                 "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
         :param form_data: data from UI
         :type form_data: dict
-        :return: id of sms_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
+        :return: id of sms_campaign in db, invalid_smartlist_ids
         :rtype: tuple
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        campaign_model, validated_data, invalid_smartlist_ids, not_found_smartlist_ids = \
+        campaign_model, validated_data, invalid_smartlist_ids = \
             self.pre_process_save_or_update(form_data)
         # Save campaign in database table e.g. "sms_campaign"
         campaign_obj = campaign_model(**validated_data)
@@ -316,7 +316,7 @@ class CampaignBase(object):
                                                        self.oauth_header)
         except Exception:
             logger.exception('Error creating campaign creation activity.')
-        return campaign_obj.id, invalid_smartlist_ids, not_found_smartlist_ids
+        return campaign_obj.id, invalid_smartlist_ids
 
     def update(self, form_data, campaign_id):
         """
@@ -330,13 +330,12 @@ class CampaignBase(object):
         :type form_data: dict
         :type campaign_id: int
         :exception: ResourceNotFound
-        :return: "sms_campaign" obj, invalid_smartlist_ids and not_found_smartlist_ids
-        :rtype: tuple
+        :return: invalid_smartlist_ids
+        :rtype: dict
         """
         campaign_obj = self.validate_ownership_of_campaign(campaign_id, self.user.id,
                                                            self.campaign_type)
-        _, validated_data, invalid_smartlist_ids, not_found_smartlist_ids = \
-            self.pre_process_save_or_update(form_data)
+        _, validated_data, invalid_smartlist_ids = self.pre_process_save_or_update(form_data)
         if not campaign_obj:
             raise ResourceNotFound('%s campaign(id=%s) not found.' % (self.campaign_type,
                                                                       campaign_id))
@@ -344,7 +343,7 @@ class CampaignBase(object):
             # update old values with new ones if provided, else preserve old ones.
             validated_data[key] = value if value else getattr(campaign_obj, key)
         campaign_obj.update(**validated_data)
-        return invalid_smartlist_ids, not_found_smartlist_ids
+        return invalid_smartlist_ids
 
     @staticmethod
     def create_campaign_smartlist(campaign, smartlist_ids):

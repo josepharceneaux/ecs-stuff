@@ -14,6 +14,7 @@ from werkzeug.security import gen_salt
 # Service Specific
 from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
     CampaignsCommonTests
+from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
@@ -285,6 +286,37 @@ class TestSmsCampaignHTTPPost(object):
             'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
+    def test_campaign_create_with_valid_and_non_existing_and_not_owned_smartlist_ids(
+            self, valid_header, sample_user, campaign_valid_data, smartlist_of_other_domain):
+        """
+        This is a test to create SMS campaign with valid and invalid smartlist_ids.
+        Status code should be 207 and campaign should be created.
+        :return:
+        """
+        data = campaign_valid_data.copy()
+        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        _assert_campaign_creation(response, sample_user.id, 207)
+
+    def test_campaign_create_with_invalid_smartlist_ids(self, valid_header,
+                                                        campaign_valid_data,
+                                                        smartlist_of_other_domain):
+        """
+        This is a test to create SMS campaign with invalid smartlist_ids.
+        Status code should be 400 and campaign should not be created.
+        :return:
+        """
+        data = campaign_valid_data.copy()
+        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
+        response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                                 headers=valid_header,
+                                 data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
 
 class TestSmsCampaignHTTPDelete(object):
     """
@@ -348,16 +380,18 @@ class TestSmsCampaignHTTPDelete(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_campaigns_delete_with_invalid_ids(self, valid_header):
+    def test_campaigns_delete_with_invalid_and_not_owned_and_non_existing_ids(
+            self, valid_header, sms_campaign_of_other_user):
         """
-        User auth token is valid, but invalid data provided(id other than int).
+        User auth token is valid, but invalid data provided
+        (ids other than int, not owned campaign and Non-exisiting),
         It should get bad request error.
         :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': ['a', 'b', 'c']
+                                       'ids': [0, 'a', 'b', sms_campaign_of_other_user.id]
                                    }))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
@@ -444,7 +478,6 @@ class TestSmsCampaignHTTPDelete(object):
         assert 0 in response.json()['not_deleted_ids']
         assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
-
 
     def test_campaigns_delete_with_deleted_record(self, valid_header, sample_user,
                                                   sms_campaign_of_current_user):

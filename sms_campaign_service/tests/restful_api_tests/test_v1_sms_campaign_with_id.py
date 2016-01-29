@@ -10,6 +10,7 @@ import json
 import requests
 
 # Service Specific
+from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete
@@ -21,7 +22,8 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests, \
+    get_invalid_ids
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -250,6 +252,38 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                 data=json.dumps(campaign_valid_data))
         assert response.status_code == InvalidUsage.http_status_code()
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
+
+    def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, valid_header,
+                                                                  campaign_valid_data,
+                                                                  smartlist_of_other_domain,
+                                                                  sms_campaign_of_current_user):
+        """
+        This is a test to update a campaign which does not exists in database.
+        :return:
+        """
+        data = campaign_valid_data.copy()
+        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header,
+                                data=json.dumps(data))
+        assert response.status_code == 207
+
+    def test_campaign_update_with_invalid_smartlist_ids(self, valid_header,
+                                                        campaign_valid_data,
+                                                        smartlist_of_other_domain,
+                                                        sms_campaign_of_current_user):
+        """
+        This is a test to update a campaign which does not exists in database.
+        :return:
+        """
+        data = campaign_valid_data.copy()
+        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        data['smartlist_ids'] = [last_id+100, 0, smartlist_of_other_domain.id]
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
+                                headers=valid_header,
+                                data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_update_with_invalid_campaign_id(self, auth_token, campaign_valid_data):
         """
