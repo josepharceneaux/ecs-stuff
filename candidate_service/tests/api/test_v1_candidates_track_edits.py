@@ -11,6 +11,8 @@ from helpers import (
     request_to_candidate_edit_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 def test_edit_candidate_primary_info(access_token_first, user_first, talent_pool):

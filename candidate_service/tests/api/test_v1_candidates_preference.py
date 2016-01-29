@@ -13,6 +13,8 @@ from helpers import (
     request_to_candidates_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 class TestCreateSubscriptionPreference(object):
@@ -71,7 +73,8 @@ class TestCreateSubscriptionPreference(object):
         resp = request_to_candidate_preference_resource(access_token_first, 'post',
                                                         candidate_first.id, data)
         print response_info(response=resp)
-        assert resp.status_code == 400 and resp.json()['error']['code'] == 3143
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.PREFERENCE_EXISTS
 
     def test_access_endpoint_using_non_json_data(self, access_token_first, user_first, candidate_first):
         """
@@ -160,7 +163,7 @@ class TestUpdateSubscriptionPreference(object):
         resp = request_to_candidate_preference_resource(access_token_first, 'put', candidate_id, data)
         print response_info(resp)
         assert resp.status_code == 400
-        assert resp.json()['error']['code'] == 3142
+        assert resp.json()['error']['code'] == custom_error.NO_PREFERENCES
 
     def test_update_candidate_pref_without_providing_adequate_data(self, access_token_first, user_first, talent_pool):
         """
@@ -180,10 +183,10 @@ class TestUpdateSubscriptionPreference(object):
         resp_3 = request_to_candidate_preference_resource(access_token_first, 'put', candidate_id, data_3)
         resp_4 = request_to_candidate_preference_resource(access_token_first, 'put', candidate_id, data_4)
         print response_info(resp_1), response_info(resp_2), response_info(resp_3), response_info(resp_4)
-        assert resp_1.status_code == 400 and resp_1.json()['error']['code'] == 3000
-        assert resp_2.status_code == 400 and resp_2.json()['error']['code'] == 3000
-        assert resp_3.status_code == 400 and resp_3.json()['error']['code'] == 3000
-        assert resp_4.status_code == 400 and resp_4.json()['error']['code'] == 3000
+        assert resp_1.status_code == 400 and resp_1.json()['error']['code'] == custom_error.INVALID_INPUT
+        assert resp_2.status_code == 400 and resp_2.json()['error']['code'] == custom_error.INVALID_INPUT
+        assert resp_3.status_code == 400 and resp_3.json()['error']['code'] == custom_error.INVALID_INPUT
+        assert resp_4.status_code == 400 and resp_4.json()['error']['code'] == custom_error.INVALID_INPUT
 
     def test_update_subs_pref_of_a_non_existing_candidate(self, access_token_first, user_first, talent_pool):
         """
@@ -197,7 +200,8 @@ class TestUpdateSubscriptionPreference(object):
         data = {'frequency_id': 1}
         resp = request_to_candidate_preference_resource(access_token_first, 'put', non_existing_candidate_id, data)
         print response_info(resp)
-        assert resp.status_code == 404 and resp.json()['error']['code'] == 3010
+        assert resp.status_code == 404
+        assert resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
     def test_update_subs_pref_of_candidate(self, access_token_first, user_first, talent_pool):
         """

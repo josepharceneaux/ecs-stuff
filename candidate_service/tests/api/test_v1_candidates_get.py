@@ -119,7 +119,8 @@ def test_get_candidate_from_forbidden_domain(access_token_first, user_first, tal
     candidate_id = resp_dict['candidates'][0]['id']
     resp = request_to_candidate_resource(access_token_second, 'get', candidate_id)
     print response_info(resp)
-    assert resp.status_code == 403 and resp.json()['error']['code'] == 3012
+    assert resp.status_code == 403
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_get_candidate_via_invalid_email(access_token_first, user_first, talent_pool):
@@ -132,7 +133,8 @@ def test_get_candidate_via_invalid_email(access_token_first, user_first, talent_
     # Retrieve Candidate via candidate's email
     resp = request_to_candidate_resource(access_token_first, 'get', candidate_email='bad_email.com')
     print response_info(resp)
-    assert resp.status_code == 400 and resp.json()['error']['code'] == 3072
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
 
 def test_get_can_via_id_and_email(access_token_first, user_first, talent_pool):
@@ -202,7 +204,8 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
     non_existing_candidate_id = last_candidate.id * 100
     resp = request_to_candidate_resource(access_token_first, 'get', non_existing_candidate_id)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
     # Create Candidate and hide it
     data = generate_single_candidate_data([talent_pool.id])
@@ -212,4 +215,5 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
     # Retrieve web-hidden candidate
     resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
