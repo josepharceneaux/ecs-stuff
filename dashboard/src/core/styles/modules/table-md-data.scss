@@ -12,10 +12,15 @@ table {
           border-bottom:1px solid #efefef;
         }
       }
+      .md-column {
+        font-size:17px;
+        font-weight: 400;
+      }
     }
 
     th {
       &.md-column {
+
         &.md-active {
           color: $color--blue;
           md-icon {
@@ -32,6 +37,7 @@ table {
       td.md-cell {
         border:none;
         font-size: 15px;
+        color: #666;
       }
     }
 

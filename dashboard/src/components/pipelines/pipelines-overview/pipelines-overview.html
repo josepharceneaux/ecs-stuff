@@ -15,7 +15,7 @@
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
                     <h2 class="md-title">My Pipelines</h2>
-                    <div class="md-title-text">This is a sub title for the title bar</div>
+                    <div class="md-subhead">This is a sub title for the title bar</div>
                 </div>
                 <div class="page-title-menu">
                     <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
@@ -33,7 +33,7 @@
                 <div class="chart-title">
                     <span>
                         Candidates Added Per Month
-                        <i class="fa fa-info-circle"></i>
+                        <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
                     </span>
                 </div>
                 <div id="pipelineDetailsViewChart" class="hero-chart"></div>
@@ -47,8 +47,8 @@
 
         <!-- Call-outs -->
         <div class="stat-row" layout="row" layout-wrap>
-            <div class="md-whiteframe-gt module-padding" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
-                <md-content layout="column" layout-align="center center">
+            <div class="md-whiteframe-gt" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center" class="module-padding">
                     <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
                     <h3 class="md-display-3">{{callout.value}}</h3>
                 </md-content>
@@ -70,7 +70,7 @@
                                 
                                 <md-icon>search</md-icon>
                                 <form flex name="vm.tableData.filter.form" layout-align="start start">                                                                    
-                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search">
+                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
                                 </form>
                                 <md-button class="md-icon-button" ng-click="vm.removeFilter()">
                                     <md-icon>close</md-icon>
@@ -112,10 +112,10 @@
             <!-- End: Top Pipelines Table -->
 
             <!-- Cards -->
-            <div id="v2-pipeline-cards" flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
                 
                 <!-- Current Candidate Usage -->
-                <md-card flex="none" class="md-margin">
+                <md-card flex="none" class="md-margin md-padding">
                     <md-card-title flex="none">
                         <md-card-title-text>
                             <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
@@ -131,7 +131,7 @@
                 <!-- End: Current Candidate Usage -->
 
                 <!-- Top Performing Campaigns -->
-                <md-card flex="none" class="md-margin">
+                <md-card flex="none" class="md-margin md-padding">
                     <md-card-title flex="none">
                         <md-card-title-text>
                             <span class="md-title">Top Campaigns<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>

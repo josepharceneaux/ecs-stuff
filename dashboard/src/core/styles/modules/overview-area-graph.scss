@@ -7,6 +7,9 @@
   .area-chart {
     background:transparent;
   }
+  .layout-margin {
+    margin:15px;
+  }
 }
 
 .chart-container {
@@ -46,8 +49,8 @@
       left: 30px;
       color: #7a7a7a;
       z-index: 1;
-      font-weight: 400;
-      font-size: 20px;
+      font-weight: 300;
+      font-size: 22px;
     }
   }
   &:before {
