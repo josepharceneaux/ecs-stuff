@@ -128,7 +128,6 @@
     height: 100%;
     position: relative;
     vertical-align: top;
-    overflow: visible;
   }
 }
 
@@ -149,6 +148,7 @@
 
   @include helper--media($breakpoint--medium) {
     display: table-cell;
+    overflow: visible;
   }
 
   &.view__sidebar--active {
