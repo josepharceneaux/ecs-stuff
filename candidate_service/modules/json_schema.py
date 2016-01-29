@@ -363,7 +363,7 @@ candidates_resource_schema_post = {
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_year",
                                                 "type": ["integer", "null"],
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_month",
@@ -373,7 +373,7 @@ candidates_resource_schema_post = {
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_year",
                                                 "type": ["integer", "null"],
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_month",
@@ -489,12 +489,12 @@ candidates_resource_schema_post = {
                                 "start_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
                                     "type": ["integer", "null"],
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
                                     "type": ["integer", "null"],
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
@@ -981,7 +981,7 @@ candidates_resource_schema_patch = {
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_year",
                                                 "type": ["integer", "null"],
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_month",
@@ -991,7 +991,7 @@ candidates_resource_schema_patch = {
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_year",
                                                 "type": ["integer", "null"],
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_month",
@@ -1117,12 +1117,12 @@ candidates_resource_schema_patch = {
                                 "start_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
                                     "type": ["integer", "null"],
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/end_date",
                                     "type": ["integer", "null"],
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
@@ -1276,8 +1276,7 @@ resource_schema_preferences = {
     "properties": {
         "frequency_id": {
             # "id": "http://jsonschema.net/frequency_id",
-            "type": "integer",
-            "minimum": 1, "maximum": 7
+            "type": "integer"
         }
     }
 }

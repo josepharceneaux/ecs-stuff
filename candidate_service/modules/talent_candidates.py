@@ -490,7 +490,10 @@ def get_candidate_id_from_email_if_exists(user_id, email):
 # Helper Functions For Candidate Edits
 ######################################
 def fetch_candidate_edits(candidate_id):
-    assert isinstance(candidate_id, (int, long))
+    """
+    :type candidate_id:  int|long
+    :rtype:  list[dict]
+    """
     all_edits = []
     for can_edit in CandidateEdit.get_by_candidate_id(candidate_id=candidate_id):
         table_and_field_names_tuple = CandidateEdit.get_table_and_field_names_from_id(can_edit.field_id)
@@ -1244,7 +1247,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
-            list_order=work_experience.get('list_order', 1) or 1,
+            list_order=work_experience.get('list_order') or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),

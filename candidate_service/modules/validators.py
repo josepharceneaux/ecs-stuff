@@ -23,11 +23,9 @@ def get_json_if_exist(_request):
     :type _request:  request
     """
     if _request.content_type != "application/json":
-        raise InvalidUsage("Request body must be a JSON object",
-                           error_code=custom_error.INVALID_INPUT)
+        raise InvalidUsage("Request body must be a JSON object", custom_error.INVALID_INPUT)
     if not _request.get_data():
-        raise InvalidUsage("Request body cannot be empty", error_code=custom_error.MISSING_INPUT)
-
+        raise InvalidUsage("Request body cannot be empty", custom_error.MISSING_INPUT)
     return _request.get_json()
 
 

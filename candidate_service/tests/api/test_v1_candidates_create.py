@@ -429,7 +429,6 @@ def test_create_candidate_experience(access_token_first, user_first, talent_pool
     assert can_experiences[0]['organization'] == can_exp_data['organization']
     assert can_experiences[0]['position'] == can_exp_data['position']
     assert can_experiences[0]['city'] == can_exp_data['city']
-    assert can_experiences[0]['country'] == 'United States'
     assert can_experiences[0]['is_current'] == can_exp_data['is_current']
 
     can_exp_bullets = can_experiences[0]['bullets']

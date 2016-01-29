@@ -85,19 +85,19 @@ def test_get_candidate_without_id_or_email(access_token_first, user_first, talen
     Test:   Attempt to retrieve candidate without providing ID or Email
     Expect: 400
     """
-    AddUserRoles.add_and_get(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_and_get(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(resp)
     assert resp.status_code == 201
 
     # Retrieve Candidate without providing ID or Email
-    resp = request_to_candidates_resource(access_token_first, 'get')
+    resp = requests.get(url=CandidateApiUrl.CANDIDATE,
+                        headers={'Authorization': 'Bearer {}'.format(access_token_first)})
     print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 1
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
 
 def test_get_candidate_from_forbidden_domain(access_token_first, user_first, talent_pool,
@@ -170,28 +170,6 @@ def test_get_can_via_id_and_email(access_token_first, user_first, talent_pool):
     print response_info(resp)
     assert resp.status_code == 200
     assert isinstance(resp_dict, dict)
-
-
-def test_get_candidates_via_list_of_ids(access_token_first, user_first, talent_pool):
-    """
-    Test:   Retrieve candidates via a list of ids
-    Expect: 200, list of Candidates
-    """
-    # Create candidates
-    AddUserRoles.add_and_get(user=user_first)
-    data_1 = generate_single_candidate_data([talent_pool.id])
-    data_2 = generate_single_candidate_data([talent_pool.id])
-    can_id_1 = request_to_candidates_resource(access_token_first, 'post', data_1)\
-        .json()['candidates'][0]['id']
-    can_id_2 = request_to_candidates_resource(access_token_first, 'post', data_2)\
-        .json()['candidates'][0]['id']
-
-    # Get all candidates in user's domain
-    data = {'candidate_ids': [can_id_1, can_id_2]}
-    resp = request_to_candidates_resource(access_token_first, 'get', data)
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 2
 
 
 def test_get_non_existing_candidate(access_token_first, user_first, talent_pool):

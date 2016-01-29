@@ -303,8 +303,8 @@ def test_edit_candidate_experience_bullet(access_token_first, user_first, talent
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['work_experiences'][0]
+    old_experience_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
     old_experience_bullet_dict = old_experience_dict['bullets'][0]
 
     # Update Candidate's experience bullet
@@ -318,8 +318,8 @@ def test_edit_candidate_experience_bullet(access_token_first, user_first, talent
     request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['work_experiences'][0]
+    new_experience_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
     new_experience_bullet_dict = new_experience_dict['bullets'][0]
 
     # Retrieve Candidate Edits

@@ -36,7 +36,7 @@ class TestCreateSubscriptionPreference(object):
         print response_info(response=resp)
         assert resp.status_code == 401
 
-    def test_add_candidate_subs_preference(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_subscription_preference(self, access_token_first, user_first, talent_pool):
         """
         Test: Add subscription preference for the candidate
         Expect: 204
@@ -44,8 +44,8 @@ class TestCreateSubscriptionPreference(object):
         # Create candidate and candidate subscription preference
         AddUserRoles.add_and_get(user=user_first)
         data = generate_single_candidate_data([talent_pool.id])
-        candidate_id = request_to_candidates_resource(access_token_first, 'post', data) \
-            .json()['candidates'][0]['id']
+        candidate_id = request_to_candidates_resource(
+                access_token_first, 'post', data).json()['candidates'][0]['id']
         data = {'frequency_id': 1}
         resp = request_to_candidate_preference_resource(access_token_first, 'post', candidate_id, data)
         print response_info(resp)

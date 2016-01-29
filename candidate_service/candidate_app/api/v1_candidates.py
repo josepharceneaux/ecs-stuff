@@ -187,7 +187,7 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # Authenticated user
+        # Authenticated user and request body
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data

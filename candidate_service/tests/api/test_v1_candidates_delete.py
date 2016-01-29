@@ -43,7 +43,7 @@ def test_delete_non_existing_candidate(access_token_first, user_first, talent_po
 
     # Delete non existing candidate via Email
     bogus_email = '{}_{}'.format(fake.word(), fake.safe_email())
-    assert CandidateEmail.get_by_address(email_address=bogus_email) is None
+    assert not CandidateEmail.get_by_address(email_address=bogus_email)
 
     resp = request_to_candidate_resource(access_token_first, 'delete', bogus_email)
     print response_info(resp)
