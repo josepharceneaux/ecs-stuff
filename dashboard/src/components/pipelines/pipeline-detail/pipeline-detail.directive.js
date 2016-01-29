@@ -140,6 +140,143 @@
                 }
             ];
 
+            $('#pipelineDetailsViewChart').highcharts({
+                chart: {
+                    type: 'area',
+                    backgroundColor: null
+                },
+                title: {
+                    text: ''
+                },
+                lang: {
+                    decimalPoint: ',',
+                    thousandsSep: '.'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    lineColor: 'transparent',
+                    tickLength: 0,
+                    endOnTick: true,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        y: 24,
+                        style: {
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: "bold"
+                        },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    gridLineColor: '#fff',
+                    yDecimals: 2,
+                    gridLineWidth: 1.5,
+                    title : {
+                        text: ""
+                    },
+                    labels: {
+                        style: {
+                            color: '#adadad',
+                            fontSize: '12px',
+                            fontWeight: "bold"
+                        },
+                        formatter: function () {
+                            if (this.value != 0) {
+                              return this.value;
+                            } else {
+                              return null;
+                            }
+                        }
+                    }
+                },
+                exporting: {
+                    enabled: false
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    x: -8,
+                    y: -10,
+                    floating: true,
+                    width: 170,
+                    symbolWidth: 12,
+                    itemMarginTop: 5,
+                    itemMarginBottom: 5,
+                    padding: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderColor: '#D9D9D9',
+                    borderWidth: 1
+                },
+                tooltip: {
+                    borderWidth:0,
+                    borderRadius:0,
+                    backgroundColor: null,
+                    shadow:false,
+                    useHTML: true,
+                    formatter: function() {
+                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
+                        $.each(this.points, function () {
+                            s += this.series.name + ': ' + this.y + '<br/>';
+                        });
+                        return s;
+                    },
+                    shared: true,
+                    crosshairs: {
+                        color: 'white',
+                        dashStyle: 'solid'
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        animation: true,
+                        fillOpacity: 0.2,
+                        lineWidth: 0.2,
+                        marker: {
+                            enabled: false,
+                            symbol: 'circle',
+                            radius: 2,
+                            states: {
+                                hover: {
+                                    enabled: true
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                lineWidth: 0.2
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Legend 1',
+                    color: '#907f90',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
+                }, {
+                    name: 'Legend 2',
+                    color: '#97b99b',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
+                }, {
+                    name: 'Legend 3',
+                    color: '#6ba5ae',
+                    pointStart: Date.UTC(2016, 0, 1),
+                    pointInterval: 30 * 24 * 3600 * 1000,
+                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                }]
+            });
         }
     }
 })();

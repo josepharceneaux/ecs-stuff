@@ -67,9 +67,9 @@
                             <div class="md-toolbar-tools">
                                 <h2 class="md-title">Pipelines</h2>
                                 <div flex></div>
-                                
+
                                 <md-icon>search</md-icon>
-                                <form flex name="vm.tableData.filter.form" layout-align="start start">                                                                    
+                                <form flex name="vm.tableData.filter.form" layout-align="start start">
                                     <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
                                 </form>
                                 <md-button class="md-icon-button" ng-click="vm.removeFilter()">
@@ -77,7 +77,7 @@
                                 </md-button>
                             </div>
                         </md-toolbar>
-                        
+
                         <md-table-container>
                             <table md-table md-progress="vm.promise">
                                 <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
@@ -90,9 +90,9 @@
                                 </thead>
                                 <tbody md-body>
                                 <tr md-row
-                                    ng-repeat="p in vm.tableData.pipelines.data 
+                                    ng-repeat="p in vm.tableData.pipelines.data
                                     | filter: vm.tableData.query.filter
-                                    | orderBy: vm.tableData.query.order 
+                                    | orderBy: vm.tableData.query.order
                                     | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
                                     <td md-cell>{{p.name}}</td>
                                     <td md-cell>{{p.candidates}}</td>
@@ -113,7 +113,7 @@
 
             <!-- Cards -->
             <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
-                
+
                 <!-- Current Candidate Usage -->
                 <md-card flex="none" class="md-margin md-padding">
                     <md-card-title flex="none">
@@ -123,7 +123,7 @@
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-                        <gt-circle-graph angle="75" value="3000" class="d3-circle">
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
                             <div></div>
                         </gt-circle-graph>
                     </md-card-content>
@@ -139,16 +139,18 @@
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
-
+                        <gt-bar-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-bar-graph>
                     </md-card-content>
                 </md-card>
                 <!-- End: Top Performing Campaigns -->
-            
+
             </div>
             <!-- End: Cards -->
         </div>
         <!-- End: Tables & Cards -->
 
     </div>
-    
+
 </section>
