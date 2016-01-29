@@ -498,8 +498,8 @@ class TalentPipelineCampaigns(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    # TODO: Add Role here for CAN_GET_EMAIL_CAMPAIGNS once it becomes available.
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    # TODO: Add Role here for CAN_GET_EMAIL_CAMPAIGNS once it becomes available, and CAN_GET_TALENT_PIPELINE_SMART_LISTS.
+    # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/campaigns  Fetch all candidates of a talent-pipeline
