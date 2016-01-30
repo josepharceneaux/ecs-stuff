@@ -162,4 +162,4 @@ def gettalent_generate_password_hash(new_password):
     :param str new_password: Password to hash according to gT security standards.
     :rtype: basestring
     """
-    return generate_password_hash(new_password, method='pbkdf2:sha512:2000', salt_length=32)
+    return generate_password_hash(new_password, method='pbkdf2:sha512:1000', salt_length=32)
