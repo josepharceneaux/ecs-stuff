@@ -126,14 +126,14 @@ md-content {
 }
 
 // Log in
-.view--login {    
+.view--login {
 
     .login-header {
         margin-bottom: 50px;
     }
 
-    .login-form-wrap {
-        height: 420px;
+    .login-form-wrap,
+    .forgot-password-form-wrap {
         padding: 50px 50px 30px 50px;
 
         md-input-container {
@@ -160,9 +160,17 @@ md-content {
             height: 40px;
         }
 
-        .login-error-message {
+        .error-message {
             color: #d30;
         }
+    }
+
+    .login-form-wrap {
+        height: 420px;
+    }
+
+    .forgot-password-form-wrap {
+        height: 300px;
     }
 }
 
