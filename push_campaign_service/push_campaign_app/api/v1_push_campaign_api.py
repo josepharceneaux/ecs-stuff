@@ -296,6 +296,7 @@ class PushCampaignsResource(Resource):
         not_deleted = []
         not_found = []
         not_owner = []
+        status_code = None
         for campaign_id in campaign_ids:
             campaign_obj = PushCampaignBase(request.user.id)
             try:
@@ -304,20 +305,16 @@ class PushCampaignsResource(Resource):
                     # error has been logged inside delete()
                     not_deleted.append(campaign_id)
             except ForbiddenError:
-                if len(campaign_ids) == 1:
-                    raise
-                # error has been logged inside delete()
+                status_code = ForbiddenError.http_status_code()
                 not_owner.append(campaign_id)
             except ResourceNotFound:
-                if len(campaign_ids) == 1:
-                    raise
-                # error has been logged inside delete()
+                status_code = ResourceNotFound.http_status_code()
                 not_found.append(campaign_id)
             except InvalidUsage:
-                if len(campaign_ids) == 1:
-                    raise
-                # error has been logged inside delete()
+                status_code = InvalidUsage.http_status_code()
                 not_deleted.append(campaign_id)
+        if status_code and len(campaign_ids) == 1:  # It means only one campaign_id was provided
+            return dict(message='Unable to delete campaign.'), status_code
         if not_deleted or not_owner or not_found:
             return dict(message='Unable to delete %d campaign(s).'
                                 % (len(not_deleted) + len(not_found) + len(not_owner)),
