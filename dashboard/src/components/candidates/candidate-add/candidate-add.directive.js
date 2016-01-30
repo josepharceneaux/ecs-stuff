@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$q', 'logger', 'candidatesAddService'];
+    ControllerFunction.$inject = ['$q', 'logger', 'candidatesAddService', 'resumeService'];
 
     /* @ngInject */
-    function ControllerFunction($q, logger, candidatesAddService) {
+    function ControllerFunction($q, logger, candidatesAddService, resumeService) {
         var vm = this;
 
         init();
@@ -55,17 +55,29 @@
                         console.log('SUCCESS: ', response)
                     }
                 })
-            }
+            };
+
+            //YxvdCJb2RiGPuer8TWeX_EfResume.txt
+            vm.postFpKey = function(filepickerKey) {
+                console.log(filepickerKey);
+                resumeService.all('parse_resume').post(
+                    {filepicker_key: filepickerKey, resume_file_name: filepickerKey}
+                ).then(
+                    function (response) {
+                        console.log(response);
+                    }
+                )
+            };
 
             // Should only be able to add once this has completed.
             candidatesAddService.getUserTalentPools().then(function (response) {
                 var i;
-                var talentPoolIds = []
+                var talentPoolIds = [];
                 for (i = 0; i < response.length; i++) {
                     talentPoolIds.push(response[i].id);
                 }
                 vm.candidateForm.talentPools = talentPoolIds;
-            })
+            });
 
             vm.fpInit = function() {
                 console.log('initializing FilePicker');
@@ -112,11 +124,13 @@
                                         }
                                         filepickerKeys.push(this.key)
                                     });
-                                    console.log(filepickerKeys);
                                     if (filepickerKeys.length != Blobs.length && Blobs.length) {
                                         return false;
                                     }
-                                   // Make the call to resume batch service.
+                                    var i;
+                                    for (i = 0; i < filepickerKeys.length; i++) {
+                                        vm.postFpKey(filepickerKeys[i]);
+                                    }
                                 },
                                 function(FPError) {
                                     console.error("Error response to parse_filepicker_resume: ", FPError.toString());
