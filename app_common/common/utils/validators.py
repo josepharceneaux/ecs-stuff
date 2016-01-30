@@ -1,5 +1,6 @@
+"""Various misc validators"""
 import re
-from ..error_handling import *
+from ..error_handling import InvalidUsage
 
 
 def is_number(s):
@@ -40,13 +41,14 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number), region=country_code)
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
+
+            return dict(formatted_number=str(formatted_number), extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
-                                             (phone_number, country_code))
+                               (phone_number, country_code))
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
-                                         (phone_number, country_code))
+                           (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -55,8 +57,8 @@ def sanitize_zip_code(zip_code):
     :return:
     """
     zip_code = str(zip_code)
-    zip_code = ''.join(filter(lambda character: character not in ' -', zip_code))
-    if zip_code and not ''.join(filter(lambda character: not character.isdigit(), zip_code)):
+    zip_code = ''.join([char for char in zip_code if char not in ' -'])
+    if zip_code and not ''.join([char for char in zip_code if not char.isdigit()]):
         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
         if zip_code:
             return (zip_code[:5] + ' ' + zip_code[5:]).strip()

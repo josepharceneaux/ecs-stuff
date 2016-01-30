@@ -6,21 +6,67 @@ from os.path import splitext
 from time import sleep
 from time import time
 import base64
-# Third Party
+import json
+# Third Party/Framework Specific.
+from BeautifulSoup import BeautifulSoup
+from flask import current_app
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
-from pdfminer.pdfparser import PDFParser
 from pdfminer.pdfparser import PDFDocument
-from pdfminer.layout import LAParams
-from pdfminer.converter import TextConverter
+from pdfminer.pdfparser import PDFParser
 from xhtml2pdf import pisa
-import requests
-from BeautifulSoup import BeautifulSoup
 import magic
+import requests
 # Module Specific
-from flask import current_app
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import parse_optic_json
-from resume_parsing_service.resume_parsing_app.views.optic_parse_lib import fetch_optic_response
+from .utils import create_parsed_resume_candidate
+from resume_parsing_service.common.error_handling import ForbiddenError
+from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.utils.talent_s3 import download_file
+from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
+from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+
+
+IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
+                 '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
+DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
+
+
+def process_resume(parse_params):
+    """
+    Parses a resume based on a provided: filepicker key or binary, filename
+    :return: dict: {'candidate': {}}
+    """
+    filepicker_key = parse_params.get('filepicker_key')
+    create_candidate = parse_params.get('create_candidate')
+    talent_pools = parse_params.get('talent_pools')
+    if filepicker_key:
+        file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
+        filename_str = filepicker_key
+        resume_file = download_file(file_picker_bucket, filename_str)
+    elif parse_params.get('filename'):
+        resume_bin = parse_params.get('resume_file')
+        resume_file = StringIO(resume_bin.read())
+        filename_str = parse_params.get('filename')
+    else:
+        raise InvalidUsage('Invalid query params for /parse_resume')
+    # Parse the actual resume content.
+    result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    # Emails and talent pools are the ONLY thing required to create a candidate.
+    email_present = True if result_dict['candidate'].get('emails') else False
+    if create_candidate and email_present and talent_pools:
+        result_dict['candidate']['talent_pool_ids']['add'] = talent_pools
+        candidate_response = create_parsed_resume_candidate(result_dict['candidate'],
+                                                            parse_params.get('oauth'))
+        # TODO: Check for good response code!
+        response_dict = json.loads(candidate_response)
+        if 'error' in candidate_response:
+            raise InvalidUsage(response_dict['error']['message'])
+        candidate_id = response_dict.get('candidates')
+        result_dict['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
+    return result_dict
 
 
 def parse_resume(file_obj, filename_str):
@@ -30,35 +76,17 @@ def parse_resume(file_obj, filename_str):
     :param str filename_str: The file_obj file name.
     :return: A dictionary of processed candidate data or an appropriate error message.
     """
-    """
-
-    Args:
-        file_obj: .
-        filename_str: the file's name
-        is_test_parser: debugging/test mode Bool.
-
-    Returns:
-        Dictionary containing error message or candidate data.
-
-    """
     current_app.logger.info("Beginning parse_resume(%s)", filename_str)
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
-
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
-
-    image_formats = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
-                     '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
-    doc_formats = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-
-    if file_ext not in image_formats and file_ext not in doc_formats:
+    if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
         current_app.logger.error(
             'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
         return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
-
     # Find out if the file is an image
     is_resume_image = False
-    if file_ext in image_formats:
+    if file_ext in IMAGE_FORMATS:
         if file_ext == '.pdf':
             start_time = time()
             text = convert_pdf_to_text(file_obj)
@@ -125,8 +153,8 @@ def parse_resume(file_obj, filename_str):
         "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
         time() - start_time)
     if optic_response:
-        candidate_data = parse_optic_json(optic_response)
-        return candidate_data
+        candidate_data = parse_optic_xml(optic_response)
+        return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
         return dict(error='No XML text')
 
@@ -137,12 +165,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     certain number of tries.
     :param cStringIO.StringI img_file_obj: File initially posted to the resume parsing service.
     :param string export_format: Abby OCR param.
-    :return:
-    """
-    """
-
-    Return:
-        Image file OCR'd in desired format.
+    :return: Image file OCR'd in desired format.
     """
 
     abby_ocr_api_auth_tuple = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')
@@ -155,8 +178,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
                             )
     if response.status_code != 200:
-        current_app.logger.error('ABBY OCR returned non 200 response code')
-        return 0
+        raise ForbiddenError('Error connecting to Abby OCR instance.')
 
     xml = BeautifulSoup(response.text)
     current_app.logger.info("ocr_image() - Abby response to processImage: %s", response.text)
