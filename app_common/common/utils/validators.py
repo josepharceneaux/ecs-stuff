@@ -32,7 +32,7 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number))
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return formatted_number
+            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             pass
 

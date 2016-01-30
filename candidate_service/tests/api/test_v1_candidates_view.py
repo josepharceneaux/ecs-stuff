@@ -13,6 +13,8 @@ from helpers import (
     request_to_candidate_view_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom erorrs
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 def test_user_without_appropriate_permission_to_view_candidate_info(access_token_first,

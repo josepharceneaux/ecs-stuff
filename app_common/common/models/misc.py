@@ -134,12 +134,10 @@ class Country(db.Model):
 
     @classmethod
     def country_id_from_name_or_code(cls, name_or_code):
-        if name_or_code:
-            country_row = cls.query.filter(db.or_(Country.name == name_or_code,
-                                                  Country.code == name_or_code)).first()
-            if country_row:
-                return country_row.id
-        return 1
+        country_row = cls.query.filter(db.or_(Country.name == name_or_code,
+                                              Country.code == name_or_code)).first()
+        return country_row.id if country_row else None
+
 
     @classmethod
     def country_name_from_country_id(cls, country_id):
@@ -215,6 +213,13 @@ class Frequency(db.Model):
     __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
+
+    def __repr__(self):
+        return "<Frequency: (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @property
     def in_seconds(self):

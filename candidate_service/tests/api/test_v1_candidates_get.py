@@ -10,9 +10,55 @@ from helpers import (
     response_info, request_to_candidates_resource, request_to_candidate_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Routes
+from candidate_service.common.routes import CandidateApiUrl
+# Custom Errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## Candidate ########################
+class TestGetCandidate(object):
+    @staticmethod
+    def create_candidate(access_token_first, user_first, talent_pool, data=None):
+        AddUserRoles.add(user=user_first)
+        if data is None:
+            data = generate_single_candidate_data([talent_pool.id])
+        return request_to_candidates_resource(access_token_first, 'post', data)
+
+    def test_create_candidate_with_empty_input(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Retrieve user's candidate(s) by providing empty string for data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user=user_first)
+        resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'content-type': 'application/json'}
+        )
+        print response_info(response=resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.MISSING_INPUT
+
+    def test_create_candidate_with_non_json_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Send post request with non json data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user=user_first)
+        resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'content-type': 'application/xml'},
+            data=generate_single_candidate_data([talent_pool.id])
+        )
+        print response_info(response=resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+
 def test_get_candidate_without_authed_user(access_token_first, user_first, talent_pool):
     """
     Test:   Attempt to retrieve candidate with no access token
@@ -39,19 +85,19 @@ def test_get_candidate_without_id_or_email(access_token_first, user_first, talen
     Test:   Attempt to retrieve candidate without providing ID or Email
     Expect: 400
     """
-    AddUserRoles.add_and_get(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_and_get(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(resp)
     assert resp.status_code == 201
 
     # Retrieve Candidate without providing ID or Email
-    resp = request_to_candidates_resource(access_token_first, 'get')
+    resp = requests.get(url=CandidateApiUrl.CANDIDATE,
+                        headers={'Authorization': 'Bearer {}'.format(access_token_first)})
     print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 1
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
 
 def test_get_candidate_from_forbidden_domain(access_token_first, user_first, talent_pool,
@@ -73,7 +119,8 @@ def test_get_candidate_from_forbidden_domain(access_token_first, user_first, tal
     candidate_id = resp_dict['candidates'][0]['id']
     resp = request_to_candidate_resource(access_token_second, 'get', candidate_id)
     print response_info(resp)
-    assert resp.status_code == 403 and resp.json()['error']['code'] == 3012
+    assert resp.status_code == 403
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_get_candidate_via_invalid_email(access_token_first, user_first, talent_pool):
@@ -86,7 +133,8 @@ def test_get_candidate_via_invalid_email(access_token_first, user_first, talent_
     # Retrieve Candidate via candidate's email
     resp = request_to_candidate_resource(access_token_first, 'get', candidate_email='bad_email.com')
     print response_info(resp)
-    assert resp.status_code == 400 and resp.json()['error']['code'] == 3072
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
 
 def test_get_can_via_id_and_email(access_token_first, user_first, talent_pool):
@@ -124,28 +172,6 @@ def test_get_can_via_id_and_email(access_token_first, user_first, talent_pool):
     assert isinstance(resp_dict, dict)
 
 
-def test_get_candidates_via_list_of_ids(access_token_first, user_first, talent_pool):
-    """
-    Test:   Retrieve candidates via a list of ids
-    Expect: 200, list of Candidates
-    """
-    # Create candidates
-    AddUserRoles.add_and_get(user=user_first)
-    data_1 = generate_single_candidate_data([talent_pool.id])
-    data_2 = generate_single_candidate_data([talent_pool.id])
-    can_id_1 = request_to_candidates_resource(access_token_first, 'post', data_1)\
-        .json()['candidates'][0]['id']
-    can_id_2 = request_to_candidates_resource(access_token_first, 'post', data_2)\
-        .json()['candidates'][0]['id']
-
-    # Get all candidates in user's domain
-    data = {'candidate_ids': [can_id_1, can_id_2]}
-    resp = request_to_candidates_resource(access_token_first, 'get', data)
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 2
-
-
 def test_get_non_existing_candidate(access_token_first, user_first, talent_pool):
     """
     Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
@@ -156,7 +182,8 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
     non_existing_candidate_id = last_candidate.id * 100
     resp = request_to_candidate_resource(access_token_first, 'get', non_existing_candidate_id)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
     # Create Candidate and hide it
     data = generate_single_candidate_data([talent_pool.id])
@@ -166,4 +193,5 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
     # Retrieve web-hidden candidate
     resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
     print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden
+    assert resp.status_code == 404
+    assert resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
