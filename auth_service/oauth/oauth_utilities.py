@@ -26,7 +26,7 @@ def change_hashing_format(password):
         return ''
     elif password.count('$') == 2:
         (digest_alg, salt, hash) = password.split('$')
-        return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
+        return 'pbkdf2:sha512:2000$%s$%s' % (salt, hash)
 
 
 def get_user(username, password, *args, **kwargs):
