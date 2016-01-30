@@ -142,15 +142,23 @@
 .view__sidebar--feed {
   @extend .view__sidebar;
 
-  background-color: $color--white;
+  position: absolute;
   top: -$misc--topNavMenuHeight;
-  z-index: 900;
+  right: 0;
+  bottom: -$misc--topNavMenuHeight;
+  z-index: $z-index--3;
   width: 0;
-  position: relative;
+  height: 100%;
+  background-color: $color--white;
+  box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
 
   @include helper--media($breakpoint--medium) {
     display: table-cell;
     overflow: visible;
+  }
+
+  @include helper--media($breakpoint--full) {
+    position: relative;
   }
 
   &.view__sidebar--active {
@@ -162,10 +170,58 @@
   &:after {
     content: '';
     position: absolute;
-    bottom: -$misc--topNavMenuHeight;
+
     display: block;
     width: 100%;
     height: $misc--topNavMenuHeight;
     background: $color--white;
+  }
+}
+
+.view__sidebar--feed--fixed {
+  @extend .view__sidebar--feed;
+
+  width: 0;
+  background: transparent;
+  box-shadow: none;
+
+  &:after {
+    display: none;
+  }
+
+  & .view__sidebar__wrapper--feed {
+    @extend .view__sidebar--feed;
+
+    position: fixed;
+    top: $misc--topNavHeaderHeight--tiny;
+    bottom: 0;
+    height: auto;
+    padding-bottom: 2em;
+    box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
+
+    @include helper--media($breakpoint--small) {
+      top: $misc--topNavHeaderHeight--small;
+    }
+
+    &:after {
+      display: none;
+    }
+  }
+
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--medium) {
+      width: 0;
+    }
+
+    @include helper--media($breakpoint--full) {
+      position: static;
+      width: 20em;
+    }
+
+    .view__sidebar__wrapper--feed {
+      @include helper--media($breakpoint--medium) {
+        width: 20em;
+      }
+    }
   }
 }
