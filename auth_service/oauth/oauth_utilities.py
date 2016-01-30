@@ -39,7 +39,7 @@ def get_user(username, password, *args, **kwargs):
     assert isinstance(username, basestring)
     assert isinstance(password, basestring)
     user = User.query.filter_by(email=username).first()
-    if user:
+    if user and not user.is_disabled:
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user

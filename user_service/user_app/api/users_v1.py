@@ -30,7 +30,7 @@ class UserApi(Resource):
         requested_user_id = kwargs.get('id')
         if requested_user_id:
             requested_user = User.query.get(requested_user_id)
-            if not requested_user:
+            if not requested_user or requested_user.is_disabled == 1:
                 raise NotFoundError(error_message="User with user id %s not found" % requested_user_id)
 
             if requested_user.domain_id != request.user.domain_id:
@@ -54,7 +54,8 @@ class UserApi(Resource):
 
         # User id is not provided so logged-in user wants to get all users of its domain
         elif 'CAN_GET_USERS' in request.valid_domain_roles:
-                return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id)]}
+                return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not
+                user.is_disabled]}
 
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to get user's info.")
