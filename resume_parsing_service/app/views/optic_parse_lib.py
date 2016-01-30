@@ -8,12 +8,16 @@ import string
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-from resume_parsing_service.resume_parsing_app.views.OauthClient import OAuthClient
-import phonenumbers
+from resume_parsing_service.app.views.OauthClient import OAuthClient
 import requests
 # Module Specific
 from flask import current_app
+from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.utils.validators import format_phone_number
+from resume_parsing_service.common.utils.validators import sanitize_zip_code
+
+ISO8601_DT_FORMAT = "%Y-%m-%d"
+
 
 def fetch_optic_response(resume):
     """
@@ -43,23 +47,25 @@ def fetch_optic_response(resume):
         'locale': 'en_us'
     }
     r = requests.post(BG_URL, headers=HEADERS, json=DATA)
-    #TODO add bad request handling.
+    if r.status_code != requests.codes.ok:
+        raise ForbiddenError('Error connecting to BG instance.')
     html_parser = HTMLParser.HTMLParser()
     unquoted = urllib2.unquote(r.content).decode('utf8')
     unescaped = html_parser.unescape(unquoted)
     return unescaped
 
-def parse_optic_json(resume_xml_string):
+
+def parse_optic_xml(resume_xml_unicode):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param str resume_xml_string: An XML tree represented in string format. It is a slightly
+    :param str resume_xml_unicode: An XML tree represented in unicode format. It is a slightly
                                   processed response from the Burning Glass API.
     :return dict candidate: Results of various parsing functions on the input xml string.
     """
-    contact_xml_list = bs4(resume_xml_string, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml_string, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml_string, 'lxml').findAll('education')
-    skill_xml_list = bs4(resume_xml_string, 'lxml').findAll('canonskill')
+    contact_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
+    skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -75,7 +81,8 @@ def parse_optic_json(resume_xml_string):
         work_experiences=work_experiences,
         educations=educations,
         skills=skills,
-        addresses=addresses
+        addresses=addresses,
+        talent_pool_ids={'add': None}
     )
     return candidate
 
@@ -126,10 +133,12 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
+            # CanidateService currently extracts extensions so we do not need to invoke that
+            # validator as long as we send a 'sane' string.
             raw_phone = p.text.strip()
-            formatted_phone = format_phone_number(raw_phone)
-            if formatted_phone:
-                output.append({'value': formatted_phone or raw_phone})
+            if raw_phone:
+                output.append({'value': raw_phone})
+
     return output
 
 
@@ -150,18 +159,30 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Position title
             position_title = _tag_text(employement, 'title')
             # Start date
-            experience_start_date = get_date_from_date_tag(employement, 'start')
+            start_date_str = get_date_from_date_tag(employement, 'start')
+            start_month, start_year = None, None
+            if start_date_str:
+                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DT_FORMAT)
+                start_year = start_datetime.year
+                start_month = start_datetime.month
+
             is_current_job = False
             # End date
-            experience_end_date = get_date_from_date_tag(employement, 'end')
+            end_date_str = get_date_from_date_tag(employement, 'end')
+            end_month, end_year = None, None
+            if end_date_str:
+                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DT_FORMAT)
+                end_month = end_datetime.month
+                end_year = end_datetime.year
+
             try:
                 today_date = datetime.date.today().isoformat()
-                is_current_job = True if today_date == experience_end_date else False
+                is_current_job = True if today_date == end_date_str else False
             except ValueError:
                 pass
                 # current_app.logger.error(
                 #     "parse_xml: Received exception getting date for candidate end_date %s",
-                #      experience_end_date)
+                #      end_date_str)
             # Company's address
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
@@ -171,8 +192,10 @@ def parse_candidate_experiences(bg_experience_xml_list):
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
                                                                           position_title or '',
-                                                                          experience_start_date,
-                                                                          experience_end_date)
+                                                                          start_month,
+                                                                          start_year,
+                                                                          end_month,
+                                                                          end_year)
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employement, 'description', remove_questions=True) or ''
@@ -181,25 +204,27 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     existing_experience_description = output[existing_experience_list_order - 1][
-                        'work_experience_bullets']
+                        'bullets']
                     existing_experience_description.append(dict(
-                        text=bullet_description
+                        description=bullet_description
                     ))
                 else:
                     candidate_experience_bullets.append(dict(
-                        text=bullet_description
+                        description=bullet_description
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
+                    bullets=candidate_experience_bullets,
                     city=company_city,
-                    state=company_state,
-                    end_date=experience_end_date,
                     country=company_country,
-                    company=organization,
-                    role=position_title,
+                    end_month=end_month,
+                    end_year=end_year,
                     is_current=is_current_job,
-                    start_date=experience_start_date,
-                    work_experience_bullets=candidate_experience_bullets
+                    organization=organization,
+                    position=position_title,
+                    start_month=start_month,
+                    start_year=start_year,
+                    state=company_state,
                 ))
     return output
 
@@ -241,7 +266,7 @@ def parse_candidate_educations(bg_educations_xml_list):
                     {
                         'type': _tag_text(school, 'degree'),
                         'title': _tag_text(school, 'major'),
-                        'degree_bullets': []
+                        'bullets': []
                     }
                 ],
             ))
@@ -336,29 +361,15 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
     return None
 
 
-def is_experience_already_exists(candidate_experiences, organization, position_title, start_date,
-                                 end_date):
+def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,
+                                 start_year, end_month, end_year):
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['company'] or '') == organization and\
-                        (experience['role'] or '') == position_title and\
-                        (experience['start_date'] == start_date and
-                         experience['end_date'] == end_date):
+        if (experience['organization'] or '') == organization and\
+                        (experience['position'] or '') == position_title and\
+                        (experience['start_month'] == start_month and
+                         experience['start_year'] == start_year and
+                         experience['end_month'] == end_month and
+                         experience['end_year'] == end_year):
             return i + 1
     return False
-
-def sanitize_zip_code(zip_code):
-    """Folowing expression will validate US zip codes e.g 12345 and 12345-6789"""
-    zip_code = str(zip_code)
-    # Dashed and Space filtered Zip Code
-    zip_code = ''.join(char for char in zip_code if char not in ' -')
-    if zip_code and not ''.join(char for char in  zip_code if not char.isdigit()):
-        if len(zip_code) <= 5:
-            zip_code = zip_code.zfill(5)
-        elif len(zip_code) <= 9:
-            zip_code = zip_code.zfill(5)
-        else:
-            zip_code = ''
-        if zip_code:
-            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-    return None

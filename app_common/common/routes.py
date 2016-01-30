@@ -183,6 +183,7 @@ class ResumeApi(object):
     URL_PREFIX = _get_url_prefix(VERSION)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     PARSE = 'parse_resume'
+    BATCH = 'batch'
 
 
 class ResumeApiUrl(object):
@@ -194,6 +195,8 @@ class ResumeApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
+    BATCH_URL = API_URL % ResumeApi.BATCH
+    BATCH_PROCESS = '{}/{}'.format(BATCH_URL, '<int:user_id>')
 
 
 class UserServiceApiWords(object):
