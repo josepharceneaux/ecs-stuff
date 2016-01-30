@@ -153,7 +153,11 @@ $easing--slow:   .5s ease;
 // -----
 
 $misc--sidebarWidth: 5em;
-$misc--topNavMenuHeight: 2.65em;
+$misc--topNavMenuHeight: 2.8em;
+$misc--topNavHeaderHeight--small: 5.4em;
+$misc--topNavHeaderHeight--tiny: 3.9em;
+$misc--topNavHeight--small: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--small;
+$misc--topNavHeight--tiny: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--tiny;
 
 // -----
 // Animations

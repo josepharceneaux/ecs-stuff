@@ -2,9 +2,22 @@
 // Modules / Navigation
 // ---------------------------------------------------
 
-#top-nav {
-  position:relative;
-  width:100%;
+.topnav-wrapper {
+  position: relative;
+  width: 100%;
+  height: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    height: $misc--topNavHeight--small;
+  }
+}
+
+.topnav {
+  position: fixed;
+  z-index: $z-index--1;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .navigation {
