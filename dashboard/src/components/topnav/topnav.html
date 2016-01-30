@@ -54,12 +54,22 @@
             </nav>
         </div>
         <div class="navigation__items">
-            <a ui-sref="dashboard" class="navigation__link">Dashboards</a>
+            <div class="js--mobileMenu js--topNavItem navigation__item">
+                Dashboards
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--announcements"></span> Dashboards
+                    </header>
+                    <a ui-sref="dashboard">Candidates</a>
+                    <a ui-sref="dashboard">Pipelines</a>
+                    <a ui-sref="dashboard">Contributors</a>
+                </nav>
+            </div>
             <div class="js--mobileMenu js--topNavItem navigation__item">
                 Pipelines
                 <nav class="js--mobileMenu-target navigation__subMenu">
                     <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Recent Pipelines
+                        <span class="icon--pipeline"></span> Recent Pipelines
                     </header>
                     <a href="/pipelines/">Java Developer</a>
                     <a href="/pipelines/javap-developer">Full Stack Engineer</a>

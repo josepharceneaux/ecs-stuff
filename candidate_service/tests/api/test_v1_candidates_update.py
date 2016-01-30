@@ -9,7 +9,8 @@ from candidate_service.common.models.candidate import CandidateEmail
 from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
-    response_info, request_to_candidate_resource, request_to_candidates_resource, AddUserRoles
+    response_info, request_to_candidate_resource, request_to_candidates_resource, AddUserRoles,
+    request_to_candidate_search_resource
 )
 # Candidate sample data
 from candidate_sample_data import (
@@ -17,6 +18,7 @@ from candidate_sample_data import (
     candidate_educations, candidate_experience, candidate_work_preference, candidate_emails,
     candidate_phones, candidate_areas_of_interest
 )
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## Candidate ########################
@@ -38,7 +40,8 @@ def test_update_candidate_outside_of_domain(access_token_first, user_first, tale
     data = {'candidates': [{'id': candidate_id, 'first_name': 'moron'}]}
     update_resp = request_to_candidates_resource(access_token_second, 'patch', data)
     print response_info(update_resp)
-    assert update_resp.status_code == 403 and update_resp.json()['error']['code'] == 3012
+    assert update_resp.status_code == 403
+    assert update_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 # def test_update_existing_candidate(access_token_first, user_first, talent_pool):
@@ -95,7 +98,8 @@ def test_update_candidate_without_id(access_token_first, user_first, talent_pool
     resp = request_to_candidates_resource(access_token_first, 'patch', data)
 
     print response_info(resp)
-    assert resp.status_code == 400 and resp.json()['error']['code'] == 3000
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_data_validations(access_token_first, user_first, talent_pool):
@@ -159,10 +163,8 @@ def test_update_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     Test: Attempt to update few candidates, one of which will have bad data
     Expect: 400; no record should be added to the db
     """
-    AddUserRoles.add_get_edit(user=user_first)
-
     # Create Candidate
-    # data = generate_single_candidate_data([talent_pool.id]) + candidate's emails
+    AddUserRoles.add_get_edit(user=user_first)
     email_1, email_2 = fake.safe_email(), fake.safe_email()
     data = {'candidates': [
         {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
@@ -172,7 +174,7 @@ def test_update_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     candidate_ids = [candidate['id'] for candidate in create_resp['candidates']]
 
     # Retrieve both candidates
-    get_candidates_resp = request_to_candidates_resource(
+    get_candidates_resp = request_to_candidate_search_resource(
             access_token_first, 'get', data={'candidate_ids': candidate_ids}
     ).json()['candidates']
 
@@ -189,7 +191,8 @@ def test_update_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     print response_info(update_resp)
 
     # Candidates' emails must remain unchanged
-    assert update_resp.status_code == 400 and update_resp.json()['error']['code'] == 3072
+    assert update_resp.status_code == 400
+    assert update_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
     assert CandidateEmail.get_by_id(_id=email_1_id).address == email_1
     assert CandidateEmail.get_by_id(_id=email_2_id).address == email_2
 
@@ -262,7 +265,8 @@ def test_update_an_existing_address(access_token_first, user_first, talent_pool)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
+    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']
     candidate_address = candidate_dict['addresses'][0]
 
     # Update one of Candidate's addresses
@@ -367,8 +371,8 @@ def test_add_new_education(access_token_first, user_first, talent_pool):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
 
     can_educations_count = len(candidate_dict['educations'])
 
@@ -378,8 +382,8 @@ def test_add_new_education(access_token_first, user_first, talent_pool):
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
-    updated_can_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    updated_can_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
     updated_educations = updated_can_dict['educations']
 
     can_ed_from_data = data['candidates'][0]['educations'][0]
@@ -421,7 +425,7 @@ def test_update_education_of_a_diff_candidate(access_token_first, user_first, ta
     updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == 3050
+    assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
 
 
 def test_update_education_primary_info(access_token_first, user_first, talent_pool):
@@ -508,18 +512,17 @@ def test_add_candidate_experience(access_token_first, user_first, talent_pool):
     """
     Test:   Add a CandidateExperience to an existing Candidate. Number of Candidate's
             CandidateExperience must increase by 1.
-    Expect:
+    Expect: 200
     """
-    AddUserRoles.add_get_edit(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_get_edit(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
 
     candidate_experience_count = len(candidate_dict['work_experiences'])
 
@@ -529,12 +532,10 @@ def test_add_candidate_experience(access_token_first, user_first, talent_pool):
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
-    updated_can_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    updated_can_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
     can_experiences = updated_can_dict['work_experiences']
-
     can_experiences_from_data = data['candidates'][0]['work_experiences']
-
     assert candidate_id == updated_can_dict['id']
     assert isinstance(can_experiences, list)
     assert can_experiences[0]['organization'] == can_experiences_from_data[0]['organization']
@@ -581,8 +582,8 @@ def test_add_experience_bullet(access_token_first, user_first, talent_pool):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
 
     can_exp_count = len(candidate_dict['work_experiences'])
     can_exp_bullet_count = len(candidate_dict['work_experiences'][0]['bullets'])
@@ -658,7 +659,8 @@ def test_add_multiple_work_preference(access_token_first, user_first, talent_poo
     data = candidate_work_preference(candidate_id)
     updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 400 and updated_resp.json()['error']['code'] == 3132
+    assert updated_resp.status_code == 400
+    assert updated_resp.json()['error']['code'] == custom_error.WORK_PREF_EXISTS
 
 
 def test_update_work_preference(access_token_first, user_first, talent_pool):

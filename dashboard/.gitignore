@@ -80,3 +80,11 @@ src/core/icon-font/gettalent-icons.ttf
 src/core/icon-font/gettalent-icons.woff
 src/core/icon-font/gettalent-icons-gallery.css
 
+# until webapp is moved over to its own repo
+dashboard/src/core/icon-font/gettalent-icons.eot
+dashboard/src/core/icon-font/gettalent-icons.html
+dashboard/src/core/icon-font/gettalent-icons.scss
+dashboard/src/core/icon-font/gettalent-icons.ttf
+dashboard/src/core/icon-font/gettalent-icons.woff
+dashboard/src/core/icon-font/gettalent-icons-gallery.css
+

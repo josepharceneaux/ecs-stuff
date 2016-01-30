@@ -3,19 +3,8 @@
 // ---------------------------------------------------
 
 #top-nav {
-  position:fixed;
+  position:relative;
   width:100%;
-  top:0px;
-  left:0px;
-  z-index:2000;
-}
-
-.view__sidebar {
-  position:fixed;
-  top:0px;
-  left:0px;
-  margin-top:118px;
-  z-index:500;
 }
 
 .navigation {
