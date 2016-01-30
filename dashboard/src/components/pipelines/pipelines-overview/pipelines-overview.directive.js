@@ -277,7 +277,7 @@
                 query: {
                     filter: '',
                     order: 'name',
-                    limit: 10,
+                    limit: 15,
                     page: 1
                 },
                 pipelines: {

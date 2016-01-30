@@ -58,7 +58,7 @@
             <!-- Top Pipelines Table -->
             <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
 
-                <md-card flex class="md-margin">
+                <md-card flex="initial" class="md-margin">
                     <md-card-content>
                         <md-toolbar class="md-table-toolbar md-default">
                             <div class="md-toolbar-tools">
@@ -75,7 +75,7 @@
                             </div>
                         </md-toolbar>
 
-                        <md-table-container>
+                        <md-table-container class="md-margin">
                             <table md-table md-progress="vm.promise">
                                 <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
                                 <tr md-row>
@@ -102,7 +102,7 @@
 
                         <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
                                              md-page-select md-boundary-links
-                                             md-on-paginate="vm.logPagination"></md-table-pagination>
+                                             md-on-paginate="vm.logPagination" class="md-margin"></md-table-pagination>
                     </md-card-content>
                 </md-card>
             </div>

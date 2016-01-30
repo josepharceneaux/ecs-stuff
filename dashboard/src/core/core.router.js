@@ -22,6 +22,9 @@
                 views: {
                     content: {
                         template: '<gt-login></gt-login>'
+                    },
+                    'title': {
+                        template: '<title>GetTalent | Login To Your Account</title>'
                     }
                 }
             })
@@ -31,7 +34,10 @@
                 url: '/forgot-password',
                 views: {
                     content: {
-                        template: '<gt-forgot-password></gt-forgot-password'
+                        template: '<gt-forgot-password></gt-forgot-password>'
+                    },
+                    'title': {
+                        template: '<title>GetTalent | Forgot Password</title>'
                     }
                 }
             })
@@ -42,6 +48,9 @@
                 views: {
                     content: {
                         template: '<gt-reset-password></gt-reset-password>'
+                    },
+                    'title': {
+                        template: '<title>GetTalent | Reset Your Password</title>'
                     }
                 }
             })
@@ -158,6 +167,11 @@
                 redirectTo: 'dashboard.overview',
                 ncyBreadcrumb: {
                     label: 'Dashboard'
+                },
+                views: {
+                    'title': {
+                        template: '<title>GetTalent | Login To Your Account</title>'
+                    }
                 }
             })
             .state('dashboard.overview', {
@@ -165,6 +179,9 @@
                 views: {
                     '@site': {
                         template: '<gt-dashboard-overview></gt-dashboard-overview>'
+                    },
+                    'title': {
+                        template: '<title>GetTalent | Login To Your Account</title>'
                     }
                 },
                 ncyBreadcrumb: {
@@ -176,6 +193,9 @@
                 views: {
                     '@site': {
                         template: '<gt-dashboard-customize></gt-dashboard-customize>'
+                    },
+                    'title': {
+                        template: '<title>GetTalent | Login To Your Account</title>'
                     }
                 }
             })
@@ -439,6 +459,9 @@
                 views: {
                     '@site': {
                         template: '<gt-pipelines></gt-pipelines>'
+                    },
+                    'title': {
+                        template: '<title>Pipelines | GetTalent</title>'
                     }
                 }
             })
@@ -447,6 +470,9 @@
                 views: {
                     '@pipelines': {
                         template: '<gt-pipelines-overview></gt-pipelines-overview>'
+                    },
+                    'title': {
+                        template: '<title>Pipelines in Talent Pool | GetTalent</title>'
                     }
                 },
                 ncyBreadcrumb: {
@@ -459,6 +485,9 @@
                 views: {
                     '@pipelines': {
                         template: '<gt-pipelines-manage></gt-pipelines-manage>'
+                    },
+                    'title': {
+                        template: '<title>Manage Your Pipelines | GetTalent</title>'
                     }
                 }
             })
@@ -507,6 +536,9 @@
                 views: {
                     '@pipelines': {
                         template: '<gt-smart-lists></gt-smart-lists>'
+                    },
+                    'title': {
+                        template: '<title>Smartlists | GetTalent</title>'
                     }
                 }
             })
@@ -527,6 +559,9 @@
                 views: {
                     '@pipelines': {
                         template: '<gt-smart-list-details></gt-smart-list-details>'
+                    },
+                    'title': {
+                        template: '<title>Smartlist Detail | GetTalent</title>'
                     }
                 }
             })
@@ -658,13 +693,21 @@
             })
             .state('talentPools.dashboard', {
                 abstract: true,
-                url: '/dashboard'
+                url: '/dashboard',
+                views: {
+                    'title': {
+                        template: '<title>Dashboard - Overview | GetTalent</title>'
+                    }
+                }
             })
             .state('talentPools.dashboard.candidates', {
                 url: '/candidates',
                 views: {
                     '@site': {
                         template: '<gt-talent-pools-dashboard-candidates></gt-talent-pools-dashboard-candidates>'
+                    },
+                    'title': {
+                        template: '<title>Dashboard - Overview | GetTalent</title>'
                     }
                 }
             })
