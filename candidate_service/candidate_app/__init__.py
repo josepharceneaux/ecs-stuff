@@ -252,6 +252,7 @@ try:
     # ****** OPENWEB Request *******
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
+
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidatePreferenceResource,
                      CandidateApi.CANDIDATE_PREFERENCES,

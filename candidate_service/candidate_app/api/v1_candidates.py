@@ -51,7 +51,7 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
-from candidate_service.modules.talent_openweb import match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict
+from candidate_service.modules.talent_openweb import match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict, find_in_openweb_by_email
 import logging
 
 class CandidatesResource(Resource):
@@ -1149,12 +1149,16 @@ class CandidateOpenWebResource(Resource):
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/openweb?url=http://...
-        Function will return requested Candidate url from openweb endpoint
+        Function will return requested Candidate url, email from openweb endpoint
         """
         # Authenticated user
         authed_user = request.user
         url = request.args.get('url')
-        find_candidate = match_candidate_from_openweb(url, authed_user)
+        email = request.args.get('email')
+        if url:
+            find_candidate = match_candidate_from_openweb(url, authed_user)
+        elif email:
+            find_candidate = find_in_openweb_by_email(email)
         candidate = None
 
         if int(find_candidate[0]) == 1:
@@ -1163,9 +1167,9 @@ class CandidateOpenWebResource(Resource):
         elif int(find_candidate[0]) == 0:
             try:
                 candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate[1])}
-            except Exception:
+            except Exception as e:
                 logging.exception("Converting candidate from dice to gT went wrong")
-                raise InvalidUsage(error_message="Something went wrong")
+                raise InvalidUsage(error_message=e.message)
         else:
             raise NotFoundError(error_message="Candidate not found")
 

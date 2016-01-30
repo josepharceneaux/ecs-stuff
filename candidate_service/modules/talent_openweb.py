@@ -13,25 +13,41 @@ import requests, datetime
 SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
 
 
-def query_openweb(url):
+def query_openweb(url, type):
     """
     Function search openweb endpoint for social network url
     :param url: social-network-url: string
+    :param type: email=1 or url=0
     :return: json object
     """
     try:
-        openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json", params=dict(apiKey=SOCIALCV_API_KEY, webProfile=url))
+        if type == 0:
+            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json", params=dict(apiKey=SOCIALCV_API_KEY, webProfile=url))
+        elif type == 1:
+            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json", params=dict(apiKey=SOCIALCV_API_KEY, email=url))
+
     except Exception as e:
         return 0
 
     if openweb_response.status_code == 404:
-        openweb_crawl(url)
+        if type == 0:
+            openweb_crawl(url)
         raise NotFoundError(error_message="Candidate not found")
 
     if openweb_response.status_code != 200:
         raise InternalServerError(error_message="Response error")
 
     return openweb_response
+
+
+def find_in_openweb_by_email(candidate_email):
+    """
+    Function search openweb endpoint for email address
+    :param candidate_email string
+    :return: json object
+    """
+    openweb_response = query_openweb(candidate_email, 1).json()
+    return [0, openweb_response]
 
 
 def match_candidate_from_openweb(url, auth_user):
@@ -41,7 +57,7 @@ def match_candidate_from_openweb(url, auth_user):
     :param auth_user:
     :return: candidate sql query
     """
-    openweb_response = query_openweb(url).json()
+    openweb_response = query_openweb(url, 0).json()
     urls = []
     if openweb_response:
         for candidate_url in openweb_response['webProfiles']:
@@ -108,9 +124,11 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
     city = social_profile_location_dict.get('town') or dice_profile_location_dict.get('municipality')
     state = social_profile_location_dict.get('text')
     if state:
-        state = state.split(',')
-        if len(state):
-            state = state[1]
+        try:
+            state = state.split(',')[1]
+        except IndexError:
+            state = state
+
     zip_code = dice_profile_location_dict.get('postalCode')
 
     # Get candidate's social network profiles
