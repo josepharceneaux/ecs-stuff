@@ -21,12 +21,13 @@
                     </div>
 
                     <div layout="row" layout-align="center center" ng-if="vm.errorMessage">
-                        <span class="login-error-message">{{vm.errorMessage}}</md-text-float>
+                        <span class="error-message">{{vm.errorMessage}}</span>
                     </div>
 
                     <form name="loginForm" ng-submit="vm.login()">
                          <md-input-container md-no-float class="md-block">
                             <input required
+                                autofocus
                                 type="email"
                                 name="username" 
                                 placeholder="User Name" 
