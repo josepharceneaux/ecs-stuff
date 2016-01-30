@@ -77,3 +77,38 @@ def is_valid_url(url):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
 
+
+def parse_openweb_date(openweb_date):
+    """
+    :param openweb_date:
+    :return: datetime.date | None
+    """
+    from datetime import date
+
+    date_obj = None
+    if isinstance(openweb_date, basestring):
+        try:  # If string, try to parse as ISO 8601
+            import dateutil.parser
+
+            date_obj = dateutil.parser.parse(openweb_date)
+        except ValueError:
+            date_obj = None
+        if not date_obj:  # If fails, try to convert to int
+            try:
+                openweb_date = int(openweb_date) or None  # Sometimes the openweb_date is "0", which is invalid
+            except ValueError:
+                date_obj = None
+
+    if not date_obj and isinstance(openweb_date, int):  # If still not found, parse it as an int
+        try:
+            date_obj = date.fromtimestamp(openweb_date / 1000)
+        except ValueError:
+            date_obj = None
+
+    if date_obj and (date_obj.year > date.today().year + 2):  # Filters out any year 2 more than the current year
+        date_obj = None
+
+    if date_obj and (date_obj.year == 1970):  # Sometimes, it can't parse out the year so puts 1970, just for the hell of it
+        date_obj = None
+
+    return date_obj

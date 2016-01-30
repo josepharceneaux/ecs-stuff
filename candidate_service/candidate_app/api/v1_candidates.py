@@ -51,9 +51,8 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
-
-from candidate_service.modules.talent_openweb import find_candidate_from_openweb
-
+from candidate_service.modules.talent_openweb import match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict
+import logging
 
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
@@ -1155,12 +1154,22 @@ class CandidateOpenWebResource(Resource):
         # Authenticated user
         authed_user = request.user
         url = request.args.get('url')
-        find_candidate = find_candidate_from_openweb(url)
-        if find_candidate:
-            candidate = fetch_candidate_info(find_candidate)
-            return {'candidate': candidate}
+        find_candidate = match_candidate_from_openweb(url, authed_user)
+        candidate = None
+
+        if int(find_candidate[0]) == 1:
+            candidate = {'candidate': fetch_candidate_info(find_candidate[1])}
+
+        elif int(find_candidate[0]) == 0:
+            try:
+                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate[1])}
+            except Exception:
+                logging.exception("Converting candidate from dice to gT went wrong")
+                raise InvalidUsage(error_message="Something went wrong")
         else:
-            raise NotFoundError("Candidate not found", custom_error.CANDIDATE_NOT_FOUND)
+            raise NotFoundError(error_message="Candidate not found")
+
+        return candidate
 
 
 class CandidateViewResource(Resource):
