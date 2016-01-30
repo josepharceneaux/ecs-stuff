@@ -18,7 +18,7 @@
 
         var directive = {
             scope: {
-                error: '='
+                shakeTrigger: '='
             },            
             link: linkFunction
         };
@@ -27,14 +27,24 @@
 
         function linkFunction(scope, element, attrs) {
             
-            scope.$watch('error', function(newValue, oldValue) {
+            scope.$watch('shakeTrigger', function(newValue, oldValue) {
 
-                if (newValue === oldValue) return;
+                console.log('shakeTrigger Change', newValue);
 
-                console.log('change');
+                if (newValue === oldValue || newValue === false) {
+                    
+                    return;
 
-                $animate.addClass(element, 'shake', function() {
+                }
+
+                $animate.addClass(element, 'shake').then(function() {
+
+                    console.log('$animate.addClass callback');
+
                     $animate.removeClass(element, 'shake');
+
+                    scope.shakeTrigger = false;
+
                 });
             });
         }
