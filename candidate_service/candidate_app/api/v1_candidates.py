@@ -45,7 +45,7 @@ from candidate_service.common.models.user import DomainRole
 
 # Module
 from candidate_service.modules.talent_candidates import (
-    fetch_candidate_info, get_candidate_id_from_email_if_exists,
+    fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference
@@ -310,7 +310,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
+            candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -350,7 +350,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_email_if_exists(authed_user.id, candidate_email)
+            candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)

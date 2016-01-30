@@ -471,15 +471,15 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def get_candidate_id_from_email_if_exists(user_id, email):
+def get_candidate_id_from_email_if_exists_in_domain(user, email):
     """
     Function will get the domain-candidate associated with email and return its ID.
+    :type user: User
     :type email: str
     :return Candidate.id or None (if not found)
     """
-    email_obj = CandidateEmail.query.join(Candidate) \
-        .filter(Candidate.user_id == user_id) \
-        .filter(CandidateEmail.address == email).first()
+    email_obj = CandidateEmail.query.join(Candidate).join(User).filter(
+            User.domain_id == user.domain_id).filter(CandidateEmail.address == email).first()
     if not email_obj:
         raise NotFoundError(error_message='Candidate email not recognized: {}'.format(email),
                             error_code=custom_error.EMAIL_NOT_FOUND)
