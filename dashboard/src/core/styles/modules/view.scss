@@ -125,7 +125,7 @@
   overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
-    width: 3em;
+    width: $misc--sidebarParentMenuWidth;
     display: table;
     height: 100%;
     position: relative;
@@ -135,7 +135,7 @@
 
 .view__sidebar--active {
   @include helper--media($breakpoint--medium) {
-    width: 20em;
+    width: $misc--sidebarWidth;
   }
 }
 
@@ -163,7 +163,7 @@
 
   &.view__sidebar--active {
     @include helper--media($breakpoint--medium) {
-      width: 20em;
+      width: $misc--sidebarWidth;
     }
   }
 
@@ -215,12 +215,12 @@
 
     @include helper--media($breakpoint--full) {
       position: static;
-      width: 20em;
+      width: $misc--sidebarWidth;
     }
 
     .view__sidebar__wrapper--feed {
       @include helper--media($breakpoint--medium) {
-        width: 20em;
+        width: $misc--sidebarWidth;
       }
     }
   }
