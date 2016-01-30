@@ -5,6 +5,7 @@ import json
 from candidate_service.common.models.db import db
 from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.email_marketing import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
@@ -258,3 +259,11 @@ def validate_and_format_data(request_data):
         if key.startswith('cf-'):
             request_vars[key] = value
     return request_vars
+
+def is_valid_email_client(client_id):
+    """
+    Validate if client id is in the system
+    :param client_id: int
+    :return: string: email client name
+    """
+    return db.session.query(EmailClient.name).filter(EmailClient.id == int(client_id)).first()

@@ -15,19 +15,19 @@ from candidate_service.common.models.db import db
 from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists, is_valid_email_client
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
     candidates_resource_schema_get, resource_schema_preferences
 )
-from jsonschema import validate, FormatChecker
+from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 
 # Error handling
-from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
+from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError, UnauthorizedError, InternalServerError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Models
@@ -52,7 +52,8 @@ from candidate_service.modules.talent_candidates import (
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict, find_in_openweb_by_email
-import logging
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
+import logging, json
 
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
@@ -133,8 +134,8 @@ class CandidatesResource(Resource):
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_post,
                      format_checker=FormatChecker())
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        except ValidationError as e:
+            raise InvalidUsage(error_message="Schema validation error: %s" % e.message, error_code=custom_error.INVALID_INPUT)
 
         candidates = body_dict.get('candidates')
 
@@ -1174,6 +1175,89 @@ class CandidateOpenWebResource(Resource):
             raise NotFoundError(error_message="Candidate not found")
 
         return candidate
+
+class CandidateClientEmailCampaignResource(Resource):
+    decorators = [require_oauth()]
+
+    def post(self, **kwargs):
+        """ POST /web/api/client_email_campaigns
+            input:
+             {
+                'candidates': [{candidateObject1}, {candidateObject2}, ...],
+                'email_subject': 'Email Subject',
+                'email_from': 'Samuel L. Jackson',
+                'email_reply_to': 'amir@gettalent.com',
+                'email_body_html': '<html><body>Email Body</body></html>',
+                'email_body_text': 'Plaintext part of email goes here, if any',
+                'email_client_id': int,
+                'sent_time': datetime,
+             }
+
+        Function will create a list, email_campaign, email_campaign_send, and a url_conversion
+
+        :return:    email-campaign-send id for each candidate => [int]
+        """
+        authed_user = request.user
+        body_dict = request.get_json(force=True)
+        if not any(body_dict):
+            raise InvalidUsage(error_message="JSON body cannot be empty.")
+
+        candidates_list = body_dict.get('candidates')
+        email_subject = body_dict.get('email_subject', 'No Subject')
+        email_from = body_dict.get('email_from')
+        email_reply_to = body_dict.get('email_reply_to')
+        email_body_html = body_dict.get('email_body_html')
+        email_body_text = body_dict.get('email_body_text')
+        email_client_id = body_dict.get('email_client_id')
+        send_time = body_dict.get('sent_time', 0)
+
+        if not email_from or not email_reply_to or not email_client_id or not candidates_list:
+            raise InvalidUsage(error_message="Fields are missing.")
+
+        if not isinstance(candidates_list, list):
+            raise InvalidUsage(error_message="Candidates must be a list.")
+
+        candidate_ids = [candidate['id'] for candidate in body_dict.get('candidates')]
+        if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
+            raise UnauthorizedError(error_message="Candidates do not belong to logged-in user")
+
+        email_client_name = is_valid_email_client(email_client_id)
+        if not email_client_name:
+            raise InvalidUsage(error_message="Email client is not supported.")
+
+        campaign_name = 'Campaign %s %s' % (email_subject, email_client_name[0])
+        list_name = 'List %s' % campaign_name
+
+        smartlist_object = {
+            "name": list_name,
+            "candidate_ids": candidate_ids
+        }
+
+        created_smartlist = create_smartlist_from_api(smartlist_object, access_token=request.headers.get('authorization'))
+
+        if not created_smartlist or not created_smartlist.get('smartlist'):
+            raise InternalServerError(error_message="Could not create smartlist")
+        else:
+            created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
+
+        # create campaign
+        email_campaign_object = {
+            "email_campaign_name": campaign_name,
+            "email_subject": email_subject,
+            "email_from": email_from,
+            "email_reply_to": email_reply_to,
+            "email_body_html": email_body_html,
+            "email_body_text": email_body_text,
+            "email_client_id": email_client_id,
+            "list_ids": [int(created_smartlist_id)]
+        }
+        try:
+            email_campaign_created = create_campaign_from_api(email_campaign_object, access_token=request.headers.get('authorization'))
+            email_campaign_send_created = create_campaign_send_from_api(email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
+        except Exception as e:
+            raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
+
+        return email_campaign_send_created
 
 
 class CandidateViewResource(Resource):

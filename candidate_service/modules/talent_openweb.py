@@ -159,7 +159,7 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
                 social_network_id = new_social_network.id
                 logger.info("Auto-created social_network, id=%s, homepage=%s", social_network_id, social_network_homepage)
 
-            social_networks.append({'id': social_network_id, 'url': info_dict.get('url')})
+            social_networks.append({'profile_url': info_dict.get('url'), 'name': social_network_name})
 
     # Get CandidateExperience objects from OpenWeb and Dice dicts
 
@@ -183,10 +183,12 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         if history_dict.get('description'):
             candidate_experience_bullets.append(dict(text=history_dict.get('description')))
 
-        work_experiences.append(dict(company=history_dict.get('company'),
-                                     role=history_dict.get('jobTitle'),
-                                     start_date=datetime.date(year=start_year, month=start_month or 1, day=1).isoformat() if start_year else None,
-                                     end_date=datetime.date(year=end_year, month=end_month or 1, day=1).isoformat() if end_year else None,
+        work_experiences.append(dict(organization=history_dict.get('company'),
+                                     position=history_dict.get('jobTitle'),
+                                     start_year=start_year,
+                                     end_year=end_year,
+                                     start_month=start_month,
+                                     end_month=end_month,
                                      is_current=i == 0,  # Assume the very first element is the current one
                                      bullets=candidate_experience_bullets))
     employment_history_list = dice_profile_dict.get('employmentHistoryList') or []
@@ -197,15 +199,17 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
             # using TalentCore._split_description
             candidate_experience_bullets.append(dict(text=employment_dict['description']))
 
-        start_year = int(employment_dict.get('startYear', 0)) or None
-        start_month = int(employment_dict.get('startMonth', 0)) or None
-        end_year = int(employment_dict.get('endYear', 0)) or None
-        end_month = int(employment_dict.get('endMonth', 0)) or None
+        start_year = int(employment_dict.get('startYear', 1970)) or 1970
+        start_month = int(employment_dict.get('startMonth', 1)) or 1
+        end_year = int(employment_dict.get('endYear', 1970)) or 1970
+        end_month = int(employment_dict.get('endMonth', 1)) or 1
 
-        work_experiences.append(dict(company=employment_dict.get('employerName'),
-                                     role=employment_dict.get('jobTitle'),
-                                     start_date=datetime.date(year=start_year, month=start_month or 1, day=1).isoformat() if start_year else None,
-                                     end_date=datetime.date(year=end_year, month=end_month or 1, day=1).isoformat() if end_year else None,
+        work_experiences.append(dict(organization=history_dict.get('company'),
+                                     position=history_dict.get('jobTitle'),
+                                     start_year=start_year,
+                                     end_year=end_year,
+                                     start_month=start_month,
+                                     end_month=end_month,
                                      bullets=candidate_experience_bullets))
 
     # Skills
@@ -276,7 +280,6 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
     universities_list.extend([education_dict.get('institution') for education_dict in dice_profile_dict_education_list])
     universities_list = filter(None, universities_list)  # Remove empty university names
     educations = [{'school_name': university_name,
-                   'degree_details': [],
                    'city': None,
                    'state': None,
                    'country': None} for university_name in universities_list]
@@ -288,9 +291,6 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         'city': city,
         'state': state,
         'zip_code': zip_code,
-        'po_box': None,
-        'latitude': latitude,
-        'longitude': longitude,
         'country': country_code_or_name,
         'is_default': True,
     }]
@@ -301,13 +301,13 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         'phones': [{'value': phone} for phone in phones],
         'addresses': addresses,
         'preferred_locations': preferred_locations,
-        'work_preferences': work_preferences,
+        'work_preference': work_preferences,
         'work_experiences': work_experiences,
         'educations': educations,
         'social_networks': social_networks,
         # 'military_services': candidate_military_services,
         'skills': skills,
-        'text_comments': text_comments,
+        # 'text_comments': text_comments,
         'openweb_id': social_profile_dict.get('id'),
         'dice_profile_id': dice_profile_dict.get('id')
     }
