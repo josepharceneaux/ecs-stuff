@@ -71,50 +71,47 @@ def update_users_group_id():
 
 def add_talent_pool():
     print "running: add_talent_pool()"
-    users = User.query.all()
-    for user in users:
-        talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id,
-                                                 owner_user_id=user.id).first()
-        if not talent_pool:
-            talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id,
-                                     name='default')
-            print "user_domain_id: {}, user_id: {}".format(user.domain_id, user.id)
-            db.session.add(talent_pool)
-            db.session.commit()
-
-            user_candidates = user.candidates
-            for candidate in user_candidates:
-                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
-                                                                talent_pool_id=talent_pool.id)
-                if not talent_pool_candidate:
-                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
-                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
-                                                       candidate_id=candidate.id))
-                    db.session.commit()
-        else:
-            user_candidates = user.candidates
-            for candidate in user_candidates:
-                talent_pool_candidate = TalentPoolCandidate.get(candidate_id=candidate.id,
-                                                                talent_pool_id=talent_pool.id)
-                if not talent_pool_candidate:
-                    print "talent_pool_id: {}, candidate_id: {}".format(talent_pool.id, candidate.id)
-                    db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id,
-                                                       candidate_id=candidate.id))
-                    db.session.commit()
-
-
-def add_talent_pool_group():
-    print "running: add_talent_pool_group()"
-    talent_pools = TalentPool.query.all()
-    user_groups = UserGroup.query.all()
-    for group in user_groups:
-        for pool in talent_pools:
-            pool_group = TalentPoolGroup.query.filter_by(talent_pool_id=pool.id,
-                                                         user_group_id=group.id).first()
-            if not pool_group:
-                print "talent_pool_id: {}, group_id: {}".format(pool.id, group.id)
-                db.session.add(TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id))
+    number_of_users = User.query.count()
+    start = 0
+    end = start + 20
+    users = User.query.slice(start, end).all()
+    while end < number_of_users + 20:
+        for user in users:
+            talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id, owner_user_id=user.id).first()
+            if not talent_pool:
+                print "TalentPool => user_id: {}, domain_id: {}".format(user.id, user.domain_id)
+                talent_pool = TalentPool(domain_id=user.domain_id, owner_user_id=user.id, name='default')
+                db.session.add(talent_pool)
                 db.session.commit()
+
+                for candidate in user.candidates:
+                    talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
+                    if not talent_pool_candidate:
+                        print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
+                        db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id, candidate_id=candidate.id))
+                        db.session.commit()
+            else:
+                for candidate in user.candidates:
+                    talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
+                    if not talent_pool_candidate:
+                        print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
+                        db.session.add(talent_pool_candidate)
+                        db.session.commit()
+        start += 20
+
+
+# def add_talent_pool_group():
+#     print "running: add_talent_pool_group()"
+#     talent_pools = TalentPool.query.all()
+#     user_groups = UserGroup.query.all()
+#     for group in user_groups:
+#         for pool in talent_pools:
+#             pool_group = TalentPoolGroup.query.filter_by(talent_pool_id=pool.id,
+#                                                          user_group_id=group.id).first()
+#             if not pool_group:
+#                 print "talent_pool_id: {}, group_id: {}".format(pool.id, group.id)
+#                 db.session.add(TalentPoolGroup(talent_pool_id=pool.id, user_group_id=group.id))
+#                 db.session.commit()
 
 # Staging: GetTalent
 # Prod: GetTalent, viacom, Kaiser, Kaiser Corporate, Dice, IT Job Boards, EFC, QC Technologies, HP. Geico, Dice Demore Account, DHI, ABC Demo
@@ -143,9 +140,9 @@ if __name__ == '__main__':
         add_talent_pool()
         print "completed: add_talent_pool()\ntime: {}".format(time.time() - time_4)
 
-        time_5 = time.time()
-        add_talent_pool_group()
-        print "completed: add_talent_pool_group()\ntime: {}".format(time.time() - time_5)
+        # time_5 = time.time()
+        # add_talent_pool_group()
+        # print "completed: add_talent_pool_group()\ntime: {}".format(time.time() - time_5)
         print "total time: {}".format(time.time() - start_time)
     except Exception as e:
         db.session.rollback()

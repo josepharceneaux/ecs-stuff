@@ -208,8 +208,7 @@ candidates_resource_schema_post = {
                             },
                             "travel_percentage": {
                                 # "id": "http://jsonschema.net/work_preference/travel_percentage",
-                                "type": ["string", "integer", "null"],
-                                "maxLength": 3,
+                                "type": ["integer", "null"],
                                 "minimum": 0, "maximum": 100
                             },
                             "security_clearance": {
@@ -363,31 +362,28 @@ candidates_resource_schema_post = {
                                             },
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_year",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 4,
-                                                "minimum": 1900, "maximum": CURRENT_YEAR,
+                                                "type": ["integer", "null"],
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/start_month",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 2,
-                                                "minimum": 1, "maximum": 12,
+                                                "type": ["integer", "null"],
+                                                "minimum": 1, "maximum": 12
                                             },
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_year",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 4,
-                                                "minimum": 1900, "maximum": CURRENT_YEAR,
+                                                "type": ["integer", "null"],
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/end_month",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 2,
-                                                "minimum": 1, "maximum": 12,
+                                                "type": ["integer", "null"],
+                                                "minimum": 1, "maximum": 12
                                             },
                                             "gpa": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/gpa_num",
-                                                "type": ["number", "null"]
+                                                "type": ["number", "null"],
+                                                "minimum": 0
                                             },
                                             "bullets": {
                                                 # "id": "http://jsonschema.net/educations/0/degrees/0/bullets",
@@ -492,26 +488,22 @@ candidates_resource_schema_post = {
                                 },
                                 "start_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 4,
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 4,
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/start_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 2,
+                                    "type": ["integer", "null"],
                                     "minimum": 1, "maximum": 12
                                 },
                                 "end_month": {
                                     # "id": "http://jsonschema.net/work_experiences/0/end_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 2,
+                                    "type": ["integer", "null"],
                                     "minimum": 1, "maximum": 12
                                 },
                                 "is_current": {
@@ -819,8 +811,7 @@ candidates_resource_schema_patch = {
                             },
                             "travel_percentage": {
                                 # "id": "http://jsonschema.net/candidates/0/work_preference/travel_percentage",
-                                "type": ["string", "integer", "null"],
-                                "maxLength": 3,
+                                "type": ["integer", "null"],
                                 "minimum": 0, "maximum": 100
                             },
                             "security_clearance": {
@@ -989,26 +980,22 @@ candidates_resource_schema_patch = {
                                             },
                                             "start_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_year",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 4,
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "type": ["integer", "null"],
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "start_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/start_month",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 2,
+                                                "type": ["integer", "null"],
                                                 "minimum": 1, "maximum": 12
                                             },
                                             "end_year": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_year",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 4,
-                                                "minimum": 1900, "maximum": CURRENT_YEAR
+                                                "type": ["integer", "null"],
+                                                "minimum": 1950, "maximum": CURRENT_YEAR
                                             },
                                             "end_month": {
                                                 # "id": "http://jsonschema.net/candidates/0/educations/0/degrees/0/end_month",
-                                                "type": ["string", "integer", "null"],
-                                                "maxLength": 2,
+                                                "type": ["integer", "null"],
                                                 "minimum": 1, "maximum": 12
                                             },
                                             "gpa": {
@@ -1129,26 +1116,22 @@ candidates_resource_schema_patch = {
                                 },
                                 "start_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 4,
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "end_year": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/end_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 4,
-                                    "minimum": 1900, "maximum": CURRENT_YEAR
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
                                 },
                                 "start_month": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/start_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 2,
+                                    "type": ["integer", "null"],
                                     "minimum": 1, "maximum": 12
                                 },
                                 "end_month": {
                                     # "id": "http://jsonschema.net/candidates/0/work_experiences/0/end_date",
-                                    "type": ["integer", "string", "null"],
-                                    "maxLength": 2,
+                                    "type": ["integer", "null"],
                                     "minimum": 1, "maximum": 12
                                 },
                                 "is_current": {
@@ -1293,7 +1276,7 @@ resource_schema_preferences = {
     "properties": {
         "frequency_id": {
             # "id": "http://jsonschema.net/frequency_id",
-            "type": "integer",
+            "type": "integer"
         }
     }
 }

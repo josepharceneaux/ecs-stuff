@@ -26,7 +26,7 @@ def change_hashing_format(password):
         return ''
     elif password.count('$') == 2:
         (digest_alg, salt, hash) = password.split('$')
-        return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
+        return 'pbkdf2:sha512:2000$%s$%s' % (salt, hash)
 
 
 def get_user(username, password, *args, **kwargs):
@@ -39,7 +39,7 @@ def get_user(username, password, *args, **kwargs):
     assert isinstance(username, basestring)
     assert isinstance(password, basestring)
     user = User.query.filter_by(email=username).first()
-    if user:
+    if user and not user.is_disabled:
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user
