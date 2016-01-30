@@ -645,7 +645,10 @@ class UserGroup(db.Model):
         for user_id in user_ids:
             user = User.query.get(user_id) or None
             if user and user.domain_id == user_group.domain_id:
-                user.user_group_id = user_group.id
+                if user.user_group_id == user_group.id:
+                    raise InvalidUsage("User %s already belongs to user group %s" % (user_id, user_group.id))
+                else:
+                    user.user_group_id = user_group.id
             else:
                 raise InvalidUsage(error_message="User: %s doesn't exist or either it doesn't belong to same Domain "
                                                  "%s as user group" % (user_id, user_group.domain_id))
