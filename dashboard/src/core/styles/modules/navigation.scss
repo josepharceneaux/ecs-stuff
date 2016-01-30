@@ -249,7 +249,7 @@
   text-align: center;
 
   @include helper--media($breakpoint--medium) {
-    width: 2.25em;
+    width: $misc--sidebarParentMenuWidth;
     float: none;
     display:  table-cell;
     vertical-align: top;
