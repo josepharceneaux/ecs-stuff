@@ -3,9 +3,17 @@
 // ---------------------------------------------------
 
 
-md-list-item {
+.team-contributions {
   .md-avatar {
     width: 60px;
     height: 60px;
+  }
+  .md-display-5 {
+    font-size:15px;
+    margin-bottom:3px;
+  }
+  .md-display-6 {
+    font-size:12px;
+    color:#777;
   }
 }

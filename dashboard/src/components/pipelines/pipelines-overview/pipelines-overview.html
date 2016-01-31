@@ -158,7 +158,7 @@
 
                 <div flex="100" layout="column">
 
-                    <!-- Begin: Top Performing Campaigns -->
+                    <!-- Begin: Team Contributions -->
                     <md-card flex="grow" class="team-contributions">
                         <md-card-title flex="none">
                             <md-card-title-text>
@@ -171,16 +171,19 @@
                                 <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
                                     <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
                                     <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <span class="md-display-5">{{contributor.name}}</span>
+                                        <div>
+                                            <div class="md-display-5"><a href="">{{contributor.name}}</a></div>
+                                            <div class="md-display-6">{{contributor.team}}</div>
+                                        </div>
                                         <span class="md-display-1">{{contributor.value}}</span>
                                     </div>
                                 </md-list-item>
                             </md-list>
                         </md-card-content>
                     </md-card>
-                    <!-- End: Top Performing Campaigns -->
+                    <!-- End: Team Contributions -->
 
-                    <!-- Begin: Top Performing Campaigns -->
+                    <!-- Begin: Top Skills -->
                     <md-card flex>
                         <md-card-title>
                             <md-card-title-text>
@@ -197,7 +200,7 @@
                             </gt-bar-graph>
                         </md-content>
                     </md-card>
-                    <!-- End: Top Performing Campaigns -->
+                    <!-- End: Top Skills -->
 
 
                 </div>
