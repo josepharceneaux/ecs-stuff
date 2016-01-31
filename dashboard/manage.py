@@ -39,7 +39,11 @@ if args.deploy:
     os.chdir(python_bin_path)
 
     print 'Uploading to %s bucket' % env
-    command = 'aws s3 sync %(build_dir_path)s s3://%(s3_bucket_name)s.gettalent.com --region us-east-1 --acl public-read' % locals()
+    if env == 'demo':
+        region = 'us-west-1'
+    else:
+        region = 'us-east-1'
+    command = 'aws s3 sync %(build_dir_path)s s3://%(s3_bucket_name)s.gettalent.com --region %(region)s --acl public-read' % locals()
     print ' > ', command
     call(command, shell=True)
 
