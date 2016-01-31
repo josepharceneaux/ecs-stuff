@@ -15,13 +15,15 @@ from candidate_sample_data import (
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 from candidate_service.common.models.candidate import CandidateEmail
+# Custom errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 class CommonData(object):
     @staticmethod
-    def data(talent_pool):
+    def data(_talent_pool):
         return {'candidates': [{'emails': [{'address': fake.safe_email()}],
-                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
+                                'talent_pool_ids': {'add': [_talent_pool.id]}}]}
 
 
 ######################## Candidate ########################
@@ -35,7 +37,8 @@ def test_create_candidate_without_talent_pools(access_token_first, user_first):
     data = {'candidates': [{'first_name': 'cher'}]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(response=create_resp)
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_create_candidate_successfully(access_token_first, user_first, talent_pool):
@@ -89,7 +92,7 @@ def test_create_an_existing_candidate(access_token_first, user_first, talent_poo
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
     assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == 3013
+    assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
 
 def test_create_candidate_with_missing_candidates_keys(access_token_first, user_first, talent_pool):
@@ -102,7 +105,8 @@ def test_create_candidate_with_missing_candidates_keys(access_token_first, user_
     data = {'first_name': fake.first_name()}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_update_candidate_via_post(access_token_first, user_first, talent_pool):
@@ -115,7 +119,8 @@ def test_update_candidate_via_post(access_token_first, user_first, talent_pool):
     data = {'candidates': [{'id': 5, 'emails': [{'address': fake.safe_email()}]}]}
     resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(resp)
-    assert resp.status_code == 400 and resp.json()['error']['code'] == 3000
+    assert resp.status_code == 400
+    assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_create_candidate_with_invalid_fields(access_token_first, user_first, talent_pool):
@@ -129,7 +134,8 @@ def test_create_candidate_with_invalid_fields(access_token_first, user_first, ta
                             'talent_pool_ids': {'add': [talent_pool.id]}}]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_create_candidates_in_bulk_with_one_erroneous_data(access_token_first, user_first, talent_pool):
@@ -148,7 +154,8 @@ def test_create_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
     db.session.commit()
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
     assert not CandidateEmail.get_by_address(email_address=email_1)
     assert not CandidateEmail.get_by_address(email_address=email_2)
 
@@ -287,7 +294,8 @@ def test_create_candidate_area_of_interest_outside_of_domain(access_token_second
     data = generate_single_candidate_data([talent_pool.id], domain_aoi)
     create_resp = request_to_candidates_resource(access_token_second, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 403 and create_resp.json()['error']['code'] == 3030
+    assert create_resp.status_code == 403
+    assert create_resp.json()['error']['code'] == custom_error.AOI_FORBIDDEN
 
 
 ######################## CandidateCustomField ########################
@@ -325,7 +333,8 @@ def test_create_candidate_custom_fields_outside_of_domain(access_token_second, t
     data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
     create_resp = request_to_candidates_resource(access_token_second, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 403 and create_resp.json()['error']['code'] == 3040
+    assert create_resp.status_code == 403
+    assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
 
 ######################## CandidateEducations ########################
@@ -420,7 +429,6 @@ def test_create_candidate_experience(access_token_first, user_first, talent_pool
     assert can_experiences[0]['organization'] == can_exp_data['organization']
     assert can_experiences[0]['position'] == can_exp_data['position']
     assert can_experiences[0]['city'] == can_exp_data['city']
-    assert can_experiences[0]['country'] == 'United States'
     assert can_experiences[0]['is_current'] == can_exp_data['is_current']
 
     can_exp_bullets = can_experiences[0]['bullets']
@@ -511,7 +519,8 @@ def test_create_candidate_without_email(access_token_first, user_first, talent_p
                             'talent_pool_ids': {'add': [talent_pool.id]}}]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3000
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
 def test_create_candidate_with_bad_email(access_token_first, user_first, talent_pool):
@@ -525,7 +534,8 @@ def test_create_candidate_with_bad_email(access_token_first, user_first, talent_
                             'talent_pool_ids': {'add': [talent_pool.id]}}]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(create_resp)
-    assert create_resp.status_code == 400 and create_resp.json()['error']['code'] == 3072
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
 
 def test_create_candidate_without_email_label(access_token_first, user_first, talent_pool):
