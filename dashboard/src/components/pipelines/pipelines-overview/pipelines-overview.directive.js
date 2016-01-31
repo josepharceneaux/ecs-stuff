@@ -65,14 +65,14 @@
                         tickLength: 0,
                         endOnTick: true,
                         title : {
-                            text: ""
+                            text: ''
                         },
                         labels: {
                             y: 24,
                             style: {
                                 color: '#fff',
                                 fontSize: '14px',
-                                fontWeight: "400"
+                                fontWeight: 400
                             },
                             formatter: function() {
                                 return Highcharts.dateFormat('%m/%e/%Y', this.value);
@@ -84,13 +84,13 @@
                         yDecimals: 2,
                         gridLineWidth: 1,
                         title : {
-                            text: ""
+                            text: ''
                         },
                         labels: {
                             style: {
                                 color: '#adadad',
                                 fontSize: '14px',
-                                fontWeight: "400"
+                                fontWeight: 400
                             },
                             formatter: function () {
                                 if (this.value != 0) {
@@ -121,21 +121,21 @@
                         padding: 12,
                         backgroundColor: '#FFFFFF',
                         borderWidth: 1,
-                        borderColor: "#cccccc",
+                        borderColor: '#cccccc',
                         itemStyle: {
-                          "fontWeight":"300"
+                          fontWeight: 300
                         },
                         navigation: {
                             style: {
-                                fontWeight: '400',
+                                fontWeight: 400,
                             }
                         }
                     },
                     tooltip: {
-                        borderWidth:0,
-                        borderRadius:0,
+                        borderWidth: 0,
+                        borderRadius: 0,
                         backgroundColor: null,
-                        shadow:false,
+                        shadow: false,
                         useHTML: true,
                         formatter: function() {
                             var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
@@ -193,8 +193,6 @@
                     }]
                 });
             });
-
-            
 
             vm.totalCandidates = {
                 graph: {}
