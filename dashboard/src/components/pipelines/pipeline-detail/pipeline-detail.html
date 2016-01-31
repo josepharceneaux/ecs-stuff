@@ -3,6 +3,7 @@
     <div layout="column" class="overview-graph">
 
         <div layout="column" layout-margin>
+
             <div hide layout="row">
                 <div ncy-breadcrumb></div>
             </div>
@@ -11,28 +12,32 @@
                 <ul class="breadcrumb">
                     <!-- ngRepeat: step in steps -->
                     <li>
-                       <a href="/dashboard">Google Drive Team</a>
+                        <a href="/dashboard">Google Drive Team</a>
                     </li>
                     <li>
-                        <a href="/pipelines">My Pipelines</a>
+                        <a href="/pipelines">Pipelines</a>
                     </li>
                     <li>
-                    <a href="/pipelines/2892365a"></a>
-                </li><!-- end ngRepeat: step in steps -->
+                        <a href="/pipelines/2892365a"></a>
+                    </li><!-- end ngRepeat: step in steps -->
                 </ul>
             </div>
             <!-- End: Navigation path -->
 
             <!-- Header -->
-            <md-content class="page-title gt-card module-padding" layout="row" layout-xs="column" layout-align="center center" >
+            <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
-                    <h2 class="md-title">Senior Java Engineer</h2>
+                    <h2 class="md-title">Senior Java Developer</h2>
+                    <div>Created by <a href="">Jason Provencher</a> on 10/22/2015</div>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="pipelines.pipeline.smartlists.create"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+
                 </div>
-            </md-content>
+            </md-card>
             <!-- End: Header -->
 
         </div>
