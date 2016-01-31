@@ -3,7 +3,8 @@
 // ---------------------------------------------------
 
 .overview-graph {
-  @include linear-gradient(to top, #f7f7f7, #efefef);
+  //background:#fff;
+  @include linear-gradient(to top, #ffffff, #efefef);
   .area-chart {
     background:transparent;
   }

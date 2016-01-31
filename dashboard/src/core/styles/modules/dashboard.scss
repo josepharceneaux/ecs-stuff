@@ -4,6 +4,9 @@
 
 .dashboard {
   background: darken(#373437, 5%);
+  md-content {
+    background:transparent;
+  }
   md-card {
     background: lighten(#373437,2%);
     border-right: 1px darken(#373437, 8%) solid;

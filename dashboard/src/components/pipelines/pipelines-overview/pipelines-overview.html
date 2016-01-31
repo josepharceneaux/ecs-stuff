@@ -1,12 +1,38 @@
 <section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
+    <md-content hide class="page-title-2 md-padding">
+        <div class="breadcrumbs2">My Pipelines</div>
+        <div class="md-padding" layout="row" layout-xs="column" layout-align="center center">
+            <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+            <div flex>
+                <h2 class="md-title">My Pipelines</h2>
+            </div>
+            <div class="page-title-menu">
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+            </div>
+        </div>
+    </md-content>
+
     <div layout="column" class="overview-graph">
 
         <div layout="column" layout-margin>
 
             <!-- Navigation path -->
             <div layout="row">
-                <div ncy-breadcrumb></div>
+                <div hide ncy-breadcrumb></div>
+                <div layout="row">
+                    <ul class="breadcrumb">
+                        <!-- ngRepeat: step in steps -->
+                        <li>
+                            <a href="/dashboard">Google Drive Team</a>
+                        </li>
+                        <li>
+                            <a href="/pipelines"></a>
+                        </li>
+                    </ul>
+                </div>
             </div>
             <!-- End: Navigation path -->
 
@@ -14,17 +40,20 @@
             <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
-                    <h2 class="md-title">My Pipelines</h2>
+                    <h2 class="md-title">Pipelines</h2>
                 </div>
                 <div class="page-title-menu">
                     <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+
                 </div>
             </md-card>
             <!-- End: Header -->
 
         </div>
 
-        <!-- Section overview graph
+        <!-- Section overview graph -->
         <div class="area-chart chart-container">
             <div class="">
                 <div class="chart-title">
@@ -35,7 +64,7 @@
                 </div>
                 <div id="pipelineDetailsViewChart" class="hero-chart"></div>
             </div>
-        </div>-->
+        </div>
         <!-- End: Growth graph -->
 
     </div>
@@ -51,7 +80,7 @@
                 <md-content layout="column" layout-align="center center">
                     <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
                     <span class="md-display-3">{{callout.value}}</span>
-                    <span class="md-subhead" ng-bind="callout.change"></span>
+                    <span class="md-subhead" ng-bind-html="callout.change"></span>
                 </md-content>
             </div>
         </div>
@@ -63,7 +92,7 @@
         <div layout="row" layout-wrap layout-fill>
 
             <!-- Top Pipelines Table -->
-            <div flex="55" layout="column" layout-wrap>
+            <div flex="65" layout="column" layout-wrap>
 
                 <md-card flex="grow">
                     <md-toolbar class="md-table-toolbar md-default">
@@ -124,7 +153,7 @@
             </div>
             <!-- End: Top Pipelines Table -->
 
-            <div flex="45" layout="column">
+            <div flex="35" layout="column">
 
                 <div flex="100" layout="column">
 
@@ -133,7 +162,7 @@
                         <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Top Contributors</span>
-                                <span class="md-subhead">Contributions from your team across all of your pipelines</span>
+                                <span class="md-subhead">Candidate Contributions By Your Team</span>
                             </md-card-title-text>
                         </md-card-title>
                         <md-card-content flex>
@@ -141,38 +170,14 @@
                                 <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
                                     <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
                                     <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <h3>{{contributor.name}}</h3>
-                                        <h3>{{contributor.value}}</h3>
+                                        <span class="md-display-5">{{contributor.name}}</span>
+                                        <span class="md-display-1">{{contributor.value}}</span>
                                     </div>
                                 </md-list-item>
                             </md-list>
                         </md-card-content>
                     </md-card>
                     <!-- End: Top Performing Campaigns -->
-
-                </div>
-
-                <div flex="100" layout="row">
-
-                    <!-- Begin: Current Candidate Usage -->
-                    <md-card flex>
-                        <md-card-title>
-                            <md-card-title-text>
-                                <span class="md-title">
-                                    Candidate Usage
-                                    <i class="fa fa-info-circle"  uib-tooltip="Total number of pipelines in your talent pool" tooltip-class="tooltip--info" ></i>
-                                </span>
-                                <span class="md-subhead">Percentage of Talent Pool Used</span>
-                            </md-card-title-text>
-                        </md-card-title>
-                        </md-card-title>
-                        <md-content>
-                            <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
-                                <div></div>
-                            </gt-circle-graph>
-                        </md-content>
-                    </md-card>
-                    <!-- End: Current Candidate Usage -->
 
                     <!-- Begin: Top Performing Campaigns -->
                     <md-card flex>
@@ -186,12 +191,13 @@
                             </md-card-title-text>
                         </md-card-title>
                         <md-content>
-                            <gt-bar-graph bar-height="25" bar-spacing="30" class="gt-bar-graph">
+                            <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
                                 <div></div>
                             </gt-bar-graph>
                         </md-content>
                     </md-card>
                     <!-- End: Top Performing Campaigns -->
+
 
                 </div>
 

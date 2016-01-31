@@ -226,25 +226,25 @@
                     name: 'Total Pipelines',
                     tooltip: 'Total number of pipelines in your talent pool',
                     value: '25',
-                    change: '(2 New Today)'
+                    change: '2 New Today <span class="negative">(-2%)</span>'
                 },
                 {
                     name: 'Total Candidates',
                     tooltip: 'Total number of candidates in all pipelines',
                     value: '10,000',
-                    change: '+500'
+                    change: '+500 <span class="positive">(+25%)</span>'
                 },
                 {
                     name: 'Contributions',
                     tooltip: 'Total number of team contributions ',
                     value: '800',
-                    change: '+300 (-65%)'
+                    change: '+300 <span class="negative">(-65%)</span>'
                 },
                 {
                     name: 'Candidates Added Today',
                     tooltip: 'Total number of team contributions ',
                     value: '400',
-                    change: '+300 vs day before'
+                    change: '+300 <span class="positive">(+25%)</span>'
                 }
             ];
 
@@ -257,17 +257,17 @@
                 {
                     name: 'Katie Fries',
                     avatar: '/images/placeholder/profiles/prof1b.jpg',
-                    value: 40
+                    value: 55
                 },
                 {
                     name: 'Rachel Thompson',
                     avatar: '/images/placeholder/profiles/prof1c.jpg',
-                    value: 15
+                    value: 45
                 },
                 {
                     name: 'Chris Chang',
                     avatar: '/images/placeholder/profiles/prof1d.jpg',
-                    value: 12
+                    value: 40
                 },
                 {
                     name: 'Chrissy Donnelly',
@@ -288,35 +288,41 @@
 
             vm.pipelines = [
                 {
-                    title: 'Java Developer',
+                    title: 'Product Management',
                     width: 100,
                     value: '45'
                 },
                 {
-                    title: 'Rails Developer',
+                    title: 'Python',
                     width: 80,
                     value: '35'
                 },
                 {
-                    title: 'Angular Developer',
+                    title: 'Backbone',
                     width: 70,
                     value: '20'
                 },
                 {
-                    title: 'PHP Developer',
+                    title: 'Javascript',
                     width: 65,
                     value: '10'
                 },
                 {
-                    title: 'Python Developer',
+                    title: 'PHP',
                     width: 50,
                     value: '+16'
                 },
                 {
-                    title: 'Python Developer',
-                        width: 50,
+                    title: 'Front End Developemnt',
+                    width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'UX',
+                    width: 50,
                     value: '+16'
                 }
+
             ];
 
             vm.tableData = {
@@ -328,7 +334,7 @@
                 query: {
                     filter: '',
                     order: 'name',
-                    limit: 15,
+                    limit: 20,
                     page: 1
                 },
                 pipelines: {
