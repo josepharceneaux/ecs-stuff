@@ -40,20 +40,27 @@
         function init() {
             vm.callouts = [
                 {
+                    name: 'Candidates Added',
+                    tooltip: 'Fix',
+                    value: '500',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
+                },
+                {
                     name: 'Total Candidates',
-                    value: '1000'
+                    tooltip: 'Fix',
+                    value: '865',
+                    change: '<span class="negative">(-10%)</span>'
                 },
                 {
-                    name: 'Active Campaigns',
-                    value: '20'
+                    name: 'Recommended Candidates',
+                    tooltip: 'Fix',
+                    value: '10',
+                    change: '<span class="positive">(+10%)</span>'
                 },
                 {
-                    name: 'Smartlists',
+                    name: 'Campaigns',
+                    tooltip: 'Fix',
                     value: '10'
-                },
-                {
-                    name: 'Created Date',
-                    value: '4/3/16'
                 }
             ];
 
