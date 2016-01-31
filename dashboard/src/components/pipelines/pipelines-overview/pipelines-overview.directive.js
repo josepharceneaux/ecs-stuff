@@ -250,38 +250,38 @@
 
             vm.contributors = [
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 20
+                    name: 'Bob Smith',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
                 },
                 {
-                    name: 'Osman Masood',
-                    avatar: '//placehold.it/80x80',
-                    value: 18
+                    name: 'Katie Fries',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 40
                 },
                 {
-                    name: 'Jason Provencher',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Rachel Thompson',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
                     value: 15
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Chris Chang',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
                     value: 12
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Chrissy Donnelly',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
                     value: 10
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Sean Zinsmeister',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
                     value: 12
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Lauren Freeman',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
                     value: 10
                 }
             ];
