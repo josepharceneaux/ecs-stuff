@@ -152,8 +152,13 @@ $easing--slow:   .5s ease;
 // Misc
 // -----
 
-$misc--sidebarWidth: 5em;
-$misc--topNavMenuHeight: 2.65em;
+$misc--sidebarWidth: 20em;
+$misc--sidebarParentMenuWidth: 3.62em;
+$misc--topNavMenuHeight: 2.75em;
+$misc--topNavHeaderHeight--small: 5.4em;
+$misc--topNavHeaderHeight--tiny: 3.9em;
+$misc--topNavHeight--small: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--small;
+$misc--topNavHeight--tiny: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--tiny;
 
 // -----
 // Animations

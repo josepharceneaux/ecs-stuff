@@ -39,7 +39,7 @@
         //    },
         //    pipelines: {
         //        overview: 'Overview',
-        //        smartLists: 'Smart Lists',
+        //        smartlists: 'Smartlists',
         //        candidateSearch: 'Candidate Search',
         //        importCandidates: 'Import Candidates'
         //    },

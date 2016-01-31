@@ -48,7 +48,7 @@
                     value: '20'
                 },
                 {
-                    name: 'Smart Lists',
+                    name: 'Smartlists',
                     value: '10'
                 },
                 {

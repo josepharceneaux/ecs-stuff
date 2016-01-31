@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('app.smartLists', [
+    angular.module('app.smartlists', [
         'app.core'
     ]);
 })();

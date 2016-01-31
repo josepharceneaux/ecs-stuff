@@ -21,8 +21,8 @@
             restrict: 'AE',
             require: ['gtCircleGraph'],
             scope: {
-                data: '=',
-                options: '='
+                data: '=?',
+                options: '=?'
             },
             controller: 'CircleGraphController',
             controllerAs: 'circleGraph',
