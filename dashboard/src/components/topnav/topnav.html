@@ -55,7 +55,8 @@
                 </nav>
             </div>
             <div class="navigation__items">
-                <div class="js--mobileMenu js--topNavItem navigation__item">
+                <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
+                <div hide class="js--mobileMenu js--topNavItem navigation__item">
                     Dashboards
                     <nav class="js--mobileMenu-target navigation__subMenu">
                         <header class="navigation__subMenu__header">
@@ -94,7 +95,7 @@
                         </footer>
                     </nav>
                 </div>
-                <a ui-sref="candidates.add" class="navigation__link">Add Candidates</a>
+                <a ui-sref="candidates.add" class="navigation__link">+</a>
             </div>
             <div hide class="navigation__buttons">
               <a href=""><span class="icon--share">Share</span></a>
