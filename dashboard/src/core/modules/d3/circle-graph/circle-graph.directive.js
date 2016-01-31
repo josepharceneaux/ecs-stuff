@@ -53,7 +53,7 @@
             .attr("width", '360')
             .attr("height", '360px')
             .append("g")
-            .attr("transform", "translate(180,150)");
+            .attr("transform", "translate(120,130)");
 
 
         arc = d3.svg.arc()
@@ -95,14 +95,14 @@
             .attr("height", "12")
             .attr("x", '-43')
             .attr("y", '10.3em')
-            .text("Candidates Used In [segment]");
+            .text("Candidates Used");
 
         svg.append("rect")
             .attr("class", "legend off-white")
             .attr("width", "12")
             .attr("height", "12")
             .attr("x", '-165')
-            .attr("y", '9em');
+            .attr("y", '10.15em');
 
         svg.append("text")
             .attr("width", "200")
@@ -110,14 +110,14 @@
             .attr("height", "12")
             .attr("x", '-30')
             .attr("y", '11.7em')
-            .text("Candidates Available from [Parent]");
+            .text("Candidates Available");
 
         svg.append("rect")
             .attr("class", "legend purple")
             .attr("width", "12")
             .attr("height", "12")
             .attr("x", '-165')
-            .attr("y", '10.3em');
+            .attr("y", '11.35em');
     }
 
 })();

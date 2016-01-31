@@ -11,7 +11,7 @@
             <!-- End: Navigation path -->
 
             <!-- Header -->
-            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+            <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
                     <h2 class="md-title">My Pipelines</h2>
@@ -19,12 +19,12 @@
                 <div class="page-title-menu">
                     <a ui-sref="/pipelines/[pipeline-id]/smart-lists/create"><div class="gt-menu-icon icon--list-add"></div></a>
                 </div>
-            </md-content>
+            </md-card>
             <!-- End: Header -->
 
         </div>
 
-        <!-- Section overview graph -->
+        <!-- Section overview graph
         <div class="area-chart chart-container">
             <div class="">
                 <div class="chart-title">
@@ -35,45 +35,60 @@
                 </div>
                 <div id="pipelineDetailsViewChart" class="hero-chart"></div>
             </div>
-        </div>
+        </div>-->
         <!-- End: Growth graph -->
 
     </div>
 
-    <div layout="column" layout-margin>
+
+
+
+    <div layout="column" class="md-padding" layout-wrap>
 
         <!-- Call-outs -->
-        <div class="stat-row" layout="row" layout-wrap>
-            <div class="md-whiteframe-gt" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
-                <md-content layout="column" layout-align="center center" class="module-padding">
-                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
-                    <h3 class="md-display-3">{{callout.value}}</h3>
+        <div class="stat-row md-margin" layout="row" layout-wrap>
+            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center">
+                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
+                    <span class="md-display-3">{{callout.value}}</span>
+                    <span class="md-subhead">{{callout.change}}</span>
                 </md-content>
             </div>
         </div>
         <!-- End: Call-outs -->
 
+
+
         <!-- Tables & Cards -->
         <div layout="row" layout-wrap layout-fill>
+
             <!-- Top Pipelines Table -->
-            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+            <div flex="55" layout="column" layout-wrap>
 
-                <md-card flex="initial" class="md-margin">
-                    <md-card-content>
-                        <md-toolbar class="md-table-toolbar md-default">
-                            <div class="md-toolbar-tools">
-                                <h2 class="md-title">Pipelines</h2>
-                                <div flex></div>
-
-                                <md-icon>search</md-icon>
-                                <form flex name="vm.tableData.filter.form" layout-align="start start">
-                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
-                                </form>
-                                <md-button class="md-icon-button" ng-click="vm.removeFilter()">
-                                    <md-icon>close</md-icon>
-                                </md-button>
+                <md-card flex="grow">
+                    <md-toolbar class="md-table-toolbar md-default">
+                        <div class="md-toolbar-tools">
+                            <div>
+                                <div class="md-title">
+                                    Pipelines
+                                </div>
+                                <div class="md-subhead">
+                                    Complete list of pipelines in this talent pool
+                                </div>
                             </div>
-                        </md-toolbar>
+                            <div flex></div>
+
+                            <md-icon>search</md-icon>
+                            <form flex name="vm.tableData.filter.form" layout-align="start start">
+                                <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
+                            </form>
+                            <md-button class="md-icon-button" ng-click="vm.removeFilter()">
+                                <md-icon>close</md-icon>
+                            </md-button>
+                        </div>
+                    </md-toolbar>
+
+                    <md-content>
 
                         <md-table-container class="md-margin">
                             <table md-table md-progress="vm.promise">
@@ -88,10 +103,10 @@
                                 <tbody md-body>
                                 <tr md-row
                                     ng-repeat="p in vm.tableData.pipelines.data
-                                    | filter: vm.tableData.query.filter
-                                    | orderBy: vm.tableData.query.order
-                                    | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
-                                    <td md-cell>{{p.name}}</td>
+                                | filter: vm.tableData.query.filter
+                                | orderBy: vm.tableData.query.order
+                                | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
+                                    <td md-cell><a href="/pipelines/">{{p.name}}</a></td>
                                     <td md-cell>{{p.candidates}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
                                     <td md-cell>{{p.created | date:'MM/d/y'}}</td>
@@ -103,48 +118,86 @@
                         <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
                                              md-page-select md-boundary-links
                                              md-on-paginate="vm.logPagination" class="md-margin"></md-table-pagination>
-                    </md-card-content>
+                    </md-content>
                 </md-card>
+
             </div>
             <!-- End: Top Pipelines Table -->
 
-            <!-- Cards -->
-            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+            <div flex="45" layout="column">
 
-                <!-- Current Candidate Usage -->
-                <md-card flex="none" class="md-margin md-padding">
-                    <md-card-title flex="none">
-                        <md-card-title-text>
-                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
-                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
-                        </md-card-title-text>
-                    </md-card-title>
-                    <md-card-content flex>
-                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
-                            <div></div>
-                        </gt-circle-graph>
-                    </md-card-content>
-                </md-card>
-                <!-- End: Current Candidate Usage -->
+                <div flex="100" layout="row">
 
-                <!-- Top Performing Campaigns -->
-                <md-card flex="none" class="md-margin md-padding">
-                    <md-card-title flex="none">
-                        <md-card-title-text>
-                            <span class="md-title">Top Campaigns<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
-                            <span class="md-subhead">By Candidate Growth</span>
-                        </md-card-title-text>
-                    </md-card-title>
-                    <md-card-content flex>
-                        <gt-bar-graph angle="75" value="3000" class="gt-bar-graph">
-                            <div></div>
-                        </gt-bar-graph>
-                    </md-card-content>
-                </md-card>
-                <!-- End: Top Performing Campaigns -->
+                    <!-- Begin: Current Candidate Usage -->
+                    <md-card flex>
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Candidate Usage
+                                    <i class="fa fa-info-circle"  uib-tooltip="Total number of pipelines in your talent pool" tooltip-class="tooltip--info" ></i>
+                                </span>
+                                <span class="md-subhead">Percentage of Talent Pool Used</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        </md-card-title>
+                        <md-content>
+                            <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                                <div></div>
+                            </gt-circle-graph>
+                        </md-content>
+                    </md-card>
+                    <!-- End: Current Candidate Usage -->
+
+                    <!-- Begin: Top Performing Campaigns -->
+                    <md-card flex>
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Top skills
+                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                                </span>
+                                <span class="md-subhead">Large</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-content>
+                            <gt-bar-graph bar-height="25" bar-spacing="30" class="gt-bar-graph">
+                                <div></div>
+                            </gt-bar-graph>
+                        </md-content>
+                    </md-card>
+                    <!-- End: Top Performing Campaigns -->
+
+                </div>
+
+                <div flex="100" layout="column">
+
+                    <!-- Begin: Top Performing Campaigns -->
+                    <md-card flex="grow">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Team Contributors</span>
+                                <span class="md-subhead">Contributions by your team across all of your pipelines</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-list>
+                                <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
+                                    <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <h3>{{contributor.name}}</h3>
+                                        <h3>{{contributor.value}}</h3>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                    <!-- End: Top Performing Campaigns -->
+
+                </div>
 
             </div>
-            <!-- End: Cards -->
+
+
         </div>
         <!-- End: Tables & Cards -->
 

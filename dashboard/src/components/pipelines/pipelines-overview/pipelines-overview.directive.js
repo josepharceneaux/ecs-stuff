@@ -224,19 +224,65 @@
             vm.callouts = [
                 {
                     name: 'Total Pipelines',
-                    value: '25'
+                    tooltip: 'Total number of pipelines in your talent pool',
+                    value: '25',
+                    change: '(2 New Today)'
                 },
                 {
                     name: 'Total Candidates',
-                    value: '10,000'
+                    tooltip: 'Total number of candidates in all pipelines',
+                    value: '10,000',
+                    change: '+500 (+25%)'
                 },
                 {
-                    name: 'Unique Candidates',
-                    value: '800'
+                    name: 'Contributions',
+                    tooltip: 'Total number of team contributions ',
+                    value: '800',
+                    change: '+300 (-65%)'
                 },
                 {
-                    name: 'Candidates Today',
-                    value: '10'
+                    name: 'Candidates Added Today',
+                    tooltip: 'Total number of team contributions ',
+                    value: '400',
+                    change: '+300 vs day before'
+                }
+            ];
+
+            vm.contributors = [
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 20
+                },
+                {
+                    name: 'Osman Masood',
+                    avatar: '//placehold.it/80x80',
+                    value: 18
+                },
+                {
+                    name: 'Jason Provencher',
+                    avatar: '//placehold.it/80x80',
+                    value: 15
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 12
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 10
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 12
+                },
+                {
+                    name: 'Haohong Xu',
+                    avatar: '//placehold.it/80x80',
+                    value: 10
                 }
             ];
 
@@ -264,6 +310,11 @@
                 {
                     title: 'Python Developer',
                     width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'Python Developer',
+                        width: 50,
                     value: '+16'
                 }
             ];
