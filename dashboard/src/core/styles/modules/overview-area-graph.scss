@@ -71,6 +71,11 @@
 
 
 // Override growth chart style
+
+body {
+  overflow-x: hidden;
+}
+
 #growth-chart-section {
   background: #ececeb;
 
