@@ -19,7 +19,7 @@ from subprocess import call
 parser = argparse.ArgumentParser(description='For frontend-related actions.')
 parser.add_argument('--build', nargs=1, choices=['local', 'dev', 'staging', 'prod'],
                     help='Builds assets to build/ directory for given environment')
-parser.add_argument('--deploy', nargs=1, choices=['dev', 'staging', 'prod'],
+parser.add_argument('--deploy', nargs=1, choices=['dev', 'staging', 'prod', 'demo'],
                     help='Deploys assets in build/ to S3 Static Website bucket for given environment, if you'
                          'have permissions')
 parser.add_argument('--update', action='store_true',
@@ -30,7 +30,7 @@ if args.deploy:
     env = args.deploy[0]
 
     build_dir_path = os.getcwd() + '/build'
-    s3_bucket_name = 'app' if env == 'prod' else env
+    s3_bucket_name = 'app' if env == 'prod' else env  # S3 bucket subdomain is same as env, except prod -> app
 
     print 'Changing directory to pyenv 2.7.9 directory to access AWS CLI'
     python_bin_path = os.path.expanduser("~/.pyenv/versions/2.7.9/bin")
