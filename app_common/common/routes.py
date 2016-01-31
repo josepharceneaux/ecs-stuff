@@ -435,6 +435,7 @@ class CandidateApiWords(object):
     SEARCH = "/search"
     DOCUMENTS = "/documents"
     OPENWEB = '/openweb'
+    CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
     PREFERENCE = "/preferences"
 
@@ -503,6 +504,7 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
 

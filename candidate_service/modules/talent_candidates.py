@@ -42,6 +42,8 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
+import urlparse
+
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
 ##################################################
@@ -876,6 +878,19 @@ def social_network_id_from_name(name):
     return matching_social_network.id if matching_social_network else None
 
 
+def social_network_name_from_url(url):
+
+    if url:
+        parsed_url = urlparse.urlparse(url)
+        url = "%s://%s" % (parsed_url.scheme, parsed_url.netloc)
+        result = db.session.query(SocialNetwork.name).filter(SocialNetwork.url == url).first()
+        if result:
+            return result[0]
+        else:
+            return "Unknown"
+
+
+
 def _update_candidate(first_name, middle_name, last_name, formatted_name,
                       objective, summary, candidate_id, user_id, edited_time):
     """
@@ -1661,6 +1676,9 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
     Function will update CandidateSocialNetwork or create new one(s).
     """
     for social_network in social_networks:
+
+        if not social_network.get('name'):
+            social_network['name'] = social_network_name_from_url(social_network.get('profile_url'))
 
         social_network_dict = dict(
             social_network_id=social_network_id_from_name(name=social_network.get('name')),
