@@ -113,7 +113,7 @@ module.exports = function (config) {
                 baseDir: isDev ? config.tempDir : config.buildDir,
                 routes: isDev ? {
                     '/bower_components': './bower_components',
-                    '/fonts': config.sourceDir + 'core/icon-font',
+                    '/fonts': config.sourceDir + 'fonts',
                     '/src': config.sourceDir,
                     '/images': config.sourceDir + 'images',
                     '/.tmp': config.tempDir

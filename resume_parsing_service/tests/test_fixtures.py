@@ -11,13 +11,16 @@ from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
 from resume_parsing_service.common.models.misc import Product
 from resume_parsing_service.common.models.candidate import PhoneLabel
+from resume_parsing_service.common.models.talent_pools_pipelines import TalentPool
+from resume_parsing_service.common.models.talent_pools_pipelines import TalentPoolGroup
 from resume_parsing_service.common.models.user import Client
 from resume_parsing_service.common.models.user import Domain
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.models.user import User
+from resume_parsing_service.common.models.user import UserGroup
 from resume_parsing_service.common.utils.db_utils import get_or_create
 from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.resume_parsing_app import db
+from resume_parsing_service.app import db
 
 
 def require_integrity(func):
@@ -76,10 +79,39 @@ def domain_fixture(culture_fixture, org_fixture, request):
 
 
 @pytest.fixture(autouse=True)
-def user_fixture(domain_fixture, request):
+def user_group_fixture(domain_fixture, request):
+    user_group = UserGroup(name=random_word(4), description=random_word(4),
+                           domain_id=domain_fixture.id)
+    db.session.add(user_group)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(user_group)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return user_group
+
+
+@pytest.fixture(autouse=True)
+def talent_pool_group_fixture(talent_pool_fixture, user_group_fixture, request):
+    talent_pool_group = TalentPoolGroup(talent_pool_id=talent_pool_fixture.id,
+                                        user_group_id=user_group_fixture.id)
+    db.session.add(talent_pool_group)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(talent_pool_group)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return talent_pool_group
+
+
+@pytest.fixture(autouse=True)
+def user_fixture(domain_fixture, user_group_fixture, request):
     user = User(domain_id=domain_fixture.id, first_name='Jamtry', last_name='Jonas',
-                     password='password', email='jamtry@{}.com'.format(random_word(8)),
-                     added_time=datetime.datetime(2050, 4, 26))
+                password='password', email='jamtry@{}.com'.format(random_word(8)),
+                user_group_id=user_group_fixture.id,
+                added_time=datetime.datetime(2050, 4, 26))
     db.session.add(user)
     db.session.commit()
     @require_integrity
@@ -88,6 +120,22 @@ def user_fixture(domain_fixture, request):
         db.session.commit()
     request.addfinalizer(fin)
     return user
+
+
+@pytest.fixture(autouse=True)
+def talent_pool_fixture(domain_fixture, user_fixture, request):
+    talent_pool = TalentPool(domain_id=domain_fixture.id, owner_user_id=user_fixture.id,
+                               name=random_word(5), description=random_word(5),
+                               added_time=datetime.datetime(2050, 4, 26),
+                               updated_time=datetime.datetime(2050, 4, 26))
+    db.session.add(talent_pool)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(talent_pool)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return talent_pool
 
 
 @pytest.fixture(autouse=True)

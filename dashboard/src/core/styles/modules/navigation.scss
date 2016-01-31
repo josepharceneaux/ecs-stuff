@@ -2,9 +2,22 @@
 // Modules / Navigation
 // ---------------------------------------------------
 
-#top-nav {
-  position:relative;
-  width:100%;
+.topnav-wrapper {
+  position: relative;
+  width: 100%;
+  height: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    height: $misc--topNavHeight--small;
+  }
+}
+
+.topnav {
+  position: fixed;
+  z-index: $z-index--3;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .navigation {
@@ -209,7 +222,7 @@
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 3.6em;
+    width: $misc--sidebarParentMenuWidth;
   }
 }
 
@@ -236,7 +249,7 @@
   text-align: center;
 
   @include helper--media($breakpoint--medium) {
-    width: 2.25em;
+    width: $misc--sidebarParentMenuWidth;
     float: none;
     display:  table-cell;
     vertical-align: top;

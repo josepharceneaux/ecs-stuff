@@ -21,8 +21,8 @@
             restrict: 'AE',
             require: ['gtBarGraph'],
             scope: {
-                data: '=',
-                options: '='
+                data: '=?',
+                options: '=?'
             },
             controller: 'BarGraphController',
             controllerAs: 'barGraph',
@@ -74,6 +74,11 @@
             },
             {
                 title: 'Perl Developer',
+                value: '200',
+                percentage: '50'
+            },
+            {
+                title: 'Backbone',
                 value: '200',
                 percentage: '50'
             }

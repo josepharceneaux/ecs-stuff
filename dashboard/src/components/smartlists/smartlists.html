@@ -1,0 +1,127 @@
+<section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
+
+    <div layout="column" layout-margin>
+
+        <!-- Navigation path -->
+        <div layout="row" class="md-margin">
+            <div ncy-breadcrumb></div>
+        </div>
+        <!-- End: Navigation path -->
+
+        <!-- Header -->
+        <md-content class="page-title md-whiteframe-gt module-padding md-margin" layout="row" layout-xs="column" layout-align="center center" >
+            <div flex="initial" class="gt-title-icon icon--list"></div>
+            <div flex>
+                <h2 class="md-title">Smartlists</h2>
+                <div class="md-subhead">This is a sub title for the title bar</div>
+            </div>
+            <div class="page-title-menu">
+                <a ui-sref="dashboard"><div class="gt-menu-icon icon--bell"></div></a>
+            </div>
+        </md-content>
+        <!-- End: Header -->
+
+        <!-- Tables & Cards -->
+        <div layout="row" layout-wrap layout-fill>
+            <!-- Top Pipelines Table -->
+            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
+
+                <md-card flex class="md-margin">
+                    <md-card-content>
+                        <md-toolbar class="md-table-toolbar md-default">
+                            <div class="md-toolbar-tools">
+                                <h2 class="md-title">Smartlists</h2>
+                                <div flex></div>
+
+                                <md-icon>search</md-icon>
+                                <form flex name="vm.tableData.filter.form" layout-align="start start">
+                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
+                                </form>
+                                <md-button class="md-icon-button" ng-click="vm.removeFilter()">
+                                    <md-icon>close</md-icon>
+                                </md-button>
+                            </div>
+                        </md-toolbar>
+
+                        <md-table-container>
+                            <table md-table md-progress="vm.promise">
+                                <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
+                                <tr md-row>
+                                    <th md-column md-order-by="name"><span>Pipeline</span></th>
+                                    <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
+                                    <th md-column md-numeric md-order-by="created"><span>Created</span></th>
+                                </tr>
+                                </thead>
+                                <tbody md-body>
+                                <tr md-row
+                                    ng-repeat="p in vm.tableData.pipelines.data
+                                | filter: vm.tableData.query.filter
+                                | orderBy: vm.tableData.query.order
+                                | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
+                                    <td md-cell>{{p.name}}</td>
+                                    <td md-cell>{{p.candidates}}</td>
+                                    <td md-cell>{{p.newCandidates}}</td>
+                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </md-table-container>
+
+                        <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
+                                             md-page-select md-boundary-links
+                                             md-on-paginate="vm.logPagination"></md-table-pagination>
+                    </md-card-content>
+                </md-card>
+            </div>
+            <!-- End: Top Pipelines Table -->
+
+            <!-- Cards -->
+            <div flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
+
+                <!-- Current Candidate Usage -->
+                <md-card flex="none" class="md-margin md-padding">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
+                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-circle-graph>
+                    </md-card-content>
+                </md-card>
+                <!-- End: Current Candidate Usage -->
+
+                <!-- Top Performing Campaigns -->
+                <md-card flex="none" class="md-margin md-padding">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Top Campaigns<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
+                            <span class="md-subhead">By Candidate Growth</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-card-content flex>
+                        <gt-bar-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-bar-graph>
+                    </md-card-content>
+                </md-card>
+                <!-- End: Top Performing Campaigns -->
+
+            </div>
+            <!-- End: Cards -->
+        </div>
+        <!-- End: Tables & Cards -->
+
+    </div>
+
+
+
+    </div>
+
+    </div>
+
+</section>

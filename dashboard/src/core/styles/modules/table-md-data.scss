@@ -4,7 +4,7 @@
 
 table {
   &.md-table {
-
+    margin-top:0px;
     .md-head {
       .md-row {
         border-bottom:1px solid #efefef;
@@ -13,7 +13,7 @@ table {
         }
       }
       .md-column {
-        font-size:17px;
+        font-size:15px;
         font-weight: 400;
       }
     }
@@ -22,9 +22,7 @@ table {
       &.md-column {
 
         &.md-active {
-          color: $color--blue;
           md-icon {
-            color: $color--blue;
           }
         }
       }
@@ -36,12 +34,20 @@ table {
       }
       td.md-cell {
         border:none;
-        font-size: 15px;
+        font-size: 14px;
         color: #666;
       }
     }
 
   }
+}
+
+.md-table-pagination {
+  justify-content: center;
+}
+
+md-toolbar {
+  background:red;
 }
 
 md-toolbar.md-table-toolbar form {

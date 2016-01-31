@@ -1,0 +1,25 @@
+// see https://github.com/angular/material/blob/v1.0.1/src/components/backdrop/backdrop.scss
+
+// !!Important - Theme-based Background-color can be configured in backdrop-theme.scss
+//             - Animate background-color opacityy only for `.md-opaque` styles
+
+md-backdrop {
+
+  z-index: $z-index--6 - 1;
+
+  &.md-menu-backdrop {
+    z-index: $z-index--6 - 1;
+  }
+  &.md-select-backdrop {
+    z-index: $z-index--6 + 1;
+  }
+  &.md-dialog-backdrop {
+    z-index: $z-index--6 - 1;
+  }
+  &.md-bottom-sheet-backdrop {
+    z-index: $z-index--6 - 1;
+  }
+  &.md-sidenav-backdrop {
+    z-index: $z-index--6 - 1;
+  }
+}

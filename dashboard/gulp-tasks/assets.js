@@ -6,10 +6,8 @@ module.exports = function (config) {
     gulp.task('fonts', ['clean-fonts', 'build-icon-font'], function () {
         config.log('Copying fonts');
 
-        var fontDir = config.sourceDir + 'core/icon-font/gettalent-icons.*';
-
         return gulp
-            .src(fontDir)
+            .src(config.fonts)
             .pipe(gulp.dest(config.buildDir + 'fonts'));
     });
 

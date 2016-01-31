@@ -3,21 +3,34 @@
     <div layout="column" class="overview-graph">
 
         <div layout="column" layout-margin>
-
+            <div hide layout="row">
+                <div ncy-breadcrumb></div>
+            </div>
             <!-- Navigation path -->
             <div layout="row">
-                <div ncy-breadcrumb></div>
+                <ul class="breadcrumb">
+                    <!-- ngRepeat: step in steps -->
+                    <li>
+                       <a href="/dashboard">Google Drive Team</a>
+                    </li>
+                    <li>
+                        <a href="/pipelines">My Pipelines</a>
+                    </li>
+                    <li>
+                    <a href="/pipelines/2892365a"></a>
+                </li><!-- end ngRepeat: step in steps -->
+                </ul>
             </div>
             <!-- End: Navigation path -->
 
             <!-- Header -->
-            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+            <md-content class="page-title gt-card module-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
                     <h2 class="md-title">Senior Java Engineer</h2>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="/pipelines/[pipeline-id]/smart-lists/create"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create"><div class="gt-menu-icon icon--list-add"></div></a>
                 </div>
             </md-content>
             <!-- End: Header -->
@@ -43,11 +56,12 @@
     <div layout="column" layout-margin>
 
         <!-- Call-outs -->
-        <div class="stat-row" layout="row" layout-wrap>
-            <div class="md-whiteframe-gt" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
-                <md-content layout="column" layout-align="center center" class="module-padding">
-                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
-                    <h3 class="md-display-3">{{callout.value}}</h3>
+        <div class="stat-row md-margin" layout="row" layout-wrap>
+            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center">
+                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
+                    <span class="md-display-3">{{callout.value}}</span>
+                    <span class="md-subhead" ng-bind-html="callout.change"></span>
                 </md-content>
             </div>
         </div>
@@ -68,28 +82,12 @@
                             </md-card-title-text>
                             <span class="md-caption card-top-right-button"></span>
                         </md-card-title>
-                        <gt-bar-graph bar-height="35" bar-spacing="30" class="gt-bar-graph">
+                        <gt-bar-graph bar-height="30" bar-spacing="30" class="gt-bar-graph">
                             <div></div>
                         </gt-bar-graph>
                     </md-card>
                 </div>
                 <!-- End: Top Skills -->
-                <!-- Top Candidate Usage -->
-                <div id="candidateUsage" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
-                                <span class="md-subhead">This is module description</span>
-                            </md-card-title-text>
-                            <span class="md-caption card-top-right-button"></span>
-                        </md-card-title>
-                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
-                            <div></div>
-                        </gt-circle-graph>
-                    </md-card>
-                </div>
-                <!-- End: Top Candidate Usage -->
                 <!-- Candidate Breakdown -->
                 <div id="v2-candidate-breakdown" flex="50" flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
@@ -165,9 +163,11 @@
                 </div>
                 <!-- End: Candidate Breakdown -->
 
+
+
                 <!-- Team Contributors -->
                 <div id="v2-team-contributors" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
+                    <md-card>
                         <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">Team Contributors<i class="fa fa-info-circle"></i></span>
@@ -188,6 +188,23 @@
                     </md-card>
                 </div>
                 <!-- End: Team Contributors -->
+
+                <!-- Top Candidate Usage -->
+                <div id="candidateUsage" flex="50" flex-xs="100" flex-sm="100">
+                    <md-card class="md-margin">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
+                                <span class="md-subhead">This is module description</span>
+                            </md-card-title-text>
+                            <span class="md-caption card-top-right-button"></span>
+                        </md-card-title>
+                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
+                            <div></div>
+                        </gt-circle-graph>
+                    </md-card>
+                </div>
+                <!-- End: Top Candidate Usage -->
             </div>
             <!-- End: Summaries -->
 

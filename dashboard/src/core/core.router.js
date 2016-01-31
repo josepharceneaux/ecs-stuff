@@ -22,6 +22,9 @@
                 views: {
                     content: {
                         template: '<gt-login></gt-login>'
+                    },
+                    'title@': {
+                        template: '<title>getTalent | Login To Your Account</title>'
                     }
                 }
             })
@@ -439,6 +442,9 @@
                 views: {
                     '@site': {
                         template: '<gt-pipelines></gt-pipelines>'
+                    },
+                    'title@': {
+                        template: '<title>hola!</title>'
                     }
                 }
             })
