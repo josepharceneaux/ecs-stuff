@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$mdEditDialog', '$q'];
+    ControllerFunction.$inject = ['logger', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $timeout) {
         var vm = this;
 
         init();
@@ -39,8 +39,15 @@
 
         function init() {
 
-            $('#pipelineDetailsViewChart').highcharts({
+            vm.redrawChart = function () {
+
+                vm.chart.reflow();
+                
+            };
+
+            vm.chart = new Highcharts.Chart({
                 chart: {
+                    renderTo: 'growth-chart',
                     type: 'area',
                     backgroundColor: null,
                     spacingLeft: 40,
@@ -49,7 +56,8 @@
                     style: {
                         fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
                         fontWeight: 300
-                    }
+                    },
+                    reflow: true
                 },
                 title: {
                     text: ''
@@ -64,14 +72,14 @@
                     tickLength: 0,
                     endOnTick: true,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         y: 24,
                         style: {
                             color: '#fff',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function() {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
@@ -83,13 +91,13 @@
                     yDecimals: 2,
                     gridLineWidth: 1,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         style: {
                             color: '#adadad',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function () {
                             if (this.value != 0) {
@@ -120,21 +128,21 @@
                     padding: 12,
                     backgroundColor: '#FFFFFF',
                     borderWidth: 1,
-                    borderColor: "#cccccc",
+                    borderColor: '#cccccc',
                     itemStyle: {
-                      "fontWeight":"300"
+                      fontWeight: 300
                     },
                     navigation: {
                         style: {
-                            fontWeight: '400',
+                            fontWeight: 400,
                         }
                     }
                 },
                 tooltip: {
-                    borderWidth:0,
-                    borderRadius:0,
+                    borderWidth: 0,
+                    borderRadius: 0,
                     backgroundColor: null,
-                    shadow:false,
+                    shadow: false,
                     useHTML: true,
                     formatter: function() {
                         var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
@@ -190,7 +198,7 @@
                     pointInterval: 30 * 24 * 3600 * 1000,
                     data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
                 }]
-            });
+            });            
 
             vm.totalCandidates = {
                 graph: {}
