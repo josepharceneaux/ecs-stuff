@@ -121,7 +121,40 @@
 
             vm.candidateCards = [
                 {
-                    name: 'Bob Smith'
+                    name: 'Bob Smith',
+                    initials: 'BS',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Kevin Thompson',
+                    initials: 'KT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Lenny Seager',
+                    initials: 'LS',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Tom Chansky',
+                    initials: 'TC',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Chris Pratt',
+                    initials: 'CP',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Megi Theodhor',
+                    initials: 'MT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
                 }
             ];
 

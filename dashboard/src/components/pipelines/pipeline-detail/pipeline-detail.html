@@ -148,7 +148,7 @@
                 <!-- End: Candidate Breakdown -->
                 <!-- Begin: Top Skills -->
                 <md-card flex>
-                    <md-card-title>
+                    <md-card-title flex="none">
                         <md-card-title-text>
                                 <span class="md-title">
                                     Top skills
@@ -168,7 +168,7 @@
             <div flex="45" layout="column">
                 <!-- Begin: Recommended Candidates -->
                 <md-card flex class="candidate-cards">
-                    <md-card-title>
+                    <md-card-title flex="none">
                         <md-card-title-text>
                                 <span class="md-title">
                                     Recommended Candidates (10)
@@ -176,29 +176,30 @@
                             <span class="md-subhead">These candidates have engaged with your campaings</span>
                         </md-card-title-text>
                     </md-card-title>
-                    <md-content>
-                        <md-card layout="row">
+                    <md-content ng-repeat="candidates in vm.candidateCards">
+                        <md-card layout="row" layout-align="center center">
                             <div flex="initial" class="gt-title-icon">BS<i class="fa fa-check-circle"></i></div>
                             <div flex>
                                 <div class="md-title">
-                                    <span>Bob Smith</span>
-                                    <i class="fa fa-github"></i>
-                                    <i class="fa fa-facebook-square"></i>
-                                    <i class="fa fa-twitter-square"></i>
-                                    <i class="fa fa-linkedin-square"></i>
+                                    <h2>{{candidates.name}}
+                                        <span>
+                                            <a href="" class="fa fa-github"></a>
+                                            <a href="" class="fa fa-facebook-square"></a>
+                                            <a href="" class="fa fa-twitter-square"></a>
+                                            <a href="" class="fa fa-linkedin-square"></a>
+                                        </span>
+                                    </h2>
                                 </div>
-                                <div>Senior Software Engineer at GetTalent</div>
-                                <div class="md-display-5">Current Position:</div>
-                                <div>10/29/15 to Present</div>
-                                <div>Software Engineer at GetTalent</div>
-                                <div>Recent Activity: Bob recently viewed your email</div>
+                                <div><i>{{candidates.current}}</i></div>
+                                <div class="md-display-6">Recent Activity: {{candidates.activity}}</div>
                             </div>
-                            <div layout="column" class="page-title-menu">
+                            <md-card-actions layout="column" layout-align="space-between end">
                                 <i class="fa fa-envelope-square"></i>
                                 <i class="fa fa-share"></i>
-                            </div>
+                            </md-card-actions>
                         </md-card>
                     </md-content>
+                    <md-card-actions layout="row" layout-align="center end">Infinite Scroll</md-card-actions>
                 </md-card>
                 <!-- End: Recommended Candidates -->
             </div>
