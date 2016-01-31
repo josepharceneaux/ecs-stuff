@@ -76,6 +76,11 @@
                 title: 'Perl Developer',
                 value: '200',
                 percentage: '50'
+            },
+            {
+                title: 'Backbone',
+                value: '200',
+                percentage: '50'
             }
         ];
 

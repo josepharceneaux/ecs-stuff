@@ -80,14 +80,13 @@
 // -----
 
 @import "modules/angular-material-override";
-@import "modules/cards";
+@import "modules/md-cards";
 @import "modules/user-activity-system";
 @import "modules/system-alerts";
 @import "modules/modals";
 @import "modules/tool-tips";
 
 @import "modules/table-md-data.scss";
-@import "modules/charts";
 
 @import "modules/page-title";
 @import "modules/dashboard";
@@ -96,6 +95,9 @@
 @import "modules/stat-row";
 @import "modules/activity-feed";
 @import "modules/chart-area-graph";
+@import "modules/chart-circle-graph";
+@import "modules/chart-bar-graph";
+
 
 
 

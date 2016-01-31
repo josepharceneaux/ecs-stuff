@@ -1,0 +1,42 @@
+// ---------------------------------------------------
+// Modules / Circle Graph
+// ---------------------------------------------------
+
+.gt-circle-graph {
+  svg {
+    display: block;
+    margin: auto;
+    .path {
+      &.path--background {
+        fill: #c8cec9;
+      }
+      &.path--foreground {
+        fill: #978897;
+      }
+    }
+    .label {
+      font-size: 40px;
+      font-weight: 300;
+      text-anchor: middle;
+      fill: #fff;
+    }
+    .inner-label {
+      font-weight: 300;
+      text-anchor: middle;
+      fill: #fff;
+    }
+    .legend {
+      &.purple {
+        fill: #978897;
+        margin-top:5px;
+      }
+      &.off-white {
+        fill: #c8cec9;
+      }
+      &.label {
+        fill: #999;
+        font-size: 15px;
+      }
+    }
+  }
+}

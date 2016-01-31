@@ -4,7 +4,7 @@
 
 table {
   &.md-table {
-
+    margin-top:0px;
     .md-head {
       .md-row {
         border-bottom:1px solid #efefef;
@@ -42,6 +42,14 @@ table {
     }
 
   }
+}
+
+.md-table-pagination {
+  justify-content: center;
+}
+
+md-toolbar {
+  background:red;
 }
 
 md-toolbar.md-table-toolbar form {
