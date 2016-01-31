@@ -14,9 +14,9 @@
         font-family: "<%= fontName %>";
         src: url('<%= targetPath %><%= fontName %>.eot');
         src: url('<%= targetPath %><%= fontName %>.eot?#iefix') format('embedded-opentype'),
+          url('<%= targetPath %><%= fontName %>.woff2') format('woff2'),
           url('<%= targetPath %><%= fontName %>.woff') format('woff'),
-          url('<%= targetPath %><%= fontName %>.ttf') format('truetype'),
-          url('<%= targetPath %><%= fontName %>.svg#<%= fontName %>') format('svg');
+          url('<%= targetPath %><%= fontName %>.ttf') format('truetype');
       }
 
       .<%= className %>,
