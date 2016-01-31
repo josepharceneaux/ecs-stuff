@@ -24,16 +24,20 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $mdDialog, $mdMedia) {
         var vm = this;
 
         init();
         activate();
+        showWelcomeDialog();
 
         function init() {
+            // example for md-dialog example
+            vm.items = [1, 2, 3];
+
             vm.itemsPerPageOptions = [
                 { value: 5, name: '5 per page' },
                 { value: 10, name: '10 per page' },
@@ -471,6 +475,39 @@
 
         function activate() {
             logger.log('Activated Dashboard Overview View');
+        }
+
+        function showWelcomeDialog($event) {
+            var useFullScreen = ($mdMedia('sm') || $mdMedia('xs'));
+            $mdDialog.show({
+                controller: DialogController,
+                controllerAs: 'vm',
+                templateUrl: 'components/onboard/onboard-welcome/onboard-welcome.html',
+                parent: angular.element(document.body),
+                targetEvent: $event,
+                clickOutsideToClose: true,
+                fullscreen: useFullScreen
+            })
+            .then(function (answer) {
+                //$scope.status = 'You said the information was "' + answer + '".';
+            }, function() {
+                //$scope.status = 'You canceled the dialog.';
+            });
+        };
+
+        DialogController.$inject = ['$scope', '$mdDialog'];
+
+        /* @ngInject */
+        function DialogController($scope, $mdDialog) {
+            $scope.hide = function() {
+                $mdDialog.hide();
+            };
+            $scope.cancel = function() {
+                $mdDialog.cancel();
+            };
+            $scope.answer = function(answer) {
+                $mdDialog.hide(answer);
+            };
         }
     }
 })();

@@ -3,7 +3,7 @@ EmailCampaign is a restful resource and the endpoint which is sending out emails
 using blueprint.
 """
 import json
-from flask import request, Blueprint, redirect
+from flask import request, Blueprint, redirect, jsonify
 from flask_restful import Resource
 from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
 from ...modules.validations import validate_and_format_request_data
@@ -93,8 +93,27 @@ def send_campaign_emails(campaign_id):
     # remove oauth_token instead use trusted server to server calls
     oauth_token = request.oauth_token
     email_send = send_emails_to_campaign(oauth_token, campaign, new_candidates_only=False)
-    data = json.dumps({'campaign': {'emails_send': email_send}})
-    return data
+
+    if campaign.email_client_id:
+        if isinstance(email_send, list):
+            data = {
+                'email_campaign_sends': [
+                    {
+                        'email_campaign_id': campaign.id,
+                        'new_html': new_email_html_or_text.get('new_html'),
+                        'new_text': new_email_html_or_text.get('new_text'),
+                        'candidate_email_address': new_email_html_or_text.get('email')
+                    } for new_email_html_or_text in email_send
+                ]
+            }
+            return jsonify(data)
+
+        else:
+            raise InvalidUsage(error_message="Something went wrong, response is not list")
+
+    else:
+        data = json.dumps({'campaign': {'emails_send': email_send}})
+        return data
 
 
 @email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])
