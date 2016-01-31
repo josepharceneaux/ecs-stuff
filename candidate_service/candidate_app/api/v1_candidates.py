@@ -1217,7 +1217,7 @@ class CandidateClientEmailCampaignResource(Resource):
         if not isinstance(candidates_list, list):
             raise InvalidUsage(error_message="Candidates must be a list.")
 
-        candidate_ids = [candidate['id'] for candidate in body_dict.get('candidates')]
+        candidate_ids = [int(candidate['id']) for candidate in body_dict.get('candidates')]
         if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
             raise UnauthorizedError(error_message="Candidates do not belong to logged-in user")
 
