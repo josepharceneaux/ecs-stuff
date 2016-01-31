@@ -40,7 +40,7 @@
         function init() {
 
             $timeout(function() {
-                $('#pipelineDetailsViewChart').highcharts({
+                $('#growth-chart').highcharts({
                     chart: {
                         type: 'area',
                         backgroundColor: null,
