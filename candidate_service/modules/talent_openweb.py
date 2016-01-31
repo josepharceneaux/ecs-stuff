@@ -166,9 +166,12 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
     work_experiences = []
     social_profile_dict_experience = social_profile_dict.get('experience') or {}
     history_dicts = social_profile_dict_experience.get('history') or []
+    start_year = 1970
+    start_month = 1
+    end_year = 1970
+    end_month = 1
     for i, history_dict in enumerate(history_dicts):
         # Parse startedAt and endedAt
-        start_year = start_month = end_year = end_month = None
         start_date_obj = parse_openweb_date(history_dict.get('startedAt'))
         if start_date_obj:
             start_year = start_date_obj.year or 1970
