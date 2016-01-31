@@ -49,6 +49,7 @@ if args.build:
 
     gt_node_env = {
         'local': 'local',
+        'dev': 'development',
         'staging': 'development',
         'prod': 'production'
     }[env]
