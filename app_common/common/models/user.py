@@ -131,7 +131,7 @@ class User(db.Model):
 
         user = User(
             email='{}@example.com'.format(uuid.uuid4().__str__()),
-            password=generate_password_hash(password, method='pbkdf2:sha512:2000', salt_length=32),
+            password=generate_password_hash(password, method='pbkdf2:sha512'),
             domain_id=domain_id,
             user_group_id=user_group_id,
             expiration=None
@@ -222,6 +222,7 @@ class Client(db.Model):
 
     client_id = db.Column(db.String(40), primary_key=True)
     client_secret = db.Column(db.String(55), nullable=False)
+    client_name = db.Column(db.String(255))
 
     def delete(self):
         db.session.delete(self)

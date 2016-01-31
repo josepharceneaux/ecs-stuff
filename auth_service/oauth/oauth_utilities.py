@@ -26,7 +26,7 @@ def change_hashing_format(password):
         return ''
     elif password.count('$') == 2:
         (digest_alg, salt, hash) = password.split('$')
-        return 'pbkdf2:sha512:2000$%s$%s' % (salt, hash)
+        return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
 
 
 def get_user(username, password, *args, **kwargs):
@@ -71,29 +71,39 @@ def save_token(token, request, *args, **kwargs):
     tokens = Token.query.filter_by(
         client_id=request.client.client_id,
         user_id=request.user.id
-    )
+    ).all()
+    latest_token = tokens.pop() if tokens else None
+
     # make sure that every client has only one token connected to a user
     for t in tokens:
         db.session.delete(t)
 
-    expires_in = token.get('expires_in')
-    expires = datetime.utcnow() + timedelta(seconds=expires_in)
-    token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
     token['user_id'] = request.user.id
+    if latest_token and datetime.utcnow() < latest_token.expires:
+        token['expires_at'] = latest_token.expires.strftime("%d/%m/%Y %H:%M:%S")
+        token['access_token'] = latest_token.access_token
+        token['refresh_token'] = latest_token.refresh_token
+        return latest_token
+    else:
+        if latest_token:
+            db.session.delete(latest_token)
 
-    tok = Token(
-        access_token=token['access_token'],
-        refresh_token=token['refresh_token'],
-        token_type=token['token_type'],
-        _scopes=token['scope'],
-        expires=expires,
-        client_id=request.client.client_id,
-        user_id=request.user.id,
-    )
-    db.session.add(tok)
-    db.session.commit()
-    logger.info('Bearer token has been created for user %s', request.user.id)
-    return tok
+        expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
+        token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
+
+        tok = Token(
+            access_token=token['access_token'],
+            refresh_token=token['refresh_token'],
+            token_type=token['token_type'],
+            _scopes=token['scope'],
+            expires=expires,
+            client_id=request.client.client_id,
+            user_id=request.user.id,
+        )
+        db.session.add(tok)
+        db.session.commit()
+        logger.info('Bearer token has been created for user %s', request.user.id)
+        return tok
 
 
 class GetTalentOauthValidator(OAuth2RequestValidator):
