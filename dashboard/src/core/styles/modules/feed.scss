@@ -23,6 +23,7 @@
 .feed__header {
   @extend .icon--bars;
 
+  position: relative;
   transition: background-color $easing--slow;
   padding-top: $padding--normal;
   padding-bottom: $padding--normal;
