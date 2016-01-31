@@ -33,9 +33,6 @@
                 </div>
                 <div class="page-title-menu">
                     <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-
                 </div>
             </md-card>
             <!-- End: Header -->
@@ -168,9 +165,9 @@
                 <!-- End: Top Skills -->
             </div>
 
-            <div flex="50" layout="column">
+            <div flex="45" layout="column">
                 <!-- Begin: Recommended Candidates -->
-                <md-card flex>
+                <md-card flex class="candidate-cards">
                     <md-card-title>
                         <md-card-title-text>
                                 <span class="md-title">
@@ -181,10 +178,10 @@
                     </md-card-title>
                     <md-content>
                         <md-card layout="row">
-                            <div flex="initial" class="gt-title-icon">BS</div>
+                            <div flex="initial" class="gt-title-icon">BS<i class="fa fa-check-circle"></i></div>
                             <div flex>
                                 <div class="md-title">
-                                    Bob Smith
+                                    <span>Bob Smith</span>
                                     <i class="fa fa-github"></i>
                                     <i class="fa fa-facebook-square"></i>
                                     <i class="fa fa-twitter-square"></i>
@@ -194,6 +191,7 @@
                                 <div class="md-display-5">Current Position:</div>
                                 <div>10/29/15 to Present</div>
                                 <div>Software Engineer at GetTalent</div>
+                                <div>Recent Activity: Bob recently viewed your email</div>
                             </div>
                             <div layout="column" class="page-title-menu">
                                 <i class="fa fa-envelope-square"></i>
@@ -205,7 +203,7 @@
                 <!-- End: Recommended Candidates -->
             </div>
 
-            <div flex="20" layout="column">
+            <div flex="25" layout="column">
                 <!-- Begin: Team Contributions -->
                 <md-card flex="grow" class="team-contributions">
                     <md-card-title flex="none">

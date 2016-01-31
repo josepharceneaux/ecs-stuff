@@ -116,7 +116,13 @@
                     title: 'Python Developer',
                     width: 50,
                     value: '+16'
-                },
+                }
+            ];
+
+            vm.candidateCards = [
+                {
+                    name: 'Bob Smith'
+                }
             ];
 
             vm.contributors = [
