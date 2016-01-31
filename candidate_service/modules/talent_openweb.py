@@ -171,12 +171,12 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         start_year = start_month = end_year = end_month = None
         start_date_obj = parse_openweb_date(history_dict.get('startedAt'))
         if start_date_obj:
-            start_year = start_date_obj.year
-            start_month = start_date_obj.month
+            start_year = start_date_obj.year or 1970
+            start_month = start_date_obj.month or 1
         end_date_obj = parse_openweb_date(history_dict.get('endedAt'))
         if end_date_obj:
-            end_year = end_date_obj.year
-            end_month = end_date_obj.month
+            end_year = end_date_obj.year or 1970
+            end_month = end_date_obj.month or 1
 
         # Parse out candidate_experience_bullets.
         candidate_experience_bullets = []
