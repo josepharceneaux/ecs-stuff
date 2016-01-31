@@ -1,0 +1,20 @@
+// ---------------------------------------------------
+// Modules / Onboard Welcome
+// ---------------------------------------------------
+
+.onboard-welcome {
+  max-width:700px;
+  text-align:center;
+  .md-dialog-content {
+    padding:0px 70px;
+  }
+  img {
+    margin:40px 20px 30px;
+    width: auto;
+    display: inline-block;
+  }
+  .md-display-3 {
+    font-size: 30px;
+    margin-bottom:20px;
+  }
+}
