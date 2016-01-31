@@ -21,8 +21,8 @@
             restrict: 'AE',
             require: ['gtBarGraph'],
             scope: {
-                data: '=',
-                options: '='
+                data: '=?',
+                options: '=?'
             },
             controller: 'BarGraphController',
             controllerAs: 'barGraph',

@@ -55,16 +55,6 @@
 }
 
 // -----
-// Inner
-// -----
-
-.header__inner {
-  @include helper--media($breakpoint--large) {
-    padding-left: $misc--sidebarWidth;
-  }
-}
-
-// -----
 // Search Bar
 // -----
 

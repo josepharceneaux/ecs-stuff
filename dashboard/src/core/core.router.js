@@ -433,13 +433,17 @@
 
             // Pipelines
             .state('pipelines', {
-                abstract: true,
                 parent: 'site',
                 url: '/pipelines',
+                redirectTo: 'pipelines.overview',
                 views: {
                     '@site': {
                         template: '<gt-pipelines></gt-pipelines>'
                     }
+                },
+                ncyBreadcrumb: {
+                    parent: 'dashboard',
+                    label: 'Pipelines'
                 }
             })
             .state('pipelines.overview', {
@@ -450,8 +454,7 @@
                     }
                 },
                 ncyBreadcrumb: {
-                    parent: 'dashboard',
-                    label: 'Pipelines'
+                    skip: true
                 }
             })
             .state('pipelines.manage', {
@@ -460,6 +463,9 @@
                     '@pipelines': {
                         template: '<gt-pipelines-manage></gt-pipelines-manage>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Manage Pipelines'
                 }
             })
             .state('pipelines.create', {
@@ -468,11 +474,17 @@
                     '@pipelines': {
                         template: '<gt-pipeline-create></gt-pipeline-create>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Create Pipeline'
                 }
             })
             .state('pipelines.pipeline', {
                 url: '/:pipelineId',
-                redirectTo: 'pipelines.pipeline.detail'
+                redirectTo: 'pipelines.pipeline.detail',
+                ncyBreadcrumb: {
+                    label: 'Pipeline'
+                }
             })
             .state('pipelines.pipeline.detail', {
                 url: '',
@@ -482,8 +494,7 @@
                     }
                 },
                 ncyBreadcrumb: {
-                    parent: 'pipelines.overview',
-                    label: 'Pipeline detail'
+                    label: 'Detail'
                 }
             })
             .state('pipelines.pipeline.settings', {
@@ -492,6 +503,9 @@
                     '@pipelines': {
                         template: '<gt-pipeline-settings></gt-pipeline-settings>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Settings'
                 }
             })
             .state('pipelines.pipeline.team', {
@@ -500,34 +514,49 @@
                     '@pipelines': {
                         template: '<gt-pipeline-team></gt-pipeline-team>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Teams'
                 }
             })
-            .state('pipelines.pipeline.smartLists', {
-                url: '/smart-lists',
+            .state('pipelines.pipeline.smartlists', {
+                url: '/smartlists',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-lists></gt-smart-lists>'
+                        template: '<gt-smartlists></gt-smartlists>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Smartlists'
                 }
             })
-            .state('pipelines.pipeline.smartLists.create', {
+            .state('pipelines.pipeline.smartlists.create', {
                 url: '/create',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-create></gt-smart-list-create>'
+                        template: '<gt-smartlist-create></gt-smartlist-create>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Create'
                 }
             })
-            .state('pipelines.pipeline.smartLists.smartList', {
-                url: '/:pipelineId',
-                redirectTo: 'pipelines.pipeline.smartLists.smartList.detail'
+            .state('pipelines.pipeline.smartlists.smartlist', {
+                url: '/:smartlistId',
+                redirectTo: 'pipelines.pipeline.smartlists.smartlist.detail',
+                ncyBreadcrumb: {
+                    label: 'Smartlist'
+                }
             })
-            .state('pipelines.pipeline.smartLists.smartList.detail', {
+            .state('pipelines.pipeline.smartlists.smartlist.detail', {
                 url: '',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-details></gt-smart-list-details>'
+                        template: '<gt-smartlist-details></gt-smartlist-details>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Detail'
                 }
             })
 
