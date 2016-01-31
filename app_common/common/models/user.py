@@ -222,6 +222,7 @@ class Client(db.Model):
 
     client_id = db.Column(db.String(40), primary_key=True)
     client_secret = db.Column(db.String(55), nullable=False)
+    client_name = db.Column(db.String(255))
 
     def delete(self):
         db.session.delete(self)
