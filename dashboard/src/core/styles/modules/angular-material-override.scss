@@ -10,7 +10,13 @@ html, body {
     padding: $padding--module;
 }
 
+.positive {
+    color: $color--green;
+}
 
+.negative {
+    color: $color--red;
+}
 
 
 

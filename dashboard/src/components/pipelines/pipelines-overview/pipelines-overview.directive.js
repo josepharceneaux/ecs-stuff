@@ -232,7 +232,7 @@
                     name: 'Total Candidates',
                     tooltip: 'Total number of candidates in all pipelines',
                     value: '10,000',
-                    change: '+500 (+25%)'
+                    change: '+500'
                 },
                 {
                     name: 'Contributions',
