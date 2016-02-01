@@ -4,6 +4,18 @@
 
 .dashboard {
   background: darken(#373437, 5%);
+
+  h1, h2, h3, h4, h5, h6, span {
+    color: #ddd;
+  }
+
+  p {
+    color: #bbb;
+  }
+
+  .team-name {
+    margin: 16px;
+  }
   
   md-content {
     background: transparent;
@@ -12,15 +24,7 @@
   md-card {
     background: lighten(#373437,2%);
     border-right: 1px darken(#373437, 8%) solid;
-    border-bottom: 1px darken(#373437, 8%)  solid;
-    
-    h1, h2, h3, h4, h5, h6, span {
-      color: #ddd;
-    }
-
-    p {
-      color: #bbb;
-    }
+    border-bottom: 1px darken(#373437, 8%)  solid;    
 
     &.new-candidates,
     &.team-contributions {

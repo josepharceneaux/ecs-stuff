@@ -472,6 +472,8 @@
                 { location: 'Santa Cruz, CA' }
             ];
 
+            vm.teamName = 'Google Drive Team';
+
             vm.recommendedCandidates = [
                 {
                     name: 'Bob Smith',
