@@ -471,6 +471,59 @@
                 { location: 'Orlando, FL' },
                 { location: 'Santa Cruz, CA' }
             ];
+
+            vm.recommendedCandidates = [
+                {
+                    name: 'Bob Smith',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Kevin Thompson',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Lenny Seager',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Tom Chansky',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Chris Pratt',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Megi Theodhor',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                }
+            ];
+
+            vm.viewCandidate = function (candidate) {
+                
+                // TODO: go to candidate detail page
+                alert('View candidate: ' + candidate.name);
+            
+            };
+
+            vm.emailToCandidate = function (candidate) {
+
+                // TODO: email to candidate
+                alert('Email to ' + candidate.name);
+
+            };
         }
 
         function activate() {

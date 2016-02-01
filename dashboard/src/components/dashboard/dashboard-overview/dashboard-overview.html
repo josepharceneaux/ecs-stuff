@@ -57,18 +57,40 @@
                     </md-card>
                 </div>
                 
+                <!-- Recommended Candidates -->
                 <div flex layout="row">
-                    <md-card flex>
-                        <md-card-title>
+                    <md-card flex class="recommended-candidates">
+                        <md-card-title flex="none">
                             <md-card-title-text>
-                                <span class="md-subhead">Recommended Candidates</span>
+                                <span class="md-title">
+                                    Recommended Candidates
+                                </span>                                
                             </md-card-title-text>
                         </md-card-title>
+
                         <md-card-content>
-                            
+                            <md-list>
+                                <md-list-item ng-repeat="candidate in vm.recommendedCandidates">
+                                    <div class="md-list-item-avatar">
+                                        <img alt="{{ candidate.name }}" ng-src="{{ candidate.avatar }}" class="md-avatar" />
+                                        <div class="check-circle-wrap">
+                                            <md-icon>check</md-icon>
+                                        </div>
+                                    </div>
+                                    <div class="md-list-item-text" layout="column">
+                                        <h3>
+                                            {{ candidate.name }}
+                                            <md-icon md-font-set="fa" md-font-icon="fa-share" ng-click="vm.viewCandidate(candidate)"></md-icon>
+                                        </h3>
+                                        <p>{{ candidate.activity }}</p>
+                                    </div>
+                                    <md-icon ng-click="vm.emailToCandidate(candidate)" aria-label="View Candidate" class="md-secondary">mail</md-icon>
+                                </md-list-item>
+                            </md-list>
                         </md-card-content>
-                    </md-card>
+                    </md-card>                
                 </div>
+                <!-- End: Recommended Candidates -->
             
             </div>
             <!-- End: Second column -->
