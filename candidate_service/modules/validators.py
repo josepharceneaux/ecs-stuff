@@ -4,6 +4,7 @@ Functions related to candidate_service/candidate_app/api validations
 # Flask Specific
 from flask import request
 import json
+import re
 from candidate_service.common.models.db import db
 from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
@@ -244,10 +245,56 @@ SEARCH_INPUT_AND_VALIDATIONS = {
 }
 
 
+def convert_to_snake_case(key):
+    """
+    Convert camelCase to snake_case
+    Copied from: http://goo.gl/648F0n
+    :param key:
+    :return:
+    """
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', key)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def is_backward_compatible(key):
+    """
+    This method will check for backward compatibility of old web2py based app's search keys
+    :param key: Key which is to be converted to new format
+    :return: Converted key
+    """
+    if key not in SEARCH_INPUT_AND_VALIDATIONS:
+        key = convert_to_snake_case(key)
+        if 'facet' in key:
+            key = key.replace('_facet', '')
+
+        if key == 'username':
+            key = 'user_ids'
+        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+            key = 'area_of_interest_ids'
+        elif key == 'status' or key == 'source':
+            key += '_ids'
+        elif key == 'skill_description':
+            key = 'skills'
+        elif key == 'position':
+            key = 'job_title'
+        elif key == 'concentration_type':
+            key = 'major'
+        elif key == 'branch':
+            key = 'military_branch'
+        elif key == 'highest_grade':
+            key = 'military_highest_grade'
+
+        if key not in SEARCH_INPUT_AND_VALIDATIONS:
+            return False
+
+    return key
+
+
 def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
-        if key not in SEARCH_INPUT_AND_VALIDATIONS:
+        key = is_backward_compatible(key)
+        if not key:
             raise InvalidUsage("`%s` is an invalid input" % key, 400)
         if value.strip():
             if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
