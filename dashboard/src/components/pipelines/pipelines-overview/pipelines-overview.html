@@ -48,8 +48,8 @@
             </md-card>
             <!-- End: Header -->
 
-        </div>        
-        
+        </div>
+
         <!-- Growth chart -->
         <div id="growth-chart-section">
             <div class="module-padding">
@@ -57,6 +57,11 @@
                     Candidate Growth
                     <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
                 </h2>
+                <div layout="row" layout-align="end">
+                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack">
+                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" value="{{option}}">{{option}}</md-radio-button>
+                    </md-radio-group>
+                </div>
             </div>
 
             <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">

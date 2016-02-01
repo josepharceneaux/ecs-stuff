@@ -42,8 +42,12 @@
             vm.redrawChart = function () {
 
                 vm.chart.reflow();
-                
+
             };
+
+            vm.chartFilters = {};
+            vm.daysFilterOptions = [7, 30, 60, 90];
+            vm.chartFilters.daysBack = vm.daysFilterOptions[1];
 
             vm.chart = new Highcharts.Chart({
                 chart: {
@@ -182,11 +186,22 @@
                 series: [{
                     name: 'Candidates Added',
                     color: '#907f90',
-                    pointStart: Date.UTC(2015, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 500, 600, 300, 200, 350, 50, 170, 235, 600, 734, 650, 400, 200]
+                    pointStart: (function () {
+                        var d = new Date();
+                        d.setDate(d.getDate() - vm.chartFilters.daysBack);
+                        return d.getTime();
+                    })(),
+                    pointInterval: (function () {
+                        var day = 24 * 60 * 60 * 1000;
+                        //if (vm.chartFilters.daysBack === 7) {
+                        //    return day; // => expects 7 data points
+                        //} else if (vm.chartFilters.daysBack === 30) {
+                            return day * 5; // => expects no more than 6 data points
+                        //} //else if...
+                    })(),
+                    data: [200, 350, 50, 170, 235, 600, 734]
                 }]
-            });            
+            });
 
             vm.totalCandidates = {
                 graph: {}
@@ -461,7 +476,7 @@
 
              vm.removeFilter = function () {
                 vm.tableData.query.filter = '';
-    
+
                 if (vm.tableData.filter.form.$dirty) {
                     vm.tableData.filter.form.$setPristine();
                 }
