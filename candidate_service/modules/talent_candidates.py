@@ -3,9 +3,10 @@ Helper functions for candidate CRUD operations and tracking edits made to the Ca
 """
 # Standard libraries
 import datetime
-from flask import request
+import urlparse
 import dateutil.parser
 import simplejson as json
+from flask import request
 from datetime import date
 
 # Database connection and logger
@@ -42,7 +43,6 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
-import urlparse
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
