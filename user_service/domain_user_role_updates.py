@@ -7,6 +7,7 @@ from user_service.common.models.user import (
 from user_service.common.models.talent_pools_pipelines import (
     TalentPool, TalentPoolCandidate, TalentPoolGroup
 )
+from user_service.common.models.candidate import Candidate
 
 
 def get_role_names():
@@ -84,19 +85,34 @@ def add_talent_pool():
                 db.session.add(talent_pool)
                 db.session.commit()
 
-                for candidate in user.candidates:
-                    talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
-                    if not talent_pool_candidate:
-                        print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
-                        db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id, candidate_id=candidate.id))
-                        db.session.commit()
+                s = 0
+                e = s + 20
+                number_of_user_candidates = len(user.candidates)
+                print "number_of_user_candidates: {}".format(number_of_user_candidates)
+                user_candidates = user.candidates.__getslice__(s, e)
+                while e < number_of_user_candidates + 20:
+                    for candidate in user_candidates:
+                        talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
+                        if not talent_pool_candidate:
+                            print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
+                            db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool.id, candidate_id=candidate.id))
+                            db.session.commit()
+                    s += 20
             else:
-                for candidate in user.candidates:
-                    talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
-                    if not talent_pool_candidate:
-                        print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
-                        db.session.add(talent_pool_candidate)
-                        db.session.commit()
+                print "else-clause: TalentPoolCandidate: {}".format(talent_pool)
+                s = 0
+                e = s + 20
+                number_of_user_candidates = len(user.candidates)
+                print "number_of_user_candidates: {}".format(number_of_user_candidates)
+                user_candidates = user.candidates.__getslice__(s, e)
+                while e < number_of_user_candidates + 20:
+                    for candidate in user_candidates:
+                        talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
+                        if not talent_pool_candidate:
+                            print "TalentPoolCandidate => candidate_id: {}, talent_pool_id: {}".format(candidate.id, talent_pool.id)
+                            db.session.add(talent_pool_candidate)
+                            db.session.commit()
+                    s += 20
         start += 20
 
 
