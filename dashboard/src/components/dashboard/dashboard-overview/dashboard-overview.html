@@ -46,13 +46,14 @@
             <div flex-gt-sm="33" layout="column">
                 
                 <div>
-                    <md-card>
-                        <md-card-title>
+                    <md-card class="new-candidates">
+                        <md-card-title flex="none">
                             <md-card-title-text>
-                                <span class="md-subhead">New Candidates Today</span>
+                                <span class="md-title">New Candidates Today</span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
+                            <span class="md-display-3">{{ vm.newCandidateToday }}</span>
                         </md-card-content>
                     </md-card>
                 </div>
@@ -98,17 +99,20 @@
             <!-- Third column -->
             <div flex-gt-sm="33" layout="column">
                 
+                <!-- Team Contributions -->
                 <div>
-                    <md-card>
-                        <md-card-title>
+                    <md-card class="team-contributions">
+                        <md-card-title flex="none">
                             <md-card-title-text>
-                                <span class="md-subhead">Team Contributions</span>
+                                <span class="md-title">Team Contributions</span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content>
+                        <md-card-content flex>
+                            <span class="md-display-3">{{ vm.teamContributions }}</span>
                         </md-card-content>
                     </md-card>
                 </div>
+                <!-- End: Team Contributions -->
                 
                 <!-- Top 10 Contributors -->
                 <div flex layout="row">

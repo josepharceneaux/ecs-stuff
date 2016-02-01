@@ -556,6 +556,9 @@
                 }
             ];
 
+            vm.newCandidateToday = 400;
+            vm.teamContributions = 400;
+
             vm.viewCandidate = function (candidate) {
                 
                 // TODO: go to candidate detail page

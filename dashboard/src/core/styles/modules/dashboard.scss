@@ -22,6 +22,18 @@
       color: #bbb;
     }
 
+    &.new-candidates,
+    &.team-contributions {
+      height: 200px;
+
+      md-card-content {
+        span {
+          color: #1DBA7E;
+          font-weight: 600;
+        }
+      }
+    }
+
     md-list-item {
       margin-bottom: 15px;
       padding: 0;
