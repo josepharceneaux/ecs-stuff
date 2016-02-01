@@ -155,6 +155,12 @@
                     initials: 'MT',
                     current: 'Senior Software Engineer at GetTalent',
                     activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Julie Thomas',
+                    initials: 'JT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
                 }
             ];
 
@@ -220,6 +226,12 @@
                     value: 10
                 }
             ];
+
+            vm.redrawChart = function () {
+
+                vm.chart.reflow();
+
+            };
 
             vm.chart = new Highcharts.Chart({
                 chart: {
@@ -291,11 +303,12 @@
                     enabled: false
                 },
                 legend: {
+                    enabled: false,
                     layout: 'vertical',
                     align: 'right',
                     verticalAlign: 'top',
-                    x: 10,
-                    y: 0,
+                    x: -30,
+                    y: -20,
                     floating: true,
                     width: 170,
                     symbolWidth: 12,
@@ -312,7 +325,7 @@
                         style: {
                             fontWeight: 400,
                         }
-                    }
+                    },
                 },
                 tooltip: {
                     borderWidth: 0,
@@ -356,23 +369,11 @@
                     }
                 },
                 series: [{
-                    name: 'Legend 1',
-                    color: '#907f90',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
-                }, {
-                    name: 'Legend 2',
+                    name: 'Candidates Added',
                     color: '#97b99b',
-                    pointStart: Date.UTC(2016, 0, 1),
+                    pointStart: Date.UTC(2015, 0, 1),
                     pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
-                }, {
-                    name: 'Legend 3',
-                    color: '#6ba5ae',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                    data: [0, 20, 50, 80, 120, 60, 150, 110, 112, 92, 20, 40, 80, 100]
                 }]
             });
 

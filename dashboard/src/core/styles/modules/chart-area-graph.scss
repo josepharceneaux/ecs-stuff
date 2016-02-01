@@ -4,7 +4,7 @@
 
 .overview-graph {
   //background:#fff;
-  @include linear-gradient(to top, #ffffff, #efefef);
+  @include linear-gradient(to bottom, #ffffff, #eeeeee);
   .area-chart {
     background:transparent;
   }
@@ -14,7 +14,7 @@
 }
 
 .chart-container {
-  background-color: #ececeb;
+  background-color: transparent;
   position: relative;
   > div {
     overflow: hidden;

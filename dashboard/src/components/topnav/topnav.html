@@ -54,6 +54,20 @@
                     </footer>
                 </nav>
             </div>
+            <div hide class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+                <strong>Talent Pool:</strong> Google Drive Team
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--pipeline"></span> Choose a Talent Pool
+                    </header>
+                    <a ui-sref="talentPools.talentPool({ poolId: '2892365a' })">Senior Software Engineer</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'd92f9a8e' })">Junior Project Manager</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'bea68b3e' })">Web Designer</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a ui-sref="talentPools">See All</a>
+                    </footer>
+                </nav>
+            </div>
             <div class="navigation__items">
                 <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
                 <div hide class="js--mobileMenu js--topNavItem navigation__item">
