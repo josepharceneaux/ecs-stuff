@@ -162,26 +162,27 @@
 
                 <div flex="none" layout="column">
 
-
-                    <!-- Begin: Top Skills -->
+                    <!-- Begin: Current Candidate Usage -->
                     <md-card flex>
                         <md-card-title>
                             <md-card-title-text>
                                 <span class="md-title">
-                                    Top skills
-                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                                    Candidate Usage
+                                    <i class="fa fa-info-circle"  uib-tooltip="Total number of pipelines in your talent pool" tooltip-class="tooltip--info" ></i>
                                 </span>
-                                <span class="md-subhead">Large</span>
+                                <span class="md-subhead">Percentage of Talent Pool Used</span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-content>
-                            <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
-                                <div></div>
-                            </gt-bar-graph>
+                        </md-card-title>
+                        <md-content style="text-align:center">
+                            <div class="spacing-adjust">
+                                <gt-circle-graph layout="row" angle="75" value="3000" class="gt-circle-graph">
+                                    <div></div>
+                                </gt-circle-graph>
+                            </div>
                         </md-content>
                     </md-card>
-                    <!-- End: Top Skills -->
-
+                    <!-- End: Current Candidate Usage -->
 
                 </div>
 

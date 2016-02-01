@@ -490,8 +490,7 @@
                     targetEvent: $event,
                     clickOutsideToClose: true,
                     fullscreen: useFullScreen
-                });
-                    /**
+                })
                 .then(function (answer) {
                     //$scope.status = 'You said the information was "' + answer + '".';
 
@@ -506,7 +505,7 @@
                     var expireDate = new Date();
                     expireDate.setDate(expireDate.getDate() + 1);
                     $cookies.put('welcomeModalShown', true, { expires: expireDate });
-                });**/
+                });
             }
         };
 
