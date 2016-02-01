@@ -18,6 +18,16 @@
   height: 100%;
 }
 
+.view--app {
+  @extend .view;
+
+  padding-top: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    padding-top: $misc--topNavHeight--small;
+  }
+}
+
 .view--login {
   @extend .view;
 
