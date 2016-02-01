@@ -11,9 +11,9 @@ from abc import ABCMeta
 import requests
 
 # Application Specific
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
-from social_network_service.modules.utilities import http_request
 from social_network_service.common.models.user import User
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential

@@ -122,6 +122,7 @@ class TalentActivityManager(object):
     CAMPAIGN_EMAIL_OPEN = 16
     CAMPAIGN_EMAIL_CLICK = 17
     RSVP_EVENT = 23
+    EVENT = 24
     # RSVP_MEETUP = 24
 
     MESSAGES = {
@@ -130,6 +131,8 @@ class TalentActivityManager(object):
                      "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
                      " on event '%(eventTitle)s'",
                      "candidate.png"),
+        EVENT:      ("%(firstname)s  %(lastname)s created an event <b>%(title)s .</b> "
+                     "%(description)s <b>'"),
         CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
                                "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
         CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",

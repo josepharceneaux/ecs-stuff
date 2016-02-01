@@ -104,11 +104,11 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
-from social_network_service.modules.utilities import http_request
 from social_network_service.modules.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
 from social_network_service.modules.custom_exceptions import InvalidDatetime
 from social_network_service.modules.custom_exceptions import EventNotSaveInDb

@@ -17,8 +17,11 @@ from datetime import datetime
 # Third Party
 import pytz
 import requests
+from flask import request
 from pytz import timezone
 # Application Specific Imports
+from social_network_service.common.routes import ActivityApiUrl
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import *
 from social_network_service.common.models.event import Event
@@ -216,61 +219,6 @@ def get_data_to_log(log_data):
     return callee_data
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
-    """
-    This is common function to make HTTP Requests. It takes method_type (GET or POST)
-    and makes call on given URL. It also handles/logs exception.
-    :param method_type: GET or POST.
-    :param url: resource URL.
-    :param params: params to be sent in URL.
-    :param headers: headers for Authorization.
-    :param data: data to be sent.
-    :param user_id: Id of logged in user.
-    :return: response from HTTP request or None
-    """
-    response = None
-    if method_type in ['GET', 'POST', 'PUT', 'DELETE']:
-        method = getattr(requests, method_type.lower())
-        error_message = None
-        if url:
-            try:
-                response = method(url, params=params, headers=headers, data=data, verify=False)
-                # If we made a bad request (a 4XX client error or 5XX server
-                # error response),
-                # we can raise it with Response.raise_for_status():"""
-                response.raise_for_status()
-            except requests.exceptions.HTTPError as e:
-                if e.response.status_code in [401]:
-                    # 401 is the error code for Not Authorized user(Expired Token)
-                    raise
-                # checks if error occurred on "Server" or is it a bad request
-                elif e.response.status_code < 500:
-                    if 'errors' in e.response.json():
-                        error_message = e.message + ', Details: ' \
-                                        + json.dumps(
-                            e.response.json().get('errors'))
-                    elif 'error_description' in e.response.json():
-                        error_message = e.message + ', Details: ' \
-                                        + json.dumps(
-                            e.response.json().get('error_description'))
-                    else:
-                        error_message = e.message
-                else:
-                    # raise any Server error occurred on social network website
-                    raise
-            except requests.RequestException as e:
-                error_message = e.message
-            if error_message:
-                logger.error('http_request: HTTP request failed, %s, '
-                             'user_id: %s', error_message, user_id)
-            return response
-        else:
-            error_message = 'URL is None. Unable to make "%s" Call' % method_type
-            logger.error('http_request: Error: %s, user_id: %s' % (error_message, user_id))
-    else:
-        logger.error('Unknown Method type %s ' % method_type)
-
-
 def get_class(social_network_name, category, user_credentials=None):
     """
     This function is used to import module from given parameters.
@@ -327,7 +275,24 @@ def process_event(data, user_id, method='Create'):
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
         if method == 'Create':
-            return event_obj.create_event()
+            event_id = event_obj.create_event()
+
+            # Create activity of event object creation
+            event_obj = Event.get_by_user_and_event_id(user_id=user_id,
+                                                       event_id=event_id)
+
+            header = {'Authorization': request.oauth_token,
+                      'Content-Type': 'application/json'}
+
+            activity_data = {'first_name': request.user.first_name,
+                             'last_name': request.user.last_name,
+                             'title': event_obj.title,
+                             'description': event_obj.description,
+                             }
+
+            post_data = {'type': TalentActivityManager}
+            http_request('post', headers=header)
+            return event_id
         else:
             return event_obj.update_event()
     else:

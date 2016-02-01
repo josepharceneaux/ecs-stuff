@@ -5,9 +5,9 @@ class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.custom_exceptions import *
-from social_network_service.modules.utilities import http_request
 
 WEBHOOK_REDIRECT_URL = 'http://bfd91b3c.ngrok.io'  # app.config['WEBHOOK_REDIRECT_URL']
 

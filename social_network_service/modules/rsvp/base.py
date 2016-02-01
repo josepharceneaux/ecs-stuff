@@ -11,6 +11,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from social_network_service.common.routes import CandidateApiUrl
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import ProductNotFound
 from social_network_service.modules.custom_exceptions import UserCredentialsNotFound
@@ -454,10 +456,14 @@ class RSVPBase(object):
             entry_in_db.update(**data)
             entry_id = entry_in_db.id
         else:
-            entry = CandidateSource(**data)
-            CandidateSource.save(entry)
-            entry_id = entry.id
-        attendee.candidate_source_id = entry_id
+            header = {'': ''}
+            response = http_request('post', CandidateApiUrl.CANDIDATES,
+                                    headers=header,
+                                    data=data)
+            # entry = CandidateSource(**data)
+            # CandidateSource.save(entry)
+            # entry_id = entry.id
+        # attendee.candidate_source_id = entry_id
         return attendee
 
     @staticmethod

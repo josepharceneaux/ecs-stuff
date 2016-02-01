@@ -16,7 +16,7 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.event.base import EventBase
-from social_network_service.modules.utilities import http_request
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.modules.utilities import milliseconds_since_epoch_local_time
 from social_network_service.modules.custom_exceptions import VenueNotFound
