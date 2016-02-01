@@ -511,6 +511,51 @@
                 }
             ];
 
+            vm.topContributors = [
+                {
+                    name: 'Bob Smith',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
+                },
+                {
+                    name: 'Katie Fries',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 55
+                },
+                {
+                    name: 'Rachel Thompson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    value: 45
+                },
+                {
+                    name: 'Chris Chang',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    value: 40
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google Southwest',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    value: 12
+                },
+                {
+                    name: 'Lauren Freeman',
+                    team: 'Google HR',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
+                    value: 10
+                }
+            ];
+
             vm.viewCandidate = function (candidate) {
                 
                 // TODO: go to candidate detail page
