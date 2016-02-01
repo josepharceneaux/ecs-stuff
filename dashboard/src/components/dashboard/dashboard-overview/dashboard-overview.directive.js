@@ -33,6 +33,7 @@
         init();
         activate();
         drawTopPipelinesChart();
+        drawCandidatesDistributionChart();
         showWelcomeDialog();
 
         function init() {
@@ -602,11 +603,93 @@
                     candidates: 50,
                     recommendations: 45
                 }
-            ];            
+            ];
+
+            vm.candidates = [
+                {
+                    name: 'Candidates Used',
+                    value: 2374
+                },
+                {
+                    name: 'Candidates Not Used',
+                    value: 532
+                }
+            ];
         }
 
         function activate() {
             logger.log('Activated Dashboard Overview View');
+        }
+
+        function drawCandidatesDistributionChart() {
+            $timeout(function () {
+                $('#candidate-distribution-chart').highcharts({
+                    chart: {
+                        type: 'pie',
+                        backgroundColor: 'transparent'
+                    },
+                    title: {
+                        useHTML: true,
+                        text: '<span>10,000</span><br/><span>(talent pool)</span>',
+                        align: 'center',
+                        floating: true,
+                        y: 100,
+                        style: {
+                            textAlign: 'center'
+                        }
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    legend: {
+                        align: 'left',
+                        itemStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    tooltip: {
+                        formatter: function () {
+                            return this.key + ': ' + this.y + ' (' + Math.round(this.percentage) + '%)';
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            showInLegend: true,
+                            shadow: false,
+                            center: ['50%', '50%'],
+                            dataLabels: {
+                                enabled: false
+                            }
+                        },
+                        series: {
+                            borderWidth: 0
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'Candidates Usage',
+                            data: [
+                                {
+                                    name: vm.candidates[0].name,
+                                    color: '#2AF4AA',
+                                    y: vm.candidates[0].value
+                                },
+                                {
+                                    name: vm.candidates[1].name,
+                                    color: '#1EA778',
+                                    y: vm.candidates[1].value
+                                }
+                            ],
+                            size: '100%',
+                            innerSize: '60%'
+                        }
+                    ]
+                });
+            });
         }
 
         function drawTopPipelinesChart() {
