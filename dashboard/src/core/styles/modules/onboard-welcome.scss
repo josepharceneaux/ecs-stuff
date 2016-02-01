@@ -5,16 +5,30 @@
 .onboard-welcome {
   max-width:700px;
   text-align:center;
-  .md-dialog-content {
-    padding:0px 70px;
+  form {
+    padding:30px;
   }
-  img {
-    margin:40px 20px 30px;
-    width: auto;
-    display: inline-block;
+  .md-dialog-content {
+    padding:0px 20px;
+    p {
+      text-align:left;
+    }
   }
   .md-display-3 {
-    font-size: 30px;
-    margin-bottom:20px;
+    font-size: 28px;
+    margin:10px 5px 10px 5px;
+    color: $color--blue;
+    line-height: 1.35;
+  }
+  .welcome-graphic {
+    text-align:center;
+    margin-top:20px;
+    img {
+      width:260px;
+      display:inline-block;
+    }
+  }
+  md-dialog-actions {
+    margin-top: 15px;
   }
 }
