@@ -24,14 +24,15 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia'];
+    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $mdDialog, $mdMedia) {
+    function ControllerFunction(logger, $mdDialog, $mdMedia, $timeout) {
         var vm = this;
 
         init();
         activate();
+        drawTopPipelinesChart();
         showWelcomeDialog();
 
         function init() {
@@ -574,10 +575,118 @@
                 alert('Email to ' + candidate.name);
 
             };
+
+            vm.topPipelines = [
+                {
+                    title: 'Product Management',
+                    candidates: 100,
+                    recommendations: 80
+                },
+                {
+                    title: 'Python',
+                    candidates: 90,
+                    recommendations: 70
+                },
+                {
+                    title: 'Backbone',
+                    candidates: 70,
+                    recommendations: 50
+                },
+                {
+                    title: 'Javascript',
+                    candidates: 55,
+                    recommendations: 45
+                },
+                {
+                    title: 'PHP',
+                    candidates: 50,
+                    recommendations: 45
+                }
+            ];            
         }
 
         function activate() {
             logger.log('Activated Dashboard Overview View');
+        }
+
+        function drawTopPipelinesChart() {
+            $timeout(function () {
+                $('#top-pipelines-chart').highcharts({
+                    chart: {
+                        type: 'bar',
+                        backgroundColor: 'transparent'
+                    },
+                    title: {
+                        text: null
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    xAxis: {
+                        categories: _.pluck(vm.topPipelines, 'title'),
+                        title: {
+                            text: null
+                        },
+                        labels: {
+                            enabled: false
+                        },
+                        tickLength: 0,
+                        lineWidth: 0                        
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: null
+                        },
+                        labels: {
+                            enabled: false
+                        },
+                        gridLineWidth: 0,
+                        max: 100
+                    },
+                    plotOptions: {
+                        series: {
+                            borderWidth: 0,
+                            pointPadding: 0,
+                            groupPadding: 0.1
+                        }
+                    },
+                    legend: {
+                        align: 'right',
+                        itemStyle: {
+                            color: '#fff'
+                        },
+                        margin: 0
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    series: [{
+                        name: 'Available Candidates',
+                        data: _.pluck(vm.topPipelines, 'candidates'),
+                        color: '#1EA778',
+                        pointWidth: 30,
+                        dataLabels: {
+                            enabled: true,
+                            align: 'right',
+                            color: '#fff',
+                            style: {
+                                fontSize: '16px',
+                                textShadow: 'none',
+                                textWeight: 'normal'
+                            },
+                            formatter: function () {
+                                return this.y + '%';
+                            }
+                        }
+                    }, {
+                        name: 'Recommendations',
+                        data: _.pluck(vm.topPipelines, 'recommendations'),
+                        color: '#2AF4AA',
+                        pointWidth: 10
+                    }]
+                });
+            });
         }
 
         function showWelcomeDialog($event) {
