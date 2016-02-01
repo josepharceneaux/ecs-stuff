@@ -74,9 +74,8 @@ def add_talent_pool():
     print "running: add_talent_pool()"
     number_of_users = User.query.count()
     start = 0
-    end = start + 20
-    users = User.query.slice(start, end).all()
-    while end < number_of_users + 20:
+    users = User.query.slice(start, start + 20).all()
+    while start < number_of_users:
         for user in users:
             talent_pool = TalentPool.query.filter_by(domain_id=user.domain_id, owner_user_id=user.id).first()
             if not talent_pool:
@@ -86,11 +85,10 @@ def add_talent_pool():
                 db.session.commit()
 
                 s = 0
-                e = s + 20
                 number_of_user_candidates = len(user.candidates)
                 print "number_of_user_candidates: {}".format(number_of_user_candidates)
-                user_candidates = user.candidates.__getslice__(s, e)
-                while e < number_of_user_candidates + 20:
+                user_candidates = user.candidates.__getslice__(s, s + 20)
+                while s < number_of_user_candidates:
                     for candidate in user_candidates:
                         talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
                         if not talent_pool_candidate:
@@ -101,11 +99,10 @@ def add_talent_pool():
             else:
                 print "else-clause: TalentPoolCandidate: {}".format(talent_pool)
                 s = 0
-                e = s + 20
                 number_of_user_candidates = len(user.candidates)
                 print "number_of_user_candidates: {}".format(number_of_user_candidates)
-                user_candidates = user.candidates.__getslice__(s, e)
-                while e < number_of_user_candidates + 20:
+                user_candidates = user.candidates.__getslice__(s, s + 20)
+                while s < number_of_user_candidates:
                     for candidate in user_candidates:
                         talent_pool_candidate = TalentPoolCandidate.get(candidate.id, talent_pool.id)
                         if not talent_pool_candidate:
