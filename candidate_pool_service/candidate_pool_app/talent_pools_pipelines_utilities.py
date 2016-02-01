@@ -105,8 +105,8 @@ def get_campaigns_of_talent_pipeline(talent_pipeline):
     sql_query = """
         SELECT email_campaign.*
         FROM email_campaign, email_campaign_smart_list, smart_list
-        WHERE email_campaign.id=email_campaign_smart_list.emailCampaignId AND
-              email_campaign_smart_list.smartListId=smart_list.id AND
+        WHERE email_campaign.Id=email_campaign_smart_list.emailCampaignId AND
+              email_campaign_smart_list.smartListId=smart_list.Id AND
               smart_list.talentPipelineId=:talent_pipeline_id"""
 
     email_campaigns = EmailCampaign.query.from_statement(text(sql_query)).params(
