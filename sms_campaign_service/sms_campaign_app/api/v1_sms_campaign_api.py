@@ -70,10 +70,7 @@ This file contains API endpoints related to sms_campaign_service.
 
 # Standard Library
 import types
-
 from werkzeug.utils import redirect
-from werkzeug.exceptions import BadRequest
-
 
 # Third Party
 from flask import request
@@ -87,7 +84,6 @@ from sms_campaign_service.modules.handy_functions import (request_from_google_sh
                                                           get_valid_blast_obj)
 
 # Common Utils
-from sms_campaign_service.common.error_handling import *
 from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -98,6 +94,8 @@ from sms_campaign_service.common.campaign_services.validators import get_valid_j
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (CampaignUtils, raise_if_dict_values_are_not_int_or_long)
 from sms_campaign_service.common.campaign_services.custom_errors import CampaignException
+from sms_campaign_service.common.error_handling import (ResourceNotFound, InvalidUsage,
+                                                        ForbiddenError,  InternalServerError)
 
 
 # creating blueprint
@@ -130,7 +128,7 @@ class SMSCampaigns(Resource):
         >>> import requests
 
         >>> headers = {'Authorization': 'Bearer <access_token>'}
-        >>> response = requests.post(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
+        >>> response = requests.get(SmsCampaignApiUrl.CAMPAIGNS, headers=headers)
 
         .. Response::
 
@@ -164,10 +162,8 @@ class SMSCampaigns(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
-                    403 (Forbidden error)
                     500 (Internal Server Error)
         """
-
         camp_obj = SmsCampaignBase(request.user.id)
         all_campaigns = [campaign.to_json() for campaign in camp_obj.get_all_campaigns()]
         return dict(count=len(all_campaigns), campaigns=all_campaigns), 200
@@ -206,9 +202,11 @@ class SMSCampaigns(Resource):
                     403 (Forbidden error)
                     500 (Internal Server Error)
 
-        ..Error Codes:: 5002 (MultipleTwilioNumbersFoundForUser)
+        ..Error Codes::
+                        5001 (INVALID_URL_FORMAT)
+                        5002 (MultipleTwilioNumbersFoundForUser)
                         5003 (TwilioApiError)
-                        5017 (INVALID_URL_FORMAT)
+                        5005 (MultipleUsersFound)
         """
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
@@ -252,7 +250,9 @@ class SMSCampaigns(Resource):
         .. Status:: 200 (Resource deleted)
                     207 (Not all deleted)
                     400 (Bad request)
+                    401 (Unauthorized to access getTalent)
                     403 (Forbidden error)
+                    404 (Campaign not found)
                     500 (Internal Server Error)
         """
         req_data = get_valid_json_data(request)
@@ -269,7 +269,7 @@ class SMSCampaigns(Resource):
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
         not_found = []
-        not_owner = []
+        not_owned = []
         status_code = None
         for campaign_id in campaign_ids:
             campaign_obj = SmsCampaignBase(request.user.id)
@@ -280,7 +280,7 @@ class SMSCampaigns(Resource):
                     not_deleted.append(campaign_id)
             except ForbiddenError:
                 status_code = ForbiddenError.http_status_code()
-                not_owner.append(campaign_id)
+                not_owned.append(campaign_id)
             except ResourceNotFound:
                 status_code = ResourceNotFound.http_status_code()
                 not_found.append(campaign_id)
@@ -289,16 +289,16 @@ class SMSCampaigns(Resource):
                 not_deleted.append(campaign_id)
         if status_code and len(campaign_ids) == 1:  # It means only one campaign_id was provided
             return dict(message='Unable to delete campaign.'), status_code
-        count_invalid_ids = len(not_deleted) + len(not_found) + len(not_owner)
+        count_invalid_ids = len(not_deleted) + len(not_found) + len(not_owned)
         if not count_invalid_ids:
             return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), 200
         if count_invalid_ids == len(campaign_ids):
             status_code = InvalidUsage.http_status_code()
         else:
             status_code = 207
-        return dict(message='Unable to delete %d campaign(s).' % (count_invalid_ids),
+        return dict(message='Unable to delete %d campaign(s).' % count_invalid_ids,
                     not_deleted_ids=not_deleted, not_found_ids=not_found,
-                    not_owned_ids=not_owner), status_code
+                    not_owned_ids=not_owned), status_code
 
 
 @api.route(SmsCampaignApi.SCHEDULE)
@@ -306,7 +306,7 @@ class ScheduleSmsCampaign(Resource):
     """
     Endpoint looks like /v1/campaigns/:id/schedule
     This resource is used to
-        1- schedule SMS Campaign using scheduler_service [POST]
+        1- Schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
         3- Un-schedule SMS Campaign using scheduler_service [DELETE]
     """
@@ -355,8 +355,9 @@ class ScheduleSmsCampaign(Resource):
                     500 (Internal Server Error)
         """
         # validate data to schedule
-        pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                  CampaignUtils.SMS)
+        pre_processed_data = SmsCampaignBase.data_validation_for_campaign_schedule(request,
+                                                                                   campaign_id,
+                                                                                   CampaignUtils.SMS)
         # create object of class SmsCampaignBase
         sms_camp_obj = SmsCampaignBase(request.user.id)
         # assign campaign to object
@@ -368,11 +369,18 @@ class ScheduleSmsCampaign(Resource):
 
     def put(self, campaign_id):
         """
-        This endpoint is to re-schedule a campaign. We Check if given campaign has task_id and
-        task is scheduled on scheduler_service, If task is not scheduled, return 200 with message
-        that task has stopped already
-        Otherwise, remove the task from scheduler_service and remove task_id from  database table
-        'sms_campaign' as well.
+        This endpoint is to re-schedule a campaign.
+        We check if given campaign has task_id and task is scheduled on scheduler_service.
+
+        If task is not scheduled, we raise Invalid Usage saying 'Campaign is not scheduled. Use POST
+        method instead to schedule it'.
+
+        If campaign is scheduled, we get scheduled task from scheduler_service. We then compare
+        the fields of scheduled task with the requested field values (e.g. frequency,
+        start_datetime, end_datetime etc.) If requested field values are different than the field
+        values of scheduled_task, we un-schedule first previous schedule of that campaign and then
+        schedule it again with new parameters. Otherwise we return the message that campaign
+        is already scheduled with given parameters.
 
         :param campaign_id: integer, unique id representing campaign in getTalent's database
         :type campaign_id: int | long
@@ -416,22 +424,15 @@ class ScheduleSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        # validate data to schedule
-        pre_processed_data = SmsCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                  CampaignUtils.SMS)
-        # check if task is already present on scheduler_service
-        scheduled_task_id = SmsCampaignBase.pre_process_re_schedule(pre_processed_data)
-        if not scheduled_task_id:  # Task not found on scheduler_service
-            # create object of class SmsCampaignBase
-            sms_camp_obj = SmsCampaignBase(request.user.id)
-            # assign campaign to object
-            sms_camp_obj.campaign = pre_processed_data['campaign']
-            # call method schedule() to schedule the campaign and get the task_id
-            task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
+        # create object of class SmsCampaignBase
+        sms_camp_obj = SmsCampaignBase(request.user.id)
+        # call method schedule() to schedule the campaign and get the task_id
+        task_id = sms_camp_obj.reschedule(request, campaign_id)
+        if task_id:
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
         else:
             message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
-            task_id = scheduled_task_id
+            task_id = sms_camp_obj.campaign.scheduler_task_id
         return dict(message=message, task_id=task_id), 200
 
     def delete(self, campaign_id):
@@ -473,7 +474,7 @@ class CampaignById(Resource):
     """
     Endpoint looks like /v1/campaigns/:id
     This resource is used to
-        1- Get Campaign from given campaign_id [GET]
+        1- Get campaign from given campaign_id [GET]
         2- Update an existing SMS campaign [PUT]
         3- Delete campaign by given campaign id [DELETE]
     """
@@ -623,6 +624,8 @@ class SendSmsCampaign(Resource):
         """
         It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
+        Once the campaign is scheduled, _scheduler_service_ will pick it up and it will ping the
+        this endpoint (https://sms-campaign-service/v1/campaign/:id/send)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
@@ -662,7 +665,9 @@ class SendSmsCampaign(Resource):
 class SmsCampaignUrlRedirection(Resource):
     """
     This endpoint redirects the candidate to our app.
+    For details, kindly see below or read README.md under app_common/common/campaign_services/.
     """
+
     def get(self, url_conversion_id):
         """
         This endpoint is /v1/redirect/:id
@@ -704,16 +709,17 @@ class SmsCampaignUrlRedirection(Resource):
         if request_from_google_shorten_url_api(request.headers.environ):
             return 200
         try:
-            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignUtils.SMS,
-                                                                verify_signature=True,
-                                                                request_args=request.args,
-                                                                requested_url=request.full_path)
+            redirection_url = CampaignBase.url_redirect(url_conversion_id, CampaignUtils.SMS,
+                                                        verify_signature=True,
+                                                        request_args=request.args,
+                                                        requested_url=request.full_path)
             return redirect(redirection_url)
         # In case any type of exception occurs, candidate should only get internal server error
-        except Exception:
+        except Exception as error:
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
-            logger.exception("Error occurred while URL redirection for SMS campaign.")
+            logger.exception("Error occurred while URL redirection for SMS campaign. %s"
+                             % error.message)
         return dict(message='Internal Server Error'), InternalServerError.http_status_code()
 
 
@@ -723,6 +729,7 @@ class SmsReceive(Resource):
     This end point is is /v1/receive and is used by Twilio to notify getTalent when a candidate
     replies to an SMS.
     """
+
     def post(self):
         """
         - Recruiters(users) are assigned to one unique Twilio number. That number is configured with

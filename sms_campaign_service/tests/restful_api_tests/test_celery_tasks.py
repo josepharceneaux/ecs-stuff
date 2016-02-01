@@ -252,7 +252,7 @@ class TestURLRedirectionApi(object):
             self, valid_header, scheduled_sms_campaign_of_current_user,
             url_conversion_by_send_test_sms_campaign):
         """
-        Here we first delete the campaign, and then test functionality of process_url_redirect
+        Here we first delete the campaign, and then test functionality of url_redirect
         by making HTTP GET call to endpoint /v1/redirect. It should give ResourceNotFound Error.
         But candidate should get Internal server error. Hence this test should get internal server
         error.
@@ -265,7 +265,7 @@ class TestURLRedirectionApi(object):
                                         candidate_first):
         """
         Here we first delete the candidate, which internally deletes the sms_campaign_send record
-        as it uses candidate as primary key. We then test functionality of process_url_redirect
+        as it uses candidate as primary key. We then test functionality of url_redirect
         by making HTTP GET call to endpoint /v1/redirect. It should get ResourceNotFound Error.
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
@@ -278,7 +278,7 @@ class TestURLRedirectionApi(object):
         """
         Here we first delete the url_conversion object. which internally deletes the
         sms_campaign_send record as it uses url_conversion as primary key. We then test
-        functionality of process_url_redirect by making HTTP GET call to endpoint /v1/redirect.
+        functionality of url_redirect by making HTTP GET call to endpoint /v1/redirect.
         It should get ResourceNotFound Error. But candidate should only get internal server error.
         So this test asserts we get internal server error.
         """
@@ -296,7 +296,7 @@ class TestURLRedirectionMethods(object):
     def test_process_url_redirect_empty_destination_url(self,
                                                         url_conversion_by_send_test_sms_campaign):
         """
-        Here we are testing the functionality of process_url_redirect() class method of
+        Here we are testing the functionality of url_redirect() class method of
         CampaignBase by setting destination URL an empty string. It should get custom exception
         EmptyDestinationUrl.
         :return:
@@ -313,7 +313,7 @@ class TestURLRedirectionMethods(object):
             url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the campaign which internally deletes campaign send record,
-        and then test functionality of process_url_redirect. It should give ResourceNotFound Error.
+        and then test functionality of url_redirect. It should give ResourceNotFound Error.
         """
         _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
         _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
@@ -323,7 +323,7 @@ class TestURLRedirectionMethods(object):
                                                          candidate_first):
         """
         Here we first delete the candidate, which internally deletes the sms_campaign_send record
-        as it uses candidate as primary key. We then test functionality of process_url_redirect().
+        as it uses candidate as primary key. We then test functionality of url_redirect().
         It should get ResourceNotFound Error.
         """
         _delete_candidate(candidate_first)
@@ -334,7 +334,7 @@ class TestURLRedirectionMethods(object):
         """
         Here we first delete the url_conversion object. which internally deletes the
         sms_campaign_send record as it uses url_conversion as primary key. We then test
-        functionality of process_url_redirect(). It should get ResourceNotFound Error.
+        functionality of url_redirect(). It should get ResourceNotFound Error.
         """
         _delete_url_conversion(url_conversion_by_send_test_sms_campaign)
         _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
@@ -504,12 +504,12 @@ def _get_args_from_url(url):
 
 def _call_process_url_redirect(url_conversion_obj):
     """
-    This directly calls the process_url_redirect() class method of CampaignBase
+    This directly calls the url_redirect() class method of CampaignBase
     :param url_conversion_obj:
     :return:
     """
     with app.app_context():
-        CampaignBase.process_url_redirect(url_conversion_obj.id, CampaignUtils.SMS)
+        CampaignBase.url_redirect(url_conversion_obj.id, CampaignUtils.SMS)
 
 
 def _call_pre_process_url_redirect(request_args, url):
@@ -532,7 +532,7 @@ def _make_destination_url_empty(url_conversion_obj):
 
 def _assert_for_no_campiagn_send_obj(url_conversion_obj):
     """
-    This asserts the functionality of process_url_redirect() by deleting campaign from
+    This asserts the functionality of url_redirect() by deleting campaign from
     database.
     :param url_conversion_obj:
     :return:

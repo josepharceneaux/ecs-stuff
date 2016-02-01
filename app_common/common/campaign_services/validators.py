@@ -158,7 +158,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
     6- Returns data_to_schedule
 
-    This function is used in pre_process_schedule() of CampaignBase class.
+    This function is used in data_validation_for_campaign_schedule() of CampaignBase class.
 
     :param campaign_obj: campaign obj
     :param request: request received on API
@@ -203,7 +203,7 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     :exception: ResourceNotFound
 
     **See Also**
-    .. see also:: process_url_redirect() method of CampaignBase class
+    .. see also:: url_redirect() method of CampaignBase class
     """
     # check if candidate exists in database
     if not candidate:

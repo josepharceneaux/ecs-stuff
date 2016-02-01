@@ -226,7 +226,9 @@ class SmsCampaignBase(CampaignBase):
         user_phone = UserPhone.get_by_user_id_and_phone_label_id(self.user.id,
                                                                  phone_label_id)
         if len(user_phone) == 1:
+            # check if Twilio number is assigned to only one user
             user_phone_value = user_phone[0].value
+            _get_valid_user_phone(user_phone_value)
             if user_phone_value:
                 return user_phone[0]
         elif len(user_phone) > 1:
@@ -767,7 +769,7 @@ class SmsCampaignBase(CampaignBase):
     @classmethod
     def process_candidate_reply(cls, reply_data):
         """
-        - Recruiters(users) are assigned to one unique twilio number.sms_callback_url of
+        - Recruiters(users) are assigned to one unique Twilio number. sms_callback_url of
         that number is set to redirect request at this end point. Twilio API hits this URL
         with data like
                  {
@@ -783,9 +785,8 @@ class SmsCampaignBase(CampaignBase):
                       "ToZip": "97132",
                  }
 
-        - When candidate replies to user'phone number, we do the following at our App's
-            endpoint '/v1/receive'
-
+        - When candidate replies to a recruiter's phone_number, endpoint '/v1/receive' is hit by
+            Twilio and this method does the following step:
             1- Gets "user_phone" record using "To" key
             2- Gets "candidate_phone" record using "From" key
             3- Gets latest campaign sent to given candidate
@@ -795,27 +796,28 @@ class SmsCampaignBase(CampaignBase):
                     "Alvaro Oliveira" has replied "Thanks" to campaign "Jobs at Google"
             7- Updates the count of replies in "sms_campaign_blast" by 11
 
-        :param reply_data:
-        :type reply_data: dict
-
         .. Status:: 200 (OK)
                     400 (Invalid Usage)
                     403 (ForbiddenError)
                     404 (Resource not found)
                     500 (Internal Server Error)
 
-        .. Error codes:
-                     MISSING_REQUIRED_FIELD(5104)
-                     MultipleUsersFound(5007)
-                     MultipleCandidatesFound(5008)
-                     NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5011)
-                     NoCandidateAssociatedWithSmartlist(5012)
-                     NoSMSCampaignSentToCandidate(5013)
-                     NoUserFoundForPhoneNumber(5016)
-                     NoCandidateFoundForPhoneNumber(5017)
+        .. Error codes::
+
+                     MultipleUsersFound(5005)
+                     NoSMSCampaignSentToCandidate(5006)
+                     NoCandidateFoundForPhoneNumber(5008)
+                     NoUserFoundForPhoneNumber(5009)
+                     MultipleCandidatesFound(5016)
+                     NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5102)
+                     NoCandidateAssociatedWithSmartlist(5103)
 
         **See Also**
-        .. see also:: sms_receive() function in sms_campaign_app/app.py
+        .. see also:: SmsReceive() class in sms_campaign_app/v1_sms_campaign_api.py
+
+        :param reply_data:
+        :type reply_data: dict
+
         """
         required_fields = ['From', 'To', 'Body']
         missing_items = find_missing_items(reply_data, required_fields)

@@ -60,7 +60,7 @@ class EmptyDestinationUrl(CampaignException):
     creating campaign.
 
     **Usage**
-        .. see also:: process_url_redirect() method of SmsCampaignBase class.
+        .. see also:: url_redirect() method of SmsCampaignBase class.
     """
     error_code = CampaignException.EMPTY_DESTINATION_URL
 

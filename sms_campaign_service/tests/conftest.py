@@ -571,7 +571,7 @@ def url_conversion_by_send_test_sms_campaign(request,
     sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
     # get URL conversion record from relationship
     url_conversion = \
-        sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0].url_conversion
+        sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion
 
     def tear_down():
         UrlConversion.delete(url_conversion)

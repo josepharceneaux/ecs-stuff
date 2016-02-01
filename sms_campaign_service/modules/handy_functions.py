@@ -268,9 +268,7 @@ def get_formatted_phone_number(phone_number):
     """
     raise_if_not_instance_of(phone_number, basestring)
     try:
-        formatted_phone_number = format_phone_number(phone_number)
-        if isinstance(formatted_phone_number, dict):
-            formatted_phone_number = formatted_phone_number['formatted_number']
+        formatted_phone_number = format_phone_number(phone_number)['formatted_number']
     except InvalidUsage:
         # Adding this condition here so that in tests, fake.phone_number()
         # does not always generate American/Canadian number, so format_phone_number()

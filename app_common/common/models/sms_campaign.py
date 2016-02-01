@@ -66,10 +66,10 @@ class SmsCampaignSend(db.Model):
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
-                                                      cascade='all,delete-orphan',
-                                                      passive_deletes=True,
-                                                      backref='send')
+    url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                   cascade='all,delete-orphan',
+                                   passive_deletes=True,
+                                   backref='send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id
@@ -118,8 +118,8 @@ class SmsCampaignSendUrlConversion(db.Model):
     __tablename__ = 'sms_campaign_send_url_conversion'
     id = db.Column(db.Integer, primary_key=True)
     send_id = db.Column(db.Integer,
-                                 db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
-                                 nullable=False)
+                        db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
+                        nullable=False)
     url_conversion_id = db.Column(db.Integer,
                                   db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
                                   nullable=False)

@@ -355,7 +355,7 @@ class CampaignUtils(object):
         return True
 
     @staticmethod
-    def get_campaign_for_ownership_validation(campaign_id, current_user_id, campaign_type):
+    def get_campaign(campaign_id, current_user_id, campaign_type):
         """
         This function gets the campaign from database table as specified by campaign_type.
         If campaign obj is found, it returns it. Otherwise it returns Resource Not Found error.
