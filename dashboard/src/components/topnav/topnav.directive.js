@@ -18,22 +18,24 @@
             replace: true,
             scope: {},
             controller: 'TopnavController',
-            controllerAs: 'vm'
+            controllerAs: 'vm',
+            link: linkFunction
         };
 
         return directive;
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService'];
+    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService', 'notificationCenterService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuth, toastr, systemAlertsService) {
+    function ControllerFunction($state, OAuth, toastr, systemAlertsService, notificationCenterService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
         vm.notifyUser = notifyUser;
         vm.createSystemAlert = createSystemAlert;
+        vm.toggleNotificationCenter = notificationCenterService.toggle;
 
         init();
 
@@ -116,5 +118,67 @@
 
             systemAlertsService.createAlert(messages[Math.round((messages.length - 1) * Math.random())]);
         }
+
+
+    }
+
+    function linkFunction() {
+        var self = {};
+
+        self.navItem   = $('.js--topNavItem');
+
+        function navClickout(target, $menu) {
+            // console.log(menu.is(target), !!menu.has(target).length)
+
+            if(!!$menu.has(target).length) return;
+
+            return closeSubMenu($menu);
+        }
+
+        function openSubMenu($menu) {
+            setTimeout(function() {
+                $('body').bind('click.clickout', function(e) {
+                    navClickout(e.target, $menu)
+                })
+            });
+
+            return $menu.addClass('navigation__item--active')
+        }
+
+        function closeSubMenu($menu) {
+            $('body').unbind('click.clickout')
+            return $menu.removeClass('navigation__item--active')
+        }
+
+        // -----
+        // Public Methods
+        // -----
+
+        self.toggleSubMenu = function(element) {
+            var $this = element;
+            var $subMenu = $this.find('.navigation__subMenu')
+
+            if(!$subMenu.length) return false;
+
+            if($this.hasClass('navigation__item--active')) {
+                return closeSubMenu($this)
+            } else {
+                return openSubMenu($this)
+            }
+        };
+
+
+        self.init = function() {
+            $(self.navItem).on('click', function(e) {
+                e.preventDefault();
+                self.toggleSubMenu($(this));
+            });
+        };
+
+        (function() {
+            self.init();
+        })();
+
+        return self;
     }
 })();

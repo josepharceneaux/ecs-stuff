@@ -12,21 +12,52 @@
 }
 
 .view {
+  position: relative;
   display: table;
   width: 100%;
   height: 100%;
 }
 
+.view--app {
+  @extend .view;
+
+  padding-top: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    padding-top: $misc--topNavHeight--small;
+  }
+}
+
 .view--login {
   @extend .view;
 
-  display: table;
-  width: 100%;
-  height: 100%;
   background-color: $color--blue;
   background-image: url('../images/backgrounds/login-peaks.png');
   background-position: bottom;
   background-size: cover;
+  .header--login {
+    margin-bottom:0px;
+  }
+  .box {
+    padding:50px;
+    border-right:darken($color--blue, 5%) 1px solid;
+    border-bottom:darken($color--blue, 5%) 1px solid;
+  }
+  .row--skinny {
+    margin-top:0px;
+    margin-bottom:0px;
+  }
+
+  .form__input--icon--password,
+  .form__input--icon--email
+  {
+    border: 1px solid #efefef;
+    padding: 1em 3em;
+  }
+  .alert {
+    color:red;
+    margin:5px 0px;
+  }
 }
 
 .view--pipelines {
@@ -42,13 +73,13 @@
 // -----
 
 .view__main {
-  background-color: $color--lightGray;
-  z-index: $z-index--1;
-  position: absolute;
-  overflow: hidden;
-  min-height: 100%;
+  background-color: $color--nearWhite;
+  z-index: $z-index--view__main;
+  display: table-cell;
   width: 100%;
+  min-height: 100%;
 }
+
 .view__main--login {
   display: table-cell;
   width: 100%;
@@ -58,9 +89,6 @@
 
 .view__main--pipelines {
   @extend .view__main;
-
-  position: static;
-  overflow: visible;
 }
 
 .view__main--user {
@@ -68,11 +96,9 @@
 }
 
 .view__wrapper--pipelines-nav {
-  @include helper--media($breakpoint--large) {
-    display: table-cell;
-    height: 100%;
-    vertical-align: top;
-  }
+  display: table-cell;
+  height: 100%;
+  vertical-align: top;
 }
 
 .view__wrapper--user-nav {
@@ -100,198 +126,148 @@
 // -----
 
 .view__sidebar {
+  transition: width $easing--normal;
+  background-color: $color--darkGray;
+  z-index: $z-index--view__sidebar;
   width: 100%;
-  height: 100%;
-}
+  bottom: 0;
+  position: fixed;
+  overflow: hidden;
 
-.view__sidebar__nav {
-  position: relative;
-  width: 100%;
-  height: 100%;
-
-  @include helper--media($breakpoint--large) {
+  @include helper--media($breakpoint--medium) {
+    width: $misc--sidebarParentMenuWidth;
     display: table;
-    vertical-align: top;
-  }
-}
-
-.view__sidebar__navParent {
-  background-color: $color--darkerGray;
-  color: $color--white;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  transition: width $easing--normal, color $easing--normal, background $easing--normal;
-
-  @include helper--media($breakpoint--large) {
-    display: table-cell;
-    vertical-align: top;
-    padding-bottom: $padding--jumbo;
     height: 100%;
     position: relative;
-    z-index: $z-index--1;
+    vertical-align: top;
+  }
+}
+
+.view__sidebar--active {
+  @include helper--media($breakpoint--medium) {
+    width: $misc--sidebarWidth;
+  }
+}
+
+.view__sidebar--navigation {
+  @extend .view__sidebar;
+}
+
+.view__sidebar--navigation--fixed {
+  @extend .view__sidebar--navigation;
+
+  position: static;
+  overflow: visible;
+  background-color: transparent;
+
+  & .view__sidebar__wrapper--navigation {
+    @extend .view__sidebar--navigation;
+
+    @include helper--media($breakpoint--medium) {
+      position: fixed;
+      top: $misc--topNavHeight--small;
+      bottom: 0;
+      display: block;
+      height: auto;
+    }
   }
 
-  .view__sidebar__navIcon {
-    font-size: $font-size--jumbo;
-    text-align: center;
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--full) {
+      width: $misc--sidebarWidth;
+    }
 
-    span {
-      position: relative;
-      top: .2em;
+    .view__sidebar__wrapper--navigation {
+      @include helper--media($breakpoint--medium) {
+        width: $misc--sidebarWidth;
+      }
     }
   }
 }
 
-.view__sidebar__navParent--active {
-  color: $color--medGray;
-  background-color: $color--darkerGray;
-  display: flex;
-  justify-content: center;
-  transition: width $easing--normal, color $easing--normal, background $easing--normal;
+.view__sidebar--feed {
+  @extend .view__sidebar;
 
-  @include helper--media($breakpoint--large) {
+  position: absolute;
+  top: -$misc--topNavMenuHeight;
+  right: 0;
+  bottom: -$misc--topNavMenuHeight;
+  z-index: $z-index--view__sidebar--feed;
+  width: 0;
+  height: 100%;
+  background-color: $color--white;
+  box-shadow: -3px 0 36px -12px rgba(0,0,0,0.15);
+
+  @include helper--media($breakpoint--medium) {
     display: table-cell;
-    vertical-align: top;
-    padding-bottom: $padding--jumbo;
-    height: 100%;
-    position: relative;
-    z-index: $z-index--1;
+    overflow: visible;
   }
 
-  .view__sidebar__navText {
+  @include helper--media($breakpoint--full) {
+    position: relative;
+  }
+
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--medium) {
+      width: $misc--sidebarWidth;
+    }
+  }
+
+  &:after {
+    content: '';
+    position: absolute;
+
+    display: block;
+    width: 100%;
+    height: $misc--topNavMenuHeight;
+    background-color: $color--white;
+  }
+}
+
+.view__sidebar--feed--fixed {
+  @extend .view__sidebar--feed;
+
+  width: 0;
+  background-color: transparent;
+  box-shadow: none;
+
+  &:after {
     display: none;
   }
 
-  .view__sidebar__navIcon {
-    font-size: $font-size--jumbo;
-    text-align: center;
+  & .view__sidebar__wrapper--feed {
+    @extend .view__sidebar--feed;
 
-    span {
-      position: relative;
-      top: .2em;
+    position: fixed;
+    top: $misc--topNavHeaderHeight--tiny;
+    bottom: 0;
+    height: auto;
+    padding-bottom: 2em;
+    box-shadow: -3px 0 36px -12px rgba(0,0,0,0.15);
+
+    @include helper--media($breakpoint--small) {
+      top: $misc--topNavHeaderHeight--small;
     }
-  }
-}
 
-.view__sidebar__navItem {
-  transition: background $easing--slow;
-  padding-top: $padding--small;
-  padding-bottom: $padding--tiny;
-  width: 20%;
-  color: inherit;
-  text-decoration: inherit;
-  float: left;
-  text-align: center;
-
-  @include helper--media($breakpoint--large) {
-    padding-top: $padding--tiny;
-    padding-bottom: $padding--tiny;
-    padding-left: $padding--small;
-    padding-right: $padding--small;
-    border-width: $border-width--medium;
-    border-color: transparent;
-    border-right-style: solid;
-    width: 100%;
-    float: none;
-    display: table;
-    text-align: left;
-
-  }
-
-  &:hover {
-    background-color: $color--nearBlack;
-  }
-}
-
-.view__sidebar__navItem--active {
-  @extend .view__sidebar__navItem;
-
-  color: $color--blue;
-
-  @include helper--media($breakpoint--large) {
-    border-color: $color--blue;
-    color: inherit;
-  }
-}
-
-.view__sidebar__navIcon {
-  margin: 0;
-}
-
-.view__sidebar__navText {
-  display: none;
-
-  @include helper--media($breakpoint--large) {
-    display: table-cell;
-    vertical-align: middle;
-  }
-}
-
-.view__sidebar__navChild {
-  @include inc--align--left;
-
-  color: $color--medGray;
-  width: 100%;
-  vertical-align: top;
-
-  @include helper--media($breakpoint--large) {
-    width: auto;
-    display: table;
-    height: 100%;
-    position: relative;
-    z-index: $z-index--0;
-  }
-
-  a {
-    font-size: $font-size--large;
-    padding: $padding--small;
-    padding-left: $padding--large;
-    padding-right: $padding--large;
-    display: block;
-    color: inherit;
-    text-decoration: inherit;
-
-    @include helper--media($breakpoint--large) {
-      font-size: $font-size--main;
-    }
-  }
-}
-
-.view__sidebar__subNav {
-  display: none;
-  opacity: 0;
-  background-color: $color--darkGray;
-
-  transition: none;
-
-  @include helper--media($breakpoint--large) {
-    height: 100%;
-
-    transition: transform 300ms ease;
-    transform: translate3d(-100%, 0, 0);
-  }
-}
-
-.view__sidebar__subNav--active {
-  @extend .view__sidebar__subNav;
-
-  display: block;
-  opacity: 1;
-
-  a {
-    transition: color $easing--slow;
-
-    &:hover {
-      color: $color--white;
+    &:after {
+      display: none;
     }
   }
 
-  @include helper--media($breakpoint--large) {
-    display: table-cell !important;
-    height: 100%;
-    vertical-align: top;
-    transform: translate3d(0, 0, 0);
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--medium) {
+      width: 0;
+    }
+
+    @include helper--media($breakpoint--full) {
+      position: static;
+      width: $misc--sidebarWidth;
+    }
+
+    .view__sidebar__wrapper--feed {
+      @include helper--media($breakpoint--medium) {
+        width: $misc--sidebarWidth;
+      }
+    }
   }
 }
-

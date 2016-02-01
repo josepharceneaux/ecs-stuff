@@ -22,6 +22,9 @@
                 views: {
                     content: {
                         template: '<gt-login></gt-login>'
+                    },
+                    'title@': {
+                        template: '<title>getTalent | Login To Your Account</title>'
                     }
                 }
             })
@@ -155,7 +158,10 @@
             .state('dashboard', {
                 parent: 'site',
                 url: '/dashboard',
-                redirectTo: 'dashboard.overview'
+                redirectTo: 'dashboard.overview',
+                ncyBreadcrumb: {
+                    label: 'Dashboard'
+                }
             })
             .state('dashboard.overview', {
                 url: '',
@@ -163,6 +169,9 @@
                     '@site': {
                         template: '<gt-dashboard-overview></gt-dashboard-overview>'
                     }
+                },
+                ncyBreadcrumb: {
+                    label: 'Home'
                 }
             })
             .state('dashboard.customize', {
@@ -433,6 +442,9 @@
                 views: {
                     '@site': {
                         template: '<gt-pipelines></gt-pipelines>'
+                    },
+                    'title@': {
+                        template: '<title>hola!</title>'
                     }
                 }
             })
@@ -442,6 +454,10 @@
                     '@pipelines': {
                         template: '<gt-pipelines-overview></gt-pipelines-overview>'
                     }
+                },
+                ncyBreadcrumb: {
+                    parent: 'dashboard',
+                    label: 'Pipelines'
                 }
             })
             .state('pipelines.manage', {
@@ -470,6 +486,10 @@
                     '@pipelines': {
                         template: '<gt-pipeline-detail></gt-pipeline-detail>'
                     }
+                },
+                ncyBreadcrumb: {
+                    parent: 'pipelines.overview',
+                    label: 'Pipeline detail'
                 }
             })
             .state('pipelines.pipeline.settings', {
@@ -488,31 +508,31 @@
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists', {
-                url: '/smart-lists',
+            .state('pipelines.pipeline.smartlists', {
+                url: '/smartlists',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-lists></gt-smart-lists>'
+                        template: '<gt-smartlists></gt-smartlists>'
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists.create', {
+            .state('pipelines.pipeline.smartlists.create', {
                 url: '/create',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-create></gt-smart-list-create>'
+                        template: '<gt-smartlist-create></gt-smartlist-create>'
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists.smartList', {
+            .state('pipelines.pipeline.smartlists.smartlist', {
                 url: '/:pipelineId',
-                redirectTo: 'pipelines.pipeline.smartLists.smartList.detail'
+                redirectTo: 'pipelines.pipeline.smartlists.smartlist.detail'
             })
-            .state('pipelines.pipeline.smartLists.smartList.detail', {
+            .state('pipelines.pipeline.smartlists.smartlist.detail', {
                 url: '',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-details></gt-smart-list-details>'
+                        template: '<gt-smartlist-details></gt-smartlist-details>'
                     }
                 }
             })
@@ -641,6 +661,34 @@
                 parent: 'site',
                 url: '/talent-pools',
                 redirectTo: 'talentPools.manage'
+            })
+            .state('talentPools.dashboard', {
+                abstract: true,
+                url: '/dashboard'
+            })
+            .state('talentPools.dashboard.candidates', {
+                url: '/candidates',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-candidates></gt-talent-pools-dashboard-candidates>'
+                    }
+                }
+            })
+            .state('talentPools.dashboard.pipelines', {
+                url: '/pipelines',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-pipelines></gt-talent-pools-dashboard-pipelines>'
+                    }
+                }
+            })
+            .state('talentPools.dashboard.teams', {
+                url: '/teams',
+                views: {
+                    '@site': {
+                        template: '<gt-talent-pools-dashboard-teams></gt-talent-pools-dashboard-teams>'
+                    }
+                }
             })
             .state('talentPools.manage', {
                 url: '',

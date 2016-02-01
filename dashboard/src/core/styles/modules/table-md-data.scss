@@ -1,0 +1,69 @@
+// ---------------------------------------------------
+// Modules / Table-MD-Data
+// ---------------------------------------------------
+
+table {
+  &.md-table {
+    margin-top:0px;
+    .md-head {
+      .md-row {
+        border-bottom:1px solid #efefef;
+        td.md-cell {
+          border-bottom:1px solid #efefef;
+        }
+      }
+      .md-column {
+        font-size:15px;
+        font-weight: 400;
+      }
+    }
+
+    th {
+      &.md-column {
+
+        &.md-active {
+          md-icon {
+          }
+        }
+      }
+    }
+
+    .md-row {
+      &:nth-child(even) {
+        background:lighten(#d0d6d1, 13%);
+      }
+      td.md-cell {
+        border:none;
+        font-size: 14px;
+        color: #666;
+      }
+    }
+
+  }
+}
+
+.md-table-pagination {
+  justify-content: center;
+}
+
+md-toolbar {
+  background:red;
+}
+
+md-toolbar.md-table-toolbar form {
+  input {
+    width: 100%;
+    margin: 0;
+    border: none;
+    color: rgba(0, 0, 0, 0.87);
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.26);
+      font-weight: 300;
+    }
+  }
+}

@@ -644,7 +644,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     # Return data dictionary. Initializing here, to have standard return type across the function
     search_results = dict(total_found=0,
-                          total_count=0,
                           candidates=[],
                           max_score=0,
                           max_pages=0,
@@ -949,13 +948,13 @@ def _get_source_id(request_vars):
     :return:
     """
 
-    if isinstance(request_vars['source_id'], basestring):  # source_id is string
-        if 'product_' in request_vars['source_id']:
-            request_vars['product_id'] = request_vars['source_id'].replace('product_', '')
-            request_vars['source_id'] = ''
+    if isinstance(request_vars['source_ids'], basestring):  # source_id is string
+        if 'product_' in request_vars['source_ids']:
+            request_vars['product_id'] = request_vars['source_ids'].replace('product_', '')
+            request_vars['source_ids'] = ''
     else:  # source_id is array
         new_source_ids = []
-        for source_or_product in request_vars['source_id']:
+        for source_or_product in request_vars['source_ids']:
             if 'product_' in source_or_product:  # if product id found, add to product_id array
 
                 if not request_vars['product_id']:
@@ -964,8 +963,8 @@ def _get_source_id(request_vars):
                 request_vars['product_id'].append(source_or_product.replace('product_', ''))
             else:  # otherwise, add to new product ids array
                 new_source_ids.append(source_or_product)
-        request_vars['source_id'] = new_source_ids
-    return request_vars['source_id']
+        request_vars['source_ids'] = new_source_ids
+    return request_vars['source_ids']
 
 
 def _get_search_queries(request_vars):

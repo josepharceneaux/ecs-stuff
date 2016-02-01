@@ -20,7 +20,7 @@
         'app.pipelines',
         'app.resetPassword',
         'app.search',
-        'app.smartLists',
+        'app.smartlists',
         'app.styleguide',
         'app.support',
         'app.systemAlerts',

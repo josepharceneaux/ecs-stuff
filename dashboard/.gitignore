@@ -72,3 +72,7 @@ journal
 ehthumbs.db
 Icon?
 Thumbs.db
+
+# Generated icon font files
+gettalent-icons*
+

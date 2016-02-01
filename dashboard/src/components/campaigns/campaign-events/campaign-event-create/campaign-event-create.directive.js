@@ -43,7 +43,7 @@
                 { id: 'eventbrite02', name: 'Eventbrite 01' }
             ];
 
-            vm.smartLists = [
+            vm.smartlists = [
                 { id: 'candidate-count-by-pipelines', name: 'Candidate Count by Pipelines' },
                 { id: 'candidate-growth-by-pipelines', name: 'Candidate Growth by Pipelines' },
                 { id: 'candidate-growth-by-user', name: 'Candidate Growth by User' },

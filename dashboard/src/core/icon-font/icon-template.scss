@@ -2,19 +2,18 @@
   font-family: "<%= fontName %>";
   src: url('<%= fontPath %><%= fontName %>.eot'); // IE9 compat
   src: url('<%= fontPath %><%= fontName %>.eot?#iefix') format('embedded-opentype'), // IE8 and below
+    url('<%= fontPath %><%= fontName %>.woff2') format('woff2'), // standards
     url('<%= fontPath %><%= fontName %>.woff') format('woff'), // standards
-    url('<%= fontPath %><%= fontName %>.ttf') format('truetype'), // Safari, Android, iOS
-    url('<%= fontPath %><%= fontName %>.svg#<%= fontName %>') format('svg'); // legacy iOS
+    url('<%= fontPath %><%= fontName %>.ttf') format('truetype'); // Safari, Android, iOS
+  font-style: normal;
+  font-weight: normal;
 }
 
 .<%= className %> {
   font-family: "<%= fontName %>";
-  font-style: normal;
-  font-weight: normal;
   font-variant: normal;
-  text-transform: none;
+  text-transform: none !important;
   speak: none;
-  display: inline;
 }
 
 <% _.each(glyphs, function(glyph) { %>.<%= className %>--<%= glyph.name %> { @extend .<%= className %>; &:after { content: "\<%= glyph.unicode[0].charCodeAt(0).toString(16).toUpperCase() %>" } }

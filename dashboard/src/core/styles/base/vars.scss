@@ -6,44 +6,36 @@
 // Colors
 // -----
 
-$color--white:      #ffffff;
-$color--black:      #000000;
-$color--gray:       #828282;
-$color--lightGray:  #f2f4f5;
-$color--medGray:    #bbbbbb;
-$color--darkGray:   #494f51;
-$color--darkerGray: #414546;
-$color--nearBlack:  #333638;
+$color--white:       #ffffff;
+$color--nearBlack:     #444444;
+$color--gray:          #c6c6c6;
+$color--darkGray:      #373437;
+$color--lightGray: #5a5a5d;
+$color--nearWhite:     #efefef;
+$color--black:       #212223;
 
-$color--blue:       #009ccc;
-$color--lightBlue:  #17c6fc;
+$color--blue:        #009ccc;
+$color--lightBlue:   #17c6fc;
 
+$color--purple:        #5e385d;
+$color--lightPurple:   #7a4979;
+$color--lighterPurple: #d180d1;
+
+
+// @deprecated: delete once all old modules markup and css have been removed
 $color--teal:       #9ef6dc;
-
 $color--green:      #21bd58;
 $color--lightGreen: #50ca7d;
-
 $color--teal:       #44c196;
-
 $color--red:        #de4f11;
 $color--darkRed:    #a82b2b;
-
 $color--yellow:     #f5fa6b;
 $color--darkYellow: #ecf32f;
-
 $color--orange: #e3c363;
 $color--orange-alt: #efb127;
-
 $color--turquoise: #57e5dd;
 $color--pink: #ec6fc2;
-
 $color--pink-alt: #f26969;
-
-// ----
-// Section Colors (New)
-// ----
-// @todo Post Demo Fix
-
 
 // -----
 // Fonts
@@ -57,6 +49,7 @@ $font--icons: 'gettalent-icons', sans-serif;
 // -----
 
 $font-size--small: .85em;
+$font-size--smaller: .9em;
 $font-size--main:  1em;
 $font-size--big:   1.2em;
 $font-size--large: 1.5em;
@@ -102,6 +95,8 @@ $padding--jumbo:  1.75em;
 $padding--giant:  2em;
 $padding--mega:   2.5em; // don't use often
 
+$padding--module:  30px;
+
 // -----
 // Border
 // -----
@@ -113,7 +108,7 @@ $border-width--medium: .2em;
 // Border Radius
 // -----
 
-$border-radius--base: 5px;
+$border-radius--base: 3px;
 $border-radius--button: $border-radius--base;
 $border-radius--container: $border-radius--base;
 
@@ -138,12 +133,27 @@ $breakpoint--teeny:  20em;
 // Z-Indexes
 // -----
 
-$z-index--0:  0;
-$z-index--1:  100;
-$z-index--2:  200;
-$z-index--3:  300;
-$z-index--4:  400;
-$z-index--5:  500;
+// angular material z-indexes for reference
+
+//$z-index-toast: 105 !default;
+//$z-index-tooltip: 100 !default;
+//$z-index-menu: 100 !default;
+//$z-index-select: 90 !default;
+//$z-index-dialog: 80 !default;
+//$z-index-bottom-sheet: 70 !default;
+//$z-index-scroll-mask: 65 !default;
+//$z-index-sidenav: 60 !default;
+//$z-index-backdrop: 50 !default;
+//$z-index-fab: 20 !default;
+//$z-index-progress-circular: 2 !default; // Used to fix animation bug in Chrome
+
+$z-index--mobileMenu:          45 !default;
+$z-index--toastr:              40 !default;
+$z-index--view__sidebar--feed: 30 !default;
+$z-index--topnav:              30 !default;
+$z-index--view__sidebar:       25 !default;
+$z-index--view__main:          20 !default;
+$z-index--hero__header:        10 !default;
 
 // -----
 // Easing
@@ -156,5 +166,38 @@ $easing--slow:   .5s ease;
 // Misc
 // -----
 
-//$misc--headerHeight: 5.25em;
-$misc--sidebarWidth: 4em;
+$misc--sidebarWidth: 20em;
+$misc--sidebarParentMenuWidth: 3.62em;
+$misc--topNavMenuHeight: 2.75em;
+$misc--topNavHeaderHeight--small: 5.4em;
+$misc--topNavHeaderHeight--tiny: 3.9em;
+$misc--topNavHeight--small: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--small;
+$misc--topNavHeight--tiny: $misc--topNavMenuHeight + $misc--topNavHeaderHeight--tiny;
+
+// -----
+// Animations
+// -----
+
+@keyframes animation--show {
+  0% {
+    display: none;
+    opacity: 0;
+  }
+  1% {
+    display: block;
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes animation--hide {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    display: none;
+  }
+}

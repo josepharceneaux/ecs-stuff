@@ -12,22 +12,22 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.validators import (is_valid_email)
+from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
-    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists
+    is_area_of_interest_authorized, do_candidates_belong_to_users_domain, get_candidate_if_exists, is_valid_email_client,get_json_if_exist
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
     candidates_resource_schema_get, resource_schema_preferences
 )
-from jsonschema import validate, FormatChecker
+from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 
 # Error handling
-from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
+from candidate_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError, UnauthorizedError, InternalServerError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Models
@@ -38,77 +38,26 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateSubscriptionPreference
 )
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import Frequency
+from candidate_service.common.models.user import DomainRole
 
 # Module
 from candidate_service.modules.talent_candidates import (
-    fetch_candidate_info, get_candidate_id_from_candidate_email,
+    fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference
 )
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
-
-from candidate_service.modules.talent_openweb import find_candidate_from_openweb
-
+from candidate_service.modules.talent_openweb import match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict, find_in_openweb_by_email
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
+import logging, json
 
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
-    def get(self, **kwargs):
-        """
-        Endpoint:  GET /v1/candidates
-        Optional-input:  {'candidate_ids': [int, int, int, ...]}
-
-        Function retrieves candidates via two methods:
-             i. Candidates from a list of candidate IDs, OR
-            ii. If nothing is provided, all of user's candidates will be returned
-
-        :return     [dict] -> list of candidate-dicts
-        """
-        # Authenticated user
-        authed_user= request.user
-
-        # Parse request body & validate data
-        body_dict = request.get_json()
-        try:
-            validate(instance=body_dict, schema=candidates_resource_schema_get)
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
-
-        get_all_domain_candidates = True if not body_dict else False
-        if get_all_domain_candidates:  # Retrieve user's candidates
-            candidates = authed_user.candidates
-
-            retrieved_candidates = []
-            for candidate in candidates:
-
-                # If Candidate is web hidden, it is assumed "deleted"
-                if candidate.is_web_hidden:
-                    raise NotFoundError('Candidate not found', custom_error.CANDIDATE_IS_HIDDEN)
-
-                retrieved_candidates.append(fetch_candidate_info(candidate))
-
-        else:  # Retrieve via a list of candidate IDs
-            candidate_ids = body_dict.get('candidate_ids')
-
-            # Candidate IDs must belong to user's domain
-            if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
-                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-            retrieved_candidates = []
-            for candidate_id in candidate_ids:
-
-                # Check for candidate's existence and web-hidden status
-                candidate = get_candidate_if_exists(candidate_id=candidate_id)
-                retrieved_candidates.append(fetch_candidate_info(candidate))
-
-        return {'candidates': retrieved_candidates}
-
-    @require_all_roles('CAN_ADD_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
@@ -124,14 +73,14 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         # Authenticate user
-        authed_user, body_dict = request.user, request.get_json()
+        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_post,
                      format_checker=FormatChecker())
-        except Exception as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        except ValidationError as e:
+            raise InvalidUsage(error_message="Schema validation error: %s" % e.message, error_code=custom_error.INVALID_INPUT)
 
         candidates = body_dict.get('candidates')
 
@@ -147,14 +96,17 @@ class CandidatesResource(Resource):
                     raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
                                        error_code=custom_error.INVALID_EMAIL)
 
-                # If candidate is web-hidden, un-hide it
-                can_email_query_obj = CandidateEmail.get_by_address(email_address=email_address)
-                if can_email_query_obj:
-                    candidate = Candidate.get_by_id(candidate_id=can_email_query_obj.candidate_id)
-                    if candidate.is_web_hidden:
-                        candidate.is_web_hidden = False
+                # Check for candidate's email in authed_user's domain
+                candidate_email_obj = CandidateEmail.query.join(Candidate) \
+                    .filter(Candidate.user_id == authed_user.id) \
+                    .filter(CandidateEmail.address == email_address).first()
+                # If candidate's email is found, check if it's web-hidden
+                if candidate_email_obj:
+                    candidate = Candidate.get_by_id(candidate_id=candidate_email_obj.candidate_id)
+                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
+                        candidate.is_web_hidden = 0
                         # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating, candidate_id = False, True, candidate.id
+                        is_creating, is_updating, candidate_id = False, True, candidate_email_obj.candidate_id
                     else:
                         raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
                                            custom_error.CANDIDATE_ALREADY_EXISTS)
@@ -217,7 +169,7 @@ class CandidatesResource(Resource):
 
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    @require_all_roles('CAN_EDIT_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates
@@ -234,8 +186,8 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
-        # Authenticated user
-        authed_user, body_dict = request.user, request.get_json()
+        # Authenticated user and request body
+        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data
         try:
@@ -332,7 +284,7 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -357,9 +309,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email=candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.CANDIDATE_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -375,7 +325,7 @@ class CandidateResource(Resource):
 
         return {'candidate': candidate_data_dict}
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -399,9 +349,7 @@ class CandidateResource(Resource):
                 raise InvalidUsage("A valid email address is required", custom_error.INVALID_EMAIL)
 
             # Get candidate ID from candidate's email
-            candidate_id = get_candidate_id_from_candidate_email(candidate_email)
-            if not candidate_id:
-                raise NotFoundError('Candidate email not recognized', custom_error.EMAIL_NOT_FOUND)
+            candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -421,7 +369,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -464,7 +412,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -518,7 +466,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -561,7 +509,7 @@ class CandidateCustomFieldResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -604,7 +552,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -655,7 +603,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -720,7 +668,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateExperienceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -763,7 +711,7 @@ class CandidateExperienceResource(Resource):
 class CandidateExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -821,7 +769,7 @@ class CandidateExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -864,7 +812,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -907,7 +855,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -950,7 +898,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -994,7 +942,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1038,7 +986,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1084,7 +1032,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
@@ -1119,7 +1067,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1143,26 +1091,124 @@ class CandidateEditResource(Resource):
 class CandidateOpenWebResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/openweb?url=http://...
-        Function will return requested Candidate url from openweb endpoint
+        Function will return requested Candidate url, email from openweb endpoint
         """
         # Authenticated user
         authed_user = request.user
         url = request.args.get('url')
-        find_candidate = find_candidate_from_openweb(url)
-        if find_candidate:
-            candidate = fetch_candidate_info(find_candidate)
-            return {'candidate': candidate}
+        email = request.args.get('email')
+        if url:
+            find_candidate = match_candidate_from_openweb(url, authed_user)
+        elif email:
+            find_candidate = find_in_openweb_by_email(email)
+        candidate = None
+
+        if int(find_candidate[0]) == 1:
+            candidate = {'candidate': fetch_candidate_info(find_candidate[1])}
+
+        elif int(find_candidate[0]) == 0:
+            try:
+                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate[1])}
+            except Exception as e:
+                logging.exception("Converting candidate from dice to gT went wrong")
+                raise InvalidUsage(error_message=e.message)
         else:
-            raise NotFoundError("Candidate not found", custom_error.CANDIDATE_NOT_FOUND)
+            raise NotFoundError(error_message="Candidate not found")
+
+        return candidate
+
+class CandidateClientEmailCampaignResource(Resource):
+    decorators = [require_oauth()]
+
+    def post(self, **kwargs):
+        """ POST /web/api/client_email_campaigns
+            input:
+             {
+                'candidates': [{candidateObject1}, {candidateObject2}, ...],
+                'email_subject': 'Email Subject',
+                'email_from': 'Samuel L. Jackson',
+                'email_reply_to': 'amir@gettalent.com',
+                'email_body_html': '<html><body>Email Body</body></html>',
+                'email_body_text': 'Plaintext part of email goes here, if any',
+                'email_client_id': int,
+                'sent_time': datetime,
+             }
+
+        Function will create a list, email_campaign, email_campaign_send, and a url_conversion
+
+        :return:    email-campaign-send id for each candidate => [int]
+        """
+        authed_user = request.user
+        body_dict = request.get_json(force=True)
+        if not any(body_dict):
+            raise InvalidUsage(error_message="JSON body cannot be empty.")
+
+        candidates_list = body_dict.get('candidates')
+        email_subject = body_dict.get('email_subject', 'No Subject')
+        email_from = body_dict.get('email_from')
+        email_reply_to = body_dict.get('email_reply_to')
+        email_body_html = body_dict.get('email_body_html')
+        email_body_text = body_dict.get('email_body_text')
+        email_client_id = body_dict.get('email_client_id')
+        send_time = body_dict.get('sent_time', 0)
+
+        if not email_from or not email_reply_to or not email_client_id or not candidates_list:
+            raise InvalidUsage(error_message="Fields are missing.")
+
+        if not isinstance(candidates_list, list):
+            raise InvalidUsage(error_message="Candidates must be a list.")
+
+        candidate_ids = [int(candidate['id']) for candidate in body_dict.get('candidates')]
+        if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
+            raise UnauthorizedError(error_message="Candidates do not belong to logged-in user")
+
+        email_client_name = is_valid_email_client(email_client_id)
+        if not email_client_name:
+            raise InvalidUsage(error_message="Email client is not supported.")
+
+        campaign_name = 'Campaign %s %s' % (email_subject, email_client_name[0])
+        list_name = 'List %s' % campaign_name
+
+        smartlist_object = {
+            "name": list_name,
+            "candidate_ids": candidate_ids
+        }
+
+        created_smartlist = create_smartlist_from_api(smartlist_object, access_token=request.headers.get('authorization'))
+
+        if not created_smartlist or not created_smartlist.get('smartlist'):
+            raise InternalServerError(error_message="Could not create smartlist")
+        else:
+            created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
+
+        # create campaign
+        email_campaign_object = {
+            "email_campaign_name": campaign_name,
+            "email_subject": email_subject,
+            "email_from": email_from,
+            "email_reply_to": email_reply_to,
+            "email_body_html": email_body_html,
+            "email_body_text": email_body_text,
+            "email_client_id": email_client_id,
+            "list_ids": [int(created_smartlist_id)]
+        }
+        try:
+            email_campaign_created = create_campaign_from_api(email_campaign_object, access_token=request.headers.get('authorization'))
+            email_campaign_send_created = create_campaign_send_from_api(email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
+        except Exception as e:
+            raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
+
+        return email_campaign_send_created
 
 
 class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:id/views
@@ -1185,7 +1231,7 @@ class CandidateViewResource(Resource):
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles('CAN_GET_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1201,14 +1247,10 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        if not CandidateSubscriptionPreference.get_by_candidate_id(candidate_id):
-            raise NotFoundError('Candidate {} has no subscription preferences'.format(candidate_id),
-                                custom_error.NO_PREFERENCES)
-
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_roles('CAN_ADD_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
@@ -1225,16 +1267,18 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        body_dict = request.get_json()
+        body_dict = get_json_if_exist(_request=request)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
+        # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
         if not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
+        # Candidate cannot have more than one subsctiption preference
         if CandidateSubscriptionPreference.get_by_candidate_id(candidate_id=candidate_id):
             raise InvalidUsage('Candidate {} already has a subscription preference'.format(candidate_id),
                                custom_error.PREFERENCE_EXISTS)
@@ -1243,7 +1287,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
         return '', 204
 
-    @require_all_roles('CAN_EDIT_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1260,7 +1304,7 @@ class CandidatePreferenceResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        body_dict = request.get_json()
+        body_dict = get_json_if_exist(_request=request)
         try:
             validate(instance=body_dict, schema=resource_schema_preferences)
         except Exception as e:
@@ -1282,7 +1326,7 @@ class CandidatePreferenceResource(Resource):
 
         return '', 204
 
-    @require_all_roles('CAN_DELETE_CANDIDATES')
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpint:  DELETE /v1/candidates/:id/preferences

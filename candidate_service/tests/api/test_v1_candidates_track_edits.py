@@ -3,51 +3,45 @@ Test cases pertaining to CandidateEditResource
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
-
-# Models
-from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import Candidate
-
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
-
 # Helper functions
 from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    patch_to_candidate_resource, request_to_candidate_edit_resource, AddUserRoles
+    response_info, request_to_candidate_resource, request_to_candidates_resource,
+    request_to_candidate_edit_resource, AddUserRoles
 )
+from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
-def test_edit_candidate_primary_info(sample_user, user_auth):
+def test_edit_candidate_primary_info(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's first, middle, and last names
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    old_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']
 
     # Update Candidate's first and last names
     data = {'candidates': [
         {'id': candidate_id, 'first_name': 'Quentin', 'middle_name': 'Jerome', 'last_name': 'Tarantino'}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_candidate_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']
+    new_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -56,23 +50,20 @@ def test_edit_candidate_primary_info(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_candidate_dict['full_name']
 
 
-def test_edit_candidate_address(sample_user, user_auth):
+def test_edit_candidate_address(access_token_first, user_first, talent_pool):
     """
     Test:   Edit Candidate's address
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_address_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['addresses'][0]
+    old_address_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['addresses'][0]
 
     # Update Candidate's address
     data = {'candidates': [
@@ -80,13 +71,14 @@ def test_edit_candidate_address(sample_user, user_auth):
             {'id': old_address_dict['id'], 'address_line_1': '255 west santa clara'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate addresses
-    new_address_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['addresses'][0]
+    new_address_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['addresses'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -96,23 +88,20 @@ def test_edit_candidate_address(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_address_dict['address_line_1']
 
 
-def test_edit_candidate_custom_field(sample_user, user_auth):
+def test_edit_candidate_custom_field(access_token_first, user_first, talent_pool,
+                                     domain_custom_fields):
     """
     Test:   Change Candidate's custom fields
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_custom_field_dict = get_from_candidate_resource(token, candidate_id)\
+    old_custom_field_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
         .json()['candidate']['custom_fields'][0]
     db.session.commit()
 
@@ -122,39 +111,35 @@ def test_edit_candidate_custom_field(sample_user, user_auth):
             {'id': old_custom_field_dict['id'], 'value': 'foobar'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate custom fields
-    new_custom_field_dict = get_from_candidate_resource(token, candidate_id).\
+    new_custom_field_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
         json()['candidate']['custom_fields'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
-
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
     assert candidate_edits[0]['old_value'] == old_custom_field_dict['value']
     assert candidate_edits[0]['new_value'] == new_custom_field_dict['value']
 
 
-def test_edit_candidate_education(sample_user, user_auth):
+def test_edit_candidate_education(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's education records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    old_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
 
     # Update Candidate's education
     data = {'candidates': [
@@ -162,15 +147,15 @@ def test_edit_candidate_education(sample_user, user_auth):
             {'id': old_education_dict['id'], 'school_name': 'UC Davis'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate educations
-    new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    new_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
-
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
     assert new_education_dict['school_name'] != old_education_dict['school_name']
@@ -178,23 +163,20 @@ def test_edit_candidate_education(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_education_dict['school_name']
 
 
-def test_edit_candidate_education_degree(sample_user, user_auth):
+def test_edit_candidate_education_degree(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's education degree records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    old_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
 
     # Update Candidate's education degree
     data = {'candidates': [
@@ -204,13 +186,14 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
             ]}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate education
-    new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    new_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -223,23 +206,20 @@ def test_edit_candidate_education_degree(sample_user, user_auth):
     assert candidate_edits[1]['new_value'] == new_education_dict['degrees'][0]['title']
 
 
-def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
+def test_edit_candidate_education_degree_bullet(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's education degree bullet records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token, domain_id=sample_user.domain_id)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    old_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
     old_degree_bullet_dict = old_education_dict['degrees'][0]['bullets'][0]
 
     # Update Candidate's education degree bullet
@@ -252,14 +232,15 @@ def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
             ]}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate education
-    new_education_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['educations'][0]
+    new_education_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['educations'][0]
     new_degree_bullet_dict = new_education_dict['degrees'][0]['bullets'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -269,23 +250,20 @@ def test_edit_candidate_education_degree_bullet(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_degree_bullet_dict['major']
 
 
-def test_edit_candidate_experience(sample_user, user_auth):
+def test_edit_candidate_experience(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's experience records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_experience_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences'][0]
+    old_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['work_experiences'][0]
 
     # Update Candidate's experience
     data = {'candidates': [
@@ -293,13 +271,14 @@ def test_edit_candidate_experience(sample_user, user_auth):
             {'id': old_experience_dict['id'], 'organization': 'Dice', 'position': 'Software Engineer'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_experience_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences'][0]
+    new_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['work_experiences'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -312,23 +291,20 @@ def test_edit_candidate_experience(sample_user, user_auth):
     assert candidate_edits[1]['new_value'] == new_experience_dict['organization']
 
 
-def test_edit_candidate_experience_bullet(sample_user, user_auth):
+def test_edit_candidate_experience_bullet(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's experience bullet records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_experience_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences'][0]
+    old_experience_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
     old_experience_bullet_dict = old_experience_dict['bullets'][0]
 
     # Update Candidate's experience bullet
@@ -339,14 +315,15 @@ def test_edit_candidate_experience_bullet(sample_user, user_auth):
             ]}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_experience_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_experiences'][0]
+    new_experience_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
     new_experience_bullet_dict = new_experience_dict['bullets'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -355,23 +332,20 @@ def test_edit_candidate_experience_bullet(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_experience_bullet_dict['description']
 
 
-def test_edit_candidate_work_preference(sample_user, user_auth):
+def test_edit_candidate_work_preference(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's work preference records
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_work_pref_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_preference']
+    old_work_pref_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['work_preference']
 
     # Update Candidate's work preference
     data = {'candidates': [
@@ -379,13 +353,14 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
             'id': old_work_pref_dict['id'], 'salary': '150000', 'hourly_rate': '75'
         }}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_work_pref_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['work_preference']
+    new_work_pref_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['work_preference']
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -396,35 +371,33 @@ def test_edit_candidate_work_preference(sample_user, user_auth):
     assert int(float(candidate_edits[5]['new_value'])) == int(float(new_work_pref_dict['hourly_rate']))
 
 
-def test_edit_candidate_email(sample_user, user_auth):
+def test_edit_candidate_email(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's email record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails'][0]
+    old_email_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['emails'][0]
 
     # Update Candidate's email
     data = {'candidates': [
         {'id': candidate_id, 'emails': [{'id': old_email_dict['id'], 'address': 'someone@gettalent.com'}]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['emails'][0]
+    new_email_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['emails'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -433,35 +406,33 @@ def test_edit_candidate_email(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_email_dict['address']
 
 
-def test_edit_candidate_phone(sample_user, user_auth):
+def test_edit_candidate_phone(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's phone record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_phone_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones'][0]
+    old_phone_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['phones'][0]
 
     # Update Candidate's phone
     data = {'candidates': [
         {'id': candidate_id, 'phones': [{'id': old_phone_dict['id'], 'value': '4084054085'}]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    new_email_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['phones'][0]
+    new_email_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['phones'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -470,37 +441,33 @@ def test_edit_candidate_phone(sample_user, user_auth):
     assert candidate_edits[1]['new_value'] == new_email_dict['value']
 
 
-def test_edit_candidate_military_service(sample_user, user_auth):
+def test_edit_candidate_military_service(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's military service record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_military_service_dict = get_from_candidate_resource(token, candidate_id).\
+    old_military_service_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
         json()['candidate']['military_services'][0]
 
     # Update Candidate's military service
     data = {'candidates': [
         {'id': candidate_id, 'military_services': [{'id': old_military_service_dict['id'], 'branch': 'gettalent'}]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate military services
-    new_military_service_dict = get_from_candidate_resource(token, candidate_id).\
+    new_military_service_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
         json()['candidate']['military_services'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -509,23 +476,19 @@ def test_edit_candidate_military_service(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_military_service_dict['branch']
 
 
-def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
+def test_edit_candidate_preferred_location_edits(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's preferred location record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_preferred_location_dict = get_from_candidate_resource(token, candidate_id).\
+    old_preferred_location_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
         json()['candidate']['preferred_locations'][0]
 
     # Update Candidate's preferred location
@@ -534,14 +497,14 @@ def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
             {'id': old_preferred_location_dict['id'], 'city': 'man jose'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate preferred locations
-    new_preferred_location_dict = get_from_candidate_resource(token, candidate_id).\
+    new_preferred_location_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
         json()['candidate']['preferred_locations'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -550,23 +513,20 @@ def test_edit_candidate_preferred_location_edits(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_preferred_location_dict['city']
 
 
-def test_edit_candidate_skill_edits(sample_user, user_auth):
+def test_edit_candidate_skill_edits(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's skill record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills'][0]
+    old_skill_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['skills'][0]
 
     # Update Candidate's skill
     data = {'candidates': [
@@ -574,13 +534,14 @@ def test_edit_candidate_skill_edits(sample_user, user_auth):
             {'id': old_skill_dict['id'], 'name': 'useless skill'}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate skills
-    new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['skills'][0]
+    new_skill_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['skills'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']
@@ -589,23 +550,20 @@ def test_edit_candidate_skill_edits(sample_user, user_auth):
     assert candidate_edits[0]['new_value'] == new_skill_dict['name']
 
 
-def test_edit_candidate_social_network_edits(sample_user, user_auth):
+def test_edit_candidate_social_network_edits(access_token_first, user_first, talent_pool):
     """
     Test:   Change Candidate's social network record
     Expect: 200
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
     """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
     # Create Candidate
-    create_resp = post_to_candidate_resource(token)
+    AddUserRoles.all_roles(user=user_first)
+    data = generate_single_candidate_data([talent_pool.id])
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_sn_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks'][0]
+    old_sn_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['social_networks'][0]
 
     # Update Candidate's social network
     data = {'candidates': [
@@ -613,13 +571,14 @@ def test_edit_candidate_social_network_edits(sample_user, user_auth):
             {'id': old_sn_dict['id'], 'name': 'Facebook', 'profile_url': fake.url()}
         ]}
     ]}
-    patch_to_candidate_resource(token, data)
+    request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate social networks
-    new_skill_dict = get_from_candidate_resource(token, candidate_id).json()['candidate']['social_networks'][0]
+    new_skill_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+        .json()['candidate']['social_networks'][0]
 
     # Retrieve Candidate Edits
-    edit_resp = request_to_candidate_edit_resource(token, 'get', candidate_id)
+    edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
     print response_info(edit_resp)
 
     candidate_edits = edit_resp.json()['candidate']['edits']

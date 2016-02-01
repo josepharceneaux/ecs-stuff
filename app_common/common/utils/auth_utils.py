@@ -1,0 +1,165 @@
+"""Helper functions related to the authentication of GT users."""
+
+__author__ = 'erikfarmer'
+
+# Standard Library
+import json
+from functools import wraps
+# Third Party
+import requests
+# Application/Module Specific
+from ..utils.handy_functions import random_letter_digit_string
+from flask import current_app as app
+from ..models.user import *
+from ..error_handling import *
+from ..routes import AuthApiUrl
+
+
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
+    """
+    This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
+    Auth and will set request.user and request.oauth_token
+    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
+    :param allow_null_user: Is user necessary for Authorization or not ?
+    """
+
+    def auth_wrapper(func):
+        @wraps(func)
+        def authenticate(*args, **kwargs):
+            try:
+                oauth_token = request.headers['Authorization']
+            except KeyError:
+                raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+
+            # JWT based Authentication
+            if allow_jwt_based_auth:
+                try:
+                    secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+                    json_web_token = oauth_token.replace('Bearer', '').strip()
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
+                    request.oauth_token = ''
+                    return func(*args, **kwargs)
+                except KeyError:
+                    pass
+
+            try:
+                response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
+            except Exception as e:
+                raise InternalServerError(error_message=e.message)
+            if response.status_code == 429:
+                raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+            elif not response.ok:
+                error_body = response.json()
+                if error_body['error']:
+                    raise UnauthorizedError(error_message=error_body['error'].get('message'),
+                                            error_code=error_body['error'].get('code'))
+                else:
+                    raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+            else:
+                valid_user_id = response.json().get('user_id')
+                request.user = User.query.get(valid_user_id)
+                request.oauth_token = oauth_token
+                return func(*args, **kwargs)
+
+        return authenticate
+
+    return auth_wrapper
+
+
+def require_all_roles(*role_names):
+    """ This method ensures that user should have all roles given in roles list"""
+
+    def domain_roles(func):
+        @wraps(func)
+        def authenticate_roles(*args, **kwargs):
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
+            if not role_names:
+                # Roles list is empty so it means func is not roles protected
+                return func(*args, **kwargs)
+            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
+            for role_name in role_names:
+                if role_name not in user_roles:
+                    raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                          "perform this operation")
+            return func(*args, **kwargs)
+
+        return authenticate_roles
+
+    return domain_roles
+
+
+def require_any_role(*role_names):
+    """
+    This method ensures that user should have at least one role from given roles list and set
+    request.domain_independent_role to true if user has some domain independent (ADMIN) role
+    """
+
+    def domain_roles(func):
+        @wraps(func)
+        def authenticate_roles(*args, **kwargs):
+
+            # For server-to-server Auth roles check should be skipped
+            if not request.oauth_token:
+                return func(*args, **kwargs)
+            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
+            user_roles.append('SELF')
+            if not role_names:
+                # Roles list is empty so it means func is not roles protected
+                return func(*args, **kwargs)
+            else:
+                valid_domain_roles = []
+                # Roles which a logged-in user possess
+                for role_name in role_names:
+                    if role_name in user_roles:
+                        valid_domain_roles.append(role_name)
+                if valid_domain_roles:
+                    request.valid_domain_roles = valid_domain_roles
+                    return func(*args, **kwargs)
+                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                      "perform this operation")
+
+        return authenticate_roles
+
+    return domain_roles
+
+
+def get_token_by_client_and_user(client_id, user_id, db):
+    # Fetches an Oauth2 token given a client_id/user_id.
+    token = db.session.query(Token).filter_by(client_id=client_id, user_id=user_id).first()
+    if not token:
+        token = create_token(client_id, user_id, db)
+    return token
+
+
+def create_token(client_id, user_id, db):
+    # Creates an Oauth2 token given a client_id/user_id.
+    token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
+                  access_token=random_letter_digit_string(255),
+                  refresh_token=random_letter_digit_string(255),
+                  expires=datetime.datetime.utcnow() + datetime.timedelta(hours=2))
+    db.session.add(token)
+    db.session.commit()
+    return token
+
+
+def refresh_expired_token(token, client_id, client_secret):
+    # Sends a refresh request to the Oauth2 server.
+    payload = {'grant_type': 'refresh_token', 'client_id': client_id,
+               'client_secret': client_secret, 'refresh_token': token.refresh_token}
+    r = requests.post(AuthApiUrl.TOKEN_CREATE, data=payload)
+    # TODO: Add bad request handling.
+    return json.loads(r.text)['access_token']
+
+
+def gettalent_generate_password_hash(new_password):
+    """
+    Wrapper around werkzeug.security.generate_password_hash
+
+    :param str new_password: Password to hash according to gT security standards.
+    :rtype: basestring
+    """
+    return generate_password_hash(new_password, method='pbkdf2:sha512:1000', salt_length=32)

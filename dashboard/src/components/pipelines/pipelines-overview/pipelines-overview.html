@@ -1,87 +1,216 @@
-<section id="pipelines-overview-view" class="view__main--pipelines">
+<section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
-    <div layout-padding>
-
-        <div layout="row">
-            <div flex="100" class="v2-font__sm"><a href="">Breadcrumb</a> > <a href="">Breadcrumb</a> > Breadcrumb</div>
-        </div>
-
-        <header layout="row" class="v2-page-header">
-            <div flex class="module">
-                <div class="v2-align__vertical">
-                    <div class="page-title-icon">
-                        <img src="//placehold.it/80x80" />
-                    </div>
-                    <div>
-                        <div class="v2-font__xlg">Pipeline Name</div>
-                        <div class="v2-font__sm v2-line-height__1-6">Created by <a href="">Jason Provencher</a> on 5/22/16</div>
-                    </div>
-                    <div class="v2-align__right">
-                        <a class="v2-button-round__blue" href="">T</a>
-                        <a class="v2-button-round__blue" href="">T</a>
-                        <a class="v2-button-round__blue" href="">T</a>
-                    </div>
-                </div>
+    <md-content hide class="page-title-2 md-padding">
+        <div class="breadcrumbs2">My Pipelines</div>
+        <div class="md-padding" layout="row" layout-xs="column" layout-align="center center">
+            <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+            <div flex>
+                <h2 class="md-title">My Pipelines</h2>
             </div>
-        </header>
-
-        <header layout="row" class="v2-page-header">
-            <div flex class="module">
-                <div class="v2-align__vertical">
-                    <div class="page-title-icon">
-                        <img src="//placehold.it/80x80" />
-                    </div>
-                    <div>
-                        <div class="v2-font__xlg">Your Pipelines</div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-
-        <div layout="row">
-            <div flex="100" class="module"><div style="height:400px;"></div></div>
-        </div>
-
-        <div layout="row" layout-xs="column" layout-sm="row" class="v2-align__center">
-            <div flex="25" flex-xs="100" flex-sm="50" class="module">
-                <div>
-                    <div>Callout Box 1<i class="v2-infotip">i</i></div>
-                    <div class="v2-font__xxlg">42.5%</div>
-                    <div class="v2-font__med">Call-out Secondary Meta</div>
-                </div>
-            </div>
-            <div flex="25" flex-xs="100" flex-sm="50" class="module">
-                <div>
-                    <div>Callout Box 1</div>
-                    <div class="v2-font__xxlg">42.5%</div>
-                    <div class="v2-font__med">Call-out Secondary Meta</div>
-                </div>
-            </div>
-            <div flex="25" flex-xs="100" flex-sm="50" class="module">
-                <div>
-                    <div>Callout Box 1</div>
-                    <div class="v2-font__xxlg">42.5%</div>
-                    <div class="v2-font__med">Call-out Secondary Meta</div>
-                </div>
-            </div>
-            <div flex="25" flex-xs="100" flex-sm="50" class="module">
-                <div>
-                    <div>Callout Box 1</div>
-                    <div class="v2-font__xxlg">42.5%</div>
-                    <div class="v2-font__med">Call-out Secondary Meta</div>
-                </div>
+            <div class="page-title-menu">
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
             </div>
         </div>
-        <div layout="row" style="background:red;">
+    </md-content>
+
+    <div layout="column" class="overview-graph">
+
+        <div layout="column" layout-margin>
+
+            <!-- Navigation path -->
             <div layout="row">
-                <div flex>First item in row</div>
-                <div flex>Second item in row</div>
+                <div hide ncy-breadcrumb></div>
+                <div layout="row">
+                    <ul class="breadcrumb">
+                        <!-- ngRepeat: step in steps -->
+                        <li>
+                            <a href="/dashboard">Google Drive Team</a>
+                        </li>
+                        <li>
+                            <a href="/pipelines"></a>
+                        </li>
+                    </ul>
+                </div>
             </div>
-            <div layout="column">
-                <div flex>First item in column</div>
-                <div flex>Second item in column</div>
+            <!-- End: Navigation path -->
+
+            <!-- Header -->
+            <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+                <div flex>
+                    <h2 class="md-title">Pipelines</h2>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+
+                </div>
+            </md-card>
+            <!-- End: Header -->
+
+        </div>        
+        
+        <!-- Growth chart -->
+        <div id="growth-chart-section">
+            <div class="module-padding">
+                <h2 class="md-headline">
+                    Candidates Added Per Month
+                        <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                </h2>
+            </div>
+
+            <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
+                <div id="growth-chart"></div>
             </div>
         </div>
+        <!-- End: Growth chart -->
+
     </div>
+
+
+
+
+    <div layout="column" class="md-padding" layout-wrap>
+
+        <!-- Call-outs -->
+        <div class="stat-row md-margin" layout="row" layout-wrap>
+            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center">
+                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
+                    <span class="md-display-3">{{callout.value}}</span>
+                    <span class="md-subhead" ng-bind-html="callout.change"></span>
+                </md-content>
+            </div>
+        </div>
+        <!-- End: Call-outs -->
+
+
+
+        <!-- Tables & Cards -->
+        <div layout="row" layout-wrap layout-fill>
+
+            <!-- Top Pipelines Table -->
+            <div flex="65" layout="column" layout-wrap>
+
+                <md-card flex="grow">
+                    <md-toolbar class="md-table-toolbar md-default">
+                        <div class="md-toolbar-tools">
+                            <div>
+                                <div class="md-title">
+                                    Pipelines
+                                </div>
+                                <div class="md-subhead">
+                                    Complete list of pipelines in this talent pool
+                                </div>
+                            </div>
+                            <div flex></div>
+
+                            <md-icon>search</md-icon>
+                            <form flex name="vm.tableData.filter.form" layout-align="start start">
+                                <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
+                            </form>
+                            <md-button class="md-icon-button" ng-click="vm.removeFilter()">
+                                <md-icon>close</md-icon>
+                            </md-button>
+                        </div>
+                    </md-toolbar>
+
+                    <md-content>
+
+                        <md-table-container class="md-margin">
+                            <table md-table md-progress="vm.promise">
+                                <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
+                                <tr md-row>
+                                    <th md-column md-order-by="name"><span>Pipeline</span></th>
+                                    <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
+                                    <th md-column md-numeric md-order-by="created"><span>Created</span></th>
+                                </tr>
+                                </thead>
+                                <tbody md-body>
+                                <tr md-row
+                                    ng-repeat="p in vm.tableData.pipelines.data
+                                | filter: vm.tableData.query.filter
+                                | orderBy: vm.tableData.query.order
+                                | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
+                                    <td md-cell><a href="/pipelines/">{{p.name}}</a></td>
+                                    <td md-cell>{{p.candidates}}</td>
+                                    <td md-cell>{{p.newCandidates}}</td>
+                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </md-table-container>
+
+                        <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
+                                             md-page-select md-boundary-links
+                                             md-on-paginate="vm.logPagination" class="md-margin"></md-table-pagination>
+                    </md-content>
+                </md-card>
+
+            </div>
+            <!-- End: Top Pipelines Table -->
+
+            <div flex="35" layout="column">
+
+                <div flex="100" layout="column">
+
+                    <!-- Begin: Team Contributions -->
+                    <md-card flex="grow" class="team-contributions">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Top Contributors</span>
+                                <span class="md-subhead">Candidate Contributions By Your Team</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <md-list>
+                                <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
+                                    <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
+                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                        <div>
+                                            <div class="md-display-5">{{contributor.name}}</div>
+                                            <div class="md-display-6">{{contributor.team}}</div>
+                                        </div>
+                                        <span class="md-display-1">{{contributor.value}}</span>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                    <!-- End: Team Contributions -->
+
+                    <!-- Begin: Top Skills -->
+                    <md-card flex>
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Top skills
+                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                                </span>
+                                <span class="md-subhead">Large</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-content>
+                            <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
+                                <div></div>
+                            </gt-bar-graph>
+                        </md-content>
+                    </md-card>
+                    <!-- End: Top Skills -->
+
+
+                </div>
+
+            </div>
+
+
+        </div>
+        <!-- End: Tables & Cards -->
+
+    </div>
+
 </section>

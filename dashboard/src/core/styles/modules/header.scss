@@ -3,7 +3,15 @@
 // ---------------------------------------------------
 
 .header {
-  background-color: $color--white;
+  @extend .row--table;
+
+  background-color: $color--black;
+  z-index: 3;
+  padding-left: $padding--large;
+  padding-right: $padding--large;
+  padding-top: $padding--small;
+  padding-bottom: $padding--small;
+  position: relative;
 }
 
 .header--login {
@@ -17,7 +25,24 @@
 // Logo
 // -----
 
-.header__logo {}
+.header__logo {
+  @extend .col--medium-3;
+
+  padding-right: 3em;
+  display: table-cell;
+  float: none;
+  vertical-align: middle;
+  text-align: center;
+
+  @include helper--media($breakpoint--small) {
+    text-align: left;
+  }
+
+  img {
+    max-width: 8em;
+    display: inline;
+  }
+}
 
 .header__logo--login {
   text-indent: 100%;
@@ -30,45 +55,215 @@
 }
 
 // -----
-// Navigation
+// Search Bar
 // -----
 
-.header__nav {
-  z-index: $z-index--3;
+.header__search {
+  @extend .col--medium-6;
 
-  @include helper--media($breakpoint--tiny) {
-    text-align: right;
-  }
+  padding-left: $padding--jumbo;
+  padding-right: $padding--jumbo;
+  color: $color--gray;
+  display: none;
+  float: none;
+  vertical-align: middle;
+  position: relative;
 
-  @include helper--media($breakpoint--large) {
-    position: relative;
+  @include helper--media($breakpoint--medium) {
+    max-width: 48%;
+    display: table-cell
   }
 }
 
-.header__inner {
+.header__search__input {
+  transition: border-color $easing--slow, color $easing--slow;
+  padding-top: $padding--tiny;
+  padding-bottom: $padding--tiny;
+  border-bottom-width: $border-width--normal;
+  font-weight: $font-weight--bold;
+  font-size: .9em;
+  width: 70%;
+  padding-right: 2em;
+  border-style: none;
+  float: right;
+  border-bottom-style: solid;
+  display: inline-block;
+  background: none;
+  outline: none;
+  position: relative;
 
-  .header__inner__nav {
-    margin-top: $padding--tiny;
-    margin-bottom: $padding--tiny;
+  &:focus {
+    @include helper--media($breakpoint--medium) {
+      border-color: $color--lightPurple;
+    }
+  }
 
-    > li {
-        width: auto;
-        margin-bottom: 0;
-        padding-bottom: 0;
+  &:focus + .header__search__submit {
+    @include helper--media($breakpoint--medium) {
+      color: $color--lightPurple;
+    }
+  }
 
-        > a,
-        > .dropdown > a {
-          display: inline-block;
-          padding: 0 $padding--normal;
-        }
+  &::-webkit-input-placeholder { color: $color--lightGray; font-weight: $font-weight--regular; }
+  &:-moz-placeholder           { color: $color--lightGray; font-weight: $font-weight--regular; }
+  &::-moz-placeholder          { color: $color--lightGray; font-weight: $font-weight--regular; }
+  &:-ms-input-placeholder      { color: $color--lightGray; font-weight: $font-weight--regular; }
+  &::-ms-input-placeholder     { color: $color--lightGray; font-weight: $font-weight--regular; }
+  &:placeholder-shown          { color: $color--lightGray; font-weight: $font-weight--regular; }
+}
+
+.header__search__submit {
+  transition: color $easing--slow;
+  font-size: $font-size--main;
+  right: 2em;
+  line-height: 1.35em;
+  padding: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  position: absolute;
+  background: none;
+  border: none;
+  outline: none;
+
+  &:hover {
+    color: $color--white;
+    cursor: pointer;
+
+    @include helper--media($breakpoint--tiny) {
+      color: $color--lightPurple;
     }
   }
 }
 
 // -----
-// Inner
+// Actions
 // -----
 
-.header__inner {
-  @include helper--media($breakpoint--large) {}
+.header__actions {
+  @extend .col--medium-3;
+
+  color: $color--gray;
+  display: table-cell;
+  float: none;
+  vertical-align: middle;
+  text-align: right;
+
+  @include helper--media($breakpoint--tiny) {
+    color: $color--darkGray;
+  }
+}
+
+// -----
+// Profile button
+// -----
+
+.header__profile {
+  @extend .icon--caret;
+
+  border: none;
+  text-decoration: none;
+  outline: none;
+  overflow: visible;
+  display: none;
+  position: relative;
+
+  @include helper--media($breakpoint--tiny) {
+    position: relative;
+  }
+
+  @include helper--media($breakpoint--small) {
+    display: inline-block;
+  }
+
+  img {
+    @include inc--figure--rounded;
+
+    display: block;
+    border-style: solid;
+  }
+
+  &:after {
+    color: $color--white;
+    font-size: 5px;
+    line-height: 1;
+    width: 0;
+    height: 0;
+    bottom:   5px;
+    right: 0;
+    position: absolute;
+  }
+}
+
+// -----
+// Notifications Button
+// -----
+
+.header__notifications {
+  transition: background-color $easing--slow;
+  margin-right: $padding--large;
+  width: 2.5em;
+  height: 2.5em;
+  border-radius: 50%;
+  padding: .55em;
+  outline: none;
+  position: relative;
+  text-align: center;
+  display: none;
+  position: absolute;
+  right: 5em;
+  top: 50%;
+  transform: translateY(-50%);
+
+  &:after {
+    left: 0;
+    right: 0;
+  }
+
+  &:hover {
+    background-color: $color--darkGray;
+    cursor: pointer;
+  }
+
+  @include helper--media($breakpoint--small) {
+    display: inline-block;
+  }
+}
+
+.header__notifications--active {
+  background-color: $color--darkGray;
+}
+
+.header__notifications--mobile {
+  @extend .header__notifications;
+
+  position: absolute;
+  right: 0;
+  top: 52%;
+  transform: translateY(-50%);
+  display: inline-block;
+
+  @include helper--media($breakpoint--small) {
+    display: none;
+  }
+}
+
+.header__notifications__icon {
+  color: $color--white;
+  font-size: $font-size--big;
+}
+
+.header__notifications__count {
+  background-color: $color--blue;
+  color: $color--white;
+  font-weight: $font-weight--bold;
+  font-size: .7em;
+  width: 1.5em;
+  height: 1.5em;
+  padding: .2em;
+  border-radius: 50%;
+  top: 0;
+  right: 0;
+  text-align: center;
+  display: block;
+  position: absolute;
 }

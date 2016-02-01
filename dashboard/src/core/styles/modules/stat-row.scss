@@ -1,0 +1,17 @@
+// ---------------------------------------------------
+// Modules / Stat Row
+// ---------------------------------------------------
+
+.stat-row {
+  border-radius: $border-radius--base;
+  overflow:hidden;
+  .gt-card {
+    border-radius:0;
+    border-bottom:0px;
+    border-bottom: solid 1px #e2e2e2;
+    max-height: 165px;
+  }
+  md-content {
+    padding:20px;
+  }
+}

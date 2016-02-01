@@ -1,12 +1,15 @@
-<section id="onboard-welcome-view" class="view__main">
-
-    <div class="row--widget">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Welcome</h2>
-            </header>
-            </div>
+<md-dialog class="onboard-welcome" aria-label="Welcome to GetTalent" ng-cloak>
+    <form>
+        <div class="md-dialog-content">
+            <img src="//placehold.it/275x160" />
+            <div class="md-display-3">Welcome to GetTalent, Shravan</div>
+            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco</p>
         </div>
-    </div>
-
-</section>
+        <md-dialog-actions layout="row" layout-align="end right">
+            <md-button ng-click="cancel()" md-autofocus>
+                Get Started
+            </md-button>
+            <span flex></span>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

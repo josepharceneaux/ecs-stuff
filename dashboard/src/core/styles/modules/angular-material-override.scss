@@ -1,0 +1,57 @@
+// ---------------------------------------------------
+// Modules / Angular Material Override
+// ---------------------------------------------------
+
+html, body {
+    color:#666;
+}
+
+.module-padding {
+    padding: $padding--module;
+}
+
+.positive {
+    color: $color--green;
+}
+
+.negative {
+    color: $color--red;
+}
+
+
+
+
+
+
+
+/** Move over to modules when styling **/
+
+
+#v2-pipeline-summaries {
+    md-card {
+        min-height: 450px;
+        height: 450px;
+
+        .card-top-right-button {
+            max-width: 60px;
+            text-align: right;
+        }
+    }
+}
+
+#v2-activity-feed {
+    .v2-feed {
+        background-color: #eee;
+        padding: 16px;
+        margin: 8px 0;
+    }
+}
+
+
+#v2-candidate-breakdown {
+    md-list-item {
+        min-height: 36px;
+    }
+}
+
+
