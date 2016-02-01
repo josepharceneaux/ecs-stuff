@@ -2,15 +2,23 @@
 // Modules / Navigation
 // ---------------------------------------------------
 
-#top-nav {
-  position:relative;
-  width:100%;
+.topnav-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.topnav {
+  position: fixed;
+  z-index: $z-index--topnav;
+  top: 0;
+  left: 0;
+  right: 0;
 }
 
 .navigation {
   @include inc--align--clearfix;
 
-  z-index: $z-index--3;
+  z-index: $z-index--topnav;
   background-color: $color--purple;
   background-color: $color--darkGray;
   position: relative;
@@ -60,7 +68,7 @@
 
 .navigation__items {
   background-color: $color--purple;
-  z-index: $z-index--3;
+  z-index: $z-index--topnav;
   position: fixed;
   white-space: nowrap;
   width: 100%;
@@ -209,7 +217,7 @@
     position: fixed;
     bottom: 0;
     left: 0;
-    width: 3.6em;
+    width: $misc--sidebarParentMenuWidth;
   }
 }
 
@@ -236,7 +244,7 @@
   text-align: center;
 
   @include helper--media($breakpoint--medium) {
-    width: 2.25em;
+    width: $misc--sidebarParentMenuWidth;
     float: none;
     display:  table-cell;
     vertical-align: top;
@@ -250,7 +258,7 @@
 
 .navigation__subMenu {
   transition: opacity $easing--slow;
-  z-index: $z-index--1;
+  z-index: $z-index--topnav - 1;
   background-color: $color--white;
   color: $color--nearBlack;
   padding-left: $padding--large;
@@ -267,7 +275,7 @@
   @include helper--media($breakpoint--medium) {
     position: absolute;
     display: block;
-    z-index: $z-index--1;
+    z-index: $z-index--topnav - 1;
     min-width: 110%;
     top: 100%;
     opacity: 0;

@@ -39,7 +39,7 @@
         //    },
         //    pipelines: {
         //        overview: 'Overview',
-        //        smartLists: 'Smart Lists',
+        //        smartlists: 'Smartlists',
         //        candidateSearch: 'Candidate Search',
         //        importCandidates: 'Import Candidates'
         //    },
@@ -145,7 +145,7 @@
                     complete: callback()
                 });
             },
-            close($subMenu, callback) {
+            close: function close($subMenu, callback) {
                 callback = callback || function () {};
                 return $.Velocity.animate($subMenu, { opacity: '0' }, {
                     duration: 300,

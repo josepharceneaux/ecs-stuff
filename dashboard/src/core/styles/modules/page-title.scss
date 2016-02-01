@@ -12,6 +12,30 @@
   }
 }
 
+.breadcrumbs2 {
+  background: darken($color--blue, 5%);
+  padding:10px;
+  color: lighten($color--blue, 15%);
+}
+
+.page-title-2 {
+  background-color: $color--blue;
+  color:white;
+  margin:0px;
+  .md-title {
+    color:white;
+  }
+  .gt-title-icon {
+    width: 45px;
+    height: 45px;
+    font-size:40px;
+    background: transparent;
+  }
+  .gt-menu-icon {
+    background: transparent;
+  }
+}
+
 .page-title-menu {
   a {
     display:inline-block;
@@ -21,15 +45,15 @@
 .gt-title-icon {
   background: $color--purple;
   border-radius: 50%;
-  width: 80px;
-  height: 80px;
+  width: 65px;
+  height: 65px;
   color: white;
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
   margin-right:10px;
-  font-size:40px;
+  font-size:30px;
 }
 
 .gt-menu-icon {
@@ -49,3 +73,4 @@
     background: lighten($color--purple, 10%);
   }
 }
+

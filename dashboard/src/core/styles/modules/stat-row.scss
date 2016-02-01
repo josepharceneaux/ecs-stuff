@@ -5,15 +5,13 @@
 .stat-row {
   border-radius: $border-radius--base;
   overflow:hidden;
-  margin:15px;
-  .md-whiteframe-gt {
+  .gt-card {
     border-radius:0;
     border-bottom:0px;
-  }
-  .md-content {
-    padding:30px;
-  }
-  .module-padding {
     border-bottom: solid 1px #e2e2e2;
+    max-height: 165px;
+  }
+  md-content {
+    padding:20px;
   }
 }

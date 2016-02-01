@@ -6,7 +6,7 @@
   @extend .row--table;
 
   background-color: $color--black;
-  z-index: $z-index--3;
+  z-index: 3;
   padding-left: $padding--large;
   padding-right: $padding--large;
   padding-top: $padding--small;
@@ -52,16 +52,6 @@
   width: 254px;
   height: 67px;
   background-image: url('../images/logo--main--white.svg');
-}
-
-// -----
-// Inner
-// -----
-
-.header__inner {
-  @include helper--media($breakpoint--large) {
-    padding-left: $misc--sidebarWidth;
-  }
 }
 
 // -----

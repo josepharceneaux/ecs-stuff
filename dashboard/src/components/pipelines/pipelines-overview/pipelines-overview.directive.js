@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$mdEditDialog', '$q'];
+    ControllerFunction.$inject = ['logger', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $timeout) {
         var vm = this;
 
         init();
@@ -39,8 +39,15 @@
 
         function init() {
 
-            $('#pipelineDetailsViewChart').highcharts({
+            vm.redrawChart = function () {
+
+                vm.chart.reflow();
+                
+            };
+
+            vm.chart = new Highcharts.Chart({
                 chart: {
+                    renderTo: 'growth-chart',
                     type: 'area',
                     backgroundColor: null,
                     spacingLeft: 40,
@@ -49,7 +56,8 @@
                     style: {
                         fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
                         fontWeight: 300
-                    }
+                    },
+                    reflow: true
                 },
                 title: {
                     text: ''
@@ -64,14 +72,14 @@
                     tickLength: 0,
                     endOnTick: true,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         y: 24,
                         style: {
                             color: '#fff',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function() {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
@@ -83,13 +91,13 @@
                     yDecimals: 2,
                     gridLineWidth: 1,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         style: {
                             color: '#adadad',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function () {
                             if (this.value != 0) {
@@ -120,21 +128,21 @@
                     padding: 12,
                     backgroundColor: '#FFFFFF',
                     borderWidth: 1,
-                    borderColor: "#cccccc",
+                    borderColor: '#cccccc',
                     itemStyle: {
-                      "fontWeight":"300"
+                      fontWeight: 300
                     },
                     navigation: {
                         style: {
-                            fontWeight: '400',
+                            fontWeight: 400,
                         }
                     }
                 },
                 tooltip: {
-                    borderWidth:0,
-                    borderRadius:0,
+                    borderWidth: 0,
+                    borderRadius: 0,
                     backgroundColor: null,
-                    shadow:false,
+                    shadow: false,
                     useHTML: true,
                     formatter: function() {
                         var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
@@ -190,7 +198,7 @@
                     pointInterval: 30 * 24 * 3600 * 1000,
                     data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
                 }]
-            });
+            });            
 
             vm.totalCandidates = {
                 graph: {}
@@ -224,48 +232,112 @@
             vm.callouts = [
                 {
                     name: 'Total Pipelines',
-                    value: '25'
+                    tooltip: 'Total number of pipelines in your talent pool',
+                    value: '25',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
                 },
                 {
                     name: 'Total Candidates',
-                    value: '10,000'
+                    tooltip: 'Total number of candidates in all pipelines',
+                    value: '10,000',
+                    change: '+500 <span class="positive">(+25%)</span>'
                 },
                 {
-                    name: 'Unique Candidates',
-                    value: '800'
+                    name: 'Contributions',
+                    tooltip: 'Total number of team contributions ',
+                    value: '800',
+                    change: '+300 <span class="negative">(-65%)</span>'
                 },
                 {
-                    name: 'Candidates Today',
-                    value: '10'
+                    name: 'Candidates Added Today',
+                    tooltip: 'Total number of team contributions ',
+                    value: '400',
+                    change: '+300 <span class="positive">(+25%)</span>'
+                }
+            ];
+
+            vm.contributors = [
+                {
+                    name: 'Bob Smith',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
+                },
+                {
+                    name: 'Katie Fries',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 55
+                },
+                {
+                    name: 'Rachel Thompson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    value: 45
+                },
+                {
+                    name: 'Chris Chang',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    value: 40
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google Southwest',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    value: 12
+                },
+                {
+                    name: 'Lauren Freeman',
+                    team: 'Google HR',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
+                    value: 10
                 }
             ];
 
             vm.pipelines = [
                 {
-                    title: 'Java Developer',
+                    title: 'Product Management',
                     width: 100,
                     value: '45'
                 },
                 {
-                    title: 'Rails Developer',
+                    title: 'Python',
                     width: 80,
                     value: '35'
                 },
                 {
-                    title: 'Angular Developer',
+                    title: 'Backbone',
                     width: 70,
                     value: '20'
                 },
                 {
-                    title: 'PHP Developer',
+                    title: 'Javascript',
                     width: 65,
                     value: '10'
                 },
                 {
-                    title: 'Python Developer',
+                    title: 'PHP',
+                    width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'Front End Developemnt',
+                    width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'UX',
                     width: 50,
                     value: '+16'
                 }
+
             ];
 
             vm.tableData = {
@@ -277,7 +349,7 @@
                 query: {
                     filter: '',
                     order: 'name',
-                    limit: 10,
+                    limit: 20,
                     page: 1
                 },
                 pipelines: {

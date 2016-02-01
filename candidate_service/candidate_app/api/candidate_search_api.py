@@ -34,12 +34,8 @@ class CandidateSearch(Resource):
         # Authenticated user
         authed_user = request.user
 
-        # Ensure request body is JSON data
-        if request.content_type != "application/json":
-            raise InvalidUsage("Request body must be a JSON object", custom_error.INVALID_INPUT)
-
-        if request.get_data():  # In case req-body is empty
-            body_dict = request.get_json()
+        body_dict = request.get_json(silent=True)
+        if body_dict:  # In case req-body is empty
             try:
                 validate(instance=body_dict, schema=candidates_resource_schema_get)
             except Exception as e:

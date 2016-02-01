@@ -10,72 +10,17 @@ html, body {
     padding: $padding--module;
 }
 
-@mixin card {
-    border-radius: $border-radius--base;
-    box-shadow:none;
-    border-right: solid 1px #e2e2e2;
-    border-bottom: solid 1px #e2e2e2;
-    background-color:#ffffff;
+.positive {
+    color: $color--green;
 }
 
-.md-whiteframe-gt {
-    @include card;
-}
-
-md-card {
-    @include card;
-    .md-subhead {
-        padding-top:0px;
-    }
-    md-card-content {
-
-    }
-    .md-card-title {
-        .md-subhead{
-            color:red;
-            padding-top:5px;
-        }
-    }
-    .md-title {
-        font-weight:400;
-        font-size: 1.3em;
-    }
-    .md-subhead {
-
-    }
+.negative {
+    color: $color--red;
 }
 
 
 
-md-content {
-    border-radius: $border-radius--base;
 
-    .view__main > & {
-        padding: 0;
-        border-radius: 0;
-        background: transparent;
-    }
-
-}
-
-.md-title {
-    color:#555;
-    font-weight:400;
-}
-
-.md-subhead {
-    color:#666;
-    font-weight:400;
-}
-
-.md-display-3 {
-    font-weight:300;
-    color:#666;
-}
-
-.md-margin {
-    margin:15px;
-}
 
 
 
@@ -108,17 +53,5 @@ md-content {
         min-height: 36px;
     }
 }
-
-#v2-team-contributors {
-    .v2-contributor {
-        background-color: #eee;
-        margin: 8px 0 8px 20px;
-
-        .md-avatar {
-            margin-left: -36px;
-        }
-    }
-}
-
 
 

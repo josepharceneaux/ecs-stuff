@@ -40,20 +40,27 @@
         function init() {
             vm.callouts = [
                 {
+                    name: 'Candidates Added',
+                    tooltip: 'Fix',
+                    value: '500',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
+                },
+                {
                     name: 'Total Candidates',
-                    value: '1000'
+                    tooltip: 'Fix',
+                    value: '865',
+                    change: '<span class="negative">(-10%)</span>'
                 },
                 {
-                    name: 'Active Campaigns',
-                    value: '20'
+                    name: 'Recommended Candidates',
+                    tooltip: 'Fix',
+                    value: '10',
+                    change: '<span class="positive">(+10%)</span>'
                 },
                 {
-                    name: 'Smart Lists',
+                    name: 'Campaigns',
+                    tooltip: 'Fix',
                     value: '10'
-                },
-                {
-                    name: 'Created Date',
-                    value: '4/3/16'
                 }
             ];
 
@@ -109,33 +116,107 @@
                     title: 'Python Developer',
                     width: 50,
                     value: '+16'
+                }
+            ];
+
+            vm.candidateCards = [
+                {
+                    name: 'Bob Smith',
+                    initials: 'BS',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
                 },
+                {
+                    name: 'Kevin Thompson',
+                    initials: 'KT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Lenny Seager',
+                    initials: 'LS',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Tom Chansky',
+                    initials: 'TC',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Chris Pratt',
+                    initials: 'CP',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                },
+                {
+                    name: 'Megi Theodhor',
+                    initials: 'MT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Bob recently viewed your email'
+                }
             ];
 
             vm.contributors = [
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 20
+                    name: 'Bob Smith',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
                 },
                 {
-                    name: 'Osman Masood',
-                    avatar: '//placehold.it/80x80',
-                    value: 18
+                    name: 'Katie Fries',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 55
                 },
                 {
-                    name: 'Jason Provencher',
-                    avatar: '//placehold.it/80x80',
-                    value: 15
+                    name: 'Rachel Thompson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    value: 45
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Chris Chang',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    value: 40
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google Southwest',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
                     value: 12
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Lauren Freeman',
+                    team: 'Google HR',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Rockstars',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    value: 12
+                },
+                {
+                    name: 'Lauren Freeman',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
                     value: 10
                 }
             ];

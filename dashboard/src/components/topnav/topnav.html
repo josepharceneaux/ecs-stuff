@@ -1,199 +1,107 @@
-<div id="top-nav">
+<div id="top-nav" class="topnav-wrapper">
 
-    <!-- Header -->
-    <header class="header">
-        <figure class="header__logo">
-            <a ui-sref="dashboard"><img src="/images/logo--main--white.svg" alt="getTalent"></a>
-        </figure>
-        <form class="header__search">
-            <input class="header__search__input" type="text" name="query" autocomplete="off" placeholder="Jon Smith, Developer, Java">
-            <button class="header__search__submit">
-                <span class="icon--mag"></span>
-            </button>
-        </form>
-        <nav class="header__actions">
-            <a href="" class="header__notifications--mobile">
-                <span class="header__notifications__icon icon--hamburger"></span>
-                <span class="header__notifications__count">1</span>
-            </a>
-            <a href="" class="header__notifications" ng-click="vm.toggleNotificationCenter()">
-                <span class="header__notifications__icon icon--bell"></span>
-                <span class="header__notifications__count">1</span>
-            </a>
-            <div class="header__profile js--topNavItem" >
-                <img src="/images/placeholder/profile.png" alt="Change settings">
-            </div>
-            <nav class="js--mobileMenu-target navigation__subMenu">
-                <header class="navigation__subMenu__header">
-                    <span class="icon--announcements"></span> Recent Pipelines
-                </header>
-                <a href="/pipelines/">Java Developer</a>
-                <a href="/pipelines/javap-developer">Full Stack Engineer</a>
-                <a href="/pipelines/javap-developer">JS Engineer</a>
-                <footer class="navigation__subMenu__footer">
-                    <a href="/pipelines">See All</a>
-                </footer>
+    <div class="topnav">
+        <!-- Header -->
+        <header class="header">
+            <figure class="header__logo">
+                <a ui-sref="dashboard"><img src="/images/logo--main--white.svg" alt="getTalent"></a>
+            </figure>
+            <form class="header__search">
+                <input class="header__search__input" type="text" name="query" autocomplete="off" placeholder="Jon Smith, Developer, Java">
+                <button class="header__search__submit">
+                    <span class="icon--mag"></span>
+                </button>
+            </form>
+            <nav class="header__actions">
+                <a href="" class="header__notifications--mobile">
+                    <span class="header__notifications__icon icon--hamburger"></span>
+                    <span class="header__notifications__count">1</span>
+                </a>
+                <a href="" class="header__notifications" ng-click="vm.toggleNotificationCenter()">
+                    <span class="header__notifications__icon icon--bell"></span>
+                    <span class="header__notifications__count">1</span>
+                </a>
+                <div class="header__profile js--topNavItem" >
+                    <img src="/images/placeholder/profile.png" alt="Change settings">
+                </div>
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--announcements"></span> Recent Pipelines
+                    </header>
+                    <a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })">Java Developer</a>
+                    <a ui-sref="pipelines.pipeline({ pipelineId: 'd92f9a8e' })">Full Stack Engineer</a>
+                    <a ui-sref="pipelines.pipeline({ pipelineId: 'bea68b3e' })">JS Engineer</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a ui-sref="pipelines.overview">See All</a>
+                    </footer>
+                </nav>
             </nav>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navigation">
+            <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+                <strong>Talent Pool:</strong> Google Drive Team
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--pipeline"></span> Choose a Talent Pool
+                    </header>
+                    <a ui-sref="talentPools.talentPool({ poolId: '2892365a' })">Senior Software Engineer</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'd92f9a8e' })">Junior Project Manager</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'bea68b3e' })">Web Designer</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a ui-sref="talentPools">See All</a>
+                    </footer>
+                </nav>
+            </div>
+            <div class="navigation__items">
+                <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
+                <div hide class="js--mobileMenu js--topNavItem navigation__item">
+                    Dashboards
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--announcements"></span> Dashboards
+                        </header>
+                        <a ui-sref="dashboard">Candidates</a>
+                        <a ui-sref="dashboard">Pipelines</a>
+                        <a ui-sref="dashboard">Contributors</a>
+                    </nav>
+                </div>
+                <div class="js--mobileMenu js--topNavItem navigation__item">
+                    Pipelines
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--pipeline"></span> Recent Pipelines
+                        </header>
+                        <a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })">Java Developer</a>
+                        <a ui-sref="pipelines.pipeline({ pipelineId: 'd92f9a8e' })">Full Stack Engineer</a>
+                        <a ui-sref="pipelines.pipeline({ pipelineId: 'bea68b3e' })">JS Engineer</a>
+                        <footer class="navigation__subMenu__footer">
+                            <a ui-sref="pipelines.overview">See All</a>
+                        </footer>
+                    </nav>
+                </div>
+                <div hide class="js--mobileMenu js--topNavItem navigation__item">
+                    Candidates
+                    <nav class="js--mobileMenu-target navigation__subMenu">
+                        <header class="navigation__subMenu__header">
+                            <span class="icon--announcements"></span> Recent Campaigns
+                        </header>
+                        <a href="">Loremipsu</a>
+                        <a href="">M'dolor Sitam</a>
+                        <a href="">Etconsecte Teur</a>
+                        <footer class="navigation__subMenu__footer">
+                            <a href="">See All</a>
+                        </footer>
+                    </nav>
+                </div>
+                <a ui-sref="candidates.add" class="navigation__link">+</a>
+            </div>
+            <div hide class="navigation__buttons">
+              <a href=""><span class="icon--share">Share</span></a>
+              <a href=""><span class="icon--upload-2">Upload</span></a>
+            </div>
         </nav>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="navigation">
-        <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
-            <strong>Talent Pool:</strong> Bay Area Startup
-            <nav class="js--mobileMenu-target navigation__subMenu">
-                <header class="navigation__subMenu__header">
-                    <span class="icon--pipeline"></span> Choose a Talent Pool
-                </header>
-                <a href="">Senior Software Engineer</a>
-                <a href="">Junior Project Manager</a>
-                <a href="">Web Designer</a>
-                <footer class="navigation__subMenu__footer">
-                    <a ui-sref="dashboard">See All</a>
-                </footer>
-            </nav>
-        </div>
-        <div class="navigation__items">
-            <div class="js--mobileMenu js--topNavItem navigation__item">
-                Dashboards
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Dashboards
-                    </header>
-                    <a ui-sref="dashboard">Candidates</a>
-                    <a ui-sref="dashboard">Pipelines</a>
-                    <a ui-sref="dashboard">Contributors</a>
-                </nav>
-            </div>
-            <div class="js--mobileMenu js--topNavItem navigation__item">
-                Pipelines
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--pipeline"></span> Recent Pipelines
-                    </header>
-                    <a href="/pipelines/">Java Developer</a>
-                    <a href="/pipelines/javap-developer">Full Stack Engineer</a>
-                    <a href="/pipelines/javap-developer">JS Engineer</a>
-                    <footer class="navigation__subMenu__footer">
-                        <a href="/pipelines">See All</a>
-                    </footer>
-                </nav>
-            </div>
-            <div hide class="js--mobileMenu js--topNavItem navigation__item">
-                Candidates
-                <nav class="js--mobileMenu-target navigation__subMenu">
-                    <header class="navigation__subMenu__header">
-                        <span class="icon--announcements"></span> Recent Campaigns
-                    </header>
-                    <a href="">Loremipsu</a>
-                    <a href="">M'dolor Sitam</a>
-                    <a href="">Etconsecte Teur</a>
-                    <footer class="navigation__subMenu__footer">
-                        <a href="">See All</a>
-                    </footer>
-                </nav>
-            </div>
-            <a ui-sref="candidates.add" class="navigation__link">Add Candidates</a>
-        </div>
-        <div hide class="navigation__buttons">
-          <a href=""><span class="icon--share">Share</span></a>
-          <a href=""><span class="icon--upload-2">Upload</span></a>
-        </div>
-    </nav>
+    </div>
 
 </div>
-<!-- Header
-<header class="header row--expanded">
-    <nav class="header__nav col--medium-8 col--large-12">
-        <div style="background:#333; height:70px; ">
-            <a style="float:left;" href="/"><img style="float:right;"src="//placehold.it/170x70?text=logo" /></a>
-            <div style="float:right; margin:20px 20px 0px 0px;">
-                <a ui-sref="candidates.add">Add Candidates</a>&nbsp;|&nbsp;
-                <a href="/faq">Support</a>&nbsp;|&nbsp;
-                <a href="/faq">Alerts</a>&nbsp;|&nbsp;
-                <a href="">User Settings</a>&nbsp;|&nbsp;
-                <a ng-click="vm.logout()" href="">Logout</a>
-            </div>
-        </div>
-        <div class="row--expanded row--table header__inner">
-            <div class="col--tiny-12--cell">
-                <ul class="list--sideBySide header__inner__nav" role="menu">
-                    <li>
-                        <span uib-dropdown on-toggle="toggled(open)">
-                            <a href="" uib-dropdown-toggle>
-                                {{vm.selectedTalentPool ? vm.selectedTalentPool.name : 'Select a Talent Pool'}} (change) <span class="caret"></span>
-                            </a>
-                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
-                                <li ng-repeat="pool in vm.talentPools">
-                                    <a ng-click="vm.selectedTalentPool = pool" ui-sref="talentPools.talentPool.detail({ poolId: pool.id })">{{pool.name}}</a>
-                                </li>
-                                <li><a ui-sref="talentPools.create">Create Talent Pool</a></li>
-                            </ul>
-                        </span>
-                    </li>
-                    <li>
-                        <a ui-sref="dashboard">Dashboard</a>
-                    </li>
-                    <li>
-                        <span uib-dropdown>
-                            <a href="" uib-dropdown-toggle>
-                                Pipelines <span class="caret"></span>
-                            </a>
-                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
-                                <li><a ui-sref="pipelines.create">Add Pipeline</a></li>
-                                <li ng-repeat="pipeline in vm.pipelines">
-                                    <a ui-sref="pipelines.pipeline.detail({ pipelineId: pipeline.id })">{{pipeline.name}}</a>
-                                </li>
-                                <li><a href="/pipelines">All Pipelines</a></li>
-                                <li><a ui-sref="pipelines.manage">Manage Pipelines</a></li>
-                            </ul>
-                        </span>
-                    </li>
-                    <li>
-                        <span uib-dropdown>
-                            <a href="" uib-dropdown-toggle>
-                                Campaigns <span class="caret"></span>
-                            </a>
-                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
-                                <li><a ui-sref="campaigns.create">Add Campaign</a></li>
-                                <li ng-repeat="campaign in vm.campaigns">
-                                    <a ui-sref="campaigns.campaign.detail({ campaignId: campaign.id })">{{campaign.name}}</a>
-                                </li>
-                                <li><a ui-sref="campaigns.manage">Manage Campaigns</a></li>
-                            </ul>
-                        </span>
-                    </li>
-                    <li>
-                        <span uib-dropdown>
-                            <a href="" uib-dropdown-toggle>
-                                + <span class="caret"></span>
-                            </a>
-                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
-                                <li><a ui-sref="pipelines.create">Create Pipeline</a></li>
-                                <li><a ui-sref="campaigns.create">Create Campaign</a></li>
-                                <li><a ui-sref="candidates.add">Add Candidate</a></li>
-                            </ul>
-                        </span>
-                    </li>
-                    <li>
-                        <span uib-dropdown>
-                            <a href="" uib-dropdown-toggle>
-                                User Notifications <span class="caret"></span>
-                            </a>
-                            <ul uib-dropdown-menu aria-labelledby="simple-dropdown">
-                                <li><a href="" ng-click="vm.notifyUser('success')">Success</a></li>
-                                <li><a href="" ng-click="vm.notifyUser('info')">Info</a></li>
-                                <li><a href="" ng-click="vm.notifyUser('warning')">Warning</a></li>
-                                <li><a href="" ng-click="vm.notifyUser('error')">Error</a></li>
-                            </ul>
-                        </span>
-                    </li>
-                    <li>
-                        <a href="" ng-click="vm.createSystemAlert()">Create System Alert</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-</header> -->
-<!-- End Header -->

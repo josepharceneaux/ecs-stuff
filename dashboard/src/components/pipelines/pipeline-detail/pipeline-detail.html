@@ -4,22 +4,37 @@
 
         <div layout="column" layout-margin>
 
+            <div hide layout="row">
+                <div ncy-breadcrumb></div>
+            </div>
             <!-- Navigation path -->
             <div layout="row">
-                <div ncy-breadcrumb></div>
+                <ul class="breadcrumb">
+                    <!-- ngRepeat: step in steps -->
+                    <li>
+                        <a href="/dashboard">Google Drive Team</a>
+                    </li>
+                    <li>
+                        <a href="/pipelines">Pipelines</a>
+                    </li>
+                    <li>
+                        <a href="/pipelines/2892365a"></a>
+                    </li><!-- end ngRepeat: step in steps -->
+                </ul>
             </div>
             <!-- End: Navigation path -->
 
             <!-- Header -->
-            <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
+            <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
-                    <h2 class="md-title">Senior Java Engineer</h2>
+                    <h2 class="md-title">Senior Java Developer</h2>
+                    <div>Created by <a href="">Jason Provencher</a> on 10/22/2015</div>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="/pipelines/[pipeline-id]/smart-lists/create"><div class="gt-menu-icon icon--list-add"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
                 </div>
-            </md-content>
+            </md-card>
             <!-- End: Header -->
 
         </div>
@@ -40,58 +55,25 @@
 
     </div>
 
-    <div layout="column" layout-margin>
+    <div layout="column" class="md-padding" layout-wrap>
 
         <!-- Call-outs -->
-        <div class="stat-row" layout="row" layout-wrap>
-            <div class="md-whiteframe-gt" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
-                <md-content layout="column" layout-align="center center" class="module-padding">
-                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
-                    <h3 class="md-display-3">{{callout.value}}</h3>
+        <div class="stat-row md-margin" layout="row" layout-wrap>
+            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
+                <md-content layout="column" layout-align="center center">
+                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
+                    <span class="md-display-3">{{callout.value}}</span>
+                    <span class="md-subhead" ng-bind-html="callout.change"></span>
                 </md-content>
             </div>
         </div>
         <!-- End: Call-outs -->
 
-        <!-- Summaries and Activity Feed -->
-        <div layout="row" layout-wrap layout-fill>
-            <!-- Summaries -->
-            <div id="v2-pipeline-summaries" flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-align="start start" layout-wrap>
+        <div layout="row" layout-fill>
 
-                <!-- Top Skills -->
-                <div id="topSkills" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Top Skills<i class="fa fa-info-circle"></i></span>
-                                <span class="md-subhead">This is module description</span>
-                            </md-card-title-text>
-                            <span class="md-caption card-top-right-button"></span>
-                        </md-card-title>
-                        <gt-bar-graph bar-height="35" bar-spacing="30" class="gt-bar-graph">
-                            <div></div>
-                        </gt-bar-graph>
-                    </md-card>
-                </div>
-                <!-- End: Top Skills -->
-                <!-- Top Candidate Usage -->
-                <div id="candidateUsage" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Candidate Usage<i class="fa fa-info-circle"></i></span>
-                                <span class="md-subhead">This is module description</span>
-                            </md-card-title-text>
-                            <span class="md-caption card-top-right-button"></span>
-                        </md-card-title>
-                        <gt-circle-graph angle="75" value="3000" class="gt-circle-graph">
-                            <div></div>
-                        </gt-circle-graph>
-                    </md-card>
-                </div>
-                <!-- End: Top Candidate Usage -->
+            <div flex="30" layout="column">
                 <!-- Candidate Breakdown -->
-                <div id="v2-candidate-breakdown" flex="50" flex-xs="100" flex-sm="100">
+                <div flex flex-xs="100" flex-sm="100">
                     <md-card class="md-margin">
                         <md-card-title flex="none">
                             <md-card-title-text>
@@ -164,57 +146,93 @@
                     </md-card>
                 </div>
                 <!-- End: Candidate Breakdown -->
-
-                <!-- Team Contributors -->
-                <div id="v2-team-contributors" flex="50" flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Team Contributors<i class="fa fa-info-circle"></i></span>
-                            </md-card-title-text>
-                            <span class="md-caption card-top-right-button">Invite Team</span>
-                        </md-card-title>
-                        <md-card-content flex>
-                            <md-list>
-                                <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
-                                    <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
-                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <h3>{{contributor.name}}</h3>
-                                        <h3>{{contributor.value}}</h3>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
-                    </md-card>
-                </div>
-                <!-- End: Team Contributors -->
-            </div>
-            <!-- End: Summaries -->
-
-            <!-- Activity Feed -->
-            <div id="v2-activity-feed" flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="row">
-                <md-card flex class="md-margin">
+                <!-- Begin: Top Skills -->
+                <md-card flex>
                     <md-card-title flex="none">
                         <md-card-title-text>
-                            <span class="md-title">Pipeline Activity Feed<i class="fa fa-info-circle"></i></span>
+                                <span class="md-title">
+                                    Top skills
+                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                                </span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-content>
+                        <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
+                            <div></div>
+                        </gt-bar-graph>
+                    </md-content>
+                </md-card>
+                <!-- End: Top Skills -->
+            </div>
+
+            <div flex="45" layout="column">
+                <!-- Begin: Recommended Candidates -->
+                <md-card flex class="candidate-cards">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                                <span class="md-title">
+                                    Recommended Candidates (10)
+                                </span>
+                            <span class="md-subhead">These candidates have engaged with your campaings</span>
+                        </md-card-title-text>
+                    </md-card-title>
+                    <md-content ng-repeat="candidates in vm.candidateCards">
+                        <md-card layout="row" layout-align="center center">
+                            <div flex="initial" class="gt-title-icon">BS<i class="fa fa-check-circle"></i></div>
+                            <div flex>
+                                <div class="md-title">
+                                    <h2>{{candidates.name}}
+                                        <span>
+                                            <a href="" class="fa fa-github"></a>
+                                            <a href="" class="fa fa-facebook-square"></a>
+                                            <a href="" class="fa fa-twitter-square"></a>
+                                            <a href="" class="fa fa-linkedin-square"></a>
+                                        </span>
+                                    </h2>
+                                </div>
+                                <div><i>{{candidates.current}}</i></div>
+                                <div class="md-display-6">Recent Activity: {{candidates.activity}}</div>
+                            </div>
+                            <md-card-actions layout="column" layout-align="space-between end">
+                                <i class="fa fa-envelope-square"></i>
+                                <i class="fa fa-share"></i>
+                            </md-card-actions>
+                        </md-card>
+                    </md-content>
+                    <md-card-actions layout="row" layout-align="center end">Infinite Scroll</md-card-actions>
+                </md-card>
+                <!-- End: Recommended Candidates -->
+            </div>
+
+            <div flex="25" layout="column">
+                <!-- Begin: Team Contributions -->
+                <md-card flex="grow" class="team-contributions">
+                    <md-card-title flex="none">
+                        <md-card-title-text>
+                            <span class="md-title">Top Contributors</span>
+                            <span class="md-subhead">Candidate Contributions By Your Team</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
                         <md-list>
-                            <div class="md-whiteframe-z1 v2-feed" ng-repeat="feed in vm.feeds">
-                                <span class="md-caption">{{feed.time}}</span>
-                                <h4 class="md-body-2">{{feed.text}}</h4>
-                            </div>
+                            <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
+                                <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
+                                <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
+                                    <div>
+                                        <div class="md-display-5"><a href="">{{contributor.name}}</a></div>
+                                        <div class="md-display-6">{{contributor.team}}</div>
+                                    </div>
+                                    <span class="md-display-1">{{contributor.value}}</span>
+                                </div>
+                            </md-list-item>
                         </md-list>
                     </md-card-content>
-                    <md-card-actions layout="row" layout-align="center center">
-                        <span class="md-title">Load more...</span>
-                    </md-card-actions>
                 </md-card>
+                <!-- End: Team Contributions -->
             </div>
-            <!-- End: Activity Feed -->
+
         </div>
-        <!-- End: Summaries and Activity Feed -->
+
     </div>
 
 </section>

@@ -136,7 +136,7 @@ class User(db.Model):
 
         user = User(
             email='{}@example.com'.format(uuid.uuid4().__str__()),
-            password=generate_password_hash(password, method='pbkdf2:sha512:2000', salt_length=32),
+            password=generate_password_hash(password, method='pbkdf2:sha512'),
             domain_id=domain_id,
             user_group_id=user_group_id,
             expiration=None
@@ -261,6 +261,7 @@ class Client(db.Model):
 
     client_id = db.Column(db.String(40), primary_key=True)
     client_secret = db.Column(db.String(55), nullable=False)
+    client_name = db.Column(db.String(255))
 
     def delete(self):
         db.session.delete(self)
@@ -689,7 +690,10 @@ class UserGroup(db.Model):
         for user_id in user_ids:
             user = User.query.get(user_id) or None
             if user and user.domain_id == user_group.domain_id:
-                user.user_group_id = user_group.id
+                if user.user_group_id == user_group.id:
+                    raise InvalidUsage("User %s already belongs to user group %s" % (user_id, user_group.id))
+                else:
+                    user.user_group_id = user_group.id
             else:
                 raise InvalidUsage(error_message="User: %s doesn't exist or either it doesn't belong to same Domain "
                                                  "%s as user group" % (user_id, user_group.domain_id))

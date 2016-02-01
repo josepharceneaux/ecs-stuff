@@ -24,16 +24,20 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia', '$cookies'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $mdDialog, $mdMedia, $cookies) {
         var vm = this;
 
         init();
         activate();
+        showWelcomeDialog();
 
         function init() {
+            // example for md-dialog example
+            vm.items = [1, 2, 3];
+
             vm.itemsPerPageOptions = [
                 { value: 5, name: '5 per page' },
                 { value: 10, name: '10 per page' },
@@ -471,6 +475,53 @@
 
         function activate() {
             logger.log('Activated Dashboard Overview View');
+        }
+
+        function showWelcomeDialog($event) {
+            var useFullScreen = ($mdMedia('sm') || $mdMedia('xs'));
+
+            // only show welcome modal if it hasn't been shown before (i.e. until cookie expires)
+            if (!$cookies.getObject('welcomeModalShown')) {
+                $mdDialog.show({
+                    controller: DialogController,
+                    controllerAs: 'vm',
+                    templateUrl: 'components/onboard/onboard-welcome/onboard-welcome.html',
+                    parent: angular.element(document.body),
+                    targetEvent: $event,
+                    clickOutsideToClose: true,
+                    fullscreen: useFullScreen
+                })
+                .then(function (answer) {
+                    //$scope.status = 'You said the information was "' + answer + '".';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                }, function() {
+                    //$scope.status = 'You canceled the dialog.';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                });
+            }
+        };
+
+        DialogController.$inject = ['$scope', '$mdDialog'];
+
+        /* @ngInject */
+        function DialogController($scope, $mdDialog) {
+            $scope.hide = function() {
+                $mdDialog.hide();
+            };
+            $scope.cancel = function() {
+                $mdDialog.cancel();
+            };
+            $scope.answer = function(answer) {
+                $mdDialog.hide(answer);
+            };
         }
     }
 })();

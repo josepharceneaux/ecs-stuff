@@ -1,0 +1,49 @@
+// ---------------------------------------------------
+// Modules / Candidate Cards
+// ---------------------------------------------------
+
+.candidate-cards {
+  md-card {
+    border:none;
+    background: #f5f5f5;
+    color:#666;
+    font-size:13px;
+    padding:16px 20px;
+    .fa {
+      color:#ccc;
+      &:hover {
+        color:#999;
+      }
+    }
+    md-card-title {
+      flex: none;
+    }
+    .md-title {
+      h2 {
+        font-size:19px;
+        .fa {
+          font-size:15px;
+        }
+      }
+    }
+
+    .md-display-6 {
+      color:green;
+      padding:5px 0px;
+    }
+    .gt-title-icon {
+      width:70px;
+      height:70px;
+      position:relative;
+      .fa {
+        color:green;
+        position:absolute;
+        top:0px;
+        left:-5px;
+        font-size:23px;
+        display:none;
+      }
+    }
+  }
+
+}
