@@ -14,6 +14,8 @@
 .feed__inner--active {
   animation: animation--show $easing--slow;
   display: block;
+  position: relative;
+  height: 100%;
 }
 
 // -----
@@ -24,6 +26,7 @@
   @extend .icon--bars;
 
   position: relative;
+  z-index: 1;
   transition: background-color $easing--slow;
   padding-top: $padding--normal;
   padding-bottom: $padding--normal;
@@ -31,6 +34,7 @@
   padding-right: $padding--huge;
   background-color: $color--nearWhite;
   outline: none;
+  box-shadow: 0 0 20px 10px rgba(255,255,255,1);
 
   @include helper--media($breakpoint--medium) {
     background-color: transparent;
@@ -55,6 +59,17 @@
     background-color: $color--nearWhite;
     cursor: pointer;
   }
+}
+
+// -----
+// Content
+// -----
+
+.feed__content {
+  position: absolute;
+  overflow-y: auto;
+  height: 100%;
+  border-bottom: 60px solid transparent;
 }
 
 // -----
