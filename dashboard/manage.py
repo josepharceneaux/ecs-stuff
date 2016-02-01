@@ -43,7 +43,7 @@ if args.deploy:
         region = 'us-west-1'
     else:
         region = 'us-east-1'
-    command = 'aws s3 sync %(build_dir_path)s s3://%(s3_bucket_name)s.gettalent.com --region %(region)s --acl public-read' % locals()
+    command = 'aws s3 sync %(build_dir_path)s s3://%(s3_bucket_name)s.gettalent.com --region %(region)s --acl public-read --cache-control no-cache' % locals()
     print ' > ', command
     call(command, shell=True)
 

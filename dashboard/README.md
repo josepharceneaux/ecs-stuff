@@ -79,6 +79,7 @@ The folder structure is somewhat simplified and flatter compared to John Papa's 
 /src
     /components
     /core
+    /fonts
     /framework
     /images
     /app.module.js
@@ -101,6 +102,8 @@ Below this level you will find various folders that arrange the application's fu
 - `components:` Contains all the components of the application. We recommend thinking of an Angular application as a tree of components, starting with the `app` component as the root of this tree.
 
 - `images:` Images used in the application.
+
+- `fonts:` Custom fonts used in the application. Icon fonts are placed here when generated. To include fonts in `bower_components`, add the path to *fonts* property in `gulp.config.js`;
 
 ## Tasks
 

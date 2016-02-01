@@ -1,5 +1,5 @@
 #toast-container {
   // The default 999999 is a little over the top (ha!) bringing it back so its easier to
   // manage with modals and other fixed position items.
-  z-index: $z-index--5;
+  z-index: $z-index--toastr;
 }
