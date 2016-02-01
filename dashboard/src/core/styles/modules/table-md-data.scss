@@ -3,6 +3,8 @@
 // ---------------------------------------------------
 
 table {
+  table-layout:fixed;
+
   &.md-table {
     margin-top:0px;
     .md-head {
@@ -13,8 +15,8 @@ table {
         }
       }
       .md-column {
-        font-size:15px;
-        font-weight: 400;
+        font-size:13px;
+        font-weight: 500;
       }
     }
 
@@ -34,7 +36,7 @@ table {
       }
       td.md-cell {
         border:none;
-        font-size: 14px;
+        font-size: 13px;
         color: #666;
       }
     }

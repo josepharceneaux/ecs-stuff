@@ -256,51 +256,6 @@
                 }
             ];
 
-            vm.contributors = [
-                {
-                    name: 'Bob Smith',
-                    team: 'Google Boston',
-                    avatar: '/images/placeholder/profiles/prof1a.jpg',
-                    value: 60
-                },
-                {
-                    name: 'Katie Fries',
-                    team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1b.jpg',
-                    value: 55
-                },
-                {
-                    name: 'Rachel Thompson',
-                    team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1c.jpg',
-                    value: 45
-                },
-                {
-                    name: 'Chris Chang',
-                    team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1d.jpg',
-                    value: 40
-                },
-                {
-                    name: 'Chrissy Donnelly',
-                    team: 'Google Boston',
-                    avatar: '/images/placeholder/profiles/prof1h.jpg',
-                    value: 10
-                },
-                {
-                    name: 'Sean Zinsmeister',
-                    team: 'Google Southwest',
-                    avatar: '/images/placeholder/profiles/prof1f.jpg',
-                    value: 12
-                },
-                {
-                    name: 'Lauren Freeman',
-                    team: 'Google HR',
-                    avatar: '/images/placeholder/profiles/prof1g.jpg',
-                    value: 10
-                }
-            ];
-
             vm.pipelines = [
                 {
                     title: 'Product Management',
@@ -348,7 +303,7 @@
                 },
                 query: {
                     filter: '',
-                    order: 'name',
+                    order: 'created',
                     limit: 20,
                     page: 1
                 },
@@ -360,121 +315,181 @@
                             name: 'Java Developer',
                             candidates: 100,
                             newCandidates: 20,
-                            created: new Date('2015-12-17T03:24:00')
+                            created: new Date('2015-12-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 2,
                             name: 'Rails Developer',
                             candidates: 870,
                             newCandidates: 12,
-                            created: new Date('2015-11-17T03:24:00')
+                            created: new Date('2015-11-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 3,
                             name: 'PHP Developer',
                             candidates: 134,
                             newCandidates: 22,
-                            created: new Date('2015-10-17T03:24:00')
+                            created: new Date('2015-10-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 4,
                             name: 'California based',
                             candidates: 713,
                             newCandidates: 32,
-                            created: new Date('2015-02-17T03:24:00')
+                            created: new Date('2015-02-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 5,
                             name: 'New York based',
                             candidates: 632,
                             newCandidates: 72,
-                            created: new Date('2015-08-17T03:24:00')
+                            created: new Date('2015-08-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 6,
                             name: 'Python Developer',
                             candidates: 823,
                             newCandidates: 100,
-                            created: new Date('2015-09-12T03:24:00')
+                            created: new Date('2015-09-12T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 7,
                             name: 'Angular Dev',
                             candidates: 189,
                             newCandidates: 34,
-                            created: new Date('2015-03-17T03:24:00')
+                            created: new Date('2015-03-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 8,
                             name: 'Backbone Dev',
                             candidates: 369,
                             newCandidates: 77,
-                            created: new Date('2015-04-17T03:24:00')
+                            created: new Date('2015-04-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 9,
                             name: 'Europe based',
                             candidates: 932,
                             newCandidates: 123,
-                            created: new Date('2015-06-17T03:24:00')
+                            created: new Date('2015-06-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 10,
                             name: 'Canada based',
                             candidates: 453,
                             newCandidates: 62,
-                            created: new Date('2015-04-16T03:24:00')
+                            created: new Date('2015-04-16T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 11,
                             name: 'China based',
                             candidates: 824,
                             newCandidates: 103,
-                            created: new Date('2015-06-08T03:24:00')
+                            created: new Date('2015-06-08T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 12,
                             name: '10 Yr Experienced',
                             candidates: 123,
                             newCandidates: 15,
-                            created: new Date('2015-08-17T03:24:00')
+                            created: new Date('2015-08-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 13,
                             name: 'Senior developer',
                             candidates: 253,
                             newCandidates: 29,
-                            created: new Date('2015-03-21T03:24:00')
+                            created: new Date('2015-03-21T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 14,
                             name: 'Software Tester',
                             candidates: 521,
                             newCandidates: 64,
-                            created: new Date('2015-01-17T03:24:00')
+                            created: new Date('2015-01-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 15,
                             name: 'Software designer',
                             candidates: 623,
                             newCandidates: 89,
-                            created: new Date('2015-05-18T03:24:00')
+                            created: new Date('2015-05-18T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 16,
                             name: 'Database Engineer',
                             candidates: 354,
                             newCandidates: 65,
-                            created: new Date('2015-05-17T03:24:00')
+                            created: new Date('2015-05-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 17,
                             name: 'IOS Developer',
                             candidates: 698,
                             newCandidates: 98,
-                            created: new Date('2015-09-11T03:24:00')
+                            created: new Date('2015-09-11T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 18,
                             name: 'Android Developer',
                             candidates: 693,
                             newCandidates: 20,
-                            created: new Date('2015-06-27T03:24:00')
+                            created: new Date('2015-06-27T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 19,
                             name: 'Business Admin',
                             candidates: 563,
                             newCandidates: 98,
-                            created: new Date('2015-08-27T03:24:00')
+                            created: new Date('2015-08-27T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 20,
                             name: 'Trainer',
                             candidates: 951,
                             newCandidates: 156,
-                            created: new Date('2015-12-06T03:24:00')
+                            created: new Date('2015-12-06T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }
                     ]
                 }
