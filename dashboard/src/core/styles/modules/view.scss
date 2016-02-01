@@ -18,6 +18,16 @@
   height: 100%;
 }
 
+.view--app {
+  @extend .view;
+
+  padding-top: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    padding-top: $misc--topNavHeight--small;
+  }
+}
+
 .view--login {
   @extend .view;
 
@@ -64,7 +74,7 @@
 
 .view__main {
   background-color: $color--nearWhite;
-  z-index: $z-index--1;
+  z-index: $z-index--view__main;
   display: table-cell;
   width: 100%;
   min-height: 100%;
@@ -118,7 +128,7 @@
 .view__sidebar {
   transition: width $easing--normal;
   background-color: $color--darkGray;
-  z-index: $z-index--2;
+  z-index: $z-index--view__sidebar;
   width: 100%;
   bottom: 0;
   position: fixed;
@@ -182,7 +192,7 @@
   top: -$misc--topNavMenuHeight;
   right: 0;
   bottom: -$misc--topNavMenuHeight;
-  z-index: $z-index--3;
+  z-index: $z-index--view__sidebar--feed;
   width: 0;
   height: 100%;
   background-color: $color--white;

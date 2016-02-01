@@ -3,7 +3,7 @@
 // ------------
 
 .mobileMenu {
-  z-index: $z-index--5;
+  z-index: $z-index--mobileMenu;
   font-size: $font-size--large;
   line-height: 1.1em;
   position: fixed;
@@ -63,7 +63,7 @@
   padding-bottom: $padding--normal;
   padding-top: $padding--normal;
   background-color: $color--darkGray;
-  z-index: $z-index--5;
+  z-index: $z-index--mobileMenu;
   padding-left: 3em;
   display: block;
   position: absolute;

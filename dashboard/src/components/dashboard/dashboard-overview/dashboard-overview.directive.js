@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia', '$timeout'];
+    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia', '$cookies', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $mdDialog, $mdMedia, $timeout) {
+    function ControllerFunction(logger, $mdDialog, $mdMedia, $cookies, $timeout) {
         var vm = this;
 
         init();
@@ -691,20 +691,34 @@
 
         function showWelcomeDialog($event) {
             var useFullScreen = ($mdMedia('sm') || $mdMedia('xs'));
-            $mdDialog.show({
-                controller: DialogController,
-                controllerAs: 'vm',
-                templateUrl: 'components/onboard/onboard-welcome/onboard-welcome.html',
-                parent: angular.element(document.body),
-                targetEvent: $event,
-                clickOutsideToClose: true,
-                fullscreen: useFullScreen
-            })
-            .then(function (answer) {
-                //$scope.status = 'You said the information was "' + answer + '".';
-            }, function() {
-                //$scope.status = 'You canceled the dialog.';
-            });
+
+            // only show welcome modal if it hasn't been shown before (i.e. until cookie expires)
+            if (!$cookies.getObject('welcomeModalShown')) {
+                $mdDialog.show({
+                    controller: DialogController,
+                    controllerAs: 'vm',
+                    templateUrl: 'components/onboard/onboard-welcome/onboard-welcome.html',
+                    parent: angular.element(document.body),
+                    targetEvent: $event,
+                    clickOutsideToClose: true,
+                    fullscreen: useFullScreen
+                })
+                .then(function (answer) {
+                    //$scope.status = 'You said the information was "' + answer + '".';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                }, function() {
+                    //$scope.status = 'You canceled the dialog.';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                });
+            }
         };
 
         DialogController.$inject = ['$scope', '$mdDialog'];

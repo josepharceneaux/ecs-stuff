@@ -6,7 +6,7 @@
   @extend .row--table;
 
   background-color: $color--black;
-  z-index: $z-index--3;
+  z-index: 3;
   padding-left: $padding--large;
   padding-right: $padding--large;
   padding-top: $padding--small;
