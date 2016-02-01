@@ -53,34 +53,34 @@
 
         scope.data = [
             {
-                title: 'Java Develope',
+                title: 'Android',
                 value: '2000',
-                percentage: '89'
+                percentage: '95'
             },
             {
-                title: 'Rails Develop',
+                title: 'App Development',
+                value: '200',
+                percentage: '90'
+            },
+            {
+                title: 'iOS',
                 value: '1600',
-                percentage: '70'
-            },
-            {
-                title: 'Angular Developer',
-                value: '900',
-                percentage: '60'
-            },
-            {
-                title: 'Python Developer',
-                value: '800',
                 percentage: '80'
             },
             {
-                title: 'Perl Developer',
-                value: '200',
-                percentage: '50'
+                title: 'C++',
+                value: '900',
+                percentage: '62'
             },
             {
-                title: 'Backbone',
-                value: '200',
-                percentage: '50'
+                title: 'Java',
+                value: '800',
+                percentage: '55'
+            },
+            {
+                title: 'UI',
+                value: '800',
+                percentage: '35'
             }
         ];
 
@@ -126,7 +126,8 @@
             svg.append('text')
                 .attr('y', i * (barHeight) + (i + 1) * barSpacing - 6)
                 .attr('fill', '#777')
-                .text(d.title + ' (' + d.value + ')');
+                .text(d.title);
+                //.text(d.title + ' (' + d.value + ')');
         });
     }
 

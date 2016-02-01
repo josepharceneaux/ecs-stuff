@@ -374,15 +374,6 @@
                             engagement: '5%',
                             contributors: 'Dean Smith (+20)'
                         }, {
-                            id: 12,
-                            name: '10 Yr Experienced',
-                            candidates: 123,
-                            newCandidates: 15,
-                            created: new Date('2015-08-17T03:24:00'),
-                            smartlists: 4,
-                            engagement: '5%',
-                            contributors: 'Dean Smith (+20)'
-                        }, {
                             id: 13,
                             name: 'Senior developer',
                             candidates: 253,

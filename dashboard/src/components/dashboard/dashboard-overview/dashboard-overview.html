@@ -6,7 +6,7 @@
     <md-content class="md-padding" layout="column" layout-gt-md="row">
         
         <!-- Left section -->
-        <div flex-gt-md="75" layout="column" layout-gt-sm="row">
+        <div flex-gt-md="100" layout="column" layout-gt-sm="row">
             
             <!-- First column -->
             <div flex-gt-sm="33" layout="column">
@@ -90,6 +90,7 @@
                                             <md-icon md-font-set="fa" md-font-icon="fa-share" ng-click="vm.viewCandidate(candidate)"></md-icon>
                                         </h3>
                                         <p>{{ candidate.activity }}</p>
+                                        <p><span class="icon--pipeline"></span><a>{{ candidate.pipeline }}</a></p>
                                     </div>
                                     <md-icon ng-click="vm.emailToCandidate(candidate)" aria-label="View Candidate" class="md-secondary">mail</md-icon>
                                 </md-list-item>
@@ -156,23 +157,6 @@
 
         </div>
         <!-- End: Left section -->
-        
-        <!-- Activity feed -->
-        <div flex-gt-md="25" layout="row">
-            <div flex layout="row">
-                <md-card flex>
-                    <md-card-title>
-                        <md-card-title-text>
-                            <span class="md-title">Recent Activity</span>
-                        </md-card-title-text>
-                        <md-card-title-media>
-                            <div class="md-media-sm card-media"></div>
-                        </md-card-title-media>
-                    </md-card-title>
-                </md-card>
-            </div>
-        </div>
-        <!-- End: Activity feed -->
     
     </md-content>
 

@@ -481,37 +481,43 @@
                     name: 'Bob Smith',
                     avatar: '/images/placeholder/profiles/prof1a.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'Android Developers'
                 },
                 {
                     name: 'Kevin Thompson',
                     avatar: '/images/placeholder/profiles/prof1b.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'Android Developers'
                 },
                 {
                     name: 'Lenny Seager',
                     avatar: '/images/placeholder/profiles/prof1c.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'iOS Developers'
                 },
                 {
                     name: 'Tom Chansky',
                     avatar: '/images/placeholder/profiles/prof1d.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'Senior Java Engineer'
                 },
                 {
                     name: 'Chris Pratt',
                     avatar: '/images/placeholder/profiles/prof1h.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'Senior Java Engineer'
                 },
                 {
                     name: 'Megi Theodhor',
                     avatar: '/images/placeholder/profiles/prof1f.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Bob recently viewed your email',
+                    pipeline: 'Senior Java Engineer'
                 }
             ];
 

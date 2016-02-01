@@ -40,27 +40,28 @@
         function init() {
             vm.callouts = [
                 {
-                    name: 'Candidates Added',
-                    tooltip: 'Fix',
-                    value: '500',
-                    change: '2 New Today <span class="negative">(-2%)</span>'
-                },
-                {
                     name: 'Total Candidates',
-                    tooltip: 'Fix',
+                    tooltip: 'Total Candidates in the pipeline',
                     value: '865',
                     change: '<span class="negative">(-10%)</span>'
                 },
                 {
-                    name: 'Recommended Candidates',
-                    tooltip: 'Fix',
+                    name: 'New Candidates',
+                    tooltip: 'candidates added to that pipeline in the last 30 days',
+                    value: '500',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
+                },
+                {
+                    name: 'Smart Lists',
+                    tooltip: 'Total number of Smart Lists associated with that pipeline',
                     value: '10',
                     change: '<span class="positive">(+10%)</span>'
                 },
                 {
-                    name: 'Campaigns',
-                    tooltip: 'Fix',
-                    value: '10'
+                    name: 'Total Engagement',
+                    tooltip: '% of candidates engaged through all of your pipelines',
+                    value: '63%',
+                    change: '<span class="positive">(+25%)</span>'
                 }
             ];
 
@@ -91,34 +92,6 @@
                 }
             ];
 
-            vm.topSkills = [
-                {
-                    title: 'Java Developer',
-                    width: 100,
-                    value: '45'
-                },
-                {
-                    title: 'Rails Developer',
-                    width: 80,
-                    value: '35'
-                },
-                {
-                    title: 'Angular Developer',
-                    width: 70,
-                    value: '20'
-                },
-                {
-                    title: 'PHP Developer',
-                    width: 65,
-                    value: '10'
-                },
-                {
-                    title: 'Python Developer',
-                    width: 50,
-                    value: '+16'
-                }
-            ];
-
             vm.candidateCards = [
                 {
                     name: 'Bob Smith',
@@ -130,37 +103,49 @@
                     name: 'Kevin Thompson',
                     initials: 'KT',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Kevin responded to your email'
                 },
                 {
                     name: 'Lenny Seager',
                     initials: 'LS',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Lenny responded to your email'
                 },
                 {
                     name: 'Tom Chansky',
                     initials: 'TC',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Tom viewed your email yesterday'
                 },
                 {
                     name: 'Chris Pratt',
                     initials: 'CP',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Chris clicked on your email'
                 },
                 {
                     name: 'Megi Theodhor',
                     initials: 'MT',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Megi accepted an event invite'
                 },
                 {
                     name: 'Julie Thomas',
                     initials: 'JT',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    activity: 'Juilie accepted an event invite'
+                },
+                {
+                    name: 'Rob Overman',
+                    initials: 'JT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Juilie accepted an event invite'
+                },
+                {
+                    name: 'Michelle Smith',
+                    initials: 'JT',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Juilie accepted an event invite'
                 }
             ];
 
@@ -192,7 +177,7 @@
                 {
                     name: 'Chrissy Donnelly',
                     team: 'Google Boston',
-                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    avatar: '/images/placeholder/profiles/prof1e.jpg',
                     value: 10
                 },
                 {
@@ -216,13 +201,19 @@
                 {
                     name: 'Sean Zinsmeister',
                     team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    avatar: '/images/placeholder/profiles/prof1i.jpg',
                     value: 12
                 },
                 {
                     name: 'Lauren Freeman',
                     team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1g.jpg',
+                    avatar: '/images/placeholder/profiles/prof1j.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Lauren Freeman',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1k.jpg',
                     value: 10
                 }
             ];
@@ -309,6 +300,7 @@
                     verticalAlign: 'top',
                     x: -30,
                     y: -20,
+                    followPointer: true,
                     floating: true,
                     width: 170,
                     symbolWidth: 12,
