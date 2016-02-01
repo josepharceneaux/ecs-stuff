@@ -180,23 +180,11 @@
                     }
                 },
                 series: [{
-                    name: 'Legend 1',
+                    name: 'Candidates Added',
                     color: '#907f90',
-                    pointStart: Date.UTC(2016, 0, 1),
+                    pointStart: Date.UTC(2015, 0, 1),
                     pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
-                }, {
-                    name: 'Legend 2',
-                    color: '#97b99b',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
-                }, {
-                    name: 'Legend 3',
-                    color: '#6ba5ae',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                    data: [0, 500, 600, 300, 200, 350, 50, 170, 235, 600, 734, 650, 400, 200]
                 }]
             });            
 
@@ -204,55 +192,31 @@
                 graph: {}
             };
 
-            vm.totalCandidates.graph.data = [
-                [
-                    { date: '07-01-15', data: 90 },
-                    { date: '07-15-15', data: 23 },
-                    { date: '08-01-15', data: 71 },
-                    { date: '08-15-15', data: 51 },
-                    { date: '09-01-15', data: 112 },
-                    { date: '09-15-15', data: 39 },
-                    { date: '10-01-15', data: 45 },
-                    { date: '10-15-15', data: 8 },
-                    { date: '11-01-15', data: 88 }
-                ],
-                [
-                    { date: '07-01-15', data: 30 },
-                    { date: '07-15-15', data: 133 },
-                    { date: '08-01-15', data: 21 },
-                    { date: '08-15-15', data: 79 },
-                    { date: '09-01-15', data: 52 },
-                    { date: '09-15-15', data: 119 },
-                    { date: '10-01-15', data: 15 },
-                    { date: '10-15-15', data: 80 },
-                    { date: '11-01-15', data: 14 }
-                ]
-            ];
 
             vm.callouts = [
                 {
                     name: 'Total Pipelines',
                     tooltip: 'Total number of pipelines in your talent pool',
-                    value: '25',
-                    change: '2 New Today <span class="negative">(-2%)</span>'
+                    value: '26',
+                    change: '<span class="positive">You have 4 pipelines</span>'
                 },
                 {
                     name: 'Total Candidates',
                     tooltip: 'Total number of candidates in all pipelines',
-                    value: '10,000',
-                    change: '+500 <span class="positive">(+25%)</span>'
+                    value: '21,683',
+                    change: '<span class="positive">(+25%)</span>'
                 },
                 {
-                    name: 'Contributions',
-                    tooltip: 'Total number of team contributions ',
-                    value: '800',
-                    change: '+300 <span class="negative">(-65%)</span>'
+                    name: 'Candidates Added',
+                    tooltip: 'Total number of candidates added by your team',
+                    value: '559',
+                    change: '<span class="negative">(-65%)</span>'
                 },
                 {
-                    name: 'Candidates Added Today',
-                    tooltip: 'Total number of team contributions ',
-                    value: '400',
-                    change: '+300 <span class="positive">(+25%)</span>'
+                    name: 'Total Engagement',
+                    tooltip: '% of candidates engaged through all of your pipelines',
+                    value: '63%',
+                    change: '<span class="positive">(+25%)</span>'
                 }
             ];
 
@@ -303,7 +267,7 @@
                 },
                 query: {
                     filter: '',
-                    order: 'created',
+                    order: 'name',
                     limit: 20,
                     page: 1
                 },

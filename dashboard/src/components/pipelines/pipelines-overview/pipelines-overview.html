@@ -8,9 +8,8 @@
                 <h2 class="md-title">My Pipelines</h2>
             </div>
             <div class="page-title-menu">
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add">+S</div></a>
             </div>
         </div>
     </md-content>
@@ -29,7 +28,7 @@
                             <a href="/dashboard">Google Drive Team</a>
                         </li>
                         <li>
-                            <a href="/pipelines"></a>
+                            <a href="/pipelines">Pipelines</a>
                         </li>
                     </ul>
                 </div>
@@ -43,10 +42,8 @@
                     <h2 class="md-title">Pipelines</h2>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+S</div></a>
                 </div>
             </md-card>
             <!-- End: Header -->
@@ -124,12 +121,12 @@
                             <table md-table md-progress="vm.promise">
                                 <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
                                 <tr md-row>
-                                    <th width="120"md-column md-order-by="created"><span>Date</span></th>
-                                    <th md-column md-order-by="name"><span>Name</span></th>
+                                    <th width="250" md-column md-order-by="name"><span>Name</span></th>
+                                    <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
+                                    <th md-column md-numeric md-order-by="engagement" md-desc><span>Engagement</span></th>
+                                    <th md-column md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
+                                    <th md-column md-order-by="created"><span>Created</span></th>
                                     <th md-column md-order-by="contributors" md-desc><span>Top Contributor</span></th>
-                                    <th width="100"md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
-                                    <th width="100"md-column md-numeric md-order-by="engagement" md-desc><span>Engagement</span></th>
-                                    <th width="100" md-column md-numeric md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
                                 </tr>
                                 </thead>
                                 <tbody md-body>
@@ -138,12 +135,12 @@
                                 | filter: vm.tableData.query.filter
                                 | orderBy: vm.tableData.query.order
                                 | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
-                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
                                     <td md-cell><a href="/pipelines/">{{p.name}}</a></td>
-                                    <td md-cell>{{p.contributors}}</td>
                                     <td md-cell>{{p.candidates}}</td>
                                     <td md-cell>{{p.engagement}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
+                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
+                                    <td md-cell>{{p.contributors}}</td>
                                 </tr>
                                 </tbody>
                             </table>
