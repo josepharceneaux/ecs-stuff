@@ -359,14 +359,14 @@ class SocialNetworkBase(object):
             else:
                 log_error({'user_id': user_id,
                            'error': get_token_response.json().get('error')})
-                raise SocialNetworkApiException('Unable to to get access token for '
+                raise SocialNetworkApiExceptionServer('Unable to to get access token for '
                                                 'current user')
 
         except:
             logger.exception('get_access_and_refresh_token: user_id: %s, '
                              'social network: %s(id: %s)'
                              % (user_id, social_network.name, social_network.id))
-            raise SocialNetworkApiException('Unable to create user credentials for current'
+            raise SocialNetworkApiExceptionServer('Unable to create user credentials for current'
                                             ' user')
 
     def get_member_id(self):
@@ -468,6 +468,10 @@ class SocialNetworkBase(object):
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
                 status = True
+            elif response.status_code == 429:
+                data = response.json()
+                raise HitLimitReached('Error: %s, %s' %
+                                      (data.get('error_description'), data.get('error')))
             else:
                 logger.debug("Access token has expired for %s(UserId:%s)."
                              " Social Network is %s."
@@ -568,4 +572,4 @@ class SocialNetworkBase(object):
         except:
             logger.exception('save_user_credentials_in_db: user_id: %s',
                              user_credentials['user_id'])
-            raise SocialNetworkApiException('APIError: Unable to create user credentials')
+            raise SocialNetworkApiExceptionServer('APIError: Unable to create user credentials')

@@ -154,7 +154,7 @@ class TestEventById:
         :param event_in_db:
         :return:
         """
-        unauthorize_test('DELETE', url=SocialNetworkApiUrl.EVENT % event_in_db.id)
+        unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db.id)
 
     def test_delete_with_valid_token(self, token, event_in_db):
         """

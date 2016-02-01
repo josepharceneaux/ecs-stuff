@@ -9,7 +9,6 @@ import datetime
 import requests
 
 # App specific imports
-from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
@@ -83,7 +82,7 @@ class TestResourceEvents:
         event_data['social_network_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500
+        assert response.status_code == 404
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4052, 'Social Network not found'
 
@@ -121,7 +120,7 @@ class TestResourceEvents:
         event_data['organizer_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500
+        assert response.status_code == 404
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4054, 'Event organizer not found'
 
@@ -144,7 +143,7 @@ class TestResourceEvents:
         event_data['venue_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500
+        assert response.status_code == 404
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4065, 'Venue not found'
 
@@ -171,7 +170,7 @@ class TestResourceEvents:
         event_data['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%S')
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500
+        assert response.status_code == 400
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4064, 'Invalid start datetime format'
 
@@ -199,7 +198,7 @@ class TestResourceEvents:
         event_data['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%S')
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500
+        assert response.status_code == 400
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4064, 'Invalid end datetime format'
         event_data['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -236,7 +235,7 @@ class TestResourceEvents:
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500, 'It should fail'
+        assert response.status_code == 400, 'It should fail'
         response = response.json()
         assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 
@@ -252,7 +251,7 @@ class TestResourceEvents:
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500, 'It should fail'
+        assert response.status_code == 400, 'It should fail'
         response = response.json()
         assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
 

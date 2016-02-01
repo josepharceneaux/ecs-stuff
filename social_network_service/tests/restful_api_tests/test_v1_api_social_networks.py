@@ -4,6 +4,8 @@
 import requests
 import json
 
+from social_network_service.common.models import db
+from social_network_service.common.tests.auth_utilities import create_test_user
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 
@@ -20,6 +22,7 @@ def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):
     :param user:
     :return:
     """
+
     response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
                             headers={'Authorization': 'Bearer %s' %token})
     logger.info(response.text)

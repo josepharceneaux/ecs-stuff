@@ -23,6 +23,7 @@ from social_network_service.modules.utilities import get_utc_datetime
 from social_network_service.modules.utilities import import_from_dist_packages
 from social_network_service.modules.utilities import milliseconds_since_epoch
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
+from social_network_service.tests.helper_functions import get_headers
 
 __author__ = 'zohaib'
 

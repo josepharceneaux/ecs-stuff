@@ -102,6 +102,7 @@ def schedule_candidate_daily_stats_update():
         data = {
             "frequency": 3600 * 24,  # Daily
             "task_type": "periodic",
+            "task_name": "daily_stats",
             "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),
             "end_datetime": "2099-01-05T08:00:00",
             "url": CandidatePoolApiUrl.TALENT_POOL_STATS
