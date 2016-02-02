@@ -96,56 +96,56 @@
                 {
                     name: 'Bob Smith',
                     initials: 'BS',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Senior Software Engineer at Google',
                     activity: 'Bob recently viewed your email'
                 },
                 {
                     name: 'Kevin Thompson',
                     initials: 'KT',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Java Engineer at Facebook',
                     activity: 'Kevin responded to your email'
                 },
                 {
                     name: 'Lenny Seager',
                     initials: 'LS',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Computer Science Student',
                     activity: 'Lenny responded to your email'
                 },
                 {
                     name: 'Tom Chansky',
                     initials: 'TC',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'iOS Engineer at AirBnB',
                     activity: 'Tom viewed your email yesterday'
                 },
                 {
                     name: 'Chris Pratt',
                     initials: 'CP',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Android Developer - Freelance',
                     activity: 'Chris clicked on your email'
                 },
                 {
                     name: 'Megi Theodhor',
                     initials: 'MT',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Frontend Engineer at Uber',
                     activity: 'Megi accepted an event invite'
                 },
                 {
                     name: 'Julie Thomas',
                     initials: 'JT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Juilie accepted an event invite'
+                    current: 'Senior Software Engineer',
+                    activity: 'Julie accepted an event invite'
                 },
                 {
                     name: 'Rob Overman',
-                    initials: 'JT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Juilie accepted an event invite'
+                    initials: 'RO',
+                    current: 'Android App Enthusiast',
+                    activity: 'Rob commented on your FB post'
                 },
                 {
                     name: 'Michelle Smith',
-                    initials: 'JT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Juilie accepted an event invite'
+                    initials: 'MS',
+                    current: 'Software Engineer at Amazon',
+                    activity: 'Michelle accepted an event invite'
                 }
             ];
 
@@ -193,28 +193,28 @@
                     value: 10
                 },
                 {
-                    name: 'Chrissy Donnelly',
+                    name: 'Rachel Sweezik',
                     team: 'Google Rockstars',
                     avatar: '/images/placeholder/profiles/prof1h.jpg',
-                    value: 10
+                    value: 6
                 },
                 {
-                    name: 'Sean Zinsmeister',
+                    name: 'Tim Christianson',
                     team: 'Google SF',
                     avatar: '/images/placeholder/profiles/prof1i.jpg',
-                    value: 12
+                    value: 5
                 },
                 {
-                    name: 'Lauren Freeman',
+                    name: 'Amy whitter',
                     team: 'Google SF',
                     avatar: '/images/placeholder/profiles/prof1j.jpg',
-                    value: 10
+                    value: 3
                 },
                 {
-                    name: 'Lauren Freeman',
+                    name: 'Kate Ruthorford',
                     team: 'Google SF',
                     avatar: '/images/placeholder/profiles/prof1k.jpg',
-                    value: 10
+                    value: 2
                 }
             ];
 

@@ -134,7 +134,7 @@
                                 <span class="md-subhead">Understanding your pipeline</span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content flex>
+                        <md-card-content>
                             <md-tabs md-stretch-tabs="always" md-dynamic-height md-border-bottom>
                                 <md-tab>
                                     <md-tab-label>Employers</md-tab-label>
@@ -204,17 +204,102 @@
                                 <md-tab>
                                     <md-tab-label>Titles</md-tab-label>
                                     <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by locations</span>
-                                        </md-content>
+                                        <div layout="row">
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">1: Android Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">2: Software Engineer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">3: App Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">4: Front-End Engineer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">5: iOS Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                        </div>
                                     </md-tab-body>
                                 </md-tab>
                                 <md-tab>
                                     <md-tab-label>Locations</md-tab-label>
                                     <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by locations</span>
-                                        </md-content>
+                                        <div layout="row">
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">1: Google </span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">2: Facebook</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">3: Oracle</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">4: Amazon</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">5: Appl</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">6: Macy's </span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">7: AirBnB</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">8: Uber</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">9: Salesforce</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">10: Docusign</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                        </div>
                                     </md-tab-body>
                                 </md-tab>
                             </md-tabs>
@@ -252,7 +337,7 @@
                     </md-card-title>
                     <md-content ng-repeat="candidates in vm.candidateCards">
                         <md-card layout="row" layout-align="center center">
-                            <div flex="initial" class="gt-title-icon">BS<i class="fa fa-check-circle"></i></div>
+                            <div flex="initial" class="gt-title-icon">{{candidates.initials}}<i class="fa fa-check-circle"></i></div>
                             <div flex>
                                 <div class="md-title">
                                     <h2>{{candidates.name}}</h2>
