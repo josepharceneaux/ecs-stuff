@@ -2,8 +2,7 @@ __author__ = 'ufarooqi'
 import json
 import decimal
 import requests
-from flask import request, jsonify
-from sqlalchemy import text
+from flask import request
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.models.user import User, db
 from candidate_pool_service.candidate_pool_app import logger, app
