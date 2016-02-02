@@ -40,27 +40,28 @@
         function init() {
             vm.callouts = [
                 {
-                    name: 'Candidates Added',
-                    tooltip: 'Fix',
-                    value: '500',
-                    change: '2 New Today <span class="negative">(-2%)</span>'
-                },
-                {
                     name: 'Total Candidates',
-                    tooltip: 'Fix',
+                    tooltip: 'Total Candidates in the pipeline',
                     value: '865',
                     change: '<span class="negative">(-10%)</span>'
                 },
                 {
-                    name: 'Recommended Candidates',
-                    tooltip: 'Fix',
+                    name: 'New Candidates',
+                    tooltip: 'candidates added to that pipeline in the last 30 days',
+                    value: '500',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
+                },
+                {
+                    name: 'Smart Lists',
+                    tooltip: 'Total number of Smart Lists associated with that pipeline',
                     value: '10',
                     change: '<span class="positive">(+10%)</span>'
                 },
                 {
-                    name: 'Campaigns',
-                    tooltip: 'Fix',
-                    value: '10'
+                    name: 'Total Engagement',
+                    tooltip: '% of candidates engaged through all of your pipelines',
+                    value: '63%',
+                    change: '<span class="positive">(+25%)</span>'
                 }
             ];
 
@@ -91,76 +92,60 @@
                 }
             ];
 
-            vm.topSkills = [
-                {
-                    title: 'Java Developer',
-                    width: 100,
-                    value: '45'
-                },
-                {
-                    title: 'Rails Developer',
-                    width: 80,
-                    value: '35'
-                },
-                {
-                    title: 'Angular Developer',
-                    width: 70,
-                    value: '20'
-                },
-                {
-                    title: 'PHP Developer',
-                    width: 65,
-                    value: '10'
-                },
-                {
-                    title: 'Python Developer',
-                    width: 50,
-                    value: '+16'
-                }
-            ];
-
             vm.candidateCards = [
                 {
                     name: 'Bob Smith',
                     initials: 'BS',
-                    current: 'Senior Software Engineer at GetTalent',
+                    current: 'Senior Software Engineer at Google',
                     activity: 'Bob recently viewed your email'
                 },
                 {
                     name: 'Kevin Thompson',
                     initials: 'KT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'Java Engineer at Facebook',
+                    activity: 'Kevin responded to your email'
                 },
                 {
                     name: 'Lenny Seager',
                     initials: 'LS',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'Computer Science Student',
+                    activity: 'Lenny responded to your email'
                 },
                 {
                     name: 'Tom Chansky',
                     initials: 'TC',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'iOS Engineer at AirBnB',
+                    activity: 'Tom viewed your email yesterday'
                 },
                 {
                     name: 'Chris Pratt',
                     initials: 'CP',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'Android Developer - Freelance',
+                    activity: 'Chris clicked on your email'
                 },
                 {
                     name: 'Megi Theodhor',
                     initials: 'MT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'Frontend Engineer at Uber',
+                    activity: 'Megi accepted an event invite'
                 },
                 {
                     name: 'Julie Thomas',
                     initials: 'JT',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email'
+                    current: 'Senior Software Engineer',
+                    activity: 'Julie accepted an event invite'
+                },
+                {
+                    name: 'Rob Overman',
+                    initials: 'RO',
+                    current: 'Android App Enthusiast',
+                    activity: 'Rob commented on your FB post'
+                },
+                {
+                    name: 'Michelle Smith',
+                    initials: 'MS',
+                    current: 'Software Engineer at Amazon',
+                    activity: 'Michelle accepted an event invite'
                 }
             ];
 
@@ -192,7 +177,7 @@
                 {
                     name: 'Chrissy Donnelly',
                     team: 'Google Boston',
-                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    avatar: '/images/placeholder/profiles/prof1e.jpg',
                     value: 10
                 },
                 {
@@ -208,22 +193,28 @@
                     value: 10
                 },
                 {
-                    name: 'Chrissy Donnelly',
+                    name: 'Rachel Sweezik',
                     team: 'Google Rockstars',
                     avatar: '/images/placeholder/profiles/prof1h.jpg',
-                    value: 10
+                    value: 6
                 },
                 {
-                    name: 'Sean Zinsmeister',
+                    name: 'Tim Christianson',
                     team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1f.jpg',
-                    value: 12
+                    avatar: '/images/placeholder/profiles/prof1i.jpg',
+                    value: 5
                 },
                 {
-                    name: 'Lauren Freeman',
+                    name: 'Amy whitter',
                     team: 'Google SF',
-                    avatar: '/images/placeholder/profiles/prof1g.jpg',
-                    value: 10
+                    avatar: '/images/placeholder/profiles/prof1j.jpg',
+                    value: 3
+                },
+                {
+                    name: 'Kate Ruthorford',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1k.jpg',
+                    value: 2
                 }
             ];
 
@@ -309,6 +300,7 @@
                     verticalAlign: 'top',
                     x: -30,
                     y: -20,
+                    followPointer: true,
                     floating: true,
                     width: 170,
                     symbolWidth: 12,
@@ -348,11 +340,13 @@
                 },
                 plotOptions: {
                     area: {
-                        animation: true,
+                        animation: {
+                            duration: 1000
+                        },
                         fillOpacity: 0.2,
-                        lineWidth: 0.2,
+                        lineWidth:.3,
                         marker: {
-                            enabled: false,
+                            enabled: true,
                             symbol: 'circle',
                             radius: 2,
                             states: {
@@ -367,10 +361,11 @@
                             }
                         }
                     }
+
                 },
                 series: [{
                     name: 'Candidates Added',
-                    color: '#97b99b',
+                    color: '#5e385d',
                     pointStart: Date.UTC(2015, 0, 1),
                     pointInterval: 30 * 24 * 3600 * 1000,
                     data: [0, 20, 50, 80, 120, 60, 150, 110, 112, 92, 20, 40, 80, 100]

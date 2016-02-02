@@ -211,7 +211,7 @@
                 },
                 series: [{
                     name: 'Candidates Added',
-                    color: '#907f90',
+                    color: '#5e385d',
                     pointStart: getPointStart(vm.chartFilters.daysBack),
                     pointInterval: getPointInterval(vm.chartFilters.daysBack),
                     data: getData(vm.chartFilters.daysBack)
@@ -405,15 +405,6 @@
                             engagement: '5%',
                             contributors: 'Dean Smith (+20)'
                         }, {
-                            id: 12,
-                            name: '10 Yr Experienced',
-                            candidates: 123,
-                            newCandidates: 15,
-                            created: new Date('2015-08-17T03:24:00'),
-                            smartlists: 4,
-                            engagement: '5%',
-                            contributors: 'Dean Smith (+20)'
-                        }, {
                             id: 13,
                             name: 'Senior developer',
                             candidates: 253,
@@ -461,7 +452,7 @@
                         }, {
                             id: 18,
                             name: 'Android Developer',
-                            candidates: 693,
+                            candidates: 865,
                             newCandidates: 20,
                             created: new Date('2015-06-27T03:24:00'),
                             smartlists: 4,

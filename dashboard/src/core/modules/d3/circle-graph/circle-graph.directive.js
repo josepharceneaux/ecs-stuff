@@ -93,9 +93,9 @@
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-43')
+            .attr("x", '-50')
             .attr("y", '10.3em')
-            .text("Candidates Used");
+            .text("Candidates Pipelined");
 
         svg.append("rect")
             .attr("class", "legend off-white")
@@ -108,9 +108,9 @@
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-30')
+            .attr("x", '-64')
             .attr("y", '11.7em')
-            .text("Candidates Available");
+            .text("Total Candidates");
 
         svg.append("rect")
             .attr("class", "legend purple")
