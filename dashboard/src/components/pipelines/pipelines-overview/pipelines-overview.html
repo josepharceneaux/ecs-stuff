@@ -55,9 +55,9 @@
             <div class="module-padding">
                 <h2 class="md-headline">
                     Candidate Growth
-                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                    <i class="fa fa-info-circle"  uib-tooltip="Growth by daily added candidates" tooltip-class="tooltip--info" ></i>
                 </h2>
-                <div layout="row" layout-align="end">
+                <div hide layout="row" layout-align="end">
                     <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
                         <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
                     </md-radio-group>

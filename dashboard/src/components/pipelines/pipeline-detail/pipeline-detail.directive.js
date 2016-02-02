@@ -96,54 +96,63 @@
                 {
                     name: 'Bob Smith',
                     initials: 'BS',
+                    photo: '/images/placeholder/candidates/1.jpg',
                     current: 'Senior Software Engineer at Google',
                     activity: 'Bob recently viewed your email'
                 },
                 {
                     name: 'Kevin Thompson',
                     initials: 'KT',
+                    photo: '/images/placeholder/candidates/2.jpg',
                     current: 'Java Engineer at Facebook',
                     activity: 'Kevin responded to your email'
                 },
                 {
                     name: 'Lenny Seager',
                     initials: 'LS',
+                    photo: '/images/placeholder/candidates/3.jpg',
                     current: 'Computer Science Student',
                     activity: 'Lenny responded to your email'
                 },
                 {
                     name: 'Tom Chansky',
                     initials: 'TC',
+                    photo: '/images/placeholder/candidates/4.jpg',
                     current: 'iOS Engineer at AirBnB',
                     activity: 'Tom viewed your email yesterday'
                 },
                 {
                     name: 'Chris Pratt',
                     initials: 'CP',
+                    photo: '/images/placeholder/candidates/5.jpg',
                     current: 'Android Developer - Freelance',
                     activity: 'Chris clicked on your email'
                 },
                 {
                     name: 'Megi Theodhor',
                     initials: 'MT',
+                    photo: '/images/placeholder/candidates/6.jpg',
                     current: 'Frontend Engineer at Uber',
                     activity: 'Megi accepted an event invite'
                 },
                 {
                     name: 'Julie Thomas',
                     initials: 'JT',
+                    photo: '/images/placeholder/candidates/7.jpg',
                     current: 'Senior Software Engineer',
                     activity: 'Julie accepted an event invite'
                 },
                 {
                     name: 'Rob Overman',
                     initials: 'RO',
+                    photo: '/images/placeholder/candidates/8.jpg',
                     current: 'Android App Enthusiast',
                     activity: 'Rob commented on your FB post'
                 },
                 {
-                    name: 'Michelle Smith',
+                    name: 'Mike Gueyne',
                     initials: 'MS',
+                    photo: '/images/placeholder/candidates/9.jpg',
                     current: 'Software Engineer at Amazon',
                     activity: 'Michelle accepted an event invite'
                 }

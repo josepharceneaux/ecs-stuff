@@ -163,7 +163,8 @@
                         style: {
                             fontWeight: 400,
                         }
-                    }
+                    },
+                    enabled: false
                 },
                 tooltip: {
                     borderWidth: 0,
@@ -188,11 +189,11 @@
                     area: {
                         animation: true,
                         fillOpacity: 0.2,
-                        lineWidth: 2,
+                        lineWidth:.3,
                         marker: {
                             enabled: true,
                             symbol: 'circle',
-                            radius: 4,
+                            radius: 3,
                             states: {
                                 hover: {
                                     radius: 8,
@@ -205,7 +206,7 @@
                         },
                         states: {
                             hover: {
-                                lineWidth: 2
+                                lineWidth:.4
                             }
                         }
                     }
