@@ -519,7 +519,8 @@ class TalentPipelineCampaigns(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        return {"email_campaigns": get_campaigns_of_talent_pipeline(talent_pipeline)}
+        return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
+
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
