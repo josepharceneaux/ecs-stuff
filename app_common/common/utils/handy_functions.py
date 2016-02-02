@@ -1,5 +1,5 @@
+"""Misc functions that have no logical grouping to a module."""
 __author__ = 'erikfarmer'
-
 import json
 import requests
 from flask import current_app
@@ -9,19 +9,18 @@ from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, 
 import re
 import random
 import string
+from itertools import izip_longest
 from ..models.db import db
 from ..models.user import User, UserScopedRoles, DomainRole
-# from user_service.common.models.db import db
-# import user_service.user_app
 
 
 def random_word(length):
-    # Creates a random lowercase string, useful for testing data.
+    """Creates a random lowercase string, usefull for testing data."""
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 
 def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
-    # Creates a random string of lowercase/uppercase letter and digits. Useful for Oauth2 tokens.
+    """Creates a random string of lowercase/uppercase letter and digits."""
     return ''.join(random.choice(chars) for _ in range(size))
 
 
@@ -57,6 +56,19 @@ def camel_case_to_snake_case(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('(.)([0-9]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def grouper(iterable, group_size, fillvalue=None):
+    """
+    Collect data into fixed-length chunks or blocks
+    i.e grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
+    :param iterable: Iterable item for 'chunking'.
+    :param group_size: How many items should be in a group.
+    :param fillvalue: Optional arg to fill chunks that are less than the defined group size.
+    :return type: itertools.izip_longest
+    """
+    args = [iter(iterable)] * group_size
+    return izip_longest(*args, fillvalue=fillvalue)
 
 
 def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):

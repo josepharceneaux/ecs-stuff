@@ -1,84 +1,158 @@
 <section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
-    <div layout="column" layout-margin>
-        
-        <!-- Navigation path -->
-        <div layout="row">
-            <div ncy-breadcrumb></div>
-        </div>
-        <!-- End: Navigation path -->
-
-        <!-- Header -->
-        <md-content class="page-title md-whiteframe-gt module-padding" layout="row" layout-xs="column" layout-align="center center" >
-            <div class="gt__icon-large">
-                <img src="//placehold.it/80x80" />
-            </div>
+    <md-content hide class="page-title-2 md-padding">
+        <div class="breadcrumbs2">My Pipelines</div>
+        <div class="md-padding" layout="row" layout-xs="column" layout-align="center center">
+            <div flex="initial" class="gt-title-icon icon--pipeline"></div>
             <div flex>
                 <h2 class="md-title">My Pipelines</h2>
             </div>
-            <div layout="row" layout-xs="column" layout-sm="column">
-                <md-button class="md-raised md-primary">+</md-button>
+            <div class="page-title-menu">
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add">+S</div></a>
             </div>
-        </md-content>
-        <!-- End: Header -->
+        </div>
+    </md-content>
 
-        <!-- Section overview graph -->
-        <md-content class="md-whiteframe-gt module-padding" layout="row" >
-            <div style="height:400px;">Candidate Growth Chart</div>
-        </md-content>
-        <!-- End: Growth graph -->
+    <div layout="column" class="overview-graph">
+
+        <div layout="column" layout-margin>
+
+            <!-- Navigation path -->
+            <div layout="row">
+                <div hide ncy-breadcrumb></div>
+                <div layout="row">
+                    <ul class="breadcrumb">
+                        <!-- ngRepeat: step in steps -->
+                        <li>
+                            <a href="/dashboard">Google Drive Team</a>
+                        </li>
+                        <li>
+                            <a href="/pipelines">Pipelines</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- End: Navigation path -->
+
+            <!-- Header -->
+            <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
+                <div flex="initial" class="gt-title-icon icon--pipeline"></div>
+                <div flex>
+                    <h2 class="md-title">Pipelines</h2>
+                </div>
+                <div class="page-title-menu">
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--announcements"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                </div>
+            </md-card>
+            <!-- End: Header -->
+
+        </div>
+
+        <!-- Growth chart -->
+        <div id="growth-chart-section">
+            <div class="module-padding">
+                <md-toolbar>
+                    <div class="md-toolbar-tools">
+                        <h2>
+                            <span>Candidate Growth</span>
+                        </h2>
+                        <span flex></span>
+                        <div class="toggle" layout="row" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
+                            <div flex>7</div>
+                            <div flex>30</div>
+                            <div class="active" flex>60</div>
+                            <div flex>90</div>
+                        </div>
+                    </div>
+                </md-toolbar>
+
+                <div hide layout="row" layout-align="end">
+                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
+                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
+                    </md-radio-group>
+                </div>
+            </div>
+
+            <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
+                <div id="growth-chart"></div>
+            </div>
+        </div>
+        <!-- End: Growth chart -->
+
+    </div>
+
+
+
+
+    <div layout="column" class="md-padding" layout-wrap>
 
         <!-- Call-outs -->
-        <div class="stat-row" layout="row" layout-wrap>
-            <div class="md-whiteframe-gt module-padding" flex-gt-md="25" flex-gt-sm="50" flex="100" ng-repeat="callout in vm.callouts">
+        <div class="stat-row md-margin" layout="row" layout-wrap>
+            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
                 <md-content layout="column" layout-align="center center">
-                    <h3 class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></h3>
-                    <h3 class="md-display-3">{{callout.value}}</h3>
+                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
+                    <span class="md-display-3">{{callout.value}}</span>
+                    <span class="md-subhead" ng-bind-html="callout.change"></span>
                 </md-content>
             </div>
         </div>
         <!-- End: Call-outs -->
 
+
+
         <!-- Tables & Cards -->
         <div layout="row" layout-wrap layout-fill>
-            <!-- Top Pipelines Table -->
-            <div flex="66" flex-xs="100" flex-sm="100" flex-md="100" layout="row" layout-wrap>
 
-                <md-card flex class="md-margin">
-                    <md-card-content>
-                        <md-toolbar class="md-table-toolbar md-default">
-                            <div class="md-toolbar-tools">
-                                <h2 class="md-title">Pipelines</h2>
-                                <div flex></div>
-                                
-                                <md-icon>search</md-icon>
-                                <form flex name="vm.tableData.filter.form" layout-align="start start">                                                                    
-                                    <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search">
-                                </form>
-                                <md-button class="md-icon-button" ng-click="vm.removeFilter()">
-                                    <md-icon>close</md-icon>
-                                </md-button>
+            <!-- Top Pipelines Table -->
+            <div flex="70" layout="column" layout-wrap>
+
+                <md-card flex="grow">
+                    <md-toolbar class="md-table-toolbar md-default">
+                        <div class="md-toolbar-tools">
+                            <div>
+                                <div class="md-title">
+                                    Pipelines
+                                </div>
+                                <div class="md-subhead">
+                                    Complete list of pipelines in this talent pool
+                                </div>
                             </div>
-                        </md-toolbar>
-                        
-                        <md-table-container>
+                            <div flex></div>
+
+                            <md-icon>search</md-icon>
+                            <form flex name="vm.tableData.filter.form" layout-align="start start">
+                                <input type="text" ng-model="vm.tableData.query.filter" ng-model-options="vm.tableData.filter.options" placeholder="search" class="md-input">
+                            </form>
+                            <md-button class="md-icon-button" ng-click="vm.removeFilter()">
+                                <md-icon>close</md-icon>
+                            </md-button>
+                        </div>
+                    </md-toolbar>
+
+                    <md-content>
+
+                        <md-table-container class="md-margin">
                             <table md-table md-progress="vm.promise">
                                 <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
                                 <tr md-row>
-                                    <th md-column md-order-by="name"><span>Pipeline</span></th>
+                                    <th width="250" md-column md-order-by="name"><span>Name</span></th>
                                     <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
-                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
+                                    <th md-column md-numeric md-order-by="engagement" md-desc><span>Engagement</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
                                     <th md-column md-numeric md-order-by="created"><span>Created</span></th>
                                 </tr>
                                 </thead>
                                 <tbody md-body>
                                 <tr md-row
-                                    ng-repeat="p in vm.tableData.pipelines.data 
-                                    | filter: vm.tableData.query.filter
-                                    | orderBy: vm.tableData.query.order 
-                                    | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
-                                    <td md-cell>{{p.name}}</td>
+                                    ng-repeat="p in vm.tableData.pipelines.data
+                                | filter: vm.tableData.query.filter
+                                | orderBy: vm.tableData.query.order
+                                | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
+                                    <td md-cell><a href="/pipelines/">{{p.name}}</a></td>
                                     <td md-cell>{{p.candidates}}</td>
+                                    <td md-cell>{{p.engagement}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
                                     <td md-cell>{{p.created | date:'MM/d/y'}}</td>
                                 </tr>
@@ -88,48 +162,47 @@
 
                         <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
                                              md-page-select md-boundary-links
-                                             md-on-paginate="vm.logPagination"></md-table-pagination>
-                    </md-card-content>
+                                             md-on-paginate="vm.logPagination" class="md-margin"></md-table-pagination>
+                    </md-content>
                 </md-card>
+
             </div>
             <!-- End: Top Pipelines Table -->
 
-            <!-- Cards -->
-            <div id="v2-pipeline-cards" flex="33" flex-xs="100" flex-sm="100" flex-md="100" layout="column">
-                
-                <!-- Current Candidate Usage -->
-                <md-card flex="none" class="md-margin">
-                    <md-card-title flex="none">
-                        <md-card-title-text>
-                            <span class="md-title">Current Candidate Usage<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
-                            <span class="md-subhead">Used vs Available (Talent Pools)</span>
-                        </md-card-title-text>
-                    </md-card-title>
-                    <md-card-content flex>
-                        D3 % Chart
-                    </md-card-content>
-                </md-card>
-                <!-- End: Current Candidate Usage -->
+            <div flex="30" layout="column">
 
-                <!-- Top Performing Campaigns -->
-                <md-card flex="none" class="md-margin">
-                    <md-card-title flex="none">
-                        <md-card-title-text>
-                            <span class="md-title">Top Campaigns<i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i></span>
-                            <span class="md-subhead">By Candidate Growth</span>
-                        </md-card-title-text>
-                    </md-card-title>
-                    <md-card-content flex>
-                        D3 Bar Chart
-                    </md-card-content>
-                </md-card>
-                <!-- End: Top Performing Campaigns -->
-            
+                <div flex="none" layout="column">
+
+                    <!-- Begin: Current Candidate Usage -->
+                    <md-card flex>
+                        <md-card-title>
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Candidate Usage
+                                    <i class="fa fa-info-circle"  uib-tooltip="Total number of pipelines in your talent pool" tooltip-class="tooltip--info" ></i>
+                                </span>
+                                <span class="md-subhead">Unique candidates in Talent Pipelines</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        </md-card-title>
+                        <md-content style="text-align:center">
+                            <div class="spacing-adjust">
+                                <gt-circle-graph layout="row" angle="55" value="11,925" class="gt-circle-graph">
+                                    <div></div>
+                                </gt-circle-graph>
+                            </div>
+                        </md-content>
+                    </md-card>
+                    <!-- End: Current Candidate Usage -->
+
+                </div>
+
             </div>
-            <!-- End: Cards -->
+
+
         </div>
         <!-- End: Tables & Cards -->
 
     </div>
-    
+
 </section>

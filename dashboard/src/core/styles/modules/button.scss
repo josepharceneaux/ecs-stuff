@@ -183,6 +183,11 @@
 // -----
 
 .button--small {
-  font-size: $font-size--small;
-  padding: $padding--tiny $padding--large;
+   font-size: $font-size--small;
+   padding: $padding--tiny $padding--large;
+ }
+
+.button--large {
+  font-size: $font-size--main;
+  padding: 10px 40px;
 }

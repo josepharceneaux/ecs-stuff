@@ -15,6 +15,8 @@ from helpers import (
     request_to_candidate_social_network_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+# Custom errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 ######################## CandidateExperience ########################
@@ -35,12 +37,14 @@ def test_delete_candidate_experience_with_bad_input():
     Expect: 404
     """
     # Delete Candidate's experiences
-    resp = request_to_candidate_experience_resource(None, 'delete', candidate_id='x', all_experiences=True)
+    resp = request_to_candidate_experience_resource(None, 'delete', candidate_id='x',
+                                                    all_experiences=True)
     print response_info(resp)
     assert resp.status_code == 404
 
     # Delete Candidate's experience
-    resp = request_to_candidate_experience_resource(None, 'delete', candidate_id=5, experience_id='x')
+    resp = request_to_candidate_experience_resource(None, 'delete', candidate_id=5,
+                                                    experience_id='x')
     print response_info(resp)
     assert resp.status_code == 404
 
@@ -91,7 +95,8 @@ def test_delete_experience_of_a_different_candidate(user_first, access_token_fir
     updated_resp = request_to_candidate_experience_resource(access_token_first, 'delete', candidate_1_id,
                                                             experience_id=can_2_experiences[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3060
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.EXPERIENCE_FORBIDDEN
 
 
 def test_delete_candidate_experience_with_no_id(user_first, access_token_first, talent_pool):
@@ -102,7 +107,8 @@ def test_delete_candidate_experience_with_no_id(user_first, access_token_first, 
     # Remove one of Candidate's experiences without experience_id
     AddUserRoles.delete(user=user_first)
     candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_experience_resource(access_token_first, 'delete', candidate_id)
+    updated_resp = request_to_candidate_experience_resource(access_token_first, 'delete',
+                                                            candidate_id)
     print response_info(updated_resp)
     assert updated_resp.status_code == 404
 
@@ -245,7 +251,7 @@ def test_delete_exp_bullets_of_a_different_candidate(user_first, access_token_fi
             experience_id=can_2_experiences[0]['id'], all_bullets=True)
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == 3060
+    assert updated_resp.json()['error']['code'] == custom_error.EXPERIENCE_FORBIDDEN
 
 
 def test_delete_candidate_exp_bullets_with_no_id(user_first, access_token_first, talent_pool):
@@ -375,7 +381,8 @@ def test_delete_email_of_a_candidate_belonging_to_a_diff_user(user_first, access
     updated_resp = request_to_candidate_email_resource(access_token_second, 'delete', candidate_1_id,
                                                        all_emails=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_email_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -400,7 +407,8 @@ def test_delete_email_of_a_different_candidate(user_first, access_token_first, t
     updated_resp = request_to_candidate_email_resource(access_token_first, 'delete', candidate_1_id,
                                                          email_id=can_2_emails[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3070
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
 
 
 def test_delete_candidate_email_with_no_id(user_first, access_token_first, talent_pool):
@@ -521,7 +529,8 @@ def test_delete_military_service_of_a_candidate_belonging_to_a_diff_user(user_fi
     updated_resp = request_to_candidate_military_service(
             access_token_second, 'delete', candidate_1_id, all_military_services=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_military_service_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -548,7 +557,7 @@ def test_delete_military_service_of_a_different_candidate(user_first, access_tok
             military_service_id=can_2_military_services[0]['id'])
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == 3080
+    assert updated_resp.json()['error']['code'] == custom_error.MILITARY_FORBIDDEN
 
 
 def test_delete_candidate_military_service_with_no_id(user_first, access_token_first, talent_pool):
@@ -668,7 +677,8 @@ def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(user_first, access
     updated_resp = request_to_candidate_phone_resource(
             access_token_second, 'delete', candidate_1_id, all_phones=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_phone_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -693,7 +703,8 @@ def test_delete_phone_of_a_different_candidate(user_first, access_token_first, t
     updated_resp = request_to_candidate_phone_resource(access_token_first, 'delete', candidate_1_id,
                                                        phone_id=can_2_phones[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3090
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
 
 
 def test_delete_candidate_phone_with_no_id(user_first, access_token_first, talent_pool):
@@ -961,7 +972,8 @@ def test_delete_skill_of_a_candidate_belonging_to_a_diff_user(user_first, access
     updated_resp = request_to_candidate_skill_resource(
             access_token_second, 'delete', candidate_1_id, all_skills=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_skill_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -986,7 +998,8 @@ def test_delete_skill_of_a_different_candidate(user_first, access_token_first, t
     updated_resp = request_to_candidate_skill_resource(access_token_first, 'delete', candidate_1_id,
                                                        skill_id=can_2_skills[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3110
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.SKILL_FORBIDDEN
 
 
 def test_delete_candidate_skill_with_no_id(user_first, access_token_first, talent_pool):
@@ -1107,7 +1120,8 @@ def test_delete_social_network_of_a_candidate_belonging_to_a_diff_user(user_firs
     updated_resp = request_to_candidate_social_network_resource(
             access_token_second, 'delete', candidate_1_id, all_sn=True)
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_social_network_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -1132,7 +1146,8 @@ def test_delete_social_network_of_a_different_candidate(user_first, access_token
     updated_resp = request_to_candidate_social_network_resource(access_token_first, 'delete', candidate_1_id,
                                                                 sn_id=can_2_social_networkes[0]['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3120
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.SOCIAL_NETWORK_FORBIDDEN
 
 
 def test_delete_candidate_social_network_with_no_id(user_first, access_token_first, talent_pool):
@@ -1259,7 +1274,8 @@ def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(user_fir
     updated_resp = request_to_candidate_work_preference_resource(
             access_token_second, 'delete', candidate_1_id, can_1_work_preference['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3012
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
 def test_delete_work_preference_of_a_different_candidate(user_first, access_token_first, talent_pool):
@@ -1285,7 +1301,8 @@ def test_delete_work_preference_of_a_different_candidate(user_first, access_toke
             access_token_first, 'delete', candidate_1_id,
             work_preference_id=can_2_work_preference['id'])
     print response_info(updated_resp)
-    assert updated_resp.status_code == 403 and updated_resp.json()['error']['code'] == 3130
+    assert updated_resp.status_code == 403
+    assert updated_resp.json()['error']['code'] == custom_error.WORK_PREF_FORBIDDEN
 
 
 def test_delete_candidate_work_preference_with_no_id(user_first, access_token_first, talent_pool):

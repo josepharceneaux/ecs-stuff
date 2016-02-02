@@ -1,29 +1,167 @@
 <!-- Main view -->
-<section class="view__main" id="dashboard-overview-view">
+<section id="talent-pools-dashboard-pipelines-view" class="view__main dashboard">
 
-    <div layout="column" layout-margin>
+    <h3 hide class="md-headline team-name">{{ vm.teamName }}</h3>
 
-        <!-- Header -->
-        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+    <md-content class="md-padding" layout="column" layout-gt-md="row">
+        
+        <!-- Left section -->
+        <div flex-gt-md="100" layout="column" layout-gt-sm="row">
+            
+            <!-- First column -->
+            <div flex-gt-sm="33" layout="column">
 
-            <div flex>
-                <h3 class="md-title">Talent Pool Name</h3>
-                <h3 class="md-body-1">Created by <a href="">Haohong Xu</a> on 5/22/16</h3>
+                <!-- Candidate Distribution -->
+                <div flex layout="row" >
+                    <md-card flex class="candidate-distribution">
+                        <md-card-title flex="none">
+                            <md-card-title-text layout="row">
+                                <span class="md-title">Candidate Distribution</span>
+                                <span flex></span>
+                                <a ui-sref="pipelines.overview">View All Pipelines</a>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex="none">
+                            <div id="candidate-distribution-chart" style="height: 300px;">
+                                
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End Candidate Distribution -->
+
+                <!-- Top 5 Pipeliens by Engagement -->
+                <div flex layout="row" class="top-pipelines">
+                    <md-card flex>
+                        <md-card-title flex="none">
+                            <md-card-title-text layout="row">
+                                <span class="md-title">Top 5 Pipelines by Engagement</span>
+                                <span flex></span>
+                                <a ui-sref="pipelines.overview">View All Pipelines</a>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <div id="top-pipelines-chart" style="height: 300px;">
+                                
+                            </div>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Top 5 Pipeliens by Engagement -->
+            
             </div>
-            <div layout="row" layout-xs="column" layout-sm="column">
-                <md-button class="md-raised md-primary">Share</md-button>
-                <md-button class="md-raised md-primary">Add Candidates</md-button>
+            <!-- End: First column -->
+            
+            <!-- Second column -->
+            <div flex-gt-sm="33" layout="column">
+                
+                <div>
+                    <md-card class="new-candidates">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">New Candidates Today</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <span class="md-display-3">{{ vm.newCandidateToday }}</span>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                
+                <!-- Recommended Candidates -->
+                <div flex layout="row">
+                    <md-card flex class="recommended-candidates">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Recommended Candidates
+                                </span>                                
+                            </md-card-title-text>
+                        </md-card-title>
+
+                        <md-card-content class="zebra">
+                            <md-list>
+                                <md-list-item ng-repeat="candidate in vm.recommendedCandidates">
+                                    <div class="md-list-item-avatar">
+                                        <img alt="{{ candidate.name }}" ng-src="{{ candidate.avatar }}" class="md-avatar" />
+                                        <div class="check-circle-wrap">
+                                            <md-icon>check</md-icon>
+                                        </div>
+                                    </div>
+                                    <div flex class="md-list-item-text" layout="column">
+                                        <h3>
+                                            <a href="">{{ candidate.name }}</a>
+                                        </h3>
+                                        <p>{{ candidate.activity }}</p>
+                                        <p class="md-display-5"><span class="icon--pipeline"></span><a>{{ candidate.pipeline }}</a></p>
+                                    </div>
+                                    <md-icon ng-click="vm.emailToCandidate(candidate)" aria-label="View Candidate" class="md-secondary">mail</md-icon>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Recommended Candidates -->
+            
             </div>
-        </md-content>
-        <!-- End: Header -->
+            <!-- End: Second column -->
 
-        <!-- Begin: Dashboard -->
-        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+            <!-- Third column -->
+            <div flex-gt-sm="33" layout="column">
+                
+                <!-- Team Contributions -->
+                <div>
+                    <md-card class="team-contributions">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Team Contributions</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content flex>
+                            <span class="md-display-3">{{ vm.teamContributions }}</span>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Team Contributions -->
+                
+                <!-- Top 10 Contributors -->
+                <div flex layout="row">
+                    <md-card flex class="top-contributors">
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">
+                                    Top Contributors
+                                </span>
+                            </md-card-title-text>
+                        </md-card-title>
 
+                        <md-card-content class="zebra">
+                            <md-list>
+                                <md-list-item ng-repeat="contributor in vm.topContributors">
+                                    <div class="md-list-item-avatar">
+                                        <img alt="{{ contributor.name }}" ng-src="{{ contributor.avatar }}" class="md-avatar" />
+                                    </div>
+                                    <div flex layout="row" layout-align="space-between" class="md-list-item-text">
+                                        <div>
+                                            <h3>{{contributor.name}}</h3>
+                                            <p>{{contributor.team}}</p>
+                                        </div>
+                                        <span class="md-display-1">{{contributor.value}}</span>
+                                    </div>
+                                </md-list-item>
+                            </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Top 10 Contributors -->
+            
+            </div>
+            <!-- End: Third column -->
 
-        </md-content>
-        <!-- End: Dashboard -->
-
-    </div>
+        </div>
+        <!-- End: Left section -->
+    
+    </md-content>
 
 </section>
+

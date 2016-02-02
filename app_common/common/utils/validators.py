@@ -1,5 +1,6 @@
+"""Various misc validators"""
 import re
-from ..error_handling import *
+from ..error_handling import InvalidUsage
 
 
 def is_number(s):
@@ -32,7 +33,7 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number))
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return formatted_number
+            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             pass
 
@@ -40,13 +41,14 @@ def format_phone_number(phone_number, country_code='US'):
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number), region=country_code)
             formatted_number = phonenumbers.format_number(parsed_phone_number, phonenumbers.PhoneNumberFormat.E164)
-            return dict(formatted_number=formatted_number, extension=parsed_phone_number.extension)
+
+            return dict(formatted_number=str(formatted_number), extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
-                                             (phone_number, country_code))
+                               (phone_number, country_code))
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
-                                         (phone_number, country_code))
+                           (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -55,8 +57,8 @@ def sanitize_zip_code(zip_code):
     :return:
     """
     zip_code = str(zip_code)
-    zip_code = ''.join(filter(lambda character: character not in ' -', zip_code))
-    if zip_code and not ''.join(filter(lambda character: not character.isdigit(), zip_code)):
+    zip_code = ''.join([char for char in zip_code if char not in ' -'])
+    if zip_code and not ''.join([char for char in zip_code if not char.isdigit()]):
         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
         if zip_code:
             return (zip_code[:5] + ' ' + zip_code[5:]).strip()
@@ -77,3 +79,38 @@ def is_valid_url(url):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
 
+
+def parse_openweb_date(openweb_date):
+    """
+    :param openweb_date:
+    :return: datetime.date | None
+    """
+    from datetime import date
+
+    date_obj = None
+    if isinstance(openweb_date, basestring):
+        try:  # If string, try to parse as ISO 8601
+            import dateutil.parser
+
+            date_obj = dateutil.parser.parse(openweb_date)
+        except ValueError:
+            date_obj = None
+        if not date_obj:  # If fails, try to convert to int
+            try:
+                openweb_date = int(openweb_date) or None  # Sometimes the openweb_date is "0", which is invalid
+            except ValueError:
+                date_obj = None
+
+    if not date_obj and isinstance(openweb_date, int):  # If still not found, parse it as an int
+        try:
+            date_obj = date.fromtimestamp(openweb_date / 1000)
+        except ValueError:
+            date_obj = None
+
+    if date_obj and (date_obj.year > date.today().year + 2):  # Filters out any year 2 more than the current year
+        date_obj = None
+
+    if date_obj and (date_obj.year == 1970):  # Sometimes, it can't parse out the year so puts 1970, just for the hell of it
+        date_obj = None
+
+    return date_obj

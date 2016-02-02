@@ -2,51 +2,40 @@
 // Modules / Angular Material Override
 // ---------------------------------------------------
 
+html, body {
+    color:#666;
+}
+
 .module-padding {
-    padding: $padding--module;
+    padding: 10px 40px 0px;
 }
 
-@mixin card {
-    border-radius: $border-radius--base;
-    box-shadow:none;
-    border-right: solid 1px #e2e2e2;
-    border-bottom: solid 1px #e2e2e2;
-    background-color:#ffffff;
+.positive {
+    color: $color--green;
 }
 
-.md-whiteframe-gt {
-    @include card;
+.negative {
+    color: $color--red;
 }
 
-md-card {
-    @include card;
-    .md-subhead {
-        padding-top:0px;
-    }
-    md-card-content {
+.md-margin {
 
-    }
-    .md-card-title {
+}
 
-    }
+
+/** Temp Dashboard Styles **/
+
+.new-candidates,
+.team-contributions {
     .md-title {
-        font-weight:500;
-        font-size: 1.4em;
+        margin-bottom:10px;
     }
-    .md-subhead-alt {
-        margin-top:4px;
+    .md-display-3 {
+        font-size:110px;
+        margin:20px 0px;
     }
 }
 
-md-content {
-    border-radius: $border-radius--base;
-
-    .view__main > & {
-        padding: 0;
-        border-radius: 0;
-        background: transparent;
-    }
-}
 
 
 
@@ -80,17 +69,5 @@ md-content {
         min-height: 36px;
     }
 }
-
-#v2-team-contributors {
-    .v2-contributor {
-        background-color: #eee;
-        margin: 8px 0 8px 20px;
-
-        .md-avatar {
-            margin-left: -36px;
-        }
-    }
-}
-
 
 

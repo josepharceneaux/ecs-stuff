@@ -3,8 +3,10 @@
 // ---------------------------------------------------
 
 table {
-  &.md-table {
+  table-layout:fixed;
 
+  &.md-table {
+    margin-top:0px;
     .md-head {
       .md-row {
         border-bottom:1px solid #efefef;
@@ -12,14 +14,17 @@ table {
           border-bottom:1px solid #efefef;
         }
       }
+      .md-column {
+        font-size:13px;
+        font-weight: 500;
+      }
     }
 
     th {
       &.md-column {
+
         &.md-active {
-          color: $color--blue;
           md-icon {
-            color: $color--blue;
           }
         }
       }
@@ -31,10 +36,20 @@ table {
       }
       td.md-cell {
         border:none;
+        font-size: 13px;
+        color: #666;
       }
     }
 
   }
+}
+
+.md-table-pagination {
+  justify-content: center;
+}
+
+md-toolbar {
+  background:red;
 }
 
 md-toolbar.md-table-toolbar form {
