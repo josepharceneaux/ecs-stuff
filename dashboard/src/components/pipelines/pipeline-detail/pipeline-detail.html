@@ -18,7 +18,7 @@
                         <a href="/pipelines">Pipelines</a>
                     </li>
                     <li>
-                        <a href="/pipelines/2892365a"></a>
+                        <a href="/pipelines/2892365a">Android Developers</a>
                     </li><!-- end ngRepeat: step in steps -->
                 </ul>
             </div>
@@ -28,8 +28,8 @@
             <md-card class="page-title md-padding" layout="row" layout-xs="column" layout-align="center center" >
                 <div flex="initial" class="gt-title-icon icon--pipeline"></div>
                 <div flex>
-                    <h2 class="md-title">Senior Java Developer</h2>
-                    <div>Created by <a href="">Jason Provencher</a> on 10/22/2015</div>
+                    <h2 class="md-title">Android Developers</h2>
+                    <div>Created by <a href="">Evan Lesser</a> on 10/22/2015</div>
                 </div>
                 <div class="page-title-menu">
                     <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
@@ -39,19 +39,20 @@
 
         </div>
 
-        <!-- Section overview graph -->
-        <div class="area-chart chart-container">
-            <div class="">
-                <div class="chart-title">
-                    <span>
-                        Candidates Added Per Month
-                        <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
-                    </span>
-                </div>
-                <div id="pipelineDetailsViewChart" class="hero-chart"></div>
+        <!-- Growth chart -->
+        <div id="growth-chart-section">
+            <div class="module-padding">
+                <h2 class="md-headline">
+                    Candidate Growth
+                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                </h2>
+            </div>
+
+            <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
+                <div id="growth-chart"></div>
             </div>
         </div>
-        <!-- End: Growth graph -->
+        <!-- End: Growth chart -->
 
     </div>
 
@@ -72,73 +73,204 @@
         <div layout="row" layout-fill>
 
             <div flex="30" layout="column">
-                <!-- Candidate Breakdown -->
+                <!-- Typical Candidate -->
                 <div flex flex-xs="100" flex-sm="100">
-                    <md-card class="md-margin">
+                    <md-card>
                         <md-card-title flex="none">
                             <md-card-title-text>
-                                <span class="md-title">Candidate Breakdown<i class="fa fa-info-circle"></i></span>
+                                <span class="md-title">Typical Candidate</span>
+                                <span class="md-subhead">Snapshot of a typical candidate</span>
                             </md-card-title-text>
                         </md-card-title>
                         <md-card-content flex>
+                                <md-list>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Experience:</span>
+                                            <span flex class="md-body-2">10-12 Years</span>
+                                        </div>
+                                    </md-list-item>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Avg Job Length:</span>
+                                            <span flex class="md-body-2">16 Months</span>
+                                        </div>
+                                    </md-list-item>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Avg Degree:</span>
+                                            <span flex class="md-body-2">Bachelors Degree</span>
+                                        </div>
+                                    </md-list-item>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Top State:</span>
+                                            <span flex class="md-body-2">California</span>
+                                        </div>
+                                    </md-list-item>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Top University:</span>
+                                            <span flex class="md-body-2">Stanford University</span>
+                                        </div>
+                                    </md-list-item>
+                                    <md-list-item>
+                                        <div class="md-list-item-text" flex layout="row">
+                                            <span flex="40" class="md-body-2">Social Profiles:</span>
+                                            <span flex class="md-body-2">4</span>
+                                        </div>
+                                    </md-list-item>
+                                </md-list>
+                        </md-card-content>
+                    </md-card>
+                </div>
+                <!-- End: Typical Candidate -->
+                <!-- Candidate Breakdown -->
+                <div flex flex-xs="100" flex-sm="100">
+                    <md-card>
+                        <md-card-title flex="none">
+                            <md-card-title-text>
+                                <span class="md-title">Candidate Breakdown</span>
+                                <span class="md-subhead">Understanding your pipeline</span>
+                            </md-card-title-text>
+                        </md-card-title>
+                        <md-card-content>
                             <md-tabs md-stretch-tabs="always" md-dynamic-height md-border-bottom>
                                 <md-tab>
-                                    <md-tab-label>Typical</md-tab-label>
+                                    <md-tab-label>Employers</md-tab-label>
                                     <md-tab-body>
-                                        <md-list>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Experience:</span>
-                                                    <span flex class="md-body-2">10-12 Years</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Job Length:</span>
-                                                    <span flex class="md-body-2">16 Months</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Education:</span>
-                                                    <span flex class="md-body-2">Bachelors Degree</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Relocation:</span>
-                                                    <span flex class="md-body-2">No</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Requires Sponsor:</span>
-                                                    <span flex class="md-body-2">No</span>
-                                                </div>
-                                            </md-list-item>
-                                            <md-list-item>
-                                                <div class="md-list-item-text" flex layout="row">
-                                                    <span flex="40" class="md-body-2">Income:</span>
-                                                    <span flex class="md-body-2">$90,000 p/y</span>
-                                                </div>
-                                            </md-list-item>
-                                        </md-list>
+                                        <div layout="row">
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">1: Google </span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">2: Facebook</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">3: Oracle</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">4: Amazon</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">5: Appl</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">6: Macy's </span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">7: AirBnB</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">8: Uber</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">9: Salesforce</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">10: Docusign</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                        </div>
+                                    </md-tab-body>
+                                </md-tab>
+                                <md-tab>
+                                    <md-tab-label>Titles</md-tab-label>
+                                    <md-tab-body>
+                                        <div layout="row">
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">1: Android Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">2: Software Engineer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">3: App Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">4: Front-End Engineer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">5: iOS Developer</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                        </div>
                                     </md-tab-body>
                                 </md-tab>
                                 <md-tab>
                                     <md-tab-label>Locations</md-tab-label>
                                     <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by locations</span>
-                                        </md-content>
-                                    </md-tab-body>
-                                </md-tab>
-                                <md-tab>
-                                    <md-tab-label>Resources</md-tab-label>
-                                    <md-tab-body>
-                                        <md-content class="md-padding">
-                                            <span class="md-body-2">Breakdown by resources</span>
-                                        </md-content>
+                                        <div layout="row">
+                                            <div flex>
+                                                <md-list>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">1: San Francisco </span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">2: San Jose</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">3: Boston</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">4: Palo Alto</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                    <md-list-item>
+                                                        <div class="md-list-item-text" flex>
+                                                            <span class="md-body-2">5: Sunnyvale</span>
+                                                        </div>
+                                                    </md-list-item>
+                                                </md-list>
+                                            </div>
+                                        </div>
                                     </md-tab-body>
                                 </md-tab>
                             </md-tabs>
@@ -150,14 +282,12 @@
                 <md-card flex>
                     <md-card-title flex="none">
                         <md-card-title-text>
-                                <span class="md-title">
-                                    Top skills
-                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
-                                </span>
+                                <span class="md-title">Top Skills</span>
+                                <span class="md-subhead">Most active skills in your pipeline</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-content>
-                        <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
+                        <gt-bar-graph bar-height="25" bar-spacing="25" class="gt-bar-graph">
                             <div></div>
                         </gt-bar-graph>
                     </md-content>
@@ -173,33 +303,22 @@
                                 <span class="md-title">
                                     Recommended Candidates (10)
                                 </span>
-                            <span class="md-subhead">These candidates have engaged with your campaings</span>
+                            <span class="md-subhead">Candidates most engaged with your brand</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-content ng-repeat="candidates in vm.candidateCards">
                         <md-card layout="row" layout-align="center center">
-                            <div flex="initial" class="gt-title-icon">BS<i class="fa fa-check-circle"></i></div>
+                            <div flex="initial" class="gt-title-icon">{{candidates.initials}}<i class="fa fa-check-circle"></i></div>
                             <div flex>
                                 <div class="md-title">
-                                    <h2>{{candidates.name}}
-                                        <span>
-                                            <a href="" class="fa fa-github"></a>
-                                            <a href="" class="fa fa-facebook-square"></a>
-                                            <a href="" class="fa fa-twitter-square"></a>
-                                            <a href="" class="fa fa-linkedin-square"></a>
-                                        </span>
-                                    </h2>
+                                    <h2>{{candidates.name}}</h2>
                                 </div>
                                 <div><i>{{candidates.current}}</i></div>
                                 <div class="md-display-6">Recent Activity: {{candidates.activity}}</div>
                             </div>
-                            <md-card-actions layout="column" layout-align="space-between end">
-                                <i class="fa fa-envelope-square"></i>
-                                <i class="fa fa-share"></i>
-                            </md-card-actions>
                         </md-card>
                     </md-content>
-                    <md-card-actions layout="row" layout-align="center end">Infinite Scroll</md-card-actions>
+                    <md-card-actions layout="row" layout-align="center end"><i class="fa fa-chevron-down"></i></md-card-actions>
                 </md-card>
                 <!-- End: Recommended Candidates -->
             </div>
@@ -210,7 +329,7 @@
                     <md-card-title flex="none">
                         <md-card-title-text>
                             <span class="md-title">Top Contributors</span>
-                            <span class="md-subhead">Candidate Contributions By Your Team</span>
+                            <span class="md-subhead">Candidate contributions by your team</span>
                         </md-card-title-text>
                     </md-card-title>
                     <md-card-content flex>
@@ -219,7 +338,7 @@
                                 <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
                                 <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
                                     <div>
-                                        <div class="md-display-5"><a href="">{{contributor.name}}</a></div>
+                                        <div class="md-display-5">{{contributor.name}}</div>
                                         <div class="md-display-6">{{contributor.team}}</div>
                                     </div>
                                     <span class="md-display-1">{{contributor.value}}</span>

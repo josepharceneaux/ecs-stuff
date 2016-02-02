@@ -1,0 +1,18 @@
+// ---------------------------------------------------
+// Modules / MD-Tabs
+// ---------------------------------------------------
+
+md-list-item {
+  min-height:40px;
+}
+
+md-tabs {
+  .md-tab.md-active {
+    color: $color--blue;
+  }
+  md-ink-bar {
+    color: $color--blue;
+    background: $color--blue;
+  }
+}
+

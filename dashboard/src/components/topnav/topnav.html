@@ -40,7 +40,22 @@
 
         <!-- Navigation -->
         <nav class="navigation">
-            <div class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+            <a ui-sref="dashboard" class="navigation__link navigation__item--pipeline">Talent Pool: Google Drive Team</a>
+            <div hide class="js--mobileMenu js--topNavItem navigation__item--pipeline">
+                <strong>Talent Pool:</strong> Google Drive Team
+                <nav class="js--mobileMenu-target navigation__subMenu">
+                    <header class="navigation__subMenu__header">
+                        <span class="icon--pipeline"></span> Choose a Talent Pool
+                    </header>
+                    <a ui-sref="talentPools.talentPool({ poolId: '2892365a' })">Senior Software Engineer</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'd92f9a8e' })">Junior Project Manager</a>
+                    <a ui-sref="talentPools.talentPool({ poolId: 'bea68b3e' })">Web Designer</a>
+                    <footer class="navigation__subMenu__footer">
+                        <a ui-sref="talentPools">See All</a>
+                    </footer>
+                </nav>
+            </div>
+            <div hide class="js--mobileMenu js--topNavItem navigation__item--pipeline">
                 <strong>Talent Pool:</strong> Google Drive Team
                 <nav class="js--mobileMenu-target navigation__subMenu">
                     <header class="navigation__subMenu__header">
@@ -55,7 +70,7 @@
                 </nav>
             </div>
             <div class="navigation__items">
-                <a ui-sref="dashboard" class="navigation__link">Dashboard</a>
+                <a ui-sref="dashboard" class="navigation__link">Dashboards</a>
                 <div hide class="js--mobileMenu js--topNavItem navigation__item">
                     Dashboards
                     <nav class="js--mobileMenu-target navigation__subMenu">
@@ -73,9 +88,9 @@
                         <header class="navigation__subMenu__header">
                             <span class="icon--pipeline"></span> Recent Pipelines
                         </header>
-                        <a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })">Java Developer</a>
-                        <a ui-sref="pipelines.pipeline({ pipelineId: 'd92f9a8e' })">Full Stack Engineer</a>
-                        <a ui-sref="pipelines.pipeline({ pipelineId: 'bea68b3e' })">JS Engineer</a>
+                        <a ui-sref="pipelines.pipeline({ pipelineId: '2892365a' })">Android Developers</a>
+                        <a hide ui-sref="pipelines.pipeline({ pipelineId: 'd92f9a8e' })">Full Stack Engineer</a>
+                        <a hide ui-sref="pipelines.pipeline({ pipelineId: 'bea68b3e' })">Front End Developer</a>
                         <footer class="navigation__subMenu__footer">
                             <a ui-sref="pipelines.overview">See All</a>
                         </footer>
