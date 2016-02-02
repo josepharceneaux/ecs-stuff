@@ -196,8 +196,8 @@
                             radius: 3,
                             states: {
                                 hover: {
-                                    radius: 8,
-                                    fillOpacity: 1,
+                                    radius: 6,
+                                    fillOpacity:.4,
                                     fillColor: '#FFFFFF',
                                     lineWidth: 4,
                                     lineColor: '#5e385d'
