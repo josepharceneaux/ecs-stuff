@@ -5,9 +5,9 @@ from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.candidate_pool_app import logger
+from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.models.user import DomainRole
-from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
@@ -196,6 +196,7 @@ def get_smartlist_stats(smartlist_id):
 
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
 
     if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
@@ -206,10 +207,18 @@ def get_smartlist_stats(smartlist_id):
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+    else:
+        interval = int(interval)
+        if interval < 1:
+            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
     smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
                                                   SmartlistStats.added_datetime >= from_date,
                                                   SmartlistStats.added_datetime <= to_date).all()
 
+    smartlist_stats = smartlist_stats[::interval]
     return jsonify({'smartlist_data': [
         {
             'total_number_of_candidates': smartlist_stat.total_candidates,

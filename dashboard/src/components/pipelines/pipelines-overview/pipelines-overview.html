@@ -8,9 +8,8 @@
                 <h2 class="md-title">My Pipelines</h2>
             </div>
             <div class="page-title-menu">
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
+                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add">+S</div></a>
             </div>
         </div>
     </md-content>
@@ -29,7 +28,7 @@
                             <a href="/dashboard">Google Drive Team</a>
                         </li>
                         <li>
-                            <a href="/pipelines"></a>
+                            <a href="/pipelines">Pipelines</a>
                         </li>
                     </ul>
                 </div>
@@ -43,23 +42,26 @@
                     <h2 class="md-title">Pipelines</h2>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
-
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+S</div></a>
                 </div>
             </md-card>
             <!-- End: Header -->
 
-        </div>        
-        
+        </div>
+
         <!-- Growth chart -->
         <div id="growth-chart-section">
             <div class="module-padding">
                 <h2 class="md-headline">
-                    Candidates Added Per Month
-                        <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                    Candidate Growth
+                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
                 </h2>
+                <div layout="row" layout-align="end">
+                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
+                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
+                    </md-radio-group>
+                </div>
             </div>
 
             <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
@@ -93,7 +95,7 @@
         <div layout="row" layout-wrap layout-fill>
 
             <!-- Top Pipelines Table -->
-            <div flex="65" layout="column" layout-wrap>
+            <div flex="70" layout="column" layout-wrap>
 
                 <md-card flex="grow">
                     <md-toolbar class="md-table-toolbar md-default">
@@ -124,9 +126,10 @@
                             <table md-table md-progress="vm.promise">
                                 <thead md-head md-order="vm.tableData.query.order" md-on-reorder="vm.logOrder">
                                 <tr md-row>
-                                    <th md-column md-order-by="name"><span>Pipeline</span></th>
+                                    <th width="250" md-column md-order-by="name"><span>Name</span></th>
                                     <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
-                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
+                                    <th md-column md-numeric md-order-by="engagement" md-desc><span>Engagement</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
                                     <th md-column md-numeric md-order-by="created"><span>Created</span></th>
                                 </tr>
                                 </thead>
@@ -138,6 +141,7 @@
                                 | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
                                     <td md-cell><a href="/pipelines/">{{p.name}}</a></td>
                                     <td md-cell>{{p.candidates}}</td>
+                                    <td md-cell>{{p.engagement}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
                                     <td md-cell>{{p.created | date:'MM/d/y'}}</td>
                                 </tr>
@@ -154,54 +158,31 @@
             </div>
             <!-- End: Top Pipelines Table -->
 
-            <div flex="35" layout="column">
+            <div flex="30" layout="column">
 
-                <div flex="100" layout="column">
+                <div flex="none" layout="column">
 
-                    <!-- Begin: Team Contributions -->
-                    <md-card flex="grow" class="team-contributions">
-                        <md-card-title flex="none">
-                            <md-card-title-text>
-                                <span class="md-title">Top Contributors</span>
-                                <span class="md-subhead">Candidate Contributions By Your Team</span>
-                            </md-card-title-text>
-                        </md-card-title>
-                        <md-card-content flex>
-                            <md-list>
-                                <md-list-item class="v2-contributor" ng-repeat="contributor in vm.contributors">
-                                    <img ng-src="{{contributor.avatar}}" class="md-avatar" alt="{{contributor.name}}" />
-                                    <div class="md-list-item-text" flex layout="row" layout-align="space-between center">
-                                        <div>
-                                            <div class="md-display-5">{{contributor.name}}</div>
-                                            <div class="md-display-6">{{contributor.team}}</div>
-                                        </div>
-                                        <span class="md-display-1">{{contributor.value}}</span>
-                                    </div>
-                                </md-list-item>
-                            </md-list>
-                        </md-card-content>
-                    </md-card>
-                    <!-- End: Team Contributions -->
-
-                    <!-- Begin: Top Skills -->
+                    <!-- Begin: Current Candidate Usage -->
                     <md-card flex>
                         <md-card-title>
                             <md-card-title-text>
                                 <span class="md-title">
-                                    Top skills
-                                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
+                                    Candidate Usage
+                                    <i class="fa fa-info-circle"  uib-tooltip="Total number of pipelines in your talent pool" tooltip-class="tooltip--info" ></i>
                                 </span>
-                                <span class="md-subhead">Large</span>
+                                <span class="md-subhead">Unique candidates in Talent Pipelines</span>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-content>
-                            <gt-bar-graph bar-height="38" bar-spacing="30" class="gt-bar-graph">
-                                <div></div>
-                            </gt-bar-graph>
+                        </md-card-title>
+                        <md-content style="text-align:center">
+                            <div class="spacing-adjust">
+                                <gt-circle-graph layout="row" angle="55" value="11,925" class="gt-circle-graph">
+                                    <div></div>
+                                </gt-circle-graph>
+                            </div>
                         </md-content>
                     </md-card>
-                    <!-- End: Top Skills -->
-
+                    <!-- End: Current Candidate Usage -->
 
                 </div>
 

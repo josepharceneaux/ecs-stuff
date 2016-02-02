@@ -17,7 +17,6 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
-from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (TALENT_PIPELINE_SEARCH_PARAMS,
                                                                                         get_candidates_of_talent_pipeline,
@@ -502,7 +501,7 @@ class TalentPipelineCampaigns(Resource):
     # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
-        GET /talent-pipeline/<id>/campaigns  Fetch all candidates of a talent-pipeline
+        GET /talent-pipeline/<id>/campaigns  Fetch all campaigns of a talent-pipeline
 
         :return A dictionary containing list of campaigns belonging to a talent-pipeline
         :rtype: dict
@@ -513,13 +512,13 @@ class TalentPipelineCampaigns(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id %s doesn't exist in database" % talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
-        return {"email_campaigns": get_campaigns_of_talent_pipeline(talent_pipeline)}
+        return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
+
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
@@ -596,6 +595,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
 
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
 
     if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
@@ -606,10 +606,19 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+    else:
+        interval = int(interval)
+        if interval < 1:
+            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
     talent_pipeline_stats = TalentPipelineStats.query.filter(
             TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
             TalentPipelineStats.added_datetime >= from_date,
             TalentPipelineStats.added_datetime <= to_date).all()
+
+    talent_pipeline_stats = talent_pipeline_stats[::interval]
 
     return jsonify({'talent_pipeline_data': [
         {

@@ -2,6 +2,13 @@
 // Modules / Circle Graph
 // ---------------------------------------------------
 
+.spacing-adjust {
+  display:inline-block;
+  width:250px;
+  height:330px;
+  overflow:hidden;
+}
+
 .gt-circle-graph {
   svg {
     display: block;
