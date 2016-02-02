@@ -165,20 +165,24 @@
                     area: {
                         animation: true,
                         fillOpacity: 0.2,
-                        lineWidth: 0.2,
+                        lineWidth: 2,
                         marker: {
-                            enabled: false,
+                            enabled: true,
                             symbol: 'circle',
-                            radius: 2,
+                            radius: 4,
                             states: {
                                 hover: {
-                                    enabled: true
+                                    radius: 8,
+                                    fillOpacity: 1,
+                                    fillColor: '#FFFFFF',
+                                    lineWidth: 4,
+                                    lineColor: '#5e385d'
                                 }
                             }
                         },
                         states: {
                             hover: {
-                                lineWidth: 0.2
+                                lineWidth: 2
                             }
                         }
                     }
