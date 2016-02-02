@@ -26,138 +26,138 @@ class CommonData(object):
                                 'talent_pool_ids': {'add': [_talent_pool.id]}}]}
 
 
-######################## Candidate ########################
-def test_create_candidate_without_talent_pools(access_token_first, user_first):
-    """
-    Test: Attempt to create a candidate without providing talent pool IDs
-    Expect: 400
-    """
-    # Create Candidate
-    AddUserRoles.add(user=user_first)
-    data = {'candidates': [{'first_name': 'cher'}]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(response=create_resp)
-    assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
+class TestCreateCandidate(object):
+    def test_create_candidate_without_talent_pools(self, access_token_first, user_first):
+        """
+        Test: Attempt to create a candidate without providing talent pool IDs
+        Expect: 400
+        """
+        # Create Candidate
+        AddUserRoles.add(user=user_first)
+        data = {'candidates': [{'first_name': 'cher'}]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(response=create_resp)
+        assert create_resp.status_code == 400
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
-def test_create_candidate_successfully(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create a new candidate and candidate's info
-    Expect: 201
-    """
-    AddUserRoles.add(user=user_first)
-    # Create Candidate
-    data = {'candidates': [{'first_name': 'joker', 'talent_pool_ids': {'add': [talent_pool.id]}}]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+    def test_create_candidate_successfully(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create a new candidate and candidate's info
+        Expect: 201
+        """
+        AddUserRoles.add(user=user_first)
+        # Create Candidate
+        data = {'candidates': [{'first_name': 'joker', 'talent_pool_ids': {'add': [talent_pool.id]}}]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
 
-def test_create_candidate_and_retrieve_it(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create a Candidate and retrieve it. Ensure that the data sent in for creating the
-            Candidate is identical to the data obtained from retrieving the Candidate
-            minus id-keys
-    Expect: 201
-    """
-    AddUserRoles.add_and_get(user=user_first)
-    # Create Candidate
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+    def test_create_candidate_and_retrieve_it(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create a Candidate and retrieve it. Ensure that the data sent in for creating the
+                Candidate is identical to the data obtained from retrieving the Candidate
+                minus id-keys
+        Expect: 201
+        """
+        AddUserRoles.add_and_get(user=user_first)
+        # Create Candidate
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    print response_info(resp)
-    assert resp.status_code == 200
-
-
-def test_create_an_existing_candidate(access_token_first, user_first, talent_pool):
-    """
-    Test:   Attempt to recreate an existing Candidate
-    Expect: 400
-    """
-    AddUserRoles.add(user=user_first)
-
-    # Create same Candidate twice
-    data = {'candidates': [{'emails': [{'address': fake.safe_email()}],
-                            'talent_pool_ids': {'add': [talent_pool.id]}}]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
-
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(resp)
+        assert resp.status_code == 200
 
 
-def test_create_candidate_with_missing_candidates_keys(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create a Candidate with only first_name provided
-    Expect: 400
-    """
-    AddUserRoles.add(user=user_first)
-    # Create Candidate without 'candidate'-key
-    data = {'first_name': fake.first_name()}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
+    def test_create_an_existing_candidate(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to recreate an existing Candidate
+        Expect: 400
+        """
+        AddUserRoles.add(user=user_first)
+
+        # Create same Candidate twice
+        data = {'candidates': [{'emails': [{'address': fake.safe_email()}],
+                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 400
+        assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
 
-def test_update_candidate_via_post(access_token_first, user_first, talent_pool):
-    """
-    Test:   Attempt to update a Candidate via post()
-    Expect: 400
-    """
-    AddUserRoles.add(user=user_first)
-    # Send Candidate object with candidate_id to post
-    data = {'candidates': [{'id': 5, 'emails': [{'address': fake.safe_email()}]}]}
-    resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(resp)
-    assert resp.status_code == 400
-    assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+    def test_create_candidate_with_missing_candidates_keys(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create a Candidate with only first_name provided
+        Expect: 400
+        """
+        AddUserRoles.add(user=user_first)
+        # Create Candidate without 'candidate'-key
+        data = {'first_name': fake.first_name()}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 400
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
-def test_create_candidate_with_invalid_fields(access_token_first, user_first, talent_pool):
-    """
-    Test:   Attempt to create a Candidate with bad fields/keys
-    Expect: 400
-    """
-    AddUserRoles.add(user=user_first)
-    # Create Candidate with invalid keys/fields
-    data = {'candidates': [{'emails': [{'address': 'someone@nice.io'}], 'foo': 'bar',
-                            'talent_pool_ids': {'add': [talent_pool.id]}}]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
+    def test_update_candidate_via_post(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to update a Candidate via post()
+        Expect: 400
+        """
+        AddUserRoles.add(user=user_first)
+        # Send Candidate object with candidate_id to post
+        data = {'candidates': [{'id': 5, 'emails': [{'address': fake.safe_email()}]}]}
+        resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
-def test_create_candidates_in_bulk_with_one_erroneous_data(access_token_first, user_first, talent_pool):
-    """
-    Test: Attempt to create few candidates, one of which will have bad data
-    Expect: 400, no record should be added to the db
-    """
-    AddUserRoles.add(user=user_first)
+    def test_create_candidate_with_invalid_fields(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to create a Candidate with bad fields/keys
+        Expect: 400
+        """
+        AddUserRoles.add(user=user_first)
+        # Create Candidate with invalid keys/fields
+        data = {'candidates': [{'emails': [{'address': 'someone@nice.io'}], 'foo': 'bar',
+                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 400
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    email_1, email_2 = fake.safe_email(), fake.safe_email()
-    data = {'candidates': [
-        {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
-        {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_2}]},
-        {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
-    ]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    db.session.commit()
-    assert create_resp.status_code == 400
-    assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-    assert not CandidateEmail.get_by_address(email_address=email_1)
-    assert not CandidateEmail.get_by_address(email_address=email_2)
+
+    def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Attempt to create few candidates, one of which will have bad data
+        Expect: 400, no record should be added to the db
+        """
+        AddUserRoles.add(user=user_first)
+
+        email_1, email_2 = fake.safe_email(), fake.safe_email()
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_2}]},
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
+        ]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        db.session.commit()
+        assert create_resp.status_code == 400
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
+        assert not CandidateEmail.get_by_address(email_address=email_1)
+        assert not CandidateEmail.get_by_address(email_address=email_2)
 
 
 class TestCreateHiddenCandidate(object):
@@ -277,6 +277,47 @@ class TestCreateHiddenCandidate(object):
         print response_info(response=get_resp)
         assert get_resp.status_code == 200
         assert get_resp.json()['candidate']['full_name'] != full_name
+
+    def test_create_candidates_and_delete_one_then_create_it_again(
+            self, access_token_first, user_first, talent_pool, access_token_second,
+            user_second, talent_pool_second):
+        """
+        Test brief:
+        1. Create two candidates with the same email address in different domains
+        2. Delete (hide) one
+        3. Assert the other candidate is not web-hidden
+        """
+        # Create candidates
+        AddUserRoles.all_roles(user=user_first)
+        AddUserRoles.all_roles(user=user_second)
+        data_1 = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]},
+                                  'emails': [{'address': 'amir@example.com'}]}]}
+        data_2 = {'candidates': [{'talent_pool_ids': {'add': [talent_pool_second.id]},
+                                  'emails': [{'address': 'amir@example.com'}]}]}
+        create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data_1)
+        create_resp_2 = request_to_candidates_resource(access_token_second, 'post', data_2)
+        print response_info(response=create_resp_1)
+        print response_info(response=create_resp_2)
+        candidate_id_1 = create_resp_1.json()['candidates'][0]['id']
+        candidate_id_2 = create_resp_2.json()['candidates'][0]['id']
+
+        # Delete candidate_1
+        del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id_1)
+        db.session.commit()
+        print response_info(response=del_resp)
+        candidate = Candidate.get_by_id(candidate_id=candidate_id_1)
+        assert candidate.is_web_hidden == 1
+
+        # Retrieve candidate_1
+        get_resp = request_to_candidate_resource(access_token_second, 'get', candidate_id_1)
+        print response_info(response=get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+
+        # Retrieve candidate_2
+        get_resp_2 = request_to_candidate_resource(access_token_second, 'get', candidate_id_2)
+        print response_info(response=get_resp_2)
+        assert get_resp_2.status_code == 200
 
 
 ######################## CandidateAddress ########################
