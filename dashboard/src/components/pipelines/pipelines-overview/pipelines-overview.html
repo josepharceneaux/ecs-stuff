@@ -58,8 +58,8 @@
                     <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
                 </h2>
                 <div layout="row" layout-align="end">
-                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack">
-                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" value="{{option}}">{{option}}</md-radio-button>
+                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
+                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
                     </md-radio-group>
                 </div>
             </div>

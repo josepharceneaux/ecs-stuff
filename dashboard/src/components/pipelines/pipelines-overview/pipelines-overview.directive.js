@@ -30,6 +30,15 @@
     function ControllerFunction(logger, $timeout) {
         var vm = this;
 
+        var dataSetLast24Hours;
+        var dataSetLast90Days;
+
+        vm.redrawChart = redrawChart;
+        vm.updateChart = updateChart;
+        vm.removeFilter = removeFilter;
+        vm.logOrder = logOrder;
+        vm.logPagination = logPagination;
+
         init();
         activate();
 
@@ -38,18 +47,31 @@
         }
 
         function init() {
+            // mock data: candidate growth
+            // by "hour", last day
+            dataSetLast24Hours = [1, 0, 0, 0,
+                                  0, 2, 5, 8,
+                                  10, 3, 0, 3,
+                                  13, 2, 3, 3,
+                                  5, 6, 10, 12,
+                                  8, 15, 20, 4];
 
-            vm.redrawChart = function () {
-
-                vm.chart.reflow();
-
-            };
+            // by "day", last 90 days
+            dataSetLast90Days = [48, 97, 38, 63, 45, 96, 47, 14, 45, 46,
+                                 29, 21, 16, 32, 25, 109, 93, 27, 50, 96,
+                                 46, 76, 72, 68, 32, 43, 67, 31, 117, 98,
+                                 110, 59, 76, 36, 2, 50, 81, 89, 27, 26,
+                                 118, 86, 29, 35, 61, 45, 76, 64, 135, 58,
+                                 62, 100, 39, 77, 48, 108, 124, 93, 17, 26,
+                                 21, 52, 54, 19, 41, 12, 29, 59, 29, 106,
+                                 54, 25, 26, 13, 32, 51, 41, 82, 34, 153,
+                                 83, 46, 50, 70, 87, 33, 57, 40, 38, 133];
 
             vm.chartFilters = {};
             vm.daysFilterOptions = [7, 30, 60, 90];
             vm.chartFilters.daysBack = vm.daysFilterOptions[1];
 
-            vm.chart = new Highcharts.Chart({
+            vm.chartOptions = {
                 chart: {
                     renderTo: 'growth-chart',
                     type: 'area',
@@ -190,27 +212,17 @@
                 series: [{
                     name: 'Candidates Added',
                     color: '#907f90',
-                    pointStart: (function () {
-                        var d = new Date();
-                        d.setDate(d.getDate() - vm.chartFilters.daysBack);
-                        return d.getTime();
-                    })(),
-                    pointInterval: (function () {
-                        var day = 24 * 60 * 60 * 1000;
-                        //if (vm.chartFilters.daysBack === 7) {
-                        //    return day; // => expects 7 data points
-                        //} else if (vm.chartFilters.daysBack === 30) {
-                            return day * 5; // => expects no more than 6 data points
-                        //} //else if...
-                    })(),
-                    data: [200, 350, 50, 170, 235, 600, 734]
+                    pointStart: getPointStart(vm.chartFilters.daysBack),
+                    pointInterval: getPointInterval(vm.chartFilters.daysBack),
+                    data: getData(vm.chartFilters.daysBack)
                 }]
-            });
+            };
+
+            vm.chart = new Highcharts.Chart(vm.chartOptions);
 
             vm.totalCandidates = {
                 graph: {}
             };
-
 
             vm.callouts = [
                 {
@@ -477,24 +489,83 @@
                     ]
                 }
             };
+        }
 
-             vm.removeFilter = function () {
-                vm.tableData.query.filter = '';
+        function removeFilter() {
+            vm.tableData.query.filter = '';
 
-                if (vm.tableData.filter.form.$dirty) {
-                    vm.tableData.filter.form.$setPristine();
-                }
-            };
+            if (vm.tableData.filter.form.$dirty) {
+                vm.tableData.filter.form.$setPristine();
+            }
+        }
 
-            vm.logOrder = function (order) {
-                console.log('order: ', order);
-            };
+        function logOrder(order) {
+            console.log('order: ', order);
+        }
 
-            vm.logPagination = function (page, limit) {
-                console.log('page: ', page);
-                console.log('limit: ', limit);
-            };
+        function logPagination(page, limit) {
+            console.log('page: ', page);
+            console.log('limit: ', limit);
+        }
 
+        function redrawChart() {
+            vm.chart.reflow();
+        }
+
+        function updateChart(daysBack) {
+            vm.chart.series[0].update({
+                pointStart: getPointStart(daysBack),
+                pointInterval: getPointInterval(daysBack),
+                data: getData(daysBack)
+            });
+        }
+
+        function getPointStart(daysBack) {
+            var d = new Date();
+            d.setDate(d.getDate() - daysBack - 1 /* don't include today */);
+            d.setHours(0);
+            d.setMinutes(0);
+            d.setSeconds(0);
+            return d.getTime();
+        }
+
+        function getPointInterval(daysBack) {
+            var day = 24 * 60 * 60 * 1000;
+            if (daysBack === 7) {
+                return day; // => expects 7 data points
+            } else if (daysBack === 30) {
+                return day * 5; // => expects no more than 6 data points
+            } else if (daysBack === 60) {
+                return day * 10; // => expects no more than 10 data points
+            } else if (daysBack === 90) {
+                return day * 10; // => expects no more than 15 data points
+            }
+        }
+
+        function getData(daysBack) {
+            if (daysBack === 1) {
+                return aggregate(dataSetLast24Hours, 24, 6);
+            } else if (daysBack === 7) {
+                return aggregate(dataSetLast90Days, daysBack, 7);
+            } else if (daysBack === 30) {
+                return aggregate(dataSetLast90Days, daysBack, 5);
+            } else if (daysBack === 60) {
+                return aggregate(dataSetLast90Days, daysBack, 6);
+            } else if (daysBack === 90) {
+                return aggregate(dataSetLast90Days, daysBack, 9);
+            }
+        }
+
+        function aggregate(data, daysBack, dataPoints) {
+            var aggregate = [];
+            var newData = data.slice(data.length - daysBack);
+            var dataGroupSize = Math.floor(newData.length / dataPoints);
+            while (newData.length >= dataGroupSize) {
+                aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
+                    return prev + curr;
+                }));
+            }
+            return aggregate;
         }
     }
 })();
