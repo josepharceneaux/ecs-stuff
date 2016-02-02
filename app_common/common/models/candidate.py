@@ -1,7 +1,8 @@
-from sqlalchemy import and_
-from db import db
-from sqlalchemy.orm import relationship, backref
 import datetime
+from db import db
+from sqlalchemy import and_
+from sqlalchemy.orm import relationship, backref
+from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT
 from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
@@ -206,9 +207,13 @@ class CandidatePhone(db.Model):
         return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
-    def get_by_phone_value(cls, phone_value):
-        assert phone_value, 'phone_value no provided'
-        return cls.query.filter_by(value=phone_value).all()
+    def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage('Include phone_value as a str|unicode.')
+        if not isinstance(candidate_ids, list):
+            raise InvalidUsage('Include candidate_ids as a list.')
+        return cls.query.filter(db.and_(cls.value == phone_value,
+                                        cls.candidate_id.in_(candidate_ids))).all()
 
     @classmethod
     def get_by_candidate_id_and_phone_value(cls, candidate_id, phone_value):

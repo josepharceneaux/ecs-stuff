@@ -27,8 +27,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 # Database Models
-from sms_campaign_service.common.campaign_services.validators import \
-    raise_if_dict_values_are_not_int_or_long
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
@@ -46,6 +44,8 @@ from sms_campaign_service.common.campaign_services.custom_errors import (Multipl
                                                                          CampaignException)
 from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion,
                                                                raise_if_not_instance_of)
+from sms_campaign_service.common.campaign_services.validators import \
+    raise_if_dict_values_are_not_int_or_long
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import celery_app, app, logger
@@ -63,7 +63,7 @@ from sms_campaign_service.modules.custom_exceptions import (TwilioApiError,
                                                             GoogleShortenUrlAPIError,
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate,
-                                                            NoCandidateFoundForPhoneNumber,
+                                                            NoCandidateFoundInUserDomain,
                                                             MultipleTwilioNumbersFoundForUser)
 
 
@@ -424,7 +424,7 @@ class SmsCampaignBase(CampaignBase):
         :type candidate: Candidate
         :exception: InvalidUsage
         :exception: MultipleCandidatesFound
-        :exception: NoCandidateFoundForPhoneNumber
+        :exception: NoCandidateFoundInUserDomain
         :return: Candidate obj and Candidate's mobile phone
         :rtype: tuple
 
@@ -442,7 +442,7 @@ class SmsCampaignBase(CampaignBase):
         if len(candidate_mobile_phone) == 1:
             # If this number is associated with multiple candidates, raise exception
             phone_number = candidate_mobile_phone[0].value
-            _get_valid_candidate_phone(phone_number)
+            _get_valid_candidate_phone(phone_number, self.user)
             return candidate, get_formatted_phone_number(phone_number)
         elif len(candidate_mobile_phone) > 1:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
@@ -806,7 +806,7 @@ class SmsCampaignBase(CampaignBase):
 
                      MultipleUsersFound(5005)
                      NoSMSCampaignSentToCandidate(5006)
-                     NoCandidateFoundForPhoneNumber(5008)
+                     NoCandidateFoundInUserDomain(5008)
                      NoUserFoundForPhoneNumber(5009)
                      MultipleCandidatesFound(5016)
                      NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5102)
@@ -828,7 +828,7 @@ class SmsCampaignBase(CampaignBase):
         # get "user_phone" obj
         user_phone = _get_valid_user_phone(reply_data.get('To'))
         # get "candidate_phone" obj
-        candidate_phone = _get_valid_candidate_phone(reply_data.get('From'))
+        candidate_phone = _get_valid_candidate_phone(reply_data.get('From'), user_phone.user)
         # get latest campaign send
         sms_campaign_send = \
             SmsCampaignSend.get_latest_campaign_by_candidate_id(candidate_phone.candidate_id)
@@ -946,7 +946,7 @@ def _get_valid_user_phone(user_phone_value):
     return user_phone
 
 
-def _get_valid_candidate_phone(candidate_phone_value):
+def _get_valid_candidate_phone(candidate_phone_value, current_user):
     """
     - This ensures that given phone number is associated with only one candidate.
 
@@ -956,12 +956,13 @@ def _get_valid_candidate_phone(candidate_phone_value):
     :param candidate_phone_value: Phone number by which we want to get user.
     :type candidate_phone_value: str
     :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
-    :exception: If no Candidate is found, it raises "NoCandidateFoundForPhoneNumber".
+    :exception: If no Candidate is found, it raises "NoCandidateFoundInUserDomain".
     :return: candidate_phone obj
     :rtype: CandidatePhone
     """
     raise_if_not_instance_of(candidate_phone_value, basestring)
-    candidate_phone_records = CandidatePhone.get_by_phone_value(candidate_phone_value)
+    candidate_phone_records = CandidatePhone.search_phone_number_in_user_domain(
+        candidate_phone_value, [candidate.id for candidate in current_user.candidates])
     if len(candidate_phone_records) == 1:
         candidate_phone = candidate_phone_records[0]
     elif len(candidate_phone_records) > 1:
@@ -972,6 +973,6 @@ def _get_valid_candidate_phone(candidate_phone_value):
                [candidate_phone.candidate_id for candidate_phone
                 in candidate_phone_records]))
     else:
-        raise NoCandidateFoundForPhoneNumber(
+        raise NoCandidateFoundInUserDomain(
             'No Candidate is associated with %s phone number' % candidate_phone_value)
     return candidate_phone

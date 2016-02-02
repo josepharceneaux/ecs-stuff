@@ -995,19 +995,19 @@ class CampaignBase(object):
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
         campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
-        smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
+        campaign_smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
             campaign_smartlist_model, campaign.id)
-        if not smartlists:
+        if not campaign_smartlists:
             raise InvalidUsage(
                 'No smartlist is associated with %s(id:%s). (User(id:%s))'
                 % (campaign_type, campaign.id, self.user.id),
                 error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        # get candidates from search_service and filter the None records
-        candidates = sum(map(self.get_smartlist_candidates, smartlists), [])
+        candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
         if not candidates:
             raise InvalidUsage(
                 'No candidate is associated with smartlist(s). %s(id:%s). '
-                'smartlist ids are %s' % (campaign_type, campaign.id, smartlists),
+                'campaign smartlist ids are %s'
+                % (campaign_type, campaign.id, [smartlist.id for smartlist in campaign_smartlists]),
                 error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         # create SMS campaign blast
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)

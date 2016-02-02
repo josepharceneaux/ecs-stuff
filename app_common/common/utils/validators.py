@@ -1,11 +1,7 @@
 """Various misc validators"""
 import re
-<<<<<<< HEAD
 import phonenumbers
-from ..error_handling import *
-=======
 from ..error_handling import InvalidUsage
->>>>>>> 8a9f051b688bb89b79d72287334a9cf2c891aa4a
 
 
 def is_number(s):

@@ -38,7 +38,7 @@ class TestSendSmsCampaign(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_post_with_id_of_deleted_record(self, auth_token, valid_header,
+    def test_post_with_id_of_deleted_record(self, access_token_first, valid_header,
                                             sms_campaign_of_current_user):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
@@ -49,11 +49,11 @@ class TestSendSmsCampaign(object):
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
         assert response_delete.status_code == 200, 'should get ok response (200)'
         response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                      headers=dict(Authorization='Bearer %s' % auth_token))
+                                      headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response_post.status_code == ResourceNotFound.http_status_code(), \
             'Record should not be found (404)'
 
-    def test_post_with_not_owned_campaign(self, auth_token,
+    def test_post_with_not_owned_campaign(self, access_token_first,
                                           sms_campaign_of_other_user):
         """
         User auth token is valid but user is not owner of given SMS campaign.
@@ -61,12 +61,12 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(self.URL % sms_campaign_of_other_user.id,
-                                      headers=dict(Authorization='Bearer %s' % auth_token))
+                                      headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
         assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_no_smartlist_associated(self, auth_token,
+    def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):
         """
         User auth token is valid but given SMS campaign has no associated smartlist with it. So
@@ -78,14 +78,14 @@ class TestSendSmsCampaign(object):
         """
         response_post = requests.post(
             self.URL % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response_post.status_code == InvalidUsage.http_status_code(), \
             'It should be invalid usage error(400)'
         assert response_post.json()['error']['code'] == \
                CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
         assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_no_smartlist_candidate(self, auth_token,
+    def test_post_with_no_smartlist_candidate(self, access_token_first,
                                               sms_campaign_of_current_user,
                                               smartlist_for_not_scheduled_campaign):
         """
@@ -95,27 +95,27 @@ class TestSendSmsCampaign(object):
         :return:
         """
         response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                      headers=dict(Authorization='Bearer %s' % auth_token))
+                                      headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response_post.status_code == InvalidUsage.http_status_code(), \
             'It should be invalid usage error (400)'
         assert response_post.json()['error']['code'] == \
                CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
         assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
 
-    def test_post_with_invalid_campaign_id(self, auth_token):
+    def test_post_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to update a campaign which does not exists in database.
-        :param auth_token:
+        :param access_token_first:
         :return:
         """
         CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
                                                               self.METHOD,
                                                               self.URL,
-                                                              auth_token,
+                                                              access_token_first,
                                                               None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
-            self, auth_token, sample_user, sms_campaign_of_current_user,
+            self, access_token_first, user_first, sms_campaign_of_current_user,
             smartlist_for_not_scheduled_campaign,
             sample_sms_campaign_candidates):
         """
@@ -125,15 +125,14 @@ class TestSendSmsCampaign(object):
         """
         response_post = requests.post(
             self.URL % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 0, sms_campaign_of_current_user)
+            user_first.id, 0, sms_campaign_of_current_user)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, auth_token, sample_user, smartlist_for_not_scheduled_campaign,
-            sample_sms_campaign_candidates, candidates_with_same_phone, candidate_first,
-            candidate_second):
+            self, access_token_first, user_first, smartlist_for_not_scheduled_campaign,
+            sample_sms_campaign_candidates, candidates_with_same_phone):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should raise custom exception
@@ -141,14 +140,30 @@ class TestSendSmsCampaign(object):
         :return:
         """
         try:
-            obj = SmsCampaignBase(sample_user.id)
-            obj.pre_process_celery_task([candidate_first, candidate_second])
+            candidate_1, candidate_2 = candidates_with_same_phone
+            obj = SmsCampaignBase(user_first.id)
+            obj.pre_process_celery_task([candidate_1, candidate_2])
             assert None, 'MultipleCandidatesFound exception should be raised.'
         except MultipleCandidatesFound as error:
             assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
 
+    def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
+            self, access_token_first, user_first, sms_campaign_of_current_user,
+            smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
+            candidates_with_same_phone_in_diff_domains):
+        """
+        User auth token is valid. Campaign has one smart list associated. Smartlist has two
+        candidates. One candidate exists in more than one domains with same phone. It should
+        not get any error.
+        :return:
+        """
+        obj = SmsCampaignBase(user_first.id)
+        obj.campaign = sms_campaign_of_current_user
+        candidate_1, candidate_2 = candidates_with_same_phone_in_diff_domains
+        assert obj.pre_process_celery_task([candidate_1, candidate_2])
+
     def test_pre_process_celery_task_with_valid_data(
-            self, sample_user, auth_token, sms_campaign_of_current_user,
+            self, user_first, access_token_first, sms_campaign_of_current_user,
             candidate_first, candidate_second, smartlist_for_not_scheduled_campaign,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -156,7 +171,7 @@ class TestSendSmsCampaign(object):
         candidates. Both candidates have different phone numbers. It should not get any error.
         :return:
         """
-        obj = SmsCampaignBase(sample_user.id)
+        obj = SmsCampaignBase(user_first.id)
         obj.campaign = sms_campaign_of_current_user
         assert obj.pre_process_celery_task([candidate_first, candidate_second])
 

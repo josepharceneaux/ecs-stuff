@@ -55,7 +55,7 @@ class TestCeleryTasks(object):
     """
 
     def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -70,13 +70,13 @@ class TestCeleryTasks(object):
                                   'http://www.123.com or http://www.xyz.com')
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
+            user_first.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -85,13 +85,13 @@ class TestCeleryTasks(object):
         """
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, scheduled_sms_campaign_of_current_user)
+            user_first.id, 1, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -102,13 +102,13 @@ class TestCeleryTasks(object):
         """
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
+            user_first.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist,
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
@@ -122,13 +122,13 @@ class TestCeleryTasks(object):
         campaign.update(body_text='Hi,all')
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 2, scheduled_sms_campaign_of_current_user)
+            user_first.id, 2, scheduled_sms_campaign_of_current_user)
 
     def test_campaign_send_with_multiple_smartlists(
-            self, auth_token, sample_user, scheduled_sms_campaign_of_current_user,
+            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
             sms_campaign_smartlist, sms_campaign_smartlist_2, sample_sms_campaign_candidates,
             candidate_phone_1):
         """
@@ -140,10 +140,10 @@ class TestCeleryTasks(object):
         """
         response_post = requests.post(
             SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % auth_token))
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
         assert_on_blasts_sends_url_conversion_and_activity(
-            sample_user.id, 1, scheduled_sms_campaign_of_current_user)
+            user_first.id, 1, scheduled_sms_campaign_of_current_user)
 
 
 class TestCampaignSchedule(object):
@@ -153,7 +153,7 @@ class TestCampaignSchedule(object):
     """
 
     def test_one_time_campaign_schedule_and_validate_task_run(
-            self, valid_header, sample_user, sms_campaign_of_current_user,
+            self, valid_header, user_first, sms_campaign_of_current_user,
             smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
             candidate_phone_1):
         """
@@ -166,15 +166,15 @@ class TestCampaignSchedule(object):
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(data))
-        task_id = assert_campaign_schedule(response, sample_user.id,
+        task_id = assert_campaign_schedule(response, user_first.id,
                                            sms_campaign_of_current_user.id)
         time.sleep(2 * SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
                                                            sms_campaign_of_current_user)
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_periodic_campaign_schedule_and_validate_run(
-            self, valid_header, sample_user, sms_campaign_of_current_user,
+            self, valid_header, user_first, sms_campaign_of_current_user,
             smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
             candidate_phone_1):
         """
@@ -187,13 +187,13 @@ class TestCampaignSchedule(object):
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(data))
-        task_id = assert_campaign_schedule(response, sample_user.id,
+        task_id = assert_campaign_schedule(response, user_first.id,
                                            sms_campaign_of_current_user.id)
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
                                                            sms_campaign_of_current_user)
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(sample_user.id, 1,
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
                                                            sms_campaign_of_current_user)
         delete_test_scheduled_task(task_id, valid_header)
 
@@ -205,7 +205,7 @@ class TestURLRedirectionApi(object):
     candidate should only get internal server error.
     """
 
-    def test_for_get(self, sample_user,
+    def test_for_get(self, user_first,
                      url_conversion_by_send_test_sms_campaign,
                      scheduled_sms_campaign_of_current_user):
         """
@@ -226,10 +226,10 @@ class TestURLRedirectionApi(object):
             scheduled_sms_campaign_of_current_user)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
-        assert_for_activity(sample_user.id, ActivityMessageIds.CAMPAIGN_SMS_CLICK,
+        assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_SMS_CLICK,
                             scheduled_sms_campaign_of_current_user.id)
 
-    def test_get_with_no_sigature(self, url_conversion_by_send_test_sms_campaign):
+    def test_get_with_no_signature(self, url_conversion_by_send_test_sms_campaign):
         """
         Removing signature of signed redirect URL. It should get internal server error.
         :return:

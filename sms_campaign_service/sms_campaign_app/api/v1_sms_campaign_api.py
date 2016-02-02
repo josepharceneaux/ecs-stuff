@@ -651,7 +651,7 @@ class SendSmsCampaign(Resource):
                     500 (Internal Server Error)
 
         .. Error Codes:: 5001 (Empty message body to send)
-                         5002 (User has MultipleTwilioNumbersFoundForUser)
+                         5002 (MultipleTwilioNumbersFoundForUser)
                          5003 (TwilioApiError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)
