@@ -501,7 +501,7 @@ class TalentPipelineCampaigns(Resource):
     # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
-        GET /talent-pipeline/<id>/campaigns  Fetch all candidates of a talent-pipeline
+        GET /talent-pipeline/<id>/campaigns  Fetch all campaigns of a talent-pipeline
 
         :return A dictionary containing list of campaigns belonging to a talent-pipeline
         :rtype: dict
@@ -512,11 +512,10 @@ class TalentPipelineCampaigns(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id %s doesn't exist in database" % talent_pipeline_id)
 
         if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
 
