@@ -32,8 +32,8 @@ def test_create_candidate_without_talent_pools(access_token_first, user_first):
     Test: Attempt to create a candidate without providing talent pool IDs
     Expect: 400
     """
-    AddUserRoles.add(user=user_first)
     # Create Candidate
+    AddUserRoles.add(user=user_first)
     data = {'candidates': [{'first_name': 'cher'}]}
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(response=create_resp)
@@ -160,82 +160,123 @@ def test_create_candidates_in_bulk_with_one_erroneous_data(access_token_first, u
     assert not CandidateEmail.get_by_address(email_address=email_2)
 
 
-def test_create_hidden_candidate(access_token_first, user_first, talent_pool):
-    """
-    Test: Create a candidate that was previously web-hidden
-    Expect: 201, candidate should no longer be web hidden.
-            No duplicate records should be in the database
-    """
-    # Create candidate
-    AddUserRoles.all_roles(user=user_first)
-    data = CommonData.data(talent_pool)
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    db.session.commit()
-    print response_info(response=create_resp)
+class TestCreateHiddenCandidate(object):
+    def test_create_hidden_candidate(self, access_token_first, user_first, access_token_same,
+                                     user_same_domain, talent_pool):
+        """
+        Test: Create a candidate that was previously web-hidden
+        Expect: 201, candidate should no longer be web hidden.
+                No duplicate records should be in the database
+        """
+        # Create candidate
+        AddUserRoles.all_roles(user=user_first)
+        data = CommonData.data(talent_pool)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
+        print response_info(response=create_resp)
 
-    # Retrieve candidate's email
-    get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    first_can_email = get_resp.json()['candidate']['emails'][0]
+        # Retrieve candidate's email
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        first_can_email = get_resp.json()['candidate']['emails'][0]
 
-    # Delete (hide) candidate
-    del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
-    db.session.commit()
-    print response_info(response=del_resp)
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
-    candidate_emails_count = len(candidate.emails)
-    assert del_resp.status_code == 204
-    assert candidate.is_web_hidden == 1
+        # Delete (hide) candidate
+        del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+        db.session.commit()
+        print response_info(response=del_resp)
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        candidate_emails_count = len(candidate.emails)
+        assert del_resp.status_code == 204
+        assert candidate.is_web_hidden == 1
 
-    # Create previously deleted candidate
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    db.session.commit()
-    print response_info(response=create_resp)
-    assert create_resp.status_code == 201
-    assert candidate.is_web_hidden == 0
-    assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
-    assert len(candidate.emails) == candidate_emails_count
+        # Create previously deleted candidate
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        db.session.commit()
+        print response_info(response=create_resp)
+        assert create_resp.status_code == 201
+        assert candidate.is_web_hidden == 0
+        assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
+        assert len(candidate.emails) == candidate_emails_count
 
+    def test_create_hidden_candidate_with_different_user_from_same_domain(
+            self, access_token_first, user_first, access_token_same, user_same_domain, talent_pool):
+        """
+        Test: Create a candidate that was previously web-hidden with a different
+              user from the same domain
+        Expect: 201, candidate should no longer be web-hidden
+        """
+        # Create candidate
+        AddUserRoles.all_roles(user=user_first)
+        data = CommonData.data(talent_pool)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(response=create_resp)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
 
-def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(access_token_first,
-                                                                       user_first, talent_pool):
-    """
-    Test: Create a candidate that is currently web-hidden
-    """
-    AddUserRoles.all_roles(user=user_first)
+        # Retrieve candidate's email
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        first_can_email = get_resp.json()['candidate']['emails'][0]
 
-    # Create candidate
-    create_resp = request_to_candidates_resource(access_token_first, 'post',
-                                                 data=CommonData.data(talent_pool))
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    db.session.commit()
-    print response_info(response=create_resp)
+        # Delete (hide) candidate
+        del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+        db.session.commit()
+        print response_info(response=del_resp)
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        candidate_emails_count = len(candidate.emails)
+        assert del_resp.status_code == 204
+        assert candidate.is_web_hidden == 1
 
-    # Retrieve candidate's first name
-    get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    candidate_email = get_resp.json()['candidate']['emails'][0]
-    full_name = get_resp.json()['candidate']['full_name']
+        # Create previously deleted candidate with a different user from the same domain
+        AddUserRoles.add(user=user_same_domain)
+        create_resp = request_to_candidates_resource(access_token_same, 'post', data)
+        db.session.commit()
+        print response_info(response=create_resp)
+        assert create_resp.status_code == 201
+        assert candidate.is_web_hidden == 0
+        assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
+        assert len(candidate.emails) == candidate_emails_count
 
-    # Delete candidate
-    del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
-    db.session.commit()
-    print response_info(response=del_resp)
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
-    assert del_resp.status_code == 204
-    assert candidate.is_web_hidden == 1
+    def test_create_hidden_candidate_with_fields_that_cannot_be_aggregated(self, access_token_first,
+                                                                           user_first, talent_pool):
+        """
+        Test: Create a candidate that is currently web-hidden but with a different name
+        Expect: 200; candidate's full name must be updated
+        """
+        # Create candidate
+        AddUserRoles.all_roles(user=user_first)
+        create_resp = request_to_candidates_resource(access_token_first, 'post',
+                                                     data=CommonData.data(talent_pool))
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
+        print response_info(response=create_resp)
 
-    # Create previously deleted candidate
-    data = {'candidates': [{'emails': [{'address': candidate_email['address']}],'first_name': 'McLovin',
-                            'talent_pool_ids': {'add': [talent_pool.id]}}]}
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    db.session.commit()
-    print response_info(response=create_resp)
-    assert create_resp.status_code == 201
-    assert candidate.is_web_hidden == 0
+        # Retrieve candidate's first name
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        candidate_email = get_resp.json()['candidate']['emails'][0]
+        full_name = get_resp.json()['candidate']['full_name']
 
-    # Retrieve candidate
-    get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    assert get_resp.json()['candidate']['full_name'] != full_name
+        # Delete candidate
+        del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+        db.session.commit()
+        print response_info(response=del_resp)
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        assert del_resp.status_code == 204
+        assert candidate.is_web_hidden == 1
+
+        # Create previously deleted candidate
+        data = {'candidates': [{'emails': [{'address': candidate_email['address']}],'first_name': 'McLovin',
+                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        db.session.commit()
+        print response_info(response=create_resp)
+        assert create_resp.status_code == 201
+        assert candidate.is_web_hidden == 0
+
+        # Retrieve candidate
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(response=get_resp)
+        assert get_resp.status_code == 200
+        assert get_resp.json()['candidate']['full_name'] != full_name
 
 
 ######################## CandidateAddress ########################
