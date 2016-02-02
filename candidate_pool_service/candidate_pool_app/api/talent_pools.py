@@ -73,7 +73,6 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'domain_id': talent_pool.domain_id,
                         'user_id': talent_pool.owner_user_id
 
                     } for talent_pool in talent_pools
@@ -101,8 +100,14 @@ class TalentPoolApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         posted_data = request.get_json(silent=True)
-        if not posted_data:
+        if not posted_data or 'talent_pool' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
+
+        posted_data = posted_data['talent_pool']
+
+        # posted_data must be in a dict
+        if not isinstance(posted_data, dict):
+            raise InvalidUsage(error_message="Request body is not properly formatted")
 
         if request.user.domain_id != talent_pool.domain_id:
             raise ForbiddenError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
@@ -441,9 +446,13 @@ class TalentPoolCandidateApi(Resource):
 
         # Candidates with input candidate ids exist in database or not
         for talent_pool_candidate_id in talent_pool_candidate_ids:
-            if not Candidate.query.get(talent_pool_candidate_id):
+            talent_pool_candidate = Candidate.query.get(talent_pool_candidate_id)
+            if not talent_pool_candidate:
                 raise NotFoundError(error_message="Candidate with id %s doesn't exist in database" % talent_pool_candidate_id)
 
+            if talent_pool_candidate.user.domain_id != talent_pool.domain_id:
+                raise ForbiddenError("Talent Pool %s and Candidate %s belong to different domain" %
+                                     (talent_pool.id, talent_pool_candidate.id))
             db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool_id, candidate_id=talent_pool_candidate_id))
 
         db.session.commit()
