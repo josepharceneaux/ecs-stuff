@@ -1,0 +1,16 @@
+// ---------------------------------------------------
+// Modules / Segmented Buttons
+// ---------------------------------------------------
+
+.segmented-button-group {
+  display: flex;
+
+  md-radio-button {
+    margin-bottom: 0;
+
+    &:not(:first-child) {
+      margin-top: 0;
+      margin-left: 20px;
+    }
+  }
+}

@@ -77,6 +77,34 @@ body {
 }
 
 #growth-chart-section {
+  md-toolbar {
+    background:transparent;
+    .md-toolbar-tools {
+      padding:0px;
+    }
+    h2 {
+      color:$color--nearBlack;
+    }
+    .toggle {
+      border:1px solid #efefef;
+      background:white;
+      border-radius:3px;
+      overflow:hidden;
+      div {
+        background:#cccccc;
+        padding:10px 13px;
+        border-right:1px solid #dddddd;
+        min-width:35px;
+        text-align:center;
+        cursor:pointer;
+        &.active {
+          background:$color--purple;
+          color:white;
+        }
+      }
+    }
+  }
+
 
   #growth-chart-wrap {
     position: relative;
