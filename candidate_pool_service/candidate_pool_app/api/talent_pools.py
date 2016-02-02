@@ -16,7 +16,6 @@ from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
-from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.common.models.user import DomainRole
 
@@ -612,6 +611,7 @@ def get_talent_pool_stats(talent_pool_id):
 
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
 
     if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
@@ -622,9 +622,18 @@ def get_talent_pool_stats(talent_pool_id):
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+    else:
+        interval = int(interval)
+        if interval < 1:
+            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_datetime >= from_date,
                                                           TalentPoolStats.added_datetime <= to_date)).all()
+
+    talent_pool_stats = talent_pool_stats[::interval]
 
     return jsonify({'talent_pool_data': [
         {
