@@ -159,7 +159,7 @@
                 },
                 {
                     id: '94af155370ff640425a75c743ade5787',
-                    name: 'Lazy Exotic Environment Technologist',
+                    name: 'Exotic Environment Technologist',
                     totalCandidates: '20',
                     dateCreated: '2015-02-15',
                     growth: '+45',
@@ -175,7 +175,7 @@
                 },
                 {
                     id: '6c0b23ddc797500cc16b8a42a5a49105',
-                    name: 'Fax Machine Masterer',
+                    name: 'Front End Developer',
                     totalCandidates: '132',
                     dateCreated: '2015-10-22',
                     growth: '+33',
@@ -566,7 +566,7 @@
                 }
             ];
 
-            vm.newCandidateToday = 400;
+            vm.newCandidateToday = 559;
             vm.teamContributions = 400;
 
             vm.viewCandidate = function (candidate) {
@@ -613,12 +613,12 @@
 
             vm.candidates = [
                 {
-                    name: 'Candidates Used',
-                    value: 2374
+                    name: 'Used in Pipelines',
+                    value: 21683
                 },
                 {
-                    name: 'Candidates Not Used',
-                    value: 532
+                    name: 'Total in Talent Pool',
+                    value: 43215
                 }
             ];
         }
@@ -636,7 +636,7 @@
                     },
                     title: {
                         useHTML: true,
-                        text: '<span>10,000</span><br/><span>(talent pool)</span>',
+                        text: '<span>43215</span><br/><span>Candidates</span>',
                         align: 'center',
                         floating: true,
                         y: 100,
@@ -691,7 +691,7 @@
                                 }
                             ],
                             size: '100%',
-                            innerSize: '60%'
+                            innerSize: '70%'
                         }
                     ]
                 });
@@ -741,7 +741,7 @@
                         }
                     },
                     legend: {
-                        align: 'right',
+                        align: 'left',
                         itemStyle: {
                             color: '#fff'
                         },
