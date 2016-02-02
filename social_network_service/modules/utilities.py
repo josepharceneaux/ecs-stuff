@@ -20,6 +20,8 @@ import requests
 from flask import request
 from pytz import timezone
 # Application Specific Imports
+from social_network_service.common.activity_service_config import ActivityServiceKeys
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.routes import ActivityApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
@@ -274,6 +276,11 @@ def process_event(data, user_id, method='Create'):
             raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
+
+        activity_data = {'firstName': request.user.first_name,
+                         'lastName': request.user.last_name,
+                         }
+
         if method == 'Create':
             event_id = event_obj.create_event()
 
@@ -281,20 +288,32 @@ def process_event(data, user_id, method='Create'):
             event_obj = Event.get_by_user_and_event_id(user_id=user_id,
                                                        event_id=event_id)
 
-            header = {'Authorization': request.oauth_token,
-                      'Content-Type': 'application/json'}
+            activity_data.update({'eventTitle': event_obj.title})
 
-            activity_data = {'first_name': request.user.first_name,
-                             'last_name': request.user.last_name,
-                             'title': event_obj.title,
-                             'description': event_obj.description,
-                             }
-
-            post_data = {'type': TalentActivityManager}
-            http_request('post', headers=header)
+            add_activity(user_id=user_id,
+                         oauth_token=request.oauth_token,
+                         activity_type=ActivityServiceKeys.EVENT_CREATE,
+                         source_id=event_id,
+                         source_table=Event.__tablename__,
+                         params=activity_data)
             return event_id
         else:
-            return event_obj.update_event()
+            event_id = event_obj.update_event()
+
+            # Create activity of event object creation
+            event_obj = Event.get_by_user_and_event_id(user_id=user_id,
+                                                       event_id=event_id)
+
+            activity_data.update({'eventTitle': event_obj.title})
+
+            add_activity(user_id=user_id,
+                         oauth_token=request.oauth_token,
+                         activity_type=ActivityServiceKeys.EVENT_UPDATE,
+                         source_id=event_id,
+                         source_table=Event.__tablename__,
+                         params=activity_data)
+
+            return event_id
     else:
         error_message = 'Data not received from Event Creation/Edit FORM'
         log_error({'user_id': user_id,
@@ -369,6 +388,7 @@ def delete_events(user_id, event_ids):
         successful, unsuccessful = event_obj.delete_events(social_network['event_ids'])
         deleted.extend(successful)
         not_deleted.extend(unsuccessful)
+
     return deleted, not_deleted
 
 

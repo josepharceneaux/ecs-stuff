@@ -71,7 +71,37 @@ def grouper(iterable, group_size, fillvalue=None):
     return izip_longest(*args, fillvalue=fillvalue)
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
+def log_exception(message, app=None):
+    """
+    Log exception using logger with or without app_context
+    :param message:
+    :param app:
+    :return:
+    """
+    logger = app.config[TalentConfigKeys.LOGGER]
+    if app:
+        with app.app_context():
+            logger.exception(message)
+    else:
+        logger.exception(message)
+
+
+def log_error(message, app=None):
+    """
+    Log error using logger with or without app_context
+    :param message:
+    :param app:
+    :return:
+    """
+    logger = app.config[TalentConfigKeys.LOGGER]
+    if app:
+        with app.app_context():
+            logger.error(message)
+    else:
+        logger.error(message)
+
+
+def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
     and makes call on given URL. It also handles/logs exception.
@@ -81,6 +111,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param headers: headers for Authorization.
     :param data: data to be sent.
     :param user_id: Id of logged in user.
+    :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
     :type params: dict
@@ -92,13 +123,12 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=auth_header)
     """
-    logger = current_app.config[TalentConfigKeys.LOGGER]
     if not isinstance(method_type, basestring):
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
-        logger.error('http_request: Error: %s, user_id: %s'
-                     % (error_message, user_id))
+        log_error('http_request: Error: %s, user_id: %s'
+                  % (error_message, user_id), app=app)
         raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
@@ -139,20 +169,20 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
-            logger.exception(
+            log_exception(
                             "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url))
+                            "Make sure requested server is running." % (method_type, url), app=app)
             raise
         except requests.RequestException as e:
-            logger.exception('http_request: HTTP request failed, %s' % e.message)
+            log_exception('http_request: HTTP request failed, %s' % e.message)
             raise
 
         if error_message:
-            logger.exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s', error_message, user_id)
+            log_exception('http_request: HTTP request failed, %s, '
+                                                   'user_id: %s' % (error_message, user_id), app=app)
         return response
     else:
-        logger.error('http_request: Unknown Method type %s ' % method_type)
+        log_error('http_request: Unknown Method type %s ' % method_type, app=app)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 

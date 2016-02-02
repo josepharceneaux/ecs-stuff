@@ -608,6 +608,8 @@ class SocialNetworkApi(object):
     EVENT_ORGANIZERS = RELATIVE_VERSION % 'event_organizers'
     EVENT_ORGANIZER = RELATIVE_VERSION % 'event_organizers/<int:id>'
     TIMEZONES = RELATIVE_VERSION % 'data/timezones'
+    RSVP = RELATIVE_VERSION % 'rsvp'
+    CODE = RELATIVE_VERSION % 'code'
 
 
 class SocialNetworkApiUrl(object):
@@ -632,6 +634,8 @@ class SocialNetworkApiUrl(object):
     TOKEN_VALIDITY = API_URL % 'social_networks/%s/token/validity'
     TOKEN_REFRESH = API_URL % 'social_networks/%s/token/refresh'
     USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % 'social_networks/%s/user/credentials'
+    RSVP = API_URL % 'rsvp'
+    CODE = API_URL % 'code'
 
 
 class EmailCampaignEndpoints(object):

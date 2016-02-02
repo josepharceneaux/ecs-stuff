@@ -100,6 +100,10 @@ from abc import ABCMeta
 from abc import abstractmethod
 # Application Specific
 from dateutil.parser import parse
+from flask import request
+
+from social_network_service.common.activity_service_config import ActivityServiceKeys
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
@@ -409,8 +413,22 @@ class EventBase(object):
         not_deleted = []
         if event_ids:
             for event_id in event_ids:
+                event_obj = Event.get_by_user_and_event_id(user_id=request.user.id,
+                                                           event_id=event_id)
+                title = event_obj.title
                 if self.delete_event(event_id):
                     deleted.append(event_id)
+
+                    activity_data = {'firstName': request.user.first_name,
+                                     'lastName': request.user.last_name,
+                                     'eventTitle': title
+                                     }
+                    add_activity(user_id=request.user.id,
+                                 oauth_token=request.oauth_token,
+                                 activity_type=ActivityServiceKeys.EVENT_DELETE,
+                                 source_table=Event.__tablename__,
+                                 source_id=event_id,
+                                 params=activity_data)
                 else:
                     not_deleted.append(event_id)
         return deleted, not_deleted

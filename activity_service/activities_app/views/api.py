@@ -1,6 +1,7 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
+from app_common.common.activity_service_config import ActivityServiceKeys
 
 __author__ = 'erikfarmer'
 # stdlib
@@ -89,41 +90,44 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
 class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
-    CANDIDATE_CREATE_WEB = 1
-    CANDIDATE_CREATE_CSV = 18
-    CANDIDATE_CREATE_WIDGET = 19
-    CANDIDATE_CREATE_MOBILE = 20  # TODO add in
-    CANDIDATE_UPDATE = 2
-    CANDIDATE_DELETE = 3
+    CANDIDATE_CREATE_WEB = ActivityServiceKeys.CANDIDATE_CREATE_WEB
+    CANDIDATE_CREATE_CSV = ActivityServiceKeys.CANDIDATE_CREATE_CSV
+    CANDIDATE_CREATE_WIDGET = ActivityServiceKeys.CANDIDATE_CREATE_WIDGET
+    CANDIDATE_CREATE_MOBILE = ActivityServiceKeys.CANDIDATE_CREATE_MOBILE  # TODO add in
+    CANDIDATE_UPDATE = ActivityServiceKeys.CANDIDATE_UPDATE
+    CANDIDATE_DELETE = ActivityServiceKeys.CANDIDATE_DELETE
 
     # params=dict(id, name)
-    CAMPAIGN_CREATE = 4
-    CAMPAIGN_DELETE = 5
-    CAMPAIGN_SEND = 6  # also has num_candidates
-    CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
-    CAMPAIGN_PAUSE = 21
-    CAMPAIGN_RESUME = 22
+    CAMPAIGN_CREATE = ActivityServiceKeys.CAMPAIGN_CREATE
+    CAMPAIGN_DELETE = ActivityServiceKeys.CAMPAIGN_DELETE
+    CAMPAIGN_SEND = ActivityServiceKeys.CAMPAIGN_SEND  # also has num_candidates
+    CAMPAIGN_EXPIRE = ActivityServiceKeys.CAMPAIGN_EXPIRE  # recurring campaigns only # TODO implement
+    CAMPAIGN_PAUSE = ActivityServiceKeys.CAMPAIGN_PAUSE
+    CAMPAIGN_RESUME = ActivityServiceKeys.CAMPAIGN_RESUME
 
     # params=dict(name, is_smartlist=0/1)
-    SMARTLIST_CREATE = 8
-    SMARTLIST_DELETE = 9
-    SMARTLIST_ADD_CANDIDATE = 10  # also has formattedName (of candidate) and candidateId
-    SMARTLIST_REMOVE_CANDIDATE = 11  # also has formattedName and candidateId
+    SMARTLIST_CREATE = ActivityServiceKeys.SMARTLIST_CREATE
+    SMARTLIST_DELETE = ActivityServiceKeys.SMARTLIST_DELETE
+    SMARTLIST_ADD_CANDIDATE = ActivityServiceKeys.SMARTLIST_ADD_CANDIDATE  # also has formattedName (of candidate) and candidateId
+    SMARTLIST_REMOVE_CANDIDATE = ActivityServiceKeys.SMARTLIST_REMOVE_CANDIDATE  # also has formattedName and candidateId
 
-    USER_CREATE = 12  # params=dict(firstName, lastName)
+    USER_CREATE = ActivityServiceKeys.USER_CREATE  # params=dict(firstName, lastName)
 
-    WIDGET_VISIT = 13  # params=dict(client_ip)
+    WIDGET_VISIT = ActivityServiceKeys.WIDGET_VISIT  # params=dict(client_ip)
 
     # TODO implement frontend + backend
-    NOTIFICATION_CREATE = 14  # when we want to show the users a message
+    NOTIFICATION_CREATE = ActivityServiceKeys.NOTIFICATION_CREATE  # when we want to show the users a message
 
     # params=dict(candidateId, campaign_name, candidate_name)
-    CAMPAIGN_EMAIL_SEND = 15
-    CAMPAIGN_EMAIL_OPEN = 16
-    CAMPAIGN_EMAIL_CLICK = 17
-    RSVP_EVENT = 23
-    EVENT = 24
+    CAMPAIGN_EMAIL_SEND = ActivityServiceKeys.CAMPAIGN_EMAIL_SEND
+    CAMPAIGN_EMAIL_OPEN = ActivityServiceKeys.CAMPAIGN_EMAIL_OPEN
+    CAMPAIGN_EMAIL_CLICK = ActivityServiceKeys.CAMPAIGN_EMAIL_CLICK
+    RSVP_EVENT = ActivityServiceKeys.RSVP_EVENT
     # RSVP_MEETUP = 24
+
+    EVENT_CREATE = ActivityServiceKeys.EVENT_CREATE
+    EVENT_DELETE = ActivityServiceKeys.EVENT_DELETE
+    EVENT_UPDATE = ActivityServiceKeys.EVENT_UPDATE
 
     MESSAGES = {
         RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
@@ -131,8 +135,19 @@ class TalentActivityManager(object):
                      "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
                      " on event '%(eventTitle)s'",
                      "candidate.png"),
-        EVENT:      ("%(firstname)s  %(lastname)s created an event <b>%(title)s .</b> "
-                     "%(description)s <b>'"),
+
+        EVENT_CREATE:      ("%(firstName)s  %(lastName)s created an event <b>%(eventTitle)s",
+                            "%(firstName)s  %(lastName)s created %(count)s events.</b>",
+                            "event.png"),
+
+        EVENT_DELETE:      ("%(firstName)s  %(lastName)s deleted an event <b>%(eventTitle)s",
+                            "%(firstName)s  %(lastName)s deleted %(count)s events.</b>",
+                            "event.png"),
+
+        EVENT_UPDATE:      ("%(firstName)s  %(lastName)s updated an event <b>%(eventTitle)s.",
+                            "%(firstName)s  %(lastName)s updated %(count)s events.</b>",
+                            "event.png"),
+
         CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
                                "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
         CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",

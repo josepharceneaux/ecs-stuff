@@ -14,7 +14,7 @@ from flask import request, redirect
 # Application specific imports
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
-from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
@@ -30,21 +30,6 @@ app.register_blueprint(social_network_blueprint)
 
 api = TalentApi(app)
 
-# Enable CORS
-# options = {
-#     'origins': '*',
-#     'allow_headers': ['Content-Type', 'Authorization']
-# }
-# CORS(app, resources={
-#     r'/code*': options,
-#     r'/%s/*' % SocialNetworkApiUrl.EVENTS: options,
-#     r'/%s/*' % SocialNetworkApiUrl.VENUES: options,
-#     r'/%s/*' % SocialNetworkApiUrl.TIMEZONES: options,
-#     r'/%s/*' % SocialNetworkApiUrl.SOCIAL_NETWORKS: options,
-#     r'/%s/*' % SocialNetworkApiUrl.EVENT_ORIGANIZERS: options
-# })
-
-
 @app.route('/')
 def index():
     try:
@@ -58,7 +43,7 @@ def index():
     return 'Hello World! %s, %s' % (candidate.first_name, event.title)
 
 
-@app.route('/code')
+@app.route(SocialNetworkApi.CODE)
 def authorize():
     code = request.args.get('code')
     url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
@@ -70,7 +55,7 @@ def authorize():
     return redirect(url)
 
 
-@app.route('/rsvp', methods=['GET', 'POST'])
+@app.route(SocialNetworkApi.RSVP, methods=['GET', 'POST'])
 def handle_rsvp():
     """
     This function only receives data when a candidate rsvp to some event.
@@ -126,3 +111,4 @@ def handle_rsvp():
                 'status_code': 200}
         return flask.jsonify(**data), 200
 
+from social_network_service.modules import manager

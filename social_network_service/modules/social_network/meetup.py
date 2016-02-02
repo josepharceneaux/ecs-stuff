@@ -10,6 +10,7 @@ import json
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
+from social_network_service.social_network_app import app
 
 
 class Meetup(SocialNetworkBase):
@@ -169,12 +170,13 @@ class Meetup(SocialNetworkBase):
         auth_url = self.social_network.auth_url + "/access?"
         client_id = self.social_network.client_key
         client_secret = self.social_network.secret_key
+
         payload_data = {'client_id': client_id,
                         'client_secret': client_secret,
                         'grant_type': 'refresh_token',
                         'refresh_token': user_refresh_token}
         response = http_request('POST', auth_url, data=payload_data,
-                                user_id=self.user.id)
+                                user_id=self.user.id, app=app)
         if response.ok:
             try:
                 # access token has been refreshed successfully, need to update
