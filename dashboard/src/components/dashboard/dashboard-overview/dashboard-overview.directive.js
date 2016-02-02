@@ -479,35 +479,35 @@
             vm.recommendedCandidates = [
                 {
                     name: 'Bob Smith',
-                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    avatar: '/images/placeholder/candidates/1.jpg',
                     current: 'Senior Software Engineer at Google',
                     activity: 'Recent Activity: Bob recently viewed your email',
                     pipeline: 'Android Developers'
                 },
                 {
                     name: 'Kevin Thompson',
-                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    avatar: '/images/placeholder/candidates/2.jpg',
                     current: 'Senior Software Engineer at GetTalent',
                     activity: 'Recent Activity: Kevin responded to your email',
                     pipeline: 'Android Developers'
                 },
                 {
                     name: 'Lenny Seager',
-                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    avatar: '/images/placeholder/candidates/3.jpg',
                     current: 'Computer Science Student',
                     activity: 'Recent Activity: Lenny responded to your email',
                     pipeline: 'iOS Developers'
                 },
                 {
                     name: 'Tom Chansky',
-                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    avatar: '/images/placeholder/candidates/4.jpg',
                     current: 'iOS Engineer at AirBnB',
                     activity: 'Recent Activity: Tom viewed your email yesterday',
                     pipeline: 'Senior Java Engineer'
                 },
                 {
                     name: 'Chris Pratt',
-                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    avatar: '/images/placeholder/candidates/5.jpg',
                     current: 'Android Developer - Freelance',
                     activity: 'Recent Activity: Chris clicked on your email',
                     pipeline: 'Senior Java Engineer'
