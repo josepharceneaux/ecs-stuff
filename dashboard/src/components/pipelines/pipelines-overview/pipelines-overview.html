@@ -124,9 +124,8 @@
                                     <th width="250" md-column md-order-by="name"><span>Name</span></th>
                                     <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
                                     <th md-column md-numeric md-order-by="engagement" md-desc><span>Engagement</span></th>
-                                    <th md-column md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
-                                    <th md-column md-order-by="created"><span>Created</span></th>
-                                    <th md-column md-order-by="contributors" md-desc><span>Top Contributor</span></th>
+                                    <th md-column md-numeric md-order-by="newCandidates" md-desc><span>Growth -30d</span></th>
+                                    <th md-column md-numeric md-order-by="created"><span>Created</span></th>
                                 </tr>
                                 </thead>
                                 <tbody md-body>
@@ -140,7 +139,6 @@
                                     <td md-cell>{{p.engagement}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
                                     <td md-cell>{{p.created | date:'MM/d/y'}}</td>
-                                    <td md-cell>{{p.contributors}}</td>
                                 </tr>
                                 </tbody>
                             </table>
@@ -173,7 +171,7 @@
                         </md-card-title>
                         <md-content style="text-align:center">
                             <div class="spacing-adjust">
-                                <gt-circle-graph layout="row" angle="55" value="43,215" class="gt-circle-graph">
+                                <gt-circle-graph layout="row" angle="55" value="11,925" class="gt-circle-graph">
                                     <div></div>
                                 </gt-circle-graph>
                             </div>
