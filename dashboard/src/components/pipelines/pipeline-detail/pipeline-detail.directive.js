@@ -340,11 +340,13 @@
                 },
                 plotOptions: {
                     area: {
-                        animation: true,
+                        animation: {
+                            duration: 1000
+                        },
                         fillOpacity: 0.2,
-                        lineWidth: 0.2,
+                        lineWidth:.3,
                         marker: {
-                            enabled: false,
+                            enabled: true,
                             symbol: 'circle',
                             radius: 2,
                             states: {
@@ -359,10 +361,11 @@
                             }
                         }
                     }
+
                 },
                 series: [{
                     name: 'Candidates Added',
-                    color: '#97b99b',
+                    color: '#5e385d',
                     pointStart: Date.UTC(2015, 0, 1),
                     pointInterval: 30 * 24 * 3600 * 1000,
                     data: [0, 20, 50, 80, 120, 60, 150, 110, 112, 92, 20, 40, 80, 100]

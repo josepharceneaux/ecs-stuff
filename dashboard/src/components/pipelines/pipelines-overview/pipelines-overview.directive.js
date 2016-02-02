@@ -161,9 +161,9 @@
                     area: {
                         animation: true,
                         fillOpacity: 0.2,
-                        lineWidth: 0.2,
+                        lineWidth:.3,
                         marker: {
-                            enabled: false,
+                            enabled: true,
                             symbol: 'circle',
                             radius: 2,
                             states: {
@@ -181,7 +181,7 @@
                 },
                 series: [{
                     name: 'Candidates Added',
-                    color: '#907f90',
+                    color: '#5e385d',
                     pointStart: Date.UTC(2015, 0, 1),
                     pointInterval: 30 * 24 * 3600 * 1000,
                     data: [0, 500, 600, 300, 200, 350, 50, 170, 235, 600, 734, 650, 400, 200]
