@@ -96,6 +96,7 @@
                     type: 'datetime',
                     lineColor: 'transparent',
                     tickLength: 0,
+                    tickInterval: 5 * 24 * 60 * 60 * 1000,
                     endOnTick: true,
                     title : {
                         text: ''
@@ -522,35 +523,37 @@
 
         function getPointInterval(daysBack) {
             var day = 24 * 60 * 60 * 1000;
-            if (daysBack === 7) {
-                return day; // => expects 7 data points
+            if (daysBack === 1) {
+                return day * Math.floor(daysBack / 12) / 24; // @TODO update x-axis labels to hours
+            } else if (daysBack === 7) {
+                return day * Math.floor(daysBack / 7); // => expects 7 data points
             } else if (daysBack === 30) {
-                return day * 5; // => expects no more than 6 data points
+                return day * Math.floor(daysBack / 15);
             } else if (daysBack === 60) {
-                return day * 10; // => expects no more than 10 data points
+                return day * Math.floor(daysBack / 15);
             } else if (daysBack === 90) {
-                return day * 10; // => expects no more than 15 data points
+                return day * Math.floor(daysBack / 15);
             }
         }
 
         function getData(daysBack) {
             if (daysBack === 1) {
-                return aggregate(dataSetLast24Hours, 24, 6);
+                return aggregate(dataSetLast24Hours, 24, 12);
             } else if (daysBack === 7) {
                 return aggregate(dataSetLast90Days, daysBack, 7);
             } else if (daysBack === 30) {
-                return aggregate(dataSetLast90Days, daysBack, 5);
+                return aggregate(dataSetLast90Days, daysBack, 15);
             } else if (daysBack === 60) {
-                return aggregate(dataSetLast90Days, daysBack, 6);
+                return aggregate(dataSetLast90Days, daysBack, 15);
             } else if (daysBack === 90) {
-                return aggregate(dataSetLast90Days, daysBack, 9);
+                return aggregate(dataSetLast90Days, daysBack, 15);
             }
         }
 
         function aggregate(data, daysBack, dataPoints) {
             var aggregate = [];
             var newData = data.slice(data.length - daysBack);
-            var dataGroupSize = Math.floor(newData.length / dataPoints);
+            var dataGroupSize = Math.max(Math.floor(daysBack / dataPoints), 1);
             while (newData.length >= dataGroupSize) {
                 aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
                     return prev + curr;
