@@ -51,7 +51,7 @@
         </div>
 
         <!-- Growth chart -->
-        <div id="growth-chart-section">
+        <div class="area-chart-section">
             <div class="module-padding">
                 <md-toolbar>
                     <div class="md-toolbar-tools">
@@ -68,8 +68,8 @@
                 </md-toolbar>
             </div>
 
-            <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
-                <div id="growth-chart"></div>
+            <div class="area-chart-wrap" gt-resize on-resize="vm.redrawChart()">
+                <highchart config="vm.chartConfig" class="area-chart"></highchart></div>
             </div>
         </div>
         <!-- End: Growth chart -->

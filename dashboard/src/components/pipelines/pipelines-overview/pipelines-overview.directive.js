@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$timeout'];
+    ControllerFunction.$inject = ['$scope', '$interval', 'logger'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $timeout) {
+    function ControllerFunction($scope, $interval, logger) {
         var vm = this;
 
         var dataSetLast24Hours;
@@ -71,143 +71,139 @@
             vm.daysFilterOptions = [7, 30, 60, 90];
             vm.chartFilters.daysBack = vm.daysFilterOptions[1];
 
-            vm.chartOptions = {
-                chart: {
-                    renderTo: 'growth-chart',
-                    type: 'area',
-                    backgroundColor: null,
-                    spacingLeft: 40,
-                    spacingRight: 40,
-                    spacingTop: 50,
-                    style: {
-                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                        fontWeight: 300
+            vm.chartConfig = {
+                options: {
+                    chart: {
+                        type: 'area',
+                        backgroundColor: null,
+                        spacingLeft: 40,
+                        spacingRight: 40,
+                        spacingTop: 50,
+                        style: {
+                            fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                            fontWeight: 300
+                        }
                     },
-                    reflow: true
+                    credits: {
+                        enabled: false
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    lang: {
+                        decimalPoint: ',',
+                        thousandsSep: '.'
+                    },
+                    legend: {
+                        enabled: false,
+                        layout: 'vertical',
+                        align: 'right',
+                        verticalAlign: 'top',
+                        x: 10,
+                        y: 0,
+                        floating: true,
+                        width: 170,
+                        symbolWidth: 12,
+                        itemMarginTop: 5,
+                        itemMarginBottom: 5,
+                        padding: 12,
+                        backgroundColor: 'white',
+                        borderWidth: 1,
+                        borderColor: '#ccc',
+                        itemStyle: {
+                            fontWeight: 300
+                        },
+                        navigation: {
+                            style: {
+                                fontWeight: 400,
+                            }
+                        }
+                    },
+                    plotOptions: {
+                        area: {
+                            fillOpacity: 0.2,
+                            lineWidth: 0.3,
+                            marker: {
+                                radius: 3,
+                                states: {
+                                    hover: {
+                                        radius: 6,
+                                        fillOpacity: 0.4,
+                                        fillColor: 'white',
+                                        lineWidth: 4,
+                                        lineColor: '#5e385d'
+                                    }
+                                }
+                            },
+                            states: {
+                                hover: {
+                                    lineWidth: 0.4
+                                }
+                            }
+                        }
+                    },
+                    tooltip: {
+                        borderWidth: 0,
+                        borderRadius: 0,
+                        backgroundColor: null,
+                        shadow: false,
+                        useHTML: true,
+                        formatter: function() {
+                            var s = '<strong>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</strong>' + '<hr>';
+                            $.each(this.points, function () {
+                                s += this.series.name + ': ' + this.y + '<br>';
+                            });
+                            return s;
+                        },
+                        shared: true,
+                        crosshairs: {
+                            color: 'white',
+                            dashStyle: 'solid'
+                        }
+                    },
+                    yAxis: {
+                        gridLineColor: 'white',
+                        yDecimals: 2,
+                        gridLineWidth: 1,
+                        title : {
+                            text: ''
+                        },
+                        labels: {
+                            style: {
+                                color: '#adadad',
+                                fontSize: '14px',
+                                fontWeight: 400
+                            },
+                            formatter: function () {
+                                // don't print 0 on the y-axis if it's the first label
+                                if (this.value === 0 && this.isFirst) {
+                                    return null;
+                                }
+                                return this.value;
+                            }
+                        }
+                    }
                 },
                 title: {
                     text: ''
-                },
-                lang: {
-                    decimalPoint: ',',
-                    thousandsSep: '.'
                 },
                 xAxis: {
                     type: 'datetime',
                     lineColor: 'transparent',
                     tickLength: 0,
                     tickInterval: 5 * 24 * 60 * 60 * 1000,
-                    endOnTick: true,
                     title : {
                         text: ''
                     },
                     labels: {
                         y: 24,
                         style: {
-                            color: '#fff',
+                            color: 'white',
                             fontSize: '14px',
                             fontWeight: 400
                         },
                         formatter: function() {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
-                        }
-                    }
-                },
-                yAxis: {
-                    gridLineColor: '#fff',
-                    yDecimals: 2,
-                    gridLineWidth: 1,
-                    title : {
-                        text: ''
-                    },
-                    labels: {
-                        style: {
-                            color: '#adadad',
-                            fontSize: '14px',
-                            fontWeight: 400
-                        },
-                        formatter: function () {
-                            if (this.value != 0) {
-                                return this.value;
-                            } else {
-                                return null;
-                            }
-                        }
-                    }
-                },
-                exporting: {
-                    enabled: false
-                },
-                credits: {
-                    enabled: false
-                },
-                legend: {
-                    layout: 'vertical',
-                    align: 'right',
-                    verticalAlign: 'top',
-                    x: 10,
-                    y: 0,
-                    floating: true,
-                    width: 170,
-                    symbolWidth: 12,
-                    itemMarginTop: 5,
-                    itemMarginBottom: 5,
-                    padding: 12,
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: '#cccccc',
-                    itemStyle: {
-                      fontWeight: 300
-                    },
-                    navigation: {
-                        style: {
-                            fontWeight: 400,
-                        }
-                    },
-                    enabled: false
-                },
-                tooltip: {
-                    borderWidth: 0,
-                    borderRadius: 0,
-                    backgroundColor: null,
-                    shadow: false,
-                    useHTML: true,
-                    formatter: function() {
-                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
-                        $.each(this.points, function () {
-                            s += this.series.name + ': ' + this.y + '<br/>';
-                        });
-                        return s;
-                    },
-                    shared: true,
-                    crosshairs: {
-                        color: 'white',
-                        dashStyle: 'solid'
-                    }
-                },
-                plotOptions: {
-                    area: {
-                        animation: true,
-                        fillOpacity: 0.2,
-                        lineWidth:.3,
-                        marker: {
-                            enabled: true,
-                            symbol: 'circle',
-                            radius: 3,
-                            states: {
-                                hover: {
-                                    radius: 6,
-                                    fillOpacity:.4,
-                                    fillColor: '#FFFFFF',
-                                    lineWidth: 4,
-                                    lineColor: '#5e385d'
-                                }
-                            }
-                        },
-                        states: {
-                            hover: {
-                                lineWidth:.4
-                            }
                         }
                     }
                 },
@@ -217,10 +213,11 @@
                     pointStart: getPointStart(vm.chartFilters.daysBack),
                     pointInterval: getPointInterval(vm.chartFilters.daysBack),
                     data: getData(vm.chartFilters.daysBack)
-                }]
+                }],
+                func: function (chart) {
+                    vm.chart = chart;
+                }
             };
-
-            vm.chart = new Highcharts.Chart(vm.chartOptions);
 
             vm.totalCandidates = {
                 graph: {}
@@ -503,14 +500,23 @@
 
         function redrawChart() {
             vm.chart.reflow();
+            vm.chartConfig.getHighcharts().reflow();
         }
 
         function updateChart(daysBack) {
-            vm.chart.series[0].update({
-                pointStart: getPointStart(daysBack),
-                pointInterval: getPointInterval(daysBack),
-                data: getData(daysBack)
-            });
+
+            // changing through highcharts-ng config will animate the axis changes
+            var series = vm.chartConfig.series[0];
+            series.pointStart = getPointStart(daysBack);
+            series.pointInterval = getPointInterval(daysBack);
+            series.data = getData(daysBack);
+
+            // update() = no animation
+            //vm.chart.series[0].update({
+            //    pointStart: getPointStart(daysBack),
+            //    pointInterval: getPointInterval(daysBack),
+            //    data: getData(daysBack)
+            //});
         }
 
         function getPointStart(daysBack) {
