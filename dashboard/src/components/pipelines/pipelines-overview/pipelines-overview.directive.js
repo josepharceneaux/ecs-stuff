@@ -165,7 +165,7 @@
                         gridLineColor: 'white',
                         yDecimals: 2,
                         gridLineWidth: 1,
-                        title : {
+                        title: {
                             text: ''
                         },
                         labels: {
@@ -192,7 +192,7 @@
                     lineColor: 'transparent',
                     tickLength: 0,
                     tickInterval: 5 * 24 * 60 * 60 * 1000,
-                    title : {
+                    title: {
                         text: ''
                     },
                     labels: {
