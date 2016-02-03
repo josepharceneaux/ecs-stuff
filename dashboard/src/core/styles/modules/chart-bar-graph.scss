@@ -1,0 +1,15 @@
+// ---------------------------------------------------
+// Modules / Bar Graph
+// ---------------------------------------------------
+
+.gt-bar-graph {
+  padding: 0 18px;
+  svg {
+    display: block;
+    margin: -24px auto auto;
+    text {
+      font-weight: 500;
+      font-size: 14px;
+    }
+  }
+}

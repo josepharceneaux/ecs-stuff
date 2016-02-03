@@ -32,6 +32,7 @@
 @import 'vendor/pickadate/pickadate';
 @import 'vendor/angular-bootstrap/bootstrap';
 @import 'vendor/angular-toastr/toastr';
+@import 'vendor/angular-material/angular-material';
 
 // -----
 // Modules
@@ -80,14 +81,14 @@
 // -----
 
 @import "modules/angular-material-override";
-@import "modules/cards";
+@import "modules/md-cards";
 @import "modules/user-activity-system";
 @import "modules/system-alerts";
 @import "modules/modals";
 @import "modules/tool-tips";
+@import 'modules/segmented-button';
 
 @import "modules/table-md-data.scss";
-@import "modules/charts";
 
 @import "modules/page-title";
 @import "modules/dashboard";
@@ -96,6 +97,13 @@
 @import "modules/stat-row";
 @import "modules/activity-feed";
 @import "modules/chart-area-graph";
+@import "modules/chart-circle-graph";
+@import "modules/chart-bar-graph";
+@import "modules/team-contributors";
+@import "modules/onboard-welcome";
+@import "modules/candidate-cards";
+@import "modules/md-tabs";
+
 
 
 

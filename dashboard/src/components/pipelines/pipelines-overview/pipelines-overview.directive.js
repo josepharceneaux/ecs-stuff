@@ -24,11 +24,20 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger', '$mdEditDialog', '$q'];
+    ControllerFunction.$inject = ['logger', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $timeout) {
         var vm = this;
+
+        var dataSetLast24Hours;
+        var dataSetLast90Days;
+
+        vm.redrawChart = redrawChart;
+        vm.updateChart = updateChart;
+        vm.removeFilter = removeFilter;
+        vm.logOrder = logOrder;
+        vm.logPagination = logPagination;
 
         init();
         activate();
@@ -38,9 +47,33 @@
         }
 
         function init() {
+            // mock data: candidate growth
+            // by "hour", last day
+            dataSetLast24Hours = [1, 0, 0, 0,
+                                  0, 2, 5, 8,
+                                  10, 3, 0, 3,
+                                  13, 2, 3, 3,
+                                  5, 6, 10, 12,
+                                  8, 15, 20, 4];
 
-            $('#pipelineDetailsViewChart').highcharts({
+            // by "day", last 90 days
+            dataSetLast90Days = [48, 97, 38, 63, 45, 96, 47, 14, 45, 46,
+                                 29, 21, 16, 32, 25, 109, 93, 27, 50, 96,
+                                 46, 76, 72, 68, 32, 43, 67, 31, 117, 98,
+                                 110, 59, 76, 36, 2, 50, 81, 89, 27, 26,
+                                 118, 86, 29, 35, 61, 45, 76, 64, 135, 58,
+                                 62, 100, 39, 77, 48, 108, 124, 93, 17, 26,
+                                 21, 52, 54, 19, 41, 12, 29, 59, 29, 106,
+                                 54, 25, 26, 13, 32, 51, 41, 82, 34, 153,
+                                 83, 46, 50, 70, 87, 33, 57, 40, 38, 133];
+
+            vm.chartFilters = {};
+            vm.daysFilterOptions = [7, 30, 60, 90];
+            vm.chartFilters.daysBack = vm.daysFilterOptions[1];
+
+            vm.chartOptions = {
                 chart: {
+                    renderTo: 'growth-chart',
                     type: 'area',
                     backgroundColor: null,
                     spacingLeft: 40,
@@ -49,7 +82,8 @@
                     style: {
                         fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
                         fontWeight: 300
-                    }
+                    },
+                    reflow: true
                 },
                 title: {
                     text: ''
@@ -62,16 +96,17 @@
                     type: 'datetime',
                     lineColor: 'transparent',
                     tickLength: 0,
+                    tickInterval: 5 * 24 * 60 * 60 * 1000,
                     endOnTick: true,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         y: 24,
                         style: {
                             color: '#fff',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function() {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
@@ -83,13 +118,13 @@
                     yDecimals: 2,
                     gridLineWidth: 1,
                     title : {
-                        text: ""
+                        text: ''
                     },
                     labels: {
                         style: {
                             color: '#adadad',
                             fontSize: '14px',
-                            fontWeight: "400"
+                            fontWeight: 400
                         },
                         formatter: function () {
                             if (this.value != 0) {
@@ -120,21 +155,22 @@
                     padding: 12,
                     backgroundColor: '#FFFFFF',
                     borderWidth: 1,
-                    borderColor: "#cccccc",
+                    borderColor: '#cccccc',
                     itemStyle: {
-                      "fontWeight":"300"
+                      fontWeight: 300
                     },
                     navigation: {
                         style: {
-                            fontWeight: '400',
+                            fontWeight: 400,
                         }
-                    }
+                    },
+                    enabled: false
                 },
                 tooltip: {
-                    borderWidth:0,
-                    borderRadius:0,
+                    borderWidth: 0,
+                    borderRadius: 0,
                     backgroundColor: null,
-                    shadow:false,
+                    shadow: false,
                     useHTML: true,
                     formatter: function() {
                         var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
@@ -153,119 +189,107 @@
                     area: {
                         animation: true,
                         fillOpacity: 0.2,
-                        lineWidth: 0.2,
+                        lineWidth:.3,
                         marker: {
-                            enabled: false,
+                            enabled: true,
                             symbol: 'circle',
-                            radius: 2,
+                            radius: 3,
                             states: {
                                 hover: {
-                                    enabled: true
+                                    radius: 6,
+                                    fillOpacity:.4,
+                                    fillColor: '#FFFFFF',
+                                    lineWidth: 4,
+                                    lineColor: '#5e385d'
                                 }
                             }
                         },
                         states: {
                             hover: {
-                                lineWidth: 0.2
+                                lineWidth:.4
                             }
                         }
                     }
                 },
                 series: [{
-                    name: 'Legend 1',
-                    color: '#907f90',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
-                }, {
-                    name: 'Legend 2',
-                    color: '#97b99b',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
-                }, {
-                    name: 'Legend 3',
-                    color: '#6ba5ae',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
+                    name: 'Candidates Added',
+                    color: '#5e385d',
+                    pointStart: getPointStart(vm.chartFilters.daysBack),
+                    pointInterval: getPointInterval(vm.chartFilters.daysBack),
+                    data: getData(vm.chartFilters.daysBack)
                 }]
-            });
+            };
+
+            vm.chart = new Highcharts.Chart(vm.chartOptions);
 
             vm.totalCandidates = {
                 graph: {}
             };
 
-            vm.totalCandidates.graph.data = [
-                [
-                    { date: '07-01-15', data: 90 },
-                    { date: '07-15-15', data: 23 },
-                    { date: '08-01-15', data: 71 },
-                    { date: '08-15-15', data: 51 },
-                    { date: '09-01-15', data: 112 },
-                    { date: '09-15-15', data: 39 },
-                    { date: '10-01-15', data: 45 },
-                    { date: '10-15-15', data: 8 },
-                    { date: '11-01-15', data: 88 }
-                ],
-                [
-                    { date: '07-01-15', data: 30 },
-                    { date: '07-15-15', data: 133 },
-                    { date: '08-01-15', data: 21 },
-                    { date: '08-15-15', data: 79 },
-                    { date: '09-01-15', data: 52 },
-                    { date: '09-15-15', data: 119 },
-                    { date: '10-01-15', data: 15 },
-                    { date: '10-15-15', data: 80 },
-                    { date: '11-01-15', data: 14 }
-                ]
-            ];
-
             vm.callouts = [
                 {
                     name: 'Total Pipelines',
-                    value: '25'
+                    tooltip: 'Total number of pipelines in your talent pool',
+                    value: '26',
+                    change: '<span class="positive">You have 4 pipelines</span>'
                 },
                 {
                     name: 'Total Candidates',
-                    value: '10,000'
+                    tooltip: 'Total number of candidates in all pipelines',
+                    value: '21,683',
+                    change: '<span class="positive">(+25%)</span>'
                 },
                 {
-                    name: 'Unique Candidates',
-                    value: '800'
+                    name: 'Candidates Added',
+                    tooltip: 'Total number of candidates added by your team',
+                    value: '559',
+                    change: '<span class="negative">(-65%)</span>'
                 },
                 {
-                    name: 'Candidates Today',
-                    value: '10'
+                    name: 'Total Engagement',
+                    tooltip: '% of candidates engaged through all of your pipelines',
+                    value: '63%',
+                    change: '<span class="positive">(+25%)</span>'
                 }
             ];
 
             vm.pipelines = [
                 {
-                    title: 'Java Developer',
+                    title: 'Product Management',
                     width: 100,
                     value: '45'
                 },
                 {
-                    title: 'Rails Developer',
+                    title: 'Python',
                     width: 80,
                     value: '35'
                 },
                 {
-                    title: 'Angular Developer',
+                    title: 'Backbone',
                     width: 70,
                     value: '20'
                 },
                 {
-                    title: 'PHP Developer',
+                    title: 'Javascript',
                     width: 65,
                     value: '10'
                 },
                 {
-                    title: 'Python Developer',
+                    title: 'PHP',
+                    width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'Front End Developemnt',
+                    width: 50,
+                    value: '+16'
+                },
+                {
+                    title: 'UX',
                     width: 50,
                     value: '+16'
                 }
+
             ];
 
             vm.tableData = {
@@ -277,7 +301,7 @@
                 query: {
                     filter: '',
                     order: 'name',
-                    limit: 10,
+                    limit: 20,
                     page: 1
                 },
                 pipelines: {
@@ -288,143 +312,255 @@
                             name: 'Java Developer',
                             candidates: 100,
                             newCandidates: 20,
-                            created: new Date('2015-12-17T03:24:00')
+                            created: new Date('2015-12-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 2,
                             name: 'Rails Developer',
                             candidates: 870,
                             newCandidates: 12,
-                            created: new Date('2015-11-17T03:24:00')
+                            created: new Date('2015-11-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 3,
                             name: 'PHP Developer',
                             candidates: 134,
                             newCandidates: 22,
-                            created: new Date('2015-10-17T03:24:00')
+                            created: new Date('2015-10-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 4,
                             name: 'California based',
                             candidates: 713,
                             newCandidates: 32,
-                            created: new Date('2015-02-17T03:24:00')
+                            created: new Date('2015-02-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 5,
                             name: 'New York based',
                             candidates: 632,
                             newCandidates: 72,
-                            created: new Date('2015-08-17T03:24:00')
+                            created: new Date('2015-08-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 6,
                             name: 'Python Developer',
                             candidates: 823,
                             newCandidates: 100,
-                            created: new Date('2015-09-12T03:24:00')
+                            created: new Date('2015-09-12T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 7,
                             name: 'Angular Dev',
                             candidates: 189,
                             newCandidates: 34,
-                            created: new Date('2015-03-17T03:24:00')
+                            created: new Date('2015-03-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 8,
                             name: 'Backbone Dev',
                             candidates: 369,
                             newCandidates: 77,
-                            created: new Date('2015-04-17T03:24:00')
+                            created: new Date('2015-04-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 9,
                             name: 'Europe based',
                             candidates: 932,
                             newCandidates: 123,
-                            created: new Date('2015-06-17T03:24:00')
+                            created: new Date('2015-06-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 10,
                             name: 'Canada based',
                             candidates: 453,
                             newCandidates: 62,
-                            created: new Date('2015-04-16T03:24:00')
+                            created: new Date('2015-04-16T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 11,
                             name: 'China based',
                             candidates: 824,
                             newCandidates: 103,
-                            created: new Date('2015-06-08T03:24:00')
-                        }, {
-                            id: 12,
-                            name: '10 Yr Experienced',
-                            candidates: 123,
-                            newCandidates: 15,
-                            created: new Date('2015-08-17T03:24:00')
+                            created: new Date('2015-06-08T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 13,
                             name: 'Senior developer',
                             candidates: 253,
                             newCandidates: 29,
-                            created: new Date('2015-03-21T03:24:00')
+                            created: new Date('2015-03-21T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 14,
                             name: 'Software Tester',
                             candidates: 521,
                             newCandidates: 64,
-                            created: new Date('2015-01-17T03:24:00')
+                            created: new Date('2015-01-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 15,
                             name: 'Software designer',
                             candidates: 623,
                             newCandidates: 89,
-                            created: new Date('2015-05-18T03:24:00')
+                            created: new Date('2015-05-18T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 16,
                             name: 'Database Engineer',
                             candidates: 354,
                             newCandidates: 65,
-                            created: new Date('2015-05-17T03:24:00')
+                            created: new Date('2015-05-17T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 17,
                             name: 'IOS Developer',
                             candidates: 698,
                             newCandidates: 98,
-                            created: new Date('2015-09-11T03:24:00')
+                            created: new Date('2015-09-11T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 18,
                             name: 'Android Developer',
-                            candidates: 693,
+                            candidates: 865,
                             newCandidates: 20,
-                            created: new Date('2015-06-27T03:24:00')
+                            created: new Date('2015-06-27T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 19,
                             name: 'Business Admin',
                             candidates: 563,
                             newCandidates: 98,
-                            created: new Date('2015-08-27T03:24:00')
+                            created: new Date('2015-08-27T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }, {
                             id: 20,
                             name: 'Trainer',
                             candidates: 951,
                             newCandidates: 156,
-                            created: new Date('2015-12-06T03:24:00')
+                            created: new Date('2015-12-06T03:24:00'),
+                            smartlists: 4,
+                            engagement: '5%',
+                            contributors: 'Dean Smith (+20)'
                         }
                     ]
                 }
             };
+        }
 
-             vm.removeFilter = function () {
-                vm.tableData.query.filter = '';
-    
-                if (vm.tableData.filter.form.$dirty) {
-                    vm.tableData.filter.form.$setPristine();
-                }
-            };
+        function removeFilter() {
+            vm.tableData.query.filter = '';
 
-            vm.logOrder = function (order) {
-                console.log('order: ', order);
-            };
+            if (vm.tableData.filter.form.$dirty) {
+                vm.tableData.filter.form.$setPristine();
+            }
+        }
 
-            vm.logPagination = function (page, limit) {
-                console.log('page: ', page);
-                console.log('limit: ', limit);
-            };
+        function logOrder(order) {
+            console.log('order: ', order);
+        }
 
+        function logPagination(page, limit) {
+            console.log('page: ', page);
+            console.log('limit: ', limit);
+        }
+
+        function redrawChart() {
+            vm.chart.reflow();
+        }
+
+        function updateChart(daysBack) {
+            vm.chart.series[0].update({
+                pointStart: getPointStart(daysBack),
+                pointInterval: getPointInterval(daysBack),
+                data: getData(daysBack)
+            });
+        }
+
+        function getPointStart(daysBack) {
+            var d = new Date();
+            d.setDate(d.getDate() - daysBack - 1 /* don't include today */);
+            d.setHours(0);
+            d.setMinutes(0);
+            d.setSeconds(0);
+            return d.getTime();
+        }
+
+        function getPointInterval(daysBack) {
+            var day = 24 * 60 * 60 * 1000;
+            if (daysBack === 1) {
+                return day * Math.floor(daysBack / 12) / 24; // @TODO update x-axis labels to hours
+            } else if (daysBack === 7) {
+                return day * Math.floor(daysBack / 7); // => expects 7 data points
+            } else if (daysBack === 30) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 60) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 90) {
+                return day * Math.floor(daysBack / 15);
+            }
+        }
+
+        function getData(daysBack) {
+            if (daysBack === 1) {
+                return aggregate(dataSetLast24Hours, 24, 12);
+            } else if (daysBack === 7) {
+                return aggregate(dataSetLast90Days, daysBack, 7);
+            } else if (daysBack === 30) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 60) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 90) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            }
+        }
+
+        function aggregate(data, daysBack, dataPoints) {
+            var aggregate = [];
+            var newData = data.slice(data.length - daysBack);
+            var dataGroupSize = Math.max(Math.floor(daysBack / dataPoints), 1);
+            while (newData.length >= dataGroupSize) {
+                aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
+                    return prev + curr;
+                }));
+            }
+            return aggregate;
         }
     }
 })();

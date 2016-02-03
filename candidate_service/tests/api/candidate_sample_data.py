@@ -218,8 +218,8 @@ def candidate_educations(candidate_id=None, education_id=None):
         data = {'candidates': [{'id': candidate_id, 'educations': [
             {'school_name': 'stanford', 'school_type': 'university', 'city': 'palo alto',
              'state': 'ca', 'country': None, 'is_current': False, 'degrees': [
-                {'type': 'bs', 'title': 'engineer', 'start_year': '2002', 'start_month': '11',
-                 'end_year': '2006', 'end_month': '12', 'gpa': 1.5, 'bullets': [
+                {'type': 'bs', 'title': 'engineer', 'start_year': 2002, 'start_month': 11,
+                 'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
                     {'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'}
                 ]}
             ]}
@@ -244,14 +244,14 @@ def candidate_experience(candidate_id=None, experience_id=None, experience_bulle
     if candidate_id and not experience_id:
         data = {'candidates': [{'id': candidate_id, 'work_experiences': [
             {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-             'state': fake.state(), 'start_year': '2008', 'end_year': 2012, 'start_month': 10, 'end_month': 2,
+             'state': fake.state(), 'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
              'is_current': True, 'bullets': [{'description': fake.sentence()}]}]}]}
 
     # Data for updating an existing CandidateExperience
     elif candidate_id and experience_id and not experience_bullet_id:
         data = {'candidates': [{'id': candidate_id, 'work_experiences': [
             {'id': experience_id, 'organization': fake.company(), 'position': fake.job(),
-             'city': fake.city(), 'state': fake.state(), 'start_year': '2008', 'end_year': 2012,
+             'city': fake.city(), 'state': fake.state(), 'start_year': 2008, 'end_year': 2012,
              'start_month': 10, 'end_month': 2, 'is_current': True,
              'bullets': [{'description': fake.bs()}]
              }]}]}

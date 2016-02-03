@@ -5,6 +5,7 @@ from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
+from candidate_pool_service.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -467,3 +468,35 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     assert response['smartlists'][1]['name'] == test_smart_second.name
     assert response['smartlists'][1]['user_id'] == test_smart_second.user_id
 
+
+def test_talent_pipeline_campaigns_api_get(access_token_first, user_first, talent_pipeline):
+
+    # Logged-in user trying to get all campaigns of talent-pipeline
+    response, status_code = talent_pipeline_campaigns_api(access_token_first, talent_pipeline.id)
+    assert status_code == 200
+    assert not response['email_campaigns']
+
+    # Adding a test test_smart_list
+    test_smart_list = Smartlist(name=gen_salt(5), user_id=user_first.id, talent_pipeline_id=talent_pipeline.id)
+    db.session.add(test_smart_list)
+
+    # Adding a test email_campaign
+    test_email_campaign = EmailCampaign(name=gen_salt(5))
+    db.session.add(test_email_campaign)
+    db.session.commit()
+
+    # Adding test_smart_list to test_email_campaign
+    test_email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=test_smart_list.id,
+                                                            email_campaign_id=test_email_campaign.id)
+    db.session.add(test_email_campaign_smart_list)
+    db.session.commit()
+
+    # Logged-in user trying to get all campaigns of talent-pipeline
+    response, status_code = talent_pipeline_campaigns_api(access_token_first, talent_pipeline.id)
+    assert status_code == 200
+    assert len(response['email_campaigns']) == 1
+
+    db.session.delete(test_email_campaign_smart_list)
+    db.session.delete(test_smart_list)
+    db.session.delete(test_email_campaign)
+    db.session.commit()

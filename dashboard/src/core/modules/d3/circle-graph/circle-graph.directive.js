@@ -21,8 +21,8 @@
             restrict: 'AE',
             require: ['gtCircleGraph'],
             scope: {
-                data: '=',
-                options: '='
+                data: '=?',
+                options: '=?'
             },
             controller: 'CircleGraphController',
             controllerAs: 'circleGraph',
@@ -53,7 +53,7 @@
             .attr("width", '360')
             .attr("height", '360px')
             .append("g")
-            .attr("transform", "translate(180,150)");
+            .attr("transform", "translate(120,130)");
 
 
         arc = d3.svg.arc()
@@ -93,31 +93,31 @@
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-43')
-            .attr("y", '10.3em')
-            .text("Candidates Used In [segment]");
+            .attr("x", '-30')
+            .attr("y", '10.4em')
+            .text("Candidates Pipelined");
 
         svg.append("rect")
             .attr("class", "legend off-white")
             .attr("width", "12")
             .attr("height", "12")
-            .attr("x", '-165')
-            .attr("y", '9em');
+            .attr("x", '-115')
+            .attr("y", '10.15em');
 
         svg.append("text")
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-30')
+            .attr("x", '-42')
             .attr("y", '11.7em')
-            .text("Candidates Available from [Parent]");
+            .text("Total Candidates");
 
         svg.append("rect")
             .attr("class", "legend purple")
             .attr("width", "12")
             .attr("height", "12")
-            .attr("x", '-165')
-            .attr("y", '10.3em');
+            .attr("x", '-115')
+            .attr("y", '11.35em');
     }
 
 })();

@@ -18,6 +18,16 @@
   height: 100%;
 }
 
+.view--app {
+  @extend .view;
+
+  padding-top: $misc--topNavHeight--tiny;
+
+  @include helper--media($breakpoint--small) {
+    padding-top: $misc--topNavHeight--small;
+  }
+}
+
 .view--login {
   @extend .view;
 
@@ -64,7 +74,7 @@
 
 .view__main {
   background-color: $color--nearWhite;
-  z-index: $z-index--1;
+  z-index: $z-index--view__main;
   display: table-cell;
   width: 100%;
   min-height: 100%;
@@ -118,52 +128,148 @@
 .view__sidebar {
   transition: width $easing--normal;
   background-color: $color--darkGray;
-  z-index: $z-index--2;
+  z-index: $z-index--view__sidebar;
   width: 100%;
+  bottom: 0;
+  position: fixed;
   overflow: hidden;
 
   @include helper--media($breakpoint--medium) {
-    width: 3em;
+    width: $misc--sidebarParentMenuWidth;
     display: table;
     height: 100%;
     position: relative;
     vertical-align: top;
-    overflow: visible;
   }
 }
 
 .view__sidebar--active {
   @include helper--media($breakpoint--medium) {
-    width: 20em;
+    width: $misc--sidebarWidth;
+  }
+}
+
+.view__sidebar--navigation {
+  @extend .view__sidebar;
+}
+
+.view__sidebar--navigation--fixed {
+  @extend .view__sidebar--navigation;
+
+  position: static;
+  overflow: visible;
+  background-color: transparent;
+
+  & .view__sidebar__wrapper--navigation {
+    @extend .view__sidebar--navigation;
+
+    @include helper--media($breakpoint--medium) {
+      position: fixed;
+      top: $misc--topNavHeight--small;
+      bottom: 0;
+      display: block;
+      height: auto;
+    }
+  }
+
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--full) {
+      width: $misc--sidebarWidth;
+    }
+
+    .view__sidebar__wrapper--navigation {
+      @include helper--media($breakpoint--medium) {
+        width: $misc--sidebarWidth;
+      }
+    }
   }
 }
 
 .view__sidebar--feed {
   @extend .view__sidebar;
 
-  background-color: $color--white;
+  position: absolute;
   top: -$misc--topNavMenuHeight;
-  z-index: 900;
+  right: 0;
+  bottom: -$misc--topNavMenuHeight;
+  z-index: $z-index--view__sidebar--feed;
   width: 0;
-  position: relative;
+  height: 100%;
+  background-color: $color--white;
+  box-shadow: -3px 0 36px -12px rgba(0,0,0,0.15);
 
   @include helper--media($breakpoint--medium) {
     display: table-cell;
+    overflow: visible;
+  }
+
+  @include helper--media($breakpoint--full) {
+    position: relative;
   }
 
   &.view__sidebar--active {
     @include helper--media($breakpoint--medium) {
-      width: 20em;
+      width: $misc--sidebarWidth;
     }
   }
 
   &:after {
     content: '';
     position: absolute;
-    bottom: -$misc--topNavMenuHeight;
+
     display: block;
     width: 100%;
     height: $misc--topNavMenuHeight;
-    background: $color--white;
+    background-color: $color--white;
+  }
+}
+
+.view__sidebar--feed--fixed {
+  @extend .view__sidebar--feed;
+
+  width: 0;
+  background-color: transparent;
+  box-shadow: none;
+
+  &:after {
+    display: none;
+  }
+
+  & .view__sidebar__wrapper--feed {
+    @extend .view__sidebar--feed;
+
+    position: fixed;
+    top: $misc--topNavHeaderHeight--tiny;
+    bottom: 0;
+    height: auto;
+    overflow: hidden;
+    box-shadow: -3px 0 36px -12px rgba(0,0,0,0.15);
+
+    @include helper--media($breakpoint--small) {
+      top: $misc--topNavHeaderHeight--small;
+    }
+
+    &:after {
+      bottom: 0;
+      height: 0;
+      box-shadow: 0 -1px 20px 20px rgba(255,255,255,1);
+    }
+  }
+
+  &.view__sidebar--active {
+    @include helper--media($breakpoint--medium) {
+      width: 0;
+    }
+
+    @include helper--media($breakpoint--full) {
+      position: static;
+      width: $misc--sidebarWidth;
+    }
+
+    .view__sidebar__wrapper--feed {
+      @include helper--media($breakpoint--medium) {
+        width: $misc--sidebarWidth;
+      }
+    }
   }
 }

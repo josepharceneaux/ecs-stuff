@@ -20,7 +20,7 @@ class CandidateCustomErrors(object):
 
     # Error codes for CandidateAreaOfInterest
     AOI_FORBIDDEN = 3030
-    AOI_NOT_FOUND = 3030
+    AOI_NOT_FOUND = 3031
 
     # Error codes for CandidateCustomField
     CUSTOM_FIELD_FORBIDDEN = 3040

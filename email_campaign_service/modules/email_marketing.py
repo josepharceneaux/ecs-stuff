@@ -181,6 +181,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
         blast_params = dict(sends=0, bounces=0)
 
         # For each candidate, create URL conversions and send the email
+        list_of_new_email_html_or_text = []
         for candidate_id, candidate_address in candidate_ids_and_emails:
 
             was_send = send_campaign_emails_to_candidate(
@@ -196,13 +197,22 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                 email_client_id=campaign.email_client_id
             )
 
+            if campaign.email_client_id:
+                resp_dict = {}
+                resp_dict['new_html'] = was_send.get('new_html')
+                resp_dict['new_text'] = was_send.get('new_text')
+                resp_dict['email'] = candidate_address
+                list_of_new_email_html_or_text.append(resp_dict)
+
             if was_send:
                 emails_sent += 1
 
             db.session.commit()
-    logger.info(
-            "Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
+    logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
             emails_sent, campaign.name, user.email, new_candidates_only)
+
+    if campaign.email_client_id:
+        return list_of_new_email_html_or_text
 
     return emails_sent
 
@@ -337,7 +347,7 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
     # Do not send mail if email_client_id is provided
     if email_client_id:
         logger.info("Marketing email added through client %s", email_client_id)
-        return new_html, new_text
+        return dict(new_html=new_html, new_text=new_text)
     else:
         try:
             email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign.email_from,

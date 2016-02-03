@@ -183,6 +183,7 @@ class ResumeApi(object):
     URL_PREFIX = _get_url_prefix(VERSION)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     PARSE = 'parse_resume'
+    BATCH = 'batch'
 
 
 class ResumeApiUrl(object):
@@ -194,6 +195,8 @@ class ResumeApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
     PARSE = API_URL % ResumeApi.PARSE
+    BATCH_URL = API_URL % ResumeApi.BATCH
+    BATCH_PROCESS = '{}/{}'.format(BATCH_URL, '<int:user_id>')
 
 
 class UserServiceApiWords(object):
@@ -432,6 +435,7 @@ class CandidateApiWords(object):
     SEARCH = "/search"
     DOCUMENTS = "/documents"
     OPENWEB = '/openweb'
+    CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
     PREFERENCE = "/preferences"
 
@@ -500,6 +504,7 @@ class CandidateApi(object):
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
     OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
 
