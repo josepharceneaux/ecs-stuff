@@ -41,22 +41,25 @@ def resume_post_reciever():
     :return: dict: {'candidate': {}}
     """
     # Get the resume file object from Filepicker or the request body, if provided
-    filepicker_key = request.form.get('filepicker_key')
-    create_candidate = request.form.get('create_candidate')
+    request_json = request.get_json() or {}
+    filepicker_key = request.form.get('filepicker_key') or request_json.get('filepicker_key')
+    resume_file_name = request.form.get('resume_file_name') or request_json.get('resume_file_name')
+    create_candidate = request.form.get('create_candidate') or request_json.get('create_candidate')
     oauth = request.oauth_token
     talent_pools = get_users_talent_pools(oauth)
     if filepicker_key:
         resume_file = None
-        filename_str = str(filepicker_key)
-    elif request.form.get('resume_file_name'):
+        resume_file_name = str(filepicker_key)
+    elif resume_file_name:
+        if request_json:
+            raise InvalidUsage("Posted Resumes must be sent as forms (multipart/form-data)")
         resume_file = request.files['resume_file']
-        filename_str = request.form['resume_file_name']
     else:
         raise InvalidUsage("Invalid Query Params")
     parse_params = {
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
-        'filename': filename_str,
+        'filename': resume_file_name,
         'create_candidate': create_candidate,
         'oauth': oauth,
         'talent_pools': talent_pools
