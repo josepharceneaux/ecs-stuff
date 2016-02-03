@@ -131,9 +131,10 @@ class TestSmsReceive(object):
         :return:
         """
         try:
-            SmsCampaignBase.process_candidate_reply({'To': user_phone_1.value,
-                                                     'From': candidates_with_same_phone[0].value,
-                                                     'Body': "What's the venue?"})
+            SmsCampaignBase.process_candidate_reply(
+                {'To': user_phone_1.value,
+                 'From': candidates_with_same_phone[0].candidate_phone[0].value,
+                 'Body': "What's the venue?"})
         except MultipleCandidatesFound as error:
             assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
 
@@ -179,24 +180,24 @@ class TestSmsReceive(object):
         is returned to Twilio API.
         Candidate is associated with an SMS campaign. Then we assert that reply has been saved
         and replies count has been incremented by 1. Finally we assert that activity has been
-        created in database table 'Activity'
+        created in database table 'Activity'.
         :return:
         """
-        reply_text = "What's the venue?"
-        reply_count_before = get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
-                                     data={'To': user_phone_1.value,
-                                           'From': candidate_phone_1.value,
-                                           'Body': reply_text})
-        assert response_get.status_code == 200, 'Response should be ok'
-        assert 'xml' in str(response_get.text).strip()
-        campaign_reply_in_db = get_reply_text(candidate_phone_1)
-        assert len(campaign_reply_in_db) == 1
-        assert campaign_reply_in_db[0].body_text == reply_text
-        reply_count_after = get_replies_count(sms_campaign_of_current_user)
-        assert reply_count_after == reply_count_before + 1
-        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
-                            campaign_reply_in_db[0].id)
+        _assert_valid_response(sms_campaign_of_current_user,
+                               user_phone_1, candidate_phone_1)
+
+    def test_sms_receive_with_candidate_having_same_phone_in_diff_domains(
+            self, user_phone_1, candidates_with_same_phone_in_diff_domains,
+            process_send_sms_campaign, sms_campaign_of_current_user, candidate_phone_1):
+        """
+        - This tests the endpoint /v1/receive
+
+        Data passed is valid and candidate belongs to more than one domains.
+        It should not get any error.
+        :return:
+        """
+        _assert_valid_response(sms_campaign_of_current_user, user_phone_1,
+                               candidate_phone_1)
 
 
 def get_replies_count(campaign):
@@ -208,3 +209,28 @@ def get_replies_count(campaign):
     db.session.commit()
     sms_campaign_blasts = campaign.blasts[0]
     return sms_campaign_blasts.replies
+
+
+def _assert_valid_response(campaign_obj, user_phone, candidate_phone):
+    """
+    Here is the functionality to test valid response on given campaign
+    :param campaign_obj:
+    :param user_phone:
+    :param candidate_phone:
+    :return:
+    """
+    reply_text = "What's the venue?"
+    reply_count_before = get_replies_count(campaign_obj)
+    response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                 data={'To': user_phone.value,
+                                       'From': candidate_phone.value,
+                                       'Body': reply_text})
+    assert response_get.status_code == 200, 'Response should be ok'
+    assert 'xml' in str(response_get.text).strip()
+    campaign_reply_in_db = get_reply_text(candidate_phone)
+    assert len(campaign_reply_in_db) == 1
+    assert campaign_reply_in_db[0].body_text == reply_text
+    reply_count_after = get_replies_count(campaign_obj)
+    assert reply_count_after == reply_count_before + 1
+    assert_for_activity(user_phone.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                        campaign_reply_in_db[0].id)

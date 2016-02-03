@@ -541,18 +541,16 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
 
 @pytest.fixture()
 def candidates_with_same_phone_in_diff_domains(request, candidate_first,
+                                               candidate_phone_1,
                                                candidate_in_other_domain):
     """
-    This associates same number to candidate_first and candidate_second
-    :param candidate_second:
+    This associates same number to candidate_first and candidate_in_other_domain
     :return:
     """
-    common_phone = fake.phone_number()
-    cand_phone_1 = _create_candidate_mobile_phone(candidate_first, common_phone)
-    cand_phone_2 = _create_candidate_mobile_phone(candidate_in_other_domain, common_phone)
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_in_other_domain,
+                                                  candidate_phone_1.value)
 
     def tear_down():
-        _delete_candidate_phone(cand_phone_1)
         _delete_candidate_phone(cand_phone_2)
 
     request.addfinalizer(tear_down)

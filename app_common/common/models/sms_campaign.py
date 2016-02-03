@@ -78,6 +78,8 @@ class SmsCampaignSend(db.Model):
     def get_latest_campaign_by_candidate_id(cls, candidate_id):
         if not isinstance(candidate_id, (int, long)):
             raise InvalidUsage('Invalid candidate_id given')
+        # dash in following query is to order in ascending order in terms of datetime
+        # (i.e. latest campaign send record should appear first)
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
 
