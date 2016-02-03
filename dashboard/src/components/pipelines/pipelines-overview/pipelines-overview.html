@@ -51,33 +51,10 @@
         </div>
 
         <!-- Growth chart -->
-        <div class="area-chart-section">
-            <div class="module-padding">
-                <md-toolbar>
-                    <div class="md-toolbar-tools">
-                        <h2>
-                            <span>Candidate Growth</span>
-                        </h2>
-                        <span flex></span>
-                        <div layout="row" layout-align="end">
-                            <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
-                                <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
-                            </md-radio-group>
-                        </div>
-                    </div>
-                </md-toolbar>
-            </div>
-
-            <div class="area-chart-wrap" gt-resize on-resize="vm.redrawChart()">
-                <highchart config="vm.chartConfig" class="area-chart"></highchart></div>
-            </div>
-        </div>
+        <gt-candidate-growth-graph pipeline-id="vm.pipelineId"></gt-candidate-growth-graph>
         <!-- End: Growth chart -->
 
     </div>
-
-
-
 
     <div layout="column" class="md-padding" layout-wrap>
 

@@ -1,0 +1,21 @@
+<div class="area-chart-section">
+    <div class="module-padding">
+        <md-toolbar>
+            <div class="md-toolbar-tools">
+                <h2>
+                    <span>Candidate Growth</span>
+                </h2>
+                <span flex></span>
+                <div layout="row" layout-align="end">
+                    <md-radio-group class="segmented-button-group" ng-model="areaGraph.chartFilters.daysBack" ng-change="areaGraph.updateChart(areaGraph.chartFilters.daysBack)">
+                        <md-radio-button ng-repeat="option in areaGraph.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
+                    </md-radio-group>
+                </div>
+            </div>
+        </md-toolbar>
+    </div>
+
+    <div class="area-chart-wrap" gt-resize on-resize="areaGraph.redrawChart()">
+        <highchart config="areaGraph.chartConfig" class="area-chart"></highchart></div>
+    </div>
+</div>
