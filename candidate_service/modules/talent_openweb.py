@@ -8,6 +8,7 @@ from candidate_service.common.error_handling import InternalServerError, NotFoun
 from candidate_service.candidate_app import logger
 from candidate_service.common.utils.validators import format_phone_number, parse_openweb_date
 from candidate_service.modules.validators import does_candidate_belong_to_users_domain
+from candidate_service.common.models.talent_pools_pipelines import TalentPool
 import requests, datetime
 
 SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
@@ -91,7 +92,7 @@ def openweb_crawl(url):
         logger.exception("Error: %s crawling link: %s", (e, url))
 
 
-def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
+def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed_user):
     """
     ONLY converts the dict object. Won't put in `id` fields or do anything to the DB.
 
@@ -101,6 +102,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
 
     social_profile_dict = dice_candidate_dict
     dice_profile_dict = dice_candidate_dict
+
+    talent_pool_ids = [tid.id for tid in TalentPool.query.filter_by(domain_id=authed_user.domain_id)]
 
     dice_profile_contact_dict = dice_profile_dict.get('contact') or {}
     emails = [social_profile_dict.get('email') or dice_profile_contact_dict.get('email')]
@@ -312,7 +315,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         'skills': skills,
         # 'text_comments': text_comments,
         'openweb_id': social_profile_dict.get('id'),
-        'dice_profile_id': dice_profile_dict.get('id')
+        'dice_profile_id': dice_profile_dict.get('id'),
+        'talent_pool_ids': {"add": talent_pool_ids}
     }
 
     return gt_candidate_dict
