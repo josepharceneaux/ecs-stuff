@@ -5,16 +5,14 @@ import traceback
 # Third Party
 import gevent
 from gevent import monkey
-gevent.monkey.patch_all()
+
 from gevent.pool import Pool
 
 # App Settings
-from social_network_service.social_network_app.app import init_app
-init_app()
+from social_network_service.social_network_app import logger
 
 # Application Specific
 from social_network_service.modules.utilities import get_class
-from social_network_service import logger
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.candidate import SocialNetwork
 
@@ -105,7 +103,9 @@ def start():
     else:
         logger.error('There is no User in db for social network %s'
                      % name_space.social_network)
-        
+
+
+start()
 if __name__ == '__main__':
     try:
         start()
@@ -114,3 +114,4 @@ if __name__ == '__main__':
     except:
         logger.error(traceback.format_exc())
         sys.exit(1)
+

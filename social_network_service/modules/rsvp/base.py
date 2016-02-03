@@ -11,6 +11,10 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from flask import request
+
+from social_network_service.common.activity_service_config import ActivityServiceKeys
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.routes import CandidateApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
@@ -457,13 +461,13 @@ class RSVPBase(object):
             entry_id = entry_in_db.id
         else:
             header = {'': ''}
-            response = http_request('post', CandidateApiUrl.CANDIDATES,
-                                    headers=header,
-                                    data=data)
-            # entry = CandidateSource(**data)
-            # CandidateSource.save(entry)
-            # entry_id = entry.id
-        # attendee.candidate_source_id = entry_id
+            # response = http_request('post', CandidateApiUrl.CANDIDATES,
+            #                         headers=header,
+            #                         data=data)
+            entry = CandidateSource(**data)
+            CandidateSource.save(entry)
+            entry_id = entry.id
+        attendee.candidate_source_id = entry_id
         return attendee
 
     @staticmethod
@@ -625,15 +629,19 @@ class RSVPBase(object):
             json.dumps(params),
             type_of_rsvp,
             attendee.rsvp_id)
-        data = {'source_table': 'rsvp',
-                'source_id': attendee.rsvp_id,
-                'added_time': attendee.added_time,
-                'type': type_of_rsvp,
-                'user_id': attendee.gt_user_id,
-                'params': json.dumps(params)}
+
         if activity_in_db:
-            activity_in_db.update(**data)
+            add_activity(user_id=self.user_credentials.user_id,
+                         oauth_token=request.user.oauth_token,
+                         activity_type=ActivityServiceKeys.RSVP_EVENT,
+                         source_id=attendee.rsvp_id,
+                         source_table=RSVP.__tablename__,
+                         params=json.dumps(params))
         else:
-            candidate_activity = Activity(**data)
-            Activity.save(candidate_activity)
+            add_activity(user_id=self.user_credentials.user_id,
+                         oauth_token=request.user.oauth_token,
+                         activity_type=ActivityServiceKeys.RSVP_EVENT,
+                         source_id=attendee.rsvp_id,
+                         source_table=RSVP.__tablename__,
+                         params=json.dumps(params))
         return attendee
