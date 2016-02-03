@@ -58,21 +58,26 @@ class CampaignBase(object):
         This method is called by creating the class object.
         - It takes "user_id" as keyword argument, gets the user object from database and sets
             user object in self.user.
+        - It also sets type of campaign in self.campaign_type.
+
+    * get_campaign_type(self) [abstract]
+        Child classes will implement this to set type of campaign in self.campaign_type
 
     * get_authorization_header(user_id, bearer_access_token=None): [static]
         This method is used to get authorization header for current user. This header is
         used to communicate with other flask micro services like candidate_service,
         activity_service etc.
 
-    * process_save_or_update(self, form_data, campaign_id=None):
-        This method is used to save or update a campaign. It returns the id of campaign
-        object in database.
+    * pre_process_save_or_update(self, form_data):
+        This method is used for data validation for saving and updating a campaign.
 
-    * create_or_update_campaign(self, campaign_data, campaign_id=None)
-        This saves/updates SMS campaign in database table "sms_campaign" or "push_campaign"
-        depending upon type of campaign.
+    * save(self, form_data):
+        This method is used to save the campaign in database. (e.g in "sms_campaign" table)
 
-    * create_or_update_campaign_smartlist(campaign, smartlist_ids): [static]
+    * update(self, form_data, campaign_id):
+        This method is used update campaign in database. (e.g in "sms_campaign" table)
+
+    * create_campaign_smartlist(campaign, smartlist_ids): [static]
         This saves/updates smartlist ids associated with a campaign in database
         table "sms_campaign_smartlist" for SMS campaign. (or some other table for
         other campaign)
@@ -88,15 +93,21 @@ class CampaignBase(object):
         It also return the data of scheduler_task from scheduler_service if the
         campaign was scheduled.
 
-    * validate_ownership_of_campaign(campaign_id, current_user_id): [abstract][static]
+    * validate_ownership_of_campaign(campaign_id, current_user_id): [static]
         This method verifies if current user is an owner of given campaign or not.
         If not it raises Forbidden error, otherwise it returns True, Child classes will
         implement this.
 
-    * delete(cls, **kwargs)
-        This is a class method used to delete a campaign. If that campaign was scheduled,
-        it first un-schedules the campaign from scheduler_service and then deletes campaign
-        from database.
+    * get_user_id_of_owner(campaign_obj, current_user_id): [abstract][static]
+        This returns id of user who created the given campaign obj
+
+    * delete(self, campaign_id)
+        This deletes a campaign. If that campaign was scheduled, it first un-schedules the
+        campaign from scheduler_service and then deletes campaign from database.
+
+    * create_activity_for_campaign_delete(self, source):
+        This adds an activity when user deletes a campaign.
+        Activity appears as e.g. "John deleted SMS campaign 'Jobs at getTalent'"
 
     * data_validation_for_campaign_schedule(cls,request, campaign_id):
         This class method is used before scheduling/re-scheduling a campaign. It
@@ -116,10 +127,20 @@ class CampaignBase(object):
         Once we have data from UI to schedule a campaign, we format the data as per
         scheduler_service requirement, and return it.
 
+    * create_campaign_schedule_activity(self, source):
+        This adds an activity when user schedules a campaign.
+        Activity appears as e.g. "John scheduled an SMS campaign 'Jobs at getTalent'"
+
+    * unschedule(self, data_to_schedule):
+        This method is used to un-schedule given campaign using scheduler_service.
+
     * pre_process_re_schedule(pre_processed_data)
         This method is used to do required processing before re-scheduling a campaign.
         e.g. it checks if task is not present on redis job store, return None.
         Details are given in definition of this method.
+
+    * reschedule(self, _request, campaign_id)
+        This method is used to re-schedules a campaign.
 
     * send(self, campaign):
         This method is used send the campaign to candidates. This has the common functionality
@@ -154,6 +175,16 @@ class CampaignBase(object):
         a callback and we create an "Activity" in database table as
             SMS campaign 'We are hiring' has been sent to 500 candidates.
         We also update the number of sends in this method.
+
+    * create_or_update_campaign_send(self, campaign_blast_id, candidate_id, sent_datetime,
+                                        campaign_send_model=None):
+        This creates a record in database table (e.g. in database table "sms_campaign_send")
+        when campaign is send to a candidate.
+
+    * create_or_update_send_url_conversion(self, campaign_send_obj, url_conversion_id):
+        This creates a record in database table (e.g. in database table
+        "sms_campaign_send_url_conversion") for each URL conversion when campaign is
+        send to a candidate.
 
     * create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
         This method is used to create an activity in database table "Activity" when campaign
@@ -422,10 +453,12 @@ class CampaignBase(object):
         return campaign_obj, scheduled_task, oauth_header
 
     @classmethod
-    def validate_ownership_of_campaign(cls, campaign_id, current_user_id, campaign_type):
+    def validate_ownership_of_campaign(cls, campaign_id, current_user_id,
+                                       campaign_type):
         """
         This function returns True if the current user is an owner for given
-        campaign_id. Otherwise it raises the Forbidden error. Child classes will implement this
+        campaign_id. Otherwise it raises the Forbidden error. Child classes
+        will implement this
         according to their database tables.
         :param campaign_id: id of campaign form getTalent database
         :param current_user_id: Id of current user
@@ -436,20 +469,23 @@ class CampaignBase(object):
         :rtype: SmsCampaign or some other campaign obj
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
-        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user_id, campaign_type)
-        campaign_user_id = cls.get_user_id_of_owner(campaign_obj, current_user_id)
+        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user_id,
+                                                  campaign_type)
+        campaign_user_id = cls.get_user_id_of_owner(campaign_obj,
+                                                    current_user_id)
         if campaign_user_id == current_user_id:
             return campaign_obj
         else:
             raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
-                                 % (current_user_id, campaign_obj.__tablename__, campaign_obj.id))
+                                 % (current_user_id, campaign_obj.__tablename__,
+                                    campaign_obj.id))
 
     @staticmethod
     @abstractmethod
     def get_user_id_of_owner(campaign_obj, current_user_id):
         """
-        This returns the id of user who created the given campaign. Child classes will implement
-        this as per their requirement.
+        This returns the id of user who created the given campaign. Child classes
+        will implement this as per their requirement.
         For example in case of SMS campaign, we have user_phone_id
         in campaign table and in case of Push campaign we have user_id in campaign table.
         :param campaign_obj: campaign object
@@ -520,7 +556,7 @@ class CampaignBase(object):
             logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, campaign_obj.id))
             return False
         try:
-            self.create_activity_for_campaign_delete(self.user, campaign_obj, oauth_header)
+            self.create_activity_for_campaign_delete(campaign_obj)
         except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
             logger.exception('delete: Error creating campaign delete activity.')
@@ -528,19 +564,14 @@ class CampaignBase(object):
                                                                           campaign_obj.id))
         return True
 
-    @classmethod
-    def create_activity_for_campaign_delete(cls, user, source, oauth_header):
+    def create_activity_for_campaign_delete(self, source):
         """
         - when a user deletes a campaign, here we set "params" and "type" of activity to
             be stored in db table "Activity" when a user deletes a campaign.
         - Activity will appear as " Michal has deleted an SMS campaign 'Jobs at Oculus'.
         - This method is called from delete() method of class CampaignBase.
-        :param user: user obj
         :param source: sms_campaign (or some other campaign) obj
-        :param oauth_header: Authorization header
-        :type user: User
         :type source: SmsCampaign
-        :type oauth_header: dict
         :exception: InvalidUsage
 
         **See Also**
@@ -548,16 +579,16 @@ class CampaignBase(object):
         """
         # any other campaign will update this line
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
-        raise_if_not_instance_of(user, User)
+        raise_if_not_instance_of(self.user, User)
         # Activity message looks like %(username)s deleted a campaign: %(name)s"
-        params = {'username': user.name, 'name': source.name,
+        params = {'username': self.user.name, 'name': source.name,
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
-        cls.create_activity(
-            user.id,
+        self.create_activity(
+            self.user.id,
             _type=ActivityMessageIds.CAMPAIGN_DELETE,
             source=source,
             params=params,
-            auth_header=oauth_header
+            auth_header=self.oauth_header
         )
 
     @classmethod
@@ -693,7 +724,7 @@ class CampaignBase(object):
             except Exception:
                 # In case activity_service is not running, we proceed normally and log the error.
                 logger.exception('Error creating campaign clicked activity.')
-            logger.info('%s(id:%s) has been scheduled.' % (self.campaign.__tablename__,
+            logger.info('%s(id:%s) has been scheduled.' % (self.campaign_type,
                                                            self.campaign.id))
             return response.json()['id']
         else:

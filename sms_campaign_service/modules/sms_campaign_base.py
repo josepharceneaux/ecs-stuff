@@ -85,8 +85,11 @@ class SmsCampaignBase(CampaignBase):
         - It then gets the user_phone obj from "user_phone" db table using
             provided "user_id".
 
+    * get_campaign_type(self)
+        This returns 'sms_campaign' as the type of campaign.
+
     * get_user_phone(self)
-        This gets the Twilio number of current user from database table "user_phone"
+        This gets the Twilio number of current user from database table "user_phone".
 
     * buy_twilio_mobile_number(self, phone_label_id=None)
         To send sms_campaign, we need to reserve a unique number for each user.
@@ -98,23 +101,22 @@ class SmsCampaignBase(CampaignBase):
     * get_all_campaigns(self)
         This gets all the campaigns created by current user.
 
-    * validate_form_data(cls, form_data)
+    * pre_process_save_or_update(self, form_data)
         This overrides CampaignBase class method to do any further validation.
 
-    * process_save_or_update(self, form_data, campaign_id=None)
+    * save(self, form_data)
         This overrides tha CampaignBase class method.
         This appends user_phone_id in form_data and calls super constructor to save/update
         the campaign in database.
 
     * schedule(self, data_to_schedule)
-        This overrides the base class method and set the value of data_to_schedule.
+        This overrides the base class method and sets the value of data_to_schedule.
         It then calls super constructor to get task_id for us. Then we will update
         SMS campaign record in sms_campaign table with frequency_id, start_datetime,
         end_datetime and "task_id"(Task created on APScheduler).
 
-    * validate_ownership_of_campaign(campaign_id, current_user_id)
-        This implements CampaignBase class method and returns True if the current user is
-        an owner for given campaign_id. Otherwise it raises the Forbidden error.
+    * get_user_id_of_owner(campaign_obj, current_user_id)
+        This gets the if of user who created the given campaign object.
 
     * does_candidate_have_unique_mobile_phone(self, candidate)
         This validates if candidate have unique mobile number associated with it.
@@ -143,18 +145,8 @@ class SmsCampaignBase(CampaignBase):
     * transform_body_text(self, link_in_body_text, short_url)
         This replaces the original URL present in "body_text" with the shortened URL.
 
-    * create_campaign_blast(campaign_id, sends=0, clicks=0, replies=0)
-        Every time we send a campaign, we create a new blast for that campaign here.
-
     * send_sms(self, candidate_phone_value)
         This finally sends the SMS to candidate using Twilio API.
-
-    * create_or_update_sms_campaign_send(campaign_blast_id, candidate_id, sent_datetime): [static]
-        For each SMS sent to the candidate, here we add an entry that particular campaign e.g.
-         "Job opening at getTalent" campaign has been sent to "Waqar Younas""
-
-    * create_or_update_sms_send_url_conversion(campaign_send_obj, url_conversion_id): [static]
-        This adds an entry in db table "sms_campaign_send_url_conversion" for each SMS send.
 
     * create_sms_send_activity(self, candidate, source)
         Here we set "params" and "type" to be saved in db table 'Activity' for each sent SMS.
@@ -176,15 +168,12 @@ class SmsCampaignBase(CampaignBase):
         :Example:
 
         1- Create class object
-            from sms_campaign_service.sms_campaign_base import SmsCampaignBase
-            camp_obj = SmsCampaignBase(1)
 
-        2- Get SMS campaign to send
-            from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-            campaign = SmsCampaign.get(1)
+        >>>    from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
+        >>>    camp_obj = SmsCampaignBase(int('user_id_goes_here'))
 
         3- Call method send
-            camp_obj.process(campaign)
+        >>>     camp_obj.send(int('sms_campaign_id_goes_here'))
 
     **See Also**
         .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
