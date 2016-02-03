@@ -57,11 +57,15 @@
                 })
             };
 
-            //YxvdCJb2RiGPuer8TWeX_EfResume.txt
             vm.postFpKey = function(filepickerKey) {
-                console.log(filepickerKey);
-                resumeService.all('parse_resume').post(
-                    {filepicker_key: filepickerKey, resume_file_name: filepickerKey}
+                var candidate_params = {filepicker_key: filepickerKey, resume_file_name: filepickerKey}
+                console.log(candidate_params);
+                resumeService.all('parse_resume').customPOST(
+                    candidate_params,
+                    undefined,
+                    undefined,
+                    {"Content-Type": "application/x-www-form-urlencoded",
+                     "Accept": '*/*'}
                 ).then(
                     function (response) {
                         console.log(response);
