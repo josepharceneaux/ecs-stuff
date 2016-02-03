@@ -978,6 +978,5 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
                 in candidate_phone_records]))
     else:
         raise CandidateNotFoundInUserDomain(
-            "Candidate(id:%s)(phone=%s) does not exists user's domain" % (candidate.id,
-                                                                          candidate_phone_value))
+            "Candidate(phone=%s) does not belong to user's domain." % candidate_phone_value)
     return candidate_phone

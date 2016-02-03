@@ -202,11 +202,6 @@ class CandidatePhone(db.Model):
     candidate = relationship('Candidate', backref='candidate_phone')
 
     @classmethod
-    def get_by_candidate_id(cls, candidate_id):
-        assert candidate_id, 'Candidate id not given'
-        return cls.query.filter_by(candidate_id=candidate_id).all()
-
-    @classmethod
     def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
         if not isinstance(phone_value, basestring):
             raise InvalidUsage('Include phone_value as a str|unicode.')
@@ -214,12 +209,6 @@ class CandidatePhone(db.Model):
             raise InvalidUsage('Include candidate_ids as a list.')
         return cls.query.filter(db.and_(cls.value == phone_value,
                                         cls.candidate_id.in_(candidate_ids))).all()
-
-    @classmethod
-    def get_by_candidate_id_and_phone_value(cls, candidate_id, phone_value):
-        assert phone_value, 'phone_value no provided'
-        assert candidate_id, 'Candidate id not given'
-        return cls.query.filter_by(candidate_id=candidate_id, value=phone_value, ).first()
 
     @classmethod
     def get_by_id(cls, _id):
