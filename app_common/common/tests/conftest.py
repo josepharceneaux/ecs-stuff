@@ -268,7 +268,6 @@ def access_token_same(user_same_domain, sample_client):
 
 @pytest.fixture()
 def user_first(request, domain_first, first_group):
-    # user = create_test_user(db.session, domain_first.id, PASSWORD)
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
     db.session.commit()
 
@@ -285,7 +284,7 @@ def user_first(request, domain_first, first_group):
 @pytest.fixture()
 def user_same_domain(request, domain_first, first_group):
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    UserGroup.add_users_to_group(first_group, [user.id])
+    # UserGroup.add_users_to_group(first_group, [user.id])
     db.session.commit()
 
     def tear_down():

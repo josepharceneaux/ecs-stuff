@@ -102,33 +102,6 @@ def test_update_candidate_without_id(access_token_first, user_first, talent_pool
     assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
 
-def test_data_validations(access_token_first, user_first, talent_pool):
-    """
-    Test:   Validate json data
-    Expect: 400
-    """
-    AddUserRoles.edit(user=user_first)
-    data = {'candidate': [{}]}
-    resp = request_to_candidates_resource(access_token_first, 'patch', data)
-    print response_info(resp)
-    assert resp.status_code == 400
-
-    data = {'candidates': {}}
-    resp = request_to_candidates_resource(access_token_first, 'patch', data)
-    print response_info(resp)
-    assert resp.status_code == 400
-
-    data = {'candidates': [{}]}
-    resp = request_to_candidates_resource(access_token_first, 'patch', data)
-    print response_info(resp)
-    assert resp.status_code == 400
-
-    data = {'candidates': [{'id': 5, 'phones': [{}]}]}
-    resp = request_to_candidates_resource(access_token_first, 'patch', data)
-    print response_info(resp)
-    assert resp.status_code == 400
-
-
 def test_update_candidate_names(access_token_first, user_first, talent_pool):
     """
     Test:   Update candidate's first, middle, and last names
