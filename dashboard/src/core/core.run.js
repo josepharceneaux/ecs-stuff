@@ -19,7 +19,7 @@
                 return;
             }
 
-            if (to.name === 'login') {
+            if (to.name === 'login' || to.name === 'forgotPassword' || to.name === 'resetPassword') {
                 // If already authenticated, redirects to the last page or dashboard page
                 if (OAuth.isAuthenticated()) {
                     if (angular.isDefined($rootScope.redirectTo)) {
