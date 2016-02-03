@@ -21,12 +21,14 @@
                 url: '/login',
                 views: {
                     content: {
-                        template: '<gt-login></gt-login>',
-                        controller: nonAuthRedirectController
+                        template: '<gt-login></gt-login>'
                     },
                     'title@': {
                         template: '<title>getTalent | Login To Your Account</title>'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -35,9 +37,11 @@
                 url: '/forgot-password',
                 views: {
                     content: {
-                        template: '<gt-forgot-password></gt-forgot-password',
-                        controller: nonAuthRedirectController
+                        template: '<gt-forgot-password></gt-forgot-password'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -46,9 +50,11 @@
                 url: '/reset-password/:key',
                 views: {
                     content: {
-                        template: '<gt-reset-password></gt-reset-password>',
-                        controller: nonAuthRedirectController
+                        template: '<gt-reset-password></gt-reset-password>'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -721,19 +727,5 @@
                     }
                 }
             });
-
-            nonAuthRedirectController.$inject = ['$rootScope', '$state', 'OAuth'];
-
-            /* @ngInject */
-            function nonAuthRedirectController($rootScope, $state, OAuth) {
-                // If already authenticated, redirects to the last page or dashboard page
-                if (OAuth.isAuthenticated()) {
-                    if (angular.isDefined($rootScope.redirectTo)) {
-                        $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
-                    } else {
-                        $state.go('dashboard');
-                    }
-                }
-            }
     }
 })();
