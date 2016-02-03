@@ -63,7 +63,7 @@ from sms_campaign_service.modules.custom_exceptions import (TwilioApiError,
                                                             GoogleShortenUrlAPIError,
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate,
-                                                            NoCandidateFoundInUserDomain,
+                                                            CandidateNotFoundInUserDomain,
                                                             MultipleTwilioNumbersFoundForUser)
 
 
@@ -170,7 +170,7 @@ class SmsCampaignBase(CampaignBase):
         1- Create class object
 
         >>>    from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-        >>>    camp_obj = SmsCampaignBase(int('user_id_goes_here'))
+        >>>    camp_obj = SmsCampaignBase(int('user_id'))
 
         3- Call method send
         >>>     camp_obj.send(int('sms_campaign_id_goes_here'))
@@ -413,7 +413,7 @@ class SmsCampaignBase(CampaignBase):
         :type candidate: Candidate
         :exception: InvalidUsage
         :exception: MultipleCandidatesFound
-        :exception: NoCandidateFoundInUserDomain
+        :exception: CandidateNotFoundInUserDomain
         :return: Candidate obj and Candidate's mobile phone
         :rtype: tuple
 
@@ -451,13 +451,28 @@ class SmsCampaignBase(CampaignBase):
         :type candidates: list
         :return:
         """
-        candidates_and_phones = map(self.does_candidate_have_unique_mobile_phone, candidates)
-        filtered_candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
+        not_owned_ids = []
+        multiple_records_ids = []
+        candidates_and_phones = []
+        for candidate in candidates:
+            try:
+                candidates_and_phones.append(self.does_candidate_have_unique_mobile_phone(candidate))
+            except CandidateNotFoundInUserDomain:
+                not_owned_ids.append(candidate.id)
+            except MultipleCandidatesFound:
+                multiple_records_ids.append(candidate.id)
         logger.debug('send: SMS Campaign(id:%s) will be sent to %s candidate(s). '
-                     '(User(id:%s))' % (self.campaign.id, len(filtered_candidates_and_phones),
+                     '(User(id:%s))' % (self.campaign.id, len(candidates_and_phones),
                                         self.user.id))
+        if not_owned_ids or multiple_records_ids:
+            logger.error('send: SMS Campaign(id:%s) not_owned_candidate_ids: %s. '
+                         'multiple_records_against_ids:%s '
+                         '(User(id:%s))' % (self.campaign.id, not_owned_ids,
+                                            multiple_records_ids,
+                                            self.user.id))
         logger.info('user_phone %s' % self.user_phone.value)
-        return filtered_candidates_and_phones
+        candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
+        return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate_and_phone):
@@ -795,7 +810,7 @@ class SmsCampaignBase(CampaignBase):
 
                      MultipleUsersFound(5005)
                      NoSMSCampaignSentToCandidate(5006)
-                     NoCandidateFoundInUserDomain(5008)
+                     CandidateNotFoundInUserDomain(5008)
                      NoUserFoundForPhoneNumber(5009)
                      MultipleCandidatesFound(5016)
                      NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN(5102)
@@ -945,7 +960,7 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
     :param candidate_phone_value: Phone number by which we want to get user.
     :type candidate_phone_value: str
     :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
-    :exception: If no Candidate is found, it raises "NoCandidateFoundInUserDomain".
+    :exception: If no Candidate is found, it raises "CandidateNotFoundInUserDomain".
     :return: candidate_phone obj
     :rtype: CandidatePhone
     """
@@ -962,6 +977,7 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
                [candidate_phone.candidate_id for candidate_phone
                 in candidate_phone_records]))
     else:
-        raise NoCandidateFoundInUserDomain(
-            'No Candidate is associated with %s phone number' % candidate_phone_value)
+        raise CandidateNotFoundInUserDomain(
+            "Candidate(id:%s)(phone=%s) does not exists user's domain" % (candidate.id,
+                                                                          candidate_phone_value))
     return candidate_phone

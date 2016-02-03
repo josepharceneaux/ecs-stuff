@@ -19,7 +19,7 @@ from sms_campaign_service.tests.conftest import fake
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
                                                             MultipleUsersFound,
-                                                            NoCandidateFoundInUserDomain,
+                                                            CandidateNotFoundInUserDomain,
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate)
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
@@ -95,7 +95,7 @@ class TestSmsReceive(object):
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
         Data passed is valid, but candidate phone is not saved in database.
         This is the case when candidate does not exist in getTalent database.
-        It should get NoCandidateFoundInUserDomain custom exception.
+        It should get CandidateNotFoundInUserDomain custom exception.
         :return:
         """
         try:
@@ -103,7 +103,7 @@ class TestSmsReceive(object):
                                                      # unknown candidate phone
                                                      'From': fake.phone_number(),
                                                      'Body': "What's the venue?"})
-        except NoCandidateFoundInUserDomain as error:
+        except CandidateNotFoundInUserDomain as error:
             assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
 
     def test_process_candidate_reply_with_candidate_of_other_domain(
@@ -119,7 +119,7 @@ class TestSmsReceive(object):
             SmsCampaignBase.process_candidate_reply({'To': user_phone_1.value,
                                                      'From': candidate_phone_in_other_domain.value,
                                                      'Body': "What's the venue?"})
-        except NoCandidateFoundInUserDomain as error:
+        except CandidateNotFoundInUserDomain as error:
             assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
 
     def test_process_candidate_reply_with_multiple_candidates_having_same_phone(

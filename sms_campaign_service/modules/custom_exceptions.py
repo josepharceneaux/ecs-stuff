@@ -104,7 +104,7 @@ class ErrorUpdatingBodyText(SmsCampaignApiException):
     error_code = SmsCampaignApiException.ERROR_UPDATING_BODY_TEXT
 
 
-class NoCandidateFoundInUserDomain(SmsCampaignApiException):
+class CandidateNotFoundInUserDomain(SmsCampaignApiException):
     """
     If we receive an SMS from candidate, and no candidate is found with sender's phone number,
     we raise this exception.

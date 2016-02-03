@@ -230,6 +230,7 @@ def request_from_google_shorten_url_api(requested_header):
     for key in keys:
         if key in requested_header and 'google' in requested_header[key]:
             logger.info("Successfully verified by Google's shorten URL API")
+            return True
 
 
 def get_valid_blast_obj(blast_id, requested_campaign_id):

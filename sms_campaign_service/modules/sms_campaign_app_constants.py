@@ -12,5 +12,4 @@ TWILIO_TEST_NUMBER = '+15005550006'
 TWILIO_INVALID_TEST_NUMBER = '+15005550001'
 
 # TODO: remove this when app is up
-NGROK_URL = 'http://3184f3f4.ngrok.io%s'
-
+NGROK_URL = 'http://53b9d3b8.ngrok.io%s'
