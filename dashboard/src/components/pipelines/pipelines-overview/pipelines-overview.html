@@ -59,20 +59,13 @@
                             <span>Candidate Growth</span>
                         </h2>
                         <span flex></span>
-                        <div class="toggle" layout="row" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
-                            <div flex>7</div>
-                            <div flex>30</div>
-                            <div class="active" flex>60</div>
-                            <div flex>90</div>
+                        <div layout="row" layout-align="end">
+                            <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
+                                <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
+                            </md-radio-group>
                         </div>
                     </div>
                 </md-toolbar>
-
-                <div hide layout="row" layout-align="end">
-                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
-                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
-                    </md-radio-group>
-                </div>
             </div>
 
             <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
