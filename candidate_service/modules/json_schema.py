@@ -17,7 +17,7 @@ candidates_resource_schema_post = {
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
-                #"required": ["talent_pool_ids"],
+                "required": ["talent_pool_ids"],
                 "additionalProperties": False,
                 "properties": {
                     "first_name": {
@@ -642,7 +642,7 @@ candidates_resource_schema_patch = {
             "items": {
                 # "id": "http://jsonschema.net/candidates/0",
                 "type": "object",
-                #"required": ["id"],
+                "required": ["id"],
                 "additionalProperties": False,
                 "properties": {
                     "id": {
