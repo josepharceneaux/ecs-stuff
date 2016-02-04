@@ -47,7 +47,10 @@
         }];
 
         var statRequest;
-        var toDate = new Date(2016, 4, 3); // test, "today" = May 3, 2016
+        // jordan@gettalent.com account only has stats for Feb 3 through May 2 (inclusive)
+        // so by setting today to May 3, you can see a full set of data for 90 days.
+        //var toDate = new Date(2016, 4, 3); // test, "today" = May 3, 2016
+        var toDate = new Date();
         var fromDate = new Date(toDate.getTime());
 
         vm.onDateRangeChange = onDateRangeChange;
