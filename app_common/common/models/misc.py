@@ -13,7 +13,7 @@ class Activity(db.Model):
     type = db.Column('Type', db.Integer)
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     params = db.Column('Params', db.Text)
 
     def __repr__(self):
@@ -33,9 +33,9 @@ class Activity(db.Model):
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
     id = db.Column('Id', db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Description', db.String(255))
-    parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.id'))
+    parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -149,7 +149,7 @@ class Major(db.Model):
     __tablename__ = 'majors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def serialize(self):
@@ -161,7 +161,7 @@ class State(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255))
     alpha_code = db.Column('AlphaCode', db.String(31))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.Id'))
     abbreviation = db.Column('Abbreviation', db.String(255))
 
     # Relationships
@@ -175,7 +175,7 @@ class City(db.Model):
     __tablename__ = 'city'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
+    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.Id'))
     postal_code = db.Column('PostalCode', db.String(63))
     latitude_radians = db.Column('LatitudeRadians', DOUBLE)
     longitude_radians = db.Column('LongitudeRadians', DOUBLE)
@@ -193,7 +193,7 @@ class ZipCode(db.Model):
     __tablename__ = 'zipcode'
     id = db.Column('Id', db.Integer, primary_key=True)
     code = db.Column('Code', db.String(31))
-    city_id = db.Column('CityId', db.Integer, db.ForeignKey('city.id'))
+    city_id = db.Column('CityId', db.Integer, db.ForeignKey('city.Id'))
     coordinates = db.Column('Coordinates', db.String(127))
 
     def __repr__(self):
@@ -234,7 +234,7 @@ class Frequency(db.Model):
 class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Name', db.String(255))
     type = db.Column('Type', db.String(127))
     category_id = db.Column('CategoryId', db.Integer)
@@ -260,12 +260,12 @@ class CustomField(db.Model):
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey(u'user.id'), index=True)
+    user_id = db.Column('UserId', db.ForeignKey(u'user.Id'), index=True)
     type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
     name = db.Column('Name', db.String(255), nullable=False)
     email_body_html = db.Column('EmailBodyHtml', db.Text)
     email_body_text = db.Column('EmailBodyText', db.Text)
-    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey(u'email_template_folder.id', ondelete=u'SET NULL'), index=True)
+    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey(u'email_template_folder.Id', ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
     updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
@@ -279,9 +279,9 @@ class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'), index=True)
+    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.Id', ondelete='CASCADE'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey('domain.id', ondelete='CASCADE'), index=True)
+    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
     updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
                              server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
@@ -292,7 +292,7 @@ class EmailTemplateFolder(db.Model):
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -302,7 +302,7 @@ class CustomFieldCategory(db.Model):
 #     id = db.Column('Id', db.BIGINT, primary_key=True)
 #     patent_id = db.Column('PatentId', db.BIGINT)
 #     issuing_authority = db.Column('IssuingAuthority', db.String(255))
-#     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.id'))
+#     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.Id'))
 #     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 #
 #     def __repr__(self):

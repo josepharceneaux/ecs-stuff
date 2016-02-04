@@ -165,8 +165,8 @@ class CandidateEdit(db.Model):
 class CandidateView(db.Model):
     __tablename__ = 'candidate_view'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))
     view_type = db.Column(TINYINT)
     view_datetime = db.Column(db.DateTime)
 
