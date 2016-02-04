@@ -7,6 +7,8 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
+from sms_campaign_service.modules.custom_exceptions import CandidateNotFoundInUserDomain, \
+    SmsCampaignApiException
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_api_send_response)
@@ -131,24 +133,22 @@ class TestSendSmsCampaign(object):
             user_first.id, 0, sms_campaign_of_current_user)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, access_token_first, user_first, smartlist_for_not_scheduled_campaign,
-            sample_sms_campaign_candidates, candidates_with_same_phone):
+            self, user_first, access_token_first, smartlist_for_not_scheduled_campaign,
+            sms_campaign_of_current_user, sample_sms_campaign_candidates,
+            candidates_with_same_phone):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have same phone numbers. It should raise custom exception
-        MultipleCandidatesFound.
+        candidates. Both candidates have same phone numbers. It should get an empty list which
+        shows candidates associated with smartlists of campaign are not valid.
         :return:
         """
-        try:
-            candidate_1, candidate_2 = candidates_with_same_phone
-            obj = SmsCampaignBase(user_first.id)
-            obj.pre_process_celery_task([candidate_1, candidate_2])
-            assert None, 'MultipleCandidatesFound exception should be raised.'
-        except MultipleCandidatesFound as error:
-            assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
+        candidate_1, candidate_2 = candidates_with_same_phone
+        obj = SmsCampaignBase(user_first.id)
+        obj.campaign = sms_campaign_of_current_user
+        assert not obj.pre_process_celery_task([candidate_1, candidate_2])
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
-            self, access_token_first, user_first, sms_campaign_of_current_user,
+            self, user_first, access_token_first, sms_campaign_of_current_user,
             smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
             candidates_with_same_phone_in_diff_domains):
         """
@@ -160,7 +160,7 @@ class TestSendSmsCampaign(object):
         obj = SmsCampaignBase(user_first.id)
         obj.campaign = sms_campaign_of_current_user
         candidate_1, candidate_2 = candidates_with_same_phone_in_diff_domains
-        assert obj.pre_process_celery_task([candidate_1, candidate_2])
+        assert len(obj.pre_process_celery_task([candidate_1, candidate_2])) == 1
 
     def test_pre_process_celery_task_with_valid_data(
             self, user_first, access_token_first, sms_campaign_of_current_user,
@@ -173,5 +173,38 @@ class TestSendSmsCampaign(object):
         """
         obj = SmsCampaignBase(user_first.id)
         obj.campaign = sms_campaign_of_current_user
-        assert obj.pre_process_celery_task([candidate_first, candidate_second])
+        assert len(obj.pre_process_celery_task([candidate_first, candidate_second])) == 2
 
+    def test_does_candidate_have_unique_mobile_phone_with_two_candidates_having_same_phone(
+            self, access_token_first, user_first, smartlist_for_not_scheduled_campaign,
+            sample_sms_campaign_candidates, candidates_with_same_phone):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates. Both candidates have same phone numbers. It should raise custom exception
+        MultipleCandidatesFound.
+        :return:
+        """
+        try:
+            candidate_1, candidate_2 = candidates_with_same_phone
+            obj = SmsCampaignBase(user_first.id)
+            obj.does_candidate_have_unique_mobile_phone(candidate_1)
+            assert None, 'MultipleCandidatesFound exception should be raised.'
+        except MultipleCandidatesFound as error:
+            assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
+
+    def test_does_candidate_have_unique_mobile_phone_with_candidate_in_other_domain(
+            self, access_token_first, user_first, smartlist_for_not_scheduled_campaign,
+            sample_campaign_candidate_of_other_domain, candidate_phone_in_other_domain):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has one
+        candidate but candidate belongs to some other domain.
+        It should raise custom exception CandidateNotFoundInUserDomain.
+        :return:
+        """
+        try:
+            candidate_1 = candidate_phone_in_other_domain.candidate
+            obj = SmsCampaignBase(user_first.id)
+            obj.does_candidate_have_unique_mobile_phone(candidate_1)
+            assert None, 'CandidateNotFoundInUserDomain exception should be raised.'
+        except CandidateNotFoundInUserDomain as error:
+            assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN

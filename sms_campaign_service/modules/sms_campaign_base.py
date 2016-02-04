@@ -456,6 +456,9 @@ class SmsCampaignBase(CampaignBase):
         candidates_and_phones = []
         for candidate in candidates:
             try:
+                # check if candidate belongs to user's domain
+                if candidate.user_id != self.user.id:
+                    raise CandidateNotFoundInUserDomain
                 candidates_and_phones.append(self.does_candidate_have_unique_mobile_phone(candidate))
             except CandidateNotFoundInUserDomain:
                 not_owned_ids.append(candidate.id)

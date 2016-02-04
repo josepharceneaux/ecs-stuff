@@ -218,6 +218,19 @@ def sample_sms_campaign_candidates(user_first,
 
 
 @pytest.fixture()
+def sample_campaign_candidate_of_other_domain(user_first, sample_smartlist,
+                                              candidate_in_other_domain):
+    """
+    This adds candidate of other domain to sample_smartlist.
+    :param sample_smartlist:
+    :return:
+    """
+    smartlist_candidate_1 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
+                                               candidate_id=candidate_in_other_domain.id)
+    SmartlistCandidate.save(smartlist_candidate_1)
+
+
+@pytest.fixture()
 def campaign_valid_data(sample_smartlist):
     """
     This returns the valid data to save an SMS campaign in database
