@@ -5,7 +5,7 @@ from db import db
 class WidgetPage(db.Model):
     __tablename__ = 'widget_page'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_source_id = db.Column('CandidateSourceId', db.Integer, db.ForeignKey('candidate_source.id'))
+    candidate_source_id = db.Column('CandidateSourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
     unique_key = db.Column('UniqueKey', db.String(255))
     email_source = db.Column('EmailSource', db.String(255))
     page_views = db.Column('PageViews', db.Integer)
