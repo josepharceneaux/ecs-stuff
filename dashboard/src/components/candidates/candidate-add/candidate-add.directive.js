@@ -39,10 +39,13 @@
 
         function init() {
             vm.candidateForm = {
-                firstName: '',
-                lastName: '',
-                email: ''
+                firstName: null,
+                lastName: null,
+                email: null,
+                talent_pools: null
             };
+            vm.successfullResponses = [];
+            vm.failedResponses = [];
 
             vm.manualSubmit = function() {
                 candidatesAddService.postCandidate(vm.candidateForm).then(function (response) {
@@ -62,15 +65,27 @@
                     resume_file_name: filepickerKey, create_candidate: true};
                 console.log(candidate_params);
                 resumeService.all('parse_resume').post(candidate_params).then(
+                    // Success State
                     function (response) {
                         if ('error' in response) {
-                            //Handle error via UI
                             console.log('Error: ', response.error);
+                            vm.failedResponses.push(
+                                {filename: candidate_params.resume_file_name,
+                                    error: response.error}
+                            );
                         }
                         else {
-                            //Handle success in UI
                             console.log('Success! ', response.candidate);
+                            vm.successfullResponses.push(candidate_params.resume_file_name)
                         }
+                    },
+                    // Failure State
+                    function (response) {
+                        console.log(response.data.error.message);
+                        vm.failedResponses.push(
+                            {filename: candidate_params.resume_file_name,
+                                error: response.data.error.message}
+                        );
                     }
                 )
             };
@@ -83,6 +98,7 @@
                     talentPoolIds.push(response[i].id);
                 }
                 vm.candidateForm.talentPools = talentPoolIds;
+                console.log('Talent Pool IDs obtained for user.');
             });
 
             vm.fpInit = function() {

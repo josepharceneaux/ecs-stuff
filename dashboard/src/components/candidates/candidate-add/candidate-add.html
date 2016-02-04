@@ -17,7 +17,6 @@
             <button ng-click="vm.fpInit()">Upload!</button>
         </div>
     </div>
-    <!--<input type="filepicker-dragdrop" data-fp-apikey="Ay99lw0fFRXKz5n4qpXCmz" data-fp-mimetypes="*/*" data-fp-container="modal" data-fp-multiple="true" data-fp-store-location="s3" data-fp-services="BOX,CLOUDDRIVE,COMPUTER,DROPBOX,FACEBOOK,GITHUB,GOOGLE_DRIVE,FLICKR,EVERNOTE,GMAIL,INSTAGRAM,SKYDRIVE,IMAGE_SEARCH,URL,WEBCAM" onchange="out='';for(var i=0;i<event.fpfiles.length;i++){out+=event.fpfiles[i].url;out+=' '};alert(out)">-->
 
     <div class="row--widget">
         <div class="col--full-12 box">
@@ -33,6 +32,32 @@
                        ng-required="" placeholder="Email">
                 <button>Submit</button>
             </form>
+        </div>
+    </div>
+
+    <div class="row--widget" ng-show="vm.successfullResponses.length">
+        <div class="col--full-12 box">
+            <header class="box__header">
+                <h2>Successes</h2>
+            </header>
+            <ul>
+                <li ng-repeat="i in vm.successfullResponses">
+                    {{i}}
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="row--widget" ng-show="vm.failedResponses.length">
+        <div class="col--full-12 box">
+            <header class="box__header">
+                <h2>Failures</h2>
+            </header>
+            <ul>
+                <li ng-repeat="i in vm.failedResponses">
+                    {{i.filename}}: {{i.error}}
+                </li>
+            </ul>
         </div>
     </div>
 
