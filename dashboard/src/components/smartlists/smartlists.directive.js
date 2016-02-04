@@ -24,13 +24,13 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger','$mdEditDialog', '$q', 'pipelineService'];
+    ControllerFunction.$inject = ['logger','$mdEditDialog', '$q', '$stateParams', 'pipelineService'];
 
     /* @ngInject */
-    function ControllerFunction(logger, $mdEditDialog, $q, pipelineService) {
+    function ControllerFunction(logger, $mdEditDialog, $q, $stateParams, pipelineService) {
 
         var vm = this;
-
+        vm.pipelineId = $stateParams.pipelineId;
         init();
         activate();
 
@@ -85,7 +85,7 @@
                     count: 0, data: []
                 }
             };
-            pipelineService.getPipelineSmartlists(2).then(function(data){
+            pipelineService.getPipelineSmartlists(vm.pipelineId).then(function(data){
                 vm.tableData.smartlists.data = data;
                 vm.tableData.smartlists.data.forEach(function(item){
                     item.added_time = moment(item.added_time).toDate();
