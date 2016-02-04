@@ -197,7 +197,7 @@ class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
     id = db.Column(db.BIGINT, primary_key=True)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))
-    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.Id'))
+    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
 
     # Relationship
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')

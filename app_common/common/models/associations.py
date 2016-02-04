@@ -9,7 +9,7 @@ import datetime
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'))
+    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'))
     additional_notes = db.Column('AdditionalNotes', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -26,7 +26,7 @@ class CandidateAreaOfInterest(db.Model):
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'
     reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
-    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
+    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id'))
     is_default = db.Column('IsDefault', db.Boolean, nullable=True)
     value = db.Column('Value', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -38,7 +38,7 @@ class ReferenceEmail(db.Model):
 class ReferencePhone(db.Model):
     __tablename__ = 'reference_phone'
     reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
-    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.Id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
     extension = db.Column('Extension', db.String(10))

@@ -16,7 +16,7 @@ class WidgetPage(db.Model):
     sign_ups = db.Column('SignUps', db.Integer)
     updated_time = db.Column('UpdatedTime', db.DateTime)
     url = db.Column('Url', db.String(500))
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     widget_name = db.Column('WidgetName', db.String(63))
     welcome_email_text = db.Column('WelcomeEmailText', db.Text())
     welcome_email_html = db.Column('WelcomeEmailHtml', db.Text())
