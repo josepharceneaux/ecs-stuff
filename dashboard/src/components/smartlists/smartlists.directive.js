@@ -24,10 +24,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger','$mdEditDialog', '$q'];
+    ControllerFunction.$inject = ['logger','$mdEditDialog', '$q', 'pipelineService'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $mdEditDialog, $q, pipelineService) {
 
         var vm = this;
 
@@ -43,6 +43,11 @@
             vm.totalCandidates = {
                 graph: {}
             };
+
+            //pipelineService.getPipeline(2).then(function(res){
+            //    debugger;
+            //    console.log(res);
+            //});
 
             vm.totalCandidates.graph.data = [
                 [
@@ -70,33 +75,33 @@
             ];
 
 
-            vm.smartlists = [
-                {
-                    title: 'Java Developer',
-                    width: 100,
-                    value: '45'
-                },
-                {
-                    title: 'Rails Developer',
-                    width: 80,
-                    value: '35'
-                },
-                {
-                    title: 'Angular Developer',
-                    width: 70,
-                    value: '20'
-                },
-                {
-                    title: 'PHP Developer',
-                    width: 65,
-                    value: '10'
-                },
-                {
-                    title: 'Python Developer',
-                    width: 50,
-                    value: '+16'
-                }
-            ];
+            //vm.smartlists = [
+            //    {
+            //        title: 'Java Developer',
+            //        width: 100,
+            //        value: '45'
+            //    },
+            //    {
+            //        title: 'Rails Developer',
+            //        width: 80,
+            //        value: '35'
+            //    },
+            //    {
+            //        title: 'Angular Developer',
+            //        width: 70,
+            //        value: '20'
+            //    },
+            //    {
+            //        title: 'PHP Developer',
+            //        width: 65,
+            //        value: '10'
+            //    },
+            //    {
+            //        title: 'Python Developer',
+            //        width: 50,
+            //        value: '+16'
+            //    }
+            //];
 
             vm.tableData = {
                 filter: {
@@ -110,134 +115,18 @@
                     limit: 10,
                     page: 1
                 },
-                pipelines: {
-                    count: 20,
-                    data: [
-                        {
-                            id: 1,
-                            name: 'San Francisco Bay Area',
-                            candidates: 100,
-                            newCandidates: 20,
-                            created: new Date('2015-12-17T03:24:00')
-                        }, {
-                            id: 2,
-                            name: 'Oakland',
-                            candidates: 870,
-                            newCandidates: 12,
-                            created: new Date('2015-11-17T03:24:00')
-                        }, {
-                            id: 3,
-                            name: 'San Jose',
-                            candidates: 134,
-                            newCandidates: 22,
-                            created: new Date('2015-10-17T03:24:00')
-                        }, {
-                            id: 4,
-                            name: 'Veterans',
-                            candidates: 713,
-                            newCandidates: 32,
-                            created: new Date('2015-02-17T03:24:00')
-                        }, {
-                            id: 5,
-                            name: 'Recent Graduates',
-                            candidates: 632,
-                            newCandidates: 72,
-                            created: new Date('2015-08-17T03:24:00')
-                        }, {
-                            id: 6,
-                            name: 'New York City',
-                            candidates: 823,
-                            newCandidates: 100,
-                            created: new Date('2015-09-12T03:24:00')
-                        }, {
-                            id: 7,
-                            name: 'Git Hub Contributors',
-                            candidates: 189,
-                            newCandidates: 34,
-                            created: new Date('2015-03-17T03:24:00')
-                        }, {
-                            id: 8,
-                            name: 'Senior Level',
-                            candidates: 369,
-                            newCandidates: 77,
-                            created: new Date('2015-04-17T03:24:00')
-                        }, {
-                            id: 9,
-                            name: 'Europe based',
-                            candidates: 932,
-                            newCandidates: 123,
-                            created: new Date('2015-06-17T03:24:00')
-                        }, {
-                            id: 10,
-                            name: 'Canada based',
-                            candidates: 453,
-                            newCandidates: 62,
-                            created: new Date('2015-04-16T03:24:00')
-                        }, {
-                            id: 11,
-                            name: 'China based',
-                            candidates: 824,
-                            newCandidates: 103,
-                            created: new Date('2015-06-08T03:24:00')
-                        }, {
-                            id: 12,
-                            name: '10 Yr Experienced',
-                            candidates: 123,
-                            newCandidates: 15,
-                            created: new Date('2015-08-17T03:24:00')
-                        }, {
-                            id: 13,
-                            name: 'Senior developer',
-                            candidates: 253,
-                            newCandidates: 29,
-                            created: new Date('2015-03-21T03:24:00')
-                        }, {
-                            id: 14,
-                            name: 'Software Tester',
-                            candidates: 521,
-                            newCandidates: 64,
-                            created: new Date('2015-01-17T03:24:00')
-                        }, {
-                            id: 15,
-                            name: 'Software designer',
-                            candidates: 623,
-                            newCandidates: 89,
-                            created: new Date('2015-05-18T03:24:00')
-                        }, {
-                            id: 16,
-                            name: 'Database Engineer',
-                            candidates: 354,
-                            newCandidates: 65,
-                            created: new Date('2015-05-17T03:24:00')
-                        }, {
-                            id: 17,
-                            name: 'IOS Developer',
-                            candidates: 698,
-                            newCandidates: 98,
-                            created: new Date('2015-09-11T03:24:00')
-                        }, {
-                            id: 18,
-                            name: 'Android Developer',
-                            candidates: 693,
-                            newCandidates: 20,
-                            created: new Date('2015-06-27T03:24:00')
-                        }, {
-                            id: 19,
-                            name: 'Business Admin',
-                            candidates: 563,
-                            newCandidates: 98,
-                            created: new Date('2015-08-27T03:24:00')
-                        }, {
-                            id: 20,
-                            name: 'Trainer',
-                            candidates: 951,
-                            newCandidates: 156,
-                            created: new Date('2015-12-06T03:24:00')
-                        }
-                    ]
+                smartlists: {
+                    count: 0, data: []
                 }
             };
-
+            pipelineService.getPipelineSmartlists(2).then(function(data){
+                debugger;
+                vm.tableData.smartlists.data = data;
+                vm.tableData.smartlists.data.forEach(function(item){
+                    item.added_time = moment(item.added_time).toDate();
+                });
+                vm.tableData.smartlists.count = data.length;
+            });
             vm.removeFilter = function () {
                 vm.tableData.query.filter = '';
 
