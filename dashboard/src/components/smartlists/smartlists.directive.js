@@ -44,11 +44,6 @@
                 graph: {}
             };
 
-            //pipelineService.getPipeline(2).then(function(res){
-            //    debugger;
-            //    console.log(res);
-            //});
-
             vm.totalCandidates.graph.data = [
                 [
                     { date: '07-01-15', data: 90 },
@@ -74,35 +69,6 @@
                 ]
             ];
 
-
-            //vm.smartlists = [
-            //    {
-            //        title: 'Java Developer',
-            //        width: 100,
-            //        value: '45'
-            //    },
-            //    {
-            //        title: 'Rails Developer',
-            //        width: 80,
-            //        value: '35'
-            //    },
-            //    {
-            //        title: 'Angular Developer',
-            //        width: 70,
-            //        value: '20'
-            //    },
-            //    {
-            //        title: 'PHP Developer',
-            //        width: 65,
-            //        value: '10'
-            //    },
-            //    {
-            //        title: 'Python Developer',
-            //        width: 50,
-            //        value: '+16'
-            //    }
-            //];
-
             vm.tableData = {
                 filter: {
                     options: {
@@ -120,7 +86,6 @@
                 }
             };
             pipelineService.getPipelineSmartlists(2).then(function(data){
-                debugger;
                 vm.tableData.smartlists.data = data;
                 vm.tableData.smartlists.data.forEach(function(item){
                     item.added_time = moment(item.added_time).toDate();
