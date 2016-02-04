@@ -46,8 +46,7 @@
         "baseUrl": "http://localhost:7203/api"
     },
     "candidatePoolServiceInfo": {
-        "THE_REAL_baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-120a6-candidatepoolservice.apiary-mock.com/v1"
+        "baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1"
     },
     "candidateServiceInfo": {
         "baseUrl": "https://candidate-service-staging.gettalent.com/v1"

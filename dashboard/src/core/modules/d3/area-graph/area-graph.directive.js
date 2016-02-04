@@ -1,5 +1,5 @@
 // -------------------------------------
-//   Line Graph
+//   Area Graph
 //   ->
 // -------------------------------------
 
@@ -24,10 +24,15 @@
             templateUrl: 'core/modules/d3/area-graph/area-graph.html',
             replace: true,
             scope: {
-                config: '=?'
+                config: '=graphConfig',
+                title: '=graphTitle',
+                filterOptions: '=graphFilterOptions',
+                filterValue: '=graphFilterValue',
+                onFilterChange: '&graphOnFilterChange'
             },
             controller: 'AreaGraphController',
             controllerAs: 'areaGraph',
+            bindToController: true,
             link: linkFunction
         };
 
@@ -44,28 +49,29 @@
         var dataSetLast90Days;
 
         vm.redrawChart = redrawChart;
-        vm.updateChart = updateChart;
 
         init();
 
         function init() {
+            if (!(vm.config instanceof Object)) {
+                throw new TypeError("Invalid argument: `config` must be an `Object`.");
+            }
+            mergeConfigs(vm.config, getDefaultConfig);
+        }
 
-            // by "day", last 90 days
-            dataSetLast90Days = [48, 97, 38, 63, 45, 96, 47, 14, 45, 46,
-                                 29, 21, 16, 32, 25, 109, 93, 27, 50, 96,
-                                 46, 76, 72, 68, 32, 43, 67, 31, 117, 98,
-                                 110, 59, 76, 36, 2, 50, 81, 89, 27, 26,
-                                 118, 86, 29, 35, 61, 45, 76, 64, 135, 58,
-                                 62, 100, 39, 77, 48, 108, 124, 93, 17, 26,
-                                 21, 52, 54, 19, 41, 12, 29, 59, 29, 106,
-                                 54, 25, 26, 13, 32, 51, 41, 82, 34, 153,
-                                 83, 46, 50, 70, 87, 33, 57, 40, 38, 133];
+        function redrawChart() {
+            vm.chart.reflow();
+        }
 
-            vm.chartFilters = {};
-            vm.daysFilterOptions = [7, 30, 60, 90];
-            vm.chartFilters.daysBack = vm.daysFilterOptions[1];
+        function mergeConfigs() {
+            var defaults = getDefaultConfig();
+            var originalCallback = vm.config.func;
+            vm.config.func = getChartCreatedCallback(originalCallback);
+            vm.config = angular.extend(defaults, vm.config);
+        }
 
-            vm.chartConfig = {
+        function getDefaultConfig() {
+            return {
                 options: {
                     chart: {
                         type: 'area',
@@ -142,7 +148,7 @@
                         backgroundColor: null,
                         shadow: false,
                         useHTML: true,
-                        formatter: function() {
+                        formatter: function () {
                             var s = '<strong>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</strong>' + '<hr>';
                             $.each(this.points, function () {
                                 s += this.series.name + ': ' + this.y + '<br>';
@@ -196,89 +202,22 @@
                             fontSize: '14px',
                             fontWeight: 400
                         },
-                        formatter: function() {
+                        formatter: function () {
                             return Highcharts.dateFormat('%m/%e/%Y', this.value);
                         }
                     }
                 },
-                series: [{
-                    name: 'Candidates Added',
-                    color: '#5e385d',
-                    pointStart: getPointStart(vm.chartFilters.daysBack),
-                    pointInterval: getPointInterval(vm.chartFilters.daysBack),
-                    data: getData(vm.chartFilters.daysBack)
-                }],
-                func: function (chart) {
-                    vm.chart = chart;
-                }
+                series: []
             };
         }
 
-        function redrawChart() {
-            vm.chart.reflow();
-            vm.chartConfig.getHighcharts().reflow();
-        }
-
-        function updateChart(daysBack) {
-
-            // changing through highcharts-ng config will animate the axis changes
-            var series = vm.chartConfig.series[0];
-            series.pointStart = getPointStart(daysBack);
-            series.pointInterval = getPointInterval(daysBack);
-            series.data = getData(daysBack);
-
-            // update() = no animation
-            //vm.chart.series[0].update({
-            //    pointStart: getPointStart(daysBack),
-            //    pointInterval: getPointInterval(daysBack),
-            //    data: getData(daysBack)
-            //});
-        }
-
-        function getPointStart(daysBack) {
-            var d = new Date();
-            d.setDate(d.getDate() - daysBack - 1 /* don't include today */);
-            d.setHours(0);
-            d.setMinutes(0);
-            d.setSeconds(0);
-            return d.getTime();
-        }
-
-        function getPointInterval(daysBack) {
-            var day = 24 * 60 * 60 * 1000;
-            if (daysBack === 7) {
-                return day * Math.floor(daysBack / 7); // => expects 7 data points
-            } else if (daysBack === 30) {
-                return day * Math.floor(daysBack / 15);
-            } else if (daysBack === 60) {
-                return day * Math.floor(daysBack / 15);
-            } else if (daysBack === 90) {
-                return day * Math.floor(daysBack / 15);
-            }
-        }
-
-        function getData(daysBack) {
-            if (daysBack === 7) {
-                return aggregate(dataSetLast90Days, daysBack, 7);
-            } else if (daysBack === 30) {
-                return aggregate(dataSetLast90Days, daysBack, 15);
-            } else if (daysBack === 60) {
-                return aggregate(dataSetLast90Days, daysBack, 15);
-            } else if (daysBack === 90) {
-                return aggregate(dataSetLast90Days, daysBack, 15);
-            }
-        }
-
-        function aggregate(data, daysBack, dataPoints) {
-            var aggregate = [];
-            var newData = data.slice(data.length - daysBack);
-            var dataGroupSize = Math.max(Math.floor(daysBack / dataPoints), 1);
-            while (newData.length >= dataGroupSize) {
-                aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
-                    return prev + curr;
-                }));
-            }
-            return aggregate;
+        function getChartCreatedCallback(fn) {
+            return function (chart) {
+                vm.chart = chart;
+                if (typeof fn === 'function') {
+                    fn.call(this, chart);
+                }
+            };
         }
     }
 
