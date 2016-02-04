@@ -46,8 +46,6 @@
     function ControllerFunction() {
         var vm = this;
 
-        var dataSetLast90Days;
-
         vm.redrawChart = redrawChart;
 
         init();
