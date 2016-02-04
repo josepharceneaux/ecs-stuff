@@ -2,6 +2,7 @@
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
+from flask import current_app
 from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
@@ -40,29 +41,35 @@ def resume_post_reciever():
     Builds a kwargs dict for used in abstracted process_resume.
     :return: dict: {'candidate': {}}
     """
-    # Get the resume file object from Filepicker or the request body, if provided
-    request_json = request.get_json() or {}
-    filepicker_key = request.form.get('filepicker_key') or request_json.get('filepicker_key')
-    resume_file_name = request.form.get('resume_file_name') or request_json.get('resume_file_name')
-    create_candidate = request.form.get('create_candidate') or request_json.get('create_candidate')
     oauth = request.oauth_token
     talent_pools = get_users_talent_pools(oauth)
-    if filepicker_key:
+    content_type = request.headers['content-type']
+    # Handle posted JSON data from web app/future clients. This block should consume filepicker
+    # key and filename.
+    if 'application/json' in content_type:
+        request_json = request.get_json()
+        create_candidate = request_json.get('create_candidate')
+        filepicker_key = request_json.get('filepicker_key')
         resume_file = None
         resume_file_name = str(filepicker_key)
-    elif resume_file_name:
-        if request_json:
-            raise InvalidUsage("Posted Resumes must be sent as forms (multipart/form-data)")
-        resume_file = request.files['resume_file']
+    # Handle posted form data. Required for mobile app as it posts a binary file
+    elif 'multipart/form-data' in content_type:
+        create_candidate = request.form.get('create_candidate')
+        filepicker_key = None
+        resume_file = request.files.get('resume_file')
+        resume_file_name = request.form.get('resume_file_name')
     else:
-        raise InvalidUsage("Invalid Query Params")
+        current_app.logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
+            request.form, request.files, request.json
+        ))
+        raise InvalidUsage("Invalid Request")
     parse_params = {
-        'filepicker_key': filepicker_key,
-        'resume_file': resume_file,
-        'filename': resume_file_name,
-        'create_candidate': create_candidate,
         'oauth': oauth,
-        'talent_pools': talent_pools
+        'talent_pools': talent_pools,
+        'create_candidate': create_candidate,
+        'filename': resume_file_name,
+        'filepicker_key': filepicker_key,
+        'resume_file': resume_file
     }
     return jsonify(**process_resume(parse_params))
 
