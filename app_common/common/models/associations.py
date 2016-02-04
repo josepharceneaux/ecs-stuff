@@ -25,10 +25,9 @@ class CandidateAreaOfInterest(db.Model):
 
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'
-    id = db.Column(db.Integer, primary_key=True)
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
+    reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id'))
-    is_default = db.Column('IsDefault', db.Boolean)
+    is_default = db.Column('IsDefault', db.Boolean, nullable=True)
     value = db.Column('Value', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -38,8 +37,7 @@ class ReferenceEmail(db.Model):
 
 class ReferencePhone(db.Model):
     __tablename__ = 'reference_phone'
-    id = db.Column(db.Integer, primary_key=True)
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'), primary_key=True) # Multi key?
+    reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
     phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
