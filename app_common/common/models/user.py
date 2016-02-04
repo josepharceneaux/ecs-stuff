@@ -21,7 +21,7 @@ from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSign
 
 class User(db.Model):
     __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
@@ -128,14 +128,11 @@ class User(db.Model):
         Function creates a unique user for testing
         :rtype: User
         """
-
-        user = User(
-            email='{}@example.com'.format(uuid.uuid4().__str__()),
-            password=generate_password_hash(password, method='pbkdf2:sha512'),
-            domain_id=domain_id,
-            user_group_id=user_group_id,
-            expiration=None
-        )
+        user = User(email='{}@example.com'.format(uuid.uuid4().__str__()),
+                    password=generate_password_hash(password, method='pbkdf2:sha512'),
+                    domain_id=domain_id,
+                    user_group_id=user_group_id,
+                    expiration=None)
         session.add(user)
         session.commit()
         return user
@@ -143,21 +140,21 @@ class User(db.Model):
 
 class Domain(db.Model):
     __tablename__ = 'domain'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    usage_limitation = db.Column('usageLimitation', db.Integer)
-    expiration = db.Column(db.DateTime)
-    added_time = db.Column('addedTime', db.DateTime)
-    organization_id = db.Column('organizationId', db.Integer)
-    is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
-    is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
-    default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
-    default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
-    default_from_name = db.Column('defaultFromName', db.String(255))
-    settings_json = db.Column('settingsJson', db.Text)
-    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-    dice_company_id = db.Column('diceCompanyId', db.Integer, index=True)
-    is_disabled = db.Column(TINYINT, default='0', nullable=False)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(50))
+    usage_limitation = db.Column('UsageLimitation', db.Integer)
+    expiration = db.Column('Expiration', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime)
+    organization_id = db.Column('OrganizationId', db.Integer)
+    is_fair_check_on = db.Column('IsFairCheckOn', db.Boolean, default=False)
+    is_active = db.Column('IsActive', db.Boolean, default=True)  # TODO: store as 0 or 1
+    default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
+    default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
+    default_from_name = db.Column('DefaultFromName', db.String(255))
+    settings_json = db.Column('SettingsJson', db.Text)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
+    is_disabled = db.Column('IsDisabled', TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')
@@ -179,7 +176,6 @@ class Domain(db.Model):
         Function creates a unique domain + domain's UserGroup for testing
         :return:
         """
-        from datetime import timedelta
         domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
                         expiration='0000-00-00 00:00:00')
         session.add(domain)
@@ -189,16 +185,16 @@ class Domain(db.Model):
 
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'
-    id = db.Column(db.BIGINT, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     role = db.Column('role', db.String(255))
     description = db.Column('description', db.TEXT)
 
 
 class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
-    id = db.Column(db.BIGINT, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
+    id = db.Column('Id', db.BIGINT, primary_key=True)
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    group_id = db.Column('GroupId', db.BIGINT, db.ForeignKey('web_auth_group.id'))
 
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
@@ -206,7 +202,7 @@ class WebAuthMembership(db.Model):
 
 class JobOpening(db.Model):
     __tablename__ = 'job_opening'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
@@ -219,10 +215,9 @@ class JobOpening(db.Model):
 
 class Client(db.Model):
     __tablename__ = 'client'
-
-    client_id = db.Column(db.String(40), primary_key=True)
-    client_secret = db.Column(db.String(55), nullable=False)
-    client_name = db.Column(db.String(255))
+    client_id = db.Column('ClientId', db.String(40), primary_key=True)
+    client_secret = db.Column('ClientSecret', db.String(55), nullable=False)
+    client_name = db.Column('ClientName', db.String(255))
 
     def delete(self):
         db.session.delete(self)
@@ -248,17 +243,14 @@ class Client(db.Model):
 
 class Token(db.Model):
     __tablename__ = 'token'
-
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     client_id = db.Column(
-        db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
+        'ClientId', db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
         nullable=False
     )
     client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
 
-    user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
-    )
+    user_id = db.Column(db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'))
     user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
 
     # currently only bearer is supported
@@ -295,14 +287,15 @@ class Token(db.Model):
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'
-    id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    role_name = db.Column('RoleName', db.String(255), nullable=False, unique=True)
 
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))  # TODO specify that it can be NULL
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'),
+                          nullable=True)
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def __repr__(self):
-        return "<DomainRole: (id = {})>".format(self.id)
+        return "<DomainRole (id = {})>".format(self.id)
 
     class Roles(object):
         """
@@ -359,18 +352,23 @@ class DomainRole(db.Model):
         CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
         CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
 
+        # Talent Pool Group
         CAN_GET_TALENT_POOLS_OF_GROUP = "CAN_GET_TALENT_POOLS_OF_GROUP"
         CAN_DELETE_TALENT_POOLS_FROM_GROUP = "CAN_DELETE_TALENT_POOLS_FROM_GROUP"
         CAN_ADD_TALENT_POOLS_TO_GROUP = "CAN_ADD_TALENT_POOLS_TO_GROUP"
 
+        # Candidate from Talent Pool
         CAN_GET_CANDIDATES_FROM_TALENT_POOL = "CAN_GET_CANDIDATES_FROM_TALENT_POOL"
         CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
         CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
 
+        # Talent Pool Stats
         CAN_EDIT_TALENT_POOLS_STATS = "CAN_EDIT_TALENT_POOLS_STATS"
 
+        # Smartlist Stats
         CAN_EDIT_SMARTLISTS_STATS = "CAN_EDIT_SMARTLISTS_STATS"
 
+        # Talent Pipeline Candidates
         CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
 
         # Smart List
@@ -452,19 +450,14 @@ class DomainRole(db.Model):
 
 class UserScopedRoles(db.Model):
     __tablename__ = 'user_scoped_roles'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
-    )
-    role_id = db.Column(
-        db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
-    )
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    role_id = db.Column('RoleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False)
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
 
     def __repr__(self):
-        return "<UserScopedRoles: (id = {})>".format(self.id)
+        return "<UserScopedRoles (id = {})>".format(self.id)
 
     @staticmethod
     def add_roles(user, roles_list):
@@ -533,11 +526,11 @@ class UserScopedRoles(db.Model):
 
 class UserGroup(db.Model):
     __tablename__ = 'user_group'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.String(225), nullable=True)
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'), nullable=False)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255), nullable=False)
+    description = db.Column('Description', db.String(225), nullable=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'),
+                          nullable=False)
 
     domain = db.relationship('Domain', backref=db.backref('user_group', cascade="all, delete-orphan"))
 
@@ -662,16 +655,16 @@ class UserSocialNetworkCredential(db.Model):
     social network.
     """
     __tablename__ = 'user_social_network_credential'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id', ondelete='CASCADE'),
-                                  nullable=False)
-    refresh_token = db.Column('refreshToken', db.String(1000))
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    social_network_id = db.Column('SocialNetworkId', db.Integer,
+                                  db.ForeignKey('social_network.id', ondelete='CASCADE'), nullable=False)
+    refresh_token = db.Column('RefreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
-    member_id = db.Column('memberId', db.String(100))
-    access_token = db.Column('accessToken', db.String(1000))
-    social_network = db.relationship("SocialNetwork", backref=db.backref('user_social_network_credential',
-                                                                         cascade="all, delete-orphan"))
+    member_id = db.Column('MemberId', db.String(100))
+    access_token = db.Column('AccessToken', db.String(1000))
+    social_network = db.relationship("SocialNetwork", backref=db.backref(
+            'user_social_network_credential', cascade="all, delete-orphan"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):

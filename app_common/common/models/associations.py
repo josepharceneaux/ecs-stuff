@@ -8,13 +8,13 @@ import datetime
 
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'), primary_key=True)
-    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'), primary_key=True)
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), primary_key=True)
+    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.id'))
     additional_notes = db.Column('AdditionalNotes', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateAreaOfInterest (area_of_interest_id=%r)" % self.area_of_interest_id
+        return "<CandidateAreaOfInterest (area_of_interest_id = %r)" % self.area_of_interest_id
 
     @classmethod
     def get_areas_of_interest(cls, candidate_id, area_of_interest_id):

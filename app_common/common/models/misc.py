@@ -1,37 +1,37 @@
 from db import db
-import datetime
 from sqlalchemy.orm import relationship
+import datetime
 import time
-
 from candidate import CandidateMilitaryService
 
 
 class Activity(db.Model):
     __tablename__ = 'activity'
-    id = db.Column(db.Integer, primary_key=True)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    source_table = db.Column('sourceTable', db.String(127))
-    source_id = db.Column('sourceID', db.Integer)
-    type = db.Column('type', db.Integer)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
-    params = db.Column(db.Text)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    type = db.Column('Type', db.Integer)
+    source_table = db.Column('SourceTable', db.String(127))
+    source_id = db.Column('SourceId', db.Integer)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
+    params = db.Column('Params', db.Text)
+
+    def __repr__(self):
+        return "<Activity: (id = {})>".format(self.id)
 
     @classmethod
     def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
-        assert user_id
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,
                 Activity.params == params,
                 Activity.type == type,
                 Activity.source_id == source_id,
-            )
-        ).first()
+            )).first()
 
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
     name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.id'))
@@ -42,9 +42,6 @@ class AreaOfInterest(db.Model):
 
     @classmethod
     def get_area_of_interest(cls, domain_id, name):
-        """
-        :rtype  AreaOfInterest
-        """
         return cls.query.filter(db.and_(
             AreaOfInterest.domain_id == domain_id,
             AreaOfInterest.name == name

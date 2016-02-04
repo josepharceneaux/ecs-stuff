@@ -3,17 +3,16 @@ from db import db
 
 class Venue(db.Model):
     __tablename__ = 'venue'
-
-    id = db.Column(db.Integer, primary_key=True)
-    social_network_id = db.Column('socialNetworkId', db.Integer,
+    id = db.Column('Id', db.Integer, primary_key=True)
+    social_network_id = db.Column('SocialNetworkId', db.Integer,
                                   db.ForeignKey('social_network.id'), nullable=False)
-    social_network_venue_id = db.Column('socialNetworkVenueId', db.String(200))
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'), nullable=False)
-    address_line_1 = db.Column('addressLine1', db.String(300))
-    address_line_2 = db.Column('addressLine2', db.String(300))
-    city = db.Column(db.String(100))
-    state = db.Column(db.String(100))
-    zip_code = db.Column('zipCode', db.String(10))
+    social_network_venue_id = db.Column('SocialNetworkVenueId', db.String(200))
+    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'), nullable=False)
+    address_line_1 = db.Column('AddressLine1', db.String(300))
+    address_line_2 = db.Column('AddressLine2', db.String(300))
+    city = db.Column('City', db.String(100))
+    state = db.Column('State', db.String(100))
+    zip_code = db.Column('ZipCode', db.String(10))
     country = db.Column(db.String(100))
     longitude = db.Column(db.Float)
     latitude = db.Column(db.Float)
