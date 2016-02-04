@@ -23,7 +23,7 @@ def get_json_if_exist(_request):
     """ Function will ensure data's content-type is JSON, and it isn't empty
     :type _request:  request
     """
-    if _request.content_type != "application/json":
+    if "application/json" not in _request.content_type:
         raise InvalidUsage("Request body must be a JSON object", custom_error.INVALID_INPUT)
     if not _request.get_data():
         raise InvalidUsage("Request body cannot be empty", custom_error.MISSING_INPUT)

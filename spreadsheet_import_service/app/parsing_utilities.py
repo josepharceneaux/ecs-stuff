@@ -93,13 +93,14 @@ def convert_csv_to_table(csv_file):
         raise InvalidUsage(error_message="Error importing csv because %s" % e.message)
 
 
-def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=None):
+def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids, source_id=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
     :param table: An array of candidate's dicts
     :param spreadsheet_filename: Name of spreadsheet file from which candidates are being imported
     :param header_row: An array of headers of candidate's spreadsheet
+    :param talent_pool_ids: An array on talent_pool_ids
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -123,7 +124,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
             first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
             emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
             school_names, work_experiences, educations, custom_fields = [], [], [], []
-            talent_pool_dict = {}
+            talent_pool_dict = {'add': talent_pool_ids}
 
             this_source_id = source_id
 
@@ -220,9 +221,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, source_id=N
                     if custom_fields_dict:
                         custom_fields.append(custom_fields_dict)
                 elif 'talent_pool.' in column_name:
-                    talent_pool_dict = {}
                     if isinstance(column, basestring):
-                        talent_pool_dict['add'] = [int(column_name.split('.')[1])]
+                        talent_pool_dict['add'].append(int(column_name.split('.')[1]))
 
                 number_of_educations = max(len(degrees), len(school_names))
 

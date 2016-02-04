@@ -5,11 +5,9 @@
 .overview-graph {
   //background:#fff;
   @include linear-gradient(to bottom, #ffffff, #eeeeee);
+  margin-bottom:5px;
   .area-chart {
     background:transparent;
-  }
-  .layout-margin {
-    margin:15px;
   }
 }
 
