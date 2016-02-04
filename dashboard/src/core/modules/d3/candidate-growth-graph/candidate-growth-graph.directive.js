@@ -77,6 +77,7 @@
             var dateInterval = getDateInterval(vm.dateRange, numExpectedDataPoints);
             var pointStart = fromDate.getTime();
             var pointInterval = daysToMilliseconds(dateInterval);
+            var xAxisLabelStep = getXAxisLabelStep(vm.dateRange);
             var params;
 
             fromDate = new Date(toDate.getTime());
@@ -125,6 +126,9 @@
                     pointInterval: pointInterval,
                     data: data
                 });
+
+                vm.config.xAxis.tickInterval = pointInterval;
+                vm.config.xAxis.labels.step = xAxisLabelStep;
             });
         }
 
@@ -144,6 +148,14 @@
         function getNumExpectedDataPoints(dateRange) {
             if (dateRange === 7) return 7;
             else return 15;
+        }
+
+        function getXAxisLabelStep(dateRange) {
+            if (dateRange === 60) {
+                return 2;
+            } else {
+                return 1;
+            }
         }
     }
 
