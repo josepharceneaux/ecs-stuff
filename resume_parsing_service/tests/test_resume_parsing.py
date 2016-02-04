@@ -215,6 +215,9 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
+        # TODO: investigate the following.
+        # Manually setting headers here breaks test. The goal was to ensure the content-type was
+        # passed as intended but doing so causes the data/files attrs to not get picked up by Flask.
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},
@@ -230,7 +233,9 @@ def fetch_resume_fp_key_response(token_fixture, fp_key):
     test_response = requests.post(ResumeApiUrl.PARSE,
                                   headers={
                                       'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token)},
-                                  data={'filepicker_key': fp_key}
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'filepicker_key': fp_key})
                                  )
     return json.loads(test_response.content)
