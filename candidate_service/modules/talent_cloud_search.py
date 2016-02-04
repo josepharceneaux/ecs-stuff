@@ -675,7 +675,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     except Exception as ex:
         logger.exception("Exception occurred while searching candidates from cloudsearch. "
                          "Search params: %s. Exception: %s" % (params, ex))
-        return InternalServerError("SearchServiceError: Error while searching the candidates.")
+        raise InternalServerError("SearchServiceError: Error while searching the candidates.")
 
     matches = results['hits']['hit']
 
