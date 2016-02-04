@@ -153,6 +153,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
+    list_of_new_email_html_or_text = []
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
         email_notification_to_admins(
@@ -181,7 +182,6 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
         blast_params = dict(sends=0, bounces=0)
 
         # For each candidate, create URL conversions and send the email
-        list_of_new_email_html_or_text = []
         for candidate_id, candidate_address in candidate_ids_and_emails:
 
             was_send = send_campaign_emails_to_candidate(

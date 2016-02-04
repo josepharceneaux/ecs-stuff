@@ -43,8 +43,8 @@ def validate_and_format_smartlist_post_data(data, user):
         if not isinstance(search_params, dict):
             raise InvalidUsage("`search_params` should in dictionary format.")
     smartlist_name = smartlist_name.strip()
-    if Smartlist.query.join(Smartlist.user).filter(and_(User.domain_id == user.domain_id, Smartlist.name == smartlist_name)).first():
-        raise InvalidUsage("Given smartlist `name` %s already exists in your domain" % smartlist_name)
+    # if Smartlist.query.join(Smartlist.user).filter(and_(User.domain_id == user.domain_id, Smartlist.name == smartlist_name)).first():
+    #     raise InvalidUsage("Given smartlist `name` %s already exists in your domain" % smartlist_name)
     formatted_request_data = {'name': smartlist_name,
                               'candidate_ids': None,
                               'search_params': None}
