@@ -48,7 +48,7 @@ def find_in_openweb_by_email(candidate_email):
     :return: json object
     """
     openweb_response = query_openweb(candidate_email, 1).json()
-    return [0, openweb_response]
+    return False, openweb_response
 
 
 def match_candidate_from_openweb(url, auth_user):
@@ -69,11 +69,11 @@ def match_candidate_from_openweb(url, auth_user):
             .filter(CandidateSocialNetwork.social_profile_url.in_(urls)).first()
         if candidate_query:
             if not does_candidate_belong_to_users_domain(auth_user, candidate_query.id):
-                return [0, openweb_response]
+                return False, openweb_response
 
-            return [1, candidate_query]
+            return True, candidate_query
         else:
-            return [0, openweb_response]
+            return False, openweb_response
 
 
 def openweb_crawl(url):
@@ -83,7 +83,7 @@ def openweb_crawl(url):
     :return: None
     """
     if not isinstance(url, basestring):
-        return 0
+        return False
     try:
         crawl_request = requests.get("http://api.thesocialcv.com/v3/profile/crawl.json", params=dict(apiKey=SOCIALCV_API_KEY, profileUrl=url), timeout=10)
         if crawl_request.status_code == 200:
