@@ -59,6 +59,8 @@ def process_resume(parse_params):
     parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails and talent pools are the ONLY thing required to create a candidate.
     email_present = True if parsed_resume['candidate'].get('emails') else False
+    if create_mode and not email_present:
+        raise InvalidUsage('Email fields (required for candidate creation) could not be parsed.')
     if create_mode and email_present and talent_pools:
         parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
         candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
