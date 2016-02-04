@@ -111,7 +111,7 @@ class CandidateStatus(db.Model):
     candidates = relationship('Candidate', backref='candidate_status')
 
     def __repr__(self):
-        return "<CandidateStatus(description=' %r')>" % self.description
+        return "<CandidateStatus(id = '%r')>" % self.description
 
 
 class PhoneLabel(db.Model):
@@ -168,8 +168,8 @@ class CandidateSource(db.Model):
 
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    id = db.Column('Id', db.BIGINT, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
     notes = db.Column('Notes', db.String(500))
     title = db.Column('Title', db.String(100))
     candidate_id_list = db.Column('CandidateIdList', db.Text, nullable=False)
@@ -182,7 +182,7 @@ class PublicCandidateSharing(db.Model):
 
 class CandidatePhone(db.Model):
     __tablename__ = 'candidate_phone'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
     phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     value = db.Column('Value', db.String(50), nullable=False)
@@ -276,7 +276,7 @@ class CandidatePhoto(db.Model):
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), primary_key=True)
-    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -300,17 +300,17 @@ class RatingTag(db.Model):
 
 class RatingTagUser(db.Model):
     __tabelname__ = 'rating_tag_user'
-    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.id'), primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'), primary_key=True)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
 class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
     list_order = db.Column('ListOrder', db.Integer)
-    comment = db.Column(db.String(5000))
+    comment = db.Column('Comment', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -323,6 +323,9 @@ class VoiceComment(db.Model):
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return "<VoiceComment (id = {})>".format(self.id)
 
 
 class CandidateDocument(db.Model):
@@ -365,10 +368,8 @@ class SocialNetwork(db.Model):
 
     @classmethod
     def get_by_id(cls, id):
-        assert id
-        return cls.query.filter(
-            SocialNetwork.id == id
-        ).one()
+        assert isinstance(id, (int, long))
+        return cls.query.filter(SocialNetwork.id == id).one()
 
     @classmethod
     def get_all(cls):
@@ -392,7 +393,7 @@ class SocialNetwork(db.Model):
 
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), nullable=False)
     social_network_id = db.Column('SocialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
     social_profile_url = db.Column('SocialProfileUrl', db.String(250), nullable=False)
@@ -414,17 +415,17 @@ class CandidateSocialNetwork(db.Model):
 
 class CandidateWorkPreference(db.Model):
     __tablename__ = 'candidate_work_preference'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
-    relocate = db.Column('Relocate', db.CHAR(1), default='F')
-    authorization = db.Column('Authorization', db.String(255))
-    telecommute = db.Column('Telecommute', db.CHAR(1), default='F')
-    travel_percentage = db.Column('TravelPercentage', db.Integer, default=0)
-    hourly_rate = db.Column('HourlyRate', db.Float, default=0.0)
-    salary = db.Column('Salary', db.Float, default=0.0)
-    tax_terms = db.Column('TaxTerms', db.String(255))
-    security_clearance = db.Column('SecurityClearence',db.CHAR(1), default='F')
-    third_party = db.Column('ThirdParty', db.CHAR(1), default='F')
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    relocate = db.Column(db.CHAR(1), default='F')
+    authorization = db.Column(db.String(255))
+    telecommute = db.Column(db.CHAR(1), default='F')
+    travel_percentage = db.Column(db.Integer, default=0)
+    hourly_rate = db.Column(db.Float, default=0.0)
+    salary = db.Column(db.Float, default=0.0)
+    tax_terms = db.Column(db.String(255))
+    security_clearance = db.Column(db.CHAR(1), default='F')
+    third_party = db.Column(db.CHAR(1), default='F')
 
     def __repr__(self):
         return "<CandidateWorkPreference (authorization=' %r')>" % self.authorization
@@ -636,6 +637,7 @@ class CandidatePublication(db.Model):
     added_time = db.Column('AddedTime', db.DateTime)
     link = db.Column('Link', db.String(200))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
 
     def __repr__(self):
         return "<CandidatePublication (title=' %r')>" % self.title
@@ -837,14 +839,14 @@ class CandidateSkill(db.Model):
 class CandidateUnidentified(db.Model):
     __tablename__ = 'candidate_unidentified'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_Id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
     title = db.Column('Title', db.String(100))
     description = db.Column('Description', db.Text)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateUnidentified (title=' %r')>" % self.title
+        return "<CandidateUnidentified (title= '%r')>" % self.title
 
 
 class CandidateCustomField(db.Model):

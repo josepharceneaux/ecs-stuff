@@ -143,15 +143,15 @@ class Domain(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(50))
     usage_limitation = db.Column('UsageLimitation', db.Integer)
-    expiration = db.Column('Expiration', db.DateTime)
-    added_time = db.Column('AddedTime', db.DateTime)
     organization_id = db.Column('OrganizationId', db.Integer)
     is_fair_check_on = db.Column('IsFairCheckOn', db.Boolean, default=False)
-    is_active = db.Column('IsActive', db.Boolean, default=True)  # TODO: store as 0 or 1
+    is_active = db.Column('IsActive', db.Boolean, default=True)
     default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
-    default_from_name = db.Column('DefaultFromName', db.String(255))
     settings_json = db.Column('SettingsJson', db.Text)
+    expiration = db.Column('Expiration', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime)
+    default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
     is_disabled = db.Column('IsDisabled', TINYINT, default='0', nullable=False)
@@ -185,25 +185,32 @@ class Domain(db.Model):
 
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'
-    id = db.Column('Id', db.BIGINT, primary_key=True)
-    role = db.Column('role', db.String(255))
-    description = db.Column('description', db.TEXT)
+    id = db.Column(db.BIGINT, primary_key=True)
+    role = db.Column(db.String(255))
+    description = db.Column(db.TEXT)
+
+    def __repr__(self):
+        return "<WebAuthGroup (id = {})>".format(self.id)
 
 
 class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
-    id = db.Column('Id', db.BIGINT, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
-    group_id = db.Column('GroupId', db.BIGINT, db.ForeignKey('web_auth_group.id'))
+    id = db.Column(db.BIGINT, primary_key=True)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.id'))
+    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
 
+    # Relationship
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
+
+    def __repr__(self):
+        return "<WebAuthMembership (id = {})>".format(self.id)
 
 
 class JobOpening(db.Model):
     __tablename__ = 'job_opening'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    id = db.Column('Id', db.BIGINT, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
@@ -215,9 +222,9 @@ class JobOpening(db.Model):
 
 class Client(db.Model):
     __tablename__ = 'client'
-    client_id = db.Column('ClientId', db.String(40), primary_key=True)
-    client_secret = db.Column('ClientSecret', db.String(55), nullable=False)
-    client_name = db.Column('ClientName', db.String(255))
+    client_id = db.Column(db.String(40), primary_key=True)
+    client_secret = db.Column(db.String(55), nullable=False)
+    client_name = db.Column(db.String(255))
 
     def delete(self):
         db.session.delete(self)
@@ -243,23 +250,20 @@ class Client(db.Model):
 
 class Token(db.Model):
     __tablename__ = 'token'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    client_id = db.Column(
-        'ClientId', db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
-        nullable=False
-    )
-    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
-
-    user_id = db.Column(db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'))
-    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
-
-    # currently only bearer is supported
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
+                          nullable=False)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.id', ondelete='CASCADE'))
     token_type = db.Column(db.String(40))
-
     access_token = db.Column(db.String(255), unique=True)
     refresh_token = db.Column(db.String(255), unique=True)
     expires = db.Column(db.DateTime)
     _scopes = db.Column(db.Text)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
+    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
+    # currently only bearer is supported
 
     def delete(self):
         db.session.delete(self)
@@ -267,9 +271,7 @@ class Token(db.Model):
 
     @property
     def scopes(self):
-        if self._scopes:
-            return self._scopes.split()
-        return []
+        return self._scopes.split() if self._scopes else []
 
     @staticmethod
     def get_token(access_token):
@@ -287,12 +289,11 @@ class Token(db.Model):
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    role_name = db.Column('RoleName', db.String(255), nullable=False, unique=True)
+    id = db.Column(db.Integer, primary_key=True)
+    role_name = db.Column(db.String(255), nullable=False, unique=True)
+    # domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'), nullable=True)
 
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'),
-                          nullable=True)
-    domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
+    domain = db.relationship(backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def __repr__(self):
         return "<DomainRole (id = {})>".format(self.id)
