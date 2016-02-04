@@ -9,7 +9,7 @@ __author__ = 'jitesh'
 class EmailCampaign(db.Model):
     __tablename__ = 'email_campaign'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(127), nullable=False)
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
@@ -57,9 +57,9 @@ class EmailCampaignSmartList(db.Model):
     __tablename__ = 'email_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column('SmartListId', db.Integer,
-                             db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
+                             db.ForeignKey('smart_list.id', ondelete='CASCADE'))
     email_campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+                                  db.ForeignKey('email_campaign.id', ondelete='CASCADE'))
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     @classmethod
@@ -74,7 +74,7 @@ class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
     email_campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+                                  db.ForeignKey('email_campaign.id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
     text_clicks = db.Column('TextClicks', db.Integer, default=0)
@@ -93,8 +93,9 @@ class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
     email_campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+                                  db.ForeignKey('email_campaign.id', ondelete='CASCADE'))
+    candidate_id = db.Column('CandidateId', db.BIGINT,
+                             db.ForeignKey('candidate.id', ondelete='CASCADE'))
     sent_time = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))
@@ -130,8 +131,8 @@ class EmailCampaignSendUrlConversion(db.Model):
     __tablename__ = 'email_campaign_send_url_conversion'
     id = db.Column('Id', db.Integer, primary_key=True)
     email_campaign_send_id = db.Column('EmailCampaignSendId', db.Integer,
-                                       db.ForeignKey('email_campaign_send.Id', ondelete='CASCADE'))
+                                       db.ForeignKey('email_campaign_send.id', ondelete='CASCADE'))
     url_conversion_id = db.Column('UrlConversionId', db.Integer,
-                                  db.ForeignKey('url_conversion.Id', ondelete='CASCADE'))
+                                  db.ForeignKey('url_conversion.id', ondelete='CASCADE'))
     type = db.Column(db.Integer, default=0)  # 0 = TRACKING, 1 = TEXT, 2 = HTML
     email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")
