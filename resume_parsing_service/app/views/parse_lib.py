@@ -1,4 +1,5 @@
 """Main resume parsing logic & functions."""
+# pylint: disable=wrong-import-position, fixme
 # Standard library
 from cStringIO import StringIO
 from os.path import basename

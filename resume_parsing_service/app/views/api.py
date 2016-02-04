@@ -1,4 +1,5 @@
 """API for the Resume Parsing App"""
+# pylint: disable=wrong-import-position, fixme
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
