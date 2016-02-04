@@ -19,7 +19,7 @@ class Candidate(db.Model):
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
-    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
@@ -169,7 +169,7 @@ class CandidateSource(db.Model):
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     notes = db.Column('Notes', db.String(500))
     title = db.Column('Title', db.String(100))
     candidate_id_list = db.Column('CandidateIdList', db.Text, nullable=False)
@@ -183,7 +183,7 @@ class PublicCandidateSharing(db.Model):
 class CandidatePhone(db.Model):
     __tablename__ = 'candidate_phone'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
     value = db.Column('Value', db.String(50), nullable=False)
     extension = db.Column('Extension', db.String(5))
@@ -236,7 +236,7 @@ class EmailLabel(db.Model):
 class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), nullable=False)
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
@@ -262,7 +262,7 @@ class CandidateEmail(db.Model):
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     is_default = db.Column('IsDefault', db.Boolean)
@@ -275,7 +275,7 @@ class CandidatePhoto(db.Model):
 
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), primary_key=True)
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
     rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
@@ -308,7 +308,7 @@ class RatingTagUser(db.Model):
 class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     comment = db.Column('Comment', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -318,7 +318,7 @@ class CandidateTextComment(db.Model):
 class VoiceComment(db.Model):
     __tablename__ = 'voice_comment'
     id = db.Column('Id', db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
@@ -331,7 +331,7 @@ class VoiceComment(db.Model):
 class CandidateDocument(db.Model):
     __tablename__ = 'candidate_document'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -394,8 +394,8 @@ class SocialNetwork(db.Model):
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), nullable=False)
-    social_network_id = db.Column('SocialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
+    social_network_id = db.Column('SocialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
     social_profile_url = db.Column('SocialProfileUrl', db.String(250), nullable=False)
 
     def __repr__(self):
@@ -416,7 +416,7 @@ class CandidateSocialNetwork(db.Model):
 class CandidateWorkPreference(db.Model):
     __tablename__ = 'candidate_work_preference'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     relocate = db.Column(db.CHAR(1), default='F')
     authorization = db.Column(db.String(255))
     telecommute = db.Column(db.CHAR(1), default='F')
@@ -470,7 +470,7 @@ class CandidateWorkPreference(db.Model):
 class CandidatePreferredLocation(db.Model):
     __tablename__ = 'candidate_preferred_location'
     id = db.Column('Id', db.Integer, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'), nullable=False)
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
     address = db.Column('Address', db.String(255))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     city = db.Column('City', db.String(255))
@@ -488,8 +488,8 @@ class CandidatePreferredLocation(db.Model):
 class CandidateLanguage(db.Model):
     __tablename__ = 'candidate_language'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.id'))
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.Id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     can_read = db.Column('CanRead', db.Boolean)
     can_write = db.Column('CanWrite', db.Boolean)
     can_speak = db.Column('CanSpeak', db.Boolean)
@@ -507,7 +507,7 @@ class CandidateLanguage(db.Model):
 class CandidateLicenseCertification(db.Model):
     __tablename__ = 'candidate_license_certification'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     name = db.Column('Name', db.String(500))
     description = db.Column('Description', db.String(10000))
     issuing_authority = db.Column('IssuingAuthority', db.String(255))
@@ -523,7 +523,7 @@ class CandidateLicenseCertification(db.Model):
 class CandidateReference(db.Model):
     __tablename__ = 'candidate_reference'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     person_name = db.Column('PersonName', db.String(150))
     position_title = db.Column('PositionTitle', db.String(150))
     comments = db.Column('Comments', db.String(5000))
@@ -553,7 +553,7 @@ class ReferenceWebAddress(db.Model):
 class CandidateAssociation(db.Model):
     __tablename__ = 'candidate_association'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(5000))
     link = db.Column('Link', db.String(200))
@@ -575,7 +575,7 @@ class CandidateAchievement(db.Model):
     issuing_authority = db.Column('IssuingAuthority', db.String(150))
     description = db.Column('Description', db.String(10000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
 
     resume_id = db.Column('ResumeId', db.BIGINT)
 
@@ -586,7 +586,7 @@ class CandidateAchievement(db.Model):
 class CandidateMilitaryService(db.Model):
     __tablename__ = 'candidate_military_service'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
     service_status = db.Column('ServiceStatus', db.String(200))
     highest_rank = db.Column('HighestRank', db.String(255))
@@ -611,7 +611,7 @@ class CandidateMilitaryService(db.Model):
 class CandidatePatentHistory(db.Model):
     __tablename__ = 'candidate_patent_history'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     title = db.Column('Title', db.String(255))
     description = db.Column('Description', db.String(10000))
     link = db.Column('Link', db.String(150))
@@ -627,7 +627,7 @@ class CandidatePatentHistory(db.Model):
 class CandidatePublication(db.Model):
     __tablename__ = 'candidate_publication'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     title = db.Column('Title', db.String(200))
     start_year = db.Column('StartYear', YEAR)
     start_month = db.Column('StartMonth', TINYINT)
@@ -646,7 +646,7 @@ class CandidatePublication(db.Model):
 class CandidateAddress(db.Model):
     __tablename__ = 'candidate_address'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     address_line_1 = db.Column('AddressLine1', db.String(255))
     address_line_2 = db.Column('AddressLine2', db.String(255))
     city = db.Column('City', db.String(100))
@@ -757,7 +757,7 @@ class CandidateEducationDegreeBullet(db.Model):
 class CandidateExperience(db.Model):
     __tablename__ = 'candidate_experience'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     organization = db.Column('Organization', db.String(150))
     position = db.Column('Position', db.String(150))
@@ -817,7 +817,7 @@ class CandidateExperienceBullet(db.Model):
 class CandidateSkill(db.Model):
     __tablename__ = 'candidate_skill'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -839,7 +839,7 @@ class CandidateSkill(db.Model):
 class CandidateUnidentified(db.Model):
     __tablename__ = 'candidate_unidentified'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     title = db.Column('Title', db.String(100))
     description = db.Column('Description', db.Text)
     added_time = db.Column('AddedTime', db.DateTime)
