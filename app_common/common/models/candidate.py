@@ -16,7 +16,7 @@ class Candidate(db.Model):
     middle_name = db.Column('MiddleName', db.String(50))
     last_name = db.Column('LastName', db.String(50))
     formatted_name = db.Column('FormattedName', db.String(150))
-    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.id'))
+    candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.Id'))
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.Id'))
@@ -25,15 +25,15 @@ class Candidate(db.Model):
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
-    source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.id'))
-    source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.id'),
+    source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
+    source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
                                   nullable=False, default=2) # Web = 2
     filename = db.Column('Filename', db.String(100))
     objective = db.Column('Objective', db.Text)
     summary = db.Column('Summary', db.Text)
     total_months_experience = db.Column('TotalMonthsExperience', db.Integer)
     resume_text = db.Column('ResumeText', db.Text)
-    culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.id'), default=1)
+    culture_id = db.Column('CultureId', db.Integer, db.ForeignKey('culture.Id'), default=1)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     is_dirty = db.Column('IsDirty', db.SmallInteger, default=0)
@@ -146,7 +146,7 @@ class CandidateSource(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     description = db.Column('Description', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
@@ -184,7 +184,7 @@ class CandidatePhone(db.Model):
     __tablename__ = 'candidate_phone'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
-    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.id'))
+    phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.Id'))
     value = db.Column('Value', db.String(50), nullable=False)
     extension = db.Column('Extension', db.String(5))
     is_default = db.Column('IsDefault', db.Boolean)
@@ -237,7 +237,7 @@ class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
-    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.id')) # 1 = Primary
+    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -266,7 +266,7 @@ class CandidatePhoto(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
     is_default = db.Column('IsDefault', db.Boolean)
-    directory_tag_id = db.Column('DirectoryTagId', db.INT, db.ForeignKey('directory_tag.id'))
+    # directory_tag_id = db.Column('DirectoryTagId', db.INT, db.ForeignKey('directory_tag.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -276,7 +276,7 @@ class CandidatePhoto(db.Model):
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.Id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -300,8 +300,8 @@ class RatingTag(db.Model):
 
 class RatingTagUser(db.Model):
     __tabelname__ = 'rating_tag_user'
-    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.id'), primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.Id'), primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), primary_key=True)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
@@ -541,7 +541,7 @@ class CandidateReference(db.Model):
 class ReferenceWebAddress(db.Model):
     __tablename__ = 'reference_web_address'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.id'))
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.Id'))
     url = db.Column('Url', db.String(200))
     description = db.Column('Description', db.String(1000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -676,7 +676,7 @@ class CandidateAddress(db.Model):
 class CandidateEducation(db.Model):
     __tablename__ = 'candidate_education'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     school_name = db.Column('SchoolName', db.String(200))
     school_type = db.Column('SchoolType', db.String(100))
@@ -708,7 +708,7 @@ class CandidateEducation(db.Model):
 class CandidateEducationDegree(db.Model):
     __tablename__ = 'candidate_education_degree'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_education_id = db.Column('CandidateEducationId', db.BIGINT, db.ForeignKey('candidate_education.id'))
+    candidate_education_id = db.Column('CandidateEducationId', db.BIGINT, db.ForeignKey('candidate_education.Id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
@@ -719,7 +719,7 @@ class CandidateEducationDegree(db.Model):
     gpa_num = db.Column('GpaNum', db.DECIMAL)
     gpa_denom = db.Column('GpaDenom', db.DECIMAL)
     added_time = db.Column('AddedTime', db.DateTime)
-    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.id'))
+    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
@@ -738,7 +738,7 @@ class CandidateEducationDegree(db.Model):
 class CandidateEducationDegreeBullet(db.Model):
     __tablename__ = 'candidate_education_degree_bullet'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_education_degree_id = db.Column('CandidateEducationDegreeId', db.BIGINT, db.ForeignKey('candidate_education_degree.id'))
+    candidate_education_degree_id = db.Column('CandidateEducationDegreeId', db.BIGINT, db.ForeignKey('candidate_education_degree.Id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     concentration_type = db.Column('ConcentrationType', db.String(200))
     comments = db.Column('Comments', db.String(5000))
@@ -800,7 +800,7 @@ class CandidateExperienceBullet(db.Model):
     __tablename__ = 'candidate_experience_bullet'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_experience_id = db.Column('CandidateExperienceId', db.BIGINT,
-                                        db.ForeignKey('candidate_experience.id'))
+                                        db.ForeignKey('candidate_experience.Id'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)
@@ -853,7 +853,7 @@ class CandidateCustomField(db.Model):
     __tablename__ = 'candidate_custom_field'
     id = db.Column('Id', db.Integer, primary_key=True)
     value = db.Column('Value', db.Text)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id', ondelete='CASCADE'))
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -902,7 +902,7 @@ class ClassificationType(db.Model):
 class CandidateSubscriptionPreference(db.Model):
     __tablename__ = 'candidate_subscription_preference'
     id = db.Column('Id', db.Integer, primary_key=True)
-    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id', ondelete='CASCADE'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
