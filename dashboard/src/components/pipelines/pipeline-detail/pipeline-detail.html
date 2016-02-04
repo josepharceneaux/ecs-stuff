@@ -55,18 +55,49 @@
         </div>
         <!-- End: Growth chart -->
 
-
+        <!-- Header -->
+        <md-content layout="row" layout-xs="column" layout-align="center center" class="md-whiteframe-z1">
+            <div class="page-title-icon">
+                <img src="//placehold.it/80x80" />
+            </div>
+            <div flex>
+                <h3 class="md-title">{{vm.pipelineDetails.name}}</h3>
+                <h3 class="md-body-1">Created by <a href="">{{vm.pipelineDetails.user_name}}</a> on 5/22/16</h3>
+            </div>          
+            <div layout="row" layout-xs="column" layout-sm="column">
+                <md-button class="md-raised md-primary">Add Candidates</md-button>
+                <md-button class="md-raised md-primary">Create Campaign</md-button>
+                <md-button class="md-raised md-primary">Create Smartlist</md-button>
+            </div>
+        </md-content>
+        <!-- End: Header -->
     </div>
-
     <div layout="column" class="md-padding" layout-wrap>
 
-        <!-- Call-outs -->
-        <div class="stat-row md-margin" layout="row" layout-wrap>
-            <div class="gt-card" flex="25" ng-repeat="callout in vm.callouts">
-                <md-content layout="column" layout-align="center center">
-                    <span class="md-subhead">{{callout.name}} <i class="fa fa-info-circle"  uib-tooltip="{{callout.tooltip}}" tooltip-class="tooltip--info" ></i></span>
-                    <span class="md-display-3">{{callout.value}}</span>
-                    <span class="md-subhead" ng-bind-html="callout.change"></span>
+        <!-- Callouts -->
+        <div layout="row" layout-wrap>
+            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100">
+                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
+                    <h3 class="md-title">Total Count <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{vm.candidatesCount}}</h3>
+                </md-content>
+            </div>
+            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100">
+                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
+                    <h3 class="md-title">Active Campaigns <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">2</h3>
+                </md-content>
+            </div>
+            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100">
+                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
+                    <h3 class="md-title">Smart Lists <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{vm.smartLists}} </h3>
+                </md-content>
+            </div>
+            <div flex="25" flex-md="50" flex-sm="100" flex-xs="100">
+                <md-content class="md-whiteframe-z1" layout="column" layout-align="center center">
+                    <h3 class="md-title">Created Date <i class="fa fa-info-circle"></i></h3>
+                    <h3 class="md-display-3">{{vm.pipelineDetails.added_time | date : 'shortDate'}}</h3>
                 </md-content>
             </div>
         </div>

@@ -3,7 +3,7 @@
 
     angular
         .module('app.core')
-        .provider('candidatePoolService', providerFunction);
+        .provider('resumeService', providerFunction);
 
     /**
      * @return {[type]}
@@ -11,12 +11,12 @@
     function providerFunction() {
         this.$get = $get;
 
-        $get.$inject = ['baseService', 'candidatePoolServiceInfo'];
+        $get.$inject = ['baseService', 'resumeServiceInfo'];
 
         /* @ngInject */
-        function $get(baseService, candidatePoolServiceInfo) {
+        function $get(baseService, resumeServiceInfo) {
             return baseService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl(candidatePoolServiceInfo.THE_REAL_baseUrl);
+                RestangularConfigurer.setBaseUrl(resumeServiceInfo.THE_REAL_baseUrl);
             });
         }
     }
