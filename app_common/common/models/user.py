@@ -3,7 +3,7 @@ import os
 import uuid
 import datetime
 from flask import request
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from werkzeug.security import generate_password_hash
 
@@ -22,13 +22,13 @@ from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSign
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column('Id', db.Integer, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
     device_token = db.Column('deviceToken', db.String(64))
     expiration = db.Column(db.DateTime)
     mobile_version = db.Column('mobileVersion', db.String(10))
-    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.id'))
+    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.Id'))
     phone = db.Column(db.String(50))
     get_started_data = db.Column('getStartedData', db.String(127))
     registration_key = db.Column(db.String(512))
@@ -40,7 +40,7 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
+    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
     last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
@@ -196,8 +196,8 @@ class WebAuthGroup(db.Model):
 class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
     id = db.Column(db.BIGINT, primary_key=True)
-    user_id = db.Column(db.BIGINT, db.ForeignKey('user.id'))
-    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))
+    group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.Id'))
 
     # Relationship
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
@@ -210,7 +210,7 @@ class WebAuthMembership(db.Model):
 class JobOpening(db.Model):
     __tablename__ = 'job_opening'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.id'))
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
@@ -253,7 +253,7 @@ class Token(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
                           nullable=False)
-    user_id = db.Column(db.BIGINT, db.ForeignKey('user.id', ondelete='CASCADE'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     token_type = db.Column(db.String(40))
     access_token = db.Column(db.String(255), unique=True)
     refresh_token = db.Column(db.String(255), unique=True)
@@ -291,9 +291,9 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
-    # domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'), nullable=True)
+    # domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
 
-    domain = db.relationship(backref=db.backref('domain_role', cascade="all, delete-orphan"))
+    domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def __repr__(self):
         return "<DomainRole (id = {})>".format(self.id)
@@ -452,7 +452,7 @@ class DomainRole(db.Model):
 class UserScopedRoles(db.Model):
     __tablename__ = 'user_scoped_roles'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     role_id = db.Column('RoleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False)
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
@@ -530,7 +530,7 @@ class UserGroup(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255), nullable=False)
     description = db.Column('Description', db.String(225), nullable=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'),
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'),
                           nullable=False)
 
     domain = db.relationship('Domain', backref=db.backref('user_group', cascade="all, delete-orphan"))
@@ -651,15 +651,12 @@ class UserGroup(db.Model):
 
 
 class UserSocialNetworkCredential(db.Model):
-    """
-    This represents database table that holds user's credentials of a
-    social network.
-    """
+    """ This represents database table that holds user's credentials of a social network. """
     __tablename__ = 'user_social_network_credential'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     social_network_id = db.Column('SocialNetworkId', db.Integer,
-                                  db.ForeignKey('social_network.id', ondelete='CASCADE'), nullable=False)
+                                  db.ForeignKey('social_network.Id', ondelete='CASCADE'), nullable=False)
     refresh_token = db.Column('RefreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
     member_id = db.Column('MemberId', db.String(100))
@@ -677,26 +674,18 @@ class UserSocialNetworkCredential(db.Model):
     @classmethod
     def get_user_credentials_of_social_network(cls, social_network_id):
         assert social_network_id
-        return cls.query.filter(
-            cls.social_network_id == social_network_id
-        ).all()
+        return cls.query.filter(cls.social_network_id == social_network_id).all()
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id
-        return cls.query.filter(
-            cls.user_id == user_id
-        ).all()
+        return cls.query.filter(cls.user_id == user_id).all()
 
     @classmethod
     def get_by_user_and_social_network_id(cls, user_id, social_network_id):
         assert user_id and social_network_id
         return cls.query.filter(
-            db.and_(
-                cls.user_id == user_id,
-                cls.social_network_id == social_network_id
-            )
-        ).first()
+            db.and_(cls.user_id == user_id, cls.social_network_id == social_network_id)).first()
 
     @classmethod
     def update_auth_token(cls, user_id, social_network_id, access_token):
@@ -712,8 +701,4 @@ class UserSocialNetworkCredential(db.Model):
     def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
         assert webhook_id and social_network_id
         return cls.query.filter(
-            db.and_(
-                cls.webhook == webhook_id,
-                cls.social_network_id == social_network_id
-            )
-        ).one()
+            db.and_(cls.webhook == webhook_id, cls.social_network_id == social_network_id)).one()
