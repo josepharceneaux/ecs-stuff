@@ -67,7 +67,7 @@
             var defaults = getDefaultConfig();
             var originalCallback = vm.config.func;
             vm.config.func = getChartCreatedCallback(originalCallback);
-            vm.config = angular.extend(defaults, vm.config);
+            vm.config = angular.merge(defaults, vm.config);
         }
 
         function getDefaultConfig() {
@@ -207,7 +207,9 @@
                         }
                     }
                 },
-                series: []
+                series: [{
+                    color: '#5e385d'
+                }]
             };
         }
 
