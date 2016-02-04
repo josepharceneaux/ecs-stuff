@@ -53,7 +53,8 @@ def import_from_table():
     Input: {
         'file_picker_key': 'XDmR4dqbz56OWgdNkvP8.xlsx',
         'header_row_json': ['name', 'education'..],
-        'source_id': 12
+        'source_id': 12,
+        talent_pool_ids: [1,2,3]
     }
     :return:
     """
@@ -67,10 +68,14 @@ def import_from_table():
     file_picker_key = posted_data.get('file_picker_key')
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
+    talent_pool_ids = posted_data.get('talent_pool_ids', [])
     is_import_scheduled = posted_data.get('is_import_scheduled')
 
     if not header_row or not file_picker_key:
         raise InvalidUsage(error_message="FilePicker key or header_row is missing")
+
+    if not isinstance(talent_pool_ids, list) or not talent_pool_ids:
+        raise InvalidUsage("Provide at least one TalentPool Id to import candidates from spreadsheet")
 
     logger.info("import_from_table: Converting spreadsheet (key=%s) into table", file_picker_key)
     file_picker_bucket, conn = get_s3_filepicker_bucket_and_conn()
@@ -97,4 +102,4 @@ def import_from_table():
 
     file_obj.close()
 
-    return import_from_spreadsheet(candidates_table, file_picker_key, header_row, source_id)
+    return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids, source_id)
