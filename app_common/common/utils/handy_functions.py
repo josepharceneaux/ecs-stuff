@@ -2,7 +2,7 @@
 __author__ = 'erikfarmer'
 import json
 import requests
-from flask import current_app
+from flask import current_app, request
 from requests.packages.urllib3.connection import ConnectionError
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
@@ -167,3 +167,15 @@ def sample_phone_number():
     middle = random.randint(101, 999)
     last_four = ''.join(map(str, random.sample(range(10), 4)))
     return "{}-{}-{}".format(area_code, middle, last_four)
+
+
+def create_oauth_header():
+    oauth_token = request.oauth_token
+    if not oauth_token:
+        secret_key_id, jw_token = User.generate_jw_token(user_id=request.user.id if request.user else None)
+        headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id, 'Content-Type': 'application/json'}
+    else:
+        access_token = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
+        headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
+
+    return headers

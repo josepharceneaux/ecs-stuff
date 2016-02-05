@@ -22,7 +22,7 @@ smartlist_blueprint = Blueprint('smartlist_api', __name__)
 
 class SmartlistCandidates(Resource):
 
-    decorators = [require_oauth()]
+    decorators = [require_oauth(allow_jwt_based_auth=True, allow_null_user=True)]
 
     def get(self, **kwargs):
         """

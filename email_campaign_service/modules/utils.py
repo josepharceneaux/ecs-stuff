@@ -5,6 +5,7 @@ from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.utils.handy_functions import create_oauth_header
 from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
 from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
@@ -16,16 +17,17 @@ TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
-def get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=False):
+def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
 
     :param list_id: smartlist id.
     :return:
     """
+
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = requests.get(CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id, params=params,
-                     headers={'Authorization': oauth_token})
+                     headers=create_oauth_header())
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
     if candidate_ids_only:
