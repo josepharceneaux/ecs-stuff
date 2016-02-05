@@ -851,7 +851,7 @@ class CandidateUnidentified(db.Model):
 
 class CandidateCustomField(db.Model):
     __tablename__ = 'candidate_custom_field'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     value = db.Column('Value', db.Text)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     custom_field_id = db.Column('CustomFieldId', db.Integer, db.ForeignKey('custom_field.id', ondelete='CASCADE'))
