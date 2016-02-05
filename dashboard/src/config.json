@@ -56,6 +56,9 @@
         "THE_REAL_baseUrl": "https://email-campaign-service-staging.gettalent.com/v1",
         "baseUrl": "http://private-fa828-emailcampaignservice.apiary-mock.com/v1"
     },
+    "resumeServiceInfo": {
+        "THE_REAL_baseUrl": "https://resume-parsing-service-staging.gettalent.com/v1"
+    },
     "smsCampaignServiceInfo": {
         "THE_REAL_baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1",
         "baseUrl": "http://private-4583b-smscampaignapi.apiary-mock.com/v1"

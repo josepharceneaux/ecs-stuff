@@ -1,4 +1,5 @@
 """Functions used by batch processing endpoints."""
+# pylint: disable=wrong-import-position, fixme
 __author__ = 'erik@getTalent'
 # Standard Library
 from datetime import datetime
@@ -54,7 +55,7 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
     return {'redis_key': queue_string, 'quantity': list_length}
 
 
-def _process_batch_item(user_id, create_candidate=True):
+def _process_batch_item(user_id, create_candidate='true'):
     """
     Endpoint for scheduler service to parse resumes update status data.
     :param int user_id: Id of the user who scheduled the batch process.
