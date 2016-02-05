@@ -25,7 +25,8 @@ class CandidateAreaOfInterest(db.Model):
 
 class ReferenceEmail(db.Model):
     __tablename__ = 'reference_email'
-    reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.Id'))
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id'))
     is_default = db.Column('IsDefault', db.Boolean, nullable=True)
     value = db.Column('Value', db.String(100))
@@ -37,7 +38,8 @@ class ReferenceEmail(db.Model):
 
 class ReferencePhone(db.Model):
     __tablename__ = 'reference_phone'
-    reference_id = db.Column('ReferenceId', db.BIGINT, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.Id'))
     phone_label_id = db.Column('PhoneLabelId', db.Integer, db.ForeignKey('phone_label.Id'))
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
