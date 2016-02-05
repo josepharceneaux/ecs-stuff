@@ -26,22 +26,22 @@
         }
 
         function info(/*arg1[, arg2[, arg3...]]*/) {
-            toastr.info(toString(arguments), 'Information');
+            //toastr.info(toString(arguments), 'Information');
             $log.info.apply(this, ['info:'].concat(Array.prototype.slice.call(arguments)));
         }
 
         function success(/*arg1[, arg2[, arg3...]]*/) {
-            toastr.success(toString(arguments), 'Success');
+            //toastr.success(toString(arguments), 'Success');
             $log.info.apply(this, ['success:'].concat(Array.prototype.slice.call(arguments)));
         }
 
         function warn(/*arg1[, arg2[, arg3...]]*/) {
-            toastr.warning(toString(arguments), 'Warning');
+            //toastr.warning(toString(arguments), 'Warning');
             $log.warn.apply(this, ['warn:'].concat(Array.prototype.slice.call(arguments)));
         }
 
         function error(/*arg1[, arg2[, arg3...]]*/) {
-            toastr.error(toString(arguments), 'Error');
+            //toastr.error(toString(arguments), 'Error');
             $log.error.apply(this, ['error:'].concat(Array.prototype.slice.call(arguments)));
         }
 

@@ -1,9 +1,13 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
+# Flask Specific
+from flask import request
 import json
+import re
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.email_marketing import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
 from candidate_service.common.models.email_marketing import EmailCampaign
@@ -14,6 +18,17 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from datetime import datetime
+
+
+def get_json_if_exist(_request):
+    """ Function will ensure data's content-type is JSON, and it isn't empty
+    :type _request:  request
+    """
+    if "application/json" not in _request.content_type:
+        raise InvalidUsage("Request body must be a JSON object", custom_error.INVALID_INPUT)
+    if not _request.get_data():
+        raise InvalidUsage("Request body cannot be empty", custom_error.MISSING_INPUT)
+    return _request.get_json()
 
 
 def get_candidate_if_exists(candidate_id):
@@ -230,11 +245,57 @@ SEARCH_INPUT_AND_VALIDATIONS = {
 }
 
 
+def convert_to_snake_case(key):
+    """
+    Convert camelCase to snake_case
+    Copied from: http://goo.gl/648F0n
+    :param key:
+    :return:
+    """
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', key)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def is_backward_compatible(key):
+    """
+    This method will check for backward compatibility of old web2py based app's search keys
+    :param key: Key which is to be converted to new format
+    :return: Converted key
+    """
+    if key not in SEARCH_INPUT_AND_VALIDATIONS:
+        key = convert_to_snake_case(key)
+        if 'facet' in key:
+            key = key.replace('_facet', '')
+
+        if key == 'username':
+            key = 'user_ids'
+        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+            key = 'area_of_interest_ids'
+        elif key == 'status' or key == 'source':
+            key += '_ids'
+        elif key == 'skill_description':
+            key = 'skills'
+        elif key == 'position':
+            key = 'job_title'
+        elif key == 'concentration_type':
+            key = 'major'
+        elif key == 'branch':
+            key = 'military_branch'
+        elif key == 'highest_grade':
+            key = 'military_highest_grade'
+
+        if key not in SEARCH_INPUT_AND_VALIDATIONS:
+            raise InvalidUsage("`%s` is an invalid input" % key, 400)
+
+    return key
+
+
 def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
-        if key not in SEARCH_INPUT_AND_VALIDATIONS:
-            raise InvalidUsage("`%s` is an invalid input" % key, 400)
+        if key == 'searchSource':
+            continue
+        key = is_backward_compatible(key)
         if value.strip():
             if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
                 request_vars[key] = value
@@ -259,3 +320,10 @@ def validate_and_format_data(request_data):
             request_vars[key] = value
     return request_vars
 
+def is_valid_email_client(client_id):
+    """
+    Validate if client id is in the system
+    :param client_id: int
+    :return: string: email client name
+    """
+    return db.session.query(EmailClient.name).filter(EmailClient.id == int(client_id)).first()

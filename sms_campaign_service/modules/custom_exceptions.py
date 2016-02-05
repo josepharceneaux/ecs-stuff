@@ -26,7 +26,7 @@ class SmsCampaignApiException(sms_campaign_service.common.error_handling.Interna
     MULTIPLE_USERS_FOUND = 5005
     NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE = 5006
     ERROR_UPDATING_BODY_TEXT = 5007
-    NO_CANDIDATE_FOR_PHONE_NUMBER = 5008
+    NO_CANDIDATE_IN_USER_DOMAIN = 5008
     NO_USER_FOR_PHONE_NUMBER = 5009
 
     def to_dict(self):
@@ -104,7 +104,7 @@ class ErrorUpdatingBodyText(SmsCampaignApiException):
     error_code = SmsCampaignApiException.ERROR_UPDATING_BODY_TEXT
 
 
-class NoCandidateFoundForPhoneNumber(SmsCampaignApiException):
+class CandidateNotFoundInUserDomain(SmsCampaignApiException):
     """
     If we receive an SMS from candidate, and no candidate is found with sender's phone number,
     we raise this exception.
@@ -112,7 +112,7 @@ class NoCandidateFoundForPhoneNumber(SmsCampaignApiException):
     **Usage**
         .. see also:: process_candidate_reply() method of SmsCampaignBase class.
     """
-    error_code = SmsCampaignApiException.NO_CANDIDATE_FOR_PHONE_NUMBER
+    error_code = SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
 
 
 class NoUserFoundForPhoneNumber(SmsCampaignApiException):

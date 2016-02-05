@@ -19,7 +19,7 @@ from sms_campaign_service.tests.conftest import fake
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
                                                             MultipleUsersFound,
-                                                            NoCandidateFoundForPhoneNumber,
+                                                            CandidateNotFoundInUserDomain,
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate)
 from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
@@ -90,13 +90,12 @@ class TestSmsReceive(object):
             assert error.error_code == SmsCampaignApiException.NO_SMS_CAMPAIGN_SENT_TO_CANDIDATE
             assert str(candidate_phone_1.candidate_id) in error.message
 
-    def test_process_candidate_reply_with_no_candidate_phone_saved(self,
-                                                                   user_phone_1):
+    def test_process_candidate_reply_with_unknown_candidate_phone(self, user_phone_1):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
         Data passed is valid, but candidate phone is not saved in database.
         This is the case when candidate does not exist in getTalent database.
-        It should get NoCandidateForPhoneNumber custom exception.
+        It should get CandidateNotFoundInUserDomain custom exception.
         :return:
         """
         try:
@@ -104,8 +103,24 @@ class TestSmsReceive(object):
                                                      # unknown candidate phone
                                                      'From': fake.phone_number(),
                                                      'Body': "What's the venue?"})
-        except NoCandidateFoundForPhoneNumber as error:
-            assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_FOR_PHONE_NUMBER
+        except CandidateNotFoundInUserDomain as error:
+            assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
+
+    def test_process_candidate_reply_with_candidate_of_other_domain(
+            self, user_phone_1,  candidate_phone_in_other_domain):
+        """
+        This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
+        Data passed is valid, but candidate phone belongs to other domain.
+        This is the case when candidate does not exist in getTalent database.
+        It should get NO_CANDIDATE_IN_USER_DOMAIN custom error.
+        :return:
+        """
+        try:
+            SmsCampaignBase.process_candidate_reply({'To': user_phone_1.value,
+                                                     'From': candidate_phone_in_other_domain.value,
+                                                     'Body': "What's the venue?"})
+        except CandidateNotFoundInUserDomain as error:
+            assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
 
     def test_process_candidate_reply_with_multiple_candidates_having_same_phone(
             self, user_phone_1, candidates_with_same_phone):
@@ -116,9 +131,10 @@ class TestSmsReceive(object):
         :return:
         """
         try:
-            SmsCampaignBase.process_candidate_reply({'To': user_phone_1.value,
-                                                     'From': candidates_with_same_phone[0].value,
-                                                     'Body': "What's the venue?"})
+            SmsCampaignBase.process_candidate_reply(
+                {'To': user_phone_1.value,
+                 'From': candidates_with_same_phone[0].candidate_phone[0].value,
+                 'Body': "What's the venue?"})
         except MultipleCandidatesFound as error:
             assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
 
@@ -164,24 +180,24 @@ class TestSmsReceive(object):
         is returned to Twilio API.
         Candidate is associated with an SMS campaign. Then we assert that reply has been saved
         and replies count has been incremented by 1. Finally we assert that activity has been
-        created in database table 'Activity'
+        created in database table 'Activity'.
         :return:
         """
-        reply_text = "What's the venue?"
-        reply_count_before = get_replies_count(sms_campaign_of_current_user)
-        response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
-                                     data={'To': user_phone_1.value,
-                                           'From': candidate_phone_1.value,
-                                           'Body': reply_text})
-        assert response_get.status_code == 200, 'Response should be ok'
-        assert 'xml' in str(response_get.text).strip()
-        campaign_reply_in_db = get_reply_text(candidate_phone_1)
-        assert len(campaign_reply_in_db) == 1
-        assert campaign_reply_in_db[0].body_text == reply_text
-        reply_count_after = get_replies_count(sms_campaign_of_current_user)
-        assert reply_count_after == reply_count_before + 1
-        assert_for_activity(user_phone_1.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
-                            campaign_reply_in_db[0].id)
+        _assert_valid_response(sms_campaign_of_current_user,
+                               user_phone_1, candidate_phone_1)
+
+    def test_sms_receive_with_candidate_having_same_phone_in_diff_domains(
+            self, user_phone_1, candidates_with_same_phone_in_diff_domains,
+            process_send_sms_campaign, sms_campaign_of_current_user, candidate_phone_1):
+        """
+        - This tests the endpoint /v1/receive
+
+        Data passed is valid and candidate belongs to more than one domains.
+        It should not get any error.
+        :return:
+        """
+        _assert_valid_response(sms_campaign_of_current_user, user_phone_1,
+                               candidate_phone_1)
 
 
 def get_replies_count(campaign):
@@ -193,3 +209,28 @@ def get_replies_count(campaign):
     db.session.commit()
     sms_campaign_blasts = campaign.blasts[0]
     return sms_campaign_blasts.replies
+
+
+def _assert_valid_response(campaign_obj, user_phone, candidate_phone):
+    """
+    Here is the functionality to test valid response on given campaign
+    :param campaign_obj:
+    :param user_phone:
+    :param candidate_phone:
+    :return:
+    """
+    reply_text = "What's the venue?"
+    reply_count_before = get_replies_count(campaign_obj)
+    response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                 data={'To': user_phone.value,
+                                       'From': candidate_phone.value,
+                                       'Body': reply_text})
+    assert response_get.status_code == 200, 'Response should be ok'
+    assert 'xml' in str(response_get.text).strip()
+    campaign_reply_in_db = get_reply_text(candidate_phone)
+    assert len(campaign_reply_in_db) == 1
+    assert campaign_reply_in_db[0].body_text == reply_text
+    reply_count_after = get_replies_count(campaign_obj)
+    assert reply_count_after == reply_count_before + 1
+    assert_for_activity(user_phone.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                        campaign_reply_in_db[0].id)

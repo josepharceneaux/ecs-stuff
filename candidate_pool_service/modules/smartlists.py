@@ -131,7 +131,7 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access
         db.session.commit()
 
         # Update candidate documents on cloudsearch
-        update_candidates_on_cloudsearch(access_token, candidate_ids)
+        # update_candidates_on_cloudsearch(access_token, candidate_ids)
 
     # TODO Add activity
     return smartlist

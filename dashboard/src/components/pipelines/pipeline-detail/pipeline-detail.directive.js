@@ -33,27 +33,215 @@
         init();
         activate();
 
+        vm.redrawChart = redrawChart;
+        vm.updateChart = updateChart;
+        vm.removeFilter = removeFilter;
+        var dataSetLast24Hours;
+        var dataSetLast90Days;
+
         function activate() {
             logger.log('Activated Pipeline Detail View');
         }
 
         function init() {
+            // mock data: candidate growth
+            // by "hour", last day
+            dataSetLast24Hours = [1, 0, 0, 0,
+                0, 2, 5, 8,
+                10, 3, 0, 3,
+                13, 2, 3, 3,
+                5, 6, 10, 12,
+                8, 15, 20, 4];
+
+            // by "day", last 90 days
+            dataSetLast90Days = [48, 97, 38, 63, 45, 96, 47, 14, 45, 46,
+                29, 21, 16, 32, 25, 109, 93, 27, 50, 96,
+                46, 76, 72, 68, 32, 43, 67, 31, 117, 98,
+                110, 59, 76, 36, 2, 50, 81, 89, 27, 26,
+                118, 86, 29, 35, 61, 45, 76, 64, 135, 58,
+                62, 100, 39, 77, 48, 108, 124, 93, 17, 10,
+                5, 52, 54, 19, 41, 12, 29, 59, 29, 106,
+                54, 25, 26, 13, 32, 51, 41, 82, 20, 10,
+                10, 30, 40, 20, 35, 30, 55, 80, 100, (400-300)];
+
+            vm.chartFilters = {};
+            vm.daysFilterOptions = [7, 30, 60, 90];
+            vm.chartFilters.daysBack = vm.daysFilterOptions[1];
+
+            vm.chartOptions = {
+                chart: {
+                    renderTo: 'growth-chart',
+                    type: 'area',
+                    backgroundColor: null,
+                    spacingLeft: 40,
+                    spacingRight: 40,
+                    spacingTop: 50,
+                    style: {
+                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: 300
+                    },
+                    reflow: true
+                },
+                title: {
+                    text: ''
+                },
+                lang: {
+                    decimalPoint: ',',
+                    thousandsSep: '.'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    lineColor: 'transparent',
+                    tickLength: 0,
+                    tickInterval: 5 * 24 * 60 * 60 * 1000,
+                    endOnTick: true,
+                    title : {
+                        text: ''
+                    },
+                    labels: {
+                        y: 24,
+                        style: {
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: 400
+                        },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    gridLineColor: '#fff',
+                    yDecimals: 2,
+                    gridLineWidth: 1,
+                    title : {
+                        text: ''
+                    },
+                    labels: {
+                        style: {
+                            color: '#adadad',
+                            fontSize: '14px',
+                            fontWeight: 400
+                        },
+                        formatter: function () {
+                            if (this.value != 0) {
+                                return this.value;
+                            } else {
+                                return null;
+                            }
+                        }
+                    }
+                },
+                exporting: {
+                    enabled: false
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    x: 10,
+                    y: 0,
+                    floating: true,
+                    width: 170,
+                    symbolWidth: 12,
+                    itemMarginTop: 5,
+                    itemMarginBottom: 5,
+                    padding: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: '#cccccc',
+                    itemStyle: {
+                        fontWeight: 300
+                    },
+                    navigation: {
+                        style: {
+                            fontWeight: 400,
+                        }
+                    },
+                    enabled: false
+                },
+                tooltip: {
+                    borderWidth: 0,
+                    borderRadius: 0,
+                    backgroundColor: null,
+                    shadow: false,
+                    useHTML: true,
+                    formatter: function() {
+                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
+                        $.each(this.points, function () {
+                            s += this.series.name + ': ' + this.y + '<br/>';
+                        });
+                        return s;
+                    },
+                    shared: true,
+                    crosshairs: {
+                        color: 'white',
+                        dashStyle: 'solid'
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        animation: true,
+                        fillOpacity: 0.2,
+                        lineWidth:.3,
+                        marker: {
+                            enabled: true,
+                            symbol: 'circle',
+                            radius: 3,
+                            states: {
+                                hover: {
+                                    radius: 6,
+                                    fillOpacity:.4,
+                                    fillColor: '#FFFFFF',
+                                    lineWidth: 4,
+                                    lineColor: '#5e385d'
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                lineWidth:.4
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Candidates Added',
+                    color: '#5e385d',
+                    pointStart: getPointStart(vm.chartFilters.daysBack),
+                    pointInterval: getPointInterval(vm.chartFilters.daysBack),
+                    data: getData(vm.chartFilters.daysBack)
+                }]
+            };
+
+            vm.chart = new Highcharts.Chart(vm.chartOptions);
             vm.callouts = [
                 {
                     name: 'Total Candidates',
-                    value: '1000'
+                    tooltip: 'Total Candidates in the pipeline',
+                    value: '865',
+                    change: '<span class="negative">(-10%)</span>'
                 },
                 {
-                    name: 'Active Campaigns',
-                    value: '20'
+                    name: 'New Candidates',
+                    tooltip: 'candidates added to that pipeline in the last 30 days',
+                    value: '200',
+                    change: '2 New Today <span class="negative">(-2%)</span>'
                 },
                 {
                     name: 'Smart Lists',
-                    value: '10'
+                    tooltip: 'Total number of Smart Lists associated with that pipeline',
+                    value: '10',
+                    change: '<span class="positive">(+10%)</span>'
                 },
                 {
-                    name: 'Created Date',
-                    value: '4/3/16'
+                    name: 'Total Engagement',
+                    tooltip: '% of candidates engaged through all of your pipelines',
+                    value: '63%',
+                    change: '<span class="positive">(+25%)</span>'
                 }
             ];
 
@@ -84,199 +272,220 @@
                 }
             ];
 
-            vm.topSkills = [
+            vm.candidateCards = [
                 {
-                    title: 'Java Developer',
-                    width: 100,
-                    value: '45'
+                    name: 'Bob Smith',
+                    initials: 'BS',
+                    photo: '/images/placeholder/candidates/1.jpg',
+                    current: 'Senior Software Engineer at Google',
+                    activity: 'Bob recently viewed your email'
                 },
                 {
-                    title: 'Rails Developer',
-                    width: 80,
-                    value: '35'
+                    name: 'Kevin Thompson',
+                    initials: 'KT',
+                    photo: '/images/placeholder/candidates/2.jpg',
+                    current: 'Java Engineer at Facebook',
+                    activity: 'Kevin responded to your email'
                 },
                 {
-                    title: 'Angular Developer',
-                    width: 70,
-                    value: '20'
+                    name: 'Lenny Seager',
+                    initials: 'LS',
+                    photo: '/images/placeholder/candidates/3.jpg',
+                    current: 'Computer Science Student',
+                    activity: 'Lenny responded to your email'
                 },
                 {
-                    title: 'PHP Developer',
-                    width: 65,
-                    value: '10'
+                    name: 'Tom Chansky',
+                    initials: 'TC',
+                    photo: '/images/placeholder/candidates/4.jpg',
+                    current: 'iOS Engineer at AirBnB',
+                    activity: 'Tom viewed your email yesterday'
                 },
                 {
-                    title: 'Python Developer',
-                    width: 50,
-                    value: '+16'
+                    name: 'Chris Pratt',
+                    initials: 'CP',
+                    photo: '/images/placeholder/candidates/5.jpg',
+                    current: 'Android Developer - Freelance',
+                    activity: 'Chris clicked on your email'
                 },
+                {
+                    name: 'Megi Theodhor',
+                    initials: 'MT',
+                    photo: '/images/placeholder/candidates/6.jpg',
+                    current: 'Frontend Engineer at Uber',
+                    activity: 'Megi accepted an event invite'
+                },
+                {
+                    name: 'Julie Thomas',
+                    initials: 'JT',
+                    photo: '/images/placeholder/candidates/7.jpg',
+                    current: 'Senior Software Engineer',
+                    activity: 'Julie accepted an event invite'
+                },
+                {
+                    name: 'Rob Overman',
+                    initials: 'RO',
+                    photo: '/images/placeholder/candidates/8.jpg',
+                    current: 'Android App Enthusiast',
+                    activity: 'Rob commented on your FB post'
+                },
+                {
+                    name: 'Mike Gueyne',
+                    initials: 'MS',
+                    photo: '/images/placeholder/candidates/9.jpg',
+                    current: 'Software Engineer at Amazon',
+                    activity: 'Michelle accepted an event invite'
+                }
             ];
 
             vm.contributors = [
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
-                    value: 20
+                    name: 'Bob Smith',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
                 },
                 {
-                    name: 'Osman Masood',
-                    avatar: '//placehold.it/80x80',
-                    value: 18
+                    name: 'Katie Fries',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 55
                 },
                 {
-                    name: 'Jason Provencher',
-                    avatar: '//placehold.it/80x80',
-                    value: 15
+                    name: 'Rachel Thompson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    value: 45
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Chris Chang',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    value: 40
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1e.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google Southwest',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
                     value: 12
                 },
                 {
-                    name: 'Haohong Xu',
-                    avatar: '//placehold.it/80x80',
+                    name: 'Lauren Freeman',
+                    team: 'Google HR',
+                    avatar: '/images/placeholder/profiles/prof1g.jpg',
                     value: 10
+                },
+                {
+                    name: 'Rachel Sweezik',
+                    team: 'Google Rockstars',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 6
+                },
+                {
+                    name: 'Tim Christianson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1i.jpg',
+                    value: 5
+                },
+                {
+                    name: 'Amy whitter',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1j.jpg',
+                    value: 3
+                },
+                {
+                    name: 'Kate Ruthorford',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1k.jpg',
+                    value: 2
                 }
             ];
 
-            $('#pipelineDetailsViewChart').highcharts({
-                chart: {
-                    type: 'area',
-                    backgroundColor: null
-                },
-                title: {
-                    text: ''
-                },
-                lang: {
-                    decimalPoint: ',',
-                    thousandsSep: '.'
-                },
-                xAxis: {
-                    type: 'datetime',
-                    lineColor: 'transparent',
-                    tickLength: 0,
-                    endOnTick: true,
-                    title : {
-                        text: ""
-                    },
-                    labels: {
-                        y: 24,
-                        style: {
-                            color: '#fff',
-                            fontSize: '12px',
-                            fontWeight: "bold"
-                        },
-                        formatter: function() {
-                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
-                        }
-                    }
-                },
-                yAxis: {
-                    gridLineColor: '#fff',
-                    yDecimals: 2,
-                    gridLineWidth: 1.5,
-                    title : {
-                        text: ""
-                    },
-                    labels: {
-                        style: {
-                            color: '#adadad',
-                            fontSize: '12px',
-                            fontWeight: "bold"
-                        },
-                        formatter: function () {
-                            if (this.value != 0) {
-                              return this.value;
-                            } else {
-                              return null;
-                            }
-                        }
-                    }
-                },
-                exporting: {
-                    enabled: false
-                },
-                credits: {
-                    enabled: false
-                },
-                legend: {
-                    layout: 'vertical',
-                    align: 'right',
-                    verticalAlign: 'top',
-                    x: -8,
-                    y: -10,
-                    floating: true,
-                    width: 170,
-                    symbolWidth: 12,
-                    itemMarginTop: 5,
-                    itemMarginBottom: 5,
-                    padding: 12,
-                    backgroundColor: '#FFFFFF',
-                    borderColor: '#D9D9D9',
-                    borderWidth: 1
-                },
-                tooltip: {
-                    borderWidth:0,
-                    borderRadius:0,
-                    backgroundColor: null,
-                    shadow:false,
-                    useHTML: true,
-                    formatter: function() {
-                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
-                        $.each(this.points, function () {
-                            s += this.series.name + ': ' + this.y + '<br/>';
-                        });
-                        return s;
-                    },
-                    shared: true,
-                    crosshairs: {
-                        color: 'white',
-                        dashStyle: 'solid'
-                    }
-                },
-                plotOptions: {
-                    area: {
-                        animation: true,
-                        fillOpacity: 0.2,
-                        lineWidth: 0.2,
-                        marker: {
-                            enabled: false,
-                            symbol: 'circle',
-                            radius: 2,
-                            states: {
-                                hover: {
-                                    enabled: true
-                                }
-                            }
-                        },
-                        states: {
-                            hover: {
-                                lineWidth: 0.2
-                            }
-                        }
-                    }
-                },
-                series: [{
-                    name: 'Legend 1',
-                    color: '#907f90',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 2000, 800, 6000, 500, 2500, 1500, 2000, 1000, 500]
-                }, {
-                    name: 'Legend 2',
-                    color: '#97b99b',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 1000, 500, 5000, 1500, 800, 1000, 500, 300, 150]
-                }, {
-                    name: 'Legend 3',
-                    color: '#6ba5ae',
-                    pointStart: Date.UTC(2016, 0, 1),
-                    pointInterval: 30 * 24 * 3600 * 1000,
-                    data: [0, 500, 300, 1500, 200, 800, 500, 550, 200, 50]
-                }]
+        }
+
+        function removeFilter() {
+            vm.tableData.query.filter = '';
+
+            if (vm.tableData.filter.form.$dirty) {
+                vm.tableData.filter.form.$setPristine();
+            }
+        }
+
+        function logOrder(order) {
+            console.log('order: ', order);
+        }
+
+        function logPagination(page, limit) {
+            console.log('page: ', page);
+            console.log('limit: ', limit);
+        }
+
+        function redrawChart() {
+            vm.chart.reflow();
+        }
+
+        function updateChart(daysBack) {
+            vm.chart.series[0].update({
+                pointStart: getPointStart(daysBack),
+                pointInterval: getPointInterval(daysBack),
+                data: getData(daysBack)
             });
+        }
+
+        function getPointStart(daysBack) {
+            var d = new Date();
+            d.setDate(d.getDate() - daysBack - 1 /* don't include today */);
+            d.setHours(0);
+            d.setMinutes(0);
+            d.setSeconds(0);
+            return d.getTime();
+        }
+
+        function getPointInterval(daysBack) {
+            var day = 24 * 60 * 60 * 1000;
+            if (daysBack === 1) {
+                return day * Math.floor(daysBack / 12) / 24; // @TODO update x-axis labels to hours
+            } else if (daysBack === 7) {
+                return day * Math.floor(daysBack / 7); // => expects 7 data points
+            } else if (daysBack === 30) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 60) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 90) {
+                return day * Math.floor(daysBack / 15);
+            }
+        }
+
+        function getData(daysBack) {
+            if (daysBack === 1) {
+                return aggregate(dataSetLast24Hours, 24, 12);
+            } else if (daysBack === 7) {
+                return aggregate(dataSetLast90Days, daysBack, 7);
+            } else if (daysBack === 30) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 60) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 90) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            }
+        }
+
+        function aggregate(data, daysBack, dataPoints) {
+            var aggregate = [];
+            var newData = data.slice(data.length - daysBack);
+            var dataGroupSize = Math.max(Math.floor(daysBack / dataPoints), 1);
+            while (newData.length >= dataGroupSize) {
+                aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
+                    return prev + curr;
+                }));
+            }
+            return aggregate;
         }
     }
 })();

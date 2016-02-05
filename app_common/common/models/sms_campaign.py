@@ -66,10 +66,10 @@ class SmsCampaignSend(db.Model):
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
-                                                      cascade='all,delete-orphan',
-                                                      passive_deletes=True,
-                                                      backref='send')
+    url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                   cascade='all,delete-orphan',
+                                   passive_deletes=True,
+                                   backref='send')
 
     def __repr__(self):
         return "<SmsCampaignSend (id = %r)>" % self.id
@@ -78,6 +78,8 @@ class SmsCampaignSend(db.Model):
     def get_latest_campaign_by_candidate_id(cls, candidate_id):
         if not isinstance(candidate_id, (int, long)):
             raise InvalidUsage('Invalid candidate_id given')
+        # dash in following query is to order in ascending order in terms of datetime
+        # (i.e. latest campaign send record should appear first)
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
 
@@ -118,8 +120,8 @@ class SmsCampaignSendUrlConversion(db.Model):
     __tablename__ = 'sms_campaign_send_url_conversion'
     id = db.Column(db.Integer, primary_key=True)
     send_id = db.Column(db.Integer,
-                                 db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
-                                 nullable=False)
+                        db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
+                        nullable=False)
     url_conversion_id = db.Column(db.Integer,
                                   db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
                                   nullable=False)

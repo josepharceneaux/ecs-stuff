@@ -3,9 +3,10 @@ Helper functions for candidate CRUD operations and tracking edits made to the Ca
 """
 # Standard libraries
 import datetime
-from flask import request
+import urlparse
 import dateutil.parser
 import simplejson as json
+from flask import request
 from datetime import date
 
 # Database connection and logger
@@ -41,6 +42,7 @@ from candidate_service.common.utils.validators import (sanitize_zip_code, is_num
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
+
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -471,15 +473,15 @@ def date_of_employment(year, month, day=1):
     return str(date(year, month, day)) if year else None
 
 
-def get_candidate_id_from_email_if_exists(user_id, email):
+def get_candidate_id_from_email_if_exists_in_domain(user, email):
     """
     Function will get the domain-candidate associated with email and return its ID.
+    :type user: User
     :type email: str
     :return Candidate.id or None (if not found)
     """
-    email_obj = CandidateEmail.query.join(Candidate) \
-        .filter(Candidate.user_id == user_id) \
-        .filter(CandidateEmail.address == email).first()
+    email_obj = CandidateEmail.query.join(Candidate).join(User).filter(
+            User.domain_id == user.domain_id).filter(CandidateEmail.address == email).first()
     if not email_obj:
         raise NotFoundError(error_message='Candidate email not recognized: {}'.format(email),
                             error_code=custom_error.EMAIL_NOT_FOUND)
@@ -490,7 +492,10 @@ def get_candidate_id_from_email_if_exists(user_id, email):
 # Helper Functions For Candidate Edits
 ######################################
 def fetch_candidate_edits(candidate_id):
-    assert isinstance(candidate_id, (int, long))
+    """
+    :type candidate_id:  int|long
+    :rtype:  list[dict]
+    """
     all_edits = []
     for can_edit in CandidateEdit.get_by_candidate_id(candidate_id=candidate_id):
         table_and_field_names_tuple = CandidateEdit.get_table_and_field_names_from_id(can_edit.field_id)
@@ -873,6 +878,19 @@ def social_network_id_from_name(name):
     return matching_social_network.id if matching_social_network else None
 
 
+def social_network_name_from_url(url):
+
+    if url:
+        parsed_url = urlparse.urlparse(url)
+        url = "%s://%s" % (parsed_url.scheme, parsed_url.netloc)
+        result = db.session.query(SocialNetwork.name).filter(SocialNetwork.url == url).first()
+        if result:
+            return result[0]
+        else:
+            return "Unknown"
+
+
+
 def _update_candidate(first_name, middle_name, last_name, formatted_name,
                       objective, summary, candidate_id, user_id, edited_time):
     """
@@ -1244,7 +1262,7 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
     for work_experience in work_experiences:
         # CandidateExperience
         experience_dict = dict(
-            list_order=work_experience.get('list_order', 1) or 1,
+            list_order=work_experience.get('list_order') or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),
@@ -1658,6 +1676,9 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
     Function will update CandidateSocialNetwork or create new one(s).
     """
     for social_network in social_networks:
+
+        if not social_network.get('name'):
+            social_network['name'] = social_network_name_from_url(social_network.get('profile_url'))
 
         social_network_dict = dict(
             social_network_id=social_network_id_from_name(name=social_network.get('name')),

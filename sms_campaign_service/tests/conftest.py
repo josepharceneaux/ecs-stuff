@@ -4,8 +4,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
+import json
 import time
-from datetime import timedelta
+from datetime import (datetime, timedelta)
 
 # Third Party
 from dateutil.relativedelta import relativedelta
@@ -13,10 +14,14 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
+
 app, _ = init_sms_campaign_app_and_celery_app()
 
 # common conftest
-from sms_campaign_service.common.tests.conftest import *
+from sms_campaign_service.common.tests.conftest import \
+    (db, pytest, fake, requests, gen_salt, sample_user_2, user_auth, access_token_first,
+    sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
+     test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain)
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -26,13 +31,12 @@ from sms_campaign_service.tests.modules.common_functions import (assert_api_send
                                                                  delete_test_scheduled_task)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
-                                                                     TWILIO_INVALID_TEST_NUMBER,
-                                                                     TWILIO_PAID_NUMBER_1)
+                                                                     TWILIO_INVALID_TEST_NUMBER)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
-from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone)
+from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidatePhone, Candidate)
 from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCandidate)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend)
@@ -67,12 +71,6 @@ def remove_any_user_phone_record_with_twilio_test_number():
     records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
     records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
     map(UserPhone.delete, records)
-    test_numbers = [TWILIO_PAID_NUMBER_1, TWILIO_PAID_NUMBER_1, TWILIO_PAID_NUMBER_1,
-                    TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER]
-    candidate_phones = []
-    for test_number in test_numbers:
-        candidate_phones += CandidatePhone.get_by_phone_value(test_number)
-    map(CandidatePhone.delete, candidate_phones)
 
 
 # clean database tables user_phone and candidate_phone first
@@ -80,34 +78,22 @@ remove_any_user_phone_record_with_twilio_test_number()
 
 
 @pytest.fixture()
-def auth_token(user_auth, sample_user):
-    """
-    returns the access token using pytest fixture defined in common/tests/conftest.py
-    :param user_auth: fixture in common/tests/conftest.py
-    :param sample_user: fixture in common/tests/conftest.py
-    """
-    auth_token_obj = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    return auth_token_obj['access_token']
-
-
-@pytest.fixture()
 def auth_token_2(user_auth, sample_user_2):
     """
     returns the access token using pytest fixture defined in common/tests/conftest.py
     :param user_auth: fixture in common/tests/conftest.py
-    :param sample_user: fixture in common/tests/conftest.py
     """
     auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
     return auth_token_obj['access_token']
 
 
 @pytest.fixture()
-def valid_header(auth_token):
+def valid_header(access_token_first):
     """
     Returns the header containing access token and content-type to make POST/DELETE requests.
-    :param auth_token: fixture to get access token of user
+    :param access_token_first: fixture to get access token of user
     """
-    auth_header = {'Authorization': 'Bearer %s' % auth_token}
+    auth_header = {'Authorization': 'Bearer %s' % access_token_first}
     auth_header.update(JSON_CONTENT_TYPE_HEADER)
     return auth_header
 
@@ -116,7 +102,7 @@ def valid_header(auth_token):
 def valid_header_2(auth_token_2):
     """
     Returns the header containing access token and content-type to make POST/DELETE requests.
-    :param auth_token: fixture to get access token of user
+    :param access_token_first: fixture to get access token of user
     """
     auth_header = {'Authorization': 'Bearer %s' % auth_token_2}
     auth_header.update(JSON_CONTENT_TYPE_HEADER)
@@ -124,14 +110,14 @@ def valid_header_2(auth_token_2):
 
 
 @pytest.fixture()
-def user_phone_1(request, sample_user):
+def user_phone_1(request, user_first):
     """
-    This creates a user_phone record for sample_user
+    This creates a user_phone record for user_first
     :param request:
-    :param sample_user: fixture in common/tests/conftest.py
+    :param user_first: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
+    user_phone = _create_user_twilio_phone(user_first, fake.phone_number())
 
     def tear_down():
         _delete_user_phone(user_phone)
@@ -141,14 +127,14 @@ def user_phone_1(request, sample_user):
 
 
 @pytest.fixture()
-def user_phone_2(request, sample_user):
+def user_phone_2(request, user_first):
     """
-    This creates another user_phone record for sample_user
+    This creates another user_phone record for user_first
     :param request:
-    :param sample_user: fixture in common/tests/conftest.py
+    :param user_first: fixture in common/tests/conftest.py
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user, fake.phone_number())
+    user_phone = _create_user_twilio_phone(user_first, fake.phone_number())
 
     def tear_down():
         _delete_user_phone(user_phone)
@@ -174,15 +160,15 @@ def user_phone_3(request, sample_user_2):
 
 
 @pytest.fixture()
-def sample_smartlist(request, sample_user):
+def sample_smartlist(request, user_first):
     """
     This creates sample smartlist for sample user
     :param request:
-    :param sample_user:
+    :param user_first:
     :return:
     """
 
-    smartlist = _create_smartlist(sample_user)
+    smartlist = _create_smartlist(user_first)
 
     def tear_down():
         _delete_smartlist(smartlist)
@@ -192,7 +178,25 @@ def sample_smartlist(request, sample_user):
 
 
 @pytest.fixture()
-def sample_sms_campaign_candidates(sample_user,
+def smartlist_of_other_domain(request, user_from_diff_domain):
+    """
+    This creates sample smartlist for sample user
+    :param request:
+    :param user_first:
+    :return:
+    """
+
+    smartlist = _create_smartlist(user_from_diff_domain)
+
+    def tear_down():
+        _delete_smartlist(smartlist)
+
+    request.addfinalizer(tear_down)
+    return smartlist
+
+
+@pytest.fixture()
+def sample_sms_campaign_candidates(user_first,
                                    sample_smartlist,
                                    candidate_first,
                                    candidate_second):
@@ -203,14 +207,27 @@ def sample_sms_campaign_candidates(sample_user,
     :param candidate_second:
     :return:
     """
-    candidate_first.update(user_id=sample_user.id)
-    candidate_second.update(user_id=sample_user.id)
+    candidate_first.update(user_id=user_first.id)
+    candidate_second.update(user_id=user_first.id)
     smartlist_candidate_1 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
                                                candidate_id=candidate_first.id)
     SmartlistCandidate.save(smartlist_candidate_1)
     smartlist_candidate_2 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
                                                candidate_id=candidate_second.id)
     SmartlistCandidate.save(smartlist_candidate_2)
+
+
+@pytest.fixture()
+def sample_campaign_candidate_of_other_domain(user_first, sample_smartlist,
+                                              candidate_in_other_domain):
+    """
+    This adds candidate of other domain to sample_smartlist.
+    :param sample_smartlist:
+    :return:
+    """
+    smartlist_candidate_1 = SmartlistCandidate(smartlist_id=sample_smartlist.id,
+                                               candidate_id=candidate_in_other_domain.id)
+    SmartlistCandidate.save(smartlist_candidate_1)
 
 
 @pytest.fixture()
@@ -256,7 +273,7 @@ def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
 @pytest.fixture()
 def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
     """
-    This creates SMS campaign for some other user i.e. not sample_user rather sample_user_2
+    This creates SMS campaign for some other user i.e. not user_first rather sample_user_2
     :param campaign_valid_data:
     :param user_phone_3:
     :return:
@@ -291,12 +308,12 @@ def one_time_and_periodic(request, valid_header):
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_current_user(request, sample_user, valid_header,
+def scheduled_sms_campaign_of_current_user(request, user_first, valid_header,
                                            sms_campaign_of_current_user):
     """
-    This creates the SMS campaign for sample_user using valid data.
+    This creates the SMS campaign for user_first using valid data.
     """
-    campaign = _get_scheduled_campaign(sample_user, sms_campaign_of_current_user, valid_header)
+    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_current_user, valid_header)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, valid_header)
@@ -333,6 +350,7 @@ def create_sms_campaign_blast(request, sms_campaign_of_current_user):
 
     def fin():
         _delete_blast(blast_obj)
+
     request.addfinalizer(fin)
     return blast_obj
 
@@ -349,12 +367,13 @@ def create_blast_for_not_owned_campaign(request, sms_campaign_of_other_user):
 
     def fin():
         _delete_blast(blast_obj)
+
     request.addfinalizer(fin)
     return blast_obj
 
 
 @pytest.fixture()
-def create_campaign_sends(sample_user, candidate_first, candidate_second,
+def create_campaign_sends(user_first, candidate_first, candidate_second,
                           create_sms_campaign_blast):
     """
     This creates a record in database table "sms_campaign_send"
@@ -362,7 +381,7 @@ def create_campaign_sends(sample_user, candidate_first, candidate_second,
     :param candidate_second: fixture to create another test candidate
     :return:
     """
-    camp_obj = SmsCampaignBase(sample_user.id)
+    camp_obj = SmsCampaignBase(user_first.id)
 
     camp_obj.create_or_update_campaign_send(create_sms_campaign_blast.id, candidate_first.id,
                                             datetime.now(), SmsCampaignSend)
@@ -383,14 +402,14 @@ def create_campaign_replies(candidate_phone_1, create_sms_campaign_blast):
 
 
 @pytest.fixture()
-def sample_smartlist_2(request, sample_user):
+def sample_smartlist_2(request, user_first):
     """
     This creates sample smartlist for sample user
     :param request:
-    :param sample_user:
+    :param user_first:
     :return:
     """
-    smartlist = _create_smartlist(sample_user)
+    smartlist = _create_smartlist(user_first)
 
     def tear_down():
         _delete_smartlist(smartlist)
@@ -483,6 +502,38 @@ def candidate_invalid_phone(request, candidate_second):
 
 
 @pytest.fixture()
+def candidate_in_other_domain(request, user_from_diff_domain):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20),
+                          user_id=user_from_diff_domain.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture()
+def candidate_phone_in_other_domain(request, candidate_in_other_domain):
+    """
+    This associates sample_smartlist with the sms_campaign_of_current_user
+    """
+    candidate_phone = _create_candidate_mobile_phone(candidate_in_other_domain, fake.phone_number())
+
+    def tear_down():
+        _delete_candidate_phone(candidate_phone)
+
+    request.addfinalizer(tear_down)
+    return candidate_phone
+
+
+@pytest.fixture()
 def candidates_with_same_phone(request, candidate_first, candidate_second):
     """
     This associates same number to candidate_first and candidate_second
@@ -498,16 +549,34 @@ def candidates_with_same_phone(request, candidate_first, candidate_second):
         _delete_candidate_phone(cand_phone_2)
 
     request.addfinalizer(tear_down)
-    return cand_phone_1, cand_phone_2
+    return candidate_first, candidate_second
 
 
 @pytest.fixture()
-def users_with_same_phone(request, sample_user, sample_user_2):
+def candidates_with_same_phone_in_diff_domains(request, candidate_first,
+                                               candidate_phone_1,
+                                               candidate_in_other_domain):
     """
-    This associates same number to sample_user and sample_user_2
+    This associates same number to candidate_first and candidate_in_other_domain
+    :return:
+    """
+    cand_phone_2 = _create_candidate_mobile_phone(candidate_in_other_domain,
+                                                  candidate_phone_1.value)
+
+    def tear_down():
+        _delete_candidate_phone(cand_phone_2)
+
+    request.addfinalizer(tear_down)
+    return candidate_first, candidate_in_other_domain
+
+
+@pytest.fixture()
+def users_with_same_phone(request, user_first, sample_user_2):
+    """
+    This associates same number to user_first and sample_user_2
     """
     common_phone = fake.phone_number()
-    user_1 = _create_user_twilio_phone(sample_user, common_phone)
+    user_1 = _create_user_twilio_phone(user_first, common_phone)
     user_2 = _create_user_twilio_phone(sample_user_2, common_phone)
 
     def tear_down():
@@ -519,7 +588,7 @@ def users_with_same_phone(request, sample_user, sample_user_2):
 
 
 @pytest.fixture()
-def process_send_sms_campaign(sample_user, auth_token,
+def process_send_sms_campaign(user_first, access_token_first,
                               sms_campaign_of_current_user,
                               sample_sms_campaign_candidates,
                               smartlist_for_not_scheduled_campaign,
@@ -532,7 +601,7 @@ def process_send_sms_campaign(sample_user, auth_token,
     """
     response_post = requests.post(SmsCampaignApiUrl.SEND
                                   % sms_campaign_of_current_user.id,
-                                  headers=dict(Authorization='Bearer %s' % auth_token))
+                                  headers=dict(Authorization='Bearer %s' % access_token_first))
     assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
 
@@ -554,10 +623,11 @@ def url_conversion_by_send_test_sms_campaign(request,
     sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
     # get URL conversion record from relationship
     url_conversion = \
-        sms_campaign_blast.blast_sends[0].sms_campaign_sends_url_conversions[0].url_conversion
+        sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion
 
     def tear_down():
         UrlConversion.delete(url_conversion)
+
     request.addfinalizer(tear_down)
     return url_conversion
 
@@ -729,4 +799,3 @@ def _delete_blast(blast_obj):
         SmsCampaignBlast.delete(blast_obj)
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
-

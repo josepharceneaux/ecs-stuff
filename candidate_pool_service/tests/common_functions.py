@@ -111,6 +111,13 @@ def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
     return response.json(), response.status_code
 
 
+def talent_pipeline_campaigns_api(access_token, talent_pipeline_id):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline_id, headers=headers)
+    return response.json(), response.status_code
+
+
 def talent_pool_update_stats(access_token):
 
     headers = {'Authorization': 'Bearer %s' % access_token}

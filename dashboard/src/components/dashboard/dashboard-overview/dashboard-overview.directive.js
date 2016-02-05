@@ -24,16 +24,22 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['logger'];
+    ControllerFunction.$inject = ['logger', '$mdDialog', '$mdMedia', '$cookies', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction(logger) {
+    function ControllerFunction(logger, $mdDialog, $mdMedia, $cookies, $timeout) {
         var vm = this;
 
         init();
         activate();
+        drawTopPipelinesChart();
+        drawCandidatesDistributionChart();
+        showWelcomeDialog();
 
         function init() {
+            // example for md-dialog example
+            vm.items = [1, 2, 3];
+
             vm.itemsPerPageOptions = [
                 { value: 5, name: '5 per page' },
                 { value: 10, name: '10 per page' },
@@ -153,7 +159,7 @@
                 },
                 {
                     id: '94af155370ff640425a75c743ade5787',
-                    name: 'Lazy Exotic Environment Technologist',
+                    name: 'Exotic Environment Technologist',
                     totalCandidates: '20',
                     dateCreated: '2015-02-15',
                     growth: '+45',
@@ -169,7 +175,7 @@
                 },
                 {
                     id: '6c0b23ddc797500cc16b8a42a5a49105',
-                    name: 'Fax Machine Masterer',
+                    name: 'Front End Developer',
                     totalCandidates: '132',
                     dateCreated: '2015-10-22',
                     growth: '+33',
@@ -467,10 +473,343 @@
                 { location: 'Orlando, FL' },
                 { location: 'Santa Cruz, CA' }
             ];
+
+            vm.teamName = 'Google Drive Team';
+
+            vm.recommendedCandidates = [
+                {
+                    name: 'Bob Smith',
+                    avatar: '/images/placeholder/candidates/1.jpg',
+                    current: 'Senior Software Engineer at Google',
+                    activity: 'Recent Activity: Bob recently viewed your email',
+                    pipeline: 'Android Developers'
+                },
+                {
+                    name: 'Kevin Thompson',
+                    avatar: '/images/placeholder/candidates/2.jpg',
+                    current: 'Senior Software Engineer at GetTalent',
+                    activity: 'Recent Activity: Kevin responded to your email',
+                    pipeline: 'Android Developers'
+                },
+                {
+                    name: 'Lenny Seager',
+                    avatar: '/images/placeholder/candidates/3.jpg',
+                    current: 'Computer Science Student',
+                    activity: 'Recent Activity: Lenny responded to your email',
+                    pipeline: 'iOS Developers'
+                },
+                {
+                    name: 'Tom Chansky',
+                    avatar: '/images/placeholder/candidates/4.jpg',
+                    current: 'iOS Engineer at AirBnB',
+                    activity: 'Recent Activity: Tom viewed your email yesterday',
+                    pipeline: 'Senior Java Engineer'
+                },
+                {
+                    name: 'Chris Pratt',
+                    avatar: '/images/placeholder/candidates/5.jpg',
+                    current: 'Android Developer - Freelance',
+                    activity: 'Recent Activity: Chris clicked on your email',
+                    pipeline: 'Senior Java Engineer'
+                }
+            ];
+
+            vm.topContributors = [
+                {
+                    name: 'Bob Smith',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1a.jpg',
+                    value: 60
+                },
+                {
+                    name: 'Katie Fries',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    value: 55
+                },
+                {
+                    name: 'Rachel Thompson',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1c.jpg',
+                    value: 45
+                },
+                {
+                    name: 'Chris Chang',
+                    team: 'Google SF',
+                    avatar: '/images/placeholder/profiles/prof1d.jpg',
+                    value: 40
+                },
+                {
+                    name: 'Chrissy Donnelly',
+                    team: 'Google Boston',
+                    avatar: '/images/placeholder/profiles/prof1h.jpg',
+                    value: 10
+                },
+                {
+                    name: 'Sean Zinsmeister',
+                    team: 'Google Southwest',
+                    avatar: '/images/placeholder/profiles/prof1f.jpg',
+                    value: 12
+                }
+            ];
+
+            vm.newCandidateToday = 559;
+            vm.teamContributions = 400;
+
+            vm.viewCandidate = function (candidate) {
+                
+                // TODO: go to candidate detail page
+                alert('View candidate: ' + candidate.name);
+            
+            };
+
+            vm.emailToCandidate = function (candidate) {
+
+                // TODO: email to candidate
+                alert('Email to ' + candidate.name);
+
+            };
+
+            vm.topPipelines = [
+                {
+                    title: 'Android Developers',
+                    candidates: 100,
+                    recommendations: 80
+                },
+                {
+                    title: 'Python',
+                    candidates: 90,
+                    recommendations: 70
+                },
+                {
+                    title: 'Backbone',
+                    candidates: 70,
+                    recommendations: 50
+                },
+                {
+                    title: 'Javascript',
+                    candidates: 55,
+                    recommendations: 45
+                },
+                {
+                    title: 'PHP',
+                    candidates: 50,
+                    recommendations: 45
+                }
+            ];
+
+            vm.candidates = [
+                {
+                    name: 'Used in Pipelines',
+                    value: 21683
+                },
+                {
+                    name: 'Total in Talent Pool',
+                    value: 43215
+                }
+            ];
         }
 
         function activate() {
             logger.log('Activated Dashboard Overview View');
+        }
+
+        function drawCandidatesDistributionChart() {
+            $timeout(function () {
+                $('#candidate-distribution-chart').highcharts({
+                    chart: {
+                        type: 'pie',
+                        backgroundColor: 'transparent'
+                    },
+                    title: {
+                        useHTML: true,
+                        text: '<span>43215</span><br/><span>Candidates</span>',
+                        align: 'center',
+                        floating: true,
+                        y: 100,
+                        style: {
+                            textAlign: 'center'
+                        }
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    legend: {
+                        align: 'left',
+                        itemStyle: {
+                            color: '#fff'
+                        }
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    tooltip: {
+                        formatter: function () {
+                            return this.key + ': ' + this.y + ' (' + Math.round(this.percentage) + '%)';
+                        }
+                    },
+                    plotOptions: {
+                        pie: {
+                            allowPointSelect: true,
+                            showInLegend: true,
+                            shadow: false,
+                            center: ['50%', '50%'],
+                            dataLabels: {
+                                enabled: false
+                            }
+                        },
+                        series: {
+                            borderWidth: 0
+                        }
+                    },
+                    series: [
+                        {
+                            name: 'Candidates Usage',
+                            data: [
+                                {
+                                    name: vm.candidates[0].name,
+                                    color: '#2AF4AA',
+                                    y: vm.candidates[0].value
+                                },
+                                {
+                                    name: vm.candidates[1].name,
+                                    color: '#1EA778',
+                                    y: vm.candidates[1].value
+                                }
+                            ],
+                            size: '100%',
+                            innerSize: '70%'
+                        }
+                    ]
+                });
+            });
+        }
+
+        function drawTopPipelinesChart() {
+            $timeout(function () {
+                $('#top-pipelines-chart').highcharts({
+                    chart: {
+                        type: 'bar',
+                        backgroundColor: 'transparent'
+                    },
+                    title: {
+                        text: null
+                    },
+                    exporting: {
+                        enabled: false
+                    },
+                    xAxis: {
+                        categories: _.pluck(vm.topPipelines, 'title'),
+                        title: {
+                            text: null
+                        },
+                        labels: {
+                            enabled: false
+                        },
+                        tickLength: 0,
+                        lineWidth: 0                        
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: null
+                        },
+                        labels: {
+                            enabled: false
+                        },
+                        gridLineWidth: 0,
+                        max: 100
+                    },
+                    plotOptions: {
+                        series: {
+                            borderWidth: 0,
+                            pointPadding: 0,
+                            groupPadding: 0.1
+                        }
+                    },
+                    legend: {
+                        align: 'left',
+                        itemStyle: {
+                            color: '#fff'
+                        },
+                        margin: 0
+                    },
+                    credits: {
+                        enabled: false
+                    },
+                    series: [{
+                        name: 'Available Candidates',
+                        data: _.pluck(vm.topPipelines, 'candidates'),
+                        color: '#1EA778',
+                        pointWidth: 30,
+                        dataLabels: {
+                            enabled: true,
+                            align: 'right',
+                            color: '#fff',
+                            style: {
+                                fontSize: '16px',
+                                textShadow: 'none',
+                                textWeight: 'normal'
+                            },
+                            formatter: function () {
+                                return this.y + '%';
+                            }
+                        }
+                    }, {
+                        name: 'Recommendations',
+                        data: _.pluck(vm.topPipelines, 'recommendations'),
+                        color: '#2AF4AA',
+                        pointWidth: 10
+                    }]
+                });
+            });
+        }
+
+        function showWelcomeDialog($event) {
+            var useFullScreen = ($mdMedia('sm') || $mdMedia('xs'));
+
+            // only show welcome modal if it hasn't been shown before (i.e. until cookie expires)
+            if (!$cookies.getObject('welcomeModalShown')) {
+                $mdDialog.show({
+                    controller: DialogController,
+                    controllerAs: 'vm',
+                    templateUrl: 'components/onboard/onboard-welcome/onboard-welcome.html',
+                    parent: angular.element(document.body),
+                    targetEvent: $event,
+                    clickOutsideToClose: true,
+                    fullscreen: useFullScreen
+                })
+                .then(function (answer) {
+                    //$scope.status = 'You said the information was "' + answer + '".';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                }, function() {
+                    //$scope.status = 'You canceled the dialog.';
+
+                    // set cookie, expires in 1 day
+                    var expireDate = new Date();
+                    expireDate.setDate(expireDate.getDate() + 1);
+                    $cookies.put('welcomeModalShown', true, { expires: expireDate });
+                });
+            }
+        };
+
+        DialogController.$inject = ['$scope', '$mdDialog'];
+
+        /* @ngInject */
+        function DialogController($scope, $mdDialog) {
+            $scope.hide = function() {
+                $mdDialog.hide();
+            };
+            $scope.cancel = function() {
+                $mdDialog.cancel();
+            };
+            $scope.answer = function(answer) {
+                $mdDialog.hide(answer);
+            };
         }
     }
 })();

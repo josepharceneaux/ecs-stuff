@@ -2,19 +2,6 @@
 // Modules / Feed
 // ------------
 
-.feed {
-  position: absolute;
-  top: -$misc--topNavMenuHeight;
-  right: 0;
-  height: 100%;
-  z-index: $z-index--3;
-  box-shadow: -3px 0px 36px -12px rgba(0,0,0,0.15);
-
-  @include helper--media($breakpoint--full) {
-    position: relative;
-  }
-}
-
 // -----
 // Inner
 // -----
@@ -27,6 +14,8 @@
 .feed__inner--active {
   animation: animation--show $easing--slow;
   display: block;
+  position: relative;
+  height: 100%;
 }
 
 // -----
@@ -36,6 +25,8 @@
 .feed__header {
   @extend .icon--bars;
 
+  position: relative;
+  z-index: 1;
   transition: background-color $easing--slow;
   padding-top: $padding--normal;
   padding-bottom: $padding--normal;
@@ -43,6 +34,7 @@
   padding-right: $padding--huge;
   background-color: $color--nearWhite;
   outline: none;
+  box-shadow: 0 0 20px 10px rgba(255,255,255,1);
 
   @include helper--media($breakpoint--medium) {
     background-color: transparent;
@@ -67,6 +59,17 @@
     background-color: $color--nearWhite;
     cursor: pointer;
   }
+}
+
+// -----
+// Content
+// -----
+
+.feed__content {
+  position: absolute;
+  overflow-y: auto;
+  height: 100%;
+  border-bottom: 60px solid transparent;
 }
 
 // -----

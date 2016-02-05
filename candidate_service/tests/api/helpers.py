@@ -90,6 +90,16 @@ def response_info(response):
     return content.format(url, request, status_code, _json)
 
 
+def request_to_candidate_search_resource(token, request, data=None):
+    """ Function will send a request to candidate search api
+    :type token:  str
+    :type request:  str
+    :type data:  dict
+    """
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI
+    return define_and_send_request(token, request, url, data)
+
+
 def request_to_candidates_resource(access_token, request, data=None):
     """
     Function sends a get request to CandidatesResource NOT CandidateResource

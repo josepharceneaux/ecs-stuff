@@ -140,11 +140,11 @@
                     </div>
 
                     <div class="form__fieldset row--expanded">
-                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': editEventForm.smartListToInvite.$invalid && (editEventForm.smartListToInvite.$touched || editEventForm.$submitted)}">
-                            <label class="form__label" for="SelectSmartListsToInvites">Select Smart Lists to Invite</label>
-                            <select ng-model="vm.event.smartListsToInvite" ng-options="option.name for option in vm.smartLists track by option.id"
-                                gt-float-label required id="smartListToInvite" class="form__input--select" name="smartListToInvite">
-                                <option value="" ng-show="!vm.event.smartListsToInvite">Select Smart Lists to Invite</option>
+                        <div class="col--medium-12 form__col form__col--stacked" ng-class="{'form__col--error': editEventForm.smartlistToInvite.$invalid && (editEventForm.smartlistToInvite.$touched || editEventForm.$submitted)}">
+                            <label class="form__label" for="SelectSmartlistsToInvites">Select Smartlists to Invite</label>
+                            <select ng-model="vm.event.smartlistsToInvite" ng-options="option.name for option in vm.smartlists track by option.id"
+                                gt-float-label required id="smartlistToInvite" class="form__input--select" name="smartlistToInvite">
+                                <option value="" ng-show="!vm.event.smartlistsToInvite">Select Smartlists to Invite</option>
                             </select>
                             <small class="form__input-info">Candidate Leads <span class="pill">457</span></small>
                         </div>

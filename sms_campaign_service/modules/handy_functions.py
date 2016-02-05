@@ -230,6 +230,7 @@ def request_from_google_shorten_url_api(requested_header):
     for key in keys:
         if key in requested_header and 'google' in requested_header[key]:
             logger.info("Successfully verified by Google's shorten URL API")
+            return True
 
 
 def get_valid_blast_obj(blast_id, requested_campaign_id):
@@ -268,9 +269,7 @@ def get_formatted_phone_number(phone_number):
     """
     raise_if_not_instance_of(phone_number, basestring)
     try:
-        formatted_phone_number = format_phone_number(phone_number)
-        if isinstance(formatted_phone_number, dict):
-            formatted_phone_number = formatted_phone_number['formatted_number']
+        formatted_phone_number = format_phone_number(phone_number)['formatted_number']
     except InvalidUsage:
         # Adding this condition here so that in tests, fake.phone_number()
         # does not always generate American/Canadian number, so format_phone_number()

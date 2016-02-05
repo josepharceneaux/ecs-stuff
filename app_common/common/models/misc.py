@@ -151,12 +151,10 @@ class Country(db.Model):
 
     @classmethod
     def country_id_from_name_or_code(cls, name_or_code):
-        if name_or_code:
-            country_row = cls.query.filter(db.or_(Country.name == name_or_code,
-                                                  Country.code == name_or_code)).first()
-            if country_row:
-                return country_row.id
-        return 1
+        country_row = cls.query.filter(db.or_(Country.name == name_or_code,
+                                              Country.code == name_or_code)).first()
+        return country_row.id if country_row else None
+
 
     @classmethod
     def country_name_from_country_id(cls, country_id):
@@ -168,86 +166,6 @@ class Country(db.Model):
             return country.name
         else:
             return 'United States'
-
-
-class Frequency(db.Model):
-    __tablename__ = 'frequency'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Description', db.String(10), nullable=False)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    # Relationships
-    sms_campaigns = relationship('SmsCampaign', backref='frequency')
-    push_campaigns = relationship('PushCampaign', backref='frequency')
-
-    # frequency Ids
-    ONCE = 1
-    DAILY = 2
-    WEEKLY = 3
-    BIWEEKLY = 4
-    MONTHLY = 5
-    YEARLY = 6
-    CUSTOM = 7
-
-    def __repr__(self):
-        return "<Frequency (id = %r)>" % self.id
-
-    @classmethod
-    def get_id_by_description(cls, desc):
-        assert desc, 'No description given'
-        return cls.query.filter(cls.description == desc.lower()).first().id
-
-    @classmethod
-    def get_seconds_from_id(cls, frequency_id):
-        """
-        This gives us the number of seconds for given frequency_id.
-        frequency_id is in range 1 to 6 representing
-            'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
-        respectively.
-        :param frequency_id: int
-        :return: seconds
-        :rtype: int
-        """
-        if not frequency_id:
-            return 0
-        if not isinstance(frequency_id, int):
-            raise InvalidUsage('Include frequency id as int')
-        seconds_from_frequency_id = {
-            cls.ONCE: 0,
-            cls.DAILY: 24 * 3600,
-            cls.WEEKLY: 7 * 24 * 3600,
-            cls.BIWEEKLY: 14 * 24 * 3600,
-            cls.MONTHLY: 30 * 24 * 3600,
-            cls.YEARLY: 365 * 24 * 3600,
-            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
-        }
-        seconds = seconds_from_frequency_id.get(frequency_id)
-        if not seconds and seconds != 0:
-            raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
-        return seconds
-
-    @property
-    def in_seconds(self):
-        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds),
-         will return 0.
-        """
-        frequency_in_seconds = self.standard_frequencies()
-        return frequency_in_seconds.get(self.name.lower(), 0)
-
-    @classmethod
-    def standard_frequencies(self):
-        """Returns a dict of system wide standard frequency names and period in seconds"""
-        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600,
-                'biweekly': 2 * 7 * 24 * 3600, 'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
-
-    @classmethod
-    def get_frequency_from_name(cls, frequency_name):
-        """Returns frequency object wrt given name(case insensitive) """
-        return cls.query.filter_by(name=frequency_name).first()
-
-    @classmethod
-    def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
 
 
 # Even though the table name is major I'm keeping the model class singular.
@@ -306,6 +224,87 @@ class ZipCode(db.Model):
 
     def __repr__(self):
         return "<Zipcode (code=' %r')>" % self.code
+
+
+class Frequency(db.Model):
+    __table_name__ = 'frequency'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Description', db.String(10), nullable=False)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+    push_campaigns = relationship('PushCampaign', backref='frequency')
+
+    # frequency Ids
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
+
+    def __repr__(self):
+        return "<Frequency: (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
+    def get_id_by_description(cls, desc):
+        assert desc, 'No description given'
+        return cls.query.filter(cls.description == desc.lower()).first().id
+
+    @classmethod
+    def get_seconds_from_id(cls, frequency_id):
+        """
+        This gives us the number of seconds for given frequency_id.
+        frequency_id is in range 1 to 6 representing
+            'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+        respectively.
+        :param frequency_id: int
+        :return: seconds
+        :rtype: int
+        """
+        if not frequency_id:
+            return 0
+        if not isinstance(frequency_id, int):
+            raise InvalidUsage('Include frequency id as int')
+        seconds_from_frequency_id = {
+            cls.ONCE: 0,
+            cls.DAILY: 24 * 3600,
+            cls.WEEKLY: 7 * 24 * 3600,
+            cls.BIWEEKLY: 14 * 24 * 3600,
+            cls.MONTHLY: 30 * 24 * 3600,
+            cls.YEARLY: 365 * 24 * 3600,
+            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+        }
+        seconds = seconds_from_frequency_id.get(frequency_id)
+        if not seconds and seconds != 0:
+            raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
+        return seconds
+
+    @property
+    def in_seconds(self):
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds),
+            will return 0.
+        """
+        frequency_in_seconds = self.standard_frequencies()
+        return frequency_in_seconds.get(self.name.lower(), 0)
+
+    @classmethod
+    def standard_frequencies(self):
+        """Returns a dict of system wide standard frequency names and period in seconds"""
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600,
+                'biweekly': 2 * 7 * 24 * 3600,
+                'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+
+    @classmethod
+    def get_frequency_from_name(cls, frequency_name):
+        """Returns frequency object wrt given name(case insensitive) """
+        return cls.query.filter_by(name=frequency_name).first()
 
 
 class CustomField(db.Model):

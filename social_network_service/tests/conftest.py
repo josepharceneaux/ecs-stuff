@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from mixer._faker import faker
 from werkzeug.security import gen_salt
 from mixer.backend.sqlalchemy import Mixer
-from werkzeug.security import generate_password_hash
+from social_network_service.common.utils.auth_utils import gettalent_generate_password_hash
 
 # App Settings
 from social_network_service import init_app
@@ -217,7 +217,7 @@ def test_user(request, test_domain):
     mixer = Mixer(session=db_session, commit=True)
     user = mixer.blend(User, domain=test_domain, firstName=get_random_word(10),
                        lastName=get_random_word(10), email=faker.email_address(),
-                       password=generate_password_hash('A123456', method='pbkdf2:sha512'))
+                       password=gettalent_generate_password_hash('A123456'))
 
     def fin():
         """
