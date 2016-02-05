@@ -32,7 +32,7 @@
 			//return $q.when(p);
 		}
 		function getPipelineSmartlists(id) {
-			return candidatePoolService.one('talent-pipeline', id).all('smartlists').getList();
+			return candidatePoolService.one('talent-pipelines', id).all('smartlists').getList();
 		}
 
 		function getSmartlistsCandidates(id) {
