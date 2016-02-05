@@ -21,7 +21,7 @@ from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSign
 
 class User(db.Model):
     __tablename__ = 'user'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
@@ -41,7 +41,7 @@ class User(db.Model):
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
-    last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
@@ -154,7 +154,7 @@ class Domain(db.Model):
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
-    is_disabled = db.Column('IsDisabled', TINYINT, default='0', nullable=False)
+    is_disabled = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
     users = relationship('User', backref='domain')
@@ -291,7 +291,7 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
-    # domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
 
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
