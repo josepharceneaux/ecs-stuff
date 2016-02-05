@@ -162,6 +162,7 @@ class ActivityApi(object):
     ACTIVITIES = RELATIVE_VERSION % 'activities/'
     # /v1/activities/<page>
     ACTIVITIES_PAGE = ACTIVITIES + '<page>'
+    ACTIVITY_MESSAGES = RELATIVE_VERSION % 'messages'
 
 
 class ActivityApiUrl(object):
@@ -345,11 +346,11 @@ class CandidatePoolApi(object):
     TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
     # Talent Pipelines
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
-    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.SMART_LISTS
-    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.CANDIDATES
-    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINE + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
+    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
+    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
     TALENT_PIPELINE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINE + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
     # Smartlists
     SMARTLISTS = 'smartlists'
     SMARTLIST = SMARTLISTS + _INT_ID
@@ -377,10 +378,10 @@ class CandidatePoolApiUrl(object):
     TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
     TALENT_PIPELINE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.CANDIDATES)
-    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.CAMPAIGNS)
-    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+'/%s'+CandidatePoolApiWords.SMART_LISTS)
-    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINE+"/%s"+CandidatePoolApiWords.STATS)
+    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.CAMPAIGNS)
+    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.SMART_LISTS)
+    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +"/%s"+CandidatePoolApiWords.STATS)
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
     SMARTLIST_STATS = API_URL % CandidatePoolApi.SMARTLIST_STATS

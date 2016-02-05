@@ -26,7 +26,7 @@
                 var params = {};
                 page = page || 1;
                 aggregate = aggregate || 1;
-                params[aggregate] = '';
+                //params['aggregate'] = aggregate;
                 return notificationService.all('activities').customGETLIST(page, params);
             }
         }

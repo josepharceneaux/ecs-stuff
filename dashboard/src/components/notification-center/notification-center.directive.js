@@ -34,9 +34,8 @@
     /* @ngInject */
     function ControllerFunction($timeout, logger, toastr, notificationService, notificationCenterService) {
         var vm = this;
-
+        vm.time = new Date();
         vm.toggleNotificationCenter = notificationCenterService.toggle;
-
         activate();
         init();
 
@@ -51,12 +50,15 @@
         }
 
         function getActivity() {
-            var activityRequest = notificationService.getActivity()
+            debugger;
+            var activityRequest = notificationService.getActivity();
             vm.activity = activityRequest.$object;
             vm.unreadActivity = [];
 
             activityRequest.then(function () {
+                debugger;
                 vm.activity.forEach(function (item, i) {
+                    item.added_time = moment(item.added_time).toDate();
                     if (!item.read) {
                         vm.unreadActivity.unshift(item);
                     }
@@ -67,6 +69,10 @@
                     toastr.info('<a href="">$name</a> opened your email from the <a href="">campaign</a> of name here.'.replace('$name', vm.unreadActivity[0].params.firstName + ' ' + vm.unreadActivity[0].params.lastName), 'Unread Activity');
                 }
             });
+        }
+
+        function formatMessage(message, data){
+
         }
 
         function setOpen(value) {

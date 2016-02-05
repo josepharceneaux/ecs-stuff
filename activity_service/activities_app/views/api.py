@@ -47,9 +47,15 @@ def get_activities(page):
             request_page = int(page)
         except ValueError:
             return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
-        return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
-                                             start_datetime=request_start_time,
-                                             end_datetime=request_end_time, page=request_page))
+        return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
+                                          start_datetime=request_start_time,
+                                          end_datetime=request_end_time, page=request_page))
+
+
+@mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
+@require_oauth()
+def get_activity_messages():
+    return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
@@ -201,19 +207,21 @@ class TalentActivityManager(object):
         if start_datetime: filters.append(Activity.added_time > start_datetime)
         if end_datetime: filters.append(Activity.added_time < end_datetime)
         activities = Activity.query.filter(*filters).paginate(page, post_qty, False)
-        activities_reponse = {
+        activities_response = {
             'total_count': activities.total,
             'items': [{
                           'params': json.loads(a.params),
                           'source_table': a.source_table,
                           'source_id': a.source_id,
                           'type': a.type,
-                          'user_id': a.user_id
+                          'user_id': a.user_id,
+                          'user_name': a.user.name if a.user else '',
+                          'added_time': str(a.added_time)
                       }
                       for a in activities.items
                       ]
         }
-        return activities_reponse
+        return activities_response
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, limit=3):
@@ -232,6 +240,8 @@ class TalentActivityManager(object):
         for i, activity in enumerate(activities):
             current_activity_count += 1
             current_activity_type = activity.type
+            if current_activity_type not in self.MESSAGES:
+                continue
             next_activity_type = activities[i + 1].type if (
                 i < activities.count() - 1) else None  # None means last activity
 
