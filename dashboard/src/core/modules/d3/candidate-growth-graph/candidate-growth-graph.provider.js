@@ -53,7 +53,7 @@
 
                 params.interval = params.interval || 1;
 
-                request = candidatePoolService.one('talent-pipeline', pipelineId).withHttpConfig(httpConfig).customGETLIST('stats', params);
+                request = candidatePoolService.one('talent-pipelines', pipelineId).withHttpConfig(httpConfig).customGETLIST('stats', params);
                 request.cancel = function () {
                     abort.resolve();
                 };
