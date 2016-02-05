@@ -2,37 +2,60 @@
 
     <!-- Main view -->
     <section class="view__main--login">
-        <div class="row--skinny header--login">
-            <div class="header__logo--login">
-                <h1>GetTalent</h1>
-            </div>
-        </div>
+        <div layout="row" layout-align="center center">
+            <div flex-sm="90" flex-gt-sm="70" flex-gt-md="30" layout="column">
 
-        <div class="row--skinny">
-            <div class="box">
-                <h2>Log In To Your Account</h2>
+                <!-- Header -->
+                <div layout="row" layout-align="center center" class="login-header">
+                    <img ng-src="../images/logo--main--white.svg" width="180">
+                </div>
+                <!-- Header -->
+                
+                <!-- Form wrap -->
+                <md-content layout="column" layout-align="space-between stretch" 
+                    class="md-whiteframe-z2 login-form-wrap" 
+                    gt-shake-div shake-trigger="vm.loginError">
+                    
+                    <div layout="row" layout-align="center center">
+                        <span class="md-display-1">Login To Your Account</span>
+                    </div>
 
-                <form class="form" ng-submit="vm.login()">
-                    <div class="form__fieldset row--expanded">
-                        <!-- Form: Email Address -->
-                        <div class="alert alert-danger animated fadeIn" ng-show="vm.errorMessage">{{vm.errorMessage}}</div>
-                        <div class="col--medium-12 form__col form__col--stacked">
-                            <label class="form__label" for="emailAddress">Email Address</label>
-                            <input gt-float-label class="form__input--icon--email" id="emailAddress" name="emailAddress" type="email" placeholder="Email Address" required autofocus ng-model="vm.username">
-                        </div>
-                        <!-- Form: Password -->
-                        <div class="col--medium-12 form__col form__col--stacked">
-                            <label class="form__label" for="password">Password</label>
-                            <input gt-float-label class="form__input--icon--password" id="password" name="password" type="password" placeholder="Password" required ng-model="vm.password">
-                        </div>
+                    <div layout="row" layout-align="center center" ng-if="vm.errorMessage">
+                        <span class="error-message">{{vm.errorMessage}}</span>
                     </div>
-                    <div class="form__fieldset--footer row--expanded">
-                        <div class="col--medium-12">
-                            <button class="button--blue button--large" type="submit">Login</button>
-                            <a class="form__fieldset__link" ui-sref="forgotPassword">Forgot Password</a>
+
+                    <form name="loginForm" ng-submit="vm.login()">
+                         <md-input-container md-no-float class="md-block">
+                            <input required
+                                autofocus
+                                type="email"
+                                name="username" 
+                                placeholder="User Name" 
+                                ng-model="vm.username" />
+                            <div ng-messages="loginForm.username.$error">
+                                <div ng-message="required">This is required.</div>
+                                <div ng-message="email">It must be an e-mail address.</div>
+                            </div>
+                        </md-input-container>
+                        
+                        <md-input-container md-no-float class="md-block">
+                            <input type="password" name="password" placeholder="Password" ng-model="vm.password" required>
+                            <div ng-messages="loginForm.password.$error">
+                                <div ng-message="required">This is required.</div>
+                            </div>
+                        </md-input-container>
+
+                        <div layout="row" layout-align="end start" class="forogt-password-wrap">
+                            <a class="md-body-1" ui-sref="forgotPassword">Forgot Your Password?</a>
                         </div>
-                    </div>
-                </form>
+
+                        <div layout="row" layout-align="center center">
+                            <md-button type="submit" class="md-primary md-raised">Log in</md-button>
+                        </div>
+                    </form>
+                </md-content>
+                <!-- End: Form wrap -->
+            
             </div>
         </div>
     </section>

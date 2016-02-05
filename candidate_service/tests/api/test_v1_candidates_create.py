@@ -319,6 +319,36 @@ class TestCreateHiddenCandidate(object):
         print response_info(response=get_resp_2)
         assert get_resp_2.status_code == 200
 
+    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(
+            self, access_token_first, user_first, talent_pool):
+        """
+        """
+        # Create candidate
+        AddUserRoles.all_roles(user=user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'address': fake.safe_email()}, {'address': fake.safe_email()}
+            ]}
+        ]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(response=create_resp)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        email_address_1 = data['candidates'][0]['emails'][0]['address']
+        email_address_2 = data['candidates'][0]['emails'][1]['address']
+
+        # Delete candidate
+        del_resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+        db.session.commit()
+        print response_info(response=del_resp)
+        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+        assert candidate.is_web_hidden == 1
+
+        # Re-create candidate
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(response=create_resp)
+        assert create_resp.status_code == 201
+        assert create_resp.json()['candidates'][0]['id'] == candidate_id
+
 
 ######################## CandidateAddress ########################
 def test_create_candidate_with_bad_zip_code(access_token_first, user_first, talent_pool):

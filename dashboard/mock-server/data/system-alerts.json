@@ -3,7 +3,16 @@
         {
             "id": 124,
             "date_created": "2016-01-20T22:33:01.575Z",
-            "message": "We will be performing server maintenance on July 15, your account will not be accessible between 5am and 8am."
+            "message": "We will be performing server maintenance on July 15, your account will not be accessible between 5am and 8am.",
+            "read": false,
+            "dismissable": false
+        },
+        {
+            "id": 124,
+            "date_created": "2016-01-20T22:33:01.575Z",
+            "message": "We will be performing server maintenance on July 15, your account will not be accessible between 5am and 8am.",
+            "read": true,
+            "dismissable": true
         }
     ]
 }
