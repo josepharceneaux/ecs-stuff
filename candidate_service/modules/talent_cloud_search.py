@@ -6,7 +6,7 @@ import re
 import boto
 import boto.exception
 import simplejson
-
+from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
@@ -101,7 +101,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Location
     'city':                          dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
-    'state':                         dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
+    'state':                         dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True}),
     'zip_code':                      dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False,
                                                                                                  'SortEnabled': False}),
     'coordinates':                   dict(IndexFieldType='latlon',          LatLonOptions={'ReturnEnabled': False,
@@ -128,6 +128,10 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
     'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'start_date_at_current_job':     dict(IndexFieldType='date',             DateOptions={'FacetEnabled': False,
+                                                                                          'ReturnEnabled': True}),
+    'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
+                                                                                           'ReturnEnabled': False})
 }
 
 filter_queries_list = []
@@ -246,7 +250,7 @@ def _build_candidate_documents(candidate_ids):
     SELECT
                 # Candidate table info
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
-                candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, '%(date_format)s') AS `added_time`,
+                candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
                 candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
                 candidate.totalMonthsExperience AS `total_months_experience`,
@@ -254,43 +258,46 @@ def _build_candidate_documents(candidate_ids):
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
                 candidate_address.coordinates AS `coordinates`,
-                GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR '%(sep)s') AS `email`,
+                GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
 
                 # Talent Pools
-                GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR '%(sep)s') AS `talent_pools`,
+                GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR :sep) AS `talent_pools`,
 
                 # Dumb Lists
-                GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR '%(sep)s') AS `dumb_lists`,
+                GROUP_CONCAT(DISTINCT smart_list_candidate.smartlistId SEPARATOR :sep) AS `dumb_lists`,
 
                 # AOIs and Custom Fields
-                GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR '%(sep)s') AS `area_of_interest_id`,
-                GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR '%(sep)s') AS `custom_field_id_and_value`,
+                GROUP_CONCAT(DISTINCT candidate_area_of_interest.areaOfInterestId SEPARATOR :sep) AS `area_of_interest_id`,
+                GROUP_CONCAT(DISTINCT CONCAT(candidate_custom_field.customFieldId, '|', candidate_custom_field.value) SEPARATOR :sep) AS `custom_field_id_and_value`,
 
                 # Military experience
-                GROUP_CONCAT(DISTINCT candidate_military_service.highestGrade SEPARATOR '%(sep)s') AS `military_highest_grade`,
-                GROUP_CONCAT(DISTINCT candidate_military_service.serviceStatus SEPARATOR '%(sep)s') AS `military_service_status`,
-                GROUP_CONCAT(DISTINCT candidate_military_service.branch SEPARATOR '%(sep)s') AS `military_branch`,
-                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_military_service.toDate, '%(date_format)s') SEPARATOR '%(sep)s') AS `military_end_date`,
+                GROUP_CONCAT(DISTINCT candidate_military_service.highestGrade SEPARATOR :sep) AS `military_highest_grade`,
+                GROUP_CONCAT(DISTINCT candidate_military_service.serviceStatus SEPARATOR :sep) AS `military_service_status`,
+                GROUP_CONCAT(DISTINCT candidate_military_service.branch SEPARATOR :sep) AS `military_branch`,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_military_service.toDate, :date_format) SEPARATOR :sep) AS `military_end_date`,
 
                 # Experience
-                GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR '%(sep)s') AS `organization`,
-                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR '%(sep)s') AS `position`,
-                GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR '%(sep)s') AS `experience_description`,
+                GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR :sep) AS `organization`,
+                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR :sep) AS `position`,
+                GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR :sep) AS `experience_description`,
+
+                # Start Date At Current Job
+                DATE_FORMAT(MIN((CASE candidate_experience.IsCurrent WHEN 1 THEN DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.StartYear then candidate_experience.StartYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH) END)), :date_format) AS `start_date_at_current_job`,
 
                 # Education
-                GROUP_CONCAT(DISTINCT candidate_education.schoolName SEPARATOR '%(sep)s') AS `school_name`,
-                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeType SEPARATOR '%(sep)s') AS `degree_type`,
-                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeTitle SEPARATOR '%(sep)s') AS `degree_title`,
-                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_education_degree.endTime, '%(date_format)s') SEPARATOR '%(sep)s') AS `degree_end_date`,
-                GROUP_CONCAT(DISTINCT candidate_education_degree_bullet.concentrationType SEPARATOR '%(sep)s') AS `concentration_type`,
+                GROUP_CONCAT(DISTINCT candidate_education.schoolName SEPARATOR :sep) AS `school_name`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeType SEPARATOR :sep) AS `degree_type`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree.degreeTitle SEPARATOR :sep) AS `degree_title`,
+                GROUP_CONCAT(DISTINCT DATE_FORMAT(candidate_education_degree.endTime, :date_format) SEPARATOR :sep) AS `degree_end_date`,
+                GROUP_CONCAT(DISTINCT candidate_education_degree_bullet.concentrationType SEPARATOR :sep) AS `concentration_type`,
 
                 # Skill & unidentified
-                GROUP_CONCAT(DISTINCT candidate_skill.description SEPARATOR '%(sep)s') AS `skill_description`,
-                GROUP_CONCAT(DISTINCT candidate_unidentified.description SEPARATOR '%(sep)s') AS `unidentified_description`,
+                GROUP_CONCAT(DISTINCT candidate_skill.description SEPARATOR :sep) AS `skill_description`,
+                GROUP_CONCAT(DISTINCT candidate_unidentified.description SEPARATOR :sep) AS `unidentified_description`,
 
                 # Rating and comments
-                GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR '%(sep)s') AS `candidate_rating_id_and_value`,
-                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR '%(sep)s') AS `text_comment`
+                GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR :sep) AS `candidate_rating_id_and_value`,
+                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`
 
     FROM        candidate
 
@@ -319,15 +326,23 @@ def _build_candidate_documents(candidate_ids):
     LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
     LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
 
-    WHERE       candidate.id IN (%(candidate_ids_string)s)
+    WHERE       candidate.id IN :candidate_ids_string
 
     GROUP BY    candidate.id
     ;
-    """ % dict(candidate_ids_string=','.join(["%s" % candidate_id for candidate_id in candidate_ids]),
-               sep=group_concat_separator,
-               date_format=MYSQL_DATE_FORMAT)
+    """
 
-    results = db.session.execute(sql_query)
+    sql_query_for_candidate_engagement = """
+        # Candidate Engagement Score
+        SELECT GROUP_CONCAT(DISTINCT(email_campaign_send.CandidateId)) AS `candidate_engagement` FROM email_campaign_send WHERE email_campaign_send.CandidateId IN :candidate_ids_string;
+    """
+
+    candidate_engagement = db.session.connection().execute(text(sql_query_for_candidate_engagement),
+                                                           candidate_ids_string=tuple(candidate_ids))
+    candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
+
+    results = db.session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
+                                              sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
 
     # Go through results & build action dicts
     action_dicts = []
@@ -337,6 +352,9 @@ def _build_candidate_documents(candidate_ids):
 
         # Remove keys with empty values
         field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
+
+        # Set candidate engagement score
+        field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
 
         # Massage 'field_name_to_sql_value' values into the types they are supposed to be
         for field_name in field_name_to_sql_value.keys():
@@ -637,7 +655,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                           "position:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
-                          "custom_field_id_and_value:{size:1000}}"
+                          "custom_field_id_and_value:{size:1000}},candidate_engagement_score:{size:50}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())

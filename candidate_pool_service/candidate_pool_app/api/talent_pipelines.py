@@ -525,7 +525,7 @@ class TalentPipelineCampaigns(Resource):
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS)
 def update_talent_pipelines_stats():
     """
