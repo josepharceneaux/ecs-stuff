@@ -22,7 +22,7 @@ smartlist_blueprint = Blueprint('smartlist_api', __name__)
 
 class SmartlistCandidates(Resource):
 
-    decorators = [require_oauth(allow_jwt_based_auth=True, allow_null_user=True)]
+    decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
@@ -125,7 +125,7 @@ class SmartlistResource(Resource):
 
 
 @smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS)
 def update_smartlists_stats():
     """
