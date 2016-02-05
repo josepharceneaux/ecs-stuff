@@ -48,7 +48,7 @@
 
             function getPipelineCandidatesCount(pipelineId) {
                 console.log('fetching candidate count');
-                return candidatePoolService.one('talent-pipeline', pipelineId)
+                return candidatePoolService.one('talent-pipelines', pipelineId)
                     .customGET('candidates', {fields: 'count_only'}).then(
                         function (countResponse) {
                             return countResponse.total_found;
@@ -58,7 +58,7 @@
 
             function getPipelineSmartlistsCount(pipelineId) {
                 console.log('fetching smartlist count');
-                return candidatePoolService.one('talent-pipeline', pipelineId).customGET('smartlists').then(
+                return candidatePoolService.one('talent-pipelines', pipelineId).customGET('smartlists').then(
                     function (smartListResponse) {
                         return smartListResponse.smartlists.length;
                     }

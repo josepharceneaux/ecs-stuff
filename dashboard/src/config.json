@@ -42,30 +42,25 @@
         "baseUrl": "https://activity-service-staging.gettalent.com/v1"
     },
     "alertServiceInfo": {
-        "THE_REAL_baseUrl": "https://alert-service-staging.gettalent.com/v1",
-        "baseUrl": "http://localhost:7203/api"
+        "baseUrl": "https://alert-service-staging.gettalent.com/v1"
     },
     "candidatePoolServiceInfo": {
-        "THE_REAL_baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-120a6-candidatepoolservice.apiary-mock.com/v1"
+        "baseUrl": "https://candidate-pool-service-staging.gettalent.com/v1"
     },
     "candidateServiceInfo": {
         "baseUrl": "https://candidate-service-staging.gettalent.com/v1"
     },
     "emailCampaignServiceInfo": {
-        "THE_REAL_baseUrl": "https://email-campaign-service-staging.gettalent.com/v1",
-        "baseUrl": "http://private-fa828-emailcampaignservice.apiary-mock.com/v1"
+        "baseUrl": "https://email-campaign-service-staging.gettalent.com/v1"
     },
     "resumeServiceInfo": {
-        "THE_REAL_baseUrl": "https://resume-parsing-service-staging.gettalent.com/v1"
+        "baseUrl": "https://resume-parsing-service-staging.gettalent.com/v1"
     },
     "smsCampaignServiceInfo": {
-        "THE_REAL_baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1",
-        "baseUrl": "http://private-4583b-smscampaignapi.apiary-mock.com/v1"
+        "baseUrl": "https://sms-campaign-service-staging.gettalent.com/v1"
     },
     "socialNetworkServiceInfo": {
-        "THE_REAL_baseUrl": "https://social-network-service-staging.gettalent.com/v1",
-        "baseUrl": "https://private-abc6bd-socialnetworkservice.apiary-mock.com"
+        "baseUrl": "https://social-network-service-staging.gettalent.com/v1"
     },
     "userServiceInfo": {
         "baseUrl": "https://user-service-staging.gettalent.com/v1"

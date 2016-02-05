@@ -16,7 +16,7 @@
         /* @ngInject */
         function $get(baseService, resumeServiceInfo) {
             return baseService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl(resumeServiceInfo.THE_REAL_baseUrl);
+                RestangularConfigurer.setBaseUrl(resumeServiceInfo.baseUrl);
             });
         }
     }
