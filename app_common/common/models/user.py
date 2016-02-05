@@ -248,8 +248,8 @@ class Client(db.Model):
         return ''
 
 
-class Token(db.Model):
-    __tablename__ = 'token'
+class UserToken(db.Model):
+    __tablename__ = 'user_token'
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
                           nullable=False)
@@ -261,8 +261,8 @@ class Token(db.Model):
     _scopes = db.Column(db.Text)
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
-    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('user_token', cascade="all, delete-orphan"))
+    client = db.relationship('Client', backref=db.backref('user_token', cascade="all, delete-orphan"))
     # currently only bearer is supported
 
     def delete(self):

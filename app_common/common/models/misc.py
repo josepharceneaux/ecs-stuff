@@ -260,7 +260,7 @@ class CustomField(db.Model):
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey(u'user.Id'), index=True)
+    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
     type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
     name = db.Column('Name', db.String(255), nullable=False)
     email_body_html = db.Column('EmailBodyHtml', db.Text)
