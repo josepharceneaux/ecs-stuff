@@ -50,13 +50,12 @@
         }
 
         function getActivity() {
-            debugger;
             var activityRequest = notificationService.getActivity();
             vm.activity = activityRequest.$object;
             vm.unreadActivity = [];
 
             activityRequest.then(function () {
-                debugger;
+                notificationCenterService.broadcast('activityCountChanged', vm.activity.length);
                 vm.activity.forEach(function (item, i) {
                     item.added_time = moment(item.added_time).toDate();
                     if (!item.read) {
@@ -85,6 +84,7 @@
 
         function open() {
             vm.isBarOpen = true;
+            notificationCenterService.open();
             $timeout(function () {
                 vm.isInnerOpen = true;
             }, 200);

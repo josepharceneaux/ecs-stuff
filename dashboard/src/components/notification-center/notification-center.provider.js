@@ -22,6 +22,7 @@
                 closed: 'closed',
                 locked: 'locked',
                 unlocked: 'unlocked',
+                activityCountChanged: 'activityCountChanged',
                 openStateChanged: 'openStateChanged',
                 lockStateChanged: 'lockStateChanged'
             };
@@ -40,7 +41,8 @@
                 close: close,
                 lock: lock,
                 unlock: unlock,
-                addListener: addListener
+                addListener: addListener,
+                broadcast: broadcast
             };
 
             function isLockedOpen() {

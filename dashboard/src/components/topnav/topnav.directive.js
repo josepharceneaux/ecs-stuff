@@ -36,7 +36,8 @@
         vm.notifyUser = notifyUser;
         vm.createSystemAlert = createSystemAlert;
         vm.toggleNotificationCenter = notificationCenterService.toggle;
-
+        vm.activityCount = '';
+        vm.showCount = true;
         init();
 
         function init() {
@@ -85,6 +86,14 @@
                     name: 'Campaign 3'
                 }
             ];
+
+            notificationCenterService.addListener('activityCountChanged', function(count){
+                vm.activityCount = count;
+            });
+            vm.closeFeedOpenedListerner = notificationCenterService.addListener('opened', function(){
+                vm.showCount = false;
+                vm.closeFeedOpenedListerner();
+            });
         }
 
         function logout() {
