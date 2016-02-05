@@ -125,7 +125,7 @@
         });
 
         areaGraphConfigProvider.setOptions({
-            //
+            colors: {}
         });
     }
 

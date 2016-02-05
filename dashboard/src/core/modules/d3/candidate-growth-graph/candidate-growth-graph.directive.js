@@ -23,7 +23,8 @@
             templateUrl: 'core/modules/d3/candidate-growth-graph/candidate-growth-graph.html',
             replace: true,
             scope: {
-                pipelineId: '='
+                pipelineId: '=',
+                colorOptions: '=?graphColorOptions'
             },
             controller: 'CandidateGrowthGraphController',
             controllerAs: 'candidateGrowthGraph',

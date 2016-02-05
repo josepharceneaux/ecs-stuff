@@ -28,7 +28,8 @@
                 title: '=graphTitle',
                 filterOptions: '=graphFilterOptions',
                 filterValue: '=graphFilterValue',
-                onFilterChange: '&graphOnFilterChange'
+                onFilterChange: '&graphOnFilterChange',
+                colorOptions: '=?graphColorOptions'
             },
             controller: 'AreaGraphController',
             controllerAs: 'areaGraph',
@@ -40,10 +41,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = [];
+    ControllerFunction.$inject = ['areaGraphConfig'];
 
     /* @ngInject */
-    function ControllerFunction() {
+    function ControllerFunction(areaGraphConfig) {
         var vm = this;
 
         vm.redrawChart = redrawChart;
@@ -51,10 +52,10 @@
         init();
 
         function init() {
-            if (!(vm.config instanceof Object)) {
-                throw new TypeError("Invalid argument: `config` must be an `Object`.");
+            if (!angular.isObject(vm.config)) {
+                throw new TypeError("Invalid argument: `vm.config` must be an `Object`.");
             }
-            mergeConfigs(vm.config, getDefaultConfig);
+            mergeConfigs(vm.config, getDefaultConfig(vm.colorOptions));
         }
 
         function redrawChart() {
@@ -69,11 +70,18 @@
         }
 
         function getDefaultConfig() {
+            var colorOptions = areaGraphConfig.getOptions().colors;
+            if (vm.colorOptions) {
+                if (!angular.isObject(vm.colorOptions)) {
+                    throw new TypeError("Invalid argument: `vm.colorOptions` must be an `Object`.");
+                }
+                angular.merge(colorOptions, vm.colorOptions);
+            }
             return {
                 options: {
                     chart: {
                         type: 'area',
-                        backgroundColor: null,
+                        backgroundColor: colorOptions.chart.backgroundColor,
                         spacingLeft: 40,
                         spacingRight: 40,
                         spacingTop: 50,
@@ -105,9 +113,9 @@
                         itemMarginTop: 5,
                         itemMarginBottom: 5,
                         padding: 12,
-                        backgroundColor: 'white',
+                        backgroundColor: colorOptions.legend.backgroundColor,
                         borderWidth: 1,
-                        borderColor: '#ccc',
+                        borderColor: colorOptions.legend.borderColor,
                         itemStyle: {
                             fontWeight: 300
                         },
@@ -123,13 +131,15 @@
                             lineWidth: 0.3,
                             marker: {
                                 radius: 3,
+                                fillColor: colorOptions.plotOptions.marker.fillColor,
+                                lineColor: colorOptions.plotOptions.marker.lineColor,
                                 states: {
                                     hover: {
                                         radius: 6,
                                         fillOpacity: 0.4,
-                                        fillColor: 'white',
+                                        fillColor: colorOptions.plotOptions.marker.states.hover.fillColor,
                                         lineWidth: 4,
-                                        lineColor: '#5e385d'
+                                        lineColor: colorOptions.plotOptions.marker.states.hover.lineColor
                                     }
                                 }
                             },
@@ -155,12 +165,12 @@
                         },
                         shared: true,
                         crosshairs: {
-                            color: 'white',
+                            color: colorOptions.tooltip.crosshairsColor,
                             dashStyle: 'solid'
                         }
                     },
                     yAxis: {
-                        gridLineColor: 'white',
+                        gridLineColor: colorOptions.yAxis.gridLineColor,
                         yDecimals: 2,
                         gridLineWidth: 1,
                         title: {
@@ -168,7 +178,7 @@
                         },
                         labels: {
                             style: {
-                                color: '#adadad',
+                                color: colorOptions.yAxis.labelColor,
                                 fontSize: '14px',
                                 fontWeight: 400
                             },
@@ -187,16 +197,15 @@
                 },
                 xAxis: {
                     type: 'datetime',
-                    lineColor: 'transparent',
+                    lineColor: colorOptions.xAxis.lineColor,
                     tickLength: 0,
-                    tickInterval: 5 * 24 * 60 * 60 * 1000,
                     title: {
                         text: ''
                     },
                     labels: {
                         y: 24,
                         style: {
-                            color: 'white',
+                            color: colorOptions.xAxis.labelColor,
                             fontSize: '14px',
                             fontWeight: 400
                         },
@@ -206,7 +215,7 @@
                     }
                 },
                 series: [{
-                    color: '#5e385d'
+                    color: colorOptions.series.color
                 }]
             };
         }
@@ -226,15 +235,52 @@
     }
 
     function configProviderFunction() {
-        var config;
-        this.setOptions = function (options) {
-            if (config) {
-                throw new Error("Already configured.");
+        var defaultConfig = {
+            colors: {
+                chart: {
+                    backgroundColor: null
+                },
+                legend: {
+                    backgroundColor: 'white',
+                    borderColor: '#ccc'
+                },
+                plotOptions: {
+                    marker: {
+                        fillColor: undefined,
+                        lineColor: undefined,
+                        states: {
+                            hover: {
+                                fillColor: 'white',
+                                lineColor: '#5e385d'
+                            }
+                        }
+                    }
+                },
+                tooltip: {
+                    crosshairsColor: 'white'
+                },
+                yAxis: {
+                    gridLineColor: 'white',
+                    labelColor: '#adadad'
+                },
+                xAxis: {
+                    lineColor: 'transparent',
+                    labelColor: 'white'
+                },
+                series: {
+                    color: '#5e385d'
+                }
             }
-            if (!(options instanceof Object)) {
+        };
+        var config = angular.copy(defaultConfig);
+        this.setOptions = function (options) {
+            if (!angular.isObject(options)) {
                 throw new TypeError("Invalid argument: `config` must be an `Object`.");
             }
-            config = angular.extend({}, options);
+            if (!angular.isObject(options.colors)) {
+                throw new TypeError("Invalid argument: `config.colors` must be an `Object`.");
+            }
+            angular.merge(config, options);
             return config;
         };
         this.$get = function () {

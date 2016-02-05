@@ -43,6 +43,20 @@
 
         function init() {
             vm.pipelineId = 2;
+            vm.colorOptions = {
+                //plotOptions: {
+                //    marker: {
+                //        states: {
+                //            hover: {
+                //                lineColor: '#0fc'
+                //            }
+                //        }
+                //    }
+                //},
+                //series: {
+                //    color: '#0fc'
+                //}
+            }
 
             vm.totalCandidates = {
                 graph: {}
