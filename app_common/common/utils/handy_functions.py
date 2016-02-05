@@ -169,13 +169,28 @@ def sample_phone_number():
     return "{}-{}-{}".format(area_code, middle, last_four)
 
 
-def create_oauth_header():
+def generate_jwt_header(content_type=None, user_id=None):
+    """
+    This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
+    :param str content_type: content-type header value
+    :return:
+    """
+    secret_key_id, jw_token = User.generate_jw_token(user_id=request.user.id if request.user else user_id)
+    headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+    if content_type:
+        headers['Content-Type'] = content_type
+    return headers
+
+
+def create_oauth_headers():
+    """
+    This function will return dict of Authorization and Content-Type headers. If the request context does not
+    contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
+    :return:
+    """
     oauth_token = request.oauth_token
     if not oauth_token:
-        secret_key_id, jw_token = User.generate_jw_token(user_id=request.user.id if request.user else None)
-        headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id, 'Content-Type': 'application/json'}
+        return generate_jwt_header('application/json')
     else:
-        access_token = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
-        headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
-
-    return headers
+        authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
+        return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}

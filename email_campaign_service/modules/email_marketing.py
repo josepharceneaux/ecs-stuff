@@ -16,7 +16,7 @@ from email_campaign_service.common.models.email_marketing import (EmailCampaign,
                                                                   EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
-from email_campaign_service.common.utils.handy_functions import create_oauth_header
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
@@ -80,7 +80,6 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     # Add activity
     add_activity(user_id=user_id,
-                 oauth_token=oauth_token,
                  activity_type=ActivityTypes.CAMPAIGN_CREATE,
                  source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
                  params=dict(id=email_campaign.id, name=email_campaign_name))
@@ -170,12 +169,11 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
                                 "new_candidates_only=%s, address list size=%s" % (
                                     campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)))
 
-        # # Add activity
-        # add_activity(user_id=user.id,
-        #              oauth_token=oauth_token,
-        #              activity_type=ActivityTypes.CAMPAIGN_SEND,
-        #              source_id=campaign.id, source_table=EmailCampaign.__tablename__,
-        #              params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
+        # Add activity
+        add_activity(user_id=user.id,
+                     activity_type=ActivityTypes.CAMPAIGN_SEND,
+                     source_id=campaign.id, source_table=EmailCampaign.__tablename__,
+                     params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
 
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()
@@ -214,7 +212,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
 
     try:
         # Update Candidate Documents in Amazon Cloud Search
-        headers = create_oauth_header()
+        headers = create_oauth_headers()
         response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
                                  data=json.dumps({'candidate_ids': map(itemgetter(0), candidate_ids_and_emails)}))
 
@@ -389,10 +387,10 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         email_campaign_send.ses_request_id = request_id
         db.session.commit()
         # Add activity
-        # add_activity(user_id=user.id, oauth_token=oauth_token, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
-        #              source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
-        #              params=dict(candidateId=candidate.id, campaign_name=campaign.name,
-        #                          candidate_name=candidate.formatted_name))
+        add_activity(user_id=user.id, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
+                     source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
+                     params=dict(candidateId=candidate.id, campaign_name=campaign.name,
+                                 candidate_name=candidate.formatted_name))
 
     # Update blast
     blast_params['sends'] += 1
@@ -437,7 +435,7 @@ def update_hit_count(url_conversion):
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         if candidate:  # If candidate has been deleted, don't make the activity
             # Add activity
-            add_activity(user_id="?", oauth_token="?",
+            add_activity(user_id="?",
                          activity_type=ActivityTypes.CAMPAIGN_EMAIL_OPEN if is_open else ActivityTypes.CAMPAIGN_EMAIL_CLICK,
                          source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
                          params=dict(candidateId=candidate.id, campaign_name=email_campaign_send.email_campaign.name,

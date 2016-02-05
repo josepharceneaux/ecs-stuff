@@ -6,9 +6,10 @@ import traceback
 from ..utils.handy_functions import http_request
 from ..routes import ActivityApiUrl
 from ..utils.talent_reporting import email_error_to_admins
+from ..utils.handy_functions import generate_jwt_header
 
 
-def add_activity(user_id, oauth_token, activity_type, source_table, source_id=None, params=None):
+def add_activity(user_id, activity_type, source_table, source_id=None, params=None):
     """
     Adds activity in system using Activity service
     This function fails silently, because in case of any activity error i.e. it will be some sort of programming error
@@ -35,8 +36,7 @@ def add_activity(user_id, oauth_token, activity_type, source_table, source_id=No
         email_error_to_admins(body="Not able to json.dumps. The exception was: %s" %ex, subject="Activity Service Error: Error occurred while adding activity")
         return
     # TODO: Remove bearer token because system should create activity not the user.
-    headers = {'content-type': 'application/json',
-               'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token}
+    headers = generate_jwt_header(user_id=user_id)
     # call (POST) to activity_service to create activity
     try:
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,

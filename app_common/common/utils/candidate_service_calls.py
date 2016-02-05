@@ -4,7 +4,7 @@ import requests
 import json
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from email_campaign_service.common.utils.handy_functions import create_oauth_header
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers
 from ..error_handling import InternalServerError
 
 __author__ = 'jitesh'
@@ -73,7 +73,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
 def get_candidate_subscription_preference(candidate_id):
     resp = requests.get(CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
-                        headers=create_oauth_header())
+                        headers=create_oauth_headers())
     assert resp.status_code == 200
     response = resp.json()
     # return candidate's subscription_preference
