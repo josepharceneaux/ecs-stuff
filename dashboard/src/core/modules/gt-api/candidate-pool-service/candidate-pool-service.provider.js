@@ -16,7 +16,7 @@
         /* @ngInject */
         function $get(baseService, candidatePoolServiceInfo) {
             return baseService.withConfig(function (RestangularConfigurer) {
-                RestangularConfigurer.setBaseUrl(candidatePoolServiceInfo.THE_REAL_baseUrl);
+                RestangularConfigurer.setBaseUrl(candidatePoolServiceInfo.baseUrl);
             });
         }
     }
