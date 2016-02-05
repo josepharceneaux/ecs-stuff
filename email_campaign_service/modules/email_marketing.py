@@ -220,8 +220,8 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
             raise Exception(error_message="Status Code: %s Response: %s" % (response.status_code, response.json()))
 
     except Exception as e:
-        raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search. "
-                                         "Because: %s" % e.message)
+        raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search because: "
+                                         "%s" % e.message)
 
     logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
             emails_sent, campaign.name, user.email, new_candidates_only)

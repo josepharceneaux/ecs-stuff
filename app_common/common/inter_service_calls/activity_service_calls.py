@@ -6,7 +6,7 @@ import traceback
 from ..utils.handy_functions import http_request
 from ..routes import ActivityApiUrl
 from ..utils.talent_reporting import email_error_to_admins
-from ..utils.handy_functions import generate_jwt_header
+from ..utils.handy_functions import generate_jwt_headers
 
 
 def add_activity(user_id, activity_type, source_table, source_id=None, params=None):
@@ -36,7 +36,7 @@ def add_activity(user_id, activity_type, source_table, source_id=None, params=No
         email_error_to_admins(body="Not able to json.dumps. The exception was: %s" %ex, subject="Activity Service Error: Error occurred while adding activity")
         return
     # TODO: Remove bearer token because system should create activity not the user.
-    headers = generate_jwt_header(user_id=user_id)
+    headers = generate_jwt_headers(user_id=user_id)
     # call (POST) to activity_service to create activity
     try:
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=headers,

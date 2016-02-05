@@ -169,7 +169,7 @@ def sample_phone_number():
     return "{}-{}-{}".format(area_code, middle, last_four)
 
 
-def generate_jwt_header(content_type=None, user_id=None):
+def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
@@ -190,7 +190,7 @@ def create_oauth_headers():
     """
     oauth_token = request.oauth_token
     if not oauth_token:
-        return generate_jwt_header('application/json')
+        return generate_jwt_headers('application/json')
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
