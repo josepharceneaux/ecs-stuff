@@ -1,5 +1,4 @@
 <div id="top-nav" class="topnav-wrapper">
-
     <div class="topnav">
         <!-- Header -->
         <header class="header">
@@ -15,12 +14,12 @@
             <nav class="header__actions">
                 <a href="" class="header__notifications--mobile">
                     <span class="header__notifications__icon icon--hamburger"></span>
-                    <span class="header__notifications__count" ng-if="vm.showCount">{{vm.activityCount}}</span>
+                    <span class="header__notifications__count" ng-if="vm.showCount && vm.activityCount">{{vm.activityCount}}</span>
                 </a>
 
                 <a href="" class="header__notifications" ng-click="vm.toggleNotificationCenter()">
                     <span class="header__notifications__icon icon--bell"></span>
-                    <span class="header__notifications__count" ng-if="vm.showCount">{{vm.activityCount}}</span>
+                    <span class="header__notifications__count" ng-if="vm.showCount && vm.activityCount">{{vm.activityCount}}</span>
                 </a>
                 <div class="header__profile js--topNavItem" >
                     <img src="/images/placeholder/profile.png" alt="Change settings">

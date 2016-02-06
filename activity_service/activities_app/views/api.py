@@ -13,7 +13,7 @@ from flask import jsonify
 from flask import request
 
 # application specific
-from activity_service.activities_app import db
+from activity_service.activities_app import db, logger
 from activity_service.common.models.user import User
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
@@ -241,6 +241,7 @@ class TalentActivityManager(object):
             current_activity_count += 1
             current_activity_type = activity.type
             if current_activity_type not in self.MESSAGES:
+                logger.error('Given Campaign Type (%s) not found.' % current_activity_type)
                 continue
             next_activity_type = activities[i + 1].type if (
                 i < activities.count() - 1) else None  # None means last activity
