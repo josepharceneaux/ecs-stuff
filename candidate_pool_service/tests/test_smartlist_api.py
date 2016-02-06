@@ -238,7 +238,7 @@ class TestSmartlistResource(object):
             assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
 
         def test_create_smartlist_with_existing_name_in_domain(self, access_token_first):
-            """Test smartlist creation with same name is not allowed"""
+            """Test smartlist creation with same name is now allowed, previously it was not"""
             smartlist_name = fake.word()
             data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
@@ -246,8 +246,8 @@ class TestSmartlistResource(object):
             # Try creating smartlist with same name
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
             resp2 = self.call_post_api(data2, access_token_first)
-            assert resp2.status_code == 400
-            assert json.loads(resp2.content)['error']['message'] == "Given smartlist `name` %s already exists in your domain" % smartlist_name
+            assert resp2.status_code == 201
+            # assert json.loads(resp2.content)['error']['message'] == "Given smartlist `name` %s already exists in your domain" % smartlist_name
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
