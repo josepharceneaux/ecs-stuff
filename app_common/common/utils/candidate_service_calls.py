@@ -4,7 +4,7 @@ import requests
 import json
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers
+from ..utils.handy_functions import create_oauth_headers
 from ..error_handling import InternalServerError
 
 __author__ = 'jitesh'
