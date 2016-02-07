@@ -1,7 +1,6 @@
 import datetime
 from db import db
 
-
 class University(db.Model):
     __tablename__ = 'university'
     id = db.Column(db.Integer, primary_key=True)
