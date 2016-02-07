@@ -4,7 +4,7 @@ from candidate import CandidateLanguage
 
 class Language(db.Model):
     __tablename__ = 'language'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(200))
     code = db.Column('Code', db.String(3), unique=True)
 
