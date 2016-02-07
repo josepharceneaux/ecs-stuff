@@ -532,10 +532,10 @@ def update_talent_pipelines_stats():
     :return: None
     """
     talent_pipelines = TalentPipeline.query.all()
+    talent_pools = dict()
 
-    for talent_pipeline in talent_pipelines:
-
-        try:
+    try:
+        for talent_pipeline in talent_pipelines:
             # Return only candidate_ids
             response = get_candidates_of_talent_pipeline(talent_pipeline, fields='id')
             total_candidates = response.get('total_found')
@@ -557,9 +557,23 @@ def update_talent_pipelines_stats():
             db.session.add(talent_pipeline_stat)
             db.session.commit()
 
-        except Exception as e:
-            db.session.rollback()
-            logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+            if talent_pipeline.talent_pool_id in talent_pools:
+                talent_pools[talent_pipeline.talent_pool_id][0] += 1
+                talent_pools[talent_pipeline.talent_pool_id][1] += total_candidates
+            else:
+                talent_pools[talent_pipeline.talent_pool_id] = (1, total_candidates)
+
+        for talent_pool_id in talent_pools.keys():
+            talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats(
+                    talent_pool_id=talent_pool_id,
+                    average_candidates= talent_pools[talent_pool_id][1]/talent_pools[talent_pool_id][0]
+            )
+            db.session.add(talent_pipelines_in_talent_pool_stats)
+            db.session.commit()
+
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
     return '', 204
 
@@ -588,7 +602,8 @@ def get_talent_pipeline_stats(talent_pipeline_id):
         raise InvalidUsage(error_message="'from_date' is missing from request parameters")
 
     try:
-        from_date = parse(from_date_string) - timedelta(days=1, hours=2)
+        # We want to get one reference value for stats that's why we will get one extra stats value from DB
+        from_date = parse(from_date_string) - timedelta(days=1)
         to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
@@ -605,18 +620,23 @@ def get_talent_pipeline_stats(talent_pipeline_id):
             TalentPipelineStats.added_datetime >= from_date,
             TalentPipelineStats.added_datetime <= to_date).all()
 
-    reference_talent_pipeline_stat = talent_pipeline_stats[0] if talent_pipeline_stats[0]
-    talent_pipeline_stats.pop(0)
+    if talent_pipeline_stats and talent_pipeline_stats[0].added_datetime < from_date + timedelta(days=1):
+        reference_talent_pipeline_stat = talent_pipeline_stats[0].total_candidates
+        talent_pipeline_stats.pop(0)
+    else:
+        reference_talent_pipeline_stat = 0
+
+    talent_pipeline_stats = talent_pipeline_stats[::interval]
 
     talent_pipeline_stats = map(lambda (i, x): {
         'total_number_of_candidates': x.total_candidates,
-        'number_of_candidates_removed_or_added': x.total_candidates - (x[i - 1].total_candidates if i > 0 else
-                                                                       reference_talent_pipeline_stat),
-        'added_datetime': x.added_datetime,
+        'number_of_candidates_removed_or_added': x.total_candidates - (talent_pipeline_stats[i - 1].total_candidates
+                                                                       if i > 0 else reference_talent_pipeline_stat),
+        'added_datetime': x.added_datetime.isoformat(),
         'candidates_engagement': x.candidates_engagement
-    }, enumerate(talent_pipeline_stats[::interval]))
+    }, enumerate(talent_pipeline_stats))
 
-    return jsonify({'talent_pipeline_data': [talent_pipeline_stats]})
+    return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
 
 api = TalentApi(talent_pipeline_blueprint)

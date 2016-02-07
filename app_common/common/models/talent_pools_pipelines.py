@@ -64,6 +64,19 @@ class TalentPoolStats(db.Model):
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_stats', cascade="all, delete-orphan"))
 
 
+class TalentPipelinesInTalentPoolStats(db.Model):
+
+    __tablename__ = 'talent_pipelines_in_talent_pool_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
+    average_candidates = db.Column(db.Integer, nullable=False, default=0)
+    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+
+    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipelines_in_talent_pool_stats',
+                                                                   cascade="all, delete-orphan"))
+
+
 class TalentPoolGroup(db.Model):
 
     __tablename__ = 'talent_pool_group'

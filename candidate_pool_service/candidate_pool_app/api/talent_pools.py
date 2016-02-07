@@ -553,14 +553,9 @@ def update_talent_pools_stats():
 
     talent_pools = TalentPool.query.all()
 
-    # 2 hours are added to account for scheduled job run time
-    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
-
     for talent_pool in talent_pools:
 
         try:
-            yesterday_stat = TalentPoolStats.query.filter(TalentPoolStats.talent_pool_id == talent_pool.id,
-                                                          TalentPoolStats.added_datetime > yesterday_datetime).first()
             talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
                                         TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
             total_candidates = len(talent_pool_candidate_ids)
@@ -574,15 +569,8 @@ def update_talent_pools_stats():
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            if yesterday_stat:
-                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
-                                                   number_of_candidates_removed_or_added=
-                                                   total_candidates - yesterday_stat.total_candidates,
-                                                   candidates_engagement=percentage_candidates_engagement)
-            else:
-                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
-                                                   number_of_candidates_removed_or_added=total_candidates,
-                                                   candidates_engagement=percentage_candidates_engagement)
+            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
+                                               candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
             db.session.commit()
 
@@ -613,12 +601,13 @@ def get_talent_pool_stats(talent_pool_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string or not to_date_string:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+    if not from_date_string:
+        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
 
     try:
-        from_date = parse(from_date_string)
-        to_date = parse(to_date_string)
+        # We want to get one reference value for stats that's why we will get one extra stats value from DB
+        from_date = parse(from_date_string) - timedelta(days=1)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
@@ -633,17 +622,85 @@ def get_talent_pool_stats(talent_pool_id):
                                                           TalentPoolStats.added_datetime >= from_date,
                                                           TalentPoolStats.added_datetime <= to_date)).all()
 
+    if talent_pool_stats and talent_pool_stats[0].added_datetime < from_date + timedelta(days=1):
+        reference_talent_pool_stat = talent_pool_stats[0].total_candidates
+        talent_pool_stats.pop(0)
+    else:
+        reference_talent_pool_stat = 0
+
     talent_pool_stats = talent_pool_stats[::interval]
 
-    return jsonify({'talent_pool_data': [
-        {
-            'total_number_of_candidates': talent_pool_stat.total_candidates,
-            'number_of_candidates_removed_or_added': talent_pool_stat.number_of_candidates_removed_or_added,
-            'added_datetime': talent_pool_stat.added_datetime,
-            'candidates_engagement': talent_pool_stat.candidates_engagement
-        }
-        for talent_pool_stat in talent_pool_stats
-    ]})
+    talent_pool_stats = map(lambda (i, x): {
+        'total_number_of_candidates': x.total_candidates,
+        'number_of_candidates_removed_or_added': x.total_candidates - (talent_pool_stats[i - 1].total_candidates
+                                                                       if i > 0 else reference_talent_pool_stat),
+        'added_datetime': x.added_datetime.isoformat(),
+        'candidates_engagement': x.candidates_engagement
+    }, enumerate(talent_pool_stats))
+
+    return jsonify({'talent_pool_data': talent_pool_stats})
+
+
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS, methods=['GET'])
+@require_oauth()
+def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
+    """
+    This method will return the statistics of a all talent-pipelines in a talent_pool over a given period of time
+    with time-period = 1 day
+    :param talent_pool_id: Id of a talent-pool
+    :return: A list of time-series data
+    """
+    talent_pool = TalentPool.query.get(talent_pool_id)
+    if not talent_pool:
+        raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
+
+    if talent_pool.owner_user_id != request.user.id:
+        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
+                                           % (request.user.id, talent_pool.id))
+
+    from_date_string = request.args.get('from_date', '')
+    to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
+
+    if not from_date_string:
+        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
+
+    try:
+        # We want to get one reference value for stats that's why we will get one extra stats value from DB
+        from_date = parse(from_date_string) - timedelta(days=1)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+    except Exception as e:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+    else:
+        interval = int(interval)
+        if interval < 1:
+            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats.query.filter(and_(
+            TalentPipelinesInTalentPoolStats.talent_pool_id == talent_pool_id,
+            TalentPipelinesInTalentPoolStats.added_datetime >= from_date,
+            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all()
+
+    if talent_pipelines_in_talent_pool_stats and talent_pipelines_in_talent_pool_stats[0].added_datetime < from_date + timedelta(days=1):
+        reference_talent_pipelines_in_talent_pool_stat = talent_pipelines_in_talent_pool_stats[0].average_candidates
+        talent_pipelines_in_talent_pool_stats.pop(0)
+    else:
+        reference_talent_pipelines_in_talent_pool_stat = 0
+
+    talent_pipelines_in_talent_pool_stats = talent_pipelines_in_talent_pool_stats[::interval]
+
+    talent_pipelines_in_talent_pool_stats = map(lambda (i, x): {
+        'average_number_of_candidates': x.average_candidates,
+        'average_number_of_candidates_removed_or_added': x.average_candidates - (
+            talent_pipelines_in_talent_pool_stats[i - 1].average_candidates if i > 0 else
+            reference_talent_pipelines_in_talent_pool_stat),
+        'added_datetime': x.added_datetime.isoformat()
+    }, enumerate(talent_pipelines_in_talent_pool_stats))
+
+    return jsonify({'talent_pool_data': talent_pipelines_in_talent_pool_stats})
 
 api = TalentApi(talent_pool_blueprint)
 api.add_resource(TalentPoolApi, CandidatePoolApi.TALENT_POOL, CandidatePoolApi.TALENT_POOLS)

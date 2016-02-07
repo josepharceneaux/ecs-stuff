@@ -134,15 +134,9 @@ def update_smartlists_stats():
     """
     smartlists = Smartlist.query.all()
 
-    # 2 hours are added to account for scheduled job run time
-    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
-
     for smartlist in smartlists:
 
         try:
-            yesterday_stat = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist.id,
-                                                        SmartlistStats.added_datetime > yesterday_datetime).first()
-
             # Return only candidate_ids
             response = get_candidates(smartlist, candidate_ids_only=True)
             total_candidates = response.get('total_found')
@@ -157,17 +151,9 @@ def update_smartlists_stats():
                 if int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            if yesterday_stat:
-                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
-                                                total_candidates=total_candidates,
-                                                number_of_candidates_removed_or_added=
-                                                total_candidates - yesterday_stat.total_candidates,
-                                                candidates_engagement=percentage_candidates_engagement)
-            else:
-                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
-                                                total_candidates=total_candidates,
-                                                number_of_candidates_removed_or_added=total_candidates,
-                                                candidates_engagement=percentage_candidates_engagement)
+            smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
+                                            total_candidates=total_candidates,
+                                            candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
             db.session.commit()
 
@@ -198,12 +184,13 @@ def get_smartlist_stats(smartlist_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string or not to_date_string:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+    if not from_date_string:
+        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
 
     try:
-        from_date = parse(from_date_string)
-        to_date = parse(to_date_string)
+        # We want to get one reference value for stats that's why we will get one extra stats value from DB
+        from_date = parse(from_date_string) - timedelta(days=1)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
@@ -218,16 +205,23 @@ def get_smartlist_stats(smartlist_id):
                                                   SmartlistStats.added_datetime >= from_date,
                                                   SmartlistStats.added_datetime <= to_date).all()
 
+    if smartlist_stats and smartlist_stats[0].added_datetime < from_date + timedelta(days=1):
+        reference_smartlist_stat = smartlist_stats[0].total_candidates
+        smartlist_stats.pop(0)
+    else:
+        reference_smartlist_stat = 0
+
     smartlist_stats = smartlist_stats[::interval]
-    return jsonify({'smartlist_data': [
-        {
-            'total_number_of_candidates': smartlist_stat.total_candidates,
-            'number_of_candidates_removed_or_added': smartlist_stat.number_of_candidates_removed_or_added,
-            'added_datetime': smartlist_stat.added_datetime,
-            'candidates_engagement': smartlist_stat.candidates_engagement
-        }
-        for smartlist_stat in smartlist_stats
-    ]})
+
+    smartlist_stats = map(lambda (i, x): {
+        'total_number_of_candidates': x.total_candidates,
+        'number_of_candidates_removed_or_added': x.total_candidates - (smartlist_stats[i - 1].total_candidates
+                                                                       if i > 0 else reference_smartlist_stat),
+        'added_datetime': x.added_datetime.isoformat(),
+        'candidates_engagement': x.candidates_engagement
+    }, enumerate(smartlist_stats))
+
+    return jsonify({'smartlist_data': smartlist_stats})
 
 
 api = TalentApi(smartlist_blueprint)

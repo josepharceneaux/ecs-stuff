@@ -343,6 +343,8 @@ class CandidatePoolApi(object):
     TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
     TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     # Talent Pipelines
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
     TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
