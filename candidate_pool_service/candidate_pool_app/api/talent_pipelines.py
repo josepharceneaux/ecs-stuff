@@ -523,7 +523,6 @@ class TalentPipelineCampaigns(Resource):
         return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
 
 
-
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS)
@@ -534,16 +533,9 @@ def update_talent_pipelines_stats():
     """
     talent_pipelines = TalentPipeline.query.all()
 
-    # 2 hours are added to account for scheduled job run time
-    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
-
     for talent_pipeline in talent_pipelines:
 
         try:
-            yesterday_stat = TalentPipelineStats.query.filter(
-                    TalentPipelineStats.talent_pipeline_id == talent_pipeline.id,
-                    TalentPipelineStats.added_datetime > yesterday_datetime).first()
-
             # Return only candidate_ids
             response = get_candidates_of_talent_pipeline(talent_pipeline, fields='id')
             total_candidates = response.get('total_found')
@@ -558,18 +550,10 @@ def update_talent_pipelines_stats():
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            if yesterday_stat:
-                talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
-                                                           total_candidates=total_candidates,
-                                                           number_of_candidates_removed_or_added=
-                                                           total_candidates - yesterday_stat.total_candidates,
-                                                           candidates_engagement=percentage_candidates_engagement)
-            else:
-                talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
-                                                           total_candidates=total_candidates,
-                                                           number_of_candidates_removed_or_added=total_candidates,
-                                                           candidates_engagement=percentage_candidates_engagement
-                                                           )
+            talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
+                                                       total_candidates=total_candidates,
+                                                       candidates_engagement=percentage_candidates_engagement
+                                                       )
             db.session.add(talent_pipeline_stat)
             db.session.commit()
 
@@ -600,12 +584,12 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string or not to_date_string:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+    if not from_date_string:
+        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
 
     try:
-        from_date = parse(from_date_string)
-        to_date = parse(to_date_string)
+        from_date = parse(from_date_string) - timedelta(days=1, hours=2)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
@@ -621,17 +605,18 @@ def get_talent_pipeline_stats(talent_pipeline_id):
             TalentPipelineStats.added_datetime >= from_date,
             TalentPipelineStats.added_datetime <= to_date).all()
 
-    talent_pipeline_stats = talent_pipeline_stats[::interval]
+    reference_talent_pipeline_stat = talent_pipeline_stats[0] if talent_pipeline_stats[0]
+    talent_pipeline_stats.pop(0)
 
-    return jsonify({'talent_pipeline_data': [
-        {
-            'total_number_of_candidates': talent_pipeline_stat.total_candidates,
-            'number_of_candidates_removed_or_added': talent_pipeline_stat.number_of_candidates_removed_or_added,
-            'added_datetime': talent_pipeline_stat.added_datetime,
-            'candidates_engagement': talent_pipeline_stat.candidates_engagement
-        }
-        for talent_pipeline_stat in talent_pipeline_stats
-        ]})
+    talent_pipeline_stats = map(lambda (i, x): {
+        'total_number_of_candidates': x.total_candidates,
+        'number_of_candidates_removed_or_added': x.total_candidates - (x[i - 1].total_candidates if i > 0 else
+                                                                       reference_talent_pipeline_stat),
+        'added_datetime': x.added_datetime,
+        'candidates_engagement': x.candidates_engagement
+    }, enumerate(talent_pipeline_stats[::interval]))
+
+    return jsonify({'talent_pipeline_data': [talent_pipeline_stats]})
 
 
 api = TalentApi(talent_pipeline_blueprint)

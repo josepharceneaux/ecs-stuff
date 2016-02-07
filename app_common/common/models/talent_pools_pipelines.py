@@ -54,7 +54,6 @@ class TalentPoolStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
     total_candidates = db.Column(db.Integer, nullable=False, default=0)
-    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
@@ -116,10 +115,8 @@ class TalentPipeline(db.Model):
 class TalentPipelineStats(db.Model):
     __tablename__ = 'talent_pipeline_stats'
     id = db.Column(db.Integer, primary_key=True)
-    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'),
-                                   nullable=False)
+    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'), nullable=False)
     total_candidates = db.Column(db.Integer, nullable=False, default=0)
-    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
