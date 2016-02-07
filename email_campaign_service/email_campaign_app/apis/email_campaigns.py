@@ -9,7 +9,8 @@ from ...modules.email_marketing import (create_email_campaign, send_emails_to_ca
 from ...modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
-from email_campaign_service.common.models.email_marketing import EmailCampaign, UrlConversion
+from email_campaign_service.common.models.email_marketing import EmailCampaign
+from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignEndpoints
 from ...email_campaign_app import logger
@@ -38,7 +39,7 @@ class EmailCampaignApi(Resource):
                 raise NotFoundError("Email campaign with id: %s does not exists" % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-            email_campaign_object = email_campaign.to_json()
+            email_campaign_object = email_campaign.to_dict()
             return {"email_campaign": email_campaign_object}
         else:
             # Get all email campaigns from logged in user's domain
@@ -79,40 +80,44 @@ class EmailCampaignApi(Resource):
         return {'campaign': campaign}, 201
 
 
-@email_campaign_blueprint.route(EmailCampaignEndpoints.SEND_CAMPAIGN, methods=['POST'])
-@require_oauth()
-def send_campaign_emails(campaign_id):
-    """
-    Sends campaign emails to the candidates present in smartlists of campaign.
-    Scheduler service will call this to send emails to candidates.
-    :param campaign_id: Campaign id
-    """
-    campaign = EmailCampaign.query.get(campaign_id)
-    if not campaign:
-        raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
-    # remove oauth_token instead use trusted server to server calls
-    email_send = send_emails_to_campaign(campaign, new_candidates_only=False)
+class EmailCampaignSendApi(Resource):
 
-    if campaign.email_client_id:
-        if isinstance(email_send, list):
-            data = {
-                'email_campaign_sends': [
-                    {
-                        'email_campaign_id': campaign.id,
-                        'new_html': new_email_html_or_text.get('new_html'),
-                        'new_text': new_email_html_or_text.get('new_text'),
-                        'candidate_email_address': new_email_html_or_text.get('email')
-                    } for new_email_html_or_text in email_send
-                ]
-            }
-            return jsonify(data)
+    decorators = [require_oauth()]
 
-        else:
-            raise InvalidUsage(error_message="Something went wrong, response is not list")
+    def post(self, campaign_id):
+        """
+        Sends campaign emails to the candidates present in smartlists of campaign.
+        Scheduler service will call this to send emails to candidates.
+        :param campaign_id: Campaign id
+        """
+        campaign = EmailCampaign.query.get(campaign_id)
+        if not campaign:
+            raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
+        # remove oauth_token instead use trusted server to server calls
+        email_send = send_emails_to_campaign(campaign, new_candidates_only=False)
+        return dict(message='email_campaign(id:%s) is being sent to candidates.'
+                            % campaign_id), 200
 
-    else:
-        data = json.dumps({'campaign': {'emails_send': email_send}})
-        return data
+        # if campaign.email_client_id:
+        #     if isinstance(email_send, list):
+        #         data = {
+        #             'email_campaign_sends': [
+        #                 {
+        #                     'email_campaign_id': campaign.id,
+        #                     'new_html': new_email_html_or_text.get('new_html'),
+        #                     'new_text': new_email_html_or_text.get('new_text'),
+        #                     'candidate_email_address': new_email_html_or_text.get('email')
+        #                 } for new_email_html_or_text in email_send
+        #             ]
+        #         }
+        #         return jsonify(data)
+        #
+        #     else:
+        #         raise InvalidUsage(error_message="Something went wrong, response is not list")
+        #
+        # else:
+        #     data = json.dumps({'campaign': {'emails_send': email_send}})
+        #     return data
 
 
 @email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])
@@ -141,3 +146,4 @@ def url_redirect(url_conversion_id):
 
 api = TalentApi(email_campaign_blueprint)
 api.add_resource(EmailCampaignApi, EmailCampaignEndpoints.EMAIL_CAMPAIGN, EmailCampaignEndpoints.EMAIL_CAMPAIGNS)
+api.add_resource(EmailCampaignSendApi, EmailCampaignEndpoints.SEND_CAMPAIGN)

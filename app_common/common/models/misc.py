@@ -1,3 +1,4 @@
+from app_common.common.models.db import db
 from db import db
 import datetime
 from sqlalchemy.orm import relationship
@@ -305,3 +306,13 @@ class CustomFieldCategory(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+
+class UrlConversion(db.Model):
+    __tablename__ = 'url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    source_url = db.Column('sourceUrl', db.String(512))  # Ours
+    destination_url = db.Column('destinationUrl', db.String(512))  # Theirs
+    hit_count = db.Column('hitCount', db.Integer, default=0)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('lastHitTime', db.DateTime)

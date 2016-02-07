@@ -5,8 +5,9 @@ from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers
-from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
+from email_campaign_service.common.models.email_marketing import EmailCampaignSendUrlConversion
+from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
@@ -26,8 +27,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     """
 
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = requests.get(CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id, params=params,
-                     headers=create_oauth_headers())
+    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
+                            params=params, headers=create_oauth_headers())
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
     if candidate_ids_only:

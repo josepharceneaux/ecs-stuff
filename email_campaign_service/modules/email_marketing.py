@@ -5,18 +5,20 @@ import datetime
 import requests
 from operator import itemgetter
 
+from celery import chord
 from sqlalchemy import and_
 from sqlalchemy import desc
+from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
                                                   get_candidates_of_smartlist, TRACKING_URL_TYPE)
-from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.email_campaign_app import logger, celery_app, app
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSmartList,
                                                                   EmailCampaignBlast, EmailCampaignSend,
                                                                   EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
@@ -151,7 +153,6 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
     :return:            number of emails sent
     """
     user = campaign.user
-    emails_sent = 0
     candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
@@ -159,77 +160,89 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
     # Check if the smart list has more than 0 candidates
     if len(candidate_ids_and_emails) > 0:
         email_notification_to_admins(
-                subject='Marketing batch about to send',
-                body="Marketing email batch about to send, campaign.name=%s, user=%s, \
-        new_candidates_only=%s, address list size=%s" % (
-                    campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)
-                )
+            subject='Marketing batch about to send',
+            body="Marketing email batch about to send, campaign.name=%s, user=%s, "
+                 "new_candidates_only=%s, address list size=%s"
+                 % (campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails))
         )
         logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
-                                "new_candidates_only=%s, address list size=%s" % (
-                                    campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails)))
+                    "new_candidates_only=%s, address list size=%s"
+                    % (campaign.name, user.email, new_candidates_only,
+                       len(candidate_ids_and_emails)))
 
         # Add activity
         add_activity(user_id=user.id,
                      activity_type=ActivityTypes.CAMPAIGN_SEND,
                      source_id=campaign.id, source_table=EmailCampaign.__tablename__,
-                     params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
+                     params=dict(id=campaign.id, name=campaign.name,
+                                 num_candidates=len(candidate_ids_and_emails)))
 
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()
-        email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id, sent_time=blast_datetime)
+        email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id,
+                                                  sent_time=blast_datetime)
         db.session.add(email_campaign_blast)
         db.session.commit()
         blast_params = dict(sends=0, bounces=0)
-
+        logger.info('blast record is %s' % email_campaign_blast.to_json())
+        logger.info('campaign record is %s' % campaign.to_dict())
+        logger.info('user id is %s' % user.id)
         # For each candidate, create URL conversions and send the email
-        list_of_new_email_html_or_text = []
-        for candidate_id, candidate_address in candidate_ids_and_emails:
+        send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
+                                    blast_datetime, campaign,
+                                    user, new_candidates_only)
 
-            was_send = send_campaign_emails_to_candidate(
-                user=user,
-                campaign=campaign,
-                candidate=Candidate.query.get(candidate_id),
-                # candidates.find(lambda row: row.id == candidate_id).first(),
-                candidate_address=candidate_address,
-                blast_params=blast_params,
-                email_campaign_blast_id=email_campaign_blast.id,
-                blast_datetime=blast_datetime,
-                email_client_id=campaign.email_client_id
-            )
 
-            if campaign.email_client_id:
-                resp_dict = {}
-                resp_dict['new_html'] = was_send.get('new_html')
-                resp_dict['new_text'] = was_send.get('new_text')
-                resp_dict['email'] = candidate_address
-                list_of_new_email_html_or_text.append(resp_dict)
+def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
+                                blast_datetime, campaign,
+                                user, new_candidates_only):
+    campaign_type = campaign.__tablename__
+    callback = post_processing_campaign_sent.subtask((candidate_ids_and_emails, campaign,
+                                                      user, new_candidates_only,
+                                                      email_campaign_blast, ),
+                                                     queue=campaign_type)
+    # Here we create list of all tasks and assign a self.celery_error_handler() as a
+    # callback function in case any of the tasks in the list encounter some error.
+    tasks = [send_campaign_to_candidate.subtask(
+        (user, campaign, candidate_id, candidate_address,
+         blast_params, email_campaign_blast, blast_datetime),
+        queue=campaign_type) for candidate_id, candidate_address in candidate_ids_and_emails]
+    # This runs all tasks asynchronously and sets callback function to be hit once all
+    # tasks in list finish running without raising any error. Otherwise callback
+    # results in failure status.
+    chord(tasks)(callback)
 
-            if was_send:
-                emails_sent += 1
 
-            db.session.commit()
+@celery_app.task(name='post_processing_campaign_sent')
+def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campaign,
+                                  user, new_candidates_only,
+                                  email_campaign_blast):
 
+    logger.info('celery_result: %s' % celery_result)
+    sends = celery_result.count(True)
+    email_campaign_blast.update(sends=email_campaign_blast.sends + sends)
+    logger.debug('email campaign has been sent to %s candidates.' % sends)
     try:
         # Update Candidate Documents in Amazon Cloud Search
-        headers = create_oauth_headers()
-        response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
-                                 data=json.dumps({'candidate_ids': map(itemgetter(0), candidate_ids_and_emails)}))
+        headers = CampaignBase.get_authorization_header(user.id)
+        with app.app_context():
+            response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+                                     data=json.dumps({'candidate_ids': map(itemgetter(0),
+                                                                           candidate_ids_and_emails)}))
 
         if response.status_code != 204:
-            raise Exception(error_message="Status Code: %s Response: %s" % (response.status_code, response.json()))
+            raise Exception("Status Code: %s Response: %s"
+                            % (response.status_code, response.json()))
 
     except Exception as e:
-        raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search because: "
-                                         "%s" % e.message)
+        error_message = "Couldn't update Candidate Documents in Amazon Cloud Search because: %s" \
+                        % e.message
+        logger.exception(error_message)
+        raise InvalidUsage(error_message)
 
-    logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
-            emails_sent, campaign.name, user.email, new_candidates_only)
-
-    if campaign.email_client_id:
-        return list_of_new_email_html_or_text
-
-    return emails_sent
+    logger.info("Marketing email batch completed, emails sent=%s, "
+                "campaign=%s, user=%s, new_candidates_only=%s",
+                sends, campaign.name, user.email, new_candidates_only)
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
@@ -387,18 +400,40 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         email_campaign_send.ses_request_id = request_id
         db.session.commit()
         # Add activity
-        add_activity(user_id=user.id, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
-                     source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
-                     params=dict(candidateId=candidate.id, campaign_name=campaign.name,
-                                 candidate_name=candidate.formatted_name))
-
+        try:
+            add_activity(user_id=user.id, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
+                         source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
+                         params=dict(candidateId=candidate.id, campaign_name=campaign.name,
+                                     candidate_name=candidate.formatted_name))
+        except Exception:
+            logger.exception('Error occurred while creating campaign send activity.')
     # Update blast
-    blast_params['sends'] += 1
-    email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
-    email_campaign_blast.sends = blast_params['sends']
-    db.session.commit()
-
     return True
+
+
+@celery_app.task(name='send_campaign_to_candidate')
+def send_campaign_to_candidate(user, campaign, candidate_id, candidate_address,
+                               blast_params, email_campaign_blast, blast_datetime):
+    with app.app_context():
+        was_send = send_campaign_emails_to_candidate(
+            user=user,
+            campaign=campaign,
+            candidate=Candidate.query.get(candidate_id),
+            # candidates.find(lambda row: row.id == candidate_id).first(),
+            candidate_address=candidate_address,
+            blast_params=blast_params,
+            email_campaign_blast_id=email_campaign_blast.id,
+            blast_datetime=blast_datetime,
+            email_client_id=campaign.email_client_id
+        )
+
+        if campaign.email_client_id:
+            resp_dict = dict()
+            resp_dict['new_html'] = was_send.get('new_html')
+            resp_dict['new_text'] = was_send.get('new_text')
+            resp_dict['email'] = candidate_address
+        db.session.commit()
+        return was_send
 
 
 def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, exception):

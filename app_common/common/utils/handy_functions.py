@@ -13,6 +13,8 @@ from itertools import izip_longest
 from ..models.db import db
 from ..models.user import User, UserScopedRoles, DomainRole
 
+JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
+
 
 def random_word(length):
     """Creates a random lowercase string, usefull for testing data."""
@@ -56,6 +58,23 @@ def camel_case_to_snake_case(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('(.)([0-9]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
+
+
+def snake_case_to_pascal_case(name):
+    """ Convert string or unicode from lower-case underscore to camel-case
+        e.g. appt_type_id --> ApptTypeId
+
+            :Example:
+
+                result = snake_case_to_camel_case('social_network_id')
+                assert result == 'SocialNetworkId'
+    """
+    if not isinstance(name, basestring):
+        raise InvalidUsage('Include name as str.')
+    splitted_string = name.split('_')
+    # use string's class to work on the string to keep its type
+    class_ = name.__class__
+    return class_.join('', map(class_.capitalize, splitted_string))
 
 
 def grouper(iterable, group_size, fillvalue=None):
@@ -156,6 +175,66 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 
+def validate_required_fields(data_dict, required_fields):
+    """
+    This function returns the keys as specified by required_fields, that are not present in
+    the data_dict. If any of the field is missing, it raises missing
+    :param data_dict:
+    :param required_fields:
+    :type data_dict: dict
+    :type required_fields: list
+    :exception: Invalid Usage
+    """
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('data_dict must be instance of dictionary.')
+    if not isinstance(required_fields, (tuple, list)):
+        raise InvalidUsage('required_fields must be instance of list.')
+    missing_keys = list(set(required_fields) - set(data_dict.keys()))
+    if missing_keys:
+        raise InvalidUsage('Required fields are missing from given data.%s' % missing_keys,
+                           error_code=InvalidUsage.http_status_code())
+
+
+def find_missing_items(data_dict, required_fields=None, verify_all=False):
+    """
+    This function is used to find the missing items (either key or its value)in given
+    data_dict. If verify_all is true, this function checks all the keys present in data_dict
+    if they are empty or not. Otherwise it verify only those fields as given in required_fields.
+
+    :Example:
+
+        >>> data_dict = {'name' : 'Name', 'title': 'myTitle'}
+        >>> missing_items = find_missing_items(data_dict, required_fields =['name', 'title', 'type']
+        >>> print missing_items
+
+         Output will be ['type']
+    :param data_dict: given dictionary to be examined
+    :param required_fields: keys which need to be checked
+    :param verify_all: indicator if we want to check values of all keys or only keys
+                            present in required_fields
+    :type data_dict: dict
+    :type required_fields: list | None
+    :type verify_all: bool
+    :return: list of missing items
+    :rtype: list
+    """
+    if not isinstance(data_dict, dict):
+        raise InvalidUsage('include data_dict as dict.')
+    if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
+        return [{item: ''} for item in required_fields]
+    elif verify_all:
+        # verify that all keys in the data_dict have valid values
+        missing_items = [{key: value} for key, value in data_dict.iteritems()
+                         if not value and not value == 0]
+    else:
+        # verify if required fields are present as keys in data_dict
+        validate_required_fields(data_dict, required_fields)
+        # verify that keys of data_dict present in required_field have valid values
+        missing_items = [{key: value} for key, value in data_dict.iteritems()
+                         if key in required_fields and not value and not value == 0]
+    return [missing_item for missing_item in missing_items]
+
+
 def sample_phone_number():
     """Create random phone number.
     Phone number only creates area code + 7 random digits
@@ -194,3 +273,25 @@ def create_oauth_headers():
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
+
+
+def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
+    """
+    This validates that given object is an instance of given instance. If it is not, it raises
+    the given exception.
+    :param obj: obj e,g. User object
+    :param instances: Class for which given object is expected to be an instance.
+    :param exception: Exception to be raised
+    :type obj: object
+    :type instances: class
+    :type exception: Exception
+    :exception: Invalid Usage
+    """
+    if not isinstance(obj, instances):
+        given_obj_name = dict(obj=obj).keys()[0]
+        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
+        if isinstance(instances, (list, tuple)):
+            raise exception(error_message % ", ".join([instance.__name__
+                                                       for instance in instances]))
+        else:
+            raise exception(error_message % instances.__name__)
