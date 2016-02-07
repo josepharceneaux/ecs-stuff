@@ -243,11 +243,12 @@ class TestSmartlistResource(object):
             data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 201  # Successfully created
+            assert resp.json()['smartlist']['id']
             # Try creating smartlist with same name
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
             resp2 = self.call_post_api(data2, access_token_first)
             assert resp2.status_code == 201
-            # assert json.loads(resp2.content)['error']['message'] == "Given smartlist `name` %s already exists in your domain" % smartlist_name
+            assert resp.json()['smartlist']['id']
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
