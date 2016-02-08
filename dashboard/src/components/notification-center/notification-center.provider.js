@@ -24,7 +24,8 @@
                 unlocked: 'unlocked',
                 activityCountChanged: 'activityCountChanged',
                 openStateChanged: 'openStateChanged',
-                lockStateChanged: 'lockStateChanged'
+                lockStateChanged: 'lockStateChanged',
+                clearActivity: 'clearActivity'
             };
             var listeners = {};
 

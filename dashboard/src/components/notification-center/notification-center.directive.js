@@ -42,6 +42,9 @@
 
         activate();
         init();
+        notificationCenterService.addListener('clearActivity', function(){
+            vm.activity = [];
+        });
 
         function activate() {
             logger.log('Activated Notification Center');

@@ -101,6 +101,8 @@
 
         function logout() {
             $cookies.put('showActivityCount', true);
+            notificationCenterService.broadcast('clearActivity');
+            toastr.remove();
             OAuth.revokeToken();
             $state.go('login');
         }
