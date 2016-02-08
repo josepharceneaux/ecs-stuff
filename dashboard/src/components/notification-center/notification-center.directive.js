@@ -34,7 +34,6 @@
     /* @ngInject */
     function ControllerFunction($timeout, logger, toastr, notificationService, notificationCenterService) {
         var vm = this;
-        vm.time = new Date();
         vm.toggleNotificationCenter = notificationCenterService.toggle;
         vm.messages = [];
         vm.hideNotifications = false;
