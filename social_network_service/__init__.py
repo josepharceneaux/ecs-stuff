@@ -33,7 +33,7 @@ def init_app():
     register_error_handlers(flask_app, logger)
 
     # Enable CORS for all origins & endpoints
-    CORS(flask_app)
+    CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
     logger.info("Starting social network service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])

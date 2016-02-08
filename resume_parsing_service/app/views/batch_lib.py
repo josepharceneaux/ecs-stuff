@@ -1,4 +1,5 @@
 """Functions used by batch processing endpoints."""
+# pylint: disable=wrong-import-position, fixme
 __author__ = 'erik@getTalent'
 # Standard Library
 from datetime import datetime

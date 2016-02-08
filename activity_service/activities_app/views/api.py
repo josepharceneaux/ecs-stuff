@@ -57,7 +57,7 @@ def get_activities(page):
 @require_oauth()
 def post_activity():
     valid_user_id = request.user.id
-    content = request.json
+    content = request.get_json()
     return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
                            content.get('source_id'), content.get('params'))
 

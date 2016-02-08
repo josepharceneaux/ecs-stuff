@@ -2,35 +2,41 @@
 <section class="view__sidebar">
 
     <nav>
-        <div style="padding:30px 70px 0px 30px; background:#ccc;">
-            <h2>User</h2>
+        <div class="navigation__childItem__content">
+            <div class="navigation__childItem__combo">
+                <h3>User <a href=""><span class="icon--plus"></span></a></h3>
+            </div>
             <ul>
-                <li><a href="">My Profile</a></li>
-                <li><a href="">My Account</a></li>
-                <li><a href="">Organization</a></li>
-                <li><a href="">Support</a></li>
-                <li><a href="">Settings</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.profile">My Profile</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.account">My Account</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.organization">Organization</a></li>
+                <li ui-sref-active="active"><a ui-sref="support">Support</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.settings">Settings</a></li>
             </ul>
-            <h2>Settings</h2>
+            <div class="navigation__childItem__combo">
+                <h3>Settings <a href=""><span class="icon--plus"></span></a></h3>
+            </div>
             <ul>
-                <li><a href="">My Widgets</a></li>
-                <li><a href="">Email Settings</a></li>
-                <li><a href="">Custom Fields</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.widgetOptions">My Widgets</a></li>
+                <li ui-sref-active="active"><a href="">Email Settings</a></li>
+                <li ui-sref-active="active"><a ui-sref="user.customFields">Custom Fields</a></li>
             </ul>
-            <h2>Data Management</h2>
+            <div class="navigation__childItem__combo">
+                <h3>Data Management <a href=""><span class="icon--plus"></span></a></h3>
+            </div>
             <ul>
-                <li><a href="">Talent Pools</a></li>
-                <li><a href="">Pipelines</a></li>
-                <li><a href="">Campaigns</a></li>
-                <li><a href="">Candidates</a></li>
-                <li><a href="">Settings</a></li>
+                <li ui-sref-active="active"><a ui-sref="talentPools">Talent Pools</a></li>
+                <li ui-sref-active="active"><a ui-sref="pipelines">Pipelines</a></li>
+                <li ui-sref-active="active"><a ui-sref="campaigns">Campaigns</a></li>
+                <li ui-sref-active="active"><a ui-sref="candidates">Candidates</a></li>
+                <li ui-sref-active="active"><a ui-sref="settings">Settings</a></li>
             </ul>
             <h2>Other Testing Links</h2>
             <ul>
-                <li><a href="">User Notifications</a></li>
-                <li><a href="">System Alerts</a></li>
-                <li><a href="">Modal</a></li>
-                <li><a href="">First Time UX</a></li>
+                <li ui-sref-active="active"><a href="">User Notifications</a></li>
+                <li ui-sref-active="active"><a href="">System Alerts</a></li>
+                <li ui-sref-active="active"><a href="">Modal</a></li>
+                <li ui-sref-active="active"><a href="">First Time UX</a></li>
             </ul>
         </div>
     </nav>

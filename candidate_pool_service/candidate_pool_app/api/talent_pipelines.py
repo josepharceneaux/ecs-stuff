@@ -336,10 +336,13 @@ class TalentPipelineSmartListApi(Resource):
         return {
             'smartlists': [
                 {
+                    'id': smartlist.id,
                     'name': smartlist.name,
                     'user_id': smartlist.user_id,
                     'is_hidden': smartlist.is_hidden,
-                    'search_params': json.loads(smartlist.search_params) if smartlist.search_params else None
+                    'search_params': json.loads(smartlist.search_params) if smartlist.search_params else None,
+                    'added_time': str(smartlist.added_time),
+                    'candidates': len(smartlist.smart_list_candidate)
 
                 }
                 for smartlist in smartlists
@@ -522,7 +525,7 @@ class TalentPipelineCampaigns(Resource):
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS)
 def update_talent_pipelines_stats():
     """

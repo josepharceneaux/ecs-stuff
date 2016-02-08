@@ -1,5 +1,6 @@
 """Misc functions that have no logical grouping to a module."""
 __author__ = 'erikfarmer'
+
 import re
 import json
 import pytz
@@ -10,7 +11,7 @@ from pytz import timezone
 from datetime import datetime
 from itertools import izip_longest
 from ..models.db import db
-from flask import current_app
+from flask import current_app, request
 from requests import ConnectionError
 from ..talent_config_manager import TalentConfigKeys
 from ..models.user import User, UserScopedRoles, DomainRole
@@ -337,3 +338,30 @@ def sample_phone_number():
     middle = random.randint(101, 999)
     last_four = ''.join(map(str, random.sample(range(10), 4)))
     return "{}-{}-{}".format(area_code, middle, last_four)
+
+
+def generate_jwt_headers(content_type=None, user_id=None):
+    """
+    This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
+    :param str content_type: content-type header value
+    :return:
+    """
+    secret_key_id, jw_token = User.generate_jw_token(user_id=request.user.id if request.user else user_id)
+    headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+    if content_type:
+        headers['Content-Type'] = content_type
+    return headers
+
+
+def create_oauth_headers():
+    """
+    This function will return dict of Authorization and Content-Type headers. If the request context does not
+    contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
+    :return:
+    """
+    oauth_token = request.oauth_token
+    if not oauth_token:
+        return generate_jwt_headers('application/json')
+    else:
+        authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
+        return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}

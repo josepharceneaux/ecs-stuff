@@ -17,6 +17,10 @@ try:
     db.init_app(app)
     db.app = app
 
+    # Initialize Redis Cache
+    from activity_service.common.redis_cache import redis_store
+    redis_store.init_app(app)
+
     from views import api
     app.register_blueprint(api.mod)
 
@@ -28,7 +32,7 @@ try:
     register_error_handlers(app, logger)
 
     # Enable CORS for all origins & endpoints
-    CORS(app)
+    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
     logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

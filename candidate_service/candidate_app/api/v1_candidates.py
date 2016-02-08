@@ -1124,24 +1124,23 @@ class CandidateOpenWebResource(Resource):
         url = request.args.get('url')
         email = request.args.get('email')
         if url:
-            find_candidate = match_candidate_from_openweb(url, authed_user)
+            is_gt_candidate, find_candidate = match_candidate_from_openweb(url, authed_user)
         elif email:
-            find_candidate = find_in_openweb_by_email(email)
+            is_gt_candidate, find_candidate = find_in_openweb_by_email(email)
         candidate = None
 
-        if int(find_candidate[0]) == 1:
-            candidate = {'candidate': fetch_candidate_info(find_candidate[1])}
+        if is_gt_candidate:
+            candidate = {'candidate': fetch_candidate_info(find_candidate)}
 
-        elif int(find_candidate[0]) == 0:
+        else:
             try:
-                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate[1])}
+                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate, authed_user)}
             except Exception as e:
                 logging.exception("Converting candidate from dice to gT went wrong")
                 raise InvalidUsage(error_message=e.message)
-        else:
-            raise NotFoundError(error_message="Candidate not found")
 
         return candidate
+
 
 class CandidateClientEmailCampaignResource(Resource):
     decorators = [require_oauth()]
