@@ -3,6 +3,7 @@
 
     angular.module('app.notificationCenter', [
         'app.core',
+        'ngCookies',
         'angularMoment'
     ]);
 })();

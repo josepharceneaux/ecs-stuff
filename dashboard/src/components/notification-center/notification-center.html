@@ -10,9 +10,10 @@
                 </div>
                 <div class="feed__item" ng-repeat="activity in vm.activity">
                     <!--<span class="feed__item__sub">{{'UserId: ' + activity.user_id + ' SourceTable: '  + activity.source_table}}</span>-->
-                    <span class="icon--announcements"></span>
+                    <span ng-class="activity.icon"></span>
+                    <span class="fa fa-remove pull-right" ng-click="vm.removeActivity(activity.id)"></span>
                     <span class="feed__item__sub" am-time-ago="activity.added_time"></span>
-                    <p><a href="#">{{ activity.user_name }}</a> just added 22 candidates to <a href="#">Java Developers</a></p>
+                    <div ng-bind-html="activity.feedMessage || 'No message'"><a href="#">{{ activity.user_name }}</a> just added 22 candidates to <a href="#">Java Developers</a></div>
                 </div>
                 <!--<div class="feed__item">-->
                     <!--<span class="icon&#45;&#45;people"></span>-->

@@ -26,10 +26,10 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$state', 'OAuth', 'toastr', 'systemAlertsService', 'notificationCenterService'];
+    ControllerFunction.$inject = ['$state','$cookies', 'OAuth', 'toastr', 'systemAlertsService', 'notificationCenterService'];
 
     /* @ngInject */
-    function ControllerFunction($state, OAuth, toastr, systemAlertsService, notificationCenterService) {
+    function ControllerFunction($state, $cookies, OAuth, toastr, systemAlertsService, notificationCenterService) {
         var vm = this;
         vm.isCollapsed = true;
         vm.logout = logout;
@@ -37,7 +37,9 @@
         vm.createSystemAlert = createSystemAlert;
         vm.toggleNotificationCenter = notificationCenterService.toggle;
         vm.activityCount = '';
-        vm.showCount = true;
+        //vm.showActivityCount = true;
+        var showActivityCount = $cookies.get('showActivityCount');
+        vm.showActivityCount = typeof showActivityCount == 'undefined'? true: eval(showActivityCount);
         init();
 
         function init() {
@@ -91,12 +93,14 @@
                 vm.activityCount = count;
             });
             vm.closeFeedOpenedListerner = notificationCenterService.addListener('opened', function(){
-                vm.showCount = false;
+                vm.showActivityCount = false;
+                $cookies.put('showActivityCount', false);
                 vm.closeFeedOpenedListerner();
             });
         }
 
         function logout() {
+            $cookies.put('showActivityCount', true);
             OAuth.revokeToken();
             $state.go('login');
         }

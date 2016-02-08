@@ -49,6 +49,8 @@
                 return isLockedOpen;
             }
 
+
+
             function isOpen() {
                 return isOpen;
             }

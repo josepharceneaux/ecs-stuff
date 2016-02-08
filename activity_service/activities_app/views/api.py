@@ -210,15 +210,16 @@ class TalentActivityManager(object):
         activities_response = {
             'total_count': activities.total,
             'items': [{
-                          'params': json.loads(a.params),
-                          'source_table': a.source_table,
-                          'source_id': a.source_id,
-                          'type': a.type,
-                          'user_id': a.user_id,
-                          'user_name': a.user.name if a.user else '',
-                          'added_time': str(a.added_time)
+                          'params': json.loads(activity.params),
+                          'source_table': activity.source_table,
+                          'source_id': activity.source_id,
+                          'type': activity.type,
+                          'user_id': activity.user_id,
+                          'user_name': activity.user.name if activity.user else '',
+                          'added_time': str(activity.added_time),
+                          'id': activity.id
                       }
-                      for a in activities.items
+                      for activity in activities.items
                       ]
         }
         return activities_response
