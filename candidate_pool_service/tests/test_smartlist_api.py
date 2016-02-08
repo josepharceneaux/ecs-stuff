@@ -237,18 +237,33 @@ class TestSmartlistResource(object):
             assert resp.status_code == 403
             assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
 
-        def test_create_smartlist_with_existing_name_in_domain(self, access_token_first):
+        def test_create_smartlist_with_existing_name_in_domain(self, access_token_first, user_first):
             """Test smartlist creation with same name is now allowed, previously it was not"""
             smartlist_name = fake.word()
             data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 201  # Successfully created
             assert resp.json()['smartlist']['id']
+            list_id = resp.json()['smartlist']['id']
+            add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
+            first_smartlist = requests.get(
+                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                headers={'Authorization': 'Bearer %s' % access_token_first}
+            )
+            assert first_smartlist.status_code == 200
+            assert first_smartlist.json()['smartlist']['search_params'] == '{"maximum_years_experience": "5"}'
             # Try creating smartlist with same name
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
             resp2 = self.call_post_api(data2, access_token_first)
             assert resp2.status_code == 201
-            assert resp.json()['smartlist']['id']
+            assert resp2.json()['smartlist']['id']
+            second_list_id = resp2.json()['smartlist']['id']
+            second_smartlist = requests.get(
+                url=SMARTLIST_URL + '/%s' % second_list_id  if second_list_id else SMARTLIST_URL,
+                headers={'Authorization': 'Bearer %s' % access_token_first}
+            )
+            assert second_smartlist.status_code == 200
+            assert second_smartlist.json()['smartlist']['search_params'] == '{"location": "San Jose, CA"}'
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
