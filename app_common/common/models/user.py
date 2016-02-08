@@ -248,8 +248,8 @@ class Client(db.Model):
         return ''
 
 
-class UserToken(db.Model):
-    __tablename__ = 'user_token'
+class Token(db.Model):
+    __tablename__ = 'token'
     id = db.Column(db.Integer, primary_key=True)
     client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
                           nullable=False)
