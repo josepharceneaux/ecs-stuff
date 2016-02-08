@@ -37,7 +37,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             access_token_first, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
-    def test_campaign_schedule_with_no_auth_header(self, access_token_first, sms_campaign_of_current_user):
+    def test_campaign_schedule_with_no_auth_header(self, access_token_first,
+                                                   sms_campaign_of_current_user):
         """
         Using no Auth header like dict(Authorization='Bearer %s' % 'invalid_token'),
         just passing auth token as str. It should get Attribute Error.
@@ -58,7 +59,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             self.METHOD, self.URL % sms_campaign_of_current_user.id,
             generate_campaign_schedule_data())
 
-    def test_campaign_schedule_with_invalid_header(self, access_token_first, sms_campaign_of_current_user):
+    def test_campaign_schedule_with_invalid_header(self, access_token_first,
+                                                   sms_campaign_of_current_user):
         """
         Making POST call with no content-type specifying. It should get bad request error.
         :return:
@@ -95,13 +97,13 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         CampaignsCommonTests.assert_api_response(response)
 
     def test_campaign_schedule_with_not_owned_campaign(self, access_token_first,
-                                                       sms_campaign_of_other_user):
+                                                       sms_campaign_in_other_domain):
         """
         Trying to schedule a campaign of some other user, It should get forbidden error,
         :return:
         """
         CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_of_other_user.id,
+                                                         self.URL % sms_campaign_in_other_domain.id,
                                                          access_token_first)
 
     def test_campaign_schedule_with_non_json_data_type(self, valid_header,
@@ -137,7 +139,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                              access_token_first)
 
     def test_campaign_one_time_schedule_with_past_datetimes(self, sms_campaign_of_current_user,
-                                                            access_token_first, one_time_and_periodic):
+                                                            access_token_first,
+                                                            one_time_and_periodic):
         """
         This is test to schedule SMS campaign with past start_datetime and end_datetime.
         It should get invalid usage error.
@@ -166,7 +169,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             self.METHOD, self.URL % sms_campaign_of_current_user.id,
             access_token_first, one_time_and_periodic)
 
-    def test_schedule_campaign_with_put_method(self, access_token_first, sms_campaign_of_current_user):
+    def test_schedule_campaign_with_put_method(self, access_token_first,
+                                               sms_campaign_of_current_user):
         """
         This test tries to schedule a campaign with PUT method. It should get forbidden error
         :return:
@@ -255,7 +259,8 @@ class TestSmsCampaignScheduleHTTPPUT(object):
             generate_campaign_schedule_data())
 
     def test_campaign_reschedule_with_missing_fields_in_data(
-            self, access_token_first, scheduled_sms_campaign_of_current_user, one_time_and_periodic):
+            self, access_token_first, scheduled_sms_campaign_of_current_user,
+            one_time_and_periodic):
         """
         Here we try to reschedule given campaign periodically an one time. And test by no
         start_datetime and no end_datetime. It should get Invalid usage error.
@@ -268,7 +273,8 @@ class TestSmsCampaignScheduleHTTPPUT(object):
             access_token_first, one_time_and_periodic)
 
     def test_reschedule_campaign_with_invalid_datetime_format(
-            self, access_token_first, scheduled_sms_campaign_of_current_user, one_time_and_periodic):
+            self, access_token_first, scheduled_sms_campaign_of_current_user,
+            one_time_and_periodic):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically and one_time.
         We pass datetime with invalid format. We then assert that we get Invalid usage error.
@@ -281,13 +287,13 @@ class TestSmsCampaignScheduleHTTPPUT(object):
             access_token_first, one_time_and_periodic)
 
     def test_reschedule_not_owned_campaign(self, access_token_first,
-                                           scheduled_sms_campaign_of_other_user):
+                                           scheduled_sms_campaign_of_other_domain):
         """
         Trying to re-schedule a campaign of some other user, It should get forbidden error,
         :return:
         """
         CampaignsCommonTests.request_for_forbidden_error(
-            self.METHOD, self.URL % scheduled_sms_campaign_of_other_user.id,
+            self.METHOD, self.URL % scheduled_sms_campaign_of_other_domain.id,
             access_token_first)
 
     def test_rescheduling_deleted_campaign(self, access_token_first,
@@ -322,9 +328,11 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
     def test_unschedule_campaign_with_invalid_campaign_id(self, access_token_first):
         # Test with invalid integer id
         CampaignsCommonTests.request_with_invalid_campaign_id(
-            SmsCampaign, self.METHOD, self.URL, access_token_first, generate_campaign_schedule_data())
+            SmsCampaign, self.METHOD, self.URL, access_token_first,
+            generate_campaign_schedule_data())
 
-    def test_unschedule_a_campaign(self, access_token_first, scheduled_sms_campaign_of_current_user):
+    def test_unschedule_a_campaign(self, access_token_first,
+                                   scheduled_sms_campaign_of_current_user):
         """
         Here we un schedule a campaign. It should get OK response.
         :param access_token_first:
@@ -341,13 +349,13 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
             access_token_first, None)
 
     def test_unschedule_not_owned_campaign(self, access_token_first,
-                                           scheduled_sms_campaign_of_other_user):
+                                           scheduled_sms_campaign_of_other_domain):
         """
         Here we try to un schedule a campaign of some other user. It should get forbidden error.
         :return:
         """
         CampaignsCommonTests.request_for_forbidden_error(
-            self.METHOD, self.URL % scheduled_sms_campaign_of_other_user.id,
+            self.METHOD, self.URL % scheduled_sms_campaign_of_other_domain.id,
             access_token_first)
 
     def test_unschedule_with_deleted_resource(self, access_token_first,

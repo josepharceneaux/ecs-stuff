@@ -12,18 +12,18 @@ from werkzeug.security import gen_salt
 
 
 # Service Specific
-from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
-    CampaignsCommonTests
-from sms_campaign_service.common.models.smartlist import Smartlist
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import assert_for_activity, \
-    assert_campaign_delete
+from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
+                                                                 assert_campaign_delete)
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+
 
 # Models
 from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.smartlist import Smartlist
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -381,7 +381,7 @@ class TestSmsCampaignHTTPDelete(object):
             'It should be a bad request (400)'
 
     def test_campaigns_delete_with_invalid_and_not_owned_and_non_existing_ids(
-            self, valid_header, sms_campaign_of_other_user):
+            self, valid_header, sms_campaign_in_other_domain):
         """
         User auth token is valid, but invalid data provided
         (ids other than int, not owned campaign and Non-exisiting),
@@ -391,7 +391,7 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [0, 'a', 'b', sms_campaign_of_other_user.id]
+                                       'ids': [0, 'a', 'b', sms_campaign_in_other_domain.id]
                                    }))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
@@ -411,7 +411,7 @@ class TestSmsCampaignHTTPDelete(object):
         assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user.id)
 
     def test_campaigns_delete_with_unauthorized_id(self, valid_header,
-                                                   sms_campaign_of_other_user):
+                                                   sms_campaign_in_other_domain):
         """
         User auth token is valid, data type is valid and ids are of those SMS campaigns that
         belong to some other user. It should get unauthorized error.
@@ -420,13 +420,29 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_of_other_user.id]
+                                       'ids': [sms_campaign_in_other_domain.id]
                                    }))
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
 
+    def test_delete_campaigns_of_multiple_users(self, valid_header, user_first,
+                                                sms_campaign_of_other_user_in_same_domain,
+                                                sms_campaign_of_current_user):
+        """
+        Test with one authorized and one unauthorized SMS campaign. It should get 207
+        status code.
+        :return:
+        """
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
+                                   headers=valid_header,
+                                   data=json.dumps({
+                                       'ids': [sms_campaign_of_other_user_in_same_domain.id,
+                                               sms_campaign_of_current_user.id]
+                                   }))
+        assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user.id)
+
     def test_campaigns_delete_authorized_and_unauthorized_ids(self, valid_header, user_first,
-                                                              sms_campaign_of_other_user,
+                                                              sms_campaign_in_other_domain,
                                                               sms_campaign_of_current_user):
         """
         Test with one authorized and one unauthorized SMS campaign. It should get 207
@@ -436,11 +452,11 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_of_other_user.id,
+                                       'ids': [sms_campaign_in_other_domain.id,
                                                sms_campaign_of_current_user.id]
                                    }))
         assert response.status_code == 207
-        assert sms_campaign_of_other_user.id in response.json()['not_owned_ids']
+        assert sms_campaign_in_other_domain.id in response.json()['not_owned_ids']
         assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
 

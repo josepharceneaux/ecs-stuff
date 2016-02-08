@@ -211,7 +211,7 @@ class SMSCampaigns(Resource):
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
         campaign_id, invalid_smartlist_ids = campaign_obj.save(data_from_ui)
-        headers = {'Location': '/campaigns/%s' % campaign_id}
+        headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         # If any of the smartlist_id found invalid
         if invalid_smartlist_ids['count']:
@@ -458,7 +458,9 @@ class ScheduleSmsCampaign(Resource):
             }
 
         .. Status:: 200 (Resource Deleted)
-                    403 (Forbidden: Current user cannot delete SMS campaign)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Forbidden: Current user cannot un-schedule SMS campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
@@ -517,7 +519,7 @@ class CampaignById(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                   CampaignUtils.SMS)
         return dict(campaign=campaign.to_json()), 200
 
@@ -650,11 +652,14 @@ class SendSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
-        .. Error Codes:: 5001 (Empty message body to send)
+        .. Error Codes::
                          5002 (MultipleTwilioNumbersFoundForUser)
                          5003 (TwilioApiError)
                          5004 (GoogleShortenUrlAPIError)
                          5014 (ErrorUpdatingBodyText)
+                         5101 (Empty message body to send)
+                         5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+                         5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
         camp_obj = SmsCampaignBase(request.user.id)
         camp_obj.send(campaign_id)
@@ -829,12 +834,12 @@ class SmsCampaignBlasts(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
         # Get a campaign that was created by this user
-        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                   CampaignUtils.SMS)
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts]
@@ -886,13 +891,13 @@ class SmsCampaignBlastById(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal server error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
-        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         return dict(blast=blast_obj.to_json()), 200
@@ -953,13 +958,13 @@ class SmsCampaignBlastSends(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
-        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         sends = [send_obj.to_json() for send_obj in blast_obj.blast_sends]
@@ -1020,13 +1025,13 @@ class SmsCampaignBlastReplies(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal server error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Get a campaign that was created by this user
-        SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         replies = [replies_obj.to_json() for replies_obj in blast_obj.blast_replies]
@@ -1061,7 +1066,7 @@ class SmsCampaignSends(Resource):
         .. Response::
 
             {
-                  "count": 16,
+                  "count": 2,
                   "sends": [
                         {
                           "updated_time": "2016-01-05 14:59:55",
@@ -1082,7 +1087,7 @@ class SmsCampaignSends(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
@@ -1090,7 +1095,7 @@ class SmsCampaignSends(Resource):
         :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
         """
         # Get a campaign that was created by this user
-        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                   CampaignUtils.SMS)
 
         # Get replies objects from database table 'sms_campaign_reply'
@@ -1149,12 +1154,12 @@ class SmsCampaignReplies(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Requested campaign does not belong to user's domain)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
         # Get a campaign that was created by this user
-        campaign = SmsCampaignBase.validate_ownership_of_campaign(campaign_id, request.user.id,
+        campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                   CampaignUtils.SMS)
         # Get replies objects from database table 'sms_campaign_reply'
         replies = sum([blast.blast_replies for blast in campaign.blasts], [])

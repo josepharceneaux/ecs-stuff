@@ -20,7 +20,8 @@ from datetime import datetime, timedelta
 import requests
 
 # Common Utils
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.models.user import DomainRole
+from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          EmptyDestinationUrl)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
@@ -33,12 +34,13 @@ from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
 # Database Models
-from sms_campaign_service.common.models.misc import UrlConversion, Frequency
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
 
 # Service Specific
-from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
@@ -262,7 +264,7 @@ class TestURLRedirectionApi(object):
             url_conversion_by_send_test_sms_campaign.source_url)
 
     def test_get_with_deleted_candidate(self, url_conversion_by_send_test_sms_campaign,
-                                        candidate_first):
+                                        candidate_first, valid_header):
         """
         Here we first delete the candidate, which internally deletes the sms_campaign_send record
         as it uses candidate as primary key. We then test functionality of url_redirect
@@ -270,7 +272,7 @@ class TestURLRedirectionApi(object):
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
         """
-        _delete_candidate(candidate_first)
+        _delete_candidate(candidate_first, valid_header)
         request_and_assert_internal_server_error(
             url_conversion_by_send_test_sms_campaign.source_url)
 
@@ -316,9 +318,9 @@ class TestURLRedirectionMethods(object):
         and then test functionality of url_redirect. It should give ResourceNotFound Error.
         """
         _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
-        _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
+        _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
 
-    def test_process_url_redirect_with_deleted_candidate(self,
+    def test_process_url_redirect_with_deleted_candidate(self, user_first, valid_header,
                                                          url_conversion_by_send_test_sms_campaign,
                                                          candidate_first):
         """
@@ -326,18 +328,21 @@ class TestURLRedirectionMethods(object):
         as it uses candidate as primary key. We then test functionality of url_redirect().
         It should get ResourceNotFound Error.
         """
-        _delete_candidate(candidate_first)
-        _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
+        _delete_candidate(candidate_first, valid_header)
+        try:
+            _call_process_url_redirect(url_conversion_by_send_test_sms_campaign)
+        except ResourceNotFound as error:
+            assert error.status_code == ResourceNotFound.http_status_code()
 
-    def test_process_url_redirect_with_deleted_url_conversion(self,
-                                                              url_conversion_by_send_test_sms_campaign):
+    def test_process_url_redirect_with_deleted_url_conversion(
+            self, url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the url_conversion object. which internally deletes the
         sms_campaign_send record as it uses url_conversion as primary key. We then test
         functionality of url_redirect(). It should get ResourceNotFound Error.
         """
         _delete_url_conversion(url_conversion_by_send_test_sms_campaign)
-        _assert_for_no_campiagn_send_obj(url_conversion_by_send_test_sms_campaign)
+        _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
 
     def test_validate_blast_candidate_url_conversion_in_db_with_no_candidate(
             self, create_blast_for_not_owned_campaign,
@@ -436,13 +441,18 @@ def request_and_assert_internal_server_error(url):
         'It should get Internal server error'
 
 
-def _delete_candidate(candidate_first):
+def _delete_candidate(candidate, headers):
     """
-    This deletes the candidate of given id
-    :param candidate_first:
+    This deletes the given candidate from candidate_service API.
+
     :return:
     """
-    Candidate.delete(candidate_first)
+    add_role_to_test_user(candidate.user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
+    response = requests.delete(CandidateApiUrl.CANDIDATE % candidate.id, headers=headers)
+    assert response.status_code == 204
+    db.session.commit()
+
+
 
 
 def _delete_url_conversion(url_conversion_obj):
@@ -530,7 +540,7 @@ def _make_destination_url_empty(url_conversion_obj):
     url_conversion_obj.update(destination_url='')
 
 
-def _assert_for_no_campiagn_send_obj(url_conversion_obj):
+def _assert_for_no_campaign_send_obj(url_conversion_obj):
     """
     This asserts the functionality of url_redirect() by deleting campaign from
     database.

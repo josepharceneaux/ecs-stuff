@@ -19,9 +19,10 @@ app, _ = init_sms_campaign_app_and_celery_app()
 
 # common conftest
 from sms_campaign_service.common.tests.conftest import \
-    (db, pytest, fake, requests, gen_salt, sample_user_2, user_auth, access_token_first,
-    sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
-     test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain)
+    (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
+     sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
+     test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain,
+     user_same_domain, user_second, access_token_second)
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -78,35 +79,20 @@ remove_any_user_phone_record_with_twilio_test_number()
 
 
 @pytest.fixture()
-def auth_token_2(user_auth, sample_user_2):
-    """
-    returns the access token using pytest fixture defined in common/tests/conftest.py
-    :param user_auth: fixture in common/tests/conftest.py
-    """
-    auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
-    return auth_token_obj['access_token']
-
-
-@pytest.fixture()
 def valid_header(access_token_first):
     """
     Returns the header containing access token and content-type to make POST/DELETE requests.
     :param access_token_first: fixture to get access token of user
     """
-    auth_header = {'Authorization': 'Bearer %s' % access_token_first}
-    auth_header.update(JSON_CONTENT_TYPE_HEADER)
-    return auth_header
+    return _get_auth_header(access_token_first)
 
 
 @pytest.fixture()
-def valid_header_2(auth_token_2):
+def valid_header_2(access_token_second):
     """
     Returns the header containing access token and content-type to make POST/DELETE requests.
-    :param access_token_first: fixture to get access token of user
     """
-    auth_header = {'Authorization': 'Bearer %s' % auth_token_2}
-    auth_header.update(JSON_CONTENT_TYPE_HEADER)
-    return auth_header
+    return _get_auth_header(access_token_second)
 
 
 @pytest.fixture()
@@ -144,13 +130,29 @@ def user_phone_2(request, user_first):
 
 
 @pytest.fixture()
-def user_phone_3(request, sample_user_2):
+def user_phone_3(request, user_second):
     """
-    This creates user_phone record for sample_user_2
-    :param sample_user_2:
+    This creates user_phone record for user_from_diff_domain
     :return:
     """
-    user_phone = _create_user_twilio_phone(sample_user_2, fake.phone_number())
+    user_phone = _create_user_twilio_phone(user_second, fake.phone_number())
+
+    def tear_down():
+        _delete_user_phone(user_phone)
+
+    request.addfinalizer(tear_down)
+    return user_phone
+
+
+@pytest.fixture()
+def user_phone_4(request, user_same_domain):
+    """
+    This creates user_phone record for user_same_domain
+    :param request:
+    :param user_first: fixture in common/tests/conftest.py
+    :return:
+    """
+    user_phone = _create_user_twilio_phone(user_same_domain, fake.phone_number())
 
     def tear_down():
         _delete_user_phone(user_phone)
@@ -218,8 +220,7 @@ def sample_sms_campaign_candidates(user_first,
 
 
 @pytest.fixture()
-def sample_campaign_candidate_of_other_domain(user_first, sample_smartlist,
-                                              candidate_in_other_domain):
+def sample_campaign_candidate_of_other_domain(sample_smartlist, candidate_in_other_domain):
     """
     This adds candidate of other domain to sample_smartlist.
     :param sample_smartlist:
@@ -271,9 +272,25 @@ def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
 
 
 @pytest.fixture()
-def sms_campaign_of_other_user(request, campaign_valid_data, user_phone_3):
+def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
+                                              user_phone_4):
     """
-    This creates SMS campaign for some other user i.e. not user_first rather sample_user_2
+    This creates the SMS campaign for sample_user using valid data.
+    :param campaign_valid_data:
+    """
+    test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_4)
+
+    def fin():
+        _delete_campaign(test_sms_campaign)
+
+    request.addfinalizer(fin)
+    return test_sms_campaign
+
+
+@pytest.fixture()
+def sms_campaign_in_other_domain(request, campaign_valid_data, user_phone_3):
+    """
+    This creates SMS campaign for some other user in different domain.
     :param campaign_valid_data:
     :param user_phone_3:
     :return:
@@ -323,13 +340,15 @@ def scheduled_sms_campaign_of_current_user(request, user_first, valid_header,
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_other_user(request, sample_user_2, valid_header_2,
-                                         sms_campaign_of_other_user):
+def scheduled_sms_campaign_of_other_domain(request, user_second,
+                                         valid_header_2, sms_campaign_in_other_domain):
     """
-    This creates the SMS campaign for sample_user_2 using valid data.
+    This creates the SMS campaign for user_from_diff_domain using valid data.
     :return:
     """
-    campaign = _get_scheduled_campaign(sample_user_2, sms_campaign_of_other_user, valid_header_2)
+    campaign = _get_scheduled_campaign(user_second,
+                                       sms_campaign_in_other_domain,
+                                       valid_header_2)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, valid_header_2)
@@ -356,14 +375,14 @@ def create_sms_campaign_blast(request, sms_campaign_of_current_user):
 
 
 @pytest.fixture()
-def create_blast_for_not_owned_campaign(request, sms_campaign_of_other_user):
+def create_blast_for_not_owned_campaign(request, sms_campaign_in_other_domain):
     """
     This creates a record in database table "sms_campaign_blast" for
-    a campaign for which logged-in user is not an owner.
-    :param sms_campaign_of_other_user:
+    a campaign which does not belongs to domain of logged-in user.
+    :param sms_campaign_in_other_domain:
     :return:
     """
-    blast_obj = _create_blast(sms_campaign_of_other_user.id)
+    blast_obj = _create_blast(sms_campaign_in_other_domain.id)
 
     def fin():
         _delete_blast(blast_obj)
@@ -571,13 +590,13 @@ def candidates_with_same_phone_in_diff_domains(request, candidate_first,
 
 
 @pytest.fixture()
-def users_with_same_phone(request, user_first, sample_user_2):
+def users_with_same_phone(request, user_first, user_same_domain):
     """
-    This associates same number to user_first and sample_user_2
+    This associates same number to user_first and user_same_domain
     """
     common_phone = fake.phone_number()
     user_1 = _create_user_twilio_phone(user_first, common_phone)
-    user_2 = _create_user_twilio_phone(sample_user_2, common_phone)
+    user_2 = _create_user_twilio_phone(user_same_domain, common_phone)
 
     def tear_down():
         _delete_user_phone(user_1)
@@ -799,3 +818,14 @@ def _delete_blast(blast_obj):
         SmsCampaignBlast.delete(blast_obj)
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
+
+
+def _get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token:
+    :return:
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

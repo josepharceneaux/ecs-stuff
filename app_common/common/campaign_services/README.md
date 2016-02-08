@@ -89,7 +89,7 @@ We have _update()_ method of CampaignBase class to update already saved campaign
 _update()_ will will update the existing record.        
 It does following steps:
 
-* Validates if logged-in user is the owner/creator of given campaign_id and gets the
+* Validates if requested campaign belongs to domain of logged-in user and gets the
     campaign object
 * Validates UI data
 * Updates the respective campaign record in database
@@ -99,7 +99,7 @@ It does following steps:
 We have _delete()_ method of CampaignBase class to delete a campaign.
 This function is used to delete the campaign in following given steps.
 
-* Validates that current user is an owner of given campaign id and gets
+* Validates that requested campaign belongs to domain of logged-in user and gets
 
     * campaign object and 2) scheduled task from scheduler_service.
     
