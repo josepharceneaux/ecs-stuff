@@ -31,7 +31,7 @@ try:
     register_error_handlers(app, logger)
 
     # Enable CORS for all origins & endpoints
-    CORS(app)
+    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
     logger.info("Starting resume_parsing_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

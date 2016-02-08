@@ -1,7 +1,8 @@
-from db import db
+import datetime
+
 from sqlalchemy.orm import relationship
 
-import datetime
+from db import db
 
 __author__ = 'jitesh'
 
@@ -105,16 +106,6 @@ class EmailClient(db.Model):
 
     def __repr__(self):
         return "<EmailClient (name = %r)>" % self.name
-
-
-class UrlConversion(db.Model):
-    __tablename__ = 'url_conversion'
-    id = db.Column(db.Integer, primary_key=True)
-    source_url = db.Column('sourceUrl', db.String(512))  # Ours
-    destination_url = db.Column('destinationUrl', db.String(512))  # Theirs
-    hit_count = db.Column('hitCount', db.Integer, default=0)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    last_hit_time = db.Column('lastHitTime', db.DateTime)
 
 
 class EmailCampaignSendUrlConversion(db.Model):

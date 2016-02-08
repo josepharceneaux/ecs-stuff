@@ -20,6 +20,10 @@ try:
     db.init_app(app)
     db.app = app
 
+    # Initialize Redis Cache
+    from email_campaign_service.common.redis_cache import redis_store
+    redis_store.init_app(app)
+
     # wrap the flask app and give a healthcheck url
     health = HealthCheck(app, HEALTH_CHECK)
 

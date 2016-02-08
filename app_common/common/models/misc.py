@@ -1,9 +1,14 @@
+from sqlalchemy import and_
+from app_common.common.models.db import db
 from db import db
 import datetime
 from sqlalchemy.orm import relationship
 import time
 
 from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
+from ..error_handling import InvalidUsage
+from ..utils.scheduler_utils import SchedulerUtils
 
 
 class Activity(db.Model):
@@ -17,17 +22,27 @@ class Activity(db.Model):
     params = db.Column(db.Text)
 
     @classmethod
-    def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
+    def get_by_user_id_params_type_source_id(cls, user_id, params, type_, source_id):
         assert user_id
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,
                 Activity.params == params,
-                Activity.type == type,
+                Activity.type == type_,
                 Activity.source_id == source_id,
             )
         ).first()
 
+    @classmethod
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
+        assert user_id
+        return cls.query.filter(
+            db.and_(
+                Activity.user_id == user_id,
+                Activity.type == type_,
+                Activity.source_id == source_id,
+            )
+        ).first()
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
@@ -67,7 +82,7 @@ class Culture(db.Model):
     # Relationships
     candidates = relationship('Candidate', backref='culture')
     # domain = relationship('Domain', backref='culture')
-    user = relationship('User', backref='culture')
+    # user = relationship('User', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
@@ -213,6 +228,19 @@ class Frequency(db.Model):
     __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+
+    # frequency Ids
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
 
     def __repr__(self):
         return "<Frequency: (id = {})>".format(self.id)
@@ -221,9 +249,39 @@ class Frequency(db.Model):
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
+    @classmethod
+    def get_seconds_from_id(cls, frequency_id):
+        """
+        This gives us the number of seconds for given frequency_id.
+        frequency_id is in range 1 to 6 representing
+            'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+        respectively.
+        :param frequency_id: int
+        :return: seconds
+        :rtype: int
+        """
+        if not frequency_id:
+            return 0
+        if not isinstance(frequency_id, int):
+            raise InvalidUsage('Include frequency id as int')
+        seconds_from_frequency_id = {
+            cls.ONCE: 0,
+            cls.DAILY: 24 * 3600,
+            cls.WEEKLY: 7 * 24 * 3600,
+            cls.BIWEEKLY: 14 * 24 * 3600,
+            cls.MONTHLY: 30 * 24 * 3600,
+            cls.YEARLY: 365 * 24 * 3600,
+            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+        }
+        seconds = seconds_from_frequency_id.get(frequency_id)
+        if not seconds and seconds != 0:
+            raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
+        return seconds
+
     @property
     def in_seconds(self):
-        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds), will return 0.
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds),
+            will return 0.
         """
         frequency_in_seconds = self.standard_frequencies()
         return frequency_in_seconds.get(self.name.lower(), 0)
@@ -231,14 +289,14 @@ class Frequency(db.Model):
     @classmethod
     def standard_frequencies(self):
         """Returns a dict of system wide standard frequency names and period in seconds"""
-        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600,
+                'biweekly': 2 * 7 * 24 * 3600,
                 'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
 
     @classmethod
     def get_frequency_from_name(cls, frequency_name):
         """Returns frequency object wrt given name(case insensitive) """
         return cls.query.filter_by(name=frequency_name).first()
-
 
 
 class CustomField(db.Model):
@@ -299,9 +357,29 @@ class EmailTemplateFolder(db.Model):
     parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
 
+
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+
+class UrlConversion(db.Model):
+    __tablename__ = 'url_conversion'
+    id = db.Column(db.Integer, primary_key=True)
+    source_url = db.Column('sourceUrl', db.String(512))  # Ours
+    destination_url = db.Column('destinationUrl', db.String(512))  # Theirs
+    hit_count = db.Column('hitCount', db.Integer, default=0)
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('lastHitTime', db.DateTime)
+
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='url_conversion')
+
+    def __repr__(self):
+        return "<UrlConversion (id=' %r')>" % self.id

@@ -2,6 +2,7 @@ import time
 import os
 import uuid
 import datetime
+from sqlalchemy import and_
 from flask import request
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.mysql import TINYINT
@@ -16,6 +17,7 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
+from sms_campaign import SmsCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 
@@ -50,12 +52,15 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
+                               backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
     activities = db.relationship('Activity', backref='user', lazy='dynamic')
+    culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
 
     @staticmethod
     def generate_jw_token(expiration=600, user_id=None):
@@ -140,6 +145,40 @@ class User(db.Model):
         session.add(user)
         session.commit()
         return user
+
+
+class UserPhone(db.Model):
+    __tablename__ = 'user_phone'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    value = db.Column(db.String(50), nullable=False)
+
+    # Relationship
+    sms_campaigns = relationship('SmsCampaign', backref='user_phone')
+
+    def __repr__(self):
+        return "<UserPhone (value=' %r')>" % self.value
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        return cls.query.filter_by(user_id=user_id).all()
+
+    @classmethod
+    def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        if not isinstance(phone_label_id, (int, long)):
+            raise InvalidUsage('Invalid phone_label_id provided')
+        return cls.query.filter_by(user_id=user_id, phone_label_id=phone_label_id).all()
+
+    @classmethod
+    def get_by_phone_value(cls, phone_value):
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage("phone_value is invalid")
+        return cls.query.filter_by(value=phone_value).all()
 
 
 class Domain(db.Model):
@@ -279,6 +318,11 @@ class Token(db.Model):
         if self._scopes:
             return self._scopes.split()
         return []
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(cls.user_id == user_id).first()
 
     @staticmethod
     def get_token(access_token):

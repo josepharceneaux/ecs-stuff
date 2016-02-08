@@ -1,4 +1,5 @@
 from candidate_pool_service.candidate_pool_app import app
+from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
@@ -43,7 +44,7 @@ class TestSmartlistStatsUpdateApi(object):
         assert status_code == 401
 
         # Adding 'CAN_EDIT_SMARTLISTS_STATS' role to user_first
-        add_role_to_test_user(user_first, ['CAN_EDIT_SMARTLISTS_STATS'])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS])
 
         # Adding candidates with 'Apple' as current company
         populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple')
@@ -113,7 +114,7 @@ class TestSmartlistResource(object):
     class TestSmartlistResourcePOST(object):
         def call_post_api(self, data, access_token):
             return requests.post(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 data=json.dumps(data),
                 headers={'Authorization': 'Bearer %s' % access_token,
                          'content-type': 'application/json'}
@@ -133,7 +134,7 @@ class TestSmartlistResource(object):
         def test_create_smartlist_with_candidate_ids(self, access_token_first, user_first, talent_pool):
             """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             data = FakeCandidatesData.create(talent_pool=talent_pool, count=5)
-            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             name = fake.word()
             data = {'name': name,
@@ -227,12 +228,12 @@ class TestSmartlistResource(object):
                 self, access_token_first, access_token_second, talent_pool_second, user_first, user_second):
             """Test user should not be allowed to create smartlist with candidates not belonging to his own domain"""
             # user_second creates candidates
-            add_role_to_test_user(user_second, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_second, [DomainRole.Roles.CAN_ADD_CANDIDATES])
             data = FakeCandidatesData.create(talent_pool=talent_pool_second, count=3)
             candidate_ids = create_candidates_from_candidate_api(access_token_second, data)
             data = {'name': fake.word(), 'candidate_ids': candidate_ids}
             # first user (access_token_first) trying to create smartlist with second user's candidates.
-            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 403
             assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
@@ -253,7 +254,7 @@ class TestSmartlistResource(object):
         def call_get_api(self, access_token, list_id=None):
             """Calls GET API of SmartlistResource"""
             return requests.get(
-                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % list_id if list_id else CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token}
             )
 
@@ -264,7 +265,8 @@ class TestSmartlistResource(object):
             list_name = fake.name()
             num_of_candidates = 4
             data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                               DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             smartlist = save_smartlist(user_id=user_first.id, name=list_name,
                                        candidate_ids=candidate_ids, access_token=access_token_first)
@@ -280,6 +282,7 @@ class TestSmartlistResource(object):
             Test GET API for smartlist (with search_params)
             """
             list_name = fake.name()
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
             smartlist = save_smartlist(user_id=user_first.id,
                                        name=list_name,
@@ -295,6 +298,7 @@ class TestSmartlistResource(object):
                                                    access_token_second):
             """Test for validate_list_belongs_to_domain"""
             list_name = fake.name()
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
             # user 1 of domain 1 saving smartlist
             smartlist = save_smartlist(user_id=user_first.id,
@@ -315,7 +319,7 @@ class TestSmartlistResource(object):
         def call_delete_api(self, access_token, list_id=None):
             """Calls DELETE API of SmartlistResource"""
             return requests.delete(
-                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % list_id if list_id else CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token}
             )
 
@@ -325,7 +329,7 @@ class TestSmartlistResource(object):
             """
             list_name = fake.name()
             data = FakeCandidatesData.create(talent_pool, count=1)
-            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             smartlist = save_smartlist(user_id=user_first.id, name=list_name,
                                        candidate_ids=candidate_ids, access_token=access_token_first)
@@ -342,7 +346,7 @@ class TestSmartlistResource(object):
             assert smartlist_after_deletion.is_hidden is True  # Verify smartlist is hidden
             # Try calling GET method with deleted (hidden) list id and it should give 404 Not found
             output = requests.get(
-                url=SMARTLIST_URL + '/%s' % smartlist_after_deletion.id,
+                url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % smartlist_after_deletion.id,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert output.status_code == 404  # Get method should give 404 for hidden smartlist
@@ -355,9 +359,11 @@ class TestSmartlistResource(object):
                                         search_params=json.dumps({"query": ""}))
             smartlist2 = save_smartlist(user_id=user_first.id, name=fake.name(),
                                         search_params=json.dumps({'maximum_years_experience': '5'}))
+
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             # Call GET all smartlists and it should give both the smartlist ids
             resp1 = requests.get(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert resp1.status_code == 200
@@ -369,7 +375,7 @@ class TestSmartlistResource(object):
             assert resp2.status_code == 200
             # Call GET all smartlists and it should give single smartlist, i.e. smartlist2
             resp3 = requests.get(
-                url=SMARTLIST_URL,
+                url=CandidatePoolApiUrl.SMARTLISTS,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert resp3.status_code == 200
@@ -379,7 +385,7 @@ class TestSmartlistResource(object):
 
         def test_delete_smartlist_from_other_domain(self, user_first, access_token_first,
                                                     access_token_second, talent_pool):
-            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
             list_name = fake.name()
             data = FakeCandidatesData.create(talent_pool, count=1)
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
@@ -411,14 +417,14 @@ class TestSmartlistResource(object):
 class TestSmartlistCandidatesApi(object):
     def call_smartlist_candidates_get_api(self, smartlist_id, params, access_token):
         return requests.get(
-                url=SMARTLIST_CANDIDATES_URL % smartlist_id,
+                url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id,
                 params=params,
                 headers={'Authorization': 'Bearer %s' % access_token})
 
     def test_return_candidate_ids_only(self, access_token_first, user_first, talent_pool):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    candidate_ids=candidate_ids, access_token=access_token_first)
@@ -433,7 +439,7 @@ class TestSmartlistCandidatesApi(object):
     def test_return_count_only(self, access_token_first, user_first, talent_pool):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    candidate_ids=candidate_ids, access_token=access_token_first)
@@ -447,7 +453,7 @@ class TestSmartlistCandidatesApi(object):
     def test_return_all_fields(self, access_token_first, user_first, talent_pool):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    candidate_ids=candidate_ids, access_token=access_token_first)
@@ -487,7 +493,7 @@ class TestSmartlistCandidatesApi(object):
         first_name = 'special'
         data = FakeCandidatesData.create(talent_pool, count=no_of_candidates, first_name=first_name,
                                          address_list=address)
-        add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
         # Wait for cloudsearch to upload candidate documents
         time.sleep(20)
@@ -495,6 +501,7 @@ class TestSmartlistCandidatesApi(object):
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    search_params=search_params)
 
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
         response = resp.json()
@@ -509,7 +516,7 @@ class TestSmartlistCandidatesApi(object):
                                    name=list_name,
                                    search_params=search_params)
         # Delete (hide) this smartlist
-        response = requests.delete(url=SMARTLIST_URL + '/%s' % smartlist.id,
+        response = requests.delete(url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % smartlist.id,
                                    headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == 200
         # Now try getting candidates from this deleted(hidden) smartlist, it should raise 404(not found)

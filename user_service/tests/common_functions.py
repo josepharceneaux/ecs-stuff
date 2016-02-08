@@ -82,7 +82,9 @@ def forgot_password(email='', action='GET'):
     if action == 'GET':
         return requests.get(UserServiceApiUrl.FORGOT_PASSWORD_API).status_code
     else:
-        response = requests.post(url=UserServiceApiUrl.FORGOT_PASSWORD_API, data={"username": email})
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url=UserServiceApiUrl.FORGOT_PASSWORD_API, headers=headers,
+                                 data=json.dumps({"username": email}))
         return response.status_code
 
 
@@ -90,7 +92,9 @@ def reset_password(token, password='', action='GET'):
     if action == 'GET':
         return requests.get(UserServiceApiUrl.RESET_PASSWORD_API % token).status_code
     else:
-        response = requests.post(url=UserServiceApiUrl.RESET_PASSWORD_API % token, data={"password": password})
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url=UserServiceApiUrl.RESET_PASSWORD_API % token, headers=headers,
+                                 data=json.dumps({"password": password}))
         return response.status_code
 
 

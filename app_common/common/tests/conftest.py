@@ -243,7 +243,10 @@ def sample_client(request):
     db.session.commit()
 
     def tear_down():
-        test_client.delete()
+        try:
+            test_client.delete()
+        except:
+            pass
     request.addfinalizer(tear_down)
     return test_client
 
@@ -262,6 +265,7 @@ def access_token_second(user_second, sample_client):
 def access_token_same(user_same_domain, sample_client):
     return get_access_token(user_same_domain, PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
+
 
 @pytest.fixture()
 def user_first(request, domain_first, first_group):
