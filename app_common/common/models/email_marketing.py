@@ -125,6 +125,12 @@ class UrlConversion(db.Model):
     def __repr__(self):
         return "<UrlConversion (id = {})>".format(self.id)
 
+    # Relationships
+    sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
+                                                      cascade='all,delete-orphan',
+                                                      passive_deletes=True,
+                                                      backref='url_conversion')
+
 
 class EmailCampaignSendUrlConversion(db.Model):
     __tablename__ = 'email_campaign_send_url_conversion'

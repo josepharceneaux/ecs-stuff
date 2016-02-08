@@ -138,6 +138,40 @@ class User(db.Model):
         return user
 
 
+class UserPhone(db.Model):
+    __tablename__ = 'user_phone'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    value = db.Column(db.String(50), nullable=False)
+
+    # Relationship
+    sms_campaigns = relationship('SmsCampaign', backref='user_phone')
+
+    def __repr__(self):
+        return "<UserPhone (value=' %r')>" % self.value
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        return cls.query.filter_by(user_id=user_id).all()
+
+    @classmethod
+    def get_by_user_id_and_phone_label_id(cls, user_id, phone_label_id):
+        if not isinstance(user_id, (int, long)):
+            raise InvalidUsage('Invalid user_id provided')
+        if not isinstance(phone_label_id, (int, long)):
+            raise InvalidUsage('Invalid phone_label_id provided')
+        return cls.query.filter_by(user_id=user_id, phone_label_id=phone_label_id).all()
+
+    @classmethod
+    def get_by_phone_value(cls, phone_value):
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage("phone_value is invalid")
+        return cls.query.filter_by(value=phone_value).all()
+
+
 class Domain(db.Model):
     __tablename__ = 'domain'
     id = db.Column('Id', db.Integer, primary_key=True)
@@ -261,8 +295,8 @@ class Token(db.Model):
     _scopes = db.Column(db.Text)
 
     # Relationships
-    user = db.relationship('User', backref=db.backref('user_token', cascade="all, delete-orphan"))
-    client = db.relationship('Client', backref=db.backref('user_token', cascade="all, delete-orphan"))
+    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
+    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
     # currently only bearer is supported
 
     def delete(self):
@@ -272,6 +306,11 @@ class Token(db.Model):
     @property
     def scopes(self):
         return self._scopes.split() if self._scopes else []
+
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        assert user_id
+        return cls.query.filter(cls.user_id == user_id).first()
 
     @staticmethod
     def get_token(access_token):

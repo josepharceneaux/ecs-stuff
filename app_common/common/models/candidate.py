@@ -2,6 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
+from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT, YEAR
 from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
@@ -69,6 +70,10 @@ class Candidate(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @property
+    def name(self):
+        return self.first_name + " " + self.last_name
 
     @classmethod
     def get_by_id(cls, candidate_id):
@@ -195,6 +200,8 @@ class CandidatePhone(db.Model):
 
     # Relationships
     candidate = relationship('Candidate', backref='candidate_phone')
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+                                        passive_deletes=True, backref="candidate_phone")
 
     @classmethod
     def get_by_id(cls, _id):
@@ -204,6 +211,15 @@ class CandidatePhone(db.Model):
     def set_is_default_to_false(cls, candidate_id):
         for phone in cls.query.filter_by(candidate_id=candidate_id).all():
             phone.is_default = False
+
+    @classmethod
+    def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage('Include phone_value as a str|unicode.')
+        if not isinstance(candidate_ids, list):
+            raise InvalidUsage('Include candidate_ids as a list.')
+        return cls.query.filter(db.and_(cls.value == phone_value,
+                                        cls.candidate_id.in_(candidate_ids))).all()
 
 
 class EmailLabel(db.Model):

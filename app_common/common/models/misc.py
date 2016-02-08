@@ -1,6 +1,7 @@
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
+from ..error_handling import InvalidUsage
 import datetime
 import time
 from candidate import CandidateMilitaryService
@@ -204,6 +205,19 @@ class Frequency(db.Model):
     __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    # Relationships
+    sms_campaigns = relationship('SmsCampaign', backref='frequency')
+
+    # frequency Ids
+    ONCE = 1
+    DAILY = 2
+    WEEKLY = 3
+    BIWEEKLY = 4
+    MONTHLY = 5
+    YEARLY = 6
+    CUSTOM = 7
 
     def __repr__(self):
         return "<Frequency: (id = {})>".format(self.id)
@@ -211,6 +225,35 @@ class Frequency(db.Model):
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
+
+    @classmethod
+    def get_seconds_from_id(cls, frequency_id):
+        """
+        This gives us the number of seconds for given frequency_id.
+        frequency_id is in range 1 to 6 representing
+            'Once', 'Daily', 'Weekly', 'Biweekly', 'Monthly', 'Yearly'
+        respectively.
+        :param frequency_id: int
+        :return: seconds
+        :rtype: int
+        """
+        if not frequency_id:
+            return 0
+        if not isinstance(frequency_id, int):
+            raise InvalidUsage('Include frequency id as int')
+        seconds_from_frequency_id = {
+            cls.ONCE: 0,
+            cls.DAILY: 24 * 3600,
+            cls.WEEKLY: 7 * 24 * 3600,
+            cls.BIWEEKLY: 14 * 24 * 3600,
+            cls.MONTHLY: 30 * 24 * 3600,
+            cls.YEARLY: 365 * 24 * 3600,
+            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+        }
+        seconds = seconds_from_frequency_id.get(frequency_id)
+        if not seconds and seconds != 0:
+            raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
+        return seconds
 
     @property
     def in_seconds(self):
