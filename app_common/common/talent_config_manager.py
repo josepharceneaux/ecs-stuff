@@ -11,6 +11,7 @@ import logging
 import logging.config
 import os
 import tempfile
+import imp
 
 # Load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -75,10 +76,12 @@ def load_gettalent_config(app_config):
         bucket_obj = s3_connection.get_bucket(bucket_name)
         app_config[TalentConfigKeys.LOGGER].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
-        # Download into temporary file & load config
+        # Download into temporary file & load it as a Python module into the app_config
         tmp_config_file = tempfile.NamedTemporaryFile()
         bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
-        app_config.from_pyfile(tmp_config_file.name)
+        tmp_config_file.file.seek(0)  # For some reason, get_contents_to_file doesn't reset file handle
+        data = imp.load_source('data', '', tmp_config_file.file)
+        app_config.from_object(data)
         tmp_config_file.close()
     # Load up hardcoded app config values
     _set_environment_specific_configurations(app_config[TalentConfigKeys.ENV_KEY], app_config)
