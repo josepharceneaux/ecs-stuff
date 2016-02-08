@@ -20,7 +20,7 @@ load_gettalent_config(flask_app.config)
 logger = flask_app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", flask_app.import_name, get_ec2_instance_id())
 
-add_model_helpers(db.Model, logger=logger)
+add_model_helpers(db.Model)
 db.init_app(flask_app)
 db.app = flask_app
 

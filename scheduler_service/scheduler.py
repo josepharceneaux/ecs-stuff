@@ -14,8 +14,8 @@ from dateutil.tz import tzutc
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
-from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from urllib import urlencode
 
@@ -39,13 +39,6 @@ scheduler = BackgroundScheduler(jobstore=jobstores, executors=executors,
                                 timezone='UTC')
 scheduler.configure(job_defaults=job_defaults)
 scheduler.add_jobstore(job_store)
-
-# Set the minimum frequency in seconds
-if flask_app.config.get(TalentConfigKeys.ENV_KEY) in ['dev', 'jenkins']:
-    MIN_ALLOWED_FREQUENCY = 4
-else:
-    # For qa and production minimum frequency would be one hour
-    MIN_ALLOWED_FREQUENCY = 3600
 
 # Request timeout is 30 seconds.
 REQUEST_TIMEOUT = 30
@@ -113,6 +106,7 @@ def validate_periodic_job(data):
     :return:
     """
     valid_data = dict()
+
     frequency = get_valid_integer_from_dict(data, 'frequency')
     start_datetime = get_valid_datetime_from_dict(data, 'start_datetime')
     end_datetime = get_valid_datetime_from_dict(data, 'end_datetime')
@@ -121,13 +115,12 @@ def validate_periodic_job(data):
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < MIN_ALLOWED_FREQUENCY:
-        raise InvalidUsage(error_message='Invalid value of frequency. Value should '
-                                         'be greater than or equal to %s' % MIN_ALLOWED_FREQUENCY)
+    if int(frequency) < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
+        raise InvalidUsage('Invalid value of frequency. Value should be greater than or equal to '
+                           '%s' % SchedulerUtils.MIN_ALLOWED_FREQUENCY)
 
     frequency = int(frequency)
     valid_data.update({'frequency': frequency})
-
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
 
@@ -269,7 +262,8 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception as e:
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
-        raise TriggerTypeError("Task type not correct. Please use either 'periodic' or 'one_time' as task type.")
+        raise TriggerTypeError("Task type not correct. Please use either %s or %s as task type."
+                               % (SchedulerUtils.ONE_TIME, SchedulerUtils.PERIODIC))
 
 
 def remove_tasks(ids, user_id):

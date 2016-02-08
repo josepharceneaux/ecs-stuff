@@ -1,7 +1,8 @@
-from sqlalchemy import and_
-from db import db
-from sqlalchemy.orm import relationship, backref
 import datetime
+from db import db
+from sqlalchemy import and_
+from sqlalchemy.orm import relationship, backref
+from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT
 from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
@@ -61,6 +62,7 @@ class Candidate(db.Model):
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
@@ -68,6 +70,10 @@ class Candidate(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @property
+    def name(self):
+        return self.first_name + " " + self.last_name
 
     @classmethod
     def get_by_id(cls, candidate_id):
@@ -185,11 +191,24 @@ class CandidatePhone(db.Model):
     extension = db.Column(db.String(5))
     is_default = db.Column('IsDefault', db.Boolean)
 
+    # Relationships
+    sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
+                                        passive_deletes=True, backref="candidate_phone")
+
     def __repr__(self):
         return "<CandidatePhone (value=' %r', extention= ' %r')>" % (self.value, self.extension)
 
     # Relationships
     candidate = relationship('Candidate', backref='candidate_phone')
+
+    @classmethod
+    def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
+        if not isinstance(phone_value, basestring):
+            raise InvalidUsage('Include phone_value as a str|unicode.')
+        if not isinstance(candidate_ids, list):
+            raise InvalidUsage('Include candidate_ids as a list.')
+        return cls.query.filter(db.and_(cls.value == phone_value,
+                                        cls.candidate_id.in_(candidate_ids))).all()
 
     @classmethod
     def get_by_id(cls, _id):
@@ -339,7 +358,6 @@ class SocialNetwork(db.Model):
     # Relationships
     candidate_social_networks = relationship('CandidateSocialNetwork', backref='social_network')
     events = relationship("Event", backref='social_network', lazy='dynamic')
-    user_credentials = relationship("UserSocialNetworkCredential")
     venues = relationship('Venue', backref='social_network', lazy='dynamic')
 
     def __repr__(self):
