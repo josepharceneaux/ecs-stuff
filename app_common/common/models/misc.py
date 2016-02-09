@@ -1,5 +1,4 @@
 from sqlalchemy import and_
-from app_common.common.models.db import db
 from db import db
 import datetime
 from sqlalchemy.orm import relationship

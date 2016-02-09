@@ -32,8 +32,7 @@ RUN sed -i '/$ModLoad imklog/s/^/#/g' /etc/rsyslog.conf
 RUN sed -i '/$KLogPermitNonKernelFacility/s/^/#/g' /etc/rsyslog.conf
 
 # Disable xconsole in syslog
-RUN total_lines=`cat /etc/rsyslog.d/50-default.conf | wc -l`
-RUN sed -i "$((total_lines-3)),$((total_lines)) s/^/#/" /etc/rsyslog.d/50-default.conf
+RUN sed -i "65,68 s/^/#/" /etc/rsyslog.d/50-default.conf
 
 RUN touch /etc/rsyslog.d/22-loggly.conf
 ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
