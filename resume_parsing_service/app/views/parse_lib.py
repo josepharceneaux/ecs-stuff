@@ -57,17 +57,16 @@ def process_resume(parse_params):
     # Parse the actual resume content.
     parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails and talent pools are the ONLY thing required to create a candidate.
-    email_present = True if parsed_resume['candidate'].get('emails') else False
-    if create_candidate and not email_present:
-        raise InvalidUsage('Email fields (required for candidate creation) could not be parsed.')
-    if create_candidate and email_present and talent_pools:
+    if create_candidate and not talent_pools:
+        raise InvalidUsage('Talent Pools required for candidate creation')
+    if create_candidate and talent_pools:
         parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
         candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                             parse_params.get('oauth'))
-        # TODO: Check for good response code!
         response_dict = json.loads(candidate_response)
         if 'error' in candidate_response:
             raise InvalidUsage(response_dict['error']['message'])
+        # TODO: Check for good response code (201 in apiary)
         candidate_id = response_dict.get('candidates')
         parsed_resume['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
     return parsed_resume
@@ -134,7 +133,7 @@ def parse_resume(file_obj, filename_str):
                 if create_pdf_status.err:
                     current_app.logger.error('PDF create error: {}'.format(create_pdf_status.err))
                     return None
-            except Exception as e:
+            except Exception:
                 current_app.logger.error(
                     'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
                         filename_str))
@@ -237,6 +236,7 @@ def convert_pdf_to_text(pdf_file_obj):
     laparams = LAParams()
     device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
 
+    # TODO access if this reassignment is needed.
     fp = pdf_file_obj
 
     parser = PDFParser(fp)
