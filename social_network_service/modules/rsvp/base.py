@@ -15,16 +15,18 @@ from flask import request
 
 from social_network_service.common.activity_service_config import ActivityServiceKeys
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
+from social_network_service.common.models.talent_pools_pipelines import TalentPool
 from social_network_service.common.routes import CandidateApiUrl
+from social_network_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
 from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.social_network_app import logger
+from social_network_service.social_network_app import logger, app
 from social_network_service.modules.custom_exceptions import ProductNotFound
 from social_network_service.modules.custom_exceptions import UserCredentialsNotFound
 from social_network_service.common.models.rsvp import RSVP
-from social_network_service.common.models.user import User
+from social_network_service.common.models.user import User, Token
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
-from social_network_service.common.models.candidate import Candidate
+from social_network_service.common.models.candidate import Candidate, SocialNetwork
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
 
@@ -161,6 +163,7 @@ class RSVPBase(object):
         self.social_network = kwargs.get('social_network')
         self.api_url = kwargs.get('social_network').api_url
         self.access_token = self.user_credentials.access_token
+        self.bearer_token = Token.get_token_by_user_id(user_id=self.user.id)
         self.start_date_dt = None
         self.rsvps = []
 
@@ -344,7 +347,7 @@ class RSVPBase(object):
             # following will store candidate info in attendees
             attendee = self.save_attendee_source(attendee)
             # following will store candidate info in attendees
-            attendee = self.save_attendee_as_candidate(attendee)
+            attendee = self.save_attendee_as_candidate(attendee, access_token=self.bearer_token)
             # following call will store rsvp info in attendees
             attendee = self.save_rsvp(attendee)
             # finally we store info in table activity
@@ -460,7 +463,6 @@ class RSVPBase(object):
             entry_in_db.update(**data)
             entry_id = entry_in_db.id
         else:
-            header = {'': ''}
             # response = http_request('post', CandidateApiUrl.CANDIDATES,
             #                         headers=header,
             #                         data=data)
@@ -471,7 +473,7 @@ class RSVPBase(object):
         return attendee
 
     @staticmethod
-    def save_attendee_as_candidate(attendee):
+    def save_attendee_as_candidate(attendee, access_token=None):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -506,33 +508,43 @@ class RSVPBase(object):
                 attendee.gt_user_id,
                 attendee.candidate_source_id,
                 attendee.source_product_id)
+
+        social_network = SocialNetwork.get_by_id(attendee.event.social_network_id)
+
+        talent_pool = TalentPool.get_by_user_id(user_id=attendee.gt_user_id)
+        social_network_data = {
+                'name': social_network.name,
+                'profile_url': attendee.social_profile_url}
+
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
-                'added_time': attendee.added_time,
-                'user_id': attendee.gt_user_id,
-                'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
-                'source_product_id': attendee.source_product_id}
+                'social_networks': [social_network_data]
+                }
+        if talent_pool:
+            data.update({'talent_pool_ids': {'add': [talent_pool.id]}})
+        candidates = dict(candidates=[data])
         if candidate_in_db:
             candidate_in_db.update(**data)
             candidate_id = candidate_in_db.id
         else:
-            candidate = Candidate(**data)
-            Candidate.save(candidate)
-            candidate_id = candidate.id
+            with app.test_request_context():
+                candidates = create_candidates_from_candidate_api(access_token, candidates)
+            # candidate = Candidate(**data)
+            # Candidate.save(candidate)
+            # candidate_id = candidate.id
+            candidate_id = 1
         attendee.candidate_id = candidate_id
         # Creating entry in CandidateSocialNetwork Table
         candidate_social_network_in_db = \
             CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
                 candidate_id, attendee.social_network_id)
-        data = {'candidate_id': attendee.candidate_id,
-                'social_network_id': attendee.social_network_id,
-                'social_profile_url': attendee.social_profile_url}
+
         if candidate_social_network_in_db:
             candidate_social_network_in_db.update(**data)
         else:
             candidate_data = CandidateSocialNetwork(**data)
-            CandidateSocialNetwork.save(candidate_data)
+            #CandidateSocialNetwork.save(candidate_data)
         return attendee
 
     @staticmethod

@@ -283,6 +283,20 @@ class Token(db.Model):
         return []
 
     @staticmethod
+    def get_token_by_user_id(user_id):
+        """
+        Filter Token based on user_id and return token from db
+        :param access_token: User access_token
+        :return: Token object matched with access_token
+        """
+        assert user_id, "user_id is None"
+        token = Token.query.filter_by(user_id=user_id).first()
+        if not token:
+            raise ResourceNotFound("Token not found")
+        return token.access_token
+
+
+    @staticmethod
     def get_token(access_token):
         """
         Filter Token based on access_token and return token object from db

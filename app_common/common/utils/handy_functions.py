@@ -78,11 +78,12 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
-    logger = app.config[TalentConfigKeys.LOGGER]
     if app:
+        logger = app.config[TalentConfigKeys.LOGGER]
         with app.app_context():
             logger.exception(message)
     else:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         logger.exception(message)
 
 
@@ -93,11 +94,12 @@ def log_error(message, app=None):
     :param app:
     :return:
     """
-    logger = app.config[TalentConfigKeys.LOGGER]
     if app:
+        logger = app.config[TalentConfigKeys.LOGGER]
         with app.app_context():
             logger.error(message)
     else:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
         logger.error(message)
 
 
