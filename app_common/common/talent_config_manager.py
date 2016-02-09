@@ -11,6 +11,7 @@ import logging
 import logging.config
 import os
 import tempfile
+import imp
 
 # Load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -75,10 +76,12 @@ def load_gettalent_config(app_config):
         bucket_obj = s3_connection.get_bucket(bucket_name)
         app_config[TalentConfigKeys.LOGGER].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
-        # Download into temporary file & load config
+        # Download into temporary file & load it as a Python module into the app_config
         tmp_config_file = tempfile.NamedTemporaryFile()
         bucket_obj.get_key(key_name=CONFIG_FILE_NAME).get_contents_to_file(tmp_config_file)
-        app_config.from_pyfile(tmp_config_file.name)
+        tmp_config_file.file.seek(0)  # For some reason, get_contents_to_file doesn't reset file handle
+        data = imp.load_source('data', '', tmp_config_file.file)
+        app_config.from_object(data)
         tmp_config_file.close()
     # Load up hardcoded app config values
     _set_environment_specific_configurations(app_config[TalentConfigKeys.ENV_KEY], app_config)
@@ -110,22 +113,6 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['DEBUG'] = True
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
-    elif environment == 'qa':
-        # TODO: Figure out why Staging services don't load from the gettalent-private-staging bucket!
-        app_config['ACCOUNT_ID'] = "528222547498"
-        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
-        app_config['CELERY_RESULT_BACKEND_URL'] = "redis://dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
-        app_config['CLOUD_SEARCH_DOMAIN'] = "gettalent-webdev"
-        app_config['CLOUD_SEARCH_REGION'] = "us-west-1"
-        app_config['DEBUG'] = False
-        app_config['EMAIL'] = "osman.masood@dice.com"
-        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
-        app_config['REDIS_URL'] = "redis://dev-redis-vpc.znj3iz.0001.usw1.cache.amazonaws.com:6379"
-        app_config['S3_BUCKET_NAME'] = "tcs-staging"
-        app_config['S3_BUCKET_REGION'] = "us-west-1"
-        app_config['S3_FILEPICKER_BUCKET_NAME'] = "gettalent-filepicker"
-        app_config['SECRET_KEY'] = "422a1a6961a450b94860ced1f55c3be8c8b4654c9af7534f"
-        app_config['SQLALCHEMY_DATABASE_URI'] = "mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging"
 
 
 def verify_all_config_keys_defined(app_config):
