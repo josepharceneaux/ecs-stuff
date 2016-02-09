@@ -295,7 +295,7 @@ class CandidatePhoto(db.Model):
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.Id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.Id'), primary_key=True)
     value = db.Column('Value', db.Integer, default=0)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -306,7 +306,7 @@ class CandidateRating(db.Model):
 
 class RatingTag(db.Model):
     __tablename__ = 'rating_tag'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     description = db.Column('Description', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -319,7 +319,7 @@ class RatingTag(db.Model):
 
 class RatingTagUser(db.Model):
     __tabelname__ = 'rating_tag_user'
-    rating_tag_id = db.Column('RatingTagId', db.Integer, db.ForeignKey('rating_tag.Id'), primary_key=True)
+    rating_tag_id = db.Column('RatingTagId', db.BIGINT, db.ForeignKey('rating_tag.Id'), primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), primary_key=True)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
