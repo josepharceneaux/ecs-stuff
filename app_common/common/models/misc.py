@@ -8,7 +8,6 @@ import time
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
 from ..utils.scheduler_utils import SchedulerUtils
-from ..models.sms_campaign import SmsCampaign
 
 
 class Activity(db.Model):
