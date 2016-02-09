@@ -1,4 +1,3 @@
-
 __author__ = 'basit'
 
 import datetime
@@ -60,7 +59,7 @@ class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     sent_datetime = db.Column(db.DateTime)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
