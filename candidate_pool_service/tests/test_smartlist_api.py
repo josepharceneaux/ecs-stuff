@@ -247,7 +247,7 @@ class TestSmartlistResource(object):
             list_id = resp.json()['smartlist']['id']
             add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
             first_smartlist = requests.get(
-                url=SMARTLIST_URL + '/%s' % list_id if list_id else SMARTLIST_URL,
+                url=SMARTLIST_URL + '/%s' % list_id,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert first_smartlist.status_code == 200
@@ -259,7 +259,7 @@ class TestSmartlistResource(object):
             assert resp2.json()['smartlist']['id']
             second_list_id = resp2.json()['smartlist']['id']
             second_smartlist = requests.get(
-                url=SMARTLIST_URL + '/%s' % second_list_id  if second_list_id else SMARTLIST_URL,
+                url=SMARTLIST_URL + '/%s' % second_list_id,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
             assert second_smartlist.status_code == 200
