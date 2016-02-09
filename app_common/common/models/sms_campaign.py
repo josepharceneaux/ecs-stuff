@@ -4,7 +4,6 @@ __author__ = 'basit'
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
-from candidate import Candidate
 from ..error_handling import InvalidUsage
 
 
@@ -61,7 +60,7 @@ class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id'))
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id'))
     sent_datetime = db.Column(db.DateTime)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -89,8 +88,8 @@ class SmsCampaignReply(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     blast_id = db.Column(db.Integer, db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     body_text = db.Column(db.Text)
-    candidate_phone_id = db.Column(db.Integer,
-                                   db.ForeignKey('candidate_phone.id', ondelete='CASCADE'))
+    candidate_phone_id = db.Column(db.BIGINT,
+                                   db.ForeignKey('candidate_phone.Id', ondelete='CASCADE'))
     added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -106,7 +105,7 @@ class SmsCampaignReply(db.Model):
 class SmsCampaignSmartlist(db.Model):
     __tablename__ = 'sms_campaign_smartlist'
     id = db.Column(db.Integer, primary_key=True)
-    smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.id", ondelete='CASCADE'),
+    smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.Id", ondelete='CASCADE'),
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
                             nullable=False)
@@ -123,7 +122,7 @@ class SmsCampaignSendUrlConversion(db.Model):
                         db.ForeignKey("sms_campaign_send.id", ondelete='CASCADE'),
                         nullable=False)
     url_conversion_id = db.Column(db.Integer,
-                                  db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
+                                  db.ForeignKey("url_conversion.Id", ondelete='CASCADE'),
                                   nullable=False)
 
     def __repr__(self):

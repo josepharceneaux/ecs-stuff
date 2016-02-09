@@ -11,6 +11,7 @@ We also have some functions here like
 """
 
 # Standard Imports
+import os
 import importlib
 from datetime import datetime
 
@@ -65,6 +66,12 @@ class CampaignUtils(object):
     # This contains campaign types for which we need to append 'an' in activity message.
     # e.g. 'John' created an SMS campaign
     WITH_ARTICLE_AN = [_get_campaign_type_prefix(item).lower() for item in [SMS, EMAIL]]
+    # This variable is used for sms_campaign_service. In case of 'dev', 'jenkins' or 'qa', our
+    # Twilio's account should not be charged while purchasing a number or sending SMS to candidates.
+    # This is set to False in case of 'prod'.
+    # Also in case of dev/qa/Jenkins we do not want Emails and SMS to be sent to candidates, so
+    # this variable is used there as well.
+    IS_DEV = False if os.getenv(TalentConfigKeys.ENV_KEY) is 'prod' else True
 
     @classmethod
     def get_campaign_type_prefix(cls, campaign_type):
