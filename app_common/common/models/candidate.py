@@ -8,6 +8,7 @@ from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
+from sms_campaign import SmsCampaignReply
 
 
 class Candidate(db.Model):
