@@ -22,7 +22,13 @@
                 views: {
                     content: {
                         template: '<gt-login></gt-login>'
+                    },
+                    'title@': {
+                        template: '<title>getTalent | Login To Your Account</title>'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -33,6 +39,9 @@
                     content: {
                         template: '<gt-forgot-password></gt-forgot-password'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -43,6 +52,9 @@
                     content: {
                         template: '<gt-reset-password></gt-reset-password>'
                     }
+                },
+                data: {
+                    nonAuthOnly: true
                 }
             })
 
@@ -439,6 +451,9 @@
                 views: {
                     '@site': {
                         template: '<gt-pipelines></gt-pipelines>'
+                    },
+                    'title@': {
+                        template: '<title>hola!</title>'
                     }
                 }
             })
@@ -502,31 +517,31 @@
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists', {
-                url: '/smart-lists',
+            .state('pipelines.pipeline.smartlists', {
+                url: '/smartlists',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-lists></gt-smart-lists>'
+                        template: '<gt-smartlists></gt-smartlists>'
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists.create', {
+            .state('pipelines.pipeline.smartlists.create', {
                 url: '/create',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-create></gt-smart-list-create>'
+                        template: '<gt-smartlist-create></gt-smartlist-create>'
                     }
                 }
             })
-            .state('pipelines.pipeline.smartLists.smartList', {
+            .state('pipelines.pipeline.smartlists.smartlist', {
                 url: '/:pipelineId',
-                redirectTo: 'pipelines.pipeline.smartLists.smartList.detail'
+                redirectTo: 'pipelines.pipeline.smartlists.smartlist.detail'
             })
-            .state('pipelines.pipeline.smartLists.smartList.detail', {
+            .state('pipelines.pipeline.smartlists.smartlist.detail', {
                 url: '',
                 views: {
                     '@pipelines': {
-                        template: '<gt-smart-list-details></gt-smart-list-details>'
+                        template: '<gt-smartlist-details></gt-smartlist-details>'
                     }
                 }
             })

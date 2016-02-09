@@ -1,0 +1,68 @@
+// ---------------------------------------------------
+// Modules / Segmented Buttons
+// ---------------------------------------------------
+
+$segBtnGroupBorderRadius: 3px;
+
+.segmented-button-group {
+  display: flex;
+  border: 1px solid #efefef;
+  border-radius: $segBtnGroupBorderRadius + 2;
+
+  md-radio-button {
+    margin-bottom: 0;
+
+    .md-container {
+      overflow: hidden;
+
+      .md-off,
+      .md-on {
+        display: none;
+      }
+    }
+
+    .md-label {
+      color: white;
+      text-align: center;
+      min-width: 50px;
+      padding: 10px 13px;
+      margin-left: 0;
+      border-right: 1px solid #ddd;
+      background: #ccc;
+    }
+
+    &:first-child {
+      .md-label {
+        border-top-left-radius: $segBtnGroupBorderRadius;
+        border-bottom-left-radius: $segBtnGroupBorderRadius;
+      }
+    }
+
+    &:last-child {
+      .md-label {
+        border-top-right-radius: $segBtnGroupBorderRadius;
+        border-bottom-right-radius: $segBtnGroupBorderRadius;
+      }
+    }
+
+    &:not(:first-child) {
+      margin-top: 0;
+    }
+
+    &.md-checked {
+      .md-label {
+        background: $color--purple;
+      }
+    }
+  }
+
+  &.md-focused {
+    md-radio-button {
+      &.md-checked {
+        .md-label {
+          background: darken($color--purple, 10%)
+        }
+      }
+    }
+  }
+}

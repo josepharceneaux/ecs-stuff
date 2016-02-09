@@ -243,7 +243,10 @@ def sample_client(request):
     db.session.commit()
 
     def tear_down():
-        test_client.delete()
+        try:
+            test_client.delete()
+        except:
+            pass
     request.addfinalizer(tear_down)
     return test_client
 
@@ -263,11 +266,10 @@ def access_token_same(user_same_domain, sample_client):
     return get_access_token(user_same_domain, PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
 
+
 @pytest.fixture()
 def user_first(request, domain_first, first_group):
-    # user = create_test_user(db.session, domain_first.id, PASSWORD)
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    UserGroup.add_users_to_group(first_group, [user.id])
     db.session.commit()
 
     def tear_down():
@@ -283,7 +285,7 @@ def user_first(request, domain_first, first_group):
 @pytest.fixture()
 def user_same_domain(request, domain_first, first_group):
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    UserGroup.add_users_to_group(first_group, [user.id])
+    # UserGroup.add_users_to_group(first_group, [user.id])
     db.session.commit()
 
     def tear_down():
@@ -299,7 +301,6 @@ def user_same_domain(request, domain_first, first_group):
 @pytest.fixture()
 def user_second(request, domain_second, second_group):
     user = User.add_test_user(db.session, PASSWORD, domain_second.id, second_group.id)
-    UserGroup.add_users_to_group(second_group, [user.id])
 
     def tear_down():
         try:

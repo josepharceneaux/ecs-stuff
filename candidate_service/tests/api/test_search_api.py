@@ -2,26 +2,62 @@
 Test cases for candidate-search-service-API
 """
 from candidate_service.tests.modules.test_talent_cloud_search import (
-    populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets, get_or_create_status
+    populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.tests.api.helpers import (
+    response_info, AddUserRoles, request_to_candidate_search_resource
+)
+# Standard libraries
 import random
 import datetime
 import uuid
 import time
 import requests
+from dateutil.parser import parse
 
-SEARCH_URI = CandidateApiUrl.CANDIDATE_SEARCH_URI
+
+class TestCandidateSearchGet(object):
+    @staticmethod
+    def create_candidates(access_token, user, talent_pool):
+        AddUserRoles.add(user=user)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}},
+            {'talent_pool_ids': {'add': [talent_pool.id]}},
+            {'talent_pool_ids': {'add': [talent_pool.id]}},
+        ]}
+        resp = requests.post(
+                url=CandidateApiUrl.CANDIDATES,
+                headers={'Authorization': 'Bearer {}'.format(access_token),
+                         'content-type': 'application/json'},
+                data=json.dumps(data))
+        print response_info(response=resp)
+        assert resp.status_code == 201
+        return resp
+
+    def test_get_candidates_via_list_of_ids(self, access_token_first, user_first, talent_pool):
+        # Create candidates for user
+        create_resp = self.create_candidates(access_token_first, user_first, talent_pool).json()
+        # Retrieve candidates
+        AddUserRoles.get(user=user_first)
+        data = {'candidate_ids': [candidate['id'] for candidate in create_resp['candidates']]}
+        resp = request_to_candidate_search_resource(access_token_first, 'get', data)
+        print response_info(response=resp)
+        assert resp.status_code == 200
+        assert len(resp.json()['candidates']) == 3  # Number of candidate IDs sent in
+        assert resp.json()['candidates'][0]['talent_pool_ids'][0] == talent_pool.id
+        assert resp.json()['candidates'][0]['id'] == data['candidate_ids'][0]
 
 
 def test_search_all_candidates_in_domain(user_first, access_token_first):
     """
     Test to search all candidates under the same domain
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id)
     response = get_response_from_authorized_user(access_token_first, '')
     _assert_results(candidate_ids, response.json())
@@ -31,6 +67,7 @@ def test_search_location(user_first, access_token_first):
     """
     Test to search candidates using location
     """
+    AddUserRoles.add_and_get(user=user_first)
     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
     time.sleep(10)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, city=city, state=state,
@@ -43,6 +80,7 @@ def test_search_user_ids(user_first, access_token_first):
     """
     Test to search all candidates under the user
     """
+    AddUserRoles.add_and_get(user=user_first)
     user_id = user_first.id
     candidate_ids = populate_candidates(count=5, owner_user_id=user_id)
     response = get_response_from_authorized_user(access_token_first, '?user_ids=%d' % user_id)
@@ -53,6 +91,7 @@ def test_search_skills(user_first, access_token_first):
     """
     Test to search all candidates based on skills
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id,
                                         candidate_skill_dicts=[{'last_used':datetime.datetime.now(),
                                                                 'name': 'hadoop', 'months_used': 36}],
@@ -65,6 +104,7 @@ def test_search_aoi(user_first, access_token_first):
     """
     Test to search all candidates based on area_of_interest
     """
+    AddUserRoles.add_and_get(user=user_first)
     all_aoi_ids = create_area_of_interest_facets(db, user_first.domain_id)
     print "Total area of interest facets present: %s" % len(all_aoi_ids)
     aoi_ids_list = all_aoi_ids[0:5]
@@ -96,6 +136,7 @@ def test_search_aoi(user_first, access_token_first):
 def to_fix_test_search_source(user_first, access_token_first):
     """Test to search candidates by source"""
     # Create a new source
+    AddUserRoles.add_and_get(user=user_first)
     new_source = CandidateSource(description="Test source",
                                  domain_id=user_first.domain_id,
                                  notes="Sample source for functional tests")
@@ -109,32 +150,42 @@ def to_fix_test_search_source(user_first, access_token_first):
 
 def test_search_candidate_experience(user_first, access_token_first):
     """Test to search candidates with experience"""
+    AddUserRoles.add_and_get(user=user_first)
     user_id = user_first.id
-    experience_2_years = [{'organization': 'Intel', 'position': 'Research analyst', 'startYear': 2013, 'startMonth': 06,
-                           'endYear': 2015, 'endMonth': '06'}]
-    experience_0_years = [{'organization': 'Audi', 'position': 'Mechanic', 'startYear': 2015, 'startMonth': 01,
-                           'endYear': 2015, 'endMonth': 02}]
+    experience_2_years = {'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013, 'start_month': 06,
+                          'end_year': 2015, 'end_month': '06'}
+    experience_0_years = {'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015, 'start_month': 01,
+                          'end_year': 2015, 'end_month': 02, 'is_current': True}
     candidate_ids = []
     candidate_with_0_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dicts=experience_0_years)
+                                                     candidate_experience_dict=experience_0_years)
     for candidate_id in candidate_with_0_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=2))
         db.session.flush()
         candidate_ids.append(candidate_id)
     candidate_with_2_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dicts=experience_2_years)
+                                                     candidate_experience_dict=experience_2_years)
     for candidate_id in candidate_with_2_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=24))
         db.session.commit()
         candidate_ids.append(candidate_id)
     # Update cloud_search
     upload_candidate_documents(candidate_ids)
-    response = get_response_from_authorized_user(access_token_first, '?minimum_years_experience=0&maximum_years_experience=2')
-    _assert_results(candidate_ids, response.json())
+    response = get_response_from_authorized_user(access_token_first,
+                                                 '?minimum_years_experience=0&maximum_years_experience=2').json()
+    for candidate in response['candidates']:
+        start_date_at_current_job = candidate.get('start_date_at_current_job', '')
+        if start_date_at_current_job:
+            start_date_at_current_job = parse(start_date_at_current_job)
+            assert start_date_at_current_job.month == 1
+            assert start_date_at_current_job.year == 2015
+
+    _assert_results(candidate_ids, response)
 
 
 def test_search_position(user_first, access_token_first):
     """Test to search candidates by job_title/position"""
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=4, owner_user_id=user_first.id, current_title="Developer")
     response = get_response_from_authorized_user(access_token_first, '?job_title=Developer')
     _assert_results(candidate_ids, response.json())
@@ -142,6 +193,7 @@ def test_search_position(user_first, access_token_first):
 
 def test_search_degree(user_first, access_token_first):
     """Test to search candidates by degree type"""
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id,
                                         degree="Masters", university=True)
     response = get_response_from_authorized_user(access_token_first, '?degree_type=Masters')
@@ -150,6 +202,7 @@ def test_search_degree(user_first, access_token_first):
 
 def test_search_school_name(user_first, access_token_first):
     """Test to search candidates by university/school_name"""
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id,
                                         university='Oklahoma State University')
     response = get_response_from_authorized_user(access_token_first, '?school_name=Oklahoma State University')
@@ -160,9 +213,9 @@ def test_search_concentration(user_first, access_token_first):
     """
     Test to search candidates by higher education
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=4, owner_user_id=user_first.id,
                                         major='Post Graduate', university=True)
-
     response = get_response_from_authorized_user(access_token_first, '?major=Post Graduate')
     _assert_results(candidate_ids, response.json())
 
@@ -170,12 +223,9 @@ def test_search_concentration(user_first, access_token_first):
 def test_search_military_service_status(user_first, access_token_first):
     """
     Test to search candidates by military service status
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_status="Retired")
-
     response = get_response_from_authorized_user(access_token_first, '?military_service_status=Retired')
     _assert_results(candidate_ids, response.json())
 
@@ -183,12 +233,9 @@ def test_search_military_service_status(user_first, access_token_first):
 def test_search_military_branch(user_first, access_token_first):
     """
     Test to search candidates by military branch
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_branch="Army")
-
     response = get_response_from_authorized_user(access_token_first, '?military_branch=Army')
     _assert_results(candidate_ids, response.json())
 
@@ -196,12 +243,9 @@ def test_search_military_branch(user_first, access_token_first):
 def test_search_military_highest_grade(user_first, access_token_first):
     """
     Test to search candidates by military highest grade
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_grade="W-1")
-
     response = get_response_from_authorized_user(access_token_first, '?military_highest_grade=W-1')
     _assert_results(candidate_ids, response.json())
 
@@ -209,10 +253,8 @@ def test_search_military_highest_grade(user_first, access_token_first):
 def to_fix_test_search_military_date_of_separation(user_first, access_token_first):
     """
     Test to search candidates by military date of separation
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     user_id = user_first.id
     candidates_today = populate_candidates(user_id, count=5, military_to_date=datetime.datetime.now(),
                                            military_grade=True, military_status=True, military_branch=True)
@@ -247,10 +289,8 @@ def to_fix_test_search_query_with_name(user_first, access_token_first):
     """
     Test to search candidates by passing query argument
     For example, search by querying first_name
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id,
                                         first_name="Naveen", last_name=uuid.uuid4().__str__()[0:8])
 
@@ -261,12 +301,9 @@ def to_fix_test_search_query_with_name(user_first, access_token_first):
 def test_search_get_only_requested_fields(user_first, access_token_first):
     """
     Test to search candidates and get only requested fields like email,source_id,etc,..
-    :param sample_user:
-    :param user_auth:
-    :return:
     """
+    AddUserRoles.add_and_get(user=user_first)
     populate_candidates(count=2, owner_user_id=user_first.id)
-
     response = get_response_from_authorized_user(access_token_first, '?fields=email')
     resultant_keys = response.json()['candidates'][0].keys()
     assert len(resultant_keys) == 1
@@ -274,12 +311,6 @@ def test_search_get_only_requested_fields(user_first, access_token_first):
 
 
 def to_fix_test_search_paging(user_first, access_token_first):
-    """
-
-    :param sample_user:
-    :param user_auth:
-    :return:
-    """
     candidate_ids = populate_candidates(count=50, owner_user_id=user_first.id, objective=True, added_time=True,
                                         current_company=True, current_title=True, candidate_text_comment=True,
                                         city=True, state=True, phone=True,
@@ -295,12 +326,6 @@ def to_fix_test_search_paging(user_first, access_token_first):
 
 
 def to_fix_test_search_custom_fields(user_first, access_token_first):
-    """
-
-    :param sample_user:
-    :param user_auth:
-    :return:
-    """
     # Create custom field category named as 'Certifications'
     domain_id = sample_user.domain_id
     custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
@@ -349,7 +374,7 @@ def get_response_from_authorized_user(access_token, arguments_to_url):
     time.sleep(25)
     # auth_token = auth_user.get_auth_token(owner_user, get_bearer_token=True)
     response = requests.get(
-        url=SEARCH_URI + arguments_to_url,
+        url=CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url,
         headers={'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
     )
     return response

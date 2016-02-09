@@ -7,75 +7,36 @@ html, body {
 }
 
 .module-padding {
-    padding: $padding--module;
+    padding: 10px 40px 0px;
 }
 
-@mixin card {
-    border-radius: $border-radius--base;
-    box-shadow:none;
-    border-right: solid 1px #e2e2e2;
-    border-bottom: solid 1px #e2e2e2;
-    background-color:#ffffff;
+.positive {
+    color: $color--green;
 }
 
-.md-whiteframe-gt {
-    @include card;
-}
-
-md-card {
-    @include card;
-    .md-subhead {
-        padding-top:0px;
-    }
-    md-card-content {
-
-    }
-    .md-card-title {
-        .md-subhead{
-            color:red;
-            padding-top:5px;
-        }
-    }
-    .md-title {
-        font-weight:400;
-        font-size: 1.3em;
-    }
-    .md-subhead {
-
-    }
-}
-
-
-
-md-content {
-    border-radius: $border-radius--base;
-
-    .view__main > & {
-        padding: 0;
-        border-radius: 0;
-        background: transparent;
-    }
-
-}
-
-.md-title {
-    color:#555;
-    font-weight:400;
-}
-
-.md-subhead {
-    color:#666;
-    font-weight:400;
-}
-
-.md-display-3 {
-    font-weight:300;
-    color:#666;
+.negative {
+    color: $color--red;
 }
 
 .md-margin {
-    margin:15px;
+
 }
+
+
+/** Temp Dashboard Styles **/
+
+.new-candidates,
+.team-contributions {
+    .md-title {
+        margin-bottom:10px;
+    }
+    .md-display-3 {
+        font-size:110px;
+        margin:20px 0px;
+    }
+}
+
+
 
 
 
@@ -120,5 +81,69 @@ md-content {
     }
 }
 
+.dashboard-wrapper {
+    background: transparent;
+}
+
+// Log in
+.view--login {
+
+    .login-header {
+        margin-bottom: 50px;
+    }
+
+    .login-form-wrap,
+    .forgot-password-form-wrap {
+        padding: 50px 50px 30px 50px;
+
+        md-input-container {
+            margin: 0;
+
+            &:before {
+                content: ' ';
+                display: block;
+                width: 5px;
+                height: 50px;
+                background: #888;
+                position: absolute;
+                top: 2px;
+                left: 2px;
+            }
+
+            .md-input {
+                height: 50px;
+                padding-left: 20px;
+            }
+        }
+
+        .forogt-password-wrap {
+            height: 40px;
+        }
+
+        .error-message {
+            color: #d30;
+        }
+    }
+
+    .login-form-wrap {
+        height: 420px;
+    }
+
+    .forgot-password-form-wrap {
+        height: 300px;
+    }
+}
 
 
+@keyframes shake {
+    0% {transform: translateX(0);}
+    12.5% {transform: translateX(-30px) rotateY(-5deg)}
+    37.5% {transform: translateX(25px) rotateY(4deg)}
+    62.5% {transform: translateX(-15px) rotateY(-2deg)}
+    87.5% {transform: translateX(10px) rotateY(1deg)}
+    100% {transform: translateX(0)}
+}
+
+.shake {
+    animation: shake 600ms ease-in-out;
+}

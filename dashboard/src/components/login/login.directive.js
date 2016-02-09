@@ -34,6 +34,7 @@
         vm.username = '';
         vm.password = '';
         vm.errorMessage = '';
+        vm.loginError = false;
         vm.login = login;
 
         init();
@@ -50,12 +51,18 @@
                 password: vm.password
             }).then(function() {
                 if (angular.isDefined($rootScope.redirectTo)) {
+
                     $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
+                    
                 } else {
+
                     $state.go('dashboard');
+
                 }
             }, function() {
-                vm.errorMessage = 'Authentication failed.';
+                vm.loginError = true;
+                
+                vm.errorMessage = 'Incorrect email or password, please try again';
             });
         }
     }

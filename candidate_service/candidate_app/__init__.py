@@ -31,14 +31,14 @@ try:
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource)
+        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource)
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
 
     # Enable CORS for all origins & endpoints
-    CORS(app)
+    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
     # API RESOURCES
     # ****** CandidateResource ******
@@ -252,10 +252,13 @@ try:
     # ****** OPENWEB Request *******
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
+    # ************************************************************************************** #
+    #                           Client email campaign                                        #
+    # ************************************************************************************** #
+    api.add_resource(CandidateClientEmailCampaignResource, CandidateApi.CANDIDATE_CLIENT_CAMPAIGN)
+
     # ****** CandidatePreferenceResource *******
-    api.add_resource(CandidatePreferenceResource,
-                     CandidateApi.CANDIDATE_PREFERENCES,
-                     endpoint='candidate_preference')
+    api.add_resource(CandidatePreferenceResource, CandidateApi.CANDIDATE_PREFERENCES, endpoint='candidate_preference')
 
     db.create_all()
     db.session.commit()

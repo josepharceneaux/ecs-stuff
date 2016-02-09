@@ -73,10 +73,6 @@ ehthumbs.db
 Icon?
 Thumbs.db
 
-src/core/icon-font/gettalent-icons.eot
-src/core/icon-font/gettalent-icons.html
-src/core/icon-font/gettalent-icons.scss
-src/core/icon-font/gettalent-icons.ttf
-src/core/icon-font/gettalent-icons.woff
-src/core/icon-font/gettalent-icons-gallery.css
+# Generated icon font files
+gettalent-icons*
 

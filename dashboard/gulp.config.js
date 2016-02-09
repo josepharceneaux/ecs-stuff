@@ -7,6 +7,7 @@ module.exports = function () {
     var src = './src/';
     var test = './test/';
     var temp = './.tmp/';
+    var bowerComponents = './bower_components/';
 
     var $ = require('gulp-load-plugins')({lazy: true});
     var wiredep = require('wiredep');
@@ -55,6 +56,13 @@ module.exports = function () {
         html: src + '**/*.html',
         sass: src + '**/*.scss',
         iconfont: src + 'core/icon-font/**/*.svg',
+        fonts: [
+            // custom app fonts
+            src + 'fonts/**/*.*',
+
+            // third party fonts go here
+            bowerComponents + 'font-awesome/fonts/**/*.*'
+        ],
         $: $,
         args: require('yargs').argv,
 

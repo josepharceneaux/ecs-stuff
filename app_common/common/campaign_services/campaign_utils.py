@@ -360,7 +360,7 @@ class CampaignUtils(object):
         return True
 
     @staticmethod
-    def get_campaign_for_ownership_validation(campaign_id, current_user_id, campaign_type):
+    def get_campaign(campaign_id, current_user_id, campaign_type):
         """
         This function gets the campaign from database table as specified by campaign_type.
         If campaign obj is found, it returns it. Otherwise it returns Resource Not Found error.
@@ -379,8 +379,7 @@ class CampaignUtils(object):
         campaign_model = get_model(campaign_type, campaign_type)
         campaign_obj = campaign_model.query.get(campaign_id)
         if not campaign_obj:
-            raise ResourceNotFound(
-                '%s(id=%s) not found.' % (campaign_model.__tablename__, campaign_id))
+            raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
 
 def to_utc_str(dt):

@@ -50,7 +50,7 @@ module.exports = function (config) {
                 appendUnicode      : false,
                 normalize          : true,
                 centerHorizontally : true,
-                formats            : ['ttf', 'eot', 'woff'],
+                formats            : ['ttf', 'eot', 'woff', 'woff2'],
                 autohint           : true,
                 timestamp          : Math.round(Date.now() / 1000),
             }))
@@ -80,14 +80,14 @@ module.exports = function (config) {
                         glyphs: glyphs,
                         fontName: fontName,
                         fontPath: '../fonts/',
-                        targetPath: './',
+                        targetPath: '../../fonts/',
                         className: 'icon'
                     }))
                     .pipe($.rename(fontName + '.html'))
                     .pipe(gulp.dest(config.sourceDir + 'core/icon-font/'));
                 cb();
             })
-            .pipe(gulp.dest(config.sourceDir + 'core/icon-font/'));
+            .pipe(gulp.dest(config.sourceDir + 'fonts/'));
     });
 
     gulp.task('clean-icon-font-cache', function () {

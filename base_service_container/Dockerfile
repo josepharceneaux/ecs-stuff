@@ -27,6 +27,13 @@ RUN apt-get -y install rsyslog
 RUN sed -i '/$UDPServerRun/s/^#//g' /etc/rsyslog.conf
 RUN sed -i '/$ModLoad imudp/s/^#//g' /etc/rsyslog.conf
 
+# Disable kernel level logs
+RUN sed -i '/$ModLoad imklog/s/^/#/g' /etc/rsyslog.conf
+RUN sed -i '/$KLogPermitNonKernelFacility/s/^/#/g' /etc/rsyslog.conf
+
+# Disable xconsole in syslog
+RUN sed -i "65,68 s/^/#/" /etc/rsyslog.d/50-default.conf
+
 RUN touch /etc/rsyslog.d/22-loggly.conf
 ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
 

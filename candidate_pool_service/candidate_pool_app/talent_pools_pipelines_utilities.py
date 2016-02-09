@@ -1,17 +1,16 @@
 __author__ = 'ufarooqi'
 import json
+import decimal
 import requests
 from flask import request
-from sqlalchemy import text
-from datetime import datetime, timedelta
-from candidate_pool_service.common.models.user import User
+from datetime import datetime, timedelta, date
+from candidate_pool_service.common.models.user import User, db
 from candidate_pool_service.candidate_pool_app import logger, app
 from candidate_pool_service.common.redis_cache import redis_store
 from candidate_pool_service.common.error_handling import InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
-from candidate_pool_service.common.models.email_marketing import EmailCampaign
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
     "query",
@@ -95,6 +94,14 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                          "%s" % e.message)
 
 
+def campaign_json_encoder_helper(obj):
+    """JSON encoder function for SQLAlchemy special classes."""
+    if isinstance(obj, date):
+        return obj.isoformat()
+    elif isinstance(obj, decimal.Decimal):
+        return float(obj)
+
+
 def get_campaigns_of_talent_pipeline(talent_pipeline):
     """
         Fetch all campaigns belonging to any smartlist of the talent-pipeline
@@ -107,11 +114,10 @@ def get_campaigns_of_talent_pipeline(talent_pipeline):
         FROM email_campaign, email_campaign_smart_list, smart_list
         WHERE email_campaign.id=email_campaign_smart_list.emailCampaignId AND
               email_campaign_smart_list.smartListId=smart_list.id AND
-              smart_list.talentPipelineId=:talent_pipeline_id"""
+              smart_list.talentPipelineId=%s"""
 
-    email_campaigns = EmailCampaign.query.from_statement(text(sql_query)).params(
-            talent_pipeline_id=talent_pipeline.id).all()
-    return [email_campaign.to_json() for email_campaign in email_campaigns]
+    email_campaigns = db.session.connection().execute(sql_query % talent_pipeline.id)
+    return json.dumps([dict(email_campaign) for email_campaign in email_campaigns], default=campaign_json_encoder_helper)
 
 
 def schedule_daily_task_unless_already_scheduled(task_name, url):
@@ -124,6 +130,7 @@ def schedule_daily_task_unless_already_scheduled(task_name, url):
         "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),  # Start it 10 seconds from now
         "end_datetime": "2099-01-05T08:00:00",
         "url": url,
+        "is_jwt_request": True,
         "task_name": task_name
     }
 

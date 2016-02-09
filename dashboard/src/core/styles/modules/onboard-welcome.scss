@@ -1,0 +1,34 @@
+// ---------------------------------------------------
+// Modules / Onboard Welcome
+// ---------------------------------------------------
+
+.onboard-welcome {
+  max-width:700px;
+  text-align:center;
+  form {
+    padding:30px;
+  }
+  .md-dialog-content {
+    padding:0px 20px;
+    p {
+      text-align:left;
+    }
+  }
+  .md-display-3 {
+    font-size: 28px;
+    margin:10px 5px 10px 5px;
+    color: $color--blue;
+    line-height: 1.35;
+  }
+  .welcome-graphic {
+    text-align:center;
+    margin-top:20px;
+    img {
+      width:260px;
+      display:inline-block;
+    }
+  }
+  md-dialog-actions {
+    margin-top: 15px;
+  }
+}

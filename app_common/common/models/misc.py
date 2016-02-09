@@ -1,57 +1,47 @@
 from sqlalchemy import and_
-from app_common.common.models.db import db
 from db import db
-import datetime
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import DOUBLE
+from ..error_handling import InvalidUsage
+import datetime
 import time
-
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
 from push_campaign import PushCampaign
-from ..error_handling import InvalidUsage
 from ..utils.scheduler_utils import SchedulerUtils
 
 
 class Activity(db.Model):
     __tablename__ = 'activity'
-    id = db.Column(db.Integer, primary_key=True)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    source_table = db.Column('sourceTable', db.String(127))
-    source_id = db.Column('sourceID', db.Integer)
-    type = db.Column('type', db.Integer)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id'))
-    params = db.Column(db.Text)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    type = db.Column('Type', db.Integer)
+    source_table = db.Column('SourceTable', db.String(127))
+    source_id = db.Column('SourceId', db.Integer)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
+    params = db.Column('Params', db.Text)
+
+    def __repr__(self):
+        return "<Activity: (id = {})>".format(self.id)
 
     @classmethod
-    def get_by_user_id_params_type_source_id(cls, user_id, params, type_, source_id):
-        assert user_id
+    def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
         return cls.query.filter(
             db.and_(
                 Activity.user_id == user_id,
                 Activity.params == params,
-                Activity.type == type_,
+                Activity.type == type,
                 Activity.source_id == source_id,
-            )
-        ).first()
+            )).first()
 
-    @classmethod
-    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
-        assert user_id
-        return cls.query.filter(
-            db.and_(
-                Activity.user_id == user_id,
-                Activity.type == type_,
-                Activity.source_id == source_id,
-            )
-        ).first()
 
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
-    id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    id = db.Column('Id', db.Integer, primary_key=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Description', db.String(255))
-    parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.id'))
+    parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -59,9 +49,6 @@ class AreaOfInterest(db.Model):
 
     @classmethod
     def get_area_of_interest(cls, domain_id, name):
-        """
-        :rtype  AreaOfInterest
-        """
         return cls.query.filter(db.and_(
             AreaOfInterest.domain_id == domain_id,
             AreaOfInterest.name == name
@@ -77,23 +64,21 @@ class AreaOfInterest(db.Model):
 
 class Culture(db.Model):
     __tablename__ = 'culture'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     description = db.Column('Description', db.String(50))
-    code = db.Column(db.String(5), unique=True)
+    code = db.Column('Code', db.String(5), unique=True)
 
     # Relationships
     candidates = relationship('Candidate', backref='culture')
     # domain = relationship('Domain', backref='culture')
-    # user = relationship('User', backref='culture')
+    user = relationship('User', backref='culture')
 
     def __repr__(self):
         return "<Culture (description=' %r')>" % self.description
 
     @classmethod
     def get_by_code(cls, code):
-        return cls.query.filter(
-            Culture.code == code.strip().lower()
-        ).one()
+        return cls.query.filter(Culture.code == code.strip().lower()).one()
 
 
 class Organization(db.Model):
@@ -101,7 +86,7 @@ class Organization(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255), unique=True)
     notes = db.Column('Notes', db.String(255))
-    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
     # domains = db.relationship('Domain', backref='organization')
@@ -116,7 +101,7 @@ class Organization(db.Model):
 
 class Product(db.Model):
     __tablename__ = 'product'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
@@ -127,11 +112,7 @@ class Product(db.Model):
     @classmethod
     def get_by_name(cls, vendor_name):
         assert vendor_name
-        return cls.query.filter(
-            db.and_(
-                Product.name == vendor_name
-            )
-        ).first()
+        return cls.query.filter(db.and_(Product.name == vendor_name)).first()
 
 
 class Country(db.Model):
@@ -139,6 +120,7 @@ class Country(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     code = db.Column('Code', db.String(20), nullable=False)
+
     # Relationships
     candidate_military_services = relationship('CandidateMilitaryService', backref='country')
     candidate_addresses = relationship('CandidateAddress', backref='country')
@@ -151,12 +133,10 @@ class Country(db.Model):
 
     @classmethod
     def country_id_from_name_or_code(cls, name_or_code):
-        if name_or_code:
-            country_row = cls.query.filter(db.or_(Country.name == name_or_code,
-                                                  Country.code == name_or_code)).first()
-            if country_row:
-                return country_row.id
-        return 1
+        country_row = cls.query.filter(db.or_(Country.name == name_or_code,
+                                              Country.code == name_or_code)).first()
+        return country_row.id if country_row else None
+
 
     @classmethod
     def country_name_from_country_id(cls, country_id):
@@ -170,8 +150,64 @@ class Country(db.Model):
             return 'United States'
 
 
+# Even though the table name is majors I'm keeping the model class singular.
+class Major(db.Model):
+    __tablename__ = 'majors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(100), nullable=False)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    def serialize(self):
+        return {'id': self.id}
+
+
+class State(db.Model):
+    __tablename__ = 'state'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255))
+    alpha_code = db.Column('AlphaCode', db.String(31))
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    abbreviation = db.Column('Abbreviation', db.String(255))
+
+    # Relationships
+    cities = relationship('City', backref='state')
+
+    def __repr__(self):
+        return "<State (name=' %r')>" % self.name
+
+
+class City(db.Model):
+    __tablename__ = 'city'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255))
+    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
+    postal_code = db.Column('PostalCode', db.String(63))
+    latitude_radians = db.Column('LatitudeRadians', DOUBLE)
+    longitude_radians = db.Column('LongitudeRadians', DOUBLE)
+    alternate_names = db.Column('AlternateNames', db.Text)
+    coordinates = db.Column('Coordinates', db.String(127))
+
+    # Relationships
+    zip_codes = relationship('ZipCode', backref='city')
+
+    def __repr__(self):
+        return "<City (name = '%r')>" % self.name
+
+
+class ZipCode(db.Model):
+    __tablename__ = 'zipcode'
+    id = db.Column('Id', db.Integer, primary_key=True)
+    code = db.Column('Code', db.String(31))
+    city_id = db.Column('CityId', db.Integer, db.ForeignKey('city.id'))
+    coordinates = db.Column('Coordinates', db.String(127))
+
+    def __repr__(self):
+        return "<Zipcode (code=' %r')>" % self.code
+
+
 class Frequency(db.Model):
-    __tablename__ = 'frequency'
+    __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
@@ -190,7 +226,11 @@ class Frequency(db.Model):
     CUSTOM = 7
 
     def __repr__(self):
-        return "<Frequency (id = %r)>" % self.id
+        return "<Frequency: (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def get_id_by_description(cls, desc):
@@ -228,8 +268,7 @@ class Frequency(db.Model):
 
     @property
     def in_seconds(self):
-        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds),
-         will return 0.
+        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds), will return 0.
         """
         frequency_in_seconds = self.standard_frequencies()
         return frequency_in_seconds.get(self.name.lower(), 0)
@@ -237,81 +276,19 @@ class Frequency(db.Model):
     @classmethod
     def standard_frequencies(self):
         """Returns a dict of system wide standard frequency names and period in seconds"""
-        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600,
-                'biweekly': 2 * 7 * 24 * 3600, 'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
+        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
+                'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
 
     @classmethod
     def get_frequency_from_name(cls, frequency_name):
         """Returns frequency object wrt given name(case insensitive) """
         return cls.query.filter_by(name=frequency_name).first()
 
-    @classmethod
-    def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
-
-
-# Even though the table name is major I'm keeping the model class singular.
-class Major(db.Model):
-    __tablename__ = 'majors'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(100), nullable=False)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-
-    def serialize(self):
-        return {
-            'id': self.id,
-        }
-
-
-class State(db.Model):
-    __tablename__ = 'state'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    alpha_code = db.Column('AlphaCode', db.String(31))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    abbreviation = db.Column('Abbreviation', db.String(255))
-
-    # Relationships
-    cities = relationship('City', backref='state')
-
-    def __repr__(self):
-        return "<State (name=' %r')>" % self.name
-
-
-class City(db.Model):
-    __tablename__ = 'city'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(255))
-    state_id = db.Column('StateId', db.Integer, db.ForeignKey('state.id'))
-    postal_code = db.Column('PostalCode', db.String(63))
-    latitude_radians = db.Column('LatitudeRadians', db.Float)
-    longitude_radians = db.Column('LongitudeRadians', db.Float)
-    alternate_names = db.Column('AlternateNames', db.Text)
-    coordinates = db.Column('Coordinates', db.String(127))
-
-    # Relationships
-    zip_codes = relationship('ZipCode', backref='city')
-
-    def __repr__(self):
-        return "<City (name=' %r')>" % self.name
-
-
-class ZipCode(db.Model):
-    __tablename__ = 'zipcode'
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column('Code', db.String(31))
-    city_id = db.Column('CityId', db.Integer, db.ForeignKey('city.id'))
-    coordinates = db.Column('Coordinates', db.String(127))
-
-    def __repr__(self):
-        return "<Zipcode (code=' %r')>" % self.code
-
 
 class CustomField(db.Model):
     __tablename__ = 'custom_field'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Name', db.String(255))
     type = db.Column('Type', db.String(127))
     category_id = db.Column('CategoryId', db.Integer)
@@ -336,17 +313,17 @@ class CustomField(db.Model):
 
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
-
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey(u'user.id'), index=True)
+    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
     type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
     name = db.Column('Name', db.String(255), nullable=False)
     email_body_html = db.Column('EmailBodyHtml', db.Text)
     email_body_text = db.Column('EmailBodyText', db.Text)
-    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey(u'email_template_folder.id', ondelete=u'SET NULL'), index=True)
+    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
     updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
+    # Relationships
     email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                                     cascade="all, delete-orphan"))
     user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
@@ -354,41 +331,57 @@ class UserEmailTemplate(db.Model):
 
 class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey(u'email_template_folder.id', ondelete=u'CASCADE'), index=True)
+    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
+                          index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey(u'domain.id', ondelete=u'CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
+                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
-    domain = relationship(u'Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
-    parent = relationship(u'EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
+    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
-
 
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
 
+# class PatentDetail(db.Model):
+#     __tablename__ = 'patent_detail'
+#     id = db.Column('Id', db.BIGINT, primary_key=True)
+#     patent_id = db.Column('PatentId', db.BIGINT)
+#     issuing_authority = db.Column('IssuingAuthority', db.String(255))
+#     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.Id'))
+#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+#
+#     def __repr__(self):
+#         return "<PatentDetail (id = {})>".format(self.id)
+
+
 class UrlConversion(db.Model):
     __tablename__ = 'url_conversion'
-    id = db.Column(db.Integer, primary_key=True)
-    source_url = db.Column('sourceUrl', db.String(512))  # Ours
-    destination_url = db.Column('destinationUrl', db.String(512))  # Theirs
-    hit_count = db.Column('hitCount', db.Integer, default=0)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    last_hit_time = db.Column('lastHitTime', db.DateTime)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    source_url = db.Column('SourceUrl', db.String(512))  # Ours
+    destination_url = db.Column('DestinationUrl', db.String(512))  # Theirs
+    hit_count = db.Column('HitCount', db.Integer, default=0)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    last_hit_time = db.Column('LastHitTime', db.DateTime)
+
+    def __repr__(self):
+        return "<UrlConversion (id = {})>".format(self.id)
 
     # Relationships
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+
     push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
                                                        cascade='all,delete-orphan',
                                                        passive_deletes=True,
@@ -396,3 +389,4 @@ class UrlConversion(db.Model):
 
     def __repr__(self):
         return "<UrlConversion (id=' %r')>" % self.id
+

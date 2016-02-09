@@ -16,7 +16,6 @@ from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
-from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.common.models.user import DomainRole
 
@@ -73,7 +72,6 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'domain_id': talent_pool.domain_id,
                         'user_id': talent_pool.owner_user_id
 
                     } for talent_pool in talent_pools
@@ -101,8 +99,14 @@ class TalentPoolApi(Resource):
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
         posted_data = request.get_json(silent=True)
-        if not posted_data:
+        if not posted_data or 'talent_pool' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
+
+        posted_data = posted_data['talent_pool']
+
+        # posted_data must be in a dict
+        if not isinstance(posted_data, dict):
+            raise InvalidUsage(error_message="Request body is not properly formatted")
 
         if request.user.domain_id != talent_pool.domain_id:
             raise ForbiddenError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
@@ -441,9 +445,13 @@ class TalentPoolCandidateApi(Resource):
 
         # Candidates with input candidate ids exist in database or not
         for talent_pool_candidate_id in talent_pool_candidate_ids:
-            if not Candidate.query.get(talent_pool_candidate_id):
+            talent_pool_candidate = Candidate.query.get(talent_pool_candidate_id)
+            if not talent_pool_candidate:
                 raise NotFoundError(error_message="Candidate with id %s doesn't exist in database" % talent_pool_candidate_id)
 
+            if talent_pool_candidate.user.domain_id != talent_pool.domain_id:
+                raise ForbiddenError("Talent Pool %s and Candidate %s belong to different domain" %
+                                     (talent_pool.id, talent_pool_candidate.id))
             db.session.add(TalentPoolCandidate(talent_pool_id=talent_pool_id, candidate_id=talent_pool_candidate_id))
 
         db.session.commit()
@@ -535,7 +543,7 @@ class TalentPoolCandidateApi(Resource):
 
 
 @talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS)
 def update_talent_pools_stats():
     """
@@ -603,6 +611,7 @@ def get_talent_pool_stats(talent_pool_id):
 
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
 
     if not from_date_string or not to_date_string:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
@@ -613,9 +622,18 @@ def get_talent_pool_stats(talent_pool_id):
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+    else:
+        interval = int(interval)
+        if interval < 1:
+            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_datetime >= from_date,
                                                           TalentPoolStats.added_datetime <= to_date)).all()
+
+    talent_pool_stats = talent_pool_stats[::interval]
 
     return jsonify({'talent_pool_data': [
         {

@@ -2,6 +2,123 @@
 // Modules / Dashboards
 // ---------------------------------------------------
 
-.dashboard-wrapper {
-  background: transparent;
+.dashboard {
+  background: darken(#373437, 5%);
+
+  h1, h2, h3, h4, h5, h6, span {
+    color: #ddd;
+  }
+
+  p {
+    color: #bbb;
+  }
+
+  .dashboard {
+    md-card {
+      .new-candidates {
+        background-image:url(/images/placeholder/graph-1.svg) no-repeat bottom center;
+        background-size:cover;
+      }
+    }
+  }
+
+  .zebra {
+    padding:20px 0px;
+    md-list-item:nth-child(odd) {
+      background: rgba(0,0,0,.15);
+    }
+    md-list-item {
+      padding:8px 20px;
+      margin-bottom:0px;
+      &:hover {
+      }
+    }
+  }
+
+  .candidate-distribution {
+    md-content {
+      margin-bottom:0px;
+    }
+  }
+
+  .recommended-candidates {
+    .md-card-content {
+      margin:30px 0px;
+    }
+    .md-display-5 {
+      margin-top:4px;
+      span {
+        font-size:10px;
+      }
+    }
+  }
+
+  .team-name {
+    margin: 16px;
+  }
+  
+  md-content {
+    background: transparent;
+  }
+  
+  md-card {
+    background: lighten(#373437,2%);
+    border-right: 1px darken(#373437, 8%) solid;
+    border-bottom: 1px darken(#373437, 8%)  solid;    
+    &.new-candidates {
+          background:url(/images/placeholder/graph-1.svg) lighten(#373437,2%) no-repeat bottom center !important;
+          background-size:cover;
+      }
+    &.team-contributions {
+      background:url(/images/placeholder/graph-2.svg) lighten(#373437,2%) no-repeat bottom center !important;
+      background-size:cover;
+    }
+    &.new-candidates,
+    &.team-contributions {
+      height: 200px;
+
+      md-card-content {
+        span {
+          color: #1DBA7E;
+          font-weight: 600;
+        }
+      }
+    }
+    md-list-item {
+      margin-bottom: 15px;
+      padding: 0;
+
+      .md-list-item-avatar {
+        position: relative;
+
+        .check-circle-wrap {
+          position: absolute;
+          right: 12px;
+          bottom: 4px;
+          background: #1DBA7E;            
+          line-height: 16px;
+          width: 16px;
+          height: 16px;
+          border-radius: 16px;
+          text-align: center;
+
+          md-icon {
+            cursor: default;
+            color: #fff;
+            width: 12px;
+            height: 12px;
+            font-size: 12px;
+            line-height: 12px;
+            font-weight: 600;
+          }
+        }
+      }
+
+      md-icon {
+        color: #1DBA7E;
+        line-height: inherit;
+        cursor: pointer;
+      }
+    }
+  }
 }

@@ -35,7 +35,7 @@ def assert_url_conversion(sms_campaign_sends):
     sends_url_conversions = []
     # Get "sms_campaign_send_url_conversion" records
     for sms_campaign_send in sms_campaign_sends:
-        sends_url_conversions.extend(sms_campaign_send.sms_campaign_sends_url_conversions)
+        sends_url_conversions.extend(sms_campaign_send.url_conversions)
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
