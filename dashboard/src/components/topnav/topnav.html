@@ -12,6 +12,9 @@
                 </button>
             </form>
             <nav class="header__actions">
+                <a href="" class="header__notifications" ng-click="vm.logout()">
+                    <span class="fa fa-logout"> Logout</span>
+                </a>
                 <a href="" class="header__notifications--mobile">
                     <span class="header__notifications__icon icon--hamburger"></span>
                     <span class="header__notifications__count" ng-if="vm.showActivityCount && vm.activityCount">{{vm.activityCount}}</span>

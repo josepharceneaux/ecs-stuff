@@ -1,13 +1,13 @@
 {
   "local": {
     "authInfo": {
-      "baseUrl": "http://localhost:8001/v1",
+      "baseUrl": "http://127.0.0.1:8001/v1",
       "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
       "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
       "grantPath": "/oauth2/token"
     },
     "activityServiceInfo": {
-        "baseUrl": "http://localhost:8002/v1"
+        "baseUrl": "http://127.0.0.1:8002/v1"
     },
     "alertServiceInfo": {
         "baseUrl": "http://localhost"
