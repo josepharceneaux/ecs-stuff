@@ -48,7 +48,7 @@ class UserApi(Resource):
                         'phone': requested_user.phone,
                         'registration_id': requested_user.registration_id,
                         'dice_user_id': requested_user.dice_user_id,
-                        'last_read_datetime': requested_user.last_read_datetime.isoformat(),
+                        'last_read_datetime': requested_user.last_read_datetime.isoformat() if requested_user.last_read_datetime else None,
                         'thumbnail_url': requested_user.thumbnail_url
                         }}
 
