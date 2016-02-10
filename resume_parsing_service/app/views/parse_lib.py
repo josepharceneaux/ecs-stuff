@@ -23,7 +23,7 @@ import requests
 # Module Specific
 from .utils import create_parsed_resume_candidate
 from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, TalentError
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
@@ -64,9 +64,12 @@ def process_resume(parse_params):
         candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                             parse_params.get('oauth'))
         response_dict = json.loads(candidate_response)
-        if 'error' in candidate_response:
-            raise InvalidUsage(response_dict['error']['message'])
-        # TODO: Check for good response code (201 in apiary)
+        if candidate_response.status_code is not requests.codes.created:
+            # If there was an issue with candidate creation we want to forward the error message and
+            # the error code supplied by Candidate Service.
+            raise TalentError(response_dict.get('error', {}).get(
+                    'message', 'Error in candidate creating from resume service.'),
+                    error_code=candidate_response.status_code)
         candidate_id = response_dict.get('candidates')
         parsed_resume['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
     return parsed_resume
@@ -133,10 +136,10 @@ def parse_resume(file_obj, filename_str):
                 if create_pdf_status.err:
                     current_app.logger.error('PDF create error: {}'.format(create_pdf_status.err))
                     return None
-            except Exception:
-                current_app.logger.error(
-                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
-                        filename_str))
+            except Exception as e:
+                current_app.logger.exception(
+                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
+                        filename_str), e.message)
                 return None
             file_obj.seek(0)
             doc_content = file_obj.read()
