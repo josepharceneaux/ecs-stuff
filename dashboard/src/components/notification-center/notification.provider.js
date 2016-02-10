@@ -40,7 +40,11 @@
                     20: { icon: 'icon--candidate', class: 'candidate'},
                     21: { icon: 'icon--campaigns', class: 'campaigns'},
                     22: { icon: 'icon--campaigns', class: 'campaigns'},
-                    123: { icon: 'icon--rspvs', class: 'rspvs'}
+                    23: { icon: 'icon--rspvs', class: 'rspvs'},
+                    24: { icon: 'icon--campaigns', class: 'campaigns'},
+                    25: { icon: 'icon--campaigns', class: 'campaigns'},
+                    26: { icon: 'icon--campaigns', class: 'campaigns'},
+                    27: { icon: 'icon--campaigns', class: 'campaigns'}
                 };
 
             function getCss(type){
