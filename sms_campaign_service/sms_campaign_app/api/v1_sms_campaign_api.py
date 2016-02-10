@@ -520,7 +520,7 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
         """
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                                  CampaignUtils.SMS)
+                                                                   CampaignUtils.SMS)
         return dict(campaign=campaign.to_json()), 200
 
     def put(self, campaign_id):

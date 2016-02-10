@@ -6,6 +6,7 @@ from ..error_handling import InvalidUsage
 import datetime
 import time
 from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -31,6 +32,11 @@ class Activity(db.Model):
                 Activity.type == type,
                 Activity.source_id == source_id,
             )).first()
+
+    @classmethod
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
+        assert user_id
+        return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
 
 class AreaOfInterest(db.Model):

@@ -17,8 +17,7 @@ RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zl
 # Install Nginx
 RUN apt-get install -y software-properties-common python-software-properties
 RUN add-apt-repository -y ppa:nginx/stable
-RUN apt-get update
-RUN apt-get install -y nginx
+RUN apt-get update && apt-get install -y nginx
 
 # Install syslog-ng
 RUN apt-get -y install rsyslog
