@@ -75,12 +75,15 @@ class EmailCampaignApi(Resource):
                                          template_id=data['template_id'],
                                          send_time=data['send_datetime'],
                                          stop_time=data['stop_datetime'],
-                                         frequency=data['frequency'])
+                                         frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, 201
 
 
 class EmailCampaignSendApi(Resource):
+    """
+    This endpoint looks like /v1/campaigns/:id/send
+    """
 
     decorators = [require_oauth()]
 
@@ -94,7 +97,7 @@ class EmailCampaignSendApi(Resource):
         if not campaign:
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
         # remove oauth_token instead use trusted server to server calls
-        email_send = send_emails_to_campaign(campaign, new_candidates_only=False)
+        send_emails_to_campaign(campaign, new_candidates_only=False)
         return dict(message='email_campaign(id:%s) is being sent to candidates.'
                             % campaign_id), 200
 
@@ -145,5 +148,5 @@ def url_redirect(url_conversion_id):
 
 
 api = TalentApi(email_campaign_blueprint)
-api.add_resource(EmailCampaignApi, EmailCampaignEndpoints.EMAIL_CAMPAIGN, EmailCampaignEndpoints.EMAIL_CAMPAIGNS)
-api.add_resource(EmailCampaignSendApi, EmailCampaignEndpoints.SEND_CAMPAIGN)
+api.add_resource(EmailCampaignApi, EmailCampaignEndpoints.CAMPAIGN, EmailCampaignEndpoints.CAMPAIGNS)
+api.add_resource(EmailCampaignSendApi, EmailCampaignEndpoints.SEND)

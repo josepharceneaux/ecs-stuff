@@ -1139,6 +1139,10 @@ class CampaignBase(object):
         :param candidates:
         :return:
         """
+        if not candidates:
+            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
+                               % (self.campaign_type, self.campaign.id),
+                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
         return candidates
 
     def send_campaign_to_candidates(self, candidates):
@@ -1161,8 +1165,8 @@ class CampaignBase(object):
         """
         if not candidates:
             raise InvalidUsage('At least one candidate is required to send campaign.')
+        pre_processed_data = self.pre_process_celery_task(candidates)
         try:
-            pre_processed_data = self.pre_process_celery_task(candidates)
             # callback is a function which will be hit after campaign is sent to all candidates i.e.
             # once the async task is done the self.callback_campaign_sent will be called
             # When all tasks assigned to Celery complete their execution, following function

@@ -17,6 +17,7 @@ TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
+
 def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.

@@ -40,7 +40,7 @@ def test_get_all_email_campaigns(user_first, access_token_first, talent_pool, ta
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                       email_campaign_id=email_campaign.id)
     # Test GET api of email campaign
-    response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+    response = requests.get(url=EmailCampaignUrl.CAMPAIGNS,
                  headers={'Authorization': 'Bearer %s' % access_token_first})
     assert response.status_code == 200
     resp = response.json()
@@ -51,7 +51,7 @@ def test_get_all_email_campaigns(user_first, access_token_first, talent_pool, ta
         assert resp['email_campaigns']
 
     # Test GET api of email campaign
-    response = requests.get(url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+    response = requests.get(url=EmailCampaignUrl.CAMPAIGNS,
                  headers={'Authorization': 'Bearer %s' % access_token_first})
     assert response.status_code == 200
     resp = response.json()
@@ -103,7 +103,7 @@ def test_create_email_campaign(user_first, access_token_first, talent_pool):
     }
     # add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
     r = requests.post(
-        url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+        url=EmailCampaignUrl.CAMPAIGNS,
         data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % access_token_first,
                  'content-type': 'application/json'}
@@ -134,7 +134,7 @@ def test_create_email_campaign_whitespace_campaign_name(user_first, access_token
             'list_ids': [smartlist_id]
             }
     r = requests.post(
-        url=EmailCampaignUrl.EMAIL_CAMPAIGNS,
+        url=EmailCampaignUrl.CAMPAIGNS,
         data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % access_token_first,
                  'content-type': 'application/json'}

@@ -127,9 +127,10 @@ class TestSendSmsCampaign(object):
         response_post = requests.post(
             self.URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 0, sms_campaign_of_current_user)
+        assert response_post.status_code == InvalidUsage.http_status_code()
+        json_resp = response_post.json()['error']
+        assert str(sms_campaign_of_current_user.id) in json_resp['message']
+        assert json_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
             self, user_first, access_token_first, smartlist_for_not_scheduled_campaign,

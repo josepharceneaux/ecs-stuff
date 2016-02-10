@@ -9,6 +9,8 @@ from celery import chord
 from sqlalchemy import and_
 from sqlalchemy import desc
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.campaign_services.custom_errors import CampaignException
+from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
                                                   get_candidates_of_smartlist, TRACKING_URL_TYPE)
 from email_campaign_service.email_campaign_app import logger, celery_app, app
@@ -18,12 +20,14 @@ from email_campaign_service.common.models.email_marketing import (EmailCampaign,
                                                                   EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request, \
+    JSON_CONTENT_TYPE_HEADER
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.amazon_ses import send_email
-from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity, ActivityTypes
+from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity
+from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl, CandidateApiUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
@@ -51,7 +55,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
 def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subject,
                           email_from, email_reply_to, email_body_html,
                           email_body_text, list_ids, email_client_id=None,
-                          frequency=None,
+                          frequency_id=None,
                           send_time=None,
                           stop_time=None,
                           template_id=None):
@@ -61,8 +65,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     :return: newly created email_campaign's id
     """
-    frequency_obj = Frequency.get_frequency_from_name(frequency) if frequency else None
-
+    frequency = Frequency.get_seconds_from_id(frequency_id)
     email_campaign = EmailCampaign(name=email_campaign_name,
                                    user_id=user_id,
                                    is_hidden=0,
@@ -73,22 +76,24 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                                    email_body_text=email_body_text,
                                    send_time=send_time,
                                    stop_time=stop_time,
-                                   frequency_id=frequency_obj.id if frequency_obj else None,
+                                   frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id
                                    )
 
     db.session.add(email_campaign)
     db.session.commit()
 
-    # Add activity
-    add_activity(user_id=user_id,
-                 activity_type=ActivityTypes.CAMPAIGN_CREATE,
-                 source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
-                 params=dict(id=email_campaign.id, name=email_campaign_name))
-
+    try:
+        # Add activity
+        add_activity(user_id=user_id,
+                     activity_type=ActivityMessageIds.CAMPAIGN_CREATE,
+                     source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
+                     params=dict(id=email_campaign.id, name=email_campaign_name))
+    except Exception:
+        logger.exception('Error occurred while creating activity for campaign creation.')
     # create email_campaign_smartlist record
     create_email_campaign_smartlists(smartlist_ids=list_ids,
-                                      email_campaign_id=email_campaign.id)
+                                     email_campaign_id=email_campaign.id)
 
     # if it's a client from api, we don't schedule campaign sends, we create it on the fly.
     # also we enable tracking by default for the clients.
@@ -103,35 +108,35 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         return {'id': email_campaign.id}
 
     # Schedule the sending of emails & update email_campaign scheduler fields
-    schedule_task_params = {
-        "url": EmailCampaignUrl.SEND_CAMPAIGN % email_campaign.id,
-        "content_type": "application/json",
-    }
-    if frequency_obj and frequency_obj.name != 'once':
-        schedule_task_params["frequency"] = frequency_obj.in_seconds()
+    schedule_task_params = {"url": EmailCampaignUrl.SEND % email_campaign.id}
+    schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
+    if frequency:  # It means its a periodic Job
+        schedule_task_params["frequency"] = frequency
         schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
-    elif frequency_obj and frequency_obj.name == 'once':
+    else:  # It means its a one time Job
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["start_datetime"] = send_time
-        schedule_task_params["end_datetime"] = send_time
-    else:
-        schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["run_datetime"] = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).strftime(
-            "%Y-%m-%d %H:%M:%S")
+        schedule_task_params["run_datetime"] = \
+            (datetime.datetime.utcnow()
+             + datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
 
     schedule_task_params['is_jwt_request'] = True
-
     # Schedule email campaign; call Scheduler API
-    headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
+    headers = {'Authorization': oauth_token}
+    headers.update(JSON_CONTENT_TYPE_HEADER)
     try:
-        scheduler_response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(schedule_task_params))
+        scheduler_response = http_request('post', SchedulerApiUrl.TASKS,
+                                          headers=headers,
+                                          data=json.dumps(schedule_task_params),
+                                          user_id=user_id)
     except Exception as ex:
         logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
         raise
     if scheduler_response.status_code != 201:
-        raise InternalServerError("Error occurred while scheduling email campaign. Status Code: %s, Response: %s" % (scheduler_response.status_code, scheduler_response.json()))
+        raise InternalServerError("Error occurred while scheduling email campaign. "
+                                  "Status Code: %s, Response: %s"
+                                  % (scheduler_response.status_code, scheduler_response.json()))
     scheduler_id = scheduler_response.json()['id']
     # add scheduler task id to email_campaign.
     email_campaign.scheduler_task_id = scheduler_id
@@ -158,7 +163,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
                                                                            new_candidates_only=new_candidates_only)
 
     # Check if the smart list has more than 0 candidates
-    if len(candidate_ids_and_emails) > 0:
+    if candidate_ids_and_emails:
         email_notification_to_admins(
             subject='Marketing batch about to send',
             body="Marketing email batch about to send, campaign.name=%s, user=%s, "
@@ -172,7 +177,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
 
         # Add activity
         add_activity(user_id=user.id,
-                     activity_type=ActivityTypes.CAMPAIGN_SEND,
+                     activity_type=ActivityMessageIds.CAMPAIGN_SEND,
                      source_id=campaign.id, source_table=EmailCampaign.__tablename__,
                      params=dict(id=campaign.id, name=campaign.name,
                                  num_candidates=len(candidate_ids_and_emails)))
@@ -191,6 +196,10 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, 
         send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
                                     blast_datetime, campaign,
                                     user, new_candidates_only)
+    else:
+        raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
+                           % campaign.id,
+                           error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
@@ -225,6 +234,7 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
     try:
         # Update Candidate Documents in Amazon Cloud Search
         headers = CampaignBase.get_authorization_header(user.id)
+        headers.update(JSON_CONTENT_TYPE_HEADER)
         with app.app_context():
             response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
                                      data=json.dumps({'candidate_ids': map(itemgetter(0),
@@ -233,7 +243,6 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
         if response.status_code != 204:
             raise Exception("Status Code: %s Response: %s"
                             % (response.status_code, response.json()))
-
     except Exception as e:
         error_message = "Couldn't update Candidate Documents in Amazon Cloud Search because: %s" \
                         % e.message
@@ -254,17 +263,21 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id, smartlist_ids_only=True)
+        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id,
+                                                                     smartlist_ids_only=True)
     # Get candidate ids
     all_candidate_ids = []
+    if not list_ids:
+        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id)
     for list_id in list_ids:
         # Get candidates present in smartlist
         smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)
         # gather all candidates from various smartlists
         all_candidate_ids.extend(smartlist_candidate_ids)
-
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
-
+    if not all_candidate_ids:
+        raise InvalidUsage('No candidates found for smartlist_ids %s.' % list_ids,
+                           error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
     if campaign.is_subscription:
         # If the campaign is a subscription campaign,
         # only get candidates subscribed to the campaign's frequency
@@ -302,7 +315,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         subscribed_candidate_ids = new_candidate_ids
 
     # Get emails
-    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id, CandidateEmail.address) \
+    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
+                                                              CandidateEmail.address) \
         .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
         .group_by(CandidateEmail.address)
     # list of tuples (candidate id, email address)
@@ -361,7 +375,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                email_campaign_send_id=email_campaign_send.id)
     # Only in case of production we should send mails to candidate address else mails will go to test account.
     # To avoid spamming actual email addresses, while testing.
-    if os.getenv(TalentConfigKeys.ENV_KEY) is 'prod':
+    if os.getenv(TalentConfigKeys.ENV_KEY) is not 'prod':
         to_addresses = candidate_address
     else:
         # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
@@ -401,10 +415,13 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         db.session.commit()
         # Add activity
         try:
-            add_activity(user_id=user.id, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
-                         source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
-                         params=dict(candidateId=candidate.id, campaign_name=campaign.name,
-                                     candidate_name=candidate.formatted_name))
+            headers = CampaignBase.get_authorization_header(user.id)
+            CampaignBase.create_activity(user.id,
+                                         _type=ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                         source=email_campaign_send,
+                                         params=dict(campaign_name=campaign.name,
+                                                     candidate_name=candidate.name),
+                                         auth_header=headers)
         except Exception:
             logger.exception('Error occurred while creating campaign send activity.')
     # Update blast
@@ -471,12 +488,13 @@ def update_hit_count(url_conversion):
         if candidate:  # If candidate has been deleted, don't make the activity
             # Add activity
             add_activity(user_id="?",
-                         activity_type=ActivityTypes.CAMPAIGN_EMAIL_OPEN if is_open else ActivityTypes.CAMPAIGN_EMAIL_CLICK,
+                         activity_type=ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
                          source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
                          params=dict(candidateId=candidate.id, campaign_name=email_campaign_send.email_campaign.name,
                                      candidate_name=candidate.formatted_name))
         else:
-            logger.info("Tried performing URL redirect for nonexistent candidate: %s. email_campaign_send: %s",
+            logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
+                        "email_campaign_send: %s",
                         email_campaign_send.candidate_id, email_campaign_send.id)
 
         # Update email_campaign_blast entry only if it's a new hit
@@ -514,7 +532,7 @@ def get_subscription_preference(candidate_id):
     non_custom_pref = email_prefs.filter(
         CandidateSubscriptionPreference.frequency_id.in_(non_custom_frequency_ids)).first()  # Other freqs.
     null_pref = email_prefs.filter(CandidateSubscriptionPreference.frequency_id == None).first()
-    custom_frequency = Frequency.get_frequency_from_name('custom')
+    custom_frequency = Frequency.get_seconds_from_id(Frequency.CUSTOM)
     custom_pref = email_prefs.filter(
         CandidateSubscriptionPreference.frequency_id == custom_frequency.id).first()  # Custom freq.
     if non_custom_pref:

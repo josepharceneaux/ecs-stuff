@@ -5,7 +5,7 @@ from celery import Celery
 from healthcheck import HealthCheck
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import HEALTH_CHECK
-from email_campaign_service.common.utils.models_utils import init_app
+from email_campaign_service.common.utils.models_utils import init_talent_app
 from email_campaign_service.common.talent_config_manager import (load_gettalent_config,
                                                                  TalentConfigKeys)
 
@@ -17,7 +17,7 @@ logger = app.config[TalentConfigKeys.LOGGER]
 
 try:
     logger.debug("Email campaign service: Register error handlers")
-    app = init_app(app, logger)
+    app = init_talent_app(app, logger)
 
     # Initialize Celery app
     celery_app = Celery(app, broker=app.config['REDIS_URL'],
