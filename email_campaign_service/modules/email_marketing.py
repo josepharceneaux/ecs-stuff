@@ -9,6 +9,7 @@ from celery import chord
 from sqlalchemy import and_
 from sqlalchemy import desc
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
@@ -375,7 +376,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                                                email_campaign_send_id=email_campaign_send.id)
     # Only in case of production we should send mails to candidate address else mails will go to test account.
     # To avoid spamming actual email addresses, while testing.
-    if os.getenv(TalentConfigKeys.ENV_KEY) is not 'prod':
+    if not CampaignUtils.IS_DEV:
         to_addresses = candidate_address
     else:
         # In dev/staging, only send emails to getTalent users, in case we're impersonating a customer.
