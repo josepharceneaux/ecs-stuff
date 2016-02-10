@@ -8,38 +8,12 @@
                 <div class="feed__item" ng-hide="vm.activities.length">
                     <p>No activity</p>
                 </div>
-                <div class="feed__item" ng-repeat="activity in vm.activities">
-                    <!--<span class="feed__item__sub">{{'UserId: ' + activity.user_id + ' SourceTable: '  + activity.source_table}}</span>-->
+                <div class="feed__item" ng-repeat="activity in vm.activities | orderBy: '-id'">
                     <span ng-class="activity.icon"></span>
                     <span class="fa fa-remove pull-right" ng-click="vm.removeSingleActivity(activity.id)"></span>
                     <span class="feed__item__sub" am-time-ago="activity.added_time"></span>
                     <div ng-bind-html="activity.feedMessage || 'No message'"><a href="#">{{ activity.user_name }}</a> just added 22 candidates to <a href="#">Java Developers</a></div>
                 </div>
-                <!--<div class="feed__item">-->
-                    <!--<span class="icon&#45;&#45;people"></span>-->
-                    <!--<span class="feed__item__sub">5 Minutes ago</span>-->
-                    <!--<p><a href="#">Chris Chang</a> just added 10 candidates to your<a href="#">talent pool</a></p>-->
-                <!--</div>-->
-                <!--<div class="feed__item">-->
-                    <!--<span class="icon&#45;&#45;announcements"></span>-->
-                    <!--<span class="feed__item__sub">2hrs ago</span>-->
-                    <!--<p><a href="#">Lenny Seager</a> responded to your email</p>-->
-                <!--</div>-->
-                <!--<div class="feed__item">-->
-                    <!--<span class="icon&#45;&#45;list"></span>-->
-                    <!--<span class="feed__item__sub">4hrs ago</span>-->
-                    <!--<p><a href="#">Mike Gueyne</a> just accepted an <a href="#">event invitation</a></p>-->
-                <!--</div>-->
-                <!--<div class="feed__item">-->
-                    <!--<span class="icon&#45;&#45;people"></span>-->
-                    <!--<span class="feed__item__sub">5 Hours ago</span>-->
-                    <!--<p><a href="#">Lauren Freeman</a> just added 5 candidates to <a href="#">iOS Developers</a></p>-->
-                <!--</div>-->
-                <!--<div class="feed__item">-->
-                    <!--<span class="icon&#45;&#45;people"></span>-->
-                    <!--<span class="feed__item__sub">8 Minutes ago</span>-->
-                    <!--<p><a href="#">Rachel Thompson</a> just added 5 candidates to <a href="#">Java Developers</a></p>-->
-                <!--</div>-->
             </div>
         </div>
     </div>

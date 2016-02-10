@@ -58,12 +58,54 @@ def get_activities(page):
 @mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
 @require_oauth()
 def get_activity_messages():
+    """
+    This endpoint returns a dictionary where keys are activity type ids and values are
+    raw messages for that kind of activities.
+
+    .. Response::
+
+        {
+            1: [
+                "%(username)s uploaded resume of candidate %(formattedName)s",
+                "%(username)s uploaded %(count)s candidate resumes",
+                "candidate.png" ],
+
+            2: [
+                "%(username)s updated candidate %(formattedName)s",
+                "%(username)s updated %(count)s candidates",
+                "candidate.png" ],
+            .
+            .
+            .
+        }
+    :return:
+    """
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
 @mod.route(ActivityApi.LAST_READ, methods=['GET', 'PUT'])
 @require_oauth()
 def get_user_last_activity_read_datetime():
+    """
+    This endpoint returns or update last_read_datetime for current user.
+    last_read_datetime helps to know what are the activities that user has not seen yet.
+    url: /v1/last-read
+
+    To send a put request (to update this time field), send JSON data as payload of PUT request
+
+    data = {
+            "last_read_datetime": "2016-02-10T12:12:12.000"
+        }
+
+
+    .. Response::
+
+        for both get and put request
+            {
+                "last_read_datetime": "2016-02-10 20:20:20"
+            }
+    :return: dict
+    """
     user = request.user
     if request.method == 'GET':
         last_read_datetime = user.last_read_datetime
@@ -73,7 +115,11 @@ def get_user_last_activity_read_datetime():
         if isinstance(data, dict):
             last_read_datetime = data.get('last_read_datetime')
             if last_read_datetime:
-                last_read_datetime = datetime.strptime(last_read_datetime, ISO_FORMAT)
+                try:
+                    last_read_datetime = datetime.strptime(last_read_datetime, ISO_FORMAT)
+                except:
+                    raise InvalidUsage('last_read_datetime is not in valid format. '
+                                       'Required format: %s' % ISO_FORMAT)
                 user.last_read_datetime = last_read_datetime
                 db.session.commit()
                 return jsonify(dict(last_read_datetime=last_read_datetime))

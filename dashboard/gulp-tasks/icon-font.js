@@ -51,7 +51,7 @@ module.exports = function (config) {
                 normalize          : true,
                 centerHorizontally : true,
                 formats            : ['ttf', 'eot', 'woff', 'woff2'],
-                autohint           : false,
+                autohint           : true,
                 timestamp          : Math.round(Date.now() / 1000),
             }))
             .on('glyphs', function (glyphs, options) {

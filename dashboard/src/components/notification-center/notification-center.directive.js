@@ -52,8 +52,8 @@
         vm.activityIds = localStorage.getObject('activityIds') || {};
 
         // it contains only ids of activities which have been shown as toasts. So if server
-        // sends same activities that have been shown as toast then don't show that toast
-        // for those that have ids in this collection
+        // sends same activities that have been shown as toast then don't show the toast
+        // for those activities that have ids in this collection
         vm.activityToastIds = localStorage.getObject('activityToastIds') || {};
 
         // contains activities that needed to be shown as toast.
@@ -62,10 +62,13 @@
         // flag to determine whether to show toasts or not
         vm.hideNotifications = false;
 
-        // when user saw activities last time
+        // last time, when user opened / saw activities in activity feed
         vm.lastReadTime = false;
 
+        // function to remove single ativity from vm.activities and vm.activityIds
         vm.removeSingleActivity = removeSingleActivity;
+
+        // function to toggle activityFeed , open / close
         vm.toggleNotificationCenter = notificationCenterService.toggle;
 
         activate();
@@ -92,7 +95,9 @@
         function init() {
             notificationCenterService.addListener('openStateChanged', setOpen);
             notificationCenterService.setOpen(vm.isOpen);
+            // get activities from localStorage and store in vm.activities
             initActivities();
+            // get user lastReadTime and after that get activities that occurred after that time
             getLastReadTime().then(function(){
                 getActivity();
             });
@@ -136,29 +141,25 @@
             });
         }
 
-        function getLastReadTime(){
-            return notificationService.getLastReadTime().then(function(res){
-                vm.lastReadTime = moment(res.last_read_datetime).toDate();
-                return vm.lastReadTime;
-            })
+        function initActivities(){
+            // populate vm.activities with activities from localStorage
+            vm.activityIds = localStorage.getObject('activityIds') || {};
+            for (var id in vm.activityIds){
+                vm.activities.push(vm.activityIds[id]);
+            }
         }
 
-        function setLastReadTime(){
-            return notificationService.setLastReadTime().then(function(res){
-                vm.lastReadTime = moment(res.last_read_datetime).toDate();
-                return vm.lastReadTime;
-            })
-        }
 
-        function getActivityMessages(){
-            return notificationService.getActivityMessages()
-                .then(function(res){
-                    vm.messages = res.messages;
-                    return vm.messages;
-                });
-        }
 
         function getFormattedMessage(activity){
+            /** messages from server are just a template for a specific type of activity message
+                we need to format this message using activity data
+                message from server look like
+                "%(username)s created an %(campaign_type)s campaign: %(campaign_name)s"
+                and after formatting, it looks like
+                "Zohaib Ijaz created a Push campaign : Digital Ocean"
+            **/
+
             var type = activity.type;
             var params = activity.params;
             if (activity.type in vm.messages){
@@ -175,15 +176,8 @@
             return '';
         }
 
-        function initActivities(){
-            vm.activityIds = localStorage.getObject('activityIds') || {};
-            for (var id in vm.activityIds){
-                vm.activities.push(vm.activityIds[id]);
-            }
-
-        }
-
         function createLink(type, params, key, activity){
+            // create clickable links to related object e.g. campaign or candidate
             // in case of a candidate added in smartlist
             if (type === 10 && 'candidateId' in params && key === 'formattedName'){
 
@@ -203,12 +197,11 @@
         }
 
         function showToast(){
-
+            // show toast messages for activities when activityFeed is closed.
             vm.activityToastIds = localStorage.getObject('activityToastIds') || {};
             var id = Object.keys(vm.newActivityIds).pop();
             if (id && !(id in vm.activityToastIds)){
                 var activity = vm.newActivityIds[id];
-
                 if (!vm.hideNotifications && !vm.isBarOpen){
                     delete vm.newActivityIds[id];
                     vm.activityToastIds[id] = id;
@@ -226,6 +219,7 @@
                     }
                 }
             } else if(id){
+                // if toast has already been shown, remove it from newActivityIds.
                 delete vm.newActivityIds[id];
                 if (Object.keys(vm.newActivityIds).length){
                     showToast();
@@ -234,6 +228,7 @@
         }
 
         function removeSingleActivity(id){
+            // remove activity from vm.activities and from localStorage
             vm.activities.forEach(function(activity, index){
                 if (activity.id == id){
                     vm.activities.splice(index, 1);
@@ -245,6 +240,32 @@
                     localStorage.setObject('activityToastIds',vm.activityToastIds);
                 }
             })
+        }
+
+        function getLastReadTime(){
+            // get user last_read_datetime, last time when user saw activities in activityFeed
+            return notificationService.getLastReadTime().then(function(res){
+                vm.lastReadTime = moment(res.last_read_datetime).toDate();
+                return vm.lastReadTime;
+            })
+        }
+
+        function setLastReadTime(){
+            // updated last_read_datetime for user on server
+            return notificationService.setLastReadTime().then(function(res){
+                vm.lastReadTime = moment(res.last_read_datetime).toDate();
+                return vm.lastReadTime;
+            })
+        }
+
+        function getActivityMessages(){
+            // get a dictionary / object that contains keys as message ids and values as
+            // messages for corresponding type of activity
+            return notificationService.getActivityMessages()
+                .then(function(res){
+                    vm.messages = res.messages;
+                    return vm.messages;
+                });
         }
 
         function setOpen(value) {
