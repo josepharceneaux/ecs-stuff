@@ -5,13 +5,13 @@
                 <h3>Activity Feed</h3>
             </header>
             <div class="feed__content">
-                <div class="feed__item" ng-hide="vm.activity.length">
+                <div class="feed__item" ng-hide="vm.activities.length">
                     <p>No activity</p>
                 </div>
-                <div class="feed__item" ng-repeat="activity in vm.activity">
+                <div class="feed__item" ng-repeat="activity in vm.activities">
                     <!--<span class="feed__item__sub">{{'UserId: ' + activity.user_id + ' SourceTable: '  + activity.source_table}}</span>-->
                     <span ng-class="activity.icon"></span>
-                    <span class="fa fa-remove pull-right" ng-click="vm.removeActivity(activity.id)"></span>
+                    <span class="fa fa-remove pull-right" ng-click="vm.removeSingleActivity(activity.id)"></span>
                     <span class="feed__item__sub" am-time-ago="activity.added_time"></span>
                     <div ng-bind-html="activity.feedMessage || 'No message'"><a href="#">{{ activity.user_name }}</a> just added 22 candidates to <a href="#">Java Developers</a></div>
                 </div>

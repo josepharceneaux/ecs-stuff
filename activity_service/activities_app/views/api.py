@@ -1,6 +1,8 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
+from activity_service.common.error_handling import InvalidUsage
+
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -59,6 +61,28 @@ def get_activity_messages():
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
+@mod.route(ActivityApi.LAST_READ, methods=['GET', 'PUT'])
+@require_oauth()
+def get_user_last_activity_read_datetime():
+    user = request.user
+    if request.method == 'GET':
+        last_read_datetime = user.last_read_datetime
+        return jsonify(dict(last_read_datetime=last_read_datetime))
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if isinstance(data, dict):
+            last_read_datetime = data.get('last_read_datetime')
+            if last_read_datetime:
+                last_read_datetime = datetime.strptime(last_read_datetime, ISO_FORMAT)
+                user.last_read_datetime = last_read_datetime
+                db.session.commit()
+                return jsonify(dict(last_read_datetime=last_read_datetime))
+            else:
+                raise InvalidUsage('last_read_datetime should have a valid datetime value')
+        else:
+            raise InvalidUsage('Kindly send valid json data')
+
+
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
@@ -82,7 +106,8 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         type=type_,
         source_table=source_table,
         source_id=source_id,
-        params=json.dumps(params) if params else None
+        params=json.dumps(params) if params else None,
+        added_time=datetime.now()
     )
     try:
         db.session.add(activity)
@@ -212,7 +237,8 @@ class TalentActivityManager(object):
         filters = [Activity.user_id.in_(flattened_user_ids)]
         if start_datetime: filters.append(Activity.added_time > start_datetime)
         if end_datetime: filters.append(Activity.added_time < end_datetime)
-        activities = Activity.query.filter(*filters).paginate(page, post_qty, False)
+        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())\
+            .paginate(page, post_qty, False)
         activities_response = {
             'total_count': activities.total,
             'items': [{

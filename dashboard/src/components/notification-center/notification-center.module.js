@@ -2,8 +2,6 @@
     'use strict';
 
     angular.module('app.notificationCenter', [
-        'app.core',
-        'ngCookies',
-        'angularMoment'
+        'app.core'
     ]);
 })();

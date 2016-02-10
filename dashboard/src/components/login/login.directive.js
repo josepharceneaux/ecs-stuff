@@ -50,10 +50,10 @@
                 username: vm.username,
                 password: vm.password
             }).then(function() {
-                if (angular.isDefined($rootScope.redirectTo)) {
+                if (angular.isDefined($rootScope.redirectTo) && $rootScope.redirectTo.state.name !== 'login') {
 
                     $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
-                    
+
                 } else {
 
                     $state.go('dashboard');

@@ -53,18 +53,28 @@
             return {
                 getActivity: getActivity,
                 getActivityMessages: getActivityMessages,
+                getLastReadTime: getLastReadTime,
+                setLastReadTime: setLastReadTime,
                 getCss: getCss
             };
 
-            function getActivity(page, aggregate) {
+            function getActivity(lastReadTime, page) {
                 var params = {};
                 page = page || 1;
-                aggregate = aggregate || 1;
-                //params['aggregate'] = aggregate;
+                params['start_time'] = moment(lastReadTime).format('YYYY-MM-DDTHH:mm:ss.sss');
                 return notificationService.all('activities').customGETLIST(page, params);
             }
             function getActivityMessages() {
                 return notificationService.all('messages').getList();
+            }
+            function getLastReadTime() {
+                return notificationService.all('last-read').customGET();
+            }
+            function setLastReadTime(lastReadTime) {
+                var params = {
+                    last_read_datetime: moment(lastReadTime).utc().format('YYYY-MM-DDTHH:mm:ss.sss')
+                };
+                return notificationService.all('last-read').customPUT(params);
             }
         }
     }

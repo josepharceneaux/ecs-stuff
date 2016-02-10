@@ -35,14 +35,14 @@
         vm.logout = logout;
         vm.notifyUser = notifyUser;
         vm.createSystemAlert = createSystemAlert;
-        vm.toggleNotificationCenter = notificationCenterService.toggle;
+        vm.toggleNotificationCenter = toggleNotificationCenter;
         vm.activityCount = '';
-        //vm.showActivityCount = true;
-        var showActivityCount = $cookies.get('showActivityCount');
-        vm.showActivityCount = typeof showActivityCount == 'undefined'? true: eval(showActivityCount);
+        vm.hideActivityCount = hideActivityCount;
+        vm.showActivityCount = showActivityCount;
         init();
 
         function init() {
+            vm.isActivityCountHidden = $cookies.get('isActivityCountHidden');
             vm.talentPools = [
                 {
                     id: '0cc175b9c0f1b6a831c399e269772661',
@@ -90,23 +90,37 @@
             ];
 
             notificationCenterService.addListener('activityCountChanged', function(count){
+                vm.isActivityCountHidden = $cookies.getObject('isActivityCountHidden');
                 vm.activityCount = count;
             });
             vm.closeFeedOpenedListerner = notificationCenterService.addListener('opened', function(){
-                vm.showActivityCount = false;
-                $cookies.put('showActivityCount', false);
+                vm.hideActivityCount();
                 vm.closeFeedOpenedListerner();
             });
         }
 
         function logout() {
-            $cookies.put('showActivityCount', true);
-            notificationCenterService.broadcast('clearActivity');
-            toastr.remove();
-            OAuth.revokeToken();
-            $state.go('login');
+            $cookies.put('isActivityCountHidden', false);
+            notificationCenterService.clearActivity();
+            notificationCenterService.removeAllToasts();
+            OAuth.revokeToken().then(function () {
+                $state.go('login');
+            });
         }
 
+        function hideActivityCount(){
+            vm.isActivityCountHidden = true;
+            $cookies.put('isActivityCountHidden', true);
+        }
+        function showActivityCount(){
+            vm.isActivityCountHidden = false;
+            $cookies.put('isActivityCountHidden', false);
+        }
+
+        function toggleNotificationCenter () {
+            notificationCenterService.toggle();
+            hideActivityCount();
+        }
         function notifyUser(type) {
             switch (type) {
                 case 'success':

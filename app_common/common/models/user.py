@@ -56,7 +56,6 @@ class User(db.Model):
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
-    culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
     activities = db.relationship('Activity', backref='user', lazy='dynamic')
 
     @staticmethod
