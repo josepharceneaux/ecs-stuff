@@ -25,8 +25,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
         raise InternalServerError("Resume Parsing service cannot reach Candidates API in "
                                   "create_parsed_resume_candidate. Exception: {}".format(
                                       error.message))
-    response_body = candidate_response.content
-    return response_body
+    return candidate_response
 
 
 #TODO: write tests for this.

@@ -63,7 +63,7 @@ def process_resume(parse_params):
         parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
         candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                             parse_params.get('oauth'))
-        response_dict = json.loads(candidate_response)
+        response_dict = json.loads(candidate_response.content)
         if candidate_response.status_code is not requests.codes.created:
             # If there was an issue with candidate creation we want to forward the error message and
             # the error code supplied by Candidate Service.
