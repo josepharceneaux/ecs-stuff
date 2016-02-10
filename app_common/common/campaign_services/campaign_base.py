@@ -88,17 +88,16 @@ class CampaignBase(object):
             e.g. in case of SMS campaign, activity will appear as
                 'Nikola Tesla' created an SMS campaign "We are hiring".
 
-    * get_campaign_and_scheduled_task(cls. campaign_id, user_id)
-        This validates that the current user is an owner of requested campaign.
+    * get_campaign_and_scheduled_task(cls. campaign_id, current_user)
+        This validates that the requested campaign belongs to logged-in user's domain.
         It also return the data of scheduler_task from scheduler_service if the
         campaign was scheduled.
 
-    * validate_ownership_of_campaign(campaign_id, current_user_id): [static]
-        This method verifies if current user is an owner of given campaign or not.
-        If not it raises Forbidden error, otherwise it returns True, Child classes will
-        implement this.
+    * get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
+        This method verifies if current campaign lies in user's domain.
+        If not it raises Forbidden error, otherwise it returns campaign object.
 
-    * get_user_id_of_owner(campaign_obj, current_user_id): [abstract][static]
+    * get_domain_id_of_campaign(campaign_obj, current_user_id): [abstract][static]
         This returns id of user who created the given campaign obj
 
     * delete(self, campaign_id)
@@ -353,7 +352,7 @@ class CampaignBase(object):
         """
         Here we will update the existing record.
         This does
-            1) validates if logged-in user is the owner/creator of given campaign_id and gets the
+            1) validates if campaign belongs to logged-in user's domain and gets the
                 campaign object
             2) Validates UI data
             3) Updates the respective campaign record in database
@@ -366,8 +365,8 @@ class CampaignBase(object):
         :return: invalid_smartlist_ids
         :rtype: dict
         """
-        campaign_obj = self.validate_ownership_of_campaign(campaign_id, self.user.id,
-                                                           self.campaign_type)
+        campaign_obj = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
+                                                            self.campaign_type)
         _, validated_data, invalid_smartlist_ids = self.pre_process_save_or_update(form_data)
         if not campaign_obj:
             raise ResourceNotFound('%s campaign(id=%s) not found.' % (self.campaign_type,
@@ -433,79 +432,94 @@ class CampaignBase(object):
                             auth_header=oauth_header)
 
     @classmethod
-    def get_campaign_and_scheduled_task(cls, campaign_id, user_id, campaign_type):
+    def get_campaign_and_scheduled_task(cls, campaign_id, current_user, campaign_type):
         """
-        1) verifies that current user is owner of given campaign_id
-        2) If campaign has scheduler_task_id, it gets the scheduled task data from scheduler_service
+        1) verifies that requested camapign belongs to logged-in user's domain
+        2) If campaign has scheduler_task_id, it gets the scheduled task data
+            from scheduler_service
         :param campaign_id: id of campaign
-        :param user_id: id of user
+        :param current_user: logged-in user's object
+        :param campaign_type: type of campaign
+        :type campaign_id: int | long
+        :type current_user: User
+        :type campaign_type: str
+        :exception: Invalid usage
         :return: This returns the campaign obj, scheduled task data and oauth_header
         :rtype: tuple
-        :exception: Invalid usage
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, user_id=user_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
+        raise_if_not_instance_of(current_user, User)
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
-        campaign_obj = cls.validate_ownership_of_campaign(campaign_id, user_id, campaign_type)
+        campaign_obj = cls.get_campaign_if_domain_is_valid(campaign_id, current_user,
+                                                           campaign_type)
         CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
-        oauth_header = cls.get_authorization_header(user_id)
+        oauth_header = cls.get_authorization_header(current_user.id)
         # check if campaign is already scheduled
-        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id, oauth_header)
+        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
+                                                  oauth_header)
         return campaign_obj, scheduled_task, oauth_header
 
     @classmethod
-    def validate_ownership_of_campaign(cls, campaign_id, current_user_id,
-                                       campaign_type):
+    def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
         """
-        This function returns True if the current user is an owner for given
-        campaign_id. Otherwise it raises the Forbidden error. Child classes
-        will implement this
-        according to their database tables.
+        This function returns True if campaign lies in the domain of logged-in user. Otherwise
+        it raises the Forbidden error.
         :param campaign_id: id of campaign form getTalent database
-        :param current_user_id: Id of current user
+        :param current_user: logged in user's object
+        :type campaign_id: int | long
+        :type current_user: User
         :exception: InvalidUsage
         :exception: ResourceNotFound
         :exception: ForbiddenError
-        :return: Campaign obj if current user is an owner for given campaign.
+        :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
-        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user_id,
+        raise_if_not_instance_of(current_user, User)
+        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
                                                   campaign_type)
-        campaign_user_id = cls.get_user_id_of_owner(campaign_obj,
-                                                    current_user_id)
-        if campaign_user_id == current_user_id:
+        domain_id_of_campaign = cls.get_domain_id_of_campaign(campaign_obj,
+                                                              current_user.domain_id)
+        if domain_id_of_campaign == current_user.domain_id:
             return campaign_obj
         else:
-            raise ForbiddenError('User(id:%s) is not the owner of %s(id:%s)'
-                                 % (current_user_id, campaign_obj.__tablename__,
-                                    campaign_obj.id))
+            raise ForbiddenError('%s(id:%s) does not belong to user(id:%s)`s domain.'
+                                 % (campaign_obj.__tablename__, campaign_obj.id,
+                                    current_user.id))
 
     @staticmethod
-    @abstractmethod
-    def get_user_id_of_owner(campaign_obj, current_user_id):
+    def get_domain_id_of_campaign(campaign_obj, current_user_id):
         """
-        This returns the id of user who created the given campaign. Child classes
-        will implement this as per their requirement.
-        For example in case of SMS campaign, we have user_phone_id
-        in campaign table and in case of Push campaign we have user_id in campaign table.
+        This returns the domain id of user who created the given campaign.
+        Most of the campaigns are created with user_id as foreign key(e.g. Email campaigns and
+        Push campaigns). So, in this method, we return domain id of user using relationship of
+        flask SQLAlchemy.
+        If some other campaign (e,g. SMS campaign) has no user_id in it, then that camapign
+        has to override this method as per its requirement.
         :param campaign_obj: campaign object
         :param current_user_id: id of logged-in user
         :type campaign_obj: SmsCampaign
         :type current_user_id: int | long
         :exception: Invalid Usage
-        :return: id of owner user of given campaign
+        :return: id of domain of user who created given campaign
         :rtype: int | long
 
         **See Also**
-            .. see also:: get_user_id_of_owner() in SmsCampaignBase class.
+            .. see also:: get_domain_id_of_campaign() in SmsCampaignBase class.
         """
-        pass
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
+        if not campaign_obj.user_id:
+            raise ForbiddenError('%s(id:%s) has no user_id associated. User(id:%s)'
+                                 % (campaign_obj.__tablename__, campaign_obj.id,
+                                    current_user_id))
+        # using relationship
+        return campaign_obj.user.doamin_id
 
     def delete(self, campaign_id):
         """
         This function is used to delete the campaign in following given steps.
-        1- Calls get_campaign_and_scheduled_task() method to validate that current user is an
-            owner of given campaign id and gets
+        1- Calls get_campaign_and_scheduled_task() method to validate that requested campaign
+         belongs to logged-in user's domain and gets
             1) campaign object and 2) scheduled task from scheduler_service.
         2- If campaign is scheduled, then do the following steps:
             2.1- Calls get_authorization_header() to get auth header (which is used to make
@@ -544,7 +558,7 @@ class CampaignBase(object):
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # get campaign_obj, scheduled_task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = \
-            self.get_campaign_and_scheduled_task(campaign_id, self.user.id, self.campaign_type)
+            self.get_campaign_and_scheduled_task(campaign_id, self.user, self.campaign_type)
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
@@ -597,7 +611,7 @@ class CampaignBase(object):
         Here we have common functionality for scheduling/re-scheduling a campaign.
         Before making HTTP POST/GET call on scheduler_service, we do the following:
 
-        1- Check if current user is an owner of given campaign_id
+        1- Check if requested campaign belongs to logged-in user's domain
         2- Check if given campaign is already scheduled or not
         3- If campaign is already scheduled and requested method is POST, we raise Forbidden error
             because updating already scheduled campaign should be through PUT request
@@ -626,7 +640,7 @@ class CampaignBase(object):
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = \
-            cls.get_campaign_and_scheduled_task(campaign_id, request.user.id,
+            cls.get_campaign_and_scheduled_task(campaign_id, request.user,
                                                 campaign_type)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
@@ -836,7 +850,7 @@ class CampaignBase(object):
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         is_deleted = False
         campaign_obj, scheduled_task, oauth_header = \
-            cls.get_campaign_and_scheduled_task(campaign_id, request.user.id, campaign_type)
+            cls.get_campaign_and_scheduled_task(campaign_id, request.user, campaign_type)
         if scheduled_task:
             is_deleted = CampaignUtils.delete_scheduled_task(scheduled_task['id'], oauth_header)
             campaign_obj.update(scheduler_task_id=None) if is_deleted else None
@@ -1012,8 +1026,8 @@ class CampaignBase(object):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        campaign = self.validate_ownership_of_campaign(campaign_id, self.user.id,
-                                                       self.campaign_type)
+        campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
+                                                        self.campaign_type)
         CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
         self.campaign = campaign
         campaign_type = self.campaign_type

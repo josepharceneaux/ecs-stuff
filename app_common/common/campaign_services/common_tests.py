@@ -27,8 +27,8 @@ class CampaignsCommonTests(object):
     @classmethod
     def request_for_forbidden_error(cls, method, url, token):
         """
-        This should get forbidden error because current user is not the owner of the requeste
-        campaign
+        This should get forbidden error because requested campaign does not belong to
+        logged-in user's domain.
         """
         response = send_request(method, url, token, None)
         cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())

@@ -1,17 +1,23 @@
 """Misc functions that have no logical grouping to a module."""
 __author__ = 'erikfarmer'
-import json
-import requests
-from flask import current_app, request
-from requests.packages.urllib3.connection import ConnectionError
-from ..talent_config_manager import TalentConfigKeys
-from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
+
 import re
+import json
+import pytz
 import random
 import string
+import requests
+from pytz import timezone
+from datetime import datetime
 from itertools import izip_longest
 from ..models.db import db
+from flask import current_app, request
+from requests import ConnectionError
+from ..talent_config_manager import TalentConfigKeys
 from ..models.user import User, UserScopedRoles, DomainRole
+from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
+
+JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -77,6 +83,71 @@ def snake_case_to_pascal_case(name):
     return class_.join('', map(class_.capitalize, splitted_string))
 
 
+def url_conversion(long_url):
+    """
+    We use Google's URL Shortener API to shorten the given URL.
+    In this function we pass a URL which we want to shorten and on
+    success it saves record in database and returns its id.
+    :param long_url: The URL which we want to be shortened
+    :type long_url: str
+    :return: shortened URL, and error message if any else ''
+    :rtype: tuple
+    """
+    if not isinstance(long_url, basestring):
+        raise InvalidUsage('Pass URL(to be shortened) as a string',
+                           error_code=InvalidUsage.http_status_code())
+    google_api_url = 'https://www.googleapis.com/urlshortener/v1/url?key=%s'
+    payload = json.dumps({'longUrl': long_url})
+    response = http_request('POST',
+                            google_api_url % current_app.config['GOOGLE_URL_SHORTENER_API_KEY'],
+                            headers=JSON_CONTENT_TYPE_HEADER, data=payload)
+    json_data = response.json()
+    if 'error' not in json_data:
+        return json_data['id'], ''
+    else:
+        error_message = "Error while shortening URL. Long URL is %s. " \
+                        "Error dict is %s" % (long_url, json_data['error']['errors'][0])
+        return None, error_message
+
+
+def to_utc_str(dt):
+    """
+    This converts given datetime in '2015-10-08T06:16:55Z' format.
+    :param dt: given datetime
+    :type dt: datetime
+    :return: UTC date in str
+    :rtype: str
+    """
+    if not isinstance(dt, datetime):
+        raise InvalidUsage('Given param should be datetime obj')
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def get_utc_datetime(dt, tz):
+    """
+    This method takes datetime object and timezone name and returns UTC specific datetime
+    :Example:
+        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
+        >> timezone = 'Asia/Karachi'
+        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
+    :param dt: datetime object
+    :type dt: datetime
+    :return: timezone specific datetime object
+    :rtype string
+    """
+    assert tz, 'Timezone should not be none'
+    assert isinstance(dt, datetime), 'dt should be datetime object'
+    # get timezone info from given datetime object
+    local_timezone = timezone(tz)
+    try:
+        local_dt = local_timezone.localize(dt, is_dst=None)
+    except ValueError:
+        # datetime object already contains timezone info
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    utc_dt = local_dt.astimezone(pytz.utc)
+    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def grouper(iterable, group_size, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks
@@ -109,7 +180,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
-            http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=auth_header)
+            http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
     logger = current_app.config[TalentConfigKeys.LOGGER]
     if not isinstance(method_type, basestring):
@@ -142,12 +213,13 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     # In case of Meetup, we have error details in e.response.json()['errors'].
                     # So, tyring to log as much
                     # details of error as we can.
-                    if 'errors' in e.response.json():
+                    json_response = e.response.json()
+                    if 'errors' in json_response:
+                        error_message = \
+                            e.message + ', Details: ' + json.dumps(json_response['errors'])
+                    elif 'error_description' in json_response:
                         error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('errors'))
-                    elif 'error_description' in e.response.json():
-                        error_message = e.message + ', Details: ' + json.dumps(
-                            e.response.json().get('error_description'))
+                            json_response['error_description'])
                     else:
                         error_message = e.message
                 except AttributeError:
@@ -159,8 +231,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
             logger.exception(
-                            "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url))
+                "http_request: Couldn't make %s call on %s. "
+                "Make sure requested server is running." % (method_type, url))
             raise
         except requests.RequestException as e:
             logger.exception('http_request: HTTP request failed, %s' % e.message)
@@ -168,7 +240,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
 
         if error_message:
             logger.exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s', error_message, user_id)
+                             'user_id: %s', error_message, user_id)
         return response
     else:
         logger.error('http_request: Unknown Method type %s ' % method_type)
@@ -235,6 +307,28 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     return [missing_item for missing_item in missing_items]
 
 
+def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
+    """
+    This validates that given object is an instance of given instance. If it is not, it raises
+    the given exception.
+    :param obj: obj e,g. User object
+    :param instances: Class for which given object is expected to be an instance.
+    :param exception: Exception to be raised
+    :type obj: object
+    :type instances: class
+    :type exception: Exception
+    :exception: Invalid Usage
+    """
+    if not isinstance(obj, instances):
+        given_obj_name = dict(obj=obj).keys()[0]
+        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
+        if isinstance(instances, (list, tuple)):
+            raise exception(error_message % ", ".join([instance.__name__
+                                                       for instance in instances]))
+        else:
+            raise exception(error_message % instances.__name__)
+
+
 def sample_phone_number():
     """Create random phone number.
     Phone number only creates area code + 7 random digits
@@ -269,29 +363,8 @@ def create_oauth_headers():
     """
     oauth_token = request.oauth_token
     if not oauth_token:
-        return generate_jwt_headers('application/json')
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
-        return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
-
-
-def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
-    """
-    This validates that given object is an instance of given instance. If it is not, it raises
-    the given exception.
-    :param obj: obj e,g. User object
-    :param instances: Class for which given object is expected to be an instance.
-    :param exception: Exception to be raised
-    :type obj: object
-    :type instances: class
-    :type exception: Exception
-    :exception: Invalid Usage
-    """
-    if not isinstance(obj, instances):
-        given_obj_name = dict(obj=obj).keys()[0]
-        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
-        if isinstance(instances, (list, tuple)):
-            raise exception(error_message % ", ".join([instance.__name__
-                                                       for instance in instances]))
-        else:
-            raise exception(error_message % instances.__name__)
+        return {'Authorization': authorization_header_value,
+                'Content-Type': JSON_CONTENT_TYPE_HEADER['content-type']}
