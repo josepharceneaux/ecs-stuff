@@ -72,7 +72,7 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'user_id': talent_pool.owner_user_id
+                        'user_id': talent_pool.user_id
 
                     } for talent_pool in talent_pools
                 ]

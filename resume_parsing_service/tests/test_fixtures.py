@@ -124,7 +124,7 @@ def user_fixture(domain_fixture, user_group_fixture, request):
 
 @pytest.fixture(autouse=True)
 def talent_pool_fixture(domain_fixture, user_fixture, request):
-    talent_pool = TalentPool(domain_id=domain_fixture.id, owner_user_id=user_fixture.id,
+    talent_pool = TalentPool(domain_id=domain_fixture.id, user_id=user_fixture.id,
                                name=random_word(5), description=random_word(5),
                                added_time=datetime.datetime(2050, 4, 26),
                                updated_time=datetime.datetime(2050, 4, 26))
