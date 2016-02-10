@@ -33,7 +33,7 @@ class SmartlistCandidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column('SmartlistId', db.Integer, db.ForeignKey('smart_list.Id', ondelete='CASCADE'),
                              nullable=False)
-    candidate_id = db.Column('CandidateId', db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'),
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'),
                              nullable=False)
     added_time = db.Column('AddedTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     updated_time = db.Column('UpdatedTime', db.DateTime,

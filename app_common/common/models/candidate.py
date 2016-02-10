@@ -3,7 +3,7 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage
-from sqlalchemy.dialects.mysql import TINYINT, YEAR
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from email_marketing import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
@@ -21,7 +21,7 @@ class Candidate(db.Model):
     candidate_status_id = db.Column('StatusId', db.Integer, db.ForeignKey('candidate_status.Id'))
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
-    user_id = db.Column('OwnerUserId', db.Integer, db.ForeignKey('user.Id'))
+    user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
@@ -64,6 +64,8 @@ class Candidate(db.Model):
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan',
+                                      passive_deletes=True, backref='candidate')
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
 
     def __repr__(self):
@@ -304,7 +306,7 @@ class CandidateRating(db.Model):
 
 class RatingTag(db.Model):
     __tablename__ = 'rating_tag'
-    id = db.Column('Id', db.Integer, primary_key=True)
+    id = db.Column('Id', db.BIGINT, primary_key=True)
     description = db.Column('Description', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 

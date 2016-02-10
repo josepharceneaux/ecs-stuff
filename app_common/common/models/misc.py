@@ -33,6 +33,11 @@ class Activity(db.Model):
                 Activity.source_id == source_id,
             )).first()
 
+    @classmethod
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
+        assert user_id
+        return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
+
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
