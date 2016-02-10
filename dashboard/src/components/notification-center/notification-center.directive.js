@@ -38,7 +38,7 @@
         var vm = this;
 
         // Time in seconds to updated activities periodically
-        var UPDATE_ACTIVITY_INTERVAL = 10;
+        var UPDATE_ACTIVITY_INTERVAL = 60;
 
         // unforamted messages to show proper message according to activity type and params
         vm.messages = [];
