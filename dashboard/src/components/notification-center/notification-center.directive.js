@@ -64,8 +64,6 @@
 
         // when user saw activities last time
         vm.lastReadTime = false;
-        var count = localStorage.getObject('notificationCount');
-        vm.notificationCount = isNaN(count) ? 0 : count;
 
         vm.removeSingleActivity = removeSingleActivity;
         vm.toggleNotificationCenter = notificationCenterService.toggle;
@@ -114,10 +112,8 @@
                     if (!(activity.id in vm.activityIds)) {
                         vm.activities.push(activity);
                         vm.activityIds[activity.id] = activity;
-                        vm.notificationCount += 1;
                     }
                 });
-                localStorage.setObject('notificationCount', vm.notificationCount);
                 vm.activities.forEach(function (activity) {
                     activity.added_time = moment(activity.added_time).toDate();
                     var messages  = getFormattedMessage(activity);
@@ -129,10 +125,10 @@
                     vm.newActivityIds[activity.id] = activity;
                 });
                 localStorage.setObject('activityIds', vm.activityIds);
-                if (vm.notificationCount > 0) {
+                if (activities.length > 0) {
                     if (!notificationCenterService.isOpen){
                         $cookies.put('isActivityCountHidden', false);
-                        notificationCenterService.activityCountChanged(vm.notificationCount);
+                        notificationCenterService.activityCountChanged(activities.length);
                     }
                     //toastr.info('You have <strong>%d</strong> unread notifications'.replace('%d', vm.activities.length), '<p>Notifications</p>');
                 }
@@ -183,7 +179,6 @@
             vm.activityIds = localStorage.getObject('activityIds') || {};
             for (var id in vm.activityIds){
                 vm.activities.push(vm.activityIds[id]);
-                notificationCenterService.activityCountChanged(vm.activities.length);
             }
 
         }
@@ -257,8 +252,6 @@
                 setLastReadTime();
                 notificationCenterService.removeAllToasts();
                 notificationCenterService.hideNotificationCount();
-                vm.notificationCount = 0;
-                localStorage.setObject('notificationCount', 0);
                 open();
             } else {
                 close();
