@@ -681,10 +681,6 @@ candidates_resource_schema_patch = {
                         # "id": "http://jsonschema.net/dice_profile_id",
                         "type": ["string", "null"]
                     },
-                    "talent_pool_id": {
-                        # "id": "http://jsonschema.net/talent_pool_id",
-                        "type": ["object", "null"]
-                    },
                     "source_id": {
                         # "id": "http://jsonschema.net/source_id",
                         "type": ["integer", "null"]
@@ -696,6 +692,24 @@ candidates_resource_schema_patch = {
                     "summary": {
                         # "id": "http://jsonschema.net/summary",
                         "type": ["string", "null"]
+                    },
+                    "talent_pool_ids": {
+                        "type": ["object", "null"],
+                        "additionalProperties": False,
+                        "properties": {
+                            "add": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            },
+                            "delete": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
                     },
                     "emails": {
                         # "id": "http://jsonschema.net/candidates/0/emails",
