@@ -15,7 +15,7 @@ from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepick
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
 
 
-def import_spreadsheet_candidates(talent_pool, access_token, candidate_data=None,
+def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=None,
                                   spreadsheet_file_name=None, is_csv=True,
                                   import_candidates=False, domain_custom_field=None):
     if domain_custom_field:
@@ -28,8 +28,7 @@ def import_spreadsheet_candidates(talent_pool, access_token, candidate_data=None
                   'candidate_education.schoolName', 'student_year', 'candidate_address.city',
                   'candidate_address.state', 'candidate_education_degree_bullet.concentrationType',
                   'area_of_interest.description', custom_field, 'area_of_interest.description',
-                  'candidate_experience.organization', 'candidate_experience.position',
-                  'talent_pool.{}'.format(talent_pool.id)]
+                  'candidate_experience.organization', 'candidate_experience.position']
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
 
@@ -56,7 +55,8 @@ def import_spreadsheet_candidates(talent_pool, access_token, candidate_data=None
 
     if import_candidates:
         response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,
-                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row}))
+                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row,
+                                                  'talent_pool_ids': [talent_pool_id]}))
     else:
         response = requests.get(SpreadsheetImportApiUrl.CONVERT_TO_TABLE, headers=headers,
                                 params={'file_picker_key': s3_key_name})
@@ -72,5 +72,5 @@ def candidate_test_data(num_candidates=15):
         candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
                                'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'MS', 'San Jose',
                                'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
-                               'Summer Software Intern', 'talent_pool_id'])
+                               'Summer Software Intern'])
     return candidate_data

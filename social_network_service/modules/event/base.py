@@ -424,7 +424,6 @@ class EventBase(object):
                                      'eventTitle': title
                                      }
                     add_activity(user_id=request.user.id,
-                                 oauth_token=request.oauth_token,
                                  activity_type=ActivityServiceKeys.EVENT_DELETE,
                                  source_table=Event.__tablename__,
                                  source_id=event_id,

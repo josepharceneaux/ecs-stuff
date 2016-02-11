@@ -82,7 +82,7 @@ class TestResourceEvents:
         event_data['social_network_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 404
+        assert response.status_code == 500
         response = response.json()
         assert 'error' in response and response['error']['code'] == 4052, 'Social Network not found'
 
@@ -217,7 +217,6 @@ class TestResourceEvents:
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
         assert response.status_code == 201, 'Status should be Ok, Resource Created (201)'
-        assert 'Location' in response.headers
         event_id = response.json()['id']
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id     # Add created event id  in test_event so it can be deleted in tear_down
@@ -283,7 +282,7 @@ class TestResourceEvents:
         event_data['venue_id'] = 2
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
-        assert response.status_code == 500, 'Internal Server Error'
+        assert response.status_code == 404, 'Venue not Found in database'
         response = response.json()
         assert response['error']['code'] == 4065, \
             'Event should not be created, address is invalid according to Meetup API'

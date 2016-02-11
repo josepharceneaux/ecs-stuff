@@ -1,4 +1,5 @@
 # Standard Library
+import json
 import os
 
 # Third Party
@@ -8,6 +9,8 @@ from datetime import datetime, timedelta
 from mixer._faker import faker
 
 # App Settings
+from social_network_service.common.activity_service_config import ActivityServiceKeys
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import app
 
 # Application Specific
@@ -19,7 +22,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
 from social_network_service.common.models.user import Domain
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.misc import Organization
+from social_network_service.common.models.misc import Organization, Activity
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.modules.utilities import process_event
@@ -27,7 +30,8 @@ from social_network_service.modules.utilities import delete_events
 from social_network_service.common.routes import AuthApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.tests.conftest import (user_auth, sample_user,
-                                                          test_domain, test_org, test_culture)
+                                                          test_domain, test_org, test_culture, first_group, domain_first)
+from social_network_service.tests.helper_functions import send_request
 
 db_session = db.session
 fake = Faker()
@@ -170,15 +174,6 @@ def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_d
     data['venue_id'] = meetup_venue.id
     data['organizer_id'] = organizer_in_db.id
 
-    # def delete_event():
-    #     # delete event if it was created by API. In that case,
-    #     # data contains id of that event
-    #     if 'id' in data:
-    #         event_id = data['id']
-    #         del data['id']
-    #         delete_events(sample_user.id, [event_id])
-    #
-    # request.addfinalizer(delete_event)
     return data
 
 
@@ -190,28 +185,28 @@ def eventbrite_event_data(request, eventbrite, sample_user, eventbrite_venue,
     data['venue_id'] = eventbrite_venue.id
     data['organizer_id'] = organizer_in_db.id
 
-    def delete_event():
-        # delete event if it was created by API. In that case,
-        # data contains id of that event
-        if 'id' in data:
-            event_id = data['id']
-            del data['id']
-            delete_events(sample_user.id, [event_id])
-
-    request.addfinalizer(delete_event)
     return data
 
 
 @pytest.fixture(scope='function')
 def meetup_event(request, sample_user, test_meetup_credentials, meetup,
-                 meetup_venue, organizer_in_db):
+                 meetup_venue, organizer_in_db, token):
     event = EVENT_DATA.copy()
     event['title'] = 'Meetup ' + event['title']
     event['social_network_id'] = meetup.id
     event['venue_id'] = meetup_venue.id
     event['organizer_id'] = organizer_in_db.id
-    event_id = process_event(event, sample_user.id)
-    event = Event.get_by_id(event_id)
+    response = send_request('post',
+                            url=SocialNetworkApiUrl.EVENTS,
+                            access_token=token,
+                            data=event)
+
+    assert response.status_code == 201
+
+    data = response.json()
+    db.session.commit()
+    event = Event.get_by_id(data['id'])
+    event_id = event.id
 
     def fin():
         """
@@ -221,9 +216,23 @@ def meetup_event(request, sample_user, test_meetup_credentials, meetup,
         delete_event() function to delete the event both from social network
         and from our database.
         """
-        delete_events(sample_user.id, [event_id])
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
+                                access_token=token)
+        assert response.status_code == 200
     request.addfinalizer(fin)
     return event
+
+
+@pytest.fixture(scope='function')
+def auth_header(request, token):
+    """
+    returns the header which contains bearer token and content type
+    :param auth_data: fixture to get access token
+    :return: header dict object
+    """
+    header = {'Authorization': 'Bearer ' + token,
+              'Content-Type': 'application/json'}
+    return header
 
 
 @pytest.fixture(scope='function')
@@ -258,7 +267,7 @@ def meetup_event_dict(request, sample_user, meetup_event):
 
 @pytest.fixture()
 def eventbrite_event(request, test_eventbrite_credentials,
-                     eventbrite, eventbrite_venue, organizer_in_db):
+                     eventbrite, eventbrite_venue, organizer_in_db, token):
     """
     This method create a dictionary data to create event on eventbrite.
     It uses meetup SocialNetwork model object, venue for meetup
@@ -268,10 +277,22 @@ def eventbrite_event(request, test_eventbrite_credentials,
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
     event['venue_id'] = eventbrite_venue.id
+
     event['organizer_id'] = organizer_in_db.id
-    user_id = eventbrite_venue.user_id
-    event_id = process_event(event, user_id)
-    event = Event.get_by_id(event_id)
+
+    response = send_request('post',
+                            url=SocialNetworkApiUrl.EVENTS,
+                            access_token=token,
+                            data=event)
+
+    assert response.status_code == 201
+
+    data = response.json()
+    db.session.commit()
+    event = Event.get_by_id(data['id'])
+    user_id = event.user_id
+    event_id = event.id
+    event_title = event.title
 
     def fin():
         """
@@ -281,7 +302,17 @@ def eventbrite_event(request, test_eventbrite_credentials,
         delete_event() function to delete the event both from social network
         and from our database.
         """
-        delete_events(user_id, [event_id])
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
+                                access_token=token)
+        assert response.status_code == 200
+
+        activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
+                                                          source_id=event_id,
+                                                          type=ActivityServiceKeys.EVENT_DELETE)
+        data = json.loads(activity.params)
+        if 'update' not in data['eventTitle'].lower():
+            assert data['eventTitle'] == event_title
+
     request.addfinalizer(fin)
     return event
 

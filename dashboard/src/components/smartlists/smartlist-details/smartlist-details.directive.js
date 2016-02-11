@@ -29,10 +29,12 @@
     /* @ngInject */
     function ControllerFunction(logger) {
 
+
         activate();
 
         function activate() {
             logger.log('Activated Smartlist Details View');
         }
+
     }
 })();

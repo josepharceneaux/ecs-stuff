@@ -21,7 +21,7 @@ def test_get_all_email_campaigns(user_first, access_token_first, talent_pool, ta
     Test GET API of email_campaigns for getting all campaigns
     """
     # create candidate
-    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
+    smartlist_id, candidate_ids = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
     email_campaign_name = fake.name()
     reply_to_name = fake.name()
     email_campaign_subject = fake.sentence()
@@ -80,7 +80,7 @@ def create_smartlist_with_candidate(user, access_token, talent_pool):
                       'candidate_ids': candidate_ids}
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
-    return smartlist_id
+    return smartlist_id, candidate_ids
 
 
 def test_create_email_campaign(user_first, access_token_first, talent_pool):
@@ -90,7 +90,7 @@ def test_create_email_campaign(user_first, access_token_first, talent_pool):
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
+    smartlist_id, candidate_ids = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
     data = {
         "email_campaign_name": email_campaign_name,
         "email_subject": email_subject,
@@ -124,7 +124,7 @@ def test_create_email_campaign_whitespace_campaign_name(user_first, access_token
     email_reply_to = fake.safe_email()
     email_body_text = fake.sentence()
     email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
-    smartlist_id = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
+    smartlist_id, candidate_ids = create_smartlist_with_candidate(user_first, access_token_first, talent_pool)
     data = {'email_campaign_name': email_campaign_name,
             'email_subject': email_subject,
             'email_from': email_from,

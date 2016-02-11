@@ -15,8 +15,8 @@ def test_update_talent_pipeline_stats(access_token_first, user_first, talent_pip
     status_code = talent_pipeline_update_stats(access_token_first)
     assert status_code == 401
 
-    # Adding 'CAN_EDIT_TALENT_PIPELINES_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_PIPELINES_STATS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS,
+                                       DomainRole.Roles.CAN_ADD_CANDIDATES])
 
     # Setting Empty search_params for talent_pipeline
     talent_pipeline.search_params = json.dumps({})
@@ -95,9 +95,10 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
     assert status_code == 401
 
-    # Adding 'CAN_GET_TALENT_PIPELINE_CANDIDATES' role to user_first, user_second
-    add_role_to_test_user(user_first, ['CAN_GET_TALENT_PIPELINE_CANDIDATES'])
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_CANDIDATES'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                       DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                        DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000)
@@ -109,8 +110,6 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
 
     # Creating and Adding test smart_list and dumb_list to talent-pipeline
     test_smart_list, test_dumb_list = prepare_pipeline_candidate_data(db.session, talent_pipeline, user_first)
-
-    candidate_ids_without_talent_pool = populate_candidates(oauth_token=access_token_first)
 
     # Adding candidates with 'Apple' as current company
     apple_candidate_ids = populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple',
@@ -126,13 +125,12 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
                                                         talent_pool_id=talent_pool.id)
 
     # Adding candidates dumb_list
-    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list,
-                                candidate_ids_without_talent_pool + apple_candidate_ids)
+    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list, apple_candidate_ids)
 
     # Wait for addition of candidates in Amazon Cloud Search
     sleep(30)
 
-    # Logged-in user trying to get all candidates of talent-pipeline with out search_params
+    # Logged-in user trying to get all candidates of talent-pipeline without search_params
     # and only three candidates in its dumb_list
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
     assert_results(apple_candidate_ids,  response)
@@ -170,9 +168,10 @@ def test_talent_pipeline_campaign_get(access_token_first, access_token_second, t
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
     assert status_code == 401
 
-    # Adding 'CAN_GET_TALENT_PIPELINE_CANDIDATES' role to user_first, user_second
-    add_role_to_test_user(user_first, ['CAN_GET_TALENT_PIPELINE_CANDIDATES'])
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_CANDIDATES'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                       DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                        DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000)
@@ -184,8 +183,6 @@ def test_talent_pipeline_campaign_get(access_token_first, access_token_second, t
 
     # Creating and Adding test smart_list and dumb_list to talent-pipeline
     test_smart_list, test_dumb_list = prepare_pipeline_candidate_data(db.session, talent_pipeline, user_first)
-
-    candidate_ids_without_talent_pool = populate_candidates(oauth_token=access_token_first)
 
     # Adding candidates with 'Apple' as current company
     apple_candidate_ids = populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple',
@@ -201,8 +198,7 @@ def test_talent_pipeline_campaign_get(access_token_first, access_token_second, t
                                                         talent_pool_id=talent_pool.id)
 
     # Adding candidates dumb_list
-    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list,
-                                candidate_ids_without_talent_pool + apple_candidate_ids)
+    add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list, apple_candidate_ids)
 
     # Wait for addition of candidates in Amazon Cloud Search
     sleep(30)

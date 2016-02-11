@@ -93,34 +93,6 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture()
-def sample_user(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def sample_user_2(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
 def user_from_diff_domain(test_domain_2, second_group, request):
     user = User.add_test_user(db.session, USER_PASSWORD, test_domain_2.id, second_group.id)
 
@@ -390,6 +362,35 @@ def second_group(request, domain_second):
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
+
+
+@pytest.fixture()
+def sample_user(test_domain, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def sample_user_2(test_domain, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
 
 
 @pytest.fixture()

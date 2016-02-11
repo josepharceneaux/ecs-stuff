@@ -2,8 +2,8 @@
 from social_network_service.social_network_app.app import app
 
 import os
-from social_network_service.common.routes import GTApis
 
+from social_network_service.common.routes import GTApis
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes

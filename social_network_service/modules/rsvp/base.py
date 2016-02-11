@@ -530,9 +530,6 @@ class RSVPBase(object):
         else:
             with app.test_request_context():
                 candidates = create_candidates_from_candidate_api(access_token, candidates)
-            # candidate = Candidate(**data)
-            # Candidate.save(candidate)
-            # candidate_id = candidate.id
             candidate_id = 1
         attendee.candidate_id = candidate_id
         # Creating entry in CandidateSocialNetwork Table

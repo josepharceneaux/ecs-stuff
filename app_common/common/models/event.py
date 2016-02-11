@@ -3,16 +3,14 @@ from db import db
 
 class Event(db.Model):
     __tablename__ = 'event'
-
     id = db.Column(db.Integer, primary_key=True)
     social_network_event_id = db.Column('socialNetworkEventId', db.String(1000))
     title = db.Column(db.String(500))
     description = db.Column(db.String(1000))
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id'), nullable=False)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'),
-                        nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
+    user_id = db.Column('userId', db.BIGINT, db.ForeignKey('user.Id'), nullable=False)
     organizer_id = db.Column('organizerId', db.Integer, db.ForeignKey('event_organizer.id'), nullable=False)
-    venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.id'), nullable=False)
+    venue_id = db.Column('venueId', db.Integer, db.ForeignKey('venue.Id'), nullable=False)
     social_network_group_id = db.Column('socialNetworkGroupId', db.String(100))
     group_url_name = db.Column('groupUrlName', db.String(500))
     url = db.Column(db.String(500))
@@ -88,4 +86,11 @@ class Event(db.Model):
                 Event.user_id == user_id,
                 Event.id == event_id
             )).first()
+
+    @classmethod
+    def get_by_id(cls, _id):
+        assert _id, 'Event id not provided'
+        return cls.query.filter(
+                Event.id == _id
+            ).first()
 

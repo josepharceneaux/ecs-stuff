@@ -3,6 +3,7 @@ import re
 import json
 import datetime
 import requests
+from operator import itemgetter
 
 from sqlalchemy import and_
 from sqlalchemy import desc
@@ -15,12 +16,13 @@ from email_campaign_service.common.models.email_marketing import (EmailCampaign,
                                                                   EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.user import User, Domain
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers
 from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, CandidateSubscriptionPreference
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity, ActivityTypes
-from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
+from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl, CandidateApiUrl
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.utils.candidate_service_calls import get_candidate_subscription_preference
@@ -78,7 +80,6 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     # Add activity
     add_activity(user_id=user_id,
-                 oauth_token=oauth_token,
                  activity_type=ActivityTypes.CAMPAIGN_CREATE,
                  source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
                  params=dict(id=email_campaign.id, name=email_campaign_name))
@@ -118,6 +119,8 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
         schedule_task_params["run_datetime"] = (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).strftime(
             "%Y-%m-%d %H:%M:%S")
 
+    schedule_task_params['is_jwt_request'] = True
+
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
     try:
@@ -135,7 +138,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates_only=False, email_client_id=None):
+def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False, email_client_id=None):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -149,7 +152,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
     """
     user = campaign.user
     emails_sent = 0
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(oauth_token, campaign=campaign,
+    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
@@ -168,7 +171,6 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
 
         # Add activity
         add_activity(user_id=user.id,
-                     oauth_token=oauth_token,
                      activity_type=ActivityTypes.CAMPAIGN_SEND,
                      source_id=campaign.id, source_table=EmailCampaign.__tablename__,
                      params=dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)))
@@ -186,7 +188,6 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
 
             was_send = send_campaign_emails_to_candidate(
                 user=user,
-                oauth_token=oauth_token,
                 campaign=campaign,
                 candidate=Candidate.query.get(candidate_id),
                 # candidates.find(lambda row: row.id == candidate_id).first(),
@@ -208,6 +209,20 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
                 emails_sent += 1
 
             db.session.commit()
+
+    try:
+        # Update Candidate Documents in Amazon Cloud Search
+        headers = create_oauth_headers()
+        response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+                                 data=json.dumps({'candidate_ids': map(itemgetter(0), candidate_ids_and_emails)}))
+
+        if response.status_code != 204:
+            raise Exception(error_message="Status Code: %s Response: %s" % (response.status_code, response.json()))
+
+    except Exception as e:
+        raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search because: "
+                                         "%s" % e.message)
+
     logger.info("Marketing email batch completed, emails sent=%s, campaign=%s, user=%s, new_candidates_only=%s",
             emails_sent, campaign.name, user.email, new_candidates_only)
 
@@ -217,8 +232,7 @@ def send_emails_to_campaign(oauth_token, campaign, list_ids=None, new_candidates
     return emails_sent
 
 
-def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, list_ids=None,
-                                                new_candidates_only=False):
+def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
     """
     :param campaign:    email campaign row
     :param user:        user row
@@ -232,7 +246,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, list_ids=
     all_candidate_ids = []
     for list_id in list_ids:
         # Get candidates present in smartlist
-        smartlist_candidate_ids = get_candidates_of_smartlist(oauth_token, list_id, candidate_ids_only=True)
+        smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)
         # gather all candidates from various smartlists
         all_candidate_ids.extend(smartlist_candidate_ids)
 
@@ -255,7 +269,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, list_ids=
         unsubscribed_candidate_ids = []
         for candidate_id in all_candidate_ids:
             # Call candidate API to get candidate's subscription preference.
-            subscription_preference = get_candidate_subscription_preference(oauth_token, candidate_id)
+            subscription_preference = get_candidate_subscription_preference(candidate_id)
             # campaign_subscription_preference = get_subscription_preference(candidate_id)
             logger.debug("subscription_preference: %s" % subscription_preference)
             if subscription_preference and not subscription_preference.get('frequency_id'):
@@ -282,7 +296,7 @@ def get_email_campaign_candidate_ids_and_emails(oauth_token, campaign, list_ids=
     return [(row.candidate_id, row.address) for row in candidate_email_rows]
 
 
-def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, candidate_address,
+def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,
                                       blast_params=None, email_campaign_blast_id=None,
                                       blast_datetime=None, do_email_business=None,
                                       email_client_id=None):
@@ -373,7 +387,7 @@ def send_campaign_emails_to_candidate(user, oauth_token, campaign, candidate, ca
         email_campaign_send.ses_request_id = request_id
         db.session.commit()
         # Add activity
-        add_activity(user_id=user.id, oauth_token=oauth_token, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
+        add_activity(user_id=user.id, activity_type=ActivityTypes.CAMPAIGN_EMAIL_SEND,
                      source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
                      params=dict(candidateId=candidate.id, campaign_name=campaign.name,
                                  candidate_name=candidate.formatted_name))
@@ -421,7 +435,7 @@ def update_hit_count(url_conversion):
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         if candidate:  # If candidate has been deleted, don't make the activity
             # Add activity
-            add_activity(user_id="?", oauth_token="?",
+            add_activity(user_id="?",
                          activity_type=ActivityTypes.CAMPAIGN_EMAIL_OPEN if is_open else ActivityTypes.CAMPAIGN_EMAIL_CLICK,
                          source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
                          params=dict(candidateId=candidate.id, campaign_name=email_campaign_send.email_campaign.name,

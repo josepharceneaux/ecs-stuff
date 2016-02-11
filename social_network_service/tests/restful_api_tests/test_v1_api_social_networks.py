@@ -41,9 +41,11 @@ def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):
 
 
 def test_social_network_no_auth():
+    """
+    Send request with invalid token and response should be 401 (Unauthorized)
+    :return:
+    """
     response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
                             headers={'Authorization': 'some random'})
     logger.info(response.text)
     assert response.status_code == 401
-
-

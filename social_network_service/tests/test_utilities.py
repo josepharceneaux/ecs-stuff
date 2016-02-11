@@ -1,6 +1,8 @@
+
 """
 test_utilities.py: helper methods for testing social network service endpoints
 """
+__author__ = 'zohaib'
 
 # Standard Library
 from datetime import datetime
@@ -8,6 +10,7 @@ import json
 import requests
 
 # Third Party
+import requests
 from pytz import timezone
 from dateutil.parser import parse
 
@@ -24,8 +27,6 @@ from social_network_service.modules.utilities import import_from_dist_packages
 from social_network_service.modules.utilities import milliseconds_since_epoch
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.tests.helper_functions import get_headers
-
-__author__ = 'zohaib'
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
@@ -202,25 +203,6 @@ def test_milliseconds_since_epoch():
         assert 'str' in e.message
 
 
-# def test_milliseconds_since_epoch_local_time():
-#     """
-#     - In this test, we will verify the working of
-#         milliseconds_since_epoch_local_time() function defined in
-#         social_network_service/utilities.py
-#     - We give a test date and assert its output to expected value
-#     """
-#     # case 1 - date is datetime.datetime object
-#     result = int(milliseconds_since_epoch_local_time(UTC_TEST_DATE))
-#     assert result == EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS
-#     # case 2 - date in string format
-#     test_date_str = '2015-1-1'
-#     try:
-#         unix_time(test_date_str)
-#     except TypeError as e:
-#         assert e.message.find('unsupported operand type') == 0
-#         assert 'str' in e.message
-
-
 def test_milliseconds_since_epoch_to_dt():
     """
     - In this test, we will verify the working of
@@ -240,7 +222,6 @@ def test_milliseconds_since_epoch_to_dt():
 
 
 def test_health_check():
-    import requests
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 

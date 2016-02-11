@@ -220,7 +220,6 @@ def get_data_to_log(log_data):
         callee_data = ("Reason: %(error)s"% callee_data_dict)
     return callee_data
 
-
 def get_class(social_network_name, category, user_credentials=None):
     """
     This function is used to import module from given parameters.
@@ -255,7 +254,7 @@ def process_event(data, user_id, method='Create'):
     This functions is called from restful POST service (which gets data from
     Event Create Form submission).
     It creates event on vendor as well as saves in database.
-    Data in the arguments is the Data coming from Event creation form submission
+    Data in the arguments is the Data coming from Event creation form submission3
     user_id is the id of current logged in user (which we get from session).
     :return: id of event
     :rtype: int
@@ -291,7 +290,6 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'eventTitle': event_obj.title})
 
             add_activity(user_id=user_id,
-                         oauth_token=request.oauth_token,
                          activity_type=ActivityServiceKeys.EVENT_CREATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,
@@ -307,7 +305,6 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'eventTitle': event_obj.title})
 
             add_activity(user_id=user_id,
-                         oauth_token=request.oauth_token,
                          activity_type=ActivityServiceKeys.EVENT_UPDATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,

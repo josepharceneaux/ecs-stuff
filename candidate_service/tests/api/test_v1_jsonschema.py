@@ -45,3 +45,31 @@ class TestSchemaValidationPost(object):
         print response_info(resp)
         assert resp.status_code == 201
 
+
+class TestSchemaValidationPatch(object):
+    def test_data_validations(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Validate json data
+        Expect: 400
+        """
+        AddUserRoles.edit(user=user_first)
+        data = {'candidate': [{}]}
+        resp = request_to_candidates_resource(access_token_first, 'patch', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': {}}
+        resp = request_to_candidates_resource(access_token_first, 'patch', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': [{}]}
+        resp = request_to_candidates_resource(access_token_first, 'patch', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': [{'id': 5, 'phones': [{}]}]}
+        resp = request_to_candidates_resource(access_token_first, 'patch', data)
+        print response_info(resp)
+        assert resp.status_code == 400
+

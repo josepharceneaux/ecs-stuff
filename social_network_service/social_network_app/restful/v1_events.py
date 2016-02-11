@@ -152,7 +152,7 @@ class Events(Resource):
         event_data = get_valid_json_data(request)
         gt_event_id = process_event(event_data, request.user.id)
         headers = {'Location': '/%s/events/%s' % (SocialNetworkApi.VERSION, gt_event_id)}
-        return ApiResponse(dict(id=gt_event_id), status=201, headers=headers)
+        return dict(id=gt_event_id, headers=headers), 201
 
     def delete(self):
         """

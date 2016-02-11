@@ -1,6 +1,6 @@
 from flask import current_app
 from flask.ext.restful import Api
-from utils.api_utils import ApiResponse
+from flask import current_app, jsonify
 from talent_config_manager import TalentConfigKeys
 
 
@@ -30,5 +30,4 @@ class TalentApi(Api):
             logger.exception('Unknown exception occurred: %s' % e)
             # Api user should not see this error because it is an unexpected error
             # that was not handled by the API.
-            return ApiResponse(dict(message='Some Internal Server Error Occurred.',
-                                    code=500), status=500)
+            return jsonify(dict(message='Some Internal Server Error Occurred.')), 500

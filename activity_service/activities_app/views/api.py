@@ -2,7 +2,6 @@
    to the database.
 """
 from app_common.common.activity_service_config import ActivityServiceKeys
-
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -19,6 +18,8 @@ from activity_service.common.models.user import User
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
+from activity_service.common.utils.activity_utils import ActivityMessageIds
+from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 POSTS_PER_PAGE = 20
@@ -57,7 +58,7 @@ def get_activities(page):
 @require_oauth()
 def post_activity():
     valid_user_id = request.user.id
-    content = request.json
+    content = request.get_json()
     return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
                            content.get('source_id'), content.get('params'))
 
@@ -158,46 +159,81 @@ class TalentActivityManager(object):
                                   "%(username)s added %(count)s candidates via mobile", "candidate.png"),
         CANDIDATE_UPDATE: (
             "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
-            "candidate.png"),
-        CANDIDATE_DELETE: (
-            "%(username)s deleted candidate %(formattedName)s", "%(username)s deleted %(count)s candidates",
-            "candidate.png"),
 
-        CAMPAIGN_CREATE: (
-            "%(username)s created a campaign: %(name)s", "%(username)s created %(count)s campaigns", "campaign.png"),
-        CAMPAIGN_DELETE: (
-            "%(username)s deleted a campaign: %(name)s", "%(username)s deleted %(count)s campaigns", "campaign.png"),
-        CAMPAIGN_SEND: (
-            "Campaign %(name)s was sent to %(num_candidates)s candidates", "%(count)s campaigns were sent out",
+            "candidate.png"),
+        ActivityMessageIds.CANDIDATE_DELETE: (
+            "%(username)s deleted candidate %(formattedName)s",
+            "%(username)s deleted %(count)s candidates",
+            "candidate.png"),
+        ActivityMessageIds.CAMPAIGN_CREATE: (
+            "%(username)s created an %(campaign_type)s campaign: %(campaign_name)s",
+            "%(username)s created %(count)s campaigns",
             "campaign.png"),
-        CAMPAIGN_EXPIRE: ("%(username)s's recurring campaign %(name)s has expired",
-                          "%(count)s recurring campaigns of %(username)s have expired", "campaign.png"),  # TODO
-        CAMPAIGN_PAUSE: (
-            "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns", "campaign.png"),
-        CAMPAIGN_RESUME: (
-            "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns", "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_DELETE: (
+            "%(username)s deleted an %(campaign_type)s campaign: %(name)s",
+            "%(username)s deleted %(count)s campaigns",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_SEND: (
+            "Campaign %(name)s was sent to %(num_candidates)s candidates",
+            "%(count)s campaigns were sent out",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_EXPIRE: (
+            "%(username)s's recurring campaign %(name)s has expired",
+            "%(count)s recurring campaigns of %(username)s have expired", "campaign.png"),  # TODO
+        ActivityMessageIds.CAMPAIGN_PAUSE: (
+            "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_RESUME: (
+            "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns",
+            "campaign.png"),
 
-        SMARTLIST_CREATE: (
-            "%(username)s created list %(name)s", "%(username)s created %(count)s lists", "smartlist.png"),
-        SMARTLIST_DELETE: (
-            "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists", "smartlist.png"),
-        SMARTLIST_ADD_CANDIDATE: (
-            "%(formattedName)s was added to list %(name)s", "%(count)s candidates were added to list %(name)s",
+        ActivityMessageIds.SMARTLIST_CREATE: (
+            "%(username)s created list %(name)s", "%(username)s created %(count)s lists",
             "smartlist.png"),
-        SMARTLIST_REMOVE_CANDIDATE: (
-            "%(formattedName)s was removed from list %(name)s", "%(count)s candidates were removed from list %(name)s",
+        ActivityMessageIds.SMARTLIST_DELETE: (
+            "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists",
             "smartlist.png"),
-        USER_CREATE: ("%(username)s has joined", "%(count)s users have joined", "notification.png"),
-        WIDGET_VISIT: ("Widget was visited", "Widget was visited %(count)s times", "widget.png"),
-        NOTIFICATION_CREATE: (
-            "You received an update notification", "You received %(count)s update notifications", "notification.png"),
-
-        CAMPAIGN_EMAIL_SEND: ("%(candidate_name)s received email of campaign %(campaign_name)s",
-                              "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
-        CAMPAIGN_EMAIL_OPEN: ("%(candidate_name)s opened email of campaign %(campaign_name)s",
-                              "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
-        CAMPAIGN_EMAIL_CLICK: ("%(candidate_name)s clicked email of campaign %(campaign_name)s",
-                               "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png")
+        ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
+            "%(formattedName)s was added to list %(name)s",
+            "%(count)s candidates were added to list %(name)s",
+            "smartlist.png"),
+        ActivityMessageIds.SMARTLIST_REMOVE_CANDIDATE: (
+            "%(formattedName)s was removed from list %(name)s",
+            "%(count)s candidates were removed from list %(name)s",
+            "smartlist.png"),
+        ActivityMessageIds.USER_CREATE: (
+            "%(username)s has joined", "%(count)s users have joined", "notification.png"),
+        ActivityMessageIds.WIDGET_VISIT: (
+            "Widget was visited", "Widget was visited %(count)s times", "widget.png"),
+        ActivityMessageIds.NOTIFICATION_CREATE: (
+            "You received an update notification", "You received %(count)s update notifications",
+            "notification.png"),
+        ActivityMessageIds.CAMPAIGN_EMAIL_SEND: (
+            "%(candidate_name)s received email of campaign %(campaign_name)s",
+            "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_EMAIL_OPEN: (
+            "%(candidate_name)s opened email of campaign %(campaign_name)s",
+            "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_EMAIL_CLICK: (
+            "%(candidate_name)s clicked email of campaign %(campaign_name)s",
+            "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_SMS_SEND: (
+            "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
+            "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_SMS_CLICK: (
+            "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
+            "%(candidate_name)s clicked on %(campaign_name)s.",
+            "campa"
+            "ign.png"),
+        ActivityMessageIds.CAMPAIGN_SMS_REPLY: (
+            "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
+            "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_SCHEDULE: (
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "campaign.png"),
     }
 
     def __init__(self):
@@ -257,7 +293,9 @@ class TalentActivityManager(object):
                 activity_aggregate = {}
                 activity_aggregate['count'] = current_activity_count
                 activity_aggregate['readable_text'] = self._activity_text(activity,
-                                                                          activity_aggregate['count'], current_user)
+                                                                          activity_aggregate[
+                                                                              'count'],
+                                                                          current_user)
                 activity_aggregate['image'] = self.MESSAGES[activity.type][2]
 
                 aggregated_activities.append(activity_aggregate)
@@ -283,7 +321,8 @@ class TalentActivityManager(object):
         elif not count or count == 1:  # one single activity
             format_string = format_strings[0]
             if 'You has' in format_string:
-                format_string = format_string.replace('You has', 'You have')  # To fix 'You has joined'
+                format_string = format_string.replace('You has',
+                                                      'You have')  # To fix 'You has joined'
             elif "You's" in format_string:  # To fix "You's recurring campaign has expired"
                 format_string = format_string.replace("You's", "Your")
         else:  # many activities
@@ -294,5 +333,7 @@ class TalentActivityManager(object):
         for param in re.findall(self._check_format_string_regexp, format_string):
             if not params.get(param):
                 params[param] = 'unknown'
+            if param == 'campaign_type' and params[param].lower() not in CampaignUtils.WITH_ARTICLE_AN:
+                format_string = format_string.replace("an", "a")
 
         return format_string % params

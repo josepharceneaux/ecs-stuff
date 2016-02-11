@@ -1,10 +1,14 @@
 # Std imports
 import datetime
+import json
+
 import requests
 import sys
 
 # Application imports
+from social_network_service.common.activity_service_config import ActivityServiceKeys
 from social_network_service.common.models.event import Event
+from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
@@ -125,9 +129,6 @@ class TestEventById:
         event = event_in_db.to_json()
         social_network_event_id = event['social_network_event_id']
 
-        # Update with invalid event id
-        event['id'] = sys.maxint  # We will find a better way to test it
-
         event['social_network_event_id'] = social_network_event_id
 
         # Success case, event should be updated
@@ -137,7 +138,7 @@ class TestEventById:
         event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
         logger.info(response.text)
-        assert response.status_code == 200, 'Status should be Ok, Resource Modified (204)'
+        assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'
         event_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_db = event_db.to_json()
@@ -146,6 +147,14 @@ class TestEventById:
             'start_datetime is modified'
         assert event['end_datetime'] == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
             'end_datetime is modified'
+
+        # Check activity updated
+        activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
+                                                          type=ActivityServiceKeys.EVENT_UPDATE,
+                                                          user_id=event_db['user_id'])
+
+        data = json.loads(activity.params)
+        assert data['eventTitle'] == event['title']
 
     def test_delete_with_invalid_token(self, event_in_db):
         """
@@ -170,3 +179,11 @@ class TestEventById:
                                    headers=auth_header(token))
         logger.info(response.text)
         assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
+
+    def test_activity_created(self, token, event_in_db):
+        event = event_in_db.to_json()
+        activities = Activity.get_by_user_id_type_source_id(user_id=event['user_id'],
+                                                            source_id=event['id'],
+                                                            type=ActivityServiceKeys.EVENT_CREATE)
+        data = json.loads(activities.params)
+        assert data['eventTitle'] == event['title']

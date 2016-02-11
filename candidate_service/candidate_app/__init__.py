@@ -38,7 +38,7 @@ try:
     api = TalentApi(app=app)
 
     # Enable CORS for all origins & endpoints
-    CORS(app)
+    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
     # API RESOURCES
     # ****** CandidateResource ******

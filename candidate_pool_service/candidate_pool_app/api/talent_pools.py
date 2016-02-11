@@ -543,7 +543,7 @@ class TalentPoolCandidateApi(Resource):
 
 
 @talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
+@require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS)
 def update_talent_pools_stats():
     """

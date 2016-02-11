@@ -57,11 +57,11 @@ class SocialNetworkError(SocialNetworkApiExceptionServer):
     status_code = 4052
 
 
-class EventInputMissing(SocialNetworkApiExceptionServer):
+class EventInputMissing(SocialNetworkApiInvalidException):
     status_code = 4053
 
 
-class EventOrganizerNotFound(SocialNetworkApiExceptionServer):
+class EventOrganizerNotFound(SocialNetworkApiNotFoundException):
     status_code = 4054
 
 

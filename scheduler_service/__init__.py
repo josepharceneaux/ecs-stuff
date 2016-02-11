@@ -20,12 +20,12 @@ load_gettalent_config(flask_app.config)
 logger = flask_app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", flask_app.import_name, get_ec2_instance_id())
 
-add_model_helpers(db.Model, logger=logger)
+add_model_helpers(db.Model)
 db.init_app(flask_app)
 db.app = flask_app
 
 # Enable CORS for all origins & endpoints
-CORS(flask_app)
+CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
 # Initialize Redis Cache
 redis_store.init_app(flask_app)
