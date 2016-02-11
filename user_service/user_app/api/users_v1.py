@@ -108,7 +108,7 @@ class UserApi(Resource):
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
             domain_id = request.user.domain_id
-            thumbnail_url = posted_data.get('thumbnail_url', '').strip()
+            thumbnail_url = user_dict.get('thumbnail_url', '').strip()
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
                                               domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)

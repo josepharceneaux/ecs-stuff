@@ -65,6 +65,8 @@ def update_password():
     request.user.password = gettalent_generate_password_hash(new_password)
     Token.query.filter_by(user_id=request.user.id).delete()
 
+    db.session.commit()
+
     return jsonify(dict(success="Your password has been changed successfully"))
 
 
