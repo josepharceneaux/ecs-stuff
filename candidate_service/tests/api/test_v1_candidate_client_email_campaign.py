@@ -1,55 +1,40 @@
 """
 A test for the v1/candidates/client_email_campaign endpoint
 """
-import datetime
-from flask import json
-import requests
-# Candidate Service app instance
-from candidate_service.candidate_app import app
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.tests.sample_data import generate_single_candidate_data
-from candidate_service.tests.api.helpers import AddUserRoles
-from candidate_service.common.tests.conftest import *
-from helpers import (
-    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
-)
-# Candidate Service app instance
-from candidate_service.candidate_app import app
 
-# Models
-from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
+from candidate_service.common.routes import CandidateApiUrl
+
+# Candidate Service app instance
+from candidate_service.candidate_app import app
 
 # Conftest
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    response_info, request_to_candidates_resource,
-    request_to_candidate_resource, request_to_candidate_address_resource,
-    request_to_candidate_aoi_resource, request_to_candidate_education_resource,
-    request_to_candidate_education_degree_resource, request_to_candidate_education_degree_bullet_resource,
-    request_to_candidate_custom_field_resource, AddUserRoles
+    request_to_candidates_resource,
+    request_to_candidate_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
-# Custom errors
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
 class TestClientEmailCampaign(object):
 
     def test_client_email_campaign(self, access_token_first, user_first, talent_pool):
 
+        # give the test user roles to perform all needed actions
         AddUserRoles.all_roles(user=user_first)
 
-        # Create Candidate
+        # Create a Candidate
         data = generate_single_candidate_data([talent_pool.id])
-        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        create_candidate_response = request_to_candidates_resource(access_token_first, 'post', data)
 
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        # Get Candidate via ID
+        candidate_id = create_candidate_response.json()['candidates'][0]['id']
+        get_candidate_response = request_to_candidate_resource(access_token_first, 'get', candidate_id)
 
-        candidate = json.loads(get_resp.content)['candidate']
+        # create POST request body
+        candidate = json.loads(get_candidate_response.content)['candidate']
         body = {
             'candidates': [candidate],
             'email_subject': 'Email Subject',
@@ -60,15 +45,18 @@ class TestClientEmailCampaign(object):
             'email_client_id': 101
          }
 
+        # send the post request to /v1/candidates/client-email-campaign
         email_campaign = requests.post(
             url=CandidateApiUrl.CANDIDATE_CLIENT_CAMPAIGN,
             data=json.dumps(body),
             headers={'Authorization': 'Bearer %s' % access_token_first,
                      'content-type': 'application/json'}
         )
+        # assert it is created and contains email campaign sends objects
         assert email_campaign.status_code == 201
         email_campaign_sends = json.loads(email_campaign.content)['email_campaign_sends']
 
+        # assert each email campaign send has an ID, an email address to send to and new_html to send to the user
         for email_campaign_send in email_campaign_sends:
             assert email_campaign_send['email_campaign_id']
             assert email_campaign_send['candidate_email_address']

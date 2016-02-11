@@ -243,25 +243,34 @@ class TestSmartlistResource(object):
             data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 201  # Successfully created
-            assert resp.json()['smartlist']['id']
-            list_id = resp.json()['smartlist']['id']
+            assert resp.json()['smartlist']['id'] # assert smartlist id is there
+
+            #add role to test user be able to get candidates
             add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
+
+            # get the smartlist via id
+            list_id = resp.json()['smartlist']['id']
             first_smartlist = requests.get(
                 url=SMARTLIST_URL + '/%s' % list_id,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
+            # assert it is returned and has the same search params as were input
             assert first_smartlist.status_code == 200
             assert first_smartlist.json()['smartlist']['search_params'] == '{"maximum_years_experience": "5"}'
+
             # Try creating smartlist with same name
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
             resp2 = self.call_post_api(data2, access_token_first)
-            assert resp2.status_code == 201
-            assert resp2.json()['smartlist']['id']
+            assert resp2.status_code == 201 # Successfully created
+            assert resp2.json()['smartlist']['id'] # assert smartlist id is there
+
+            # get the smartlist via id
             second_list_id = resp2.json()['smartlist']['id']
             second_smartlist = requests.get(
                 url=SMARTLIST_URL + '/%s' % second_list_id,
                 headers={'Authorization': 'Bearer %s' % access_token_first}
             )
+            # assert it is returned and has the same search params as were input
             assert second_smartlist.status_code == 200
             assert second_smartlist.json()['smartlist']['search_params'] == '{"location": "San Jose, CA"}'
 
