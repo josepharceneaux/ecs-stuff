@@ -4,7 +4,7 @@ import requests
 import json
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..utils.handy_functions import create_oauth_headers
+from ..utils.handy_functions import create_oauth_headers, http_request
 from ..error_handling import InternalServerError
 
 __author__ = 'jitesh'
@@ -72,9 +72,10 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
 
 def get_candidate_subscription_preference(candidate_id):
-    resp = requests.get(CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
+    resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers())
     assert resp.status_code == 200
     response = resp.json()
     # return candidate's subscription_preference
     return response['candidate']['subscription_preference']
+1

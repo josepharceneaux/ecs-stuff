@@ -16,7 +16,7 @@ from email_campaign_service.modules.utils import (create_email_campaign_url_conv
                                                   get_candidates_of_smartlist, TRACKING_URL_TYPE)
 from email_campaign_service.email_campaign_app import logger, celery_app, app
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSmartList,
+from email_campaign_service.common.models.email_marketing import (EmailCampaign, EmailCampaignSmartlist,
                                                                   EmailCampaignBlast, EmailCampaignSend,
                                                                   EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.misc import Frequency
@@ -47,7 +47,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     if type(smartlist_ids) in (int, long):
         smartlist_ids = [smartlist_ids]
     for smartlist_id in smartlist_ids:
-        email_campaign_smartlist = EmailCampaignSmartList(smartlist_id=smartlist_id,
+        email_campaign_smartlist = EmailCampaignSmartlist(smartlist_id=smartlist_id,
                                                            email_campaign_id=email_campaign_id)
         db.session.add(email_campaign_smartlist)
     db.session.commit()
@@ -264,12 +264,13 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        list_ids = EmailCampaignSmartList.get_smartlists_of_campaign(campaign.id,
+        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                      smartlist_ids_only=True)
     # Get candidate ids
     all_candidate_ids = []
     if not list_ids:
-        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id)
+        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
+                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
     for list_id in list_ids:
         # Get candidates present in smartlist
         smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)

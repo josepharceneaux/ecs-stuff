@@ -411,7 +411,7 @@ def unix_time(dt):
     return delta.total_seconds()
 
 
-def get_model(file_name, model_name):
+def get_model(file_name, model_name, service_name=None):
     """
     This function is used to import module from given parameters.
     e.g. if we want to import SmsCampaign database model, we will provide
@@ -429,7 +429,10 @@ def get_model(file_name, model_name):
     raise_if_not_instance_of(model_name, basestring)
     logger = current_app.config[TalentConfigKeys.LOGGER]
     model_name = snake_case_to_pascal_case(model_name)
-    module_name = file_name + '_service.common.models.' + file_name
+    if service_name:
+        module_name = service_name + '_service.common.models.' + file_name
+    else:
+        module_name = file_name + '_service.common.models.' + file_name
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)

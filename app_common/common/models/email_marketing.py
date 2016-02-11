@@ -45,7 +45,7 @@ class EmailCampaign(db.Model):
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
-                "list_ids": EmailCampaignSmartList.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
+                "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
 
     def get_id(self):
         return unicode(self.id)
@@ -54,7 +54,7 @@ class EmailCampaign(db.Model):
         return "<EmailCampaign(name=' %r')>" % self.name
 
 
-class EmailCampaignSmartList(db.Model):
+class EmailCampaignSmartlist(db.Model):
     __tablename__ = 'email_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column('SmartListId', db.Integer,
@@ -65,7 +65,7 @@ class EmailCampaignSmartList(db.Model):
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
-        records = cls.query.filter(EmailCampaignSmartList.email_campaign_id == campaign_id).all()
+        records = cls.query.filter(EmailCampaignSmartlist.email_campaign_id == campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
         return records

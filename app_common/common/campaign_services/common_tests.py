@@ -14,10 +14,12 @@ import requests
 # Application Specific
 from ..tests.conftest import fake
 from ..models.misc import Frequency
-from campaign_utils import to_utc_str
+from ..routes import CandidatePoolApiUrl
+from custom_errors import CampaignException
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
+from campaign_utils import (to_utc_str, get_model, CampaignUtils)
 
 
 class CampaignsCommonTests(object):
@@ -149,6 +151,69 @@ class CampaignsCommonTests(object):
         assert error, 'error key is missing from response'
         assert error['message']
         return error
+
+    @classmethod
+    def campaign_send_with_no_smartlist(cls, url, access_token):
+        """
+        This is the test to send a campaign which has no smartlist associated  with it.
+        It should get Invalid usage error. Custom error should be
+        NoSmartlistAssociatedWithCampaign.
+        """
+        response = send_request('post', url, access_token, None)
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be invalid usage error(400)'
+        error_resp = response.json()['error']
+        assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+        assert 'No Smartlist'.lower() in error_resp['message'].lower()
+
+    @classmethod
+    def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign):
+        """
+        User auth token is valid, campaign has one smart list associated. But smartlist has
+        no candidate associated with it. It should get invalid usage error.
+        Custom error should be NoCandidateAssociatedWithSmartlist .
+        :return:
+        """
+        smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token)
+        campaign_type = campaign.__tablename__
+        #  Need to do this because cannot make changes until prod is stable
+        if campaign_type == CampaignUtils.EMAIL:
+            campaign_smartlist_model = get_model('email_marketing',  campaign_type + '_smartlist',
+                                                 service_name=campaign_type)
+            campaign_smartlist_obj = campaign_smartlist_model(email_campaign_id=campaign.id,
+                                                              smartlist_id=smartlist_id)
+        else:
+            campaign_smartlist_model = get_model(campaign_type,  campaign_type + '_smartlist')
+            campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
+                                                              smartlist_id=smartlist_id)
+        campaign_smartlist_model.save(campaign_smartlist_obj)
+        response_post = send_request('post', url, access_token)
+        assert response_post.status_code == InvalidUsage.http_status_code(), \
+            'It should be invalid usage error (400)'
+        assert response_post.json()['error']['code'] == \
+               CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
+        assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
+
+
+class FixtureHelpers(object):
+    """
+    This contains the functions which will be useful for similar fixtures across campaigns
+    """
+    @classmethod
+    def create_smartlist_with_search_params(cls, access_token):
+        """
+        This creates a smartlist with search params and returns the id of smartlist
+        """
+        name = fake.word()
+        search_params = {"maximum_years_experience": "5", "location": "San Jose, CA",
+                         "minimum_years_experience": "2"}
+        data = {'name': name, 'search_params': search_params}
+        response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, access_token, data)
+        assert response.status_code == 201  # Successfully created
+        json_resp = response.json()
+        assert 'smartlist' in json_resp
+        assert 'id' in json_resp['smartlist']
+        return json_resp['smartlist']['id']
 
 
 def send_request(method, url, access_token, data=None, is_json=True, data_dumps=True):
