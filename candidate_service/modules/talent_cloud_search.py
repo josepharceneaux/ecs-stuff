@@ -159,6 +159,9 @@ def get_cloud_search_connection():
         if not _cloud_search_domain:
             _cloud_search_connection_layer_2.create_domain(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
 
+        logger.info("Connection to CloudSearch domain %s in region %s established" %
+                    (app.config[TalentConfigKeys.CS_DOMAIN_KEY], app.config[TalentConfigKeys.CS_REGION_KEY]))
+
     return _cloud_search_connection_layer_2
 
 #

@@ -614,6 +614,8 @@ class UserGroup(db.Model):
         """
         user_groups = []
         for group in groups:
+            if not isinstance(group, dict):
+                raise InvalidUsage(error_message="Request body is not properly formatted")
             name = group.get('name')
             description = group.get('description')
             already_existing_group = UserGroup.query.filter_by(name=name, domain_id=domain_id).first()
@@ -652,6 +654,8 @@ class UserGroup(db.Model):
         """
         if Domain.query.get(domain_id):
             for group in groups:
+                if not isinstance(group, basestring) and not isinstance(group, (int, long)):
+                    raise InvalidUsage(error_message="Request body is not properly formatted")
                 if is_number(group):
                     group_id = group
                 else:
@@ -679,6 +683,7 @@ class UserGroup(db.Model):
         :rtype: None
         """
         for user_id in user_ids:
+            assert is_number(user_id)
             user = User.query.get(user_id) or None
             if user and user.domain_id == user_group.domain_id:
                 if user.user_group_id == user_group.id:
