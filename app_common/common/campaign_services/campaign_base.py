@@ -488,7 +488,7 @@ class CampaignBase(object):
                                  % (campaign_obj.__tablename__, campaign_obj.id,
                                     current_user.id))
 
-
+    @staticmethod
     def get_domain_id_of_campaign(campaign_obj, current_user_id):
         """
         This returns the domain id of user who created the given campaign.
@@ -514,7 +514,7 @@ class CampaignBase(object):
                                  % (campaign_obj.__tablename__, campaign_obj.id,
                                     current_user_id))
         # using relationship
-        return campaign_obj.user.doamin_id
+        return campaign_obj.user.domain_id
 
     def delete(self, campaign_id):
         """

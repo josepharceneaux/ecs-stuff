@@ -52,6 +52,7 @@ class User(db.Model):
     user_group = relationship('UserGroup', backref='user')
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True, backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
+    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')

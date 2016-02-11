@@ -3,7 +3,6 @@ __author__ = 'basit'
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
-from candidate import Candidate
 from ..error_handling import InvalidUsage
 
 
