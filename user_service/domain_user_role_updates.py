@@ -45,7 +45,8 @@ def add_user_roles():
     print "running: add_user_roles()"
     existing_users = User.query.all()
     domain_roles = DomainRole.query.filter(DomainRole.role_name.notlike('%delete_user%') &
-                                           DomainRole.role_name.notlike('%delete_domain%')).all()
+                                           DomainRole.role_name.notlike('%delete_domain%') &
+                                           DomainRole.role_name.notilike('%delete_talent%')).all()
     for user in existing_users:
         print "user in progress: {}".format(user)
         for role in domain_roles:
@@ -123,7 +124,7 @@ def add_talent_pool_group():
     for talent_pool in talent_pools:
         print "talent_pool in progress: {}".format(talent_pool)
         talent_pool_id = talent_pool.id
-        user_group_id = User.query.get(talent_pool.owner_user_id).user_group_id
+        user_group_id = User.query.get(talent_pool.user_id).user_group_id
         tpg = TalentPoolGroup.query.filter_by(talent_pool_id=talent_pool_id).first()
         if not tpg:
             print "talent_pool_id: {}, user_group_id: {}".format(talent_pool_id, user_group_id)
