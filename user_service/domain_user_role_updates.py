@@ -92,7 +92,7 @@ def add_talent_pool():
         print "domain in progress: {}".format(domain)
         talent_pool = TalentPool.query.filter_by(domain_id=domain.id).first()
         if not talent_pool and domain.users:
-            db.session.add(TalentPool(domain_id=domain.id, owner_user_id=domain.users[0].id, name='default'))
+            db.session.add(TalentPool(domain_id=domain.id, user_id=domain.users[0].id, name='default'))
             db.session.commit()
 
 
@@ -103,17 +103,17 @@ def add_talent_pool_candidate():
     start = 0
     while start < number_of_candidates:
 
-        for candidate in Candidate.query.slice(start, start + 500).all():
+        for candidate in Candidate.query.slice(start, start + 10).all():
             print "candidate in progress: {}".format(candidate)
             owner_user_id = candidate.user_id
             domain_id = User.get_domain_id(_id=owner_user_id)
-            talent_pool = TalentPool.query.filter_by(domain_id=domain_id, owner_user_id=owner_user_id).first()
-            tpc = TalentPoolCandidate.get(candidate_id=candidate.id, talent_pool_id=talent_pool.id)
-            if not tpc:
-                db.session.add(TalentPoolCandidate(candidate_id=candidate.id, talent_pool_id=talent_pool.id))
-                db.session.commit()
+            talent_pool = TalentPool.query.filter_by(domain_id=domain_id, user_id=owner_user_id).first()
+            if talent_pool:
+                if not TalentPoolCandidate.get(candidate_id=candidate.id, talent_pool_id=talent_pool.id):
+                    db.session.add(TalentPoolCandidate(candidate_id=candidate.id, talent_pool_id=talent_pool.id))
+                    db.session.commit()
 
-        start += 500
+        start += 10
 
 
 def add_talent_pool_group():

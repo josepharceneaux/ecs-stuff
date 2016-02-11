@@ -145,7 +145,8 @@ def test_invalid_token_fails():
 def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert 'candidate' in response, "Candidate should be in response content"
     assert 'id' in response['candidate'], "Candidate should contain id in response if create=True."
@@ -156,7 +157,8 @@ def test_batch_processing(user_fixture, token_fixture):
     # create a single file queue
     user_id = user_fixture.id
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
