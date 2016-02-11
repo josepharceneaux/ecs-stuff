@@ -243,3 +243,16 @@ class PushCampaignBase(CampaignBase):
         :return:
         """
         db.session.rollback()
+
+    def save(self, form_data):
+        """
+        This overrides tha CampaignBase class method. This appends user_phone_id in
+        form_data and calls super constructor to save the campaign in database.
+        :param form_data: data from UI
+        :type form_data: dict
+        :return: id of sms_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
+        :rtype: tuple
+        """
+        form_data['user_id'] = self.user.id
+        return super(PushCampaignBase, self).save(form_data)
+

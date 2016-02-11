@@ -65,7 +65,7 @@ def sanitize_zip_code(zip_code):
     return None
 
 
-def is_valid_url(url):
+def is_valid_url_format(url):
     """
     Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
     """

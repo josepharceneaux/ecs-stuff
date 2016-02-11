@@ -7,7 +7,7 @@ For Celery to run from command line, script runs as separate process with celery
 
  Run the following command to start celery worker:
 
-    $ celery -A sms_campaign_service.sms_campaign_app.app.celery_config.celery_app worker --concurrency=4 --loglevel=info
+    $ celery -A sms_campaign_service.sms_campaign_app.celery_app worker --concurrency=4 --loglevel=info
 """
 
 # Service Specific

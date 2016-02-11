@@ -61,14 +61,14 @@ class TestSmsCampaignWithIdHTTPGET(object):
         assert response_campaign['name'] == campaign.name
         assert response_campaign['body_text'] == campaign.body_text
 
-    def test_with_not_owned_campaign(self, access_token_first, sms_campaign_of_other_user):
+    def test_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
-        User auth token is valid. It uses 'sms_campaign_of_other_user' fixture
+        User auth token is valid. It uses 'sms_campaign_in_other_domain' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
-        Response should get Forbidden error as current user is not an owner of this campaign.
+        Response should get Forbidden error campaign does not belong to domain of logged-in user.
         :return:
         """
-        response = requests.get(self.URL % sms_campaign_of_other_user.id,
+        response = requests.get(self.URL % sms_campaign_in_other_domain.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error(403)'
@@ -163,16 +163,16 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert resp['end_datetime'] == \
                scheduler_data['end_datetime'].replace('T', ' ').replace('Z', '')
 
-    def test_updating_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user,
+    def test_updating_not_owned_sms_campaign(self, valid_header, sms_campaign_in_other_domain,
                                              campaign_valid_data, user_phone_1):
         """
-        Here we try to update a campaign such that current user is not an owner of. It should get
-        forbidden error.
+        Here we try to update a campaign which does not belong to domain of logged-in user.
+        It should get forbidden error.
         """
         modified_name = 'Modified Name'
         campaign_valid_data.update({'name': modified_name})
         response_post = requests.put(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_other_user.id,
+            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_in_other_domain.id,
             headers=valid_header,
             data=json.dumps(campaign_valid_data))
         assert response_post.status_code == ForbiddenError.http_status_code(), \
@@ -279,13 +279,14 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsCommonTests.get_last_id(Smartlist)
-        data['smartlist_ids'] = [last_id+100, 0, smartlist_of_other_domain.id]
+        data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=valid_header,
                                 data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_update_with_invalid_campaign_id(self, access_token_first, campaign_valid_data):
+    def test_campaign_update_with_invalid_campaign_id(self, access_token_first,
+                                                      campaign_valid_data):
         """
         This is a test to update a campaign which does not exists in database.
         :param access_token_first:
@@ -325,13 +326,13 @@ class TestSmsCampaignWithIdHTTPDelete(object):
                                    headers=valid_header)
         assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user.id)
 
-    def test_not_owned_sms_campaign(self, valid_header, sms_campaign_of_other_user):
+    def test_not_owned_sms_campaign(self, valid_header, sms_campaign_in_other_domain):
         """
         User auth token is valid. It tries to delete the campaign of some other user
         from database. It should get forbidden error.
         :return:
         """
-        response = requests.delete(self.URL % sms_campaign_of_other_user.id,
+        response = requests.delete(self.URL % sms_campaign_in_other_domain.id,
                                    headers=valid_header)
         assert response.status_code == ForbiddenError.http_status_code(), \
             'it should get forbidden error (403)'

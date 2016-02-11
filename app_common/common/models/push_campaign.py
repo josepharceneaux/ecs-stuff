@@ -17,7 +17,7 @@ class PushCampaign(db.Model):
     start_datetime = db.column(db.DateTime)
     end_datetime = db.column(db.DateTime)
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.Id', ondelete='CASCADE'))
 
     # Relationships
 
@@ -61,7 +61,7 @@ class PushCampaignBlast(db.Model):
 class PushCampaignSend(db.Model):
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.id', ondelete='CASCADE'))
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
     campaign_blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
                                   nullable=False)
@@ -104,7 +104,7 @@ class PushCampaignSend(db.Model):
 class PushCampaignSmartlist(db.Model):
     __tablename__ = 'push_campaign_smartlist'
     id = db.Column(db.Integer, primary_key=True)
-    smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.id", ondelete='CASCADE'),
+    smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.Id", ondelete='CASCADE'),
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("push_campaign.id", ondelete='CASCADE'), nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
@@ -136,7 +136,7 @@ class PushCampaignSendUrlConversion(db.Model):
                                       db.ForeignKey("push_campaign_send.id", ondelete='CASCADE'),
                                       nullable=False)
     url_conversion_id = db.Column(db.Integer,
-                                  db.ForeignKey("url_conversion.id", ondelete='CASCADE'),
+                                  db.ForeignKey("url_conversion.Id", ondelete='CASCADE'),
                                   nullable=False)
 
     def __repr__(self):

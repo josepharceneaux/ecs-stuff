@@ -18,6 +18,7 @@ import datetime
 import uuid
 import time
 import requests
+from dateutil.parser import parse
 
 
 class TestCandidateSearchGet(object):
@@ -151,27 +152,35 @@ def test_search_candidate_experience(user_first, access_token_first):
     """Test to search candidates with experience"""
     AddUserRoles.add_and_get(user=user_first)
     user_id = user_first.id
-    experience_2_years = [{'organization': 'Intel', 'position': 'Research analyst', 'startYear': 2013, 'startMonth': 06,
-                           'endYear': 2015, 'endMonth': '06'}]
-    experience_0_years = [{'organization': 'Audi', 'position': 'Mechanic', 'startYear': 2015, 'startMonth': 01,
-                           'endYear': 2015, 'endMonth': 02}]
+    experience_2_years = {'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013, 'start_month': 06,
+                          'end_year': 2015, 'end_month': '06'}
+    experience_0_years = {'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015, 'start_month': 01,
+                          'end_year': 2015, 'end_month': 02, 'is_current': True}
     candidate_ids = []
     candidate_with_0_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dicts=experience_0_years)
+                                                     candidate_experience_dict=experience_0_years)
     for candidate_id in candidate_with_0_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=2))
         db.session.flush()
         candidate_ids.append(candidate_id)
     candidate_with_2_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dicts=experience_2_years)
+                                                     candidate_experience_dict=experience_2_years)
     for candidate_id in candidate_with_2_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=24))
         db.session.commit()
         candidate_ids.append(candidate_id)
     # Update cloud_search
     upload_candidate_documents(candidate_ids)
-    response = get_response_from_authorized_user(access_token_first, '?minimum_years_experience=0&maximum_years_experience=2')
-    _assert_results(candidate_ids, response.json())
+    response = get_response_from_authorized_user(access_token_first,
+                                                 '?minimum_years_experience=0&maximum_years_experience=2').json()
+    for candidate in response['candidates']:
+        start_date_at_current_job = candidate.get('start_date_at_current_job', '')
+        if start_date_at_current_job:
+            start_date_at_current_job = parse(start_date_at_current_job)
+            assert start_date_at_current_job.month == 1
+            assert start_date_at_current_job.year == 2015
+
+    _assert_results(candidate_ids, response)
 
 
 def test_search_position(user_first, access_token_first):

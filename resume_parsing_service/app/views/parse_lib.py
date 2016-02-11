@@ -1,4 +1,5 @@
 """Main resume parsing logic & functions."""
+# pylint: disable=wrong-import-position, fixme
 # Standard library
 from cStringIO import StringIO
 from os.path import basename
@@ -37,10 +38,11 @@ DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
-    :return: dict: {'candidate': {}}
+    :return: dict: {'candidate': {...}, 'raw': {...}}
     """
     filepicker_key = parse_params.get('filepicker_key')
-    create_candidate = parse_params.get('create_candidate')
+    # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
+    create_candidate = parse_params.get('create_candidate', False)
     talent_pools = parse_params.get('talent_pools')
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
@@ -53,20 +55,22 @@ def process_resume(parse_params):
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
-    result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
     # Emails and talent pools are the ONLY thing required to create a candidate.
-    email_present = True if result_dict['candidate'].get('emails') else False
+    email_present = True if parsed_resume['candidate'].get('emails') else False
+    if create_candidate and not email_present:
+        raise InvalidUsage('Email fields (required for candidate creation) could not be parsed.')
     if create_candidate and email_present and talent_pools:
-        result_dict['candidate']['talent_pool_ids']['add'] = talent_pools
-        candidate_response = create_parsed_resume_candidate(result_dict['candidate'],
+        parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+        candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                             parse_params.get('oauth'))
         # TODO: Check for good response code!
         response_dict = json.loads(candidate_response)
         if 'error' in candidate_response:
             raise InvalidUsage(response_dict['error']['message'])
         candidate_id = response_dict.get('candidates')
-        result_dict['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
-    return result_dict
+        parsed_resume['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
+    return parsed_resume
 
 
 def parse_resume(file_obj, filename_str):
@@ -154,6 +158,7 @@ def parse_resume(file_obj, filename_str):
         time() - start_time)
     if optic_response:
         candidate_data = parse_optic_xml(optic_response)
+        # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
         return dict(error='No XML text')

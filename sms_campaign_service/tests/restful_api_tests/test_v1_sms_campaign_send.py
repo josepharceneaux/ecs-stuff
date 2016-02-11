@@ -56,17 +56,16 @@ class TestSendSmsCampaign(object):
             'Record should not be found (404)'
 
     def test_post_with_not_owned_campaign(self, access_token_first,
-                                          sms_campaign_of_other_user):
+                                          sms_campaign_in_other_domain):
         """
-        User auth token is valid but user is not owner of given SMS campaign.
-        It should get Forbidden error.
+        User auth token is valid but given SMS campaign does not belong to domain
+        of logged-in user. It should get Forbidden error.
         :return:
         """
-        response_post = requests.post(self.URL % sms_campaign_of_other_user.id,
+        response_post = requests.post(self.URL % sms_campaign_in_other_domain.id,
                                       headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
-        assert 'not the owner'.lower() in response_post.json()['error']['message'].lower()
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):

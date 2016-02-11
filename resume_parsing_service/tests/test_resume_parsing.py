@@ -145,7 +145,7 @@ def test_v15_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode='True')
+    response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert 'candidate' in response, "Candidate should be in response content"
     assert 'id' in response['candidate'], "Candidate should contain id to signal creation."
 
@@ -215,6 +215,9 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
+        # TODO: investigate the following.
+        # Manually setting headers here breaks test. The goal was to ensure the content-type was
+        # passed as intended but doing so causes the data/files attrs to not get picked up by Flask.
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},
@@ -230,7 +233,9 @@ def fetch_resume_fp_key_response(token_fixture, fp_key):
     test_response = requests.post(ResumeApiUrl.PARSE,
                                   headers={
                                       'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token)},
-                                  data={'filepicker_key': fp_key}
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'filepicker_key': fp_key})
                                  )
     return json.loads(test_response.content)

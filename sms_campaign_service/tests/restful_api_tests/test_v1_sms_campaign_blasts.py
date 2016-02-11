@@ -54,7 +54,8 @@ class TestSmsCampaignBlasts(object):
         """
         CampaignsCommonTests.request_after_deleting_campaign(sms_campaign_of_current_user,
                                                              SmsCampaignApiUrl.CAMPAIGN,
-                                                             self.URL, self.METHOD, access_token_first)
+                                                             self.URL, self.METHOD,
+                                                             access_token_first)
 
     def test_get_with_saved_blasts(self, access_token_first, candidate_phone_1,
                                    sms_campaign_of_current_user,
@@ -79,12 +80,12 @@ class TestSmsCampaignBlasts(object):
         assert json_resp['sends'] == 2
         assert json_resp['replies'] == 1
 
-    def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_of_other_user):
+    def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
         This is the case where we try to get sends of a campaign which was created by
         some other user. It should get Forbidden error.
         :return:
         """
         CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_of_other_user.id,
+                                                         self.URL % sms_campaign_in_other_domain.id,
                                                          access_token_first)

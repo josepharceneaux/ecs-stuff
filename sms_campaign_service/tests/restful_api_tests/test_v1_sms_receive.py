@@ -107,7 +107,7 @@ class TestSmsReceive(object):
             assert error.error_code == SmsCampaignApiException.NO_CANDIDATE_IN_USER_DOMAIN
 
     def test_process_candidate_reply_with_candidate_of_other_domain(
-            self, user_phone_1,  candidate_phone_in_other_domain):
+            self, user_phone_1, candidate_phone_in_other_domain):
         """
         This tests the functionality of process_candidate_reply() class method of SmsCampaignBase.
         Data passed is valid, but candidate phone belongs to other domain.

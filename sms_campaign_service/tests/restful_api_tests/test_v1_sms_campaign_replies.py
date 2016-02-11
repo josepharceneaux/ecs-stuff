@@ -33,7 +33,8 @@ class TestSmsCampaignReplies(object):
         CampaignsCommonTests.request_with_invalid_token(self.METHOD, self.URL
                                                         % sms_campaign_of_current_user.id, None)
 
-    def test_get_with_no_replies_on_campaign(self, access_token_first, sms_campaign_of_current_user):
+    def test_get_with_no_replies_on_campaign(self, access_token_first,
+                                             sms_campaign_of_current_user):
         """
         Here we are assuming that SMS campaign has been sent to candidates.
         And we didn't receive any reply from candidate. Replies count should be 0.
@@ -55,7 +56,8 @@ class TestSmsCampaignReplies(object):
         """
         CampaignsCommonTests.request_after_deleting_campaign(sms_campaign_of_current_user,
                                                              SmsCampaignApiUrl.CAMPAIGN,
-                                                             self.URL, self.METHOD, access_token_first)
+                                                             self.URL, self.METHOD,
+                                                             access_token_first)
 
     def test_get_with_valid_token_and_one_reply(self, access_token_first, candidate_phone_1,
                                                 sms_campaign_of_current_user,
@@ -77,14 +79,14 @@ class TestSmsCampaignReplies(object):
         assert json_resp['blast_id'] == sms_campaign_of_current_user.blasts[0].id
         assert json_resp['candidate_phone_id'] == candidate_phone_1.id
 
-    def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_of_other_user):
+    def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
         This is the case where we try to get replies of a campaign which was created by
         some other user. It should get Forbidden error.
         :return:
         """
         CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_of_other_user.id,
+                                                         self.URL % sms_campaign_in_other_domain.id,
                                                          access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first):

@@ -130,6 +130,7 @@ def schedule_daily_task_unless_already_scheduled(task_name, url):
         "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),  # Start it 10 seconds from now
         "end_datetime": "2099-01-05T08:00:00",
         "url": url,
+        "is_jwt_request": True,
         "task_name": task_name
     }
 

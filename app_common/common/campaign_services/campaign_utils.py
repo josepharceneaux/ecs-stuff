@@ -379,8 +379,7 @@ class CampaignUtils(object):
         campaign_model = get_model(campaign_type, campaign_type)
         campaign_obj = campaign_model.query.get(campaign_id)
         if not campaign_obj:
-            raise ResourceNotFound(
-                '%s(id=%s) not found.' % (campaign_model.__tablename__, campaign_id))
+            raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
 
 def to_utc_str(dt):

@@ -182,7 +182,7 @@ def populate_candidates(oauth_token, count=1, first_name=True, middle_name=False
 
         try:
             r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate]}),
-                              headers={'Authorization': 'Bearer %s' % oauth_token})
+                              headers={'Authorization': 'Bearer %s' % oauth_token, 'Content-Type': 'application/json'})
 
             if r.status_code == 201:
                 candidate_ids.append(r.json().get('candidates')[0].get('id'))

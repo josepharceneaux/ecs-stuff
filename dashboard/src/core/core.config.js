@@ -17,13 +17,13 @@
     configFunction.$inject = ['$provide', '$compileProvider', '$httpProvider', '$logProvider', 'exceptionHandlerProvider',
         'OAuthProvider', 'OAuthTokenProvider', 'pickADateProvider', 'pickATimeProvider',
         'tagsInputConfigProvider', 'authInfo', '$uibTooltipProvider', '$mdThemingProvider',
-        'toastrConfig', '$breadcrumbProvider'];
+        'toastrConfig', '$breadcrumbProvider', 'areaGraphConfigProvider'];
 
     /* @ngInject */
     function configFunction($provide, $compileProvider, $httpProvider, $logProvider, exceptionHandlerProvider,
                             OAuthProvider, OAuthTokenProvider, pickADateProvider, pickATimeProvider,
                             tagsInputConfigProvider, authInfo, $uibTooltipProvider, $mdThemingProvider,
-                            toastrConfig, $breadcrumbProvider) {
+                            toastrConfig, $breadcrumbProvider, areaGraphConfigProvider) {
 
         // During development, you may want to set debugInfoEnabled to true. This is required for tools like
         // Protractor, Batarang and ng-inspector to work correctly. However do not check in this change.
@@ -122,6 +122,10 @@
 
         $breadcrumbProvider.setOptions({
             templateUrl: 'core/modules/breadcrumb/breadcrumb.html'
+        });
+
+        areaGraphConfigProvider.setOptions({
+            colors: {}
         });
     }
 

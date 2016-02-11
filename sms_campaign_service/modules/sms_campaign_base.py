@@ -115,7 +115,7 @@ class SmsCampaignBase(CampaignBase):
         SMS campaign record in sms_campaign table with frequency_id, start_datetime,
         end_datetime and "task_id"(Task created on APScheduler).
 
-    * get_user_id_of_owner(campaign_obj, current_user_id)
+    * get_domain_id_of_campaign(campaign_obj, current_user_id)
         This gets the if of user who created the given campaign object.
 
     * does_candidate_have_unique_mobile_phone(self, candidate)
@@ -377,7 +377,7 @@ class SmsCampaignBase(CampaignBase):
         return scheduler_task_id
 
     @staticmethod
-    def get_user_id_of_owner(campaign_obj, current_user_id):
+    def get_domain_id_of_campaign(campaign_obj, current_user_id):
         """
         This implements the base class method and returns the id of user who created the
         given campaign.
@@ -386,19 +386,19 @@ class SmsCampaignBase(CampaignBase):
         :type campaign_obj: SmsCampaign
         :type current_user_id: int | long
         :exception: Invalid Usage
-        :return: id of owner user of given campaign
+        :return: domain_id of owner user of given campaign
         :rtype: int | long
         """
         CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
         if not campaign_obj.user_phone_id:
-            raise ForbiddenError('SMS campaign(id:%s) has no user_phone associated.'
-                                 % campaign_obj.id)
+            raise ForbiddenError('%s(id:%s) has no user_phone associated.'
+                                 % (campaign_obj.__tablename__, campaign_obj.id))
         # using relationship
         user_phone = campaign_obj.user_phone
         if not user_phone:
             raise InvalidUsage('User(id:%s) has no phone number associated.' % current_user_id)
         # using relationship
-        return user_phone.user_id
+        return user_phone.user.domain_id
 
     def does_candidate_have_unique_mobile_phone(self, candidate):
         """

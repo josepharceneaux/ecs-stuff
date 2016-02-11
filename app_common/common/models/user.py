@@ -2,9 +2,8 @@ import time
 import os
 import uuid
 import datetime
-from sqlalchemy import and_
 from flask import request
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
 from werkzeug.security import generate_password_hash
 
@@ -17,20 +16,19 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_marketing import EmailCampaign
-from sms_campaign import SmsCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 
 class User(db.Model):
     __tablename__ = 'user'
-    id = db.Column(db.Integer, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.id'))
+    id = db.Column('Id', db.BIGINT, primary_key=True)
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
     device_token = db.Column('deviceToken', db.String(64))
     expiration = db.Column(db.DateTime)
     mobile_version = db.Column('mobileVersion', db.String(10))
-    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.id'))
+    default_culture_id = db.Column('defaultCultureId', db.Integer, db.ForeignKey('culture.Id'))
     phone = db.Column(db.String(50))
     get_started_data = db.Column('getStartedData', db.String(127))
     registration_key = db.Column(db.String(512))
@@ -42,8 +40,8 @@ class User(db.Model):
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('updatedTime', db.DateTime)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.id', ondelete='CASCADE'))
-    last_read_datetime  = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
+    last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     # TODO: Set Nullable = False after setting user_group_id for existing data
@@ -52,14 +50,13 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
-    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
-                               backref='user')
+    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True, backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
+    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
-    culture = relationship(u'Culture', backref=db.backref('user', cascade="all, delete-orphan"))
 
     @staticmethod
     def generate_jw_token(expiration=600, user_id=None):
@@ -133,14 +130,11 @@ class User(db.Model):
         Function creates a unique user for testing
         :rtype: User
         """
-
-        user = User(
-            email='{}@example.com'.format(uuid.uuid4().__str__()),
-            password=generate_password_hash(password, method='pbkdf2:sha512'),
-            domain_id=domain_id,
-            user_group_id=user_group_id,
-            expiration=None
-        )
+        user = User(email='{}@example.com'.format(uuid.uuid4().__str__()),
+                    password=generate_password_hash(password, method='pbkdf2:sha512'),
+                    domain_id=domain_id,
+                    user_group_id=user_group_id,
+                    expiration=None)
         session.add(user)
         session.commit()
         return user
@@ -149,8 +143,8 @@ class User(db.Model):
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.id', ondelete='CASCADE'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    phone_label_id = db.Column(db.Integer, db.ForeignKey('phone_label.Id', ondelete='CASCADE'))
     value = db.Column(db.String(50), nullable=False)
 
     # Relationship
@@ -182,20 +176,20 @@ class UserPhone(db.Model):
 
 class Domain(db.Model):
     __tablename__ = 'domain'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50))
-    usage_limitation = db.Column('usageLimitation', db.Integer)
-    expiration = db.Column(db.DateTime)
-    added_time = db.Column('addedTime', db.DateTime)
-    organization_id = db.Column('organizationId', db.Integer)
-    is_fair_check_on = db.Column('isFairCheckOn', db.Boolean, default=False)
-    is_active = db.Column('isActive', db.Boolean, default=True)  # TODO: store as 0 or 1
-    default_tracking_code = db.Column('defaultTrackingCode', db.SmallInteger)
-    default_culture_id = db.Column('defaultCultureId', db.Integer, default=1)
-    default_from_name = db.Column('defaultFromName', db.String(255))
-    settings_json = db.Column('settingsJson', db.Text)
-    updated_time = db.Column('updatedTime', db.TIMESTAMP, default=datetime.datetime.now())
-    dice_company_id = db.Column('diceCompanyId', db.Integer, index=True)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(50))
+    usage_limitation = db.Column('UsageLimitation', db.Integer)
+    organization_id = db.Column('OrganizationId', db.Integer)
+    is_fair_check_on = db.Column('IsFairCheckOn', db.Boolean, default=False)
+    is_active = db.Column('IsActive', db.Boolean, default=True)
+    default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
+    default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
+    settings_json = db.Column('SettingsJson', db.Text)
+    expiration = db.Column('Expiration', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime)
+    default_from_name = db.Column('DefaultFromName', db.String(255))
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
 
     # Relationships
@@ -218,7 +212,6 @@ class Domain(db.Model):
         Function creates a unique domain + domain's UserGroup for testing
         :return:
         """
-        from datetime import timedelta
         domain = Domain(name='{}'.format(uuid.uuid4().__str__()[0:8]),
                         expiration='0000-00-00 00:00:00')
         session.add(domain)
@@ -229,24 +222,31 @@ class Domain(db.Model):
 class WebAuthGroup(db.Model):
     __tablename__ = 'web_auth_group'
     id = db.Column(db.BIGINT, primary_key=True)
-    role = db.Column('role', db.String(255))
-    description = db.Column('description', db.TEXT)
+    role = db.Column(db.String(255))
+    description = db.Column(db.TEXT)
+
+    def __repr__(self):
+        return "<WebAuthGroup (id = {})>".format(self.id)
 
 
 class WebAuthMembership(db.Model):
     __tablename__ = 'web_auth_membership'
     id = db.Column(db.BIGINT, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))
     group_id = db.Column(db.BIGINT, db.ForeignKey('web_auth_group.id'))
 
+    # Relationship
     web_auth_group = relationship('WebAuthGroup', backref='web_auth_membership')
     user = relationship('User', backref='web_auth_membership')
+
+    def __repr__(self):
+        return "<WebAuthMembership (id = {})>".format(self.id)
 
 
 class JobOpening(db.Model):
     __tablename__ = 'job_opening'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.Integer, db.ForeignKey('user.id'))
+    id = db.Column('Id', db.BIGINT, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
@@ -258,7 +258,6 @@ class JobOpening(db.Model):
 
 class Client(db.Model):
     __tablename__ = 'client'
-
     client_id = db.Column(db.String(40), primary_key=True)
     client_secret = db.Column(db.String(55), nullable=False)
     client_name = db.Column(db.String(255))
@@ -287,26 +286,20 @@ class Client(db.Model):
 
 class Token(db.Model):
     __tablename__ = 'token'
-
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(
-        db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
-        nullable=False
-    )
-    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
-
-    user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE')
-    )
-    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
-
-    # currently only bearer is supported
+    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
+                          nullable=False)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     token_type = db.Column(db.String(40))
-
     access_token = db.Column(db.String(255), unique=True)
     refresh_token = db.Column(db.String(255), unique=True)
     expires = db.Column(db.DateTime)
     _scopes = db.Column(db.Text)
+
+    # Relationships
+    user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
+    client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
+    # currently only bearer is supported
 
     def delete(self):
         db.session.delete(self)
@@ -314,9 +307,7 @@ class Token(db.Model):
 
     @property
     def scopes(self):
-        if self._scopes:
-            return self._scopes.split()
-        return []
+        return self._scopes.split() if self._scopes else []
 
     @classmethod
     def get_by_user_id(cls, user_id):
@@ -341,12 +332,12 @@ class DomainRole(db.Model):
     __tablename__ = 'domain_role'
     id = db.Column(db.Integer, primary_key=True)
     role_name = db.Column(db.String(255), nullable=False, unique=True)
+    domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
 
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'))  # TODO specify that it can be NULL
     domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
 
     def __repr__(self):
-        return "<DomainRole: (id = {})>".format(self.id)
+        return "<DomainRole (id = {})>".format(self.id)
 
     class Roles(object):
         """
@@ -403,18 +394,23 @@ class DomainRole(db.Model):
         CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
         CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
 
+        # Talent Pool Group
         CAN_GET_TALENT_POOLS_OF_GROUP = "CAN_GET_TALENT_POOLS_OF_GROUP"
         CAN_DELETE_TALENT_POOLS_FROM_GROUP = "CAN_DELETE_TALENT_POOLS_FROM_GROUP"
         CAN_ADD_TALENT_POOLS_TO_GROUP = "CAN_ADD_TALENT_POOLS_TO_GROUP"
 
+        # Candidate from Talent Pool
         CAN_GET_CANDIDATES_FROM_TALENT_POOL = "CAN_GET_CANDIDATES_FROM_TALENT_POOL"
         CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
         CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
 
+        # Talent Pool Stats
         CAN_EDIT_TALENT_POOLS_STATS = "CAN_EDIT_TALENT_POOLS_STATS"
 
+        # Smartlist Stats
         CAN_EDIT_SMARTLISTS_STATS = "CAN_EDIT_SMARTLISTS_STATS"
 
+        # Talent Pipeline Candidates
         CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
 
         # Smart List
@@ -496,19 +492,14 @@ class DomainRole(db.Model):
 
 class UserScopedRoles(db.Model):
     __tablename__ = 'user_scoped_roles'
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.INTEGER, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False
-    )
-    role_id = db.Column(
-        db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False
-    )
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
+    role_id = db.Column('RoleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False)
     domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
     user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
 
     def __repr__(self):
-        return "<UserScopedRoles: (id = {})>".format(self.id)
+        return "<UserScopedRoles (id = {})>".format(self.id)
 
     @staticmethod
     def add_roles(user, roles_list):
@@ -577,11 +568,11 @@ class UserScopedRoles(db.Model):
 
 class UserGroup(db.Model):
     __tablename__ = 'user_group'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    description = db.Column(db.String(225), nullable=True)
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.id', ondelete='CASCADE'), nullable=False)
+    id = db.Column('Id', db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(255), nullable=False)
+    description = db.Column('Description', db.String(225), nullable=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'),
+                          nullable=False)
 
     domain = db.relationship('Domain', backref=db.backref('user_group', cascade="all, delete-orphan"))
 
@@ -701,21 +692,18 @@ class UserGroup(db.Model):
 
 
 class UserSocialNetworkCredential(db.Model):
-    """
-    This represents database table that holds user's credentials of a
-    social network.
-    """
+    """ This represents database table that holds user's credentials of a social network. """
     __tablename__ = 'user_social_network_credential'
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('userId', db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.id', ondelete='CASCADE'),
-                                  nullable=False)
-    refresh_token = db.Column('refreshToken', db.String(1000))
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
+    social_network_id = db.Column('SocialNetworkId', db.Integer,
+                                  db.ForeignKey('social_network.Id', ondelete='CASCADE'), nullable=False)
+    refresh_token = db.Column('RefreshToken', db.String(1000))
     webhook = db.Column(db.String(200))
-    member_id = db.Column('memberId', db.String(100))
-    access_token = db.Column('accessToken', db.String(1000))
-    social_network = db.relationship("SocialNetwork", backref=db.backref('user_social_network_credential',
-                                                                         cascade="all, delete-orphan"))
+    member_id = db.Column('MemberId', db.String(100))
+    access_token = db.Column('AccessToken', db.String(1000))
+    social_network = db.relationship("SocialNetwork", backref=db.backref(
+            'user_social_network_credential', cascade="all, delete-orphan"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
@@ -727,26 +715,18 @@ class UserSocialNetworkCredential(db.Model):
     @classmethod
     def get_user_credentials_of_social_network(cls, social_network_id):
         assert social_network_id
-        return cls.query.filter(
-            cls.social_network_id == social_network_id
-        ).all()
+        return cls.query.filter(cls.social_network_id == social_network_id).all()
 
     @classmethod
     def get_by_user_id(cls, user_id):
         assert user_id
-        return cls.query.filter(
-            cls.user_id == user_id
-        ).all()
+        return cls.query.filter(cls.user_id == user_id).all()
 
     @classmethod
     def get_by_user_and_social_network_id(cls, user_id, social_network_id):
         assert user_id and social_network_id
         return cls.query.filter(
-            db.and_(
-                cls.user_id == user_id,
-                cls.social_network_id == social_network_id
-            )
-        ).first()
+            db.and_(cls.user_id == user_id, cls.social_network_id == social_network_id)).first()
 
     @classmethod
     def update_auth_token(cls, user_id, social_network_id, access_token):
@@ -762,8 +742,4 @@ class UserSocialNetworkCredential(db.Model):
     def get_by_webhook_id_and_social_network_id(cls, webhook_id, social_network_id):
         assert webhook_id and social_network_id
         return cls.query.filter(
-            db.and_(
-                cls.webhook == webhook_id,
-                cls.social_network_id == social_network_id
-            )
-        ).one()
+            db.and_(cls.webhook == webhook_id, cls.social_network_id == social_network_id)).one()

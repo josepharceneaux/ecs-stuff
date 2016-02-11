@@ -57,25 +57,25 @@
                                     <th md-column md-order-by="name"><span><a href="">Smart List</a></span></th>
                                     <th md-column md-numeric md-order-by="candidates" md-desc><span>Candidates</span></th>
                                     <th md-column md-numeric md-order-by="newCandidates" md-desc><span>30d</span></th>
-                                    <th md-column md-numeric md-order-by="created"><span>Created</span></th>
+                                    <th md-column md-numeric md-order-by="added_time"><span>Created</span></th>
                                 </tr>
                                 </thead>
                                 <tbody md-body>
                                 <tr md-row
-                                    ng-repeat="p in vm.tableData.pipelines.data
+                                    ng-repeat="p in vm.tableData.smartlists.data
                                 | filter: vm.tableData.query.filter
                                 | orderBy: vm.tableData.query.order
                                 | limitTo: vm.tableData.query.limit : (vm.tableData.query.page -1) * vm.tableData.query.limit">
                                     <td md-cell><a href="">{{p.name}}</a></td>
                                     <td md-cell>{{p.candidates}}</td>
                                     <td md-cell>{{p.newCandidates}}</td>
-                                    <td md-cell>{{p.created | date:'MM/d/y'}}</td>
+                                    <td md-cell>{{p.added_time | date:'MM/d/y'}}</td>
                                 </tr>
                                 </tbody>
                             </table>
                         </md-table-container>
 
-                        <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.pipelines.count}}"
+                        <md-table-pagination md-limit="vm.tableData.query.limit" md-page="vm.tableData.query.page" md-total="{{vm.tableData.smartlists.count}}"
                                              md-page-select md-boundary-links
                                              md-on-paginate="vm.logPagination"></md-table-pagination>
                     </md-card-content>
