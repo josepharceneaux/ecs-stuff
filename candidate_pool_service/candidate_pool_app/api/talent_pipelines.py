@@ -58,7 +58,7 @@ class TalentPipelineApi(Resource):
                     'id': talent_pipeline.id,
                     'name': talent_pipeline.name,
                     'description': talent_pipeline.description,
-                    'user_id': talent_pipeline.owner_user_id,
+                    'user_id': talent_pipeline.user_id,
                     'positions': talent_pipeline.positions,
                     'search_params': json.loads(
                         talent_pipeline.search_params) if talent_pipeline.search_params else None,
@@ -77,7 +77,7 @@ class TalentPipelineApi(Resource):
                         'id': talent_pipeline.id,
                         'name': talent_pipeline.name,
                         'description': talent_pipeline.description,
-                        'user_id': talent_pipeline.owner_user_id,
+                        'user_id': talent_pipeline.user_id,
                         'positions': talent_pipeline.positions,
                         'search_params': json.loads(
                             talent_pipeline.search_params) if talent_pipeline.search_params else None,
@@ -197,7 +197,7 @@ class TalentPipelineApi(Resource):
             search_params = json.dumps(search_params) if search_params else None
 
             talent_pipeline = TalentPipeline(name=name, description=description, positions=positions,
-                                             date_needed=date_needed, owner_user_id=request.user.id,
+                                             date_needed=date_needed, user_id=request.user.id,
                                              talent_pool_id=talent_pool_id, search_params=search_params)
 
             db.session.add(talent_pipeline)
@@ -592,7 +592,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     if not talent_pipeline:
         raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
 
-    if talent_pipeline.owner_user_id != request.user.id:
+    if talent_pipeline.user_id != request.user.id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
                                            % (request.user.id, talent_pipeline.id))
 

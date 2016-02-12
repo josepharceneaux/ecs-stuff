@@ -6,7 +6,8 @@ from faker import Faker
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.models.push_campaign import PushCampaignSmartlist
 from push_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
-from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi
+from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, \
+    UserServiceApiUrl
 from push_campaign_service.common.utils.handy_functions import to_utc_str
 
 fake = Faker()
@@ -217,5 +218,22 @@ def create_smart_list(request, sample_user, test_candidate, test_candidate_devic
                                            campaign_id=campaign_in_db.id)
     PushCampaignSmartlist.save(push_smartlist)
     return smartlist
+
+
+def add_roles(user_id, roles, token):
+    """
+    This method sends a POST request to UserService to add given roles to given user
+    :param user_id: id of user
+    :param roles: permissions list
+    :param token: auth token
+    :return: True | False
+    """
+    data = {
+        "roles": ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS']
+    }
+    response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
+                            token, data=data)
+    assert response.status_code == 200
+    return response.json()['seuccess']
 
 

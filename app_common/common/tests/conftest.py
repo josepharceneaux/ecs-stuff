@@ -397,7 +397,7 @@ def second_group(request, domain_second):
 
 @pytest.fixture()
 def talent_pool(request, domain_first, first_group, user_first):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=user_first.id)
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
     db.session.add(talent_pool)
     db.session.commit()
 

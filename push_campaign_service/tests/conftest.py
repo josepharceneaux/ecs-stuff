@@ -1,16 +1,41 @@
 """
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
+
+This module contains fixtures to be used in tests for push campaign service.
+
+Most of the fixtures are created twice. First one with 'user_first' as owner and those that
+are postfix with  '_2' are owned by 'user_second'. 'user_first' belongs to domain 1 and
+'user_second' belongs to another domain say domain 2.
+
+A user can update or delete objects that  are owned by a user that is from same domain. so there
+are some fixture that are postfix with '_with_same_domain', actually belong to domain 1
+but maybe some other user.
+
 """
 import time
 from datetime import datetime
-
+from push_campaign_service.push_campaign_app.app import app
+from app_common.common.utils.handy_functions import add_role_to_test_user
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.tests.conftest import (user_auth, first_group, sample_user,
-                                                         sample_user_2, test_domain, domain_first,
-                                                         test_org, test_culture)
-from push_campaign_service.common.routes import PushCampaignApiUrl, SchedulerApiUrl
+                                                         sample_user_2, user_from_diff_domain,
+                                                         test_domain, domain_first,
+                                                         test_org, test_domain_2,
+                                                         second_group, domain_second,
+                                                         user_first, user_second, user_same_domain,
+                                                         access_token_first, access_token_second,
+                                                         access_token_same, sample_client, talent_pool)
+from push_campaign_service.common.routes import (PushCampaignApiUrl, SchedulerApiUrl,
+                                                 CandidatePoolApiUrl, CandidateApiUrl,
+                                                 UserServiceApiUrl)
 from push_campaign_service.common.models.db import db
-from push_campaign_service.common.models.smartlist import Smartlist, SmartlistCandidate
+
+from push_campaign_service.tests.test_utilities import (invalid_data_test,
+                                                        unauthorize_test,
+                                                        missing_key_test,
+                                                        send_request, OK,
+                                                        INVALID_USAGE, FORBIDDEN, add_roles)
+from push_campaign_service.common.models.smartlist import Smartlist
 from push_campaign_service.common.models.candidate import (Candidate,
                                                            CandidateDevice,
                                                            CandidateEmail)
@@ -18,9 +43,7 @@ from push_campaign_service.common.models.candidate import (Candidate,
 
 from push_campaign_service.common.models.push_campaign import (PushCampaign,
                                                                PushCampaignSmartlist,
-                                                               PushCampaignBlast,
                                                                PushCampaignSendUrlConversion)
-from push_campaign_service.common.utils.handy_functions import create_test_user
 
 from faker import Faker
 import pytest
@@ -33,7 +56,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
 
 fake = Faker()
 # Service specific
-from push_campaign_service.push_campaign_app.app import app
+
 
 # This is data to create/update SMS campaign
 # This is data to schedule an SMS campaign
@@ -42,19 +65,66 @@ CAMPAIGN_SCHEDULE_DATA = {"frequency_id": 2,
                           "end_datetime": "2015-11-30T08:00:00Z"}
 
 
-@pytest.fixture(params=['valid_token', 'invalid_token'])
-def auth_data(request, user_auth, sample_user):
+
+@pytest.fixture()
+def test_user(request, access_token_first, user_first):
     """
-    returns the access token using pytest fixture defined in common/tests/conftest.py
-    :param user_auth: fixture in common/tests/conftest.py
-    :param sample_user: fixture in common/tests/conftest.py
-    :return token, is_valid (a tuple)
+    This fixture will be used to send request for push campaigns
+    :param request: request object
+    :param access_token_first: auth token for first user
+    :param user_first: first user
+    :return: user dictionary object
     """
-    if request.param == 'valid_token':
-        auth_token_obj = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-        return auth_token_obj['access_token'], True
-    else:
-        return 'invalid_token', False
+    response = send_request('get', UserServiceApiUrl.USER % user_first.id, access_token_first)
+    assert response.status_code == 200
+    user = response.json()['user']
+
+    def tear_down():
+        response = send_request('delete', UserServiceApiUrl.USER % user_first.id, access_token_first)
+        assert response.status_code == 200
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def test_user_2(request, access_token_second, user_second):
+    """
+    This fixture will be used to send request for push campaigns to test same domain functionality
+    :param request: request object
+    :param access_token_second: auth token for first user
+    :param user_second: second user for tests
+    :return: user dictionary object
+    """
+    response = send_request('get', UserServiceApiUrl.USER % user_second.id, access_token_second)
+    assert response.status_code == 200
+    user = response.json()['user']
+
+    def tear_down():
+        response = send_request('delete', UserServiceApiUrl.USER % user_second.id, access_token_second)
+        assert response.status_code == 200
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def test_user_same_domain(request, access_token_same, user_same_domain):
+    """
+    This fixture will be used to send request for push campaigns
+    :param request: request object
+    :param access_token_same: auth token for a user from same domain as of user first
+    :param user_same_domain: user from same domain as of user first
+    :return: user dictionary object
+    """
+    response = send_request('get', UserServiceApiUrl.USER % user_same_domain.id, access_token_same)
+    assert response.status_code == 200
+    user = response.json()['user']
+
+    def tear_down():
+        response = send_request('delete', UserServiceApiUrl.USER % user_same_domain.id, access_token_same)
+        assert response.status_code == 200
+    request.addfinalizer(tear_down)
+    return user
+
 
 
 @pytest.fixture()
@@ -70,38 +140,28 @@ def token(request, user_auth, sample_user):
 
 
 @pytest.fixture()
-def token2(request, user_auth, sample_user_2):
+def token2(request, user_auth, user_second):
     """
-    returns the access token for a different user so that we can test forbidden error etc.
+    returns the access token for a different user in a different domain so that
+    we can test forbidden error etc.
     :param user_auth: fixture in common/tests/conftest.py
-    :param sample_user: fixture in common/tests/conftest.py
+    :param user_second: fixture in common/tests/conftest.py
     :return token
     """
-    auth_token_obj = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)
+    auth_token_obj = user_auth.get_auth_token(user_second, get_bearer_token=True)
     return auth_token_obj['access_token']
 
 
 @pytest.fixture()
-def campaign_in_db(request, sample_user, campaign_data):
-    campaign_data['user_id'] = sample_user.id
-    campaign = PushCampaign(**campaign_data)
-    PushCampaign.save(campaign)
-
-    def tear_down():
-        PushCampaign.delete(campaign, app=app)
-    request.addfinalizer(tear_down)
-    return campaign
-
-
-@pytest.fixture()
-def blast_and_camapign_in_db(token, campaign_in_db, test_smartlist):
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token)
-    logger.info(response.content)
-    assert response.status_code == 200
-    time.sleep(SLEEP_TIME)
-    db.session.commit()
-    blast = campaign_in_db.blasts.first()
-    return campaign_in_db, blast
+def token_with_same_domain(request, user_auth, user_same_domain):
+    """
+    returns the access token for a different user but with same domain
+    :param user_auth: fixture in common/tests/conftest.py
+    :param user_same_domain: fixture in common/tests/conftest.py
+    :return token
+    """
+    auth_token_obj = user_auth.get_auth_token(user_from_diff_domain, get_bearer_token=True)
+    return auth_token_obj['access_token']
 
 
 @pytest.fixture(scope='function')
@@ -118,8 +178,86 @@ def campaign_data(request):
     return data
 
 
+@pytest.fixture()
+def campaign_in_db(request, access_token_first, test_smartlist, campaign_data):
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [test_smartlist.id]
+    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, access_token_first, data)
+    assert response.status_code == 201
+    id = response.json()['id']
+    data['id'] = id
+
+    def tear_down():
+        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id,
+                                access_token_first, data)
+        assert response.status_code == OK
+
+    request.addfinalizer(tear_down)
+    return data
+
+
+@pytest.fixture()
+def campaign_in_db_2(request, access_token_second, test_smartlist_2, campaign_data):
+    """
+    This fixture creates a push campaign in database for sample_user
+    :param request:
+    :param access_token_second: token for user_second
+    :param test_smartlist_2: test smartlist associated to user_second
+    :param campaign_data: dictionary containing campaign data
+    :return:
+    """
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [test_smartlist_2.id]
+    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, access_token_second, data)
+    assert response.status_code == 201
+    id = response.json()['id']
+    data['id'] = id
+
+    def tear_down():
+        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id,
+                                access_token_second, data)
+        assert response.status_code == OK
+
+    request.addfinalizer(tear_down)
+    return data
+
+
+@pytest.fixture()
+def blast_and_camapign_in_db(access_token_first, campaign_in_db, test_smartlist):
+    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, access_token_first)
+    logger.info(response.content)
+    assert response.status_code == 200
+    time.sleep(SLEEP_TIME)
+    db.session.commit()
+    blast = campaign_in_db.blasts.first()
+    return campaign_in_db, blast
+
+
 @pytest.fixture(scope='function')
-def test_smartlist(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
+def test_smartlist(request, access_token_first, test_candidate):
+    """
+    This fixture associates a smartlist with push campaign object
+    :param request: request object
+    :param test_candidate: candidate object
+    :param access_token_first: access token for user_first
+    :return: smartlist id
+    """
+    data = {
+        'candidate_ids': [test_candidate.id],
+        'name': fake.word()
+    }
+    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, access_token_first, data=data)
+    assert response.status_code == 201
+    smartlist_id = response.json()['smartlist']['id']
+
+    def tear_down():
+            Smartlist.delete(smartlist_id)
+    request.addfinalizer(tear_down)
+    return smartlist_id
+
+
+@pytest.fixture(scope='function')
+def test_smartlist_2(request, user_second, test_candidate_2, test_candidate_device_2):
     """
     This fixture associates a smartlist with push campaign object
     :param request: request object
@@ -139,7 +277,7 @@ def test_smartlist(request, sample_user, test_candidate, test_candidate_device, 
 
 
 @pytest.fixture(scope='function')
-def test_smartlist_2(request, sample_user, test_candidate, test_candidate_device, campaign_in_db):
+def test_smartlist_2(request, sample_user, test_candidate_2, test_candidate_device, campaign_in_db):
     """
     This fixture is similar to "test_smartlist".
     it just associates another smartlist with given campaign
@@ -150,8 +288,8 @@ def test_smartlist_2(request, sample_user, test_candidate, test_candidate_device
     :param campaign_in_db:
     :return: smaertlist object
     """
-    smartlist = create_smart_list(request, sample_user, test_candidate,
-                                  test_candidate_device, campaign_in_db)
+    smartlist = create_smart_list(request, sample_user, test_candidate_2,
+                                  test_candidate_device_2, campaign_in_db_2)
 
     def tear_down():
             Smartlist.delete(smartlist)
@@ -259,25 +397,172 @@ def url_conversion(request, token, campaign_in_db, test_smartlist):
 
 
 @pytest.fixture(scope='function')
-def test_candidate(request, sample_user):
+def test_talent_pool(request, test_user, access_token_first, talent_pool):
     """
     This fixture created a test candidate using sample user and it will be deleted
     after test has run.
     """
-    candidate = Candidate(first_name=fake.first_name(),
-                          middle_name=fake.user_name(),
-                          last_name=fake.last_name(),
-                          candidate_status_id=1,
-                          user_id=sample_user.id)
-    Candidate.save(candidate)
-    candidate_email = CandidateEmail(candidate_id=candidate.id,
-                                     email_label_id=1,
-                                     address=fake.email(),
-                                     is_default=True)
-    CandidateEmail.save(candidate_email)
+    roles = ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS']
+    add_roles(test_user['id'], roles, access_token_first)
+    data = {
+        "talent_pools": [
+            {
+                "name": fake.word(),
+                "description": fake.paragraph()
+            }
+        ]
+    }
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, access_token_first, data=data)
+    assert response.status_code == 200
+    talent_pool_id = response.json()['talent_pools'][0]
+
+    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
+                            access_token_first)
+    assert response.status_code == 200
+    talent_pool = response.json()['talent_pool']
+    data = {
+        "talent_pools": [talent_pool_id]
+    }
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % user_first.user_group.id,
+                            access_token_first, data=data)
+    assert response.status_code == 200
 
     def tear_down():
-        Candidate.delete(candidate)
+        response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
+                            access_token_first)
+    assert response.status_code == 200
+
+    request.addfinalizer(tear_down)
+    return talent_pool
+
+
+@pytest.fixture(scope='function')
+def test_talent_pool_2(request, user_second, access_token_second):
+    """
+    This fixture created a test talent pool that is associated to user_second of domain_second
+    """
+    with app.app_context():
+        add_role_to_test_user(user_first, ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS',
+                                           'CAN_DELETE_TALENT_POOLS'])
+    data = {
+        "talent_pools": [
+            {
+                "name": fake.word(),
+                "description": fake.paragraph()
+            }
+        ]
+    }
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, access_token_second, data=data)
+    assert response.status_code == 200
+    talent_pool_id = response.json()['talent_pools'][0]
+
+    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
+                            access_token_second)
+    assert response.status_code == 200
+    talent_pool = response.json()['talent_pool']
+
+    data = {
+        "talent_pools": [talent_pool_id]
+    }
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP,
+                            access_token_second, data=data)
+    assert response.status_code == 200
+
+    def tear_down():
+        response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
+                            access_token_second)
+    assert response.status_code == 200
+
+    request.addfinalizer(tear_down)
+    return talent_pool
+
+
+@pytest.fixture(scope='function')
+def test_candidate(request, user_first, test_talent_pool, access_token_first):
+    """
+    This fixture created a test candidate using sample user and it will be deleted
+    after test has run.
+    """
+    with app.app_context():
+        add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+
+
+
+    data = {
+        "candidates": [
+            {
+                "first_name": fake.first_name(),
+                "middle_name": fake.user_name(),
+                "last_name": fake.last_name(),
+                "talent_pool_ids": {
+                    "add": [test_talent_pool['id']]
+                },
+                "emails": [
+                    {
+                        "label": "Primary",
+                        "address": fake.email(),
+                        "is_default": True
+                    }
+                ]
+            }
+
+        ]
+    }
+    response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data=data)
+    assert response.status_code == 201
+    candidate_id = response.json()['candidates'][0]['id']
+    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+    assert response.status_code == OK
+    candidate = response.json()['candidate']
+
+    def tear_down():
+        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        assert response.status_code == OK
+
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture(scope='function')
+def test_candidate_2(request, access_token_second, test_talent_pool_2):
+    """
+    This fixture created a test candidate using for domain 2 and it will be deleted
+    after test has run.
+    """
+    with app.app_context():
+            add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
+
+    data = {
+        "candidates": [
+            {
+                "first_name": fake.first_name(),
+                "middle_name": fake.user_name(),
+                "last_name": fake.last_name(),
+                "talent_pool_ids": {
+                    "add": [test_talent_pool_2['id']]
+                },
+                "emails": [
+                    {
+                        "label": "Primary",
+                        "address": fake.email(),
+                        "is_default": True
+                    }
+                ]
+            }
+
+        ]
+    }
+    response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_second, data=data)
+    assert response.status_code == 201
+    candidate_id = response.json()['candidates'][0]['id']
+    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_second)
+    assert response.status_code == OK
+    candidate = response.json()['candidate']
+
+    def tear_down():
+        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_second)
+        assert response.status_code == OK
+
     request.addfinalizer(tear_down)
     return candidate
 
@@ -289,6 +574,20 @@ def test_candidate_device(request, test_candidate):
     send push campaign to candidate.
     """
     device = CandidateDevice(candidate_id=test_candidate.id,
+                             one_signal_device_id=PUSH_DEVICE_ID,
+                             registered_at=datetime.utcnow())
+    CandidateDevice.save(device)
+
+    return device
+
+
+@pytest.fixture(scope='function')
+def test_candidate_device_2(request, test_candidate_2):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    """
+    device = CandidateDevice(candidate_id=test_candidate_2.id,
                              one_signal_device_id=PUSH_DEVICE_ID,
                              registered_at=datetime.utcnow())
     CandidateDevice.save(device)
