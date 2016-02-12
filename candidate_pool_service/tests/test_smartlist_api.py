@@ -8,6 +8,7 @@ from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistS
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
+
 import json
 import random
 import time
@@ -255,6 +256,7 @@ class TestSmartlistResource(object):
             # assert it is returned and has the same search params as were input
             assert first_smartlist.status_code == 200
             assert first_smartlist.json()['smartlist']['search_params'] == '{"maximum_years_experience": "5"}'
+            assert first_smartlist.json()['smartlist']['name'] == smartlist_name
 
             # Try creating smartlist with same name
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
@@ -271,7 +273,7 @@ class TestSmartlistResource(object):
             # assert it is returned and has the same search params as were input
             assert second_smartlist.status_code == 200
             assert second_smartlist.json()['smartlist']['search_params'] == '{"location": "San Jose, CA"}'
-            # TODO assert name after creation
+            assert second_smartlist.json()['smartlist']['name'] == smartlist_name
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
