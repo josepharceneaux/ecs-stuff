@@ -61,7 +61,7 @@ class TalentPoolApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
                 }
             }
         elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles:
@@ -72,8 +72,11 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'user_id': talent_pool.owner_user_id
-
+                        'user_id': talent_pool.user_id,
+                        'accessible_to_user_group_ids': [talent_pool_group.user_group_id for talent_pool_group in
+                                                         TalentPoolGroup.query.filter_by(
+                                                                 talent_pool_id=talent_pool.id
+                                                         ).all()]
                     } for talent_pool in talent_pools
                 ]
             }
@@ -193,7 +196,7 @@ class TalentPoolApi(Resource):
                 raise InvalidUsage(error_message="Talent pool '%s' already exists in domain %s" % (name, request.user.domain_id))
 
             talent_pool_object = TalentPool(name=name, description=description, domain_id=request.user.domain_id,
-                                            owner_user_id=request.user.id)
+                                            user_id=request.user.id)
             talent_pool_objects.append(talent_pool_object)
             db.session.add(talent_pool_object)
 
@@ -239,7 +242,7 @@ class TalentPoolGroupApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'owner_user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
 
                 } for talent_pool in talent_pools
             ]
@@ -542,7 +545,7 @@ class TalentPoolCandidateApi(Resource):
                                            talent_pool_candidate_ids]}
 
 
-@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_UPDATE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS)
 def update_talent_pools_stats():
@@ -551,13 +554,13 @@ def update_talent_pools_stats():
     :return: None
     """
 
-    talent_pools = TalentPool.query.all()
+    talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
 
-    for talent_pool in talent_pools:
+    for talent_pool_id in talent_pool_ids:
 
         try:
             talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
-                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
+                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
             total_candidates = len(talent_pool_candidate_ids)
 
             number_of_engaged_candidates = 0
@@ -569,7 +572,7 @@ def update_talent_pools_stats():
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
+            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool_id, total_number_of_candidates=total_candidates,
                                                candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
             db.session.commit()
@@ -593,7 +596,7 @@ def get_talent_pool_stats(talent_pool_id):
     if not talent_pool:
         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
 
-    if talent_pool.owner_user_id != request.user.id:
+    if talent_pool.user.domain_id != request.user.domain_id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
                                            % (request.user.id, talent_pool.id))
 
@@ -601,41 +604,34 @@ def get_talent_pool_stats(talent_pool_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string:
-        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
-
     try:
-        # We want to get one reference value for stats that's why we will get one extra stats value from DB
-        from_date = parse(from_date_string) - timedelta(days=1)
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
         to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
-    else:
-        interval = int(interval)
-        if interval < 1:
-            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_datetime >= from_date,
-                                                          TalentPoolStats.added_datetime <= to_date)).all()
-
-    if talent_pool_stats and talent_pool_stats[0].added_datetime < from_date + timedelta(days=1):
-        reference_talent_pool_stat = talent_pool_stats[0].total_candidates
-        talent_pool_stats.pop(0)
-    else:
-        reference_talent_pool_stat = 0
+                                                          TalentPoolStats.added_datetime <= to_date)).all().reverse()
 
     talent_pool_stats = talent_pool_stats[::interval]
 
-    talent_pool_stats = map(lambda (i, x): {
-        'total_number_of_candidates': x.total_candidates,
-        'number_of_candidates_removed_or_added': x.total_candidates - (talent_pool_stats[i - 1].total_candidates
-                                                                       if i > 0 else reference_talent_pool_stat),
-        'added_datetime': x.added_datetime.isoformat(),
-        'candidates_engagement': x.candidates_engagement
+    # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    talent_pool_stats = map(lambda (i, talent_pool_stat): {
+        'total_number_of_candidates': talent_pool_stat.total_number_of_candidates,
+        'number_of_candidates_added': (talent_pool_stat.total_number_of_candidates - (
+            talent_pool_stats[i + 1].total_number_of_candidates if i + 1 < len(talent_pool_stats)
+            else talent_pool_stat.total_number_of_candidates)),
+        'added_datetime': talent_pool_stat.added_datetime.isoformat(),
+        'candidates_engagement': talent_pool_stat.candidates_engagement
     }, enumerate(talent_pool_stats))
 
     return jsonify({'talent_pool_data': talent_pool_stats})
@@ -645,7 +641,7 @@ def get_talent_pool_stats(talent_pool_id):
 @require_oauth()
 def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     """
-    This method will return the statistics of a all talent-pipelines in a talent_pool over a given period of time
+    This method will return the statistics of all talent-pipelines in a talent_pool over a given period of time
     with time-period = 1 day
     :param talent_pool_id: Id of a talent-pool
     :return: A list of time-series data
@@ -654,7 +650,7 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     if not talent_pool:
         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
 
-    if talent_pool.owner_user_id != request.user.id:
+    if talent_pool.user.domain_id != request.user.domain_id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
                                            % (request.user.id, talent_pool.id))
 
@@ -662,42 +658,34 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string:
-        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
-
     try:
-        # We want to get one reference value for stats that's why we will get one extra stats value from DB
-        from_date = parse(from_date_string) - timedelta(days=1)
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
         to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
-    else:
-        interval = int(interval)
-        if interval < 1:
-            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats.query.filter(and_(
             TalentPipelinesInTalentPoolStats.talent_pool_id == talent_pool_id,
             TalentPipelinesInTalentPoolStats.added_datetime >= from_date,
-            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all()
-
-    if talent_pipelines_in_talent_pool_stats and talent_pipelines_in_talent_pool_stats[0].added_datetime < from_date + timedelta(days=1):
-        reference_talent_pipelines_in_talent_pool_stat = talent_pipelines_in_talent_pool_stats[0].average_candidates
-        talent_pipelines_in_talent_pool_stats.pop(0)
-    else:
-        reference_talent_pipelines_in_talent_pool_stat = 0
+            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all().reverse()
 
     talent_pipelines_in_talent_pool_stats = talent_pipelines_in_talent_pool_stats[::interval]
 
-    talent_pipelines_in_talent_pool_stats = map(lambda (i, x): {
-        'average_number_of_candidates': x.average_candidates,
-        'average_number_of_candidates_removed_or_added': x.average_candidates - (
-            talent_pipelines_in_talent_pool_stats[i - 1].average_candidates if i > 0 else
-            reference_talent_pipelines_in_talent_pool_stat),
-        'added_datetime': x.added_datetime.isoformat()
+    # Computing average_number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    talent_pipelines_in_talent_pool_stats = map(lambda (i, stat_row): {
+        'average_number_of_candidates': stat_row.average_number_of_candidates,
+        'average_number_of_candidates_added': (stat_row.average_number_of_candidates - (
+            talent_pipelines_in_talent_pool_stats[i + 1].average_number_of_candidates
+            if i + 1 < len(talent_pipelines_in_talent_pool_stats) else stat_row.average_number_of_candidates)),
+        'added_datetime': stat_row.added_datetime.isoformat()
     }, enumerate(talent_pipelines_in_talent_pool_stats))
 
     return jsonify({'talent_pool_data': talent_pipelines_in_talent_pool_stats})

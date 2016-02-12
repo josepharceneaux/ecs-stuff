@@ -23,7 +23,8 @@ import requests
 # Module Specific
 from .utils import create_parsed_resume_candidate
 from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, TalentError
+from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
@@ -44,6 +45,9 @@ def process_resume(parse_params):
     # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
     create_candidate = parse_params.get('create_candidate', False)
     talent_pools = parse_params.get('talent_pools')
+    #Talent pools are the ONLY thing required to create a candidate.
+    if create_candidate and not talent_pools:
+        raise InvalidUsage('Talent Pools required for candidate creation')
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
@@ -56,21 +60,26 @@ def process_resume(parse_params):
         raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
     parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    # Emails and talent pools are the ONLY thing required to create a candidate.
-    email_present = True if parsed_resume['candidate'].get('emails') else False
-    if create_candidate and not email_present:
-        raise InvalidUsage('Email fields (required for candidate creation) could not be parsed.')
-    if create_candidate and email_present and talent_pools:
-        parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
-        candidate_response = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                            parse_params.get('oauth'))
-        # TODO: Check for good response code!
-        response_dict = json.loads(candidate_response)
-        if 'error' in candidate_response:
-            raise InvalidUsage(response_dict['error']['message'])
-        candidate_id = response_dict.get('candidates')
-        parsed_resume['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
-    return parsed_resume
+    if not create_candidate:
+        return parsed_resume
+    parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+    candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
+                                                             parse_params.get('oauth'))
+    response_dict = json.loads(candidate_post_response.content)
+    if candidate_post_response.status_code is not requests.codes.created:
+        # If there was an issue with candidate creation we want to forward the error message and
+        # the error code supplied by Candidate Service.
+        raise TalentError(error_message=response_dict.get('error', {}).get(
+            'message', 'Error in candidate creating from resume service.'),
+                          error_code=candidate_post_response.status_code)
+    candidate_id = response_dict.get('candidates')[0]['id']
+    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
+                                          headers={'Authorization': parse_params.get('oauth')})
+    if candidate_get_response.status_code is not requests.codes.ok:
+        raise TalentError(error_message='Error retrieving created candidate',
+                          error_code=candidate_get_response.status_code)
+    candidate = json.loads(candidate_get_response.content)
+    return candidate
 
 
 def parse_resume(file_obj, filename_str):
@@ -135,9 +144,9 @@ def parse_resume(file_obj, filename_str):
                     current_app.logger.error('PDF create error: {}'.format(create_pdf_status.err))
                     return None
             except Exception as e:
-                current_app.logger.error(
-                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
-                        filename_str))
+                current_app.logger.exception(
+                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
+                        filename_str), e.message)
                 return None
             file_obj.seek(0)
             doc_content = file_obj.read()
@@ -237,6 +246,7 @@ def convert_pdf_to_text(pdf_file_obj):
     laparams = LAParams()
     device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
 
+    # TODO access if this reassignment is needed.
     fp = pdf_file_obj
 
     parser = PDFParser(fp)

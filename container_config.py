@@ -17,7 +17,8 @@ SERVICE_TO_REPO_NAME = {'base_service_container': 'base-service-container',
                         'candidate_pool_service': GTApis.CANDIDATE_POOL_SERVICE_NAME,
                         'spreadsheet_import_service': GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
                         'scheduler_service': GTApis.SCHEDULER_SERVICE_NAME,
-                        'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_NAME
+                        'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                        'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_NAME
                         }
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': GTApis.AUTH_SERVICE_PORT,
@@ -30,7 +31,8 @@ SERVICE_TO_PORT_NUMBER = {'auth_service': GTApis.AUTH_SERVICE_PORT,
                           'candidate_pool_service': GTApis.CANDIDATE_POOL_SERVICE_PORT,
                           'spreadsheet_import_service': GTApis.SPREADSHEET_IMPORT_SERVICE_PORT,
                           'scheduler_service': GTApis.SCHEDULER_SERVICE_PORT,
-                          'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_PORT
+                          'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_PORT,
+                          'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_PORT
                           }
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')

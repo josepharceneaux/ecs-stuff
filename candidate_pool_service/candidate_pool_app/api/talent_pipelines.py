@@ -58,7 +58,7 @@ class TalentPipelineApi(Resource):
                     'id': talent_pipeline.id,
                     'name': talent_pipeline.name,
                     'description': talent_pipeline.description,
-                    'user_id': talent_pipeline.owner_user_id,
+                    'user_id': talent_pipeline.user_id,
                     'positions': talent_pipeline.positions,
                     'search_params': json.loads(
                         talent_pipeline.search_params) if talent_pipeline.search_params else None,
@@ -77,7 +77,7 @@ class TalentPipelineApi(Resource):
                         'id': talent_pipeline.id,
                         'name': talent_pipeline.name,
                         'description': talent_pipeline.description,
-                        'user_id': talent_pipeline.owner_user_id,
+                        'user_id': talent_pipeline.user_id,
                         'positions': talent_pipeline.positions,
                         'search_params': json.loads(
                             talent_pipeline.search_params) if talent_pipeline.search_params else None,
@@ -197,7 +197,7 @@ class TalentPipelineApi(Resource):
             search_params = json.dumps(search_params) if search_params else None
 
             talent_pipeline = TalentPipeline(name=name, description=description, positions=positions,
-                                             date_needed=date_needed, owner_user_id=request.user.id,
+                                             date_needed=date_needed, user_id=request.user.id,
                                              talent_pool_id=talent_pool_id, search_params=search_params)
 
             db.session.add(talent_pipeline)
@@ -523,7 +523,7 @@ class TalentPipelineCampaigns(Resource):
         return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
 
 
-@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_STATS, methods=['POST'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS)
 def update_talent_pipelines_stats():
@@ -531,13 +531,13 @@ def update_talent_pipelines_stats():
     This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
-    talent_pipelines = TalentPipeline.query.all()
+    talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id, TalentPipeline.talent_pool_id).all()
     talent_pools = dict()
 
     try:
-        for talent_pipeline in talent_pipelines:
+        for talent_pipeline_id, talent_pool_id in talent_pipelines:
             # Return only candidate_ids
-            response = get_candidates_of_talent_pipeline(talent_pipeline, fields='id')
+            response = get_candidates_of_talent_pipeline(TalentPipeline.query.get(talent_pipeline_id), fields='id')
             total_candidates = response.get('total_found')
             talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
 
@@ -550,23 +550,23 @@ def update_talent_pipelines_stats():
                 int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id,
-                                                       total_candidates=total_candidates,
+            talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline_id,
+                                                       total_number_of_candidates=total_candidates,
                                                        candidates_engagement=percentage_candidates_engagement
                                                        )
             db.session.add(talent_pipeline_stat)
             db.session.commit()
 
-            if talent_pipeline.talent_pool_id in talent_pools:
-                talent_pools[talent_pipeline.talent_pool_id][0] += 1
-                talent_pools[talent_pipeline.talent_pool_id][1] += total_candidates
+            if talent_pool_id in talent_pools:
+                talent_pools[talent_pool_id][0] += 1
+                talent_pools[talent_pool_id][1] += total_candidates
             else:
-                talent_pools[talent_pipeline.talent_pool_id] = (1, total_candidates)
+                talent_pools[talent_pool_id] = (1, total_candidates)
 
         for talent_pool_id in talent_pools.keys():
             talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats(
                     talent_pool_id=talent_pool_id,
-                    average_candidates= talent_pools[talent_pool_id][1]/talent_pools[talent_pool_id][0]
+                    average_number_of_candidates= talent_pools[talent_pool_id][1]/talent_pools[talent_pool_id][0]
             )
             db.session.add(talent_pipelines_in_talent_pool_stats)
             db.session.commit()
@@ -590,7 +590,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     if not talent_pipeline:
         raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
 
-    if talent_pipeline.owner_user_id != request.user.id:
+    if talent_pipeline.user.domain_id != request.user.domain_id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
                                            % (request.user.id, talent_pipeline.id))
 
@@ -598,42 +598,35 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string:
-        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
-
     try:
-        # We want to get one reference value for stats that's why we will get one extra stats value from DB
-        from_date = parse(from_date_string) - timedelta(days=1)
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
         to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
-    else:
-        interval = int(interval)
-        if interval < 1:
-            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     talent_pipeline_stats = TalentPipelineStats.query.filter(
             TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
             TalentPipelineStats.added_datetime >= from_date,
-            TalentPipelineStats.added_datetime <= to_date).all()
-
-    if talent_pipeline_stats and talent_pipeline_stats[0].added_datetime < from_date + timedelta(days=1):
-        reference_talent_pipeline_stat = talent_pipeline_stats[0].total_candidates
-        talent_pipeline_stats.pop(0)
-    else:
-        reference_talent_pipeline_stat = 0
+            TalentPipelineStats.added_datetime <= to_date).all().reverse()
 
     talent_pipeline_stats = talent_pipeline_stats[::interval]
 
-    talent_pipeline_stats = map(lambda (i, x): {
-        'total_number_of_candidates': x.total_candidates,
-        'number_of_candidates_removed_or_added': x.total_candidates - (talent_pipeline_stats[i - 1].total_candidates
-                                                                       if i > 0 else reference_talent_pipeline_stat),
-        'added_datetime': x.added_datetime.isoformat(),
-        'candidates_engagement': x.candidates_engagement
+    # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    talent_pipeline_stats = map(lambda (i, talent_pipeline_stat): {
+        'total_number_of_candidates': talent_pipeline_stat.total_number_of_candidates,
+        'number_of_candidates_added': (talent_pipeline_stat.total_number_of_candidates - (
+            talent_pipeline_stats[i + 1].total_number_of_candidates if i + 1 < len(talent_pipeline_stats)
+            else talent_pipeline_stat.total_number_of_candidates)),
+        'added_datetime': talent_pipeline_stat.added_datetime.isoformat(),
+        'candidates_engagement': talent_pipeline_stat.candidates_engagement
     }, enumerate(talent_pipeline_stats))
 
     return jsonify({'talent_pipeline_data': talent_pipeline_stats})

@@ -124,7 +124,7 @@ class SmartlistResource(Resource):
         return {'smartlist': {'id': smartlist.id}}
 
 
-@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_STATS, methods=['POST'])
+@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_UPDATE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
 @require_all_roles(DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS)
 def update_smartlists_stats():
@@ -132,13 +132,13 @@ def update_smartlists_stats():
     This method will update the statistics of all smartlists daily.
     :return: None
     """
-    smartlists = Smartlist.query.all()
+    smartlist_ids = map(lambda smartlist: smartlist[0], Smartlist.query.with_entities(Smartlist.id).all())
 
-    for smartlist in smartlists:
+    for smartlist_id in smartlist_ids:
 
         try:
             # Return only candidate_ids
-            response = get_candidates(smartlist, candidate_ids_only=True)
+            response = get_candidates(Smartlist.query.get(smartlist_id), candidate_ids_only=True)
             total_candidates = response.get('total_found')
             smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
 
@@ -151,8 +151,8 @@ def update_smartlists_stats():
                 if int(total_candidates) else 0
             # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
 
-            smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
-                                            total_candidates=total_candidates,
+            smartlist_stat = SmartlistStats(smartlist_id=smartlist_id,
+                                            total_number_of_candidates=total_candidates,
                                             candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
             db.session.commit()
@@ -173,10 +173,11 @@ def get_smartlist_stats(smartlist_id):
     :return: A list of time-series data
     """
     smartlist = Smartlist.query.get(smartlist_id)
+
     if not smartlist:
         raise NotFoundError(error_message="SmartList with id=%s doesn't exist in database" % smartlist_id)
 
-    if smartlist.user_id != request.user.id:
+    if smartlist.user.domain_id != request.user.domain_id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of smartlist %s"
                                            % (request.user.id, smartlist.id))
 
@@ -184,41 +185,34 @@ def get_smartlist_stats(smartlist_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string:
-        raise InvalidUsage(error_message="'from_date' is missing from request parameters")
-
     try:
-        # We want to get one reference value for stats that's why we will get one extra stats value from DB
-        from_date = parse(from_date_string) - timedelta(days=1)
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
         to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
-    else:
-        interval = int(interval)
-        if interval < 1:
-            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
                                                   SmartlistStats.added_datetime >= from_date,
-                                                  SmartlistStats.added_datetime <= to_date).all()
-
-    if smartlist_stats and smartlist_stats[0].added_datetime < from_date + timedelta(days=1):
-        reference_smartlist_stat = smartlist_stats[0].total_candidates
-        smartlist_stats.pop(0)
-    else:
-        reference_smartlist_stat = 0
+                                                  SmartlistStats.added_datetime <= to_date).all().reverse()
 
     smartlist_stats = smartlist_stats[::interval]
 
-    smartlist_stats = map(lambda (i, x): {
-        'total_number_of_candidates': x.total_candidates,
-        'number_of_candidates_removed_or_added': x.total_candidates - (smartlist_stats[i - 1].total_candidates
-                                                                       if i > 0 else reference_smartlist_stat),
-        'added_datetime': x.added_datetime.isoformat(),
-        'candidates_engagement': x.candidates_engagement
+    # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    smartlist_stats = map(lambda (i, smart_list_stat): {
+        'total_number_of_candidates': smart_list_stat.total_number_of_candidates,
+        'number_of_candidates_added': (smart_list_stat.total_number_of_candidates - (
+            smartlist_stats[i + 1].total_number_of_candidates if i + 1 > len(smartlist_stats) else
+            smart_list_stat.total_number_of_candidates)),
+        'added_datetime': smart_list_stat.added_datetime.isoformat(),
+        'candidates_engagement': smart_list_stat.candidates_engagement
     }, enumerate(smartlist_stats))
 
     return jsonify({'smartlist_data': smartlist_stats})

@@ -290,6 +290,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
                    'state': None,
                    'country': None} for university_name in universities_list]
 
+    image_url = social_profile_dict.get('imageUrl', '')
+
     # Addresses
     addresses = [{
         'address_line_1': None,
@@ -316,7 +318,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
         # 'text_comments': text_comments,
         'openweb_id': social_profile_dict.get('id'),
         'dice_profile_id': dice_profile_dict.get('id'),
-        'talent_pool_ids': {"add": talent_pool_ids}
+        'talent_pool_ids': {"add": talent_pool_ids},
+        'image_url': image_url
     }
 
     return gt_candidate_dict

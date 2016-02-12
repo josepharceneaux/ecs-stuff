@@ -1,9 +1,8 @@
 """Run Social Network Service APP"""
-from social_network_service.app.app import app
-
 import os
-from social_network_service.common.routes import GTApis
 
+from social_network_service.app.app import app
+from social_network_service.common.routes import GTApis
 
 if __name__ == '__main__':
     # TODO Have to remove this, only here for testing purposes

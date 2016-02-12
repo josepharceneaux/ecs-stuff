@@ -6,6 +6,7 @@ from _mysql_exceptions import IntegrityError
 import pytest
 # Module Specific
 from resume_parsing_service.common.models.candidate import EmailLabel
+from resume_parsing_service.common.models.candidate_edit import CandidateView
 from resume_parsing_service.common.models.misc import Country
 from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
@@ -61,12 +62,12 @@ def culture_fixture(request):
 @pytest.fixture(autouse=True)
 def domain_fixture(culture_fixture, org_fixture, request):
     domain = Domain(name=random_word(40), usage_limitation=0,
-                         expiration=datetime.datetime(2050, 4, 26),
-                         added_time=datetime.datetime(2050, 4, 26),
-                         organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
-                         default_tracking_code=1, default_from_name=(random_word(100)),
-                         default_culture_id=culture_fixture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now())
+                    expiration=datetime.datetime(2050, 4, 26),
+                    added_time=datetime.datetime(2050, 4, 26),
+                    organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
+                    default_tracking_code=1, default_from_name=(random_word(100)),
+                    default_culture_id=culture_fixture.id,
+                    settings_json=random_word(55), updated_time=datetime.datetime.now())
 
     db.session.add(domain)
     db.session.commit()
@@ -124,10 +125,10 @@ def user_fixture(domain_fixture, user_group_fixture, request):
 
 @pytest.fixture(autouse=True)
 def talent_pool_fixture(domain_fixture, user_fixture, request):
-    talent_pool = TalentPool(domain_id=domain_fixture.id, owner_user_id=user_fixture.id,
-                               name=random_word(5), description=random_word(5),
-                               added_time=datetime.datetime(2050, 4, 26),
-                               updated_time=datetime.datetime(2050, 4, 26))
+    talent_pool = TalentPool(domain_id=domain_fixture.id, user_id=user_fixture.id,
+                             name=random_word(5), description=random_word(5),
+                             added_time=datetime.datetime(2050, 4, 26),
+                             updated_time=datetime.datetime(2050, 4, 26))
     db.session.add(talent_pool)
     db.session.commit()
     @require_integrity

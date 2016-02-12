@@ -28,7 +28,7 @@
                 console.log('fetching pipeline detail');
                 return candidatePoolService.one('talent-pipelines', pipelineId).customGET().then(
                     function (response) {
-                        var user_request = getUserName(response.owner_user_id).then(
+                        var user_request = getUserName(response.user_id).then(
                             function (userResponse) {
                                 response.user_name = userResponse;
                             });
