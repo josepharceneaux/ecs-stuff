@@ -1,5 +1,6 @@
 """Various misc validators"""
 import re
+import phonenumbers
 from ..error_handling import InvalidUsage
 
 
@@ -27,8 +28,6 @@ def format_phone_number(phone_number, country_code='US'):
     :rtype: dict
     """
     try:
-        import phonenumbers
-
         # Maybe the number is already internationally formatted
         try:
             parsed_phone_number = phonenumbers.parse(str(phone_number))
@@ -66,7 +65,7 @@ def sanitize_zip_code(zip_code):
     return None
 
 
-def is_valid_url(url):
+def is_valid_url_format(url):
     """
     Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
     """

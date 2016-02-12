@@ -5,8 +5,9 @@ from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.utils.handy_functions import create_oauth_headers
-from email_campaign_service.common.models.email_marketing import UrlConversion, EmailCampaignSendUrlConversion
+from email_campaign_service.common.models.email_marketing import EmailCampaignSendUrlConversion
 from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"

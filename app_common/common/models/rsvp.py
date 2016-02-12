@@ -5,9 +5,9 @@ class RSVP(db.Model):
     __tablename__ = 'rsvp'
     id = db.Column(db.Integer, primary_key=True)
     social_network_rsvp_id = db.Column('socialNetworkRsvpId', db.String(500))
-    candidate_id = db.Column('candidateId', db.Integer, db.ForeignKey("candidate.id"), nullable=False)
+    candidate_id = db.Column('candidateId', db.BIGINT, db.ForeignKey("candidate.Id"), nullable=False)
     event_id = db.Column('eventId', db.Integer, db.ForeignKey("event.id"), nullable=False)
-    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey("social_network.id"), nullable=False)
+    social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey("social_network.Id"), nullable=False)
     status = db.Column('status', db.String(20))
     datetime = db.Column('datetime', db.DateTime)
     payment_status = db.Column('paymentStatus', db.String(20))

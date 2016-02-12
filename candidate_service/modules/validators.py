@@ -6,7 +6,6 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.email_marketing import EmailClient
 from candidate_service.common.models.user import User

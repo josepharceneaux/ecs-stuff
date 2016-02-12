@@ -243,7 +243,10 @@ def sample_client(request):
     db.session.commit()
 
     def tear_down():
-        test_client.delete()
+        try:
+            test_client.delete()
+        except:
+            pass
     request.addfinalizer(tear_down)
     return test_client
 
@@ -262,6 +265,7 @@ def access_token_second(user_second, sample_client):
 def access_token_same(user_same_domain, sample_client):
     return get_access_token(user_same_domain, PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
+
 
 @pytest.fixture()
 def user_first(request, domain_first, first_group):
@@ -393,7 +397,7 @@ def second_group(request, domain_second):
 
 @pytest.fixture()
 def talent_pool(request, domain_first, first_group, user_first):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, owner_user_id=user_first.id)
+    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
     db.session.add(talent_pool)
     db.session.commit()
 
@@ -413,7 +417,7 @@ def talent_pool(request, domain_first, first_group, user_first):
 @pytest.fixture()
 def talent_pool_second(request, domain_second, second_group, user_second):
     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
-                             owner_user_id=user_second.id)
+                             user_id=user_second.id)
     db.session.add(talent_pool)
     db.session.commit()
 
@@ -438,7 +442,7 @@ def talent_pipeline(request, user_first, talent_pool):
         "location": "California"
     }
     talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
-                                     date_needed=datetime.utcnow().isoformat(sep=' '), owner_user_id=user_first.id,
+                                     date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
                                      talent_pool_id=talent_pool.id, search_params=json.dumps(search_params))
     db.session.add(talent_pipeline)
     db.session.commit()

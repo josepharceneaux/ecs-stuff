@@ -9,7 +9,7 @@ from dateutil.parser import parse
 
 # App specific imports
 from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.common.utils.validators import is_valid_url
+from scheduler_service.common.utils.validators import is_valid_url_format
 
 __author__ = 'saad'
 
@@ -77,6 +77,6 @@ def get_valid_url_from_dict(data, key):
     """
     assert isinstance(data, dict)
     value = get_valid_data_from_dict(data, key)
-    if not is_valid_url(value):
+    if not is_valid_url_format(value):
         raise InvalidUsage(error_message='Invalid value of %s.' % key)
     return value

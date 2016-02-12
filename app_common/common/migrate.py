@@ -9,6 +9,7 @@ from models import (
     misc,
     rsvp,
     smartlist,
+    sms_campaign,
     talent_pools_pipelines,
     university,
     user,

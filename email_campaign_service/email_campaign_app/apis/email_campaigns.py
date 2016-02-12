@@ -9,7 +9,8 @@ from ...modules.email_marketing import (create_email_campaign, send_emails_to_ca
 from ...modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
-from email_campaign_service.common.models.email_marketing import EmailCampaign, UrlConversion
+from email_campaign_service.common.models.email_marketing import EmailCampaign
+from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignEndpoints
 from ...email_campaign_app import logger
