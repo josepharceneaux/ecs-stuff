@@ -7,7 +7,7 @@ from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistStats
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
-
+from candidate_pool_service.common.routes import CandidatePoolApiUrl
 import json
 import random
 import time
@@ -17,10 +17,8 @@ from datetime import timedelta
 
 __author__ = 'jitesh'
 
-
-# TODO: Use routes.py once it is ready
-SMARTLIST_URL = 'http://localhost:8008/v1/smartlists'
-SMARTLIST_CANDIDATES_URL = 'http://localhost:8008/v1/smartlists/%s/candidates'
+SMARTLIST_URL = CandidatePoolApiUrl.SMARTLISTS
+SMARTLIST_CANDIDATES_URL = CandidatePoolApiUrl.SMARTLIST_CANDIDATES
 
 
 class TestSmartlistStatsUpdateApi(object):
@@ -243,9 +241,9 @@ class TestSmartlistResource(object):
             data = {'name': smartlist_name, 'search_params': {'maximum_years_experience': '5'}}
             resp = self.call_post_api(data, access_token_first)
             assert resp.status_code == 201  # Successfully created
-            assert resp.json()['smartlist']['id'] # assert smartlist id is there
+            assert resp.json()['smartlist']['id']  # assert smartlist id is there
 
-            #add role to test user be able to get candidates
+            # add role to test user be able to get candidates
             add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
 
             # get the smartlist via id
@@ -262,7 +260,7 @@ class TestSmartlistResource(object):
             data2 = {'name': smartlist_name, 'search_params': {"location": "San Jose, CA"}}
             resp2 = self.call_post_api(data2, access_token_first)
             assert resp2.status_code == 201 # Successfully created
-            assert resp2.json()['smartlist']['id'] # assert smartlist id is there
+            assert resp2.json()['smartlist']['id']  # assert smartlist id is there
 
             # get the smartlist via id
             second_list_id = resp2.json()['smartlist']['id']
@@ -273,6 +271,7 @@ class TestSmartlistResource(object):
             # assert it is returned and has the same search params as were input
             assert second_smartlist.status_code == 200
             assert second_smartlist.json()['smartlist']['search_params'] == '{"location": "San Jose, CA"}'
+            # TODO assert name after creation
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):

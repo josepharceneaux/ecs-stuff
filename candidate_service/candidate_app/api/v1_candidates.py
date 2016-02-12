@@ -1143,6 +1143,7 @@ class CandidateOpenWebResource(Resource):
 
         return candidate
 
+
 class CandidateClientEmailCampaignResource(Resource):
     decorators = [require_oauth()]
 
