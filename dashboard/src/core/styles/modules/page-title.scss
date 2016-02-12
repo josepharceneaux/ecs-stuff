@@ -54,7 +54,6 @@
   align-items: center;
   margin-right:10px;
   font-size:30px;
-  overflow:hidden;
 }
 
 .gt-menu-icon {
@@ -70,7 +69,6 @@
   transition: all .1s ease-in-out;
   margin-right:10px;
   font-size:20px;
-  cursor:pointer;
   &:hover{
     background: lighten($color--purple, 10%);
   }

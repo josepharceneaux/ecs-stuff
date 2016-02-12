@@ -64,7 +64,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields=''):
                                          "because: %s" % e.message)
 
     if not request.oauth_token:
-        secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.owner_user_id)
+        secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.user_id)
         headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
                    'Content-Type': 'application/json'}
     else:

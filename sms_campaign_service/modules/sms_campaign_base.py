@@ -249,7 +249,7 @@ class SmsCampaignBase(CampaignBase):
         if not phone_label_id:
             raise InvalidUsage('phone_label_id must be an integer.')
         twilio_obj = TwilioSMS()
-        if app.config[TalentConfigKeys.IS_DEV]:
+        if CampaignUtils.IS_DEV:
             # Buy Twilio TEST number so that we won't be charged in case of dev, jenkins and QA
             number_to_buy = TWILIO_TEST_NUMBER
         else:
@@ -663,7 +663,7 @@ class SmsCampaignBase(CampaignBase):
                 raise GoogleShortenUrlAPIError(error)
             short_urls.append(short_url)
             url_conversion_ids.append(url_conversion_id)
-            if app.config[TalentConfigKeys.IS_DEV]:
+            if CampaignUtils.IS_DEV:
                 # update the 'source_url' in "url_conversion" record.
                 # Source URL should not be saved in database. But we have tests written
                 # for Redirection endpoint. That's why in case of DEV, I am saving source URL here.
@@ -728,7 +728,7 @@ class SmsCampaignBase(CampaignBase):
         """
         raise_if_not_instance_of(candidate_phone_value, basestring)
         logger.debug("candidate's phone value passed is %s" % candidate_phone_value)
-        if app.config[TalentConfigKeys.IS_DEV]:
+        if CampaignUtils.IS_DEV:
             # send SMS using Twilio Test Credentials
             sender_phone = TWILIO_TEST_NUMBER
             candidate_phone_value = TWILIO_TEST_NUMBER

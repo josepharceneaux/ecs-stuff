@@ -9,36 +9,37 @@
 
     /* @ngInject */
     function runFunction($rootScope, $state, $cookies, OAuth) {
-        $rootScope.$on('$stateChangeStart', function (event, toState, toParams, fromState, fromParams) {
-            toState.data = toState.data || {};
-            toState.data.demoMode = $cookies.get('demoMode') === 'true';
+        $rootScope.$on('$stateChangeStart', function (evt, to, params) {
+            to.data = to.data || {};
+            to.data.demoMode = $cookies.get('demoMode') === 'true';
 
-            if (toState.redirectTo) {
-                event.preventDefault();
-                $state.go(toState.redirectTo, toParams);
+            if (to.redirectTo) {
+                evt.preventDefault();
+                $state.go(to.redirectTo, params);
                 return;
             }
 
-            // If already authenticated, redirects to the last page or dashboard page
-            if (toState.data.nonAuthOnly && OAuth.isAuthenticated()) {
-                event.preventDefault();
-                if (angular.isDefined($rootScope.redirectTo)) {
-                    $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
-                } else {
-                    $state.go('dashboard');
+            if (to.name === 'login') {
+                // If already authenticated, redirects to the last page or dashboard page
+                if (OAuth.isAuthenticated()) {
+                    if (angular.isDefined($rootScope.redirectTo)) {
+                        $state.go($rootScope.redirectTo.state, $rootScope.redirectTo.params);
+                    } else {
+                        $state.go('dashboard');
+                    }
                 }
             } else {
                 $rootScope.redirectTo = {
-                    state: toState,
-                    params: toParams
+                    state: to,
+                    params: params
                 };
 
                 // If the user is not authenticated and tries to browse the pages restricted
-                if (angular.isDefined(toState.data.loginRequired) && toState.data.loginRequired) {
+                if (angular.isDefined(to.data) && angular.isDefined(to.data.loginRequired) && to.data.loginRequired) {
                     if (!OAuth.isAuthenticated()) {
                         $state.go('login', {errorMessage: 'Please log in!'});
 
-                        event.preventDefault();
+                        evt.preventDefault();
                     }
                 }
             }

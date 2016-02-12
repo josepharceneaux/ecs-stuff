@@ -4,7 +4,7 @@ module.exports = function (config) {
     config.log('Importing config.js...');
 
     gulp.task('config', function () {
-        var env = process.env.GT_NODE_ENV || 'local';
+        var env = process.env.GT_NODE_ENV || 'development';
 
         return gulp
             .src(config.sourceDir + 'config.json')

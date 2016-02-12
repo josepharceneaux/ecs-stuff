@@ -1,7 +1,7 @@
 <!-- Main view -->
 <section id="talent-pools-dashboard-pipelines-view" class="view__main dashboard">
 
-    <h3 hide class="md-headline team-name">{{ vm.teamName }}</h3>
+    <h3 class="md-headline team-name">{{ vm.teamName }}</h3>
 
     <md-content class="md-padding" layout="column" layout-gt-md="row">
         
@@ -12,16 +12,14 @@
             <div flex-gt-sm="33" layout="column">
 
                 <!-- Candidate Distribution -->
-                <div flex layout="row" >
-                    <md-card flex class="candidate-distribution">
+                <div flex layout="row">
+                    <md-card flex>
                         <md-card-title flex="none">
-                            <md-card-title-text layout="row">
+                            <md-card-title-text>
                                 <span class="md-title">Candidate Distribution</span>
-                                <span flex></span>
-                                <a ui-sref="pipelines.overview">View All Pipelines</a>
                             </md-card-title-text>
                         </md-card-title>
-                        <md-card-content flex="none">
+                        <md-card-content flex>
                             <div id="candidate-distribution-chart" style="height: 300px;">
                                 
                             </div>
@@ -31,13 +29,11 @@
                 <!-- End Candidate Distribution -->
 
                 <!-- Top 5 Pipeliens by Engagement -->
-                <div flex layout="row" class="top-pipelines">
+                <div flex layout="row">
                     <md-card flex>
                         <md-card-title flex="none">
-                            <md-card-title-text layout="row">
+                            <md-card-title-text>
                                 <span class="md-title">Top 5 Pipelines by Engagement</span>
-                                <span flex></span>
-                                <a ui-sref="pipelines.overview">View All Pipelines</a>
                             </md-card-title-text>
                         </md-card-title>
                         <md-card-content flex>
@@ -79,7 +75,7 @@
                             </md-card-title-text>
                         </md-card-title>
 
-                        <md-card-content class="zebra">
+                        <md-card-content>
                             <md-list>
                                 <md-list-item ng-repeat="candidate in vm.recommendedCandidates">
                                     <div class="md-list-item-avatar">
@@ -90,10 +86,11 @@
                                     </div>
                                     <div flex class="md-list-item-text" layout="column">
                                         <h3>
-                                            <a href="">{{ candidate.name }}</a>
+                                            {{ candidate.name }}
+                                            <md-icon md-font-set="fa" md-font-icon="fa-share" ng-click="vm.viewCandidate(candidate)"></md-icon>
                                         </h3>
                                         <p>{{ candidate.activity }}</p>
-                                        <p class="md-display-5"><span class="icon--pipeline"></span><a>{{ candidate.pipeline }}</a></p>
+                                        <p><span class="icon--pipeline"></span><a>{{ candidate.pipeline }}</a></p>
                                     </div>
                                     <md-icon ng-click="vm.emailToCandidate(candidate)" aria-label="View Candidate" class="md-secondary">mail</md-icon>
                                 </md-list-item>
@@ -130,12 +127,12 @@
                         <md-card-title flex="none">
                             <md-card-title-text>
                                 <span class="md-title">
-                                    Top Contributors
+                                    Top 10 Contributors
                                 </span>
                             </md-card-title-text>
                         </md-card-title>
 
-                        <md-card-content class="zebra">
+                        <md-card-content>
                             <md-list>
                                 <md-list-item ng-repeat="contributor in vm.topContributors">
                                     <div class="md-list-item-avatar">

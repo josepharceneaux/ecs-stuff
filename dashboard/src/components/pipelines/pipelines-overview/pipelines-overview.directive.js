@@ -24,12 +24,17 @@
     }
 
     // ----- ControllerFunction -----
-    ControllerFunction.$inject = ['$scope', '$interval', 'logger'];
+    ControllerFunction.$inject = ['logger', '$timeout'];
 
     /* @ngInject */
-    function ControllerFunction($scope, $interval, logger) {
+    function ControllerFunction(logger, $timeout) {
         var vm = this;
 
+        var dataSetLast24Hours;
+        var dataSetLast90Days;
+
+        vm.redrawChart = redrawChart;
+        vm.updateChart = updateChart;
         vm.removeFilter = removeFilter;
         vm.logOrder = logOrder;
         vm.logPagination = logPagination;
@@ -42,21 +47,179 @@
         }
 
         function init() {
-            vm.pipelineId = 2;
-            vm.colorOptions = {
-                //plotOptions: {
-                //    marker: {
-                //        states: {
-                //            hover: {
-                //                lineColor: '#0fc'
-                //            }
-                //        }
-                //    }
-                //},
-                //series: {
-                //    color: '#0fc'
-                //}
-            }
+            // mock data: candidate growth
+            // by "hour", last day
+            dataSetLast24Hours = [1, 0, 0, 0,
+                                  0, 2, 5, 8,
+                                  10, 3, 0, 3,
+                                  13, 2, 3, 3,
+                                  5, 6, 10, 12,
+                                  8, 15, 20, 4];
+
+            // by "day", last 90 days
+            dataSetLast90Days = [48, 97, 38, 63, 45, 96, 47, 14, 45, 46,
+                                 29, 21, 16, 32, 25, 109, 93, 27, 50, 96,
+                                 46, 76, 72, 68, 32, 43, 67, 31, 117, 98,
+                                 110, 59, 76, 36, 2, 50, 81, 89, 27, 26,
+                                 118, 86, 29, 35, 61, 45, 76, 64, 135, 58,
+                                 62, 100, 39, 77, 48, 108, 124, 93, 17, 26,
+                                 21, 52, 54, 19, 41, 12, 29, 59, 29, 106,
+                                 54, 25, 26, 13, 32, 51, 41, 82, 34, 153,
+                                 83, 46, 50, 70, 87, 33, 57, 40, 38, 133];
+
+            vm.chartFilters = {};
+            vm.daysFilterOptions = [7, 30, 60, 90];
+            vm.chartFilters.daysBack = vm.daysFilterOptions[1];
+
+            vm.chartOptions = {
+                chart: {
+                    renderTo: 'growth-chart',
+                    type: 'area',
+                    backgroundColor: null,
+                    spacingLeft: 40,
+                    spacingRight: 40,
+                    spacingTop: 50,
+                    style: {
+                        fontFamily: '"Roboto", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                        fontWeight: 300
+                    },
+                    reflow: true
+                },
+                title: {
+                    text: ''
+                },
+                lang: {
+                    decimalPoint: ',',
+                    thousandsSep: '.'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    lineColor: 'transparent',
+                    tickLength: 0,
+                    tickInterval: 5 * 24 * 60 * 60 * 1000,
+                    endOnTick: true,
+                    title : {
+                        text: ''
+                    },
+                    labels: {
+                        y: 24,
+                        style: {
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: 400
+                        },
+                        formatter: function() {
+                            return Highcharts.dateFormat('%m/%e/%Y', this.value);
+                        }
+                    }
+                },
+                yAxis: {
+                    gridLineColor: '#fff',
+                    yDecimals: 2,
+                    gridLineWidth: 1,
+                    title : {
+                        text: ''
+                    },
+                    labels: {
+                        style: {
+                            color: '#adadad',
+                            fontSize: '14px',
+                            fontWeight: 400
+                        },
+                        formatter: function () {
+                            if (this.value != 0) {
+                                return this.value;
+                            } else {
+                                return null;
+                            }
+                        }
+                    }
+                },
+                exporting: {
+                    enabled: false
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'top',
+                    x: 10,
+                    y: 0,
+                    floating: true,
+                    width: 170,
+                    symbolWidth: 12,
+                    itemMarginTop: 5,
+                    itemMarginBottom: 5,
+                    padding: 12,
+                    backgroundColor: '#FFFFFF',
+                    borderWidth: 1,
+                    borderColor: '#cccccc',
+                    itemStyle: {
+                      fontWeight: 300
+                    },
+                    navigation: {
+                        style: {
+                            fontWeight: 400,
+                        }
+                    }
+                },
+                tooltip: {
+                    borderWidth: 0,
+                    borderRadius: 0,
+                    backgroundColor: null,
+                    shadow: false,
+                    useHTML: true,
+                    formatter: function() {
+                        var s = '<b>' + Highcharts.dateFormat('%m/%e/%Y', this.x) + '</b>' + '<hr/>';
+                        $.each(this.points, function () {
+                            s += this.series.name + ': ' + this.y + '<br/>';
+                        });
+                        return s;
+                    },
+                    shared: true,
+                    crosshairs: {
+                        color: 'white',
+                        dashStyle: 'solid'
+                    }
+                },
+                plotOptions: {
+                    area: {
+                        animation: true,
+                        fillOpacity: 0.2,
+                        lineWidth: 2,
+                        marker: {
+                            enabled: true,
+                            symbol: 'circle',
+                            radius: 4,
+                            states: {
+                                hover: {
+                                    radius: 8,
+                                    fillOpacity: 1,
+                                    fillColor: '#FFFFFF',
+                                    lineWidth: 4,
+                                    lineColor: '#5e385d'
+                                }
+                            }
+                        },
+                        states: {
+                            hover: {
+                                lineWidth: 2
+                            }
+                        }
+                    }
+                },
+                series: [{
+                    name: 'Candidates Added',
+                    color: '#5e385d',
+                    pointStart: getPointStart(vm.chartFilters.daysBack),
+                    pointInterval: getPointInterval(vm.chartFilters.daysBack),
+                    data: getData(vm.chartFilters.daysBack)
+                }]
+            };
+
+            vm.chart = new Highcharts.Chart(vm.chartOptions);
 
             vm.totalCandidates = {
                 graph: {}
@@ -335,6 +498,68 @@
         function logPagination(page, limit) {
             console.log('page: ', page);
             console.log('limit: ', limit);
+        }
+
+        function redrawChart() {
+            vm.chart.reflow();
+        }
+
+        function updateChart(daysBack) {
+            vm.chart.series[0].update({
+                pointStart: getPointStart(daysBack),
+                pointInterval: getPointInterval(daysBack),
+                data: getData(daysBack)
+            });
+        }
+
+        function getPointStart(daysBack) {
+            var d = new Date();
+            d.setDate(d.getDate() - daysBack - 1 /* don't include today */);
+            d.setHours(0);
+            d.setMinutes(0);
+            d.setSeconds(0);
+            return d.getTime();
+        }
+
+        function getPointInterval(daysBack) {
+            var day = 24 * 60 * 60 * 1000;
+            if (daysBack === 1) {
+                return day * Math.floor(daysBack / 12) / 24; // @TODO update x-axis labels to hours
+            } else if (daysBack === 7) {
+                return day * Math.floor(daysBack / 7); // => expects 7 data points
+            } else if (daysBack === 30) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 60) {
+                return day * Math.floor(daysBack / 15);
+            } else if (daysBack === 90) {
+                return day * Math.floor(daysBack / 15);
+            }
+        }
+
+        function getData(daysBack) {
+            if (daysBack === 1) {
+                return aggregate(dataSetLast24Hours, 24, 12);
+            } else if (daysBack === 7) {
+                return aggregate(dataSetLast90Days, daysBack, 7);
+            } else if (daysBack === 30) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 60) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            } else if (daysBack === 90) {
+                return aggregate(dataSetLast90Days, daysBack, 15);
+            }
+        }
+
+        function aggregate(data, daysBack, dataPoints) {
+            var aggregate = [];
+            var newData = data.slice(data.length - daysBack);
+            var dataGroupSize = Math.max(Math.floor(daysBack / dataPoints), 1);
+            while (newData.length >= dataGroupSize) {
+                aggregate.unshift(newData.splice(newData.length - dataGroupSize).reduce(function (prev, curr) {
+                    return prev + curr;
+                }));
+            }
+            return aggregate;
         }
     }
 })();

@@ -7,7 +7,9 @@
   .area-chart {
     background:transparent;
   }
-
+  .layout-margin {
+    margin:15px;
+  }
 }
 
 .chart-container {
@@ -68,29 +70,19 @@
 }
 
 
-// Override area chart style
+// Override growth chart style
 
 body {
   overflow-x: hidden;
 }
 
-.area-chart-section {
-  md-toolbar {
-    background:transparent;
-    .md-toolbar-tools {
-      padding:0px;
-    }
-    h2 {
-      color:$color--nearBlack;
-    }
-  }
+#growth-chart-section {
 
-
-  .area-chart-wrap {
+  #growth-chart-wrap {
     position: relative;
     height: 400px;
 
-    .area-chart {
+    #growth-chart {
       position: absolute;
       top: 0;
       left: 0;
@@ -111,9 +103,9 @@ body {
       .highcharts-grid path:first-child {
         display: none;
       }
-
+      
       .highcharts-tooltip {
-
+        
         > span {
           z-index: 10;
           padding: 10px 20px;
@@ -121,7 +113,7 @@ body {
           border: 1px solid #D9D9D9;
           background-color: #fff;
           box-shadow: 0 2px 5px 0 #D9D9D9;
-
+          
           hr {
             height: 2px;
             border: 0;

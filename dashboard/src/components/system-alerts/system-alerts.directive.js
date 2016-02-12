@@ -45,12 +45,9 @@
         }
 
         function dismissAlert(alert) {
-            var index;
-            if (alert.dismissable) {
-                index = vm.alerts.indexOf(alert);
-                if (index !== -1) {
-                    vm.alerts[index].read = true;
-                }
+            var index = vm.alerts.indexOf(alert);
+            if (index !== -1) {
+                vm.alerts.splice(index, 1);
             }
         }
     }

@@ -17,10 +17,9 @@ from twilio.rest import TwilioRestClient
 
 
 # Service specific
-from sms_campaign_service.common.utils.validators import format_phone_number
-from sms_campaign_service.sms_campaign_app import flask_app, logger, app
+from sms_campaign_service.sms_campaign_app import logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioApiError
-from sms_campaign_service.modules.sms_campaign_app_constants import NGROK_URL, TWILIO_TEST_NUMBER
+from sms_campaign_service.modules.sms_campaign_app_constants import (NGROK_URL, TWILIO_TEST_NUMBER)
 
 # Common utils
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -28,7 +27,8 @@ from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNo
                                                         ForbiddenError)
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 from sms_campaign_service.common.campaign_services.campaign_utils import \
-    raise_if_dict_values_are_not_int_or_long
+    (raise_if_dict_values_are_not_int_or_long, CampaignUtils)
+from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 
 # Database models
@@ -41,18 +41,10 @@ class TwilioSMS(object):
     """
 
     def __init__(self):
-        if flask_app.config[TalentConfigKeys.IS_DEV]:
-            # This client is created using test_credentials of Twilio
-            self.client = twilio.rest.TwilioRestClient(
-                app.config[TalentConfigKeys.TWILIO_TEST_ACCOUNT_SID],
-                app.config[TalentConfigKeys.TWILIO_TEST_AUTH_TOKEN]
-            )
-        else:
-            # This client has actual app credentials of Twilio
-            self.client = twilio.rest.TwilioRestClient(
-                app.config[TalentConfigKeys.TWILIO_ACCOUNT_SID],
-                app.config[TalentConfigKeys.TWILIO_AUTH_TOKEN]
-            )
+        self.client = twilio.rest.TwilioRestClient(
+            app.config[TalentConfigKeys.TWILIO_ACCOUNT_SID],
+            app.config[TalentConfigKeys.TWILIO_AUTH_TOKEN]
+        )
         self.country = 'US'
         self.phone_type = 'local'
         self.sms_enabled = True
@@ -274,7 +266,7 @@ def get_formatted_phone_number(phone_number):
         # Adding this condition here so that in tests, fake.phone_number()
         # does not always generate American/Canadian number, so format_phone_number()
         # throws Invalid usage error. In that case we assign Twilio's Test phone number.
-        if not app.config[TalentConfigKeys.IS_DEV]:
+        if not CampaignUtils.IS_DEV:
             logger('get_formatted_phone_number: Given phone %s number is invalid.' % phone_number)
             raise
         formatted_phone_number = TWILIO_TEST_NUMBER

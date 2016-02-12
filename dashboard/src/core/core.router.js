@@ -26,9 +26,6 @@
                     'title@': {
                         template: '<title>getTalent | Login To Your Account</title>'
                     }
-                },
-                data: {
-                    nonAuthOnly: true
                 }
             })
 
@@ -39,9 +36,6 @@
                     content: {
                         template: '<gt-forgot-password></gt-forgot-password'
                     }
-                },
-                data: {
-                    nonAuthOnly: true
                 }
             })
 
@@ -52,9 +46,6 @@
                     content: {
                         template: '<gt-reset-password></gt-reset-password>'
                     }
-                },
-                data: {
-                    nonAuthOnly: true
                 }
             })
 

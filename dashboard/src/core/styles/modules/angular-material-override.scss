@@ -23,20 +23,6 @@ html, body {
 }
 
 
-/** Temp Dashboard Styles **/
-
-.new-candidates,
-.team-contributions {
-    .md-title {
-        margin-bottom:10px;
-    }
-    .md-display-3 {
-        font-size:110px;
-        margin:20px 0px;
-    }
-}
-
-
 
 
 
@@ -70,80 +56,4 @@ html, body {
     }
 }
 
-#v2-team-contributors {
-    .v2-contributor {
-        background-color: #eee;
-        margin: 8px 0 8px 20px;
 
-        .md-avatar {
-            margin-left: -36px;
-        }
-    }
-}
-
-.dashboard-wrapper {
-    background: transparent;
-}
-
-// Log in
-.view--login {
-
-    .login-header {
-        margin-bottom: 50px;
-    }
-
-    .login-form-wrap,
-    .forgot-password-form-wrap {
-        padding: 50px 50px 30px 50px;
-
-        md-input-container {
-            margin: 0;
-
-            &:before {
-                content: ' ';
-                display: block;
-                width: 5px;
-                height: 50px;
-                background: #888;
-                position: absolute;
-                top: 2px;
-                left: 2px;
-            }
-
-            .md-input {
-                height: 50px;
-                padding-left: 20px;
-            }
-        }
-
-        .forogt-password-wrap {
-            height: 40px;
-        }
-
-        .error-message {
-            color: #d30;
-        }
-    }
-
-    .login-form-wrap {
-        height: 420px;
-    }
-
-    .forgot-password-form-wrap {
-        height: 300px;
-    }
-}
-
-
-@keyframes shake {
-    0% {transform: translateX(0);}
-    12.5% {transform: translateX(-30px) rotateY(-5deg)}
-    37.5% {transform: translateX(25px) rotateY(4deg)}
-    62.5% {transform: translateX(-15px) rotateY(-2deg)}
-    87.5% {transform: translateX(10px) rotateY(1deg)}
-    100% {transform: translateX(0)}
-}
-
-.shake {
-    animation: shake 600ms ease-in-out;
-}

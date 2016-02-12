@@ -64,6 +64,8 @@ def resume_post_reciever():
             request.form, request.files, request.json
         ))
         raise InvalidUsage("Invalid Request")
+    if create_candidate and not talent_pools:
+        raise InvalidUsage("Could not obtain user talent_pools for candidate creation.")
     parse_params = {
         'oauth': oauth,
         'talent_pools': talent_pools,

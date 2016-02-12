@@ -1,63 +1,11 @@
 <section id="candidate-add-view" class="view__main">
-    <script type="text/javascript" src="api.filepicker.io/v2/filepicker.js"></script>
 
     <div class="row--widget">
         <div class="col--full-12 box">
             <header class="box__header">
                 <h2>Add Candidate</h2>
             </header>
-        </div>
-    </div>
-
-    <div class="row--widget">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Upload Candidate File(s)</h2>
-            </header>
-            <button ng-click="vm.fpInit()">Upload!</button>
-        </div>
-    </div>
-
-    <div class="row--widget">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Manually Add a Candidate</h2>
-            </header>
-            <form ng-submit="vm.manualSubmit()">
-                <input type="text" ng-model="vm.candidateForm.firstName"
-                       ng-required placeholder="First Name">
-                <input type="text" ng-model="vm.candidateForm.lastName"
-                       ng-required placeholder="Last Name">
-                <input type="text" ng-model="vm.candidateForm.email"
-                       ng-required="" placeholder="Email">
-                <button>Submit</button>
-            </form>
-        </div>
-    </div>
-
-    <div class="row--widget" ng-show="vm.successfullResponses.length">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Successes</h2>
-            </header>
-            <ul>
-                <li ng-repeat="i in vm.successfullResponses">
-                    {{i}}
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="row--widget" ng-show="vm.failedResponses.length">
-        <div class="col--full-12 box">
-            <header class="box__header">
-                <h2>Failures</h2>
-            </header>
-            <ul>
-                <li ng-repeat="i in vm.failedResponses">
-                    {{i.filename}}: {{i.error}}
-                </li>
-            </ul>
+            </div>
         </div>
     </div>
 
