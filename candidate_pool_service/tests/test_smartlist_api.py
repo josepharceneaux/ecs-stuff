@@ -273,7 +273,7 @@ class TestSmartlistResource(object):
             # assert it is returned and has the same search params as were input
             assert second_smartlist.status_code == 200
             assert second_smartlist.json()['smartlist']['search_params'] == '{"location": "San Jose, CA"}'
-            assert second_smartlist.json()['smartlist']['name'] == smartlist_nameg
+            assert second_smartlist.json()['smartlist']['name'] == smartlist_name
 
     class TestSmartlistResourceGET(object):
         def call_get_api(self, access_token, list_id=None):
