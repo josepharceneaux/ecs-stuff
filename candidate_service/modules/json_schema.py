@@ -622,6 +622,10 @@ candidates_resource_schema_post = {
                                 }
                             }
                         }
+                    },
+                    "image_url": {
+                        # "id": "http://jsonschema.net/image_url",
+                        "type": ["string", "null"]
                     }
                 }
             }
