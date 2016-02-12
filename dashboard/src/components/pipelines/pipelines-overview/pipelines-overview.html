@@ -1,37 +1,12 @@
 <section id="pipelines-overview-view" class="view-wrapper view__main--pipelines">
 
-    <md-content hide class="page-title-2 md-padding">
-        <div class="breadcrumbs2">My Pipelines</div>
-        <div class="md-padding" layout="row" layout-xs="column" layout-align="center center">
-            <div flex="initial" class="gt-title-icon icon--pipeline"></div>
-            <div flex>
-                <h2 class="md-title">My Pipelines</h2>
-            </div>
-            <div class="page-title-menu">
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
-                <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add">+S</div></a>
-            </div>
-        </div>
-    </md-content>
-
     <div layout="column" class="overview-graph">
 
-        <div layout="column" layout-margin>
+        <div layout="column">
 
             <!-- Navigation path -->
-            <div layout="row">
-                <div hide ncy-breadcrumb></div>
-                <div layout="row">
-                    <ul class="breadcrumb">
-                        <!-- ngRepeat: step in steps -->
-                        <li>
-                            <a href="/dashboard">Google Drive Team</a>
-                        </li>
-                        <li>
-                            <a href="/pipelines">Pipelines</a>
-                        </li>
-                    </ul>
-                </div>
+            <div layout="row" layout-margin>
+                <div ncy-breadcrumb></div>
             </div>
             <!-- End: Navigation path -->
 
@@ -42,8 +17,8 @@
                     <h2 class="md-title">Pipelines</h2>
                 </div>
                 <div class="page-title-menu">
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+C</div></a>
-                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon">+S</div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--announcements"></div></a>
+                    <a ui-sref="pipelines.pipeline.smartlists.create)"><div class="gt-menu-icon icon--list-add"></div></a>
                 </div>
             </md-card>
             <!-- End: Header -->
@@ -51,23 +26,7 @@
         </div>
 
         <!-- Growth chart -->
-        <div id="growth-chart-section">
-            <div class="module-padding">
-                <h2 class="md-headline">
-                    Candidate Growth
-                    <i class="fa fa-info-circle"  uib-tooltip="This number is calulated by this and this" tooltip-class="tooltip--info" ></i>
-                </h2>
-                <div layout="row" layout-align="end">
-                    <md-radio-group class="segmented-button-group" ng-model="vm.chartFilters.daysBack" ng-change="vm.updateChart(vm.chartFilters.daysBack)">
-                        <md-radio-button ng-repeat="option in vm.daysFilterOptions" ng-value="option">{{option}}</md-radio-button>
-                    </md-radio-group>
-                </div>
-            </div>
-
-            <div id="growth-chart-wrap" gt-resize on-resize="vm.redrawChart()">
-                <div id="growth-chart"></div>
-            </div>
-        </div>
+        <gt-candidate-growth-graph pipeline-id="vm.pipelineId" graph-color-options="vm.colorOptions"></gt-candidate-growth-graph>
         <!-- End: Growth chart -->
 
     </div>
@@ -75,7 +34,7 @@
 
 
 
-    <div layout="column" class="md-padding" layout-wrap>
+    <div layout="column" layout-wrap>
 
         <!-- Call-outs -->
         <div class="stat-row md-margin" layout="row" layout-wrap>

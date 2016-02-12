@@ -93,22 +93,22 @@
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-50')
-            .attr("y", '10.3em')
+            .attr("x", '-30')
+            .attr("y", '10.4em')
             .text("Candidates Pipelined");
 
         svg.append("rect")
             .attr("class", "legend off-white")
             .attr("width", "12")
             .attr("height", "12")
-            .attr("x", '-165')
+            .attr("x", '-115')
             .attr("y", '10.15em');
 
         svg.append("text")
             .attr("width", "200")
             .attr("class", "legend label")
             .attr("height", "12")
-            .attr("x", '-64')
+            .attr("x", '-42')
             .attr("y", '11.7em')
             .text("Total Candidates");
 
@@ -116,7 +116,7 @@
             .attr("class", "legend purple")
             .attr("width", "12")
             .attr("height", "12")
-            .attr("x", '-165')
+            .attr("x", '-115')
             .attr("y", '11.35em');
     }
 

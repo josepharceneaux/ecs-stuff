@@ -479,44 +479,37 @@
             vm.recommendedCandidates = [
                 {
                     name: 'Bob Smith',
-                    avatar: '/images/placeholder/profiles/prof1a.jpg',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
+                    avatar: '/images/placeholder/candidates/1.jpg',
+                    current: 'Senior Software Engineer at Google',
+                    activity: 'Recent Activity: Bob recently viewed your email',
                     pipeline: 'Android Developers'
                 },
                 {
                     name: 'Kevin Thompson',
-                    avatar: '/images/placeholder/profiles/prof1b.jpg',
+                    avatar: '/images/placeholder/candidates/2.jpg',
                     current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
+                    activity: 'Recent Activity: Kevin responded to your email',
                     pipeline: 'Android Developers'
                 },
                 {
                     name: 'Lenny Seager',
-                    avatar: '/images/placeholder/profiles/prof1c.jpg',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
+                    avatar: '/images/placeholder/candidates/3.jpg',
+                    current: 'Computer Science Student',
+                    activity: 'Recent Activity: Lenny responded to your email',
                     pipeline: 'iOS Developers'
                 },
                 {
                     name: 'Tom Chansky',
-                    avatar: '/images/placeholder/profiles/prof1d.jpg',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
+                    avatar: '/images/placeholder/candidates/4.jpg',
+                    current: 'iOS Engineer at AirBnB',
+                    activity: 'Recent Activity: Tom viewed your email yesterday',
                     pipeline: 'Senior Java Engineer'
                 },
                 {
                     name: 'Chris Pratt',
-                    avatar: '/images/placeholder/profiles/prof1h.jpg',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
-                    pipeline: 'Senior Java Engineer'
-                },
-                {
-                    name: 'Megi Theodhor',
-                    avatar: '/images/placeholder/profiles/prof1f.jpg',
-                    current: 'Senior Software Engineer at GetTalent',
-                    activity: 'Bob recently viewed your email',
+                    avatar: '/images/placeholder/candidates/5.jpg',
+                    current: 'Android Developer - Freelance',
+                    activity: 'Recent Activity: Chris clicked on your email',
                     pipeline: 'Senior Java Engineer'
                 }
             ];
@@ -557,12 +550,6 @@
                     team: 'Google Southwest',
                     avatar: '/images/placeholder/profiles/prof1f.jpg',
                     value: 12
-                },
-                {
-                    name: 'Lauren Freeman',
-                    team: 'Google HR',
-                    avatar: '/images/placeholder/profiles/prof1g.jpg',
-                    value: 10
                 }
             ];
 
@@ -585,7 +572,7 @@
 
             vm.topPipelines = [
                 {
-                    title: 'Product Management',
+                    title: 'Android Developers',
                     candidates: 100,
                     recommendations: 80
                 },
