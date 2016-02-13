@@ -37,8 +37,8 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
 
     # Emptying TalentPipelineStats table
     TalentPipelineStats.query.delete()
-    talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id, total_candidates=10,
-                                               number_of_candidates_removed_or_added=3, candidates_engagement=40)
+    talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id, total_number_of_candidates=10,
+                                               candidates_engagement=40)
 
     db.session.add(talent_pipeline_stat)
     db.session.commit()
@@ -64,18 +64,14 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
     assert status_code == 200
     assert not response.get('talent_pipeline_data')
 
-    from_date = str(datetime.now() - timedelta(1))
-    to_date = str(datetime.now())
-
     # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id,
-                                                      {'from_date': from_date, 'to_date': to_date})
+    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id)
 
     assert status_code == 200
     assert len(response.get('talent_pipeline_data')) >= 1
     assert 10 in [talent_pipeline_data. get('total_number_of_candidates') for talent_pipeline_data in
                   response.get('talent_pipeline_data')]
-    assert 3 in [talent_pipeline_data. get('number_of_candidates_removed_or_added') for talent_pipeline_data in
+    assert 3 in [talent_pipeline_data. get('number_of_candidates_added') for talent_pipeline_data in
                  response.get('talent_pipeline_data')]
 
 

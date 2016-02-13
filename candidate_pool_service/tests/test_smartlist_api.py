@@ -70,8 +70,8 @@ class TestSmartlistStatsUpdateApi(object):
         # Emptying TalentPipelineStats table
         SmartlistStats.query.delete()
 
-        smartlist_stat = SmartlistStats(smartlist_id=test_smartlist.id, total_candidates=10,
-                                        number_of_candidates_removed_or_added=3, candidates_engagement=40)
+        smartlist_stat = SmartlistStats(smartlist_id=test_smartlist.id, total_number_of_candidates=10,
+                                        candidates_engagement=40)
         db.session.add(smartlist_stat)
         db.session.commit()
 
@@ -96,17 +96,13 @@ class TestSmartlistStatsUpdateApi(object):
         assert status_code == 200
         assert not response.get('smartlist_data')
 
-        from_date = str(datetime.now() - timedelta(1))
-        to_date = str(datetime.now())
-
         # Logged-in user trying to get statistics of a smartlist
-        response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id,
-                                                                  {'from_date': from_date, 'to_date': to_date})
+        response, status_code = self.call_smartlist_stats_get_api(access_token_first, test_smartlist.id)
 
         assert len(response.get('smartlist_data')) >= 1
         assert 10 in [smartlist_data. get('total_number_of_candidates') for smartlist_data in
                       response.get('smartlist_data')]
-        assert 3 in [smartlist_data. get('number_of_candidates_removed_or_added') for smartlist_data in
+        assert 3 in [smartlist_data. get('number_of_candidates_added') for smartlist_data in
                      response.get('smartlist_data')]
 
 
