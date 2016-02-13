@@ -58,8 +58,8 @@ class CandidateSearch(Resource):
         else:
             request_vars = validate_and_format_data(request.args)
 
-            # If user wants to provide two of more set of search_params then we'll validate each dictionary of search_params
-            # in search_params_list
+            # If user wants to provide two of more set of search_params then we'll validate each dictionary of
+            # search_params in search_params_list
             if 'search_params' in request_vars:
                 search_params_list = request_vars.get('search_params')
                 for index, search_params in enumerate(search_params_list):
