@@ -288,6 +288,7 @@ def get_valid_json_data(req):
         raise InvalidUsage('Request data is empty')
     return data
 
+
 def validate_required_fields(data_dict, required_fields):
     """
     This function returns the keys as specified by required_fields, that are not present in

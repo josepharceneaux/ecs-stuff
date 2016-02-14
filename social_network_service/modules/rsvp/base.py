@@ -13,10 +13,11 @@ from abc import abstractmethod
 # Application Specific
 from flask import request
 
-from social_network_service.common.activity_service_config import ActivityServiceKeys
+
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
 from social_network_service.common.routes import CandidateApiUrl
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger, app
@@ -163,7 +164,7 @@ class RSVPBase(object):
         self.social_network = kwargs.get('social_network')
         self.api_url = kwargs.get('social_network').api_url
         self.access_token = self.user_credentials.access_token
-        self.bearer_token = Token.get_token_by_user_id(user_id=self.user.id)
+        self.bearer_token = Token.get_by_user_id(user_id=self.user.id).access_token
         self.start_date_dt = None
         self.rsvps = []
 
@@ -642,14 +643,14 @@ class RSVPBase(object):
         if activity_in_db:
             add_activity(user_id=self.user_credentials.user_id,
                          oauth_token=request.user.oauth_token,
-                         activity_type=ActivityServiceKeys.RSVP_EVENT,
+                         activity_type=ActivityMessageIds.RSVP_EVENT,
                          source_id=attendee.rsvp_id,
                          source_table=RSVP.__tablename__,
                          params=json.dumps(params))
         else:
             add_activity(user_id=self.user_credentials.user_id,
                          oauth_token=request.user.oauth_token,
-                         activity_type=ActivityServiceKeys.RSVP_EVENT,
+                         activity_type=ActivityMessageIds.RSVP_EVENT,
                          source_id=attendee.rsvp_id,
                          source_table=RSVP.__tablename__,
                          params=json.dumps(params))

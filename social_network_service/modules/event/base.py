@@ -102,12 +102,12 @@ from abc import abstractmethod
 from dateutil.parser import parse
 from flask import request
 
-from social_network_service.common.activity_service_config import ActivityServiceKeys
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
@@ -424,7 +424,7 @@ class EventBase(object):
                                      'eventTitle': title
                                      }
                     add_activity(user_id=request.user.id,
-                                 activity_type=ActivityServiceKeys.EVENT_DELETE,
+                                 activity_type=ActivityMessageIds.EVENT_DELETE,
                                  source_table=Event.__tablename__,
                                  source_id=event_id,
                                  params=activity_data)

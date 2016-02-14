@@ -4,6 +4,9 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
 from ..error_handling import InvalidUsage
 import datetime
+import time
+from candidate import CandidateMilitaryService
+from sms_campaign import SmsCampaign
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -32,12 +35,8 @@ class Activity(db.Model):
 
     @classmethod
     def get_by_user_id_type_source_id(cls, user_id, type, source_id):
-        return cls.query.filter(
-            db.and_(
-                Activity.user_id == user_id,
-                Activity.type == type,
-                Activity.source_id == source_id,
-            )).first()
+        assert user_id
+        return cls.query.filter_by(user_id=user_id, type=type, source_id=source_id).first()
 
 
 class AreaOfInterest(db.Model):

@@ -12,6 +12,8 @@ import flask
 from flask import request, redirect
 
 # Application specific imports
+from flask.ext.cors import CORS
+
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
@@ -23,13 +25,14 @@ from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
-
 # Register Blueprints for different APIs
 app.register_blueprint(data_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(social_network_blueprint)
 
 api = TalentApi(app)
+
+CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
 
 # Initialize Redis Cache
 redis_store.init_app(app)

@@ -9,8 +9,9 @@ from datetime import datetime, timedelta
 from mixer._faker import faker
 
 # App Settings
-from social_network_service.common.activity_service_config import ActivityServiceKeys
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import app
 
 # Application Specific
@@ -67,7 +68,7 @@ def base_url():
     """
     This fixture returns social network app url
     """
-    return APP_URL % '/v1'
+    return APP_URL
 
 
 @pytest.fixture()
@@ -205,7 +206,7 @@ def meetup_event(request, sample_user, test_meetup_credentials, meetup,
 
     data = response.json()
     db.session.commit()
-    event = Event.get_by_id(data['id'])
+    event = get_by_id(Event, data['id'])
     event_id = event.id
 
     def fin():
@@ -289,7 +290,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
 
     data = response.json()
     db.session.commit()
-    event = Event.get_by_id(data['id'])
+    event = get_by_id(Event, data['id'])
     user_id = event.user_id
     event_id = event.id
     event_title = event.title
@@ -308,7 +309,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
 
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
                                                           source_id=event_id,
-                                                          type=ActivityServiceKeys.EVENT_DELETE)
+                                                          type=ActivityMessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
         if 'update' not in data['eventTitle'].lower():
             assert data['eventTitle'] == event_title

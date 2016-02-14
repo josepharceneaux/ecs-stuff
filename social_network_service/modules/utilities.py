@@ -20,9 +20,9 @@ import requests
 from flask import request
 from pytz import timezone
 # Application Specific Imports
-from social_network_service.common.activity_service_config import ActivityServiceKeys
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.routes import ActivityApiUrl
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import *
@@ -228,9 +228,6 @@ def get_class(social_network_name, category, user_credentials=None):
     :param category:
     :return: import the required class and return it
     """
-    # if category == 'social_network':
-    #     module_name = 'social_network_service.modules.social_networks' + social_network_name.lower()
-    # else:
     module_name = 'social_network_service.modules.' + category + '.' + social_network_name.lower()
     try:
         module = importlib.import_module(module_name)
@@ -290,7 +287,7 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'eventTitle': event_obj.title})
 
             add_activity(user_id=user_id,
-                         activity_type=ActivityServiceKeys.EVENT_CREATE,
+                         activity_type=ActivityMessageIds.EVENT_CREATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,
                          params=activity_data)
@@ -305,7 +302,7 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'eventTitle': event_obj.title})
 
             add_activity(user_id=user_id,
-                         activity_type=ActivityServiceKeys.EVENT_UPDATE,
+                         activity_type=ActivityMessageIds.EVENT_UPDATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,
                          params=activity_data)
@@ -399,8 +396,6 @@ def camel_case_to_snake_case(name):
                 assert result == 'social_network_id'
 
     """
-    # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     name = re.sub('(.)([0-9]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()

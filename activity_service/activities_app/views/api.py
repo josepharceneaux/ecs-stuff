@@ -1,7 +1,6 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
-from app_common.common.activity_service_config import ActivityServiceKeys
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -88,76 +87,38 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         return json.dumps({'error': 'There was an error saving your log entry'}), 500
 
 
+# TODO: Change this
 class TalentActivityManager(object):
     """API class for ActivityService."""
-    # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
-    CANDIDATE_CREATE_WEB = ActivityServiceKeys.CANDIDATE_CREATE_WEB
-    CANDIDATE_CREATE_CSV = ActivityServiceKeys.CANDIDATE_CREATE_CSV
-    CANDIDATE_CREATE_WIDGET = ActivityServiceKeys.CANDIDATE_CREATE_WIDGET
-    CANDIDATE_CREATE_MOBILE = ActivityServiceKeys.CANDIDATE_CREATE_MOBILE  # TODO add in
-    CANDIDATE_UPDATE = ActivityServiceKeys.CANDIDATE_UPDATE
-    CANDIDATE_DELETE = ActivityServiceKeys.CANDIDATE_DELETE
-
-    # params=dict(id, name)
-    CAMPAIGN_CREATE = ActivityServiceKeys.CAMPAIGN_CREATE
-    CAMPAIGN_DELETE = ActivityServiceKeys.CAMPAIGN_DELETE
-    CAMPAIGN_SEND = ActivityServiceKeys.CAMPAIGN_SEND  # also has num_candidates
-    CAMPAIGN_EXPIRE = ActivityServiceKeys.CAMPAIGN_EXPIRE  # recurring campaigns only # TODO implement
-    CAMPAIGN_PAUSE = ActivityServiceKeys.CAMPAIGN_PAUSE
-    CAMPAIGN_RESUME = ActivityServiceKeys.CAMPAIGN_RESUME
-
-    # params=dict(name, is_smartlist=0/1)
-    SMARTLIST_CREATE = ActivityServiceKeys.SMARTLIST_CREATE
-    SMARTLIST_DELETE = ActivityServiceKeys.SMARTLIST_DELETE
-    SMARTLIST_ADD_CANDIDATE = ActivityServiceKeys.SMARTLIST_ADD_CANDIDATE  # also has formattedName (of candidate) and candidateId
-    SMARTLIST_REMOVE_CANDIDATE = ActivityServiceKeys.SMARTLIST_REMOVE_CANDIDATE  # also has formattedName and candidateId
-
-    USER_CREATE = ActivityServiceKeys.USER_CREATE  # params=dict(firstName, lastName)
-
-    WIDGET_VISIT = ActivityServiceKeys.WIDGET_VISIT  # params=dict(client_ip)
-
-    # TODO implement frontend + backend
-    NOTIFICATION_CREATE = ActivityServiceKeys.NOTIFICATION_CREATE  # when we want to show the users a message
-
-    # params=dict(candidateId, campaign_name, candidate_name)
-    CAMPAIGN_EMAIL_SEND = ActivityServiceKeys.CAMPAIGN_EMAIL_SEND
-    CAMPAIGN_EMAIL_OPEN = ActivityServiceKeys.CAMPAIGN_EMAIL_OPEN
-    CAMPAIGN_EMAIL_CLICK = ActivityServiceKeys.CAMPAIGN_EMAIL_CLICK
-    RSVP_EVENT = ActivityServiceKeys.RSVP_EVENT
-    # RSVP_MEETUP = 24
-
-    EVENT_CREATE = ActivityServiceKeys.EVENT_CREATE
-    EVENT_DELETE = ActivityServiceKeys.EVENT_DELETE
-    EVENT_UPDATE = ActivityServiceKeys.EVENT_UPDATE
 
     MESSAGES = {
-        RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
+        ActivityMessageIds.RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
                      "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
                      "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
                      " on event '%(eventTitle)s'",
                      "candidate.png"),
 
-        EVENT_CREATE:      ("%(firstName)s  %(lastName)s created an event <b>%(eventTitle)s",
+        ActivityMessageIds.EVENT_CREATE:      ("%(firstName)s  %(lastName)s created an event <b>%(eventTitle)s",
                             "%(firstName)s  %(lastName)s created %(count)s events.</b>",
                             "event.png"),
 
-        EVENT_DELETE:      ("%(firstName)s  %(lastName)s deleted an event <b>%(eventTitle)s",
+        ActivityMessageIds.EVENT_DELETE:      ("%(firstName)s  %(lastName)s deleted an event <b>%(eventTitle)s",
                             "%(firstName)s  %(lastName)s deleted %(count)s events.</b>",
                             "event.png"),
 
-        EVENT_UPDATE:      ("%(firstName)s  %(lastName)s updated an event <b>%(eventTitle)s.",
+        ActivityMessageIds.EVENT_UPDATE:      ("%(firstName)s  %(lastName)s updated an event <b>%(eventTitle)s.",
                             "%(firstName)s  %(lastName)s updated %(count)s events.</b>",
                             "event.png"),
 
-        CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
+        ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
                                "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
-        CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
+        ActivityMessageIds.CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
                                "%(username)s imported %(count)s candidates via spreadsheet", "candidate.png"),
-        CANDIDATE_CREATE_WIDGET: (
+        ActivityMessageIds.CANDIDATE_CREATE_WIDGET: (
             "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
-        CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
+        ActivityMessageIds.CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
                                   "%(username)s added %(count)s candidates via mobile", "candidate.png"),
-        CANDIDATE_UPDATE: (
+        ActivityMessageIds.CANDIDATE_UPDATE: (
             "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
 
             "candidate.png"),

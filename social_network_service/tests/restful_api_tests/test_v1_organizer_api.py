@@ -3,6 +3,7 @@ import json
 import requests
 
 # App specific imports
+from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
@@ -72,7 +73,7 @@ class TestOrganizers:
         response = response.json()
         assert response['id'] > 0
         EventOrganizer.session.commit()
-        event_organizer = EventOrganizer.get_by_id(response['id'])
+        event_organizer = get_by_id(EventOrganizer, response['id'])
         assert event_organizer, 'Event organizer created successfully in db'
         EventOrganizer.delete(event_organizer.id)
 

@@ -1,4 +1,4 @@
-from social_network_service.common.error_handling import ResourceNotFound
+from ..error_handling import ResourceNotFound
 
 __author__ = 'ufarooqi'
 

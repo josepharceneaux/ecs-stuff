@@ -87,10 +87,4 @@ class Event(db.Model):
                 Event.id == event_id
             )).first()
 
-    @classmethod
-    def get_by_id(cls, _id):
-        assert _id, 'Event id not provided'
-        return cls.query.filter(
-                Event.id == _id
-            ).first()
 

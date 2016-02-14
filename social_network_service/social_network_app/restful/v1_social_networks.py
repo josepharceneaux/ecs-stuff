@@ -25,12 +25,12 @@ This file contains API endpoints related to social network.
             POST    : Update an existing venue
             DELETE  : Delete a venue from getTalent database
 
-        - Organizers: /event_organizers
+        - Organizers: /event-organizers
             GET     : Get all organizers created by the user
             POST    : Create an organizer
             DELETE  : Delete one or more organizers
 
-        - OrganizerById: /event_organizers/<int: id>
+        - OrganizerById: /event-organizers/<int: id>
             GET     : Get an organizer
             POST    : Update an existing organizer
             DELETE  : Delete a single organizer
@@ -781,7 +781,7 @@ class EventOrganizersResource(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/event_organizers/', headers=headers)
+            response = requests.get(API_URL + '/event-organizers/', headers=headers)
 
         .. Response::
 
@@ -825,7 +825,7 @@ class EventOrganizersResource(Resource):
                        }
             data = json.dumps(organizer_data)
             response = requests.post(
-                                        API_URL + '/event_organizers/',
+                                        API_URL + '/event-organizers/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -866,7 +866,7 @@ class EventOrganizersResource(Resource):
                        }
             data = json.dumps(organizers_ids)
             response = requests.post(
-                                        API_URL + '/event_organizers/',
+                                        API_URL + '/event-organizers/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -923,7 +923,7 @@ class EventOrganizerByIdResource(Resource):
             headers = {'Authorization': 'Bearer <access_token>'}
             organizer_id = 1
             response = requests.get(
-                                        API_URL + '/event_organizers/' + str(organizer_id),
+                                        API_URL + '/event-organizers/' + str(organizer_id),
                                         headers=headers
                                     )
 
@@ -971,7 +971,7 @@ class EventOrganizerByIdResource(Resource):
                        }
             data = json.dumps(organizer_data)
             response = requests.post(
-                                        API_URL + '/event_organizers/1',
+                                        API_URL + '/event-organizers/1',
                                         data=data,
                                         headers=headers,
                                     )

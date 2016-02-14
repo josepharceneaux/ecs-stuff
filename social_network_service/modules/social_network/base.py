@@ -468,6 +468,7 @@ class SocialNetworkBase(object):
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
                 status = True
+            # If event is already on remote then status code response will be 429
             elif response.status_code == 429:
                 data = response.json()
                 raise HitLimitReached('Error: %s, %s' %

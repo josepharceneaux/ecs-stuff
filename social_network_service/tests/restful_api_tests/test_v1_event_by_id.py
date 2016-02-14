@@ -6,10 +6,11 @@ import requests
 import sys
 
 # Application imports
-from social_network_service.common.activity_service_config import ActivityServiceKeys
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
+from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
     event_data_tests, unauthorize_test
@@ -139,7 +140,7 @@ class TestEventById:
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'
-        event_db = Event.get_by_id(event['id'])
+        event_db = get_by_id(Event, event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_db = event_db.to_json()
         assert event['title'] == event_db['title'], 'event_title is modified'
@@ -150,7 +151,7 @@ class TestEventById:
 
         # Check activity updated
         activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
-                                                          type=ActivityServiceKeys.EVENT_UPDATE,
+                                                          type=ActivityMessageIds.EVENT_UPDATE,
                                                           user_id=event_db['user_id'])
 
         data = json.loads(activity.params)
@@ -184,6 +185,6 @@ class TestEventById:
         event = event_in_db.to_json()
         activities = Activity.get_by_user_id_type_source_id(user_id=event['user_id'],
                                                             source_id=event['id'],
-                                                            type=ActivityServiceKeys.EVENT_CREATE)
+                                                            type=ActivityMessageIds.EVENT_CREATE)
         data = json.loads(activities.params)
         assert data['eventTitle'] == event['title']
