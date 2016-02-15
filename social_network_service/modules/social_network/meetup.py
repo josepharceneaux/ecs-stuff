@@ -180,7 +180,7 @@ class Meetup(SocialNetworkBase):
                         'grant_type': u'refresh_token',
                         'refresh_token': user_refresh_token}
 
-        response = http_request('POST', headers=headers, url=auth_url, data=url_encode(payload_data),
+        response = http_request('POST', headers=headers, url=auth_url, data=payload_data,
                                 user_id=self.user.id, app=app)
         if response.ok:
             try:
