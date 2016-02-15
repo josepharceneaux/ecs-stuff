@@ -46,7 +46,7 @@ class TalentPoolApi(Resource):
             if not talent_pool:
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
-            if talent_pool.domain_id != request.user.domain_id:
+            if talent_pool.domain_id != request.user.domain_id and not request.is_admin_user:
                 raise ForbiddenError(error_message="User %s is not authorized to get talent-pool's info" %
                                                    request.user.id)
 
