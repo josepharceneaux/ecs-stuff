@@ -251,7 +251,7 @@ def process_event(data, user_id, method='Create'):
     This functions is called from restful POST service (which gets data from
     Event Create Form submission).
     It creates event on vendor as well as saves in database.
-    Data in the arguments is the Data coming from Event creation form submission3
+    Data in the arguments is the Data coming from Event creation form submission
     user_id is the id of current logged in user (which we get from session).
     :return: id of event
     :rtype: int
