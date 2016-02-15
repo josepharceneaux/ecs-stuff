@@ -23,7 +23,7 @@ PARSE_MOD = Blueprint('resume_api', __name__)
 # Enable CORS
 CORS(PARSE_MOD, resources={
     r'/v1/{}'.format(ResumeApi.PARSE): {
-        'origins': [r"*.gettalent.com", "127.0.0.1"],
+        'origins': [r"*.gettalent.com", "http://localhost"],
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
@@ -64,6 +64,8 @@ def resume_post_reciever():
             request.form, request.files, request.json
         ))
         raise InvalidUsage("Invalid Request")
+    if create_candidate and not talent_pools:
+        raise InvalidUsage("Could not obtain user talent_pools for candidate creation.")
     parse_params = {
         'oauth': oauth,
         'talent_pools': talent_pools,

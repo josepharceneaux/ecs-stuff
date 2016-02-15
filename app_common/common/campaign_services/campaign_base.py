@@ -495,7 +495,7 @@ class CampaignBase(object):
         Most of the campaigns are created with user_id as foreign key(e.g. Email campaigns and
         Push campaigns). So, in this method, we return domain id of user using relationship of
         flask SQLAlchemy.
-        If some other campaign (e,g. SMS campaign) has no user_id in it, then that camapign
+        If some other campaign (e,g. SMS campaign) has no user_id in it, then that campaign
         has to override this method as per its requirement.
         :param campaign_obj: campaign object
         :param current_user_id: id of logged-in user

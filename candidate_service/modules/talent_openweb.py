@@ -187,7 +187,7 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
         # Parse out candidate_experience_bullets.
         candidate_experience_bullets = []
         if history_dict.get('description'):
-            candidate_experience_bullets.append(dict(text=history_dict.get('description')))
+            candidate_experience_bullets.append(dict(description=history_dict.get('description')))
 
         work_experiences.append(dict(organization=history_dict.get('company'),
                                      position=history_dict.get('jobTitle'),
@@ -290,6 +290,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
                    'state': None,
                    'country': None} for university_name in universities_list]
 
+    image_url = social_profile_dict.get('imageUrl', '')
+
     # Addresses
     addresses = [{
         'address_line_1': None,
@@ -316,7 +318,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
         # 'text_comments': text_comments,
         'openweb_id': social_profile_dict.get('id'),
         'dice_profile_id': dice_profile_dict.get('id'),
-        'talent_pool_ids': {"add": talent_pool_ids}
+        'talent_pool_ids': {"add": talent_pool_ids},
+        'image_url': image_url
     }
 
     return gt_candidate_dict

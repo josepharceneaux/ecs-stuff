@@ -285,7 +285,7 @@ def is_backward_compatible(key):
             key = 'military_highest_grade'
 
         if key not in SEARCH_INPUT_AND_VALIDATIONS:
-            raise InvalidUsage("`%s` is an invalid input" % key, 400)
+            return -1
 
     return key
 
@@ -293,9 +293,9 @@ def is_backward_compatible(key):
 def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
-        if key == 'searchSource':
-            continue
         key = is_backward_compatible(key)
+        if key == -1:
+            continue
         if value.strip():
             if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
                 request_vars[key] = value

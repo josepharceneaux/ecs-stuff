@@ -50,7 +50,8 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
-    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True, backref='user')
+    user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
+                               backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
@@ -614,6 +615,8 @@ class UserGroup(db.Model):
         """
         user_groups = []
         for group in groups:
+            if not isinstance(group, dict):
+                raise InvalidUsage(error_message="Request body is not properly formatted")
             name = group.get('name')
             description = group.get('description')
             already_existing_group = UserGroup.query.filter_by(name=name, domain_id=domain_id).first()
@@ -652,6 +655,8 @@ class UserGroup(db.Model):
         """
         if Domain.query.get(domain_id):
             for group in groups:
+                if not isinstance(group, basestring) and not isinstance(group, (int, long)):
+                    raise InvalidUsage(error_message="Request body is not properly formatted")
                 if is_number(group):
                     group_id = group
                 else:
@@ -679,6 +684,7 @@ class UserGroup(db.Model):
         :rtype: None
         """
         for user_id in user_ids:
+            assert is_number(user_id)
             user = User.query.get(user_id) or None
             if user and user.domain_id == user_group.domain_id:
                 if user.user_group_id == user_group.id:

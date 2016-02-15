@@ -417,7 +417,7 @@ def talent_pool(request, domain_first, first_group, user_first):
 @pytest.fixture()
 def talent_pool_second(request, domain_second, second_group, user_second):
     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
-                             owner_user_id=user_second.id)
+                             user_id=user_second.id)
     db.session.add(talent_pool)
     db.session.commit()
 
@@ -442,7 +442,7 @@ def talent_pipeline(request, user_first, talent_pool):
         "location": "California"
     }
     talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
-                                     date_needed=datetime.utcnow().isoformat(sep=' '), owner_user_id=user_first.id,
+                                     date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
                                      talent_pool_id=talent_pool.id, search_params=json.dumps(search_params))
     db.session.add(talent_pipeline)
     db.session.commit()

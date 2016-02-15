@@ -5,7 +5,7 @@ from flask import current_app as app
 import boto.exception
 from boto.s3.bucket import Bucket
 from boto.s3.key import Key
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError, InvalidUsage
 from ..talent_config_manager import TalentConfigKeys
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
@@ -55,7 +55,7 @@ def download_file(bucket, key_name):
     :type: boto.s3.key.Key | None
     """
     if not key_obj:
-        raise InternalServerError("No S3 key found in bucket %s, key_name=%s" % (bucket, key_name))
+        raise InvalidUsage("No S3 key found in bucket %s, key_name=%s" % (bucket, key_name))
     from StringIO import StringIO
 
     return StringIO(key_obj.get_contents_as_string())

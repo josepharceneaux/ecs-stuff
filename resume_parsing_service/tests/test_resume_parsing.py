@@ -11,6 +11,7 @@ import requests
 from resume_parsing_service.common.utils.handy_functions import random_word
 from resume_parsing_service.app import redis_store
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.app.views.parse_lib import process_resume
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -32,7 +33,7 @@ from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
-PDF15_FP_KEP = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
+PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
 REDIS_EXPIRE_TIME = 10
 
 
@@ -63,7 +64,7 @@ def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    response = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEP)
+    response = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEY)
     assert 'candidate' in response, "Candidate should be in response content"
 
 
@@ -141,22 +142,25 @@ def test_invalid_token_fails():
     assert 'error' in json_obj, "There should be an error if a bad token is provided"
 
 
-def test_v15_pdf_by_post(token_fixture, user_fixture):
+def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
     response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert 'candidate' in response, "Candidate should be in response content"
-    assert 'id' in response['candidate'], "Candidate should contain id to signal creation."
+    assert 'id' in response['candidate'], "Candidate should contain id in response if create=True."
+    assert response['candidate']['id'], "Candidate should contain non-None id to signal creation."
 
 
 def test_batch_processing(user_fixture, token_fixture):
     # create a single file queue
     user_id = user_fixture.id
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEP], user_id, token_fixture.access_token)
+    unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     # mock hit from scheduler service.
     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
@@ -215,9 +219,6 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
-        # TODO: investigate the following.
-        # Manually setting headers here breaks test. The goal was to ensure the content-type was
-        # passed as intended but doing so causes the data/files attrs to not get picked up by Flask.
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},

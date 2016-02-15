@@ -72,8 +72,11 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'user_id': talent_pool.user_id
-
+                        'user_id': talent_pool.user_id,
+                        'accessible_to_user_group_ids': [talent_pool_group.user_group_id for talent_pool_group in
+                                                         TalentPoolGroup.query.filter_by(
+                                                                 talent_pool_id=talent_pool.id
+                                                         ).all()]
                     } for talent_pool in talent_pools
                 ]
             }
@@ -239,7 +242,7 @@ class TalentPoolGroupApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
 
                 } for talent_pool in talent_pools
             ]
