@@ -23,7 +23,7 @@ PARSE_MOD = Blueprint('resume_api', __name__)
 # Enable CORS
 CORS(PARSE_MOD, resources={
     r'/v1/{}'.format(ResumeApi.PARSE): {
-        'origins': [r"*.gettalent.com", "127.0.0.1"],
+        'origins': [r"*.gettalent.com", "http://localhost"],
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
