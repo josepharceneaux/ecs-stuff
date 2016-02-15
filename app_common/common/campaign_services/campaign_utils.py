@@ -22,7 +22,7 @@ from ska import (sign_url, Signature)
 
 # Database Models
 from ..models.db import db
-from ..models.email_marketing import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
+from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast,
                                    SmsCampaignSend)
 

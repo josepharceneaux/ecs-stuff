@@ -9,10 +9,11 @@ import time
 # Common Utils
 from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 
 SLEEP_TIME = 30
 
@@ -49,7 +50,6 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
     :param expected_count: Expected number of sends
-    :param campaign_id: id of SMS campaign
     :return:
     """
     # time.sleep(2*SLEEP_TIME)
@@ -79,10 +79,7 @@ def assert_for_activity(user_id, type_, source_id):
     :param source_id:
     :return:
     """
-    # Need to commit the session because Celery has its own session, and our session does not
-    # know about the changes that Celery session has made.
-    db.session.commit()
-    assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
+    CampaignsCommonTests.assert_for_activity(user_id, type_, source_id)
 
 
 def get_reply_text(candidate_phone):

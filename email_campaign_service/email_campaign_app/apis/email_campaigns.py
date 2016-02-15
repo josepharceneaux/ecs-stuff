@@ -5,11 +5,13 @@ using blueprint.
 import json
 from flask import request, Blueprint, redirect, jsonify
 from flask_restful import Resource
+from email_campaign_service.common.campaign_services.validators import \
+    raise_if_dict_values_are_not_int_or_long
 from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
 from ...modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
-from email_campaign_service.common.models.email_marketing import EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignEndpoints
@@ -33,7 +35,7 @@ class EmailCampaignApi(Resource):
         email_campaign_id = kwargs.get('id')
         if email_campaign_id:
             email_campaign = EmailCampaign.query.get(email_campaign_id)
-            """:type : email_campaign_service.common.models.email_marketing.EmailCampaign"""
+            """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not email_campaign:
                 raise NotFoundError("Email campaign with id: %s does not exists" % email_campaign_id)
@@ -93,34 +95,33 @@ class EmailCampaignSendApi(Resource):
         Scheduler service will call this to send emails to candidates.
         :param campaign_id: Campaign id
         """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
+
+        if not campaign.user.domain_id == request.user.domain_id:
+            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+
         # remove oauth_token instead use trusted server to server calls
-        send_emails_to_campaign(campaign, new_candidates_only=False)
+        results_send = send_emails_to_campaign(campaign, new_candidates_only=False)
+        if campaign.email_client_id:
+            if isinstance(results_send, list):
+                data = {
+                    'email_campaign_sends': [
+                        {
+                            'email_campaign_id': campaign.id,
+                            'new_html': new_email_html_or_text.get('new_html'),
+                            'new_text': new_email_html_or_text.get('new_text'),
+                            'candidate_email_address': new_email_html_or_text.get('email')
+                        } for new_email_html_or_text in results_send
+                    ]
+                }
+                return jsonify(data)
+            else:
+                raise InvalidUsage(error_message="Something went wrong, response is not list")
         return dict(message='email_campaign(id:%s) is being sent to candidates.'
                             % campaign_id), 200
-
-        # if campaign.email_client_id:
-        #     if isinstance(email_send, list):
-        #         data = {
-        #             'email_campaign_sends': [
-        #                 {
-        #                     'email_campaign_id': campaign.id,
-        #                     'new_html': new_email_html_or_text.get('new_html'),
-        #                     'new_text': new_email_html_or_text.get('new_text'),
-        #                     'candidate_email_address': new_email_html_or_text.get('email')
-        #                 } for new_email_html_or_text in email_send
-        #             ]
-        #         }
-        #         return jsonify(data)
-        #
-        #     else:
-        #         raise InvalidUsage(error_message="Something went wrong, response is not list")
-        #
-        # else:
-        #     data = json.dumps({'campaign': {'emails_send': email_send}})
-        #     return data
 
 
 @email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])

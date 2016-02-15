@@ -2,11 +2,12 @@ import json
 from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
-from email_campaign_service.common.models.email_marketing import EmailCampaignSendUrlConversion
+from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
@@ -114,20 +115,20 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
         destination_url = set_query_parameters(destination_url, destination_url_custom_params)
 
     url_conversion = UrlConversion(destination_url=destination_url, source_url='')
-    db.session.add(url_conversion)
-    db.session.commit()
+    UrlConversion.save(url_conversion)
 
-    # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect', args=url_conversion_id, hmac_key=current.HMAC_KEY))
+    # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect',
+    # args=url_conversion_id, hmac_key=current.HMAC_KEY))
+    logger.info('create_email_campaign_url_conversion: url_conversion_id:%s' % url_conversion.id)
     source_url = EmailCampaignUrl.URL_REDIRECT % url_conversion.id
-    # Update source url
-    url_conversion.source_url = source_url
-    db.session.commit()
-
+    # In case of prod, do not save source URL
+    if CampaignUtils.IS_DEV:
+        # Update source url
+        url_conversion.update(source_url=source_url)
     # Insert email_campaign_send_url_conversion
     email_campaign_send_url_conversion = EmailCampaignSendUrlConversion(email_campaign_send_id=email_campaign_send_id,
                                                                         url_conversion_id=url_conversion.id, type=type_)
-    db.session.add(email_campaign_send_url_conversion)
-    db.session.commit()
+    EmailCampaignSendUrlConversion.save(email_campaign_send_url_conversion)
     return source_url
 
 
@@ -138,6 +139,8 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     soup = None
 
     # HTML open tracking
+    logger.info('create_email_campaign_url_conversions: email_campaign_send_id: %s'
+                % email_campaign_send_id)
     if new_html and is_email_open_tracking:
         soup = BeautifulSoup(new_html)
         num_conversions = convert_html_tag_attributes(
@@ -151,7 +154,9 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
         # If no images found, add a tracking pixel
         if not num_conversions:
             image_url = TRACKING_PIXEL_URL
-            new_image_url = create_email_campaign_url_conversion(image_url, email_campaign_send_id, TRACKING_URL_TYPE)
+            new_image_url = create_email_campaign_url_conversion(image_url,
+                                                                 email_campaign_send_id,
+                                                                 TRACKING_URL_TYPE)
             new_image_tag = Tag(soup, "img", [("src", new_image_url)])
             soup.insert(0, new_image_tag)
 

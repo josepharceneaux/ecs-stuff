@@ -2,7 +2,7 @@ from models import (
     associations,
     candidate,
     candidate_edit,
-    email_marketing,
+    email_campaign,
     event,
     event_organizer,
     language,

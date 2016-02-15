@@ -370,3 +370,7 @@ class UrlConversion(db.Model):
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+    email_campaign_sends_url_conversions = relationship('EmailCampaignSendUrlConversion',
+                                                        cascade='all,delete-orphan',
+                                                        passive_deletes=True,
+                                                        backref='url_conversion')

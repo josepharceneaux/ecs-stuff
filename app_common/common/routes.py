@@ -711,6 +711,6 @@ class EmailCampaignUrl(object):
     CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + "/%s"
     SEND = CAMPAIGN + CampaignWords.SEND
-    URL_REDIRECT = HOST_NAME % (EmailCampaignEndpoints.VERSION + '/' +
+    URL_REDIRECT = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
                                 CampaignWords.REDIRECT + '/%s')
 

@@ -78,4 +78,3 @@ def get_candidate_subscription_preference(candidate_id):
     response = resp.json()
     # return candidate's subscription_preference
     return response['candidate']['subscription_preference']
-1

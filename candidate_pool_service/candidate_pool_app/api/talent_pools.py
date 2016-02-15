@@ -15,7 +15,7 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
+from candidate_pool_service.common.models.email_campaign import EmailCampaignSend
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.common.models.user import DomainRole
 

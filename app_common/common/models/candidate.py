@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_marketing import EmailCampaignSend
+from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event

@@ -8,7 +8,6 @@ import requests
 
 # Service Specific
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-
 from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInUserDomain,
                                                             SmsCampaignApiException)
 # Common Utils
@@ -34,37 +33,31 @@ class TestSendSmsCampaign(object):
         User auth token is invalid, it should get Unauthorized error.
         :return:
         """
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == UnauthorizedError.http_status_code(), \
-            'It should be unauthorized (401)'
+        CampaignsCommonTests.request_with_invalid_token(self.METHOD,
+                                                        self.URL % sms_campaign_of_current_user.id,
+                                                        None)
 
-    def test_post_with_id_of_deleted_record(self, access_token_first, valid_header,
+    def test_post_with_id_of_deleted_record(self, access_token_first,
                                             sms_campaign_of_current_user):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
         to update the record. It should get ResourceNotFound error.
         :return:
         """
-        response_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
-        assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                      headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == ResourceNotFound.http_status_code(), \
-            'Record should not be found (404)'
+        CampaignsCommonTests.request_after_deleting_campaign(
+            sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
+            self.URL % sms_campaign_of_current_user.id, self.METHOD, access_token_first)
 
-    def test_post_with_not_owned_campaign(self, access_token_first,
-                                          sms_campaign_in_other_domain):
+    def test_post_with_campaign_in_some_other_domain(self, access_token_first,
+                                                     sms_campaign_in_other_domain):
         """
         User auth token is valid but given SMS campaign does not belong to domain
         of logged-in user. It should get Forbidden error.
         :return:
         """
-        response_post = requests.post(self.URL % sms_campaign_in_other_domain.id,
-                                      headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == ForbiddenError.http_status_code(), \
-            'It should get forbidden error (403)'
+        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
+                                                         self.URL % sms_campaign_in_other_domain.id,
+                                                         access_token_first)
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):

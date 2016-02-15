@@ -1,7 +1,6 @@
 """
 This module contains tests code that is common across services. e.g SMS and Push campaign.
 """
-
 __author__ = 'basit'
 
 # Standard Imports
@@ -12,14 +11,15 @@ from datetime import datetime, timedelta
 import requests
 
 # Application Specific
+from ..models.db import db
 from ..tests.conftest import fake
-from ..models.misc import Frequency
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
+from ..models.misc import (Frequency, Activity)
+from campaign_utils import (to_utc_str, get_model)
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
-from campaign_utils import (to_utc_str, get_model, CampaignUtils)
 
 
 class CampaignsCommonTests(object):
@@ -177,23 +177,44 @@ class CampaignsCommonTests(object):
         smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token)
         campaign_type = campaign.__tablename__
         #  Need to do this because cannot make changes until prod is stable
-        if campaign_type == CampaignUtils.EMAIL:
-            campaign_smartlist_model = get_model('email_marketing',  campaign_type + '_smartlist',
-                                                 service_name=campaign_type)
-            campaign_smartlist_obj = campaign_smartlist_model(email_campaign_id=campaign.id,
-                                                              smartlist_id=smartlist_id)
-        else:
-            campaign_smartlist_model = get_model(campaign_type,  campaign_type + '_smartlist')
-            campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
-                                                              smartlist_id=smartlist_id)
+        campaign_smartlist_model = get_model(campaign_type,
+                                             campaign_type + '_smartlist')
+        campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
+                                                          smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
-        assert response_post.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error (400)'
-        assert response_post.json()['error']['code'] == \
-               CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-        assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
+        error_resp = cls.assert_api_response(response_post,
+                                             expected_status_code=InvalidUsage.http_status_code())
+        assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
+        assert error_resp['message']
 
+    @classmethod
+    def campaign_test_with_no_valid_candidate(cls, url, token, campaign_id):
+        """
+        This is the test to send campaign to such candidate(s) who do not have valid
+        data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
+        will have no email or for SMS campaign, candidate will not have any mobile number
+        associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
+        """
+        response_post = send_request('post', url,  token)
+        error_resp = cls.assert_api_response(response_post,
+                                             expected_status_code=InvalidUsage.http_status_code())
+        assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
+        assert str(campaign_id) in error_resp['message']
+
+    @classmethod
+    def assert_for_activity(cls, user_id, type_, source_id):
+        """
+        This verifies that activity has been created for given action
+        :param user_id:
+        :param type_:
+        :param source_id:
+        :return:
+        """
+        # Need to commit the session because Celery has its own session, and our session does not
+        # know about the changes that Celery session has made.
+        db.session.commit()
+        assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
 
 class FixtureHelpers(object):
     """

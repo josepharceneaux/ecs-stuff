@@ -28,7 +28,7 @@ from flask import current_app
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.misc import (UrlConversion, Frequency)
-from ..models.email_marketing import EmailCampaignBlast
+from ..models.email_campaign import EmailCampaignBlast
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils

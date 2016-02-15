@@ -3,7 +3,6 @@
 from flask import Flask
 from celery import Celery
 from healthcheck import HealthCheck
-from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import HEALTH_CHECK
 from email_campaign_service.common.utils.models_utils import init_talent_app
 from email_campaign_service.common.talent_config_manager import (load_gettalent_config,
@@ -32,9 +31,6 @@ try:
 
     from apis.email_campaigns import email_campaign_blueprint
     app.register_blueprint(email_campaign_blueprint)
-
-    db.create_all()
-    db.session.commit()
 
     logger.info('Starting email_campaign_service in %s environment'
                 % app.config[TalentConfigKeys.ENV_KEY])
