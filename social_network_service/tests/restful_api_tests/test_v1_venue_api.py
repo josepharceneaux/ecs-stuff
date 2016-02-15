@@ -68,7 +68,7 @@ class TestVenues:
         response = response.json()
         assert response['id'] > 0
         Venue.session.commit()
-        venue = get_by_id(Venue, response['id'])
+        venue = Venue.get_by_id(response['id'])
         assert venue, 'Venue created successfully in db'
         Venue.delete(venue.id)
 

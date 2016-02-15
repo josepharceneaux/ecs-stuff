@@ -220,6 +220,7 @@ def get_data_to_log(log_data):
         callee_data = ("Reason: %(error)s"% callee_data_dict)
     return callee_data
 
+
 def get_class(social_network_name, category, user_credentials=None):
     """
     This function is used to import module from given parameters.

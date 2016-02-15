@@ -13,11 +13,10 @@ from base import RSVPBase
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service import logger
-from social_network_service.utilities import Attendee
-from social_network_service.utilities import http_request
-from social_network_service.custom_exceptions import NoUserFound
-from social_network_service.custom_exceptions import EventNotFound
+from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.modules.custom_exceptions import NoUserFound, EventNotFound
+from social_network_service.modules.utilities import Attendee
+from social_network_service.social_network_app import logger
 
 
 class Eventbrite(RSVPBase):

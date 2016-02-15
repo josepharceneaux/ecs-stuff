@@ -206,7 +206,7 @@ def meetup_event(request, sample_user, test_meetup_credentials, meetup,
 
     data = response.json()
     db.session.commit()
-    event = get_by_id(Event, data['id'])
+    event = Event.get_by_id(data['id'])
     event_id = event.id
 
     def fin():
@@ -290,7 +290,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
 
     data = response.json()
     db.session.commit()
-    event = get_by_id(Event, data['id'])
+    event = Event.get_by_id(data['id'])
     user_id = event.user_id
     event_id = event.id
     event_title = event.title
@@ -305,14 +305,17 @@ def eventbrite_event(request, test_eventbrite_credentials,
         """
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
                                 access_token=token)
-        assert response.status_code == 200
+
+        # If event is found and deleted successfully => 200
+        # If event is not found => 403
+        assert response.status_code == 200 or response.status_code == 403
 
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
                                                           source_id=event_id,
-                                                          type=ActivityMessageIds.EVENT_DELETE)
+                                                          type_=ActivityMessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
-        if 'update' not in data['eventTitle'].lower():
-            assert data['eventTitle'] == event_title
+        if 'update' not in data['event_title'].lower():
+            assert data['event_title'] == event_title
 
     request.addfinalizer(fin)
     return event

@@ -11,9 +11,6 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
-from social_network_service import logger
-from social_network_service.custom_exceptions import ProductNotFound
-from social_network_service.custom_exceptions import UserCredentialsNotFound
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import User
 from social_network_service.common.models.misc import Product
@@ -21,6 +18,8 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
+from social_network_service.modules.custom_exceptions import UserCredentialsNotFound, ProductNotFound
+from social_network_service.social_network_app import logger
 
 
 class RSVPBase(object):

@@ -140,7 +140,7 @@ class TestEventById:
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'
-        event_db = get_by_id(Event, event['id'])
+        event_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_db = event_db.to_json()
         assert event['title'] == event_db['title'], 'event_title is modified'
@@ -151,11 +151,11 @@ class TestEventById:
 
         # Check activity updated
         activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
-                                                          type=ActivityMessageIds.EVENT_UPDATE,
+                                                          type_=ActivityMessageIds.EVENT_UPDATE,
                                                           user_id=event_db['user_id'])
 
         data = json.loads(activity.params)
-        assert data['eventTitle'] == event['title']
+        assert data['event_title'] == event['title']
 
     def test_delete_with_invalid_token(self, event_in_db):
         """
@@ -185,6 +185,6 @@ class TestEventById:
         event = event_in_db.to_json()
         activities = Activity.get_by_user_id_type_source_id(user_id=event['user_id'],
                                                             source_id=event['id'],
-                                                            type=ActivityMessageIds.EVENT_CREATE)
+                                                            type_=ActivityMessageIds.EVENT_CREATE)
         data = json.loads(activities.params)
-        assert data['eventTitle'] == event['title']
+        assert data['event_title'] == event['title']

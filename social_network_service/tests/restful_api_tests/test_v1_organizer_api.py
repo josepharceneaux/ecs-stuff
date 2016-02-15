@@ -73,7 +73,7 @@ class TestOrganizers:
         response = response.json()
         assert response['id'] > 0
         EventOrganizer.session.commit()
-        event_organizer = get_by_id(EventOrganizer, response['id'])
+        event_organizer = EventOrganizer.get_by_id(response['id'])
         assert event_organizer, 'Event organizer created successfully in db'
         EventOrganizer.delete(event_organizer.id)
 
