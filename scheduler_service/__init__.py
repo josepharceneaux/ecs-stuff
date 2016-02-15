@@ -25,7 +25,7 @@ db.init_app(flask_app)
 db.app = flask_app
 
 # Enable CORS for all origins & endpoints
-CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
+CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
 
 # Initialize Redis Cache
 redis_store.init_app(flask_app)
