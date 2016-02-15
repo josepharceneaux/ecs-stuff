@@ -37,6 +37,7 @@ from push_campaign_service.tests.test_utilities import (invalid_data_test,
                                                         unauthorize_test,
                                                         missing_key_test,
                                                         send_request, OK,
+                                                        NOT_FOUND,
                                                         INVALID_USAGE, FORBIDDEN, add_roles,
                                                         remove_roles)
 from push_campaign_service.common.models.smartlist import Smartlist
@@ -202,7 +203,9 @@ def campaign_data(request):
     data = generate_campaign_data()
 
     def tear_down():
-        pass
+        if 'id' in data and 'token' in data:
+            response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % data['id'], data['token'])
+            assert response.status_code in [OK, NOT_FOUND]
     request.addfinalizer(tear_down)
     return data
 
@@ -217,9 +220,8 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     data['id'] = id
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id,
-                                token_first, data)
-        assert response.status_code == OK
+        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id, token_first)
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return data
@@ -308,7 +310,7 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first)
+        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_second)
         assert response.status_code == OK
     request.addfinalizer(tear_down)
     return smartlist
@@ -592,7 +594,7 @@ def candidate_second(request, token_second, talent_pool_second):
     candidate = response.json()['candidate']
 
     def tear_down():
-        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_second)
+        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_second)
         assert response.status_code == OK
 
     request.addfinalizer(tear_down)
