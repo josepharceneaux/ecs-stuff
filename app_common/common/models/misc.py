@@ -34,9 +34,9 @@ class Activity(db.Model):
             )).first()
 
     @classmethod
-    def get_by_user_id_type_source_id(cls, user_id, type, source_id):
+    def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
         assert user_id
-        return cls.query.filter_by(user_id=user_id, type=type, source_id=source_id).first()
+        return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
 
 class AreaOfInterest(db.Model):

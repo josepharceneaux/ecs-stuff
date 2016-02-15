@@ -464,9 +464,6 @@ class RSVPBase(object):
             entry_in_db.update(**data)
             entry_id = entry_in_db.id
         else:
-            # response = http_request('post', CandidateApiUrl.CANDIDATES,
-            #                         headers=header,
-            #                         data=data)
             entry = CandidateSource(**data)
             CandidateSource.save(entry)
             entry_id = entry.id
@@ -627,9 +624,9 @@ class RSVPBase(object):
         type_of_rsvp = 23  # to show message on activity feed
         first_name = attendee.first_name
         last_name = attendee.last_name
-        params = {'firstName': first_name,
-                  'lastName': last_name,
-                  'eventTitle': event_title,
+        params = {'first_name': first_name,
+                  'last_name': last_name,
+                  'event_title': event_title,
                   'response': attendee.rsvp_status,
                   'img': attendee.vendor_img_link,
                   'creator': '%s' % gt_user_first_name + ' %s'

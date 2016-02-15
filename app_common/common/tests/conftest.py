@@ -215,7 +215,10 @@ def sample_client(request):
     db.session.commit()
 
     def tear_down():
-        test_client.delete()
+        try:
+            test_client.delete()
+        except:
+            pass
     request.addfinalizer(tear_down)
     return test_client
 

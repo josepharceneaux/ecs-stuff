@@ -419,9 +419,9 @@ class EventBase(object):
                 if self.delete_event(event_id):
                     deleted.append(event_id)
 
-                    activity_data = {'firstName': request.user.first_name,
-                                     'lastName': request.user.last_name,
-                                     'eventTitle': title
+                    activity_data = {'first_name': request.user.first_name,
+                                     'last_name': request.user.last_name,
+                                     'event_title': title
                                      }
                     add_activity(user_id=request.user.id,
                                  activity_type=ActivityMessageIds.EVENT_DELETE,

@@ -119,4 +119,3 @@ def handle_rsvp():
                 'status_code': 200}
         return flask.jsonify(**data), 200
 
-from social_network_service.modules import manager

@@ -105,7 +105,6 @@ def start():
                      % name_space.social_network)
 
 
-start()
 if __name__ == '__main__':
     try:
         start()

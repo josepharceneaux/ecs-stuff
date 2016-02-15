@@ -87,7 +87,6 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         return json.dumps({'error': 'There was an error saving your log entry'}), 500
 
 
-# TODO: Change this
 class TalentActivityManager(object):
     """API class for ActivityService."""
 
@@ -98,16 +97,16 @@ class TalentActivityManager(object):
                      " on event '%(eventTitle)s'",
                      "candidate.png"),
 
-        ActivityMessageIds.EVENT_CREATE:      ("%(firstName)s  %(lastName)s created an event <b>%(eventTitle)s",
-                            "%(firstName)s  %(lastName)s created %(count)s events.</b>",
+        ActivityMessageIds.EVENT_CREATE:      ("%(first_name)s  %(last_name)s created an event <b>%(event_title)s",
+                            "%(first_name)s  %(last_name)s created %(count)s events.</b>",
                             "event.png"),
 
-        ActivityMessageIds.EVENT_DELETE:      ("%(firstName)s  %(lastName)s deleted an event <b>%(eventTitle)s",
-                            "%(firstName)s  %(lastName)s deleted %(count)s events.</b>",
+        ActivityMessageIds.EVENT_DELETE:      ("%(first_name)s  %(last_name)s deleted an event <b>%(event_title)s",
+                            "%(first_name)s  %(last_name)s deleted %(count)s events.</b>",
                             "event.png"),
 
-        ActivityMessageIds.EVENT_UPDATE:      ("%(firstName)s  %(lastName)s updated an event <b>%(eventTitle)s.",
-                            "%(firstName)s  %(lastName)s updated %(count)s events.</b>",
+        ActivityMessageIds.EVENT_UPDATE:      ("%(first_name)s  %(last_name)s updated an event <b>%(event_title)s.",
+                            "%(first_name)s  %(last_name)s updated %(count)s events.</b>",
                             "event.png"),
 
         ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",

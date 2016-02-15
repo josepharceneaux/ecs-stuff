@@ -59,6 +59,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     else it will return the created candidate response json object
     Returns: list of created candidate ids
     """
+
     headers = dict()
     if not oauth_token and user_id:
         secret_key_id, oauth_token = User.generate_jw_token(user_id=user_id)

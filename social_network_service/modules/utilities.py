@@ -273,8 +273,8 @@ def process_event(data, user_id, method='Create'):
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
 
-        activity_data = {'firstName': request.user.first_name,
-                         'lastName': request.user.last_name,
+        activity_data = {'first_name': request.user.first_name,
+                         'last_name': request.user.last_name,
                          }
 
         if method == 'Create':
@@ -284,7 +284,7 @@ def process_event(data, user_id, method='Create'):
             event_obj = Event.get_by_user_and_event_id(user_id=user_id,
                                                        event_id=event_id)
 
-            activity_data.update({'eventTitle': event_obj.title})
+            activity_data.update({'event_title': event_obj.title})
 
             add_activity(user_id=user_id,
                          activity_type=ActivityMessageIds.EVENT_CREATE,
@@ -299,7 +299,7 @@ def process_event(data, user_id, method='Create'):
             event_obj = Event.get_by_user_and_event_id(user_id=user_id,
                                                        event_id=event_id)
 
-            activity_data.update({'eventTitle': event_obj.title})
+            activity_data.update({'event_title': event_obj.title})
 
             add_activity(user_id=user_id,
                          activity_type=ActivityMessageIds.EVENT_UPDATE,
