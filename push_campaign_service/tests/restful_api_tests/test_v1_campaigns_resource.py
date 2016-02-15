@@ -187,15 +187,15 @@ class TestDeleteMultipleCampaigns(object):
     #     """
     #     pass
 
-    def test_campaigns_delete_authorized_and_unauthorized_ids(self, token, campaign_in_db,
-                                                              campaign_in_db_for_different_domain):
+    def test_campaigns_delete_authorized_and_unauthorized_ids(self, token_first, campaign_in_db,
+                                                              campaign_in_db_second):
         """
         Test with one authorized and one unauthorized SMS campaign. It should get 207
         status code.
         :return:
         """
-        response = send_request('delete', URL, token, data={'ids': [campaign_in_db.id,
-                                                                    campaign_in_db_for_different_domain['id']]})
+        response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db.id,
+                                                                    campaign_in_db_second['id']]})
         assert response.status_code == 207
     #
     # def test_campaigns_delete_with_existing_and_non_existing_ids(self, valid_header, user_first,

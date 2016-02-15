@@ -229,11 +229,25 @@ def add_roles(user_id, roles, token):
     :return: True | False
     """
     data = {
-        "roles": ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS']
+        "roles": roles
     }
     response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
     assert response.status_code == 200
-    return response.json()['seuccess']
 
+
+def remove_roles(user_id, roles, token):
+    """
+    This method sends a DELETE request to UserService to remove given roles to given user
+    :param user_id: id of user
+    :param roles: permissions list
+    :param token: auth token
+    :return: True | False
+    """
+    data = {
+        "roles": roles
+    }
+    response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
+                            token, data=data)
+    assert response.status_code == 200
 
