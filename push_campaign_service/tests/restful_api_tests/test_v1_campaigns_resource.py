@@ -194,7 +194,7 @@ class TestDeleteMultipleCampaigns(object):
         status code.
         :return:
         """
-        response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db.id,
+        response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db['id'],
                                                                     campaign_in_db_second['id']]})
         assert response.status_code == 207
     #

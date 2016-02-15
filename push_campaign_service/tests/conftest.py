@@ -236,7 +236,7 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
     :return:
     """
     data = campaign_data.copy()
-    data['smartlist_ids'] = [smartlist_second.id]
+    data['smartlist_ids'] = [smartlist_second['id']]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_second, data)
     assert response.status_code == 201
     id = response.json()['id']
@@ -281,8 +281,7 @@ def smartlist_first(request, token_first, candidate_first):
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first,
-                                data=data)
+        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first)
         assert response.status_code == OK
     request.addfinalizer(tear_down)
     return smartlist
@@ -503,7 +502,7 @@ def talent_pool_second(request, user_second, token_second):
     data = {
         "talent_pools": [talent_pool_id]
     }
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 1, token_first, data=data)
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 2, token_second, data=data)
     assert response.status_code == 200
 
     def tear_down():
