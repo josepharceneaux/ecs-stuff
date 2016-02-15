@@ -327,10 +327,6 @@ class Token(db.Model):
             raise ResourceNotFound("Token not found")
         return token
 
-    @classmethod
-    def get_by_user_id(cls, user_id):
-        assert user_id
-        return cls.query.filter(cls.user_id == user_id).first()
 
 class DomainRole(db.Model):
     __tablename__ = 'domain_role'

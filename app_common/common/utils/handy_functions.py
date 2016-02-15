@@ -19,8 +19,6 @@ from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, 
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
-JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
-
 
 def random_word(length):
     """Creates a random lowercase string, usefull for testing data."""

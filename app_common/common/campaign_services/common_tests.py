@@ -216,6 +216,7 @@ class CampaignsCommonTests(object):
         db.session.commit()
         assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
 
+
 class FixtureHelpers(object):
     """
     This contains the functions which will be useful for similar fixtures across campaigns
