@@ -1146,7 +1146,7 @@ class CandidateClientEmailCampaignResource(Resource):
     decorators = [require_oauth()]
 
     def post(self, **kwargs):
-        """ POST /web/api/client_email_campaigns
+        """ POST /v1/candidates/client_email_campaigns
             input:
              {
                 'candidates': [{candidateObject1}, {candidateObject2}, ...],
@@ -1161,7 +1161,7 @@ class CandidateClientEmailCampaignResource(Resource):
 
         Function will create a list, email_campaign, email_campaign_send, and a url_conversion
 
-        :return:    email-campaign-send id for each candidate => [int]
+        :return:    email-campaign-send objects for each candidate => [email_campaign_send]
         """
         authed_user = request.user
         body_dict = request.get_json(force=True)
@@ -1223,7 +1223,7 @@ class CandidateClientEmailCampaignResource(Resource):
         except Exception as e:
             raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
 
-        return email_campaign_send_created
+        return email_campaign_send_created, 201
 
 
 class CandidateViewResource(Resource):

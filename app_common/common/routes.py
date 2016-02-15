@@ -651,6 +651,7 @@ class CandidateApiUrl(object):
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
 
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
 class SchedulerApi(object):
     """
