@@ -3,11 +3,11 @@
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
-from flask import current_app
 from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
+from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.app.views.batch_lib import _process_batch_item
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
@@ -60,7 +60,7 @@ def resume_post_reciever():
         resume_file = request.files.get('resume_file')
         resume_file_name = request.form.get('resume_file_name')
     else:
-        current_app.logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
+        logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
             request.form, request.files, request.json
         ))
         raise InvalidUsage("Invalid Request")
