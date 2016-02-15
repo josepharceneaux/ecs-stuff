@@ -240,6 +240,6 @@ def init_talent_app(flask_app, logger):
     db.init_app(flask_app)
     db.app = flask_app
     # Enable CORS for all origins & endpoints
-    CORS(flask_app)
+    CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
     register_error_handlers(flask_app, logger)
     return flask_app

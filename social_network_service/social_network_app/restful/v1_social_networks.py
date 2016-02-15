@@ -40,7 +40,6 @@ This file contains API endpoints related to social network.
 import types
 
 # 3rd party imports
-from flask.ext.cors import CORS
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 

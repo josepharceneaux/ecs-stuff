@@ -12,7 +12,6 @@ import flask
 from flask import request, redirect
 
 # Application specific imports
-from flask.ext.cors import CORS
 
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
@@ -32,11 +31,9 @@ app.register_blueprint(social_network_blueprint)
 
 api = TalentApi(app)
 
-CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
-
 # Initialize Redis Cache
 redis_store.init_app(app)
-
+WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 
 @app.route('/')
 def index():

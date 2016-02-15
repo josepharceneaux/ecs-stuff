@@ -5,7 +5,6 @@ This file contains list of all API endpoints related to events.
 import types
 
 # 3rd party imports
-from flask.ext.cors import CORS
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 

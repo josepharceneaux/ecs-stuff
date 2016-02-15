@@ -27,8 +27,6 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
 
-WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'  # app.config['WEBHOOK_REDIRECT_URL']
-
 
 class Eventbrite(EventBase):
     """

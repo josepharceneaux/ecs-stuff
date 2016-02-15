@@ -4,7 +4,6 @@ __author__ = 'zohaib'
 
 # Third Party
 from flask import Flask
-from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 
 
@@ -25,7 +24,7 @@ health = HealthCheck(flask_app, HEALTH_CHECK)
 logger.info("social_network_service is running in %s environment"
             % flask_app.config[TalentConfigKeys.ENV_KEY])
 app = init_talent_app(flask_app, logger)
-CORS(app)
+
 
 
 
