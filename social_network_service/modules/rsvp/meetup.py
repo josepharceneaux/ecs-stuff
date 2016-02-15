@@ -10,10 +10,10 @@ from datetime import timedelta
 # Application Specific
 from base import RSVPBase
 from social_network_service.common.models.event import Event
-from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.modules.utilities import Attendee
-from social_network_service.modules.custom_exceptions import EventNotFound
-from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
+from social_network_service.utilities import Attendee
+from social_network_service.utilities import http_request
+from social_network_service.custom_exceptions import EventNotFound
+from social_network_service.utilities import milliseconds_since_epoch_to_dt
 
 
 class Meetup(RSVPBase):
