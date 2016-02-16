@@ -58,3 +58,77 @@ with app.app_context():
                     last_name='Doe', expiration=None)
 
 print 'Local Environment setup has been completed successfully'
+
+
+# Static Tables
+from user_service import domain_user_role_updates
+from user_service.common.models.candidate import Candidate, CandidateStatus, ClassificationType
+from user_service.common.models.misc import Culture
+from user_service.common.models.email_marketing import EmailClient
+
+# Populate DomainRole, TalentPool, UserGroup, TalentPoolCandidate, and TalentPoolGroup
+execfile(domain_user_role_updates)
+
+
+def create_candidate_status():
+    """ Populates CandidateStatus table """
+    statuses = [
+        {'description': 'New', 'notes': 'Newly added candidate'},
+        {'description': 'Contacted', 'notes': 'Candidate is contacted'},
+        {'description': 'Unqualified', 'notes': 'Candidate is unqualified'},
+        {'description': 'Qualified', 'notes': 'Candidate is qualified'},
+        {'description': 'Prospect', 'notes': 'Candidate is a prospect'},
+        {'description': 'Candidate', 'notes': 'Candidate is highly prospective'},
+        {'description': 'Hired', 'notes': 'Candidate is hired'},
+        {'description': 'Connector', 'notes': None}
+    ]
+    for status in statuses:
+        candidate_status = CandidateStatus(description=status['description'], notes=status['notes'])
+        db.session.add(candidate_status)
+
+
+def create_classification_types():
+    """ Populates ClassificationType table """
+    classifications = [
+        {'code': 'Unspecified', 'description': 'Unspecified', 'notes': 'the degree is not specified'},
+        {'code': 'Bachelors', 'description': 'Bachelors degree', 'notes': 'Bachelors degree, e.g. BS., BA., etc.'},
+        {'code': 'Associate', 'description': 'Associate degree', 'notes': 'Undergraduate academic two-year degree'},
+        {'code': 'Masters', 'description': "Master's degree", 'notes': "Master's degree, e.g. MSc., MA., etc."},
+        {'code': 'Doctorate', 'description': "Doctorate degree", 'notes': "Doctorate degree e.g. PhD, EdD., etc."},
+        {'code': 'Somehighschoolorequivalent', 'description': "Some high school or equivalent",
+         'notes': "A high school drop out or equivalent level"},
+        {'code': 'Highschoolorequivalent', 'description': "High school or equivalent",
+         'notes': "A high school degree or equivalent"},
+        {'code': 'Professional', 'description': "Professional", 'notes': None},
+        {'code': 'Certification', 'description': "Certification", 'notes': None},
+        {'code': 'Vocational', 'description': "Vocational", 'notes': None},
+        {'code': 'Somecollege', 'description': "Some college", 'notes': None},
+        {'code': 'Secondary', 'description': "Secondary", 'notes': None},
+        {'code': 'GED', 'description': "GED", 'notes': None},
+        {'code': 'Somepostgraduate', 'description': "Some postgraduate", 'notes': None}
+    ]
+    for classification in classifications:
+        classification_type = ClassificationType(code=classification['code'],
+                                                 description=classification['description'],
+                                                 notes=classification['notes'])
+        db.session.add(classification_type)
+
+
+def create_cultures():
+    """ Populates Culture table """
+    cultures = [
+        {'description': 'English', 'code': 'en-us'}
+    ]
+    for culture in cultures:
+        cult = Culture(description=culture['description'], code=culture['code'])
+        db.session.add(cult)
+
+
+def create_email_clients():
+    """ Populates EmailClient table """
+    clients = [
+        {'name': 'Outlook Plugin'}
+    ]
+    for client in clients:
+        email_client = EmailClient(name=client['name'])
+        db.session.add(email_client)
