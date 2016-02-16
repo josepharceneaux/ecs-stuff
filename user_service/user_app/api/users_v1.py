@@ -180,11 +180,12 @@ class UserApi(Resource):
         if not posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_user.domain_id != request.user.domain_id and not request.is_admin_user:
-            raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
+        if not request.is_admin_user:
+            if requested_user.domain_id != request.user.domain_id:
+                raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
 
-        if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles and not request.is_admin_user:
-            raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
+            if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles:
+                raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
 
         first_name = posted_data.get('first_name', '').strip()
         last_name = posted_data.get('last_name', '').strip()
