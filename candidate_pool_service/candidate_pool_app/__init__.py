@@ -45,8 +45,8 @@ try:
 
     schedule_candidate_daily_stats_update()
 
-    # Enable CORS for all origins & endpoints
-    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
 
     logger.info("Starting candidate_pool_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

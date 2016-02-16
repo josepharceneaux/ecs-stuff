@@ -85,14 +85,21 @@ def create_smartlist_dict(smartlist, oauth_token):
 
 
 
-def get_all_smartlists(auth_user, oauth_token):
+def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     """
     Get all smartlists from user's domain.
     :param auth_user: User object
+    :param page: Index of Page
+    :param page_size: Size of a single page
     :return: List of dictionary of all smartlists present in user's domain
     """
-    smartlists = Smartlist.query.join(Smartlist.user).filter(
-        User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).all()
+    if page and page_size:
+        smartlists = Smartlist.query.join(Smartlist.user).filter(
+                User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).paginate(page, page_size, False)
+        smartlists = smartlists.items
+    else:
+        smartlists = Smartlist.query.join(Smartlist.user).filter(
+            User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).all()
 
     if smartlists:
         return [create_smartlist_dict(smartlist, oauth_token) for smartlist in smartlists]

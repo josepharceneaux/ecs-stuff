@@ -34,7 +34,7 @@ def search_candidates_from_params(search_params, access_token, user_id=None):
             headers=headers
     )
     if not response.ok:
-        raise InvalidUsage("Couldn't get candidates from Search API because %s" % response.json())
+        raise InvalidUsage("Couldn't get candidates from Search API because %s" % response)
     else:
         return response.json()
 

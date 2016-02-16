@@ -43,8 +43,8 @@ try:
     db.create_all()
     db.session.commit()
 
-    # Enable CORS for all origins & endpoints
-    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
 
     logger.info("Starting user_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
