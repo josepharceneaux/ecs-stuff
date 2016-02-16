@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: -utf-8 -*-
 
 """
 Script for new developers to use to set up their local & remote resources, like DB data and AWS resources.
@@ -57,4 +57,24 @@ with app.app_context():
         create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
                     last_name='Doe', expiration=None)
 
+        # Insert necessary records into static tables
+        from user_service.populate_static_tables import (
+            create_candidate_status, create_email_clients, create_email_labels, create_frequencies,
+            create_cultures, create_phone_labels, create_classification_types, create_products,
+            create_rating_tags, create_social_networks
+        )
+        from user_service.domain_user_role_updates import add_domain_roles
+        create_candidate_status()
+        create_email_labels()
+        create_email_clients()
+        create_frequencies()
+        create_cultures()
+        create_phone_labels()
+        create_classification_types()
+        create_products()
+        create_rating_tags()
+        create_social_networks()
+        add_domain_roles()
+
 print 'Local Environment setup has been completed successfully'
+
