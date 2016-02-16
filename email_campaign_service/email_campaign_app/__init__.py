@@ -1,12 +1,12 @@
 """Initialize Email campaign service app, register error handlers and register blueprint"""
 
 from flask import Flask
+from flask.ext.cors import CORS
 from email_campaign_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.error_handling import register_error_handlers
 from healthcheck import HealthCheck
-from email_campaign_service.common.routes import HEALTH_CHECK
-
+from email_campaign_service.common.routes import HEALTH_CHECK, GTApis
 
 app = Flask(__name__)
 load_gettalent_config(app.config)
@@ -29,6 +29,9 @@ try:
 
     from apis.email_campaigns import email_campaign_blueprint
     app.register_blueprint(email_campaign_blueprint)
+
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     db.create_all()
     db.session.commit()

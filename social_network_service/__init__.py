@@ -7,7 +7,7 @@ from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from social_network_service.common.models.db import db
 from social_network_service.common.error_handling import *
-from social_network_service.common.routes import HEALTH_CHECK
+from social_network_service.common.routes import HEALTH_CHECK, GTApis
 from social_network_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from social_network_service.common.utils.talent_ec2 import get_ec2_instance_id
 from social_network_service.model_helpers import add_model_helpers
@@ -32,8 +32,8 @@ def init_app():
     db.app = flask_app
     register_error_handlers(flask_app, logger)
 
-    # Enable CORS for all origins & endpoints
-    CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(flask_app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting social network service in %s environment",
                 flask_app.config['GT_ENVIRONMENT'])

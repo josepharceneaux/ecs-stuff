@@ -127,6 +127,11 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
 
+    # CORS headers
+    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
+                                       "http://127.0.0.1",
+                                       "http://localhost"]}}
+
 
 class AuthApi(object):
     """

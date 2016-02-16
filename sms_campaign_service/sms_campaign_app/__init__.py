@@ -6,6 +6,7 @@ from celery import Celery
 from healthcheck import HealthCheck
 
 # Common Utils
+from sms_campaign_service.common.routes import HEALTH_CHECK
 from sms_campaign_service.common.utils.models_utils import init_talent_app
 from sms_campaign_service.common.utils.talent_ec2 import get_ec2_instance_id
 from sms_campaign_service.common.talent_config_manager import (load_gettalent_config,
@@ -17,7 +18,7 @@ load_gettalent_config(flask_app.config)
 # logger setup
 logger = flask_app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", flask_app.import_name, get_ec2_instance_id())
-health = HealthCheck(flask_app, "/healthcheck")
+health = HealthCheck(flask_app, HEALTH_CHECK)
 
 
 def init_sms_campaign_app_and_celery_app():
