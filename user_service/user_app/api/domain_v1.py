@@ -22,30 +22,41 @@ class DomainApi(Resource):
     def get(self, **kwargs):
         """
         GET /domains/<id> Fetch domain object with domain's basic info
+        GET /domains Fetch all domain objects with domain's basic info
         :return A dictionary containing domain info except safety critical info
         :rtype: dict
         """
 
         requested_domain_id = kwargs.get('id')
-        if not requested_domain_id:
-            raise InvalidUsage(error_message="Domain id is not provided")
+        is_admin_user = False
+        if DomainRole.Roles.CAN_GET_DOMAINS in request.valid_domain_roles or request.user_can_edit_other_domains:
+            is_admin_user = True
+        if requested_domain_id:
+            requested_domain = Domain.query.get(requested_domain_id)
+            if not requested_domain:
+                raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
 
-        requested_domain = Domain.query.get(requested_domain_id)
-        if not requested_domain:
-            raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
-
-        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles or request.user_can_edit_other_domains:
-            return {
-                    'domain': {
-                        'id': requested_domain.id,
-                        'name': requested_domain.name,
-                        'organization_id': requested_domain.organization_id,
-                        'dice_company_id': requested_domain.dice_company_id
+            if requested_domain_id == request.user.domain_id or is_admin_user:
+                return {
+                        'domain': {
+                            'id': requested_domain.id,
+                            'name': requested_domain.name,
+                            'organization_id': requested_domain.organization_id,
+                            'dice_company_id': requested_domain.dice_company_id
+                            }
                         }
-                    }
-        else:
-            raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as "
-                                                  "requested_domain or it doesn't have appropriate permissions")
+        elif is_admin_user:
+            return {
+                'domains': [{
+                    'id': domain.id,
+                    'name': domain.name,
+                    'organization_id': domain.organization_id,
+                    'dice_company_id': domain.dice_company_id
+                } for domain in Domain.query.all()]
+            }
+
+        raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as requested_domain "
+                                              "or it doesn't have appropriate permissions")
 
     @require_any_role(DomainRole.Roles.CAN_ADD_DOMAINS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self):
