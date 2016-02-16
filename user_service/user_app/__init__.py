@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 
 from flask import Flask
 from flask.ext.cors import CORS
-from user_service.common.routes import UserServiceApi, HEALTH_CHECK
+from user_service.common.routes import UserServiceApi, HEALTH_CHECK, GTApis
 from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from user_service.common.utils.talent_ec2 import get_ec2_instance_id
 
@@ -44,7 +44,7 @@ try:
     db.session.commit()
 
     # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting user_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 from flask import Flask
 from flask.ext.cors import CORS
 from flask_oauthlib.provider import OAuth2Provider
-from auth_service.common.routes import HEALTH_CHECK
+from auth_service.common.routes import HEALTH_CHECK, GTApis
 from auth_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from auth_service.common.migrate import db_create_all
 from auth_service.common.utils.talent_ec2 import get_ec2_instance_id
@@ -37,7 +37,7 @@ try:
     db_create_all()
 
     # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting auth_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

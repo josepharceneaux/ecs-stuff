@@ -12,6 +12,7 @@ from scheduler_service.common.utils.models_utils import add_model_helpers
 from scheduler_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.utils.talent_ec2 import get_ec2_instance_id
+from scheduler_service.common.routes import GTApis
 
 __author__ = 'saad'
 
@@ -24,8 +25,8 @@ add_model_helpers(db.Model)
 db.init_app(flask_app)
 db.app = flask_app
 
-# Enable CORS for all origins & endpoints
-CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
+# Enable CORS for *.gettalent.com and localhost
+CORS(flask_app, resources=GTApis.CORS_HEADERS)
 
 # Initialize Redis Cache
 redis_store.init_app(flask_app)

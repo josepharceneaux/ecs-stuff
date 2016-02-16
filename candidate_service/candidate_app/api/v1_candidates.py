@@ -130,8 +130,9 @@ class CandidatesResource(Resource):
                         elif candidate_id in candidate_ids_from_candidate_email_obj:
                             continue
                         else:
-                            raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
-                                               custom_error.CANDIDATE_ALREADY_EXISTS)
+                            raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
+                                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                                               additional_error_info={'id': candidate_id})
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
                 all_cf_ids.append(custom_field.get('custom_field_id'))
