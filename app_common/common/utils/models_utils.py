@@ -51,9 +51,10 @@ from flask.ext.cors import CORS
 
 # Application Specific
 from ..models.db import db
-from ..talent_config_manager import TalentConfigKeys
+from ..redis_cache import redis_store
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case
+from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
 def to_json(instance):
@@ -198,11 +199,12 @@ def add_model_helpers(cls):
     cls.delete = delete
 
 
-def init_talent_app(flask_app, logger):
+def init_talent_app(flask_app):
     """
     This method initializes the flask app by doing followings:
-
-        1- Adds model helpers to the app. This is done to save the effort of adding
+        1- Loads talent config manager to configure given app
+        2- Gets logger
+        3- Adds model helpers to the app. This is done to save the effort of adding
             following lines again and again
 
             db.session.add(instance)
@@ -229,17 +231,31 @@ def init_talent_app(flask_app, logger):
                         user_obj = User.get_by_id(1)
                         user_json_data  = user_obj.to_json()
 
-        2- Initializes the app by
+        4- Initializes redis store on app instance
+        5- Initializes the app by
                     db.init_app(flask_app) flask SQLAlchemy builtin
-        3- Enable CORS
-        4- Registers error handlers for the app
-
+        6- Enable CORS
+        7- Registers error handlers for the app
     :return: Returns the app
     """
-    add_model_helpers(db.Model)
-    db.init_app(flask_app)
-    db.app = flask_app
-    # Enable CORS for all origins & endpoints
-    CORS(flask_app)
-    register_error_handlers(flask_app, logger)
-    return flask_app
+    load_gettalent_config(flask_app.config)
+    # logger init
+    logger = flask_app.config[TalentConfigKeys.LOGGER]
+    try:
+        add_model_helpers(db.Model)
+        db.init_app(flask_app)
+        db.app = flask_app
+
+        # Initialize Redis Cache
+        redis_store.init_app(flask_app)
+
+        # Enable CORS for all origins & endpoints
+        CORS(flask_app)
+        # Register error handlers
+        logger.debug("%s: Registering error handlers." % flask_app.name)
+        register_error_handlers(flask_app, logger)
+        return flask_app, logger
+    except Exception as error:
+        logger.exception("Couldn't start %s in %s environment because: %s"
+                     % (flask_app.name, flask_app.config[TalentConfigKeys.ENV_KEY],
+                        error.message))

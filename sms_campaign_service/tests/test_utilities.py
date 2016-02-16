@@ -10,8 +10,7 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
-from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from sms_campaign_service.tests.conftest import app
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
                                                      validate_url_format)

@@ -7,18 +7,17 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInUserDomain,
                                                             SmsCampaignApiException)
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
-                                                        ForbiddenError, InvalidUsage)
 from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
-from sms_campaign_service.tests.conftest import app
 
 
 class TestSendSmsCampaign(object):
