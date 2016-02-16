@@ -34,7 +34,7 @@ class DomainApi(Resource):
         if not requested_domain:
             raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
 
-        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles:
+        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles or request.user_can_edit_other_domains:
             return {
                     'domain': {
                         'id': requested_domain.id,
@@ -47,7 +47,7 @@ class DomainApi(Resource):
             raise UnauthorizedError(error_message="Either logged-in user belongs to different domain as "
                                                   "requested_domain or it doesn't have appropriate permissions")
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_DOMAINS)
+    @require_any_role(DomainRole.Roles.CAN_ADD_DOMAINS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self):
         """
         POST /domains  Create a new Domain
@@ -112,7 +112,7 @@ class DomainApi(Resource):
 
         return {'domains': domain_ids}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_DOMAINS)
+    @require_any_role(DomainRole.Roles.CAN_DELETE_DOMAINS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def delete(self, **kwargs):
         """
         DELETE /domains/<id>
@@ -141,7 +141,7 @@ class DomainApi(Resource):
 
         return {'deleted_domain': {'id': domain_id_to_delete}}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_any_role(DomainRole.Roles.CAN_EDIT_DOMAINS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def put(self, **kwargs):
         """
         PUT /domains/<id>
