@@ -57,12 +57,18 @@ def update_candidates_on_cloudsearch(access_token, candidate_ids):
 def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids_only=False, user_id=None):
     """
     Function sends a request to CandidateResource/post()
+    Call candidate api using oauth token or user_id
+
     :param oauth_token: Oauth token, if None, then create a secret X-Talent-Key oauth token (JWT)
     :param data: Candidates object data to create candidate
     :param return_candidate_ids_only: If true it will only return the created candidate ids
     else it will return the created candidate response json object
     Returns: list of created candidate ids
-    """
+    # """
+
+    if not oauth_token and not user_id:
+        raise InvalidUsage(error_message="Call to candidate service should be made either with user oauth or JWT oauth."
+                                         "oauth_token and user_id cannot be None at same time.")
 
     headers = dict()
     if not oauth_token and user_id:

@@ -33,21 +33,16 @@ api = TalentApi(app)
 
 # Initialize Redis Cache
 redis_store.init_app(app)
+
+# TODO: remove this in final code
 WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
+
 
 @app.route('/')
 def index():
-    try:
-        from social_network_service.common.models.candidate import Candidate
-        from social_network_service.common.models.event import Event
-        candidate = Candidate.query.all()[0]
-        event = Event.query.all()[0]
-    except:
-        import traceback
-        return traceback.format_exc()
-    return 'Hello World! %s, %s' % (candidate.first_name, event.title)
+    return 'Welcome to social network service'
 
-
+# TODO: add comment
 @app.route(SocialNetworkApi.CODE)
 def authorize():
     code = request.args.get('code')

@@ -1,14 +1,16 @@
 """
     This module contains all test for Event related code.
 """
+# TODO: add comment and docstring
 import requests
 import json
 
-from social_network_service.common.models import db
-from social_network_service.common.tests.auth_utilities import create_test_user
+
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 
+
+# TODO: error code inherit from class
 
 def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):
     """

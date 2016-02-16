@@ -1,11 +1,9 @@
 # Standard Library
-import argparse
 import sys
+import argparse
 import traceback
-# Third Party
-import gevent
-from gevent import monkey
 
+# Third Party
 from gevent.pool import Pool
 
 # App Settings
@@ -72,7 +70,7 @@ def start():
         try:
             social_network_obj = SocialNetwork.get_by_name(social_network_name)
             social_network_id = social_network_obj.id
-        except:
+        except Exception:
             raise NotImplementedError('Social Network "%s" is not allowed for now, '
                                       'please implement code for this social network.'
                                       % social_network_name)
@@ -96,7 +94,7 @@ def start():
                                user_credentials=user_credentials)
             except KeyError:
                 raise
-            except:
+            except Exception:
                 logger.exception('start: running %s importer, user_id: %s',
                                  name_space.mode, user_credentials.user_id)
         job_pool.join()
@@ -110,7 +108,7 @@ if __name__ == '__main__':
         start()
     except TypeError as e:
         logger.error('Please provide required parameters to run manager')
-    except:
+    except Exception:
         logger.error(traceback.format_exc())
         sys.exit(1)
 

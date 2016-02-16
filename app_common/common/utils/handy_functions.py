@@ -1,4 +1,8 @@
 """Misc functions that have no logical grouping to a module."""
+from werkzeug.exceptions import BadRequest
+
+from app_common.common.error_handling import InvalidUsage
+
 __author__ = 'erikfarmer'
 
 import re
@@ -11,7 +15,7 @@ from pytz import timezone
 from datetime import datetime
 from itertools import izip_longest
 from ..models.db import db
-from flask import current_app, request
+from flask import current_app, request, Flask
 from requests import ConnectionError
 from ..talent_config_manager import TalentConfigKeys
 from ..models.user import User, UserScopedRoles, DomainRole
@@ -166,6 +170,8 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
+    if not isinstance(app, Flask):
+        raise InvalidUsage(error_message="app instance should be flask")
     if app:
         logger = app.config[TalentConfigKeys.LOGGER]
         with app.app_context():
@@ -182,6 +188,9 @@ def log_error(message, app=None):
     :param app:
     :return:
     """
+
+    if not isinstance(app, Flask):
+        raise InvalidUsage(error_message="app instance should be flask")
     if app:
         logger = app.config[TalentConfigKeys.LOGGER]
         with app.app_context():
@@ -213,6 +222,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
+
+    if not isinstance(app, Flask):
+        raise InvalidUsage(error_message="app instance should be flask")
+
     if not isinstance(method_type, basestring):
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
@@ -277,16 +290,6 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 
-def get_valid_json_data(req):
-    data = req.get_json()
-    if data is None:
-        raise InvalidUsage('Kindly send request with JSON data and '
-                           'application/json content-type header')
-    if not isinstance(data, dict):
-        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data')
-    if not len(data):
-        raise InvalidUsage('Request data is empty')
-    return data
 
 
 def validate_required_fields(data_dict, required_fields):
@@ -409,3 +412,38 @@ def create_oauth_headers():
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
+
+
+def validate_header(request):
+    """
+    Proper header should be {'content-type': 'application/json'} for POSTing
+    some data on SMS campaign API.
+    If header of request is not proper, it raises InvalidUsage exception
+    :return:
+    """
+    if not request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
+        raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
+                           'and application/json content-type header')
+
+
+def get_valid_json_data(req):
+    """
+    This first verifies that request has proper JSON content-type header
+    and raise invalid usage error in case it doesn't has. From given request,
+    we try to get data. We raise invalid usage exception if data is
+    1) not JSON serializable
+    2) not in dict format
+    3) empty
+    :param req:
+    :return:
+    """
+    validate_header(req)
+    try:
+        data = req.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable.')
+    if not isinstance(data, dict):
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
+    if not data:
+        raise InvalidUsage('No data provided.')
+    return data

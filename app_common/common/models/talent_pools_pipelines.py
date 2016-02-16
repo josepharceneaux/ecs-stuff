@@ -32,14 +32,6 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    @staticmethod
-    def get_by_user_id(user_id):
-        assert user_id, 'User_id is None while getting talent_pool'
-        talent_pool = TalentPool.query.filter_by(owner_user_id=user_id).first()
-        if not talent_pool:
-            raise ResourceNotFound("Talent Pool not found of user id = %s" % user_id)
-        return talent_pool
-
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

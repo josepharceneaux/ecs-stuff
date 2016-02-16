@@ -11,15 +11,14 @@ from datetime import timedelta
 import requests
 # Here we import facebook-sdk python module making sure it doesn't import
 # our local facebook.py modules
-from social_network_service import logger
-from social_network_service.utilities import import_from_dist_packages
-facebook = import_from_dist_packages('facebook')
-
-# Application Specific
 from social_network_service.common.models.event import Event
-from social_network_service.rsvp.base import RSVPBase
-from social_network_service.utilities import Attendee
-from social_network_service.custom_exceptions import EventNotFound
+from social_network_service.modules.custom_exceptions import EventNotFound
+from social_network_service.modules.rsvp.base import RSVPBase
+from social_network_service.modules.utilities import Attendee, import_from_dist_packages
+from social_network_service.social_network_app import logger
+
+
+facebook = import_from_dist_packages('facebook')
 
 
 class Facebook(RSVPBase):

@@ -16,14 +16,12 @@ from datetime import datetime
 
 # Third Party
 import pytz
-import requests
 from flask import request
 from pytz import timezone
+
 # Application Specific Imports
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.routes import ActivityApiUrl
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import *
 from social_network_service.common.models.event import Event
@@ -233,7 +231,7 @@ def get_class(social_network_name, category, user_credentials=None):
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, social_network_name.title())
-    except ImportError as e:
+    except ImportError:
         error_message = 'Social Network "%s" is not allowed for now, ' \
                         'please implement code for this social network.' \
                         % social_network_name
@@ -241,7 +239,7 @@ def get_class(social_network_name, category, user_credentials=None):
                    'error': error_message})
         raise SocialNetworkNotImplemented('Import Error: Unable to import '
                                           'module for required social network')
-    except AttributeError as e:
+    except AttributeError:
         raise SocialNetworkNotImplemented('Unable to import module for required '
                                           'social network')
     return _class
@@ -522,7 +520,7 @@ def get_utc_datetime(dt, tz):
     local_timezone = timezone(tz)
     try:
         local_dt = local_timezone.localize(dt, is_dst=None)
-    except ValueError as e:
+    except ValueError:
         # datetime object already contains timezone info
         return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
     utc_dt = local_dt.astimezone(pytz.utc)

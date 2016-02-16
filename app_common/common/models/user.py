@@ -319,6 +319,7 @@ class Token(db.Model):
         :param access_token: User access_token
         :return: Token object matched with access_token
         """
+        # TODO: Code Review - Remove Token not found
         assert user_id, "user_id is None"
         token = cls.query.filter(cls.user_id == user_id).first()
         if not token:

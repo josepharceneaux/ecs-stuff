@@ -38,11 +38,6 @@ EPOCH_UTC_TEST_DATE_IN_MILLISECONDS = 1420070400000
 EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS = 1420052400000
 
 
-"""
-SECTION: Helper methods for tests
-"""
-
-
 def test_camel_case_to_snake_case():
     """
     In this test, we will verify that camel_case_to_snake_case() method converts strings
@@ -226,6 +221,8 @@ def test_health_check():
     assert response.status_code == 200
 
 
+# TODO: Move these methods
+
 def send_request(method, url, access_token, data=None, is_json=True):
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.
@@ -247,4 +244,3 @@ def send_post_request(url, data, access_token):
     """
     return requests.post(url, data=json.dumps(data),
                          headers=get_headers(access_token))
-

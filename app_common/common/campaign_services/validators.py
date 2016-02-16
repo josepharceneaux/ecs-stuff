@@ -15,7 +15,6 @@ Functions in this file are
 # Standard Imports
 import re
 from datetime import datetime
-from werkzeug.exceptions import BadRequest
 
 # Third Party
 from dateutil.tz import tzutc
@@ -23,6 +22,7 @@ from flask import current_app
 from dateutil.parser import parse
 
 # Database Models
+from app_common.common.utils.handy_functions import get_valid_json_data
 from ..models.user import User
 from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
@@ -33,43 +33,8 @@ from ..models.email_marketing import EmailCampaignBlast
 # Common utils
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
-from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER, find_missing_items,
+from ..utils.handy_functions import (find_missing_items,
                                      validate_required_fields)
-
-
-def validate_header(request):
-    """
-    Proper header should be {'content-type': 'application/json'} for POSTing
-    some data on SMS campaign API.
-    If header of request is not proper, it raises InvalidUsage exception
-    :return:
-    """
-    if not request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
-        raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
-                           'and application/json content-type header')
-
-
-def get_valid_json_data(req):
-    """
-    This first verifies that request has proper JSON content-type header
-    and raise invalid usage error in case it doesn't has. From given request,
-    we try to get data. We raise invalid usage exception if data is
-    1) not JSON serializable
-    2) not in dict format
-    3) empty
-    :param req:
-    :return:
-    """
-    validate_header(req)
-    try:
-        data = req.get_json()
-    except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable.')
-    if not isinstance(data, dict):
-        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
-    if not data:
-        raise InvalidUsage('No data provided.')
-    return data
 
 
 def validate_datetime_format(str_datetime):

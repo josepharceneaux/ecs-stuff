@@ -1,3 +1,5 @@
+# TOOD: add docstring
+
 # Std imports
 import datetime
 import json
@@ -10,13 +12,11 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import logger
-from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
-    event_data_tests, unauthorize_test
+from social_network_service.tests.helper_functions import auth_header, send_request, unauthorize_test
 
 
-class TestEventById:
+class TestEventById(object):
     """
     Test event using event id like
     - try to get event using id and pass invalid access token in auth header        - 401 response
@@ -79,7 +79,7 @@ class TestEventById:
         unauthorize_test('put', url=SocialNetworkApiUrl.EVENT % 1,
                          data={})
 
-    def test_putw_invalid_event_id(self, token, event_in_db):
+    def test_put_with_invalid_event_id(self, token, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
         :param token:
@@ -95,7 +95,7 @@ class TestEventById:
         logger.info(response.text)
         assert response.status_code == 404, 'Event not found with this id'
 
-    def test_putw_invalid_event_id_(self, token, event_in_db):
+    def test_put_with_invalid_event_id_(self, token, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
         - Modify social_network_id to -1 in event data object
@@ -181,6 +181,7 @@ class TestEventById:
         logger.info(response.text)
         assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
 
+    # write tests for activity creation/modify/deletion
     def test_activity_created(self, token, event_in_db):
         event = event_in_db.to_json()
         activities = Activity.get_by_user_id_type_source_id(user_id=event['user_id'],

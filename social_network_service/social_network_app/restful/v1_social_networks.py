@@ -1,3 +1,4 @@
+# TODO: modify _ to - in docstring endpoints
 """
 This file contains API endpoints related to social network.
     Following is a list of API endpoints:
@@ -120,7 +121,7 @@ class SocialNetworksResource(Resource):
         sn_data = get_valid_json_data(request)
         social_network = SocialNetwork(**sn_data)
         SocialNetwork.save(social_network)
-        headers = {'Location': '/%s/social_network/%s' % (SocialNetworkApi.VERSION,
+        headers = {'Location': '/%s/social-network/%s' % (SocialNetworkApi.VERSION,
                                                           social_network.id)}
         response = ApiResponse(dict(id=social_network.id), status=201, headers=headers)
         return response
@@ -181,7 +182,7 @@ class SocialNetworksResource(Resource):
                         deleted=total_deleted,
                         not_deleted=total_not_deleted), 207
         elif total_deleted:
-                return dict(message='%s social networks deleted successfully' % total_deleted), 200
+                return dict(message='%s social networks deleted successfully' % total_deleted)
         raise InvalidUsage('Bad request, include social work ids as list data', error_code=400)
 
     def get(self):
@@ -270,7 +271,7 @@ class SocialNetworksResource(Resource):
                 del sn['secret_key']
             return dict(social_networks=all_networks, count=len(all_networks))
         else:
-            return dict(social_networks= [], count=0)
+            return dict(social_networks=[], count=0)
 
 
 @api.route(SocialNetworkApi.MEETUP_GROUPS)
@@ -364,7 +365,7 @@ class MeetupGroupsResource(Resource):
             response = dict(groups=groups, count=len(groups))
         except Exception as e:
             raise InternalServerError(e.message)
-        return response, 200
+        return response
 
 
 @api.route(SocialNetworkApi.TOKEN_VALIDITY)
@@ -417,7 +418,7 @@ class GetTokenValidityResource(Resource):
                 sn = social_network_class(user_id=user_id,
                                           social_network=social_network
                                           )
-                return dict(status=sn.access_token_status), 200
+                return dict(status=sn.access_token_status)
         else:
             raise ResourceNotFound("Invalid social network id given")
 
@@ -471,7 +472,7 @@ class RefreshTokenResource(Resource):
                                       "and social network")
         if status:
             return dict(messsage='Access token has been refreshed',
-                        status=True), 200
+                        status=True)
         else:
             raise ForbiddenError("Unable to refresh access token")
 
@@ -617,8 +618,8 @@ class VenuesResource(Resource):
                 else:
                     not_deleted.append(_id)
 
-            if len(not_deleted) == 0:
-                return dict(message='%s Venue/s deleted successfully' % len(deleted)), 200
+            if not not_deleted:
+                return dict(message='%s Venue/s deleted successfully' % len(deleted))
 
             return dict(message='Unable to delete %s venue/s' % len(not_deleted),
                         deleted=deleted,
@@ -675,7 +676,7 @@ class VenueByIdResource(Resource):
         venue = Venue.get_by_user_id_venue_id(user_id, id)
         if venue:
             venue = venue.to_json()
-            return dict(venue=venue), 200
+            return dict(venue=venue)
         else:
             raise ResourceNotFound('Venue not found')
 
@@ -728,7 +729,7 @@ class VenueByIdResource(Resource):
         if venue:
             venue_data['user_id'] = user_id
             venue.update(**venue_data)
-            return dict(message='Venue updated successfully'), 200
+            return dict(message='Venue updated successfully')
         else:
             raise ResourceNotFound('Venue not found')
 
@@ -761,7 +762,7 @@ class VenueByIdResource(Resource):
         venue = Venue.get_by_user_id_venue_id(request.user.id, id)
         if venue:
             Venue.delete(venue)
-            return dict(message='Venue has been deleted successfully'), 200
+            return dict(message='Venue has been deleted successfully')
         else:
             raise ResourceNotFound('Venue not found')
 
@@ -803,7 +804,7 @@ class EventOrganizersResource(Resource):
         event_organizers = request.user.event_organizers.all()
         organizers = map(lambda organizer: organizer.to_json(), event_organizers)
         response = dict(event_organizers=organizers, count=len(organizers))
-        return response, 200
+        return response
 
     def post(self):
         """
@@ -844,7 +845,8 @@ class EventOrganizersResource(Resource):
         organizer_data['user_id'] = request.user.id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
-        headers = {'Location': '/%s/event_organizers/%s' % (SocialNetworkApi.VERSION, organizer.id)}
+        # TODO: change it to use routes url
+        headers = {'Location': '/%s/event-organizers/%s' % (SocialNetworkApi.VERSION, organizer.id)}
         return ApiResponse(dict(messsage='Event organizer created successfully',
                                 id=organizer.id),
                            status=201, headers=headers)
@@ -896,7 +898,7 @@ class EventOrganizersResource(Resource):
                     not_deleted.append(_id)
 
             if len(not_deleted) == 0:
-                return dict(message='%s event organizer/s deleted successfully' % len(deleted)), 200
+                return dict(message='%s event organizer/s deleted successfully' % len(deleted))
 
             return dict(message='Unable to delete %s event organizer/s' % len(not_deleted),
                         deleted=deleted,
@@ -946,7 +948,7 @@ class EventOrganizerByIdResource(Resource):
         event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, id)
         if event_organizer:
             event_organizer = event_organizer.to_json()
-            return dict(event_organizer=event_organizer), 200
+            return dict(event_organizer=event_organizer)
         else:
             raise ResourceNotFound('Event organizer not found')
 
@@ -991,7 +993,7 @@ class EventOrganizerByIdResource(Resource):
         if event_organizer:
             organizer_data['user_id'] = user_id
             event_organizer.update(**organizer_data)
-            return ApiResponse(dict(message='Organizer updated successfully')), 200
+            return dict(message='Organizer updated successfully')
         else:
             raise ResourceNotFound("Organizer not found")
 
@@ -1024,7 +1026,7 @@ class EventOrganizerByIdResource(Resource):
         organizer = EventOrganizer.get_by_user_id_organizer_id(request.user.id, id)
         if organizer:
             EventOrganizer.delete(organizer)
-            return dict(message='Organizer has been deleted successfully'), 200
+            return dict(message='Organizer has been deleted successfully')
         else:
             raise ResourceNotFound("Organizer not found", error_code=404)
 

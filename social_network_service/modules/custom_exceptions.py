@@ -2,19 +2,21 @@ import json
 import social_network_service.common.error_handling
 
 
-class SocialNetworkApiExceptionServer(social_network_service.common.error_handling.InternalServerError):
+# TODO: reduce code below using model utils
+
+class SNServerException(social_network_service.common.error_handling.InternalServerError):
     """
     Custom exception in case of 500 internal server error
     """
     error_code = 4000
 
     def to_dict(self):
-        error_dict = super(SocialNetworkApiExceptionServer, self).to_dict()
+        error_dict = super(SNServerException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return error_dict
 
     def __str__(self):
-        error_dict = super(SocialNetworkApiExceptionServer, self).to_dict()
+        error_dict = super(SNServerException, self).to_dict()
         error_dict['error']['code'] = self.__class__.error_code
         return json.dumps(error_dict)
 
@@ -53,7 +55,7 @@ class SocialNetworkApiNotFoundException(social_network_service.common.error_hand
         return json.dumps(error_dict)
 
 
-class SocialNetworkError(SocialNetworkApiExceptionServer):
+class SocialNetworkError(SNServerException):
     error_code = 4052
 
 
@@ -65,27 +67,27 @@ class EventOrganizerNotFound(SocialNetworkApiNotFoundException):
     error_code = 4054
 
 
-class EventNotCreated(SocialNetworkApiExceptionServer):
+class EventNotCreated(SNServerException):
     error_code = 4055
 
 
-class EventNotPublished(SocialNetworkApiExceptionServer):
+class EventNotPublished(SNServerException):
     error_code = 4056
 
 
-class EventNotUnpublished(SocialNetworkApiExceptionServer):
+class EventNotUnpublished(SNServerException):
     error_code = 4057
 
 
-class EventLocationNotCreated(SocialNetworkApiExceptionServer):
+class EventLocationNotCreated(SNServerException):
     error_code = 4058
 
 
-class TicketsNotCreated(SocialNetworkApiExceptionServer):
+class TicketsNotCreated(SNServerException):
     error_code = 4059
 
 
-class EventNotSaveInDb(SocialNetworkApiExceptionServer):
+class EventNotSaveInDb(SNServerException):
     error_code = 4060
 
 
@@ -93,7 +95,7 @@ class UserCredentialsNotFound(SocialNetworkApiNotFoundException):
     error_code = 4061
 
 
-class SocialNetworkNotImplemented(SocialNetworkApiExceptionServer):
+class SocialNetworkNotImplemented(SNServerException):
     error_code = 4062
 
 
@@ -109,7 +111,7 @@ class VenueNotFound(SocialNetworkApiNotFoundException):
     error_code = 4065
 
 
-class AccessTokenHasExpired(SocialNetworkApiExceptionServer):
+class AccessTokenHasExpired(SNServerException):
     error_code = 4066
 
 
@@ -129,5 +131,5 @@ class ProductNotFound(SocialNetworkApiNotFoundException):
     error_code = 4070
 
 
-class HitLimitReached(SocialNetworkApiExceptionServer):
+class HitLimitReached(SNServerException):
     error_code = 4071

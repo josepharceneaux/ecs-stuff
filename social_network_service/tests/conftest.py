@@ -6,12 +6,9 @@ import os
 import pytest
 from faker import Faker
 from datetime import datetime, timedelta
-from mixer._faker import faker
 
 # App Settings
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import app
 
 # Application Specific
@@ -26,7 +23,6 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.misc import Organization, Activity
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.modules.utilities import process_event
 from social_network_service.modules.utilities import delete_events
 from social_network_service.common.routes import AuthApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
@@ -36,13 +32,15 @@ from social_network_service.tests.helper_functions import send_request
 
 db_session = db.session
 fake = Faker()
+
+# TODO: Use this urls directly in code not with global variables
+
 APP_URL = SocialNetworkApiUrl.HOST_NAME
 
 OAUTH_ENDPOINT = AuthApiUrl.HOST_NAME
 TOKEN_URL = AuthApiUrl.TOKEN_CREATE
 
 OAUTH_SERVER = AuthApiUrl.AUTHORIZE
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 # This is common data for creating test events
 EVENT_DATA = {

@@ -16,7 +16,7 @@ from social_network_service.common.talent_config_manager import (load_gettalent_
 flask_app = Flask(__name__)
 load_gettalent_config(flask_app.config)
 
-logger = flask_app.config['LOGGER']
+logger = flask_app.config[TalentConfigKeys.LOGGER]
 
 health = HealthCheck(flask_app, HEALTH_CHECK)
 

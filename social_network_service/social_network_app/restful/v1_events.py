@@ -83,9 +83,9 @@ class Events(Resource):
             .limit(limit).offset(offset).all()
         events = map(add_organizer_venue_data, events)
         if events:
-            return dict(events=events, count=len(events)), 200
+            return dict(events=events, count=len(events))
         else:
-            return dict(events=[], count=0), 200
+            return dict(events=[], count=0)
 
     def post(self):
         """
@@ -151,8 +151,7 @@ class Events(Resource):
         event_data = get_valid_json_data(request)
         gt_event_id = process_event(event_data, request.user.id)
         headers = {'Location': '/%s/events/%s' % (SocialNetworkApi.VERSION, gt_event_id)}
-        return ApiResponse(dict(id=gt_event_id, headers=headers),
-                           headers=headers,
+        return ApiResponse(dict(id=gt_event_id), headers=headers,
                            status=201)
 
     def delete(self):
@@ -192,8 +191,8 @@ class Events(Resource):
         # check if event_ids list is not empty
         if event_ids:
             deleted, not_deleted = delete_events(request.user.id, event_ids)
-            if len(not_deleted) == 0:
-                return dict(message='%s Events deleted successfully' % len(deleted)), 200
+            if not not_deleted:
+                return dict(message='%s Events deleted successfully' % len(deleted))
 
             return dict(message='Unable to delete %s events' % len(not_deleted),
                         deleted=deleted,
@@ -208,10 +207,10 @@ class EventById(Resource):
     """
     decorators = [require_oauth()]
 
-    def get(self, id):
+    def get(self, event_id):
         """
         Returns event object with required id
-        :param id: (Integer) unique id in Event table on GT database.
+        :param event_id: (Integer) unique id in Event table on GT database.
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -251,16 +250,16 @@ class EventById(Resource):
         :param id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        event = Event.get_by_user_and_event_id(request.user.id, id)
+        event = Event.get_by_user_and_event_id(request.user.id, event_id)
         if event:
             event_data = add_organizer_venue_data(event)
-            return dict(event=event_data), 200
-        raise ResourceNotFound('Event does not exist with id %s' % id)
+            return dict(event=event_data)
+        raise ResourceNotFound('Event does not exist with id %s' % event_id)
 
-    def put(self, id):
+    def put(self, event_id):
         """
         Updates event in getTalent's database and on corresponding social network.
-        :param id: id of event on getTalent database
+        :param event_id: id of event on getTalent database
 
         :Example:
 
@@ -322,16 +321,16 @@ class EventById(Resource):
         event_data = get_valid_json_data(request)
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
-            request.user.id, id, event_data['social_network_event_id'])
+            request.user.id, event_id, event_data['social_network_event_id'])
         if event:
             process_event(event_data, request.user.id, method='Update')
-            return dict(message='Event updated successfully'), 200
+            return dict(message='Event updated successfully')
         raise ResourceNotFound('Event not found')
 
-    def delete(self, id):
+    def delete(self, event_id):
         """
         Removes a single event from getTalent's database and from social network as well.
-        :param id: (Integer) unique id in Event table on GT database.
+        :param event_id: (Integer) unique id in Event table on GT database.
 
         :Example:
             headers = {
@@ -353,8 +352,8 @@ class EventById(Resource):
                     403 (Forbidden: event not found for this user)
                     500 (Internal Server Error)
         """
-        deleted, not_deleted = delete_events(request.user.id, [id])
+        deleted, not_deleted = delete_events(request.user.id, [event_id])
         if len(deleted) == 1:
-            return dict(message='Event deleted successfully'), 200
+            return dict(message='Event deleted successfully')
         raise ForbiddenError('Forbidden: Unable to delete event')
 

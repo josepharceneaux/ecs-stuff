@@ -700,6 +700,7 @@ class SocialNetworkApiUrl(object):
                                GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
+    # TODO: Make this url dynamic i.e staging , dev
     UI_APP_URL = 'http://localhost:3000'
     API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
     EVENTS = API_URL % 'events'
