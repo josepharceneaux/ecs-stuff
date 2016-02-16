@@ -37,8 +37,8 @@ try:
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
 
-    # Enable CORS for all origins & endpoints
-    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "http://localhost"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
 
     # API RESOURCES
     # ****** CandidateResource ******
