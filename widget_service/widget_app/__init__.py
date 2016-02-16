@@ -17,8 +17,8 @@ db.init_app(app)
 db.app = app
 from .views import api
 
-# Enable CORS for all origins & endpoints
-CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
+# Enable CORS for *.gettalent.com and localhost
+CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
 
 # wrap the flask app and give a heathcheck url
 health = HealthCheck(app, HEALTH_CHECK)

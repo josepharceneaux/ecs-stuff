@@ -239,7 +239,7 @@ def index_documents():
     conn.layer1.index_documents(_cloud_search_domain.name)
 
 
-def _build_candidate_documents(candidate_ids):
+def _build_candidate_documents(candidate_ids, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
@@ -380,16 +380,18 @@ def _build_candidate_documents(candidate_ids):
                 field_name_to_sql_value[field_name] = sql_value_array
 
         # Add the required values we didn't get from DB
-        field_name_to_sql_value_row = User.query.filter_by(
-            id=field_name_to_sql_value['user_id']).first()
-        field_name_to_sql_value['domain_id'] = field_name_to_sql_value_row.domain_id
+        if not domain_id:
+            field_name_to_sql_value_row = User.query.filter_by(
+                id=field_name_to_sql_value['user_id']).first()
+            domain_id = field_name_to_sql_value_row.domain_id
+        field_name_to_sql_value['domain_id'] = domain_id
         action_dict['fields'] = field_name_to_sql_value
         action_dicts.append(action_dict)
 
     return action_dicts
 
 
-def upload_candidate_documents(candidate_ids):
+def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
@@ -399,7 +401,7 @@ def upload_candidate_documents(candidate_ids):
         candidate_ids = [candidate_ids]
     logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
     start_time = time.time()
-    action_dicts = _build_candidate_documents(candidate_ids)
+    action_dicts = _build_candidate_documents(candidate_ids, domain_id)
     logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                 len(action_dicts))
     adds, deletes = _send_batch_request(action_dicts)
@@ -420,7 +422,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents(candidate_ids)
+    return upload_candidate_documents(candidate_ids, domain_id)
 
 
 def upload_candidate_documents_of_user(user_id):
