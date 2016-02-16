@@ -111,17 +111,16 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     # Schedule the sending of emails & update email_campaign scheduler fields
     schedule_task_params = {"url": EmailCampaignUrl.SEND % email_campaign.id}
     schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
-    if frequency:  # It means its a periodic Job
+    if frequency:  # It means its a periodic job, because frequency is 0 in case of one time job.
         schedule_task_params["frequency"] = frequency
         schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
         schedule_task_params["start_datetime"] = send_time
         schedule_task_params["end_datetime"] = stop_time
     else:  # It means its a one time Job
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["run_datetime"] = \
+        schedule_task_params["run_datetime"] = send_time if send_time else \
             (datetime.datetime.utcnow()
              + datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
-
     schedule_task_params['is_jwt_request'] = True
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token}
@@ -198,9 +197,10 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False,
         if campaign.email_client_id:
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
-                new_text, new_html, _, _, _, _ = get_new_text_html_subject_and_campaign_send(
+                new_text, new_html = get_new_text_html_subject_and_campaign_send(
                     campaign, candidate_id, blast_params=blast_params,
-                    email_campaign_blast_id=email_campaign_blast.id, blast_datetime=blast_datetime)
+                    email_campaign_blast_id=email_campaign_blast.id,
+                    blast_datetime=blast_datetime)[:2]
                 logger.info("Marketing email added through client %s", email_client_id)
                 resp_dict = dict()
                 resp_dict['new_html'] = new_html
@@ -561,7 +561,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
                                                                is_email_open_tracking=campaign.is_email_open_tracking,
                                                                custom_html=campaign.custom_html,
                                                                email_campaign_send_id=email_campaign_send.id)
-    return new_html, new_text, subject, email_campaign_send, blast_params, candidate
+    return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
 def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, exception):
