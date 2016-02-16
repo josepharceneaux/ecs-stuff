@@ -107,7 +107,7 @@ def test_talent_pool_api_post(access_token_first, access_token_second, user_firs
     assert status_code == 200
     assert len(response.get('talent_pools')) == 1
 
-    # Logged-in user trying to add a new talent-pool with existing name in a domain
+    # Admin user trying to add a new talent-pool with existing name in a domain
     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
     assert status_code == 400
 

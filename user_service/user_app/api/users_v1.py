@@ -33,11 +33,11 @@ class UserApi(Resource):
             if not requested_user or requested_user.is_disabled == 1:
                 raise NotFoundError(error_message="User with user id %s not found" % requested_user_id)
 
-            if requested_user.domain_id != request.user.domain_id and not request.is_admin_user:
+            if requested_user.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
                 raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get user %s" %
                                                       (request.user.id, requested_user_id))
 
-            if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles or request.is_admin_user:
+            if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
 
                 return {'user': {
                         'id': requested_user.id,
@@ -53,7 +53,7 @@ class UserApi(Resource):
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
-        elif 'CAN_GET_USERS' in request.valid_domain_roles or request.is_admin_user:
+        elif 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
                 return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not
                 user.is_disabled]}
 
@@ -108,7 +108,7 @@ class UserApi(Resource):
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
-            if request.is_admin_user:
+            if request.user_can_edit_other_domains:
                 domain_id = user_dict.get('domain_id', request.user.domain_id)
             else:
                 domain_id = request.user.domain_id
@@ -140,7 +140,7 @@ class UserApi(Resource):
             if not user_to_delete:
                 raise NotFoundError(error_message="Requested user with user id %s not found" % user_id_to_delete)
 
-        if user_to_delete.domain_id != request.user.domain_id and not request.is_admin_user:
+        if user_to_delete.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError("User to be deleted belongs to different domain than logged-in user")
 
         # Prevent logged-in user from deleting itself
@@ -180,7 +180,7 @@ class UserApi(Resource):
         if not posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if not request.is_admin_user:
+        if not request.user_can_edit_other_domains:
             if requested_user.domain_id != request.user.domain_id:
                 raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
 

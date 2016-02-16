@@ -113,7 +113,7 @@ class UserGroupsApi(Resource):
         if not requested_group:
             raise NotFoundError(error_message="Group with group_id %s doesn't exist" % requested_group_id)
 
-        if requested_group.domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_group.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get all users of a "
                                                   "group %s" % (request.user.id, requested_group_id))
 
@@ -139,7 +139,7 @@ class UserGroupsApi(Resource):
         if not posted_data or 'user_ids' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_group.domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_group.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to add users to a "
                                                   "group %s" % (request.user.id, requested_group_id))
 
@@ -167,7 +167,7 @@ class DomainGroupsApi(Resource):
         if not requested_domain:
             raise NotFoundError(error_message="Domain with domain_id %s doesn't exist" % requested_domain_id)
 
-        if requested_domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get all user_groups "
                                                   "of domain %s" % (request.user.id, requested_domain_id))
 
@@ -194,7 +194,7 @@ class DomainGroupsApi(Resource):
         if not posted_data or 'groups' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to add user_groups "
                                                   "to domain %s" % (request.user.id, requested_domain_id))
 
@@ -220,7 +220,7 @@ class DomainGroupsApi(Resource):
         if not posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_group.domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_group.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to edit user_groups %s"
                                                   % (request.user.id, requested_group.name))
 
@@ -260,7 +260,7 @@ class DomainGroupsApi(Resource):
         if not posted_data or 'groups' not in posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_domain_id != request.user.domain_id and not request.is_admin_user:
+        if requested_domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to remove user_groups "
                                                   "from domain %s" % (request.user.id, requested_domain_id))
 

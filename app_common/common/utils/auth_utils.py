@@ -84,9 +84,9 @@ def require_all_roles(*role_names):
                 if role_name not in user_roles:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
-            request.is_admin_user = False
+            request.user_can_edit_other_domains = False
             if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                request.is_admin_user = True
+                request.user_can_edit_other_domains = True
             return func(*args, **kwargs)
 
         return authenticate_roles
@@ -120,9 +120,9 @@ def require_any_role(*role_names):
                     if role_name in user_roles:
                         valid_domain_roles.append(role_name)
                 if valid_domain_roles:
-                    request.is_admin_user = False
+                    request.user_can_edit_other_domains = False
                     if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                        request.is_admin_user = True
+                        request.user_can_edit_other_domains = True
                     request.valid_domain_roles = valid_domain_roles
                     return func(*args, **kwargs)
                 raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "

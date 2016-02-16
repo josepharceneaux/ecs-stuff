@@ -34,7 +34,7 @@ class DomainApi(Resource):
         if not requested_domain:
             raise NotFoundError(error_message="Domain with domain id %s not found" % requested_domain_id)
 
-        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles or request.is_admin_user:
+        if requested_domain_id == request.user.domain_id or 'CAN_GET_DOMAINS' in request.valid_domain_roles or request.user_can_edit_other_domains:
             return {
                     'domain': {
                         'id': requested_domain.id,

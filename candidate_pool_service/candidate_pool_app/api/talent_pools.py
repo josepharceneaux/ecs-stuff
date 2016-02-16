@@ -40,13 +40,14 @@ class TalentPoolApi(Resource):
 
         talent_pool_id = kwargs.get('id')
 
+        # Getting a single talent-pool
         if talent_pool_id:
             talent_pool = TalentPool.query.get(talent_pool_id)
 
             if not talent_pool:
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
-            if not request.is_admin_user:
+            if not request.user_can_edit_other_domains:
                 if talent_pool.domain_id != request.user.domain_id:
                     raise ForbiddenError(error_message="User %s is not authorized to get talent-pool's info" %
                                                        request.user.id)
@@ -65,7 +66,8 @@ class TalentPoolApi(Resource):
                     'user_id': talent_pool.user_id
                 }
             }
-        elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles or request.is_admin_user:
+        # Getting all talent-pools of logged-in user's domain
+        elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles or request.user_can_edit_other_domains:
             talent_pools = TalentPool.query.filter_by(domain_id=request.user.domain_id).all()
             return {
                 'talent_pools': [
@@ -112,7 +114,7 @@ class TalentPoolApi(Resource):
         if not isinstance(posted_data, dict):
             raise InvalidUsage(error_message="Request body is not properly formatted")
 
-        if request.user.domain_id != talent_pool.domain_id and not request.is_admin_user:
+        if request.user.domain_id != talent_pool.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
 
         name = posted_data.get('name')
@@ -151,7 +153,7 @@ class TalentPoolApi(Resource):
         if not talent_pool:
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
-        if request.user.domain_id != talent_pool.domain_id and not request.is_admin_user:
+        if request.user.domain_id != talent_pool.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="User %s is not authorized to delete a talent-pool" % request.user.id)
 
         talent_pool.delete()
@@ -189,7 +191,7 @@ class TalentPoolApi(Resource):
 
             name = talent_pool.get('name', '').strip()
             description = talent_pool.get('description', '').strip()
-            if request.is_admin_user:
+            if request.user_can_edit_other_domains:
                 request.user = User.query.get(talent_pool.get('user_id', request.user.id))
                 if not request.user:
                     raise InvalidUsage("User with id %s doesn't exist in Database" % request.user.id)
@@ -229,7 +231,7 @@ class TalentPoolGroupApi(Resource):
 
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
-        if not request.is_admin_user:
+        if not request.user_can_edit_other_domains:
             if user_group.domain_id != request.user.domain_id:
                 raise ForbiddenError(error_message="Logged-in user belongs to different domain as given user group")
 
@@ -281,7 +283,7 @@ class TalentPoolGroupApi(Resource):
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
-        if request.user.domain_id != user_group.domain_id and not request.is_admin_user:
+        if request.user.domain_id != user_group.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
@@ -331,7 +333,7 @@ class TalentPoolGroupApi(Resource):
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
-        if request.user.domain_id != user_group.domain_id and not request.is_admin_user:
+        if request.user.domain_id != user_group.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
