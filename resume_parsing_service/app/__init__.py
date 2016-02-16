@@ -4,7 +4,7 @@ __author__ = 'erikfarmer'
 from flask import Flask
 from flask.ext.redis import FlaskRedis
 from flask.ext.cors import CORS
-from resume_parsing_service.common.routes import ResumeApi, HEALTH_CHECK
+from resume_parsing_service.common.routes import ResumeApi, HEALTH_CHECK, GTApis
 from resume_parsing_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from resume_parsing_service.common.utils.talent_ec2 import get_ec2_instance_id
 
@@ -31,7 +31,7 @@ try:
     register_error_handlers(app, logger)
 
     # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting resume_parsing_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
