@@ -20,7 +20,7 @@
     <option name="testToRun" value="$PROJECT_DIR$/social_network_service/tests" />
     <option name="keywords" value="" />
     <option name="params" value="-k test_delete_with_valid_token" />
-    <option name="USE_PARAM" value="true" />
+    <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

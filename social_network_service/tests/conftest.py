@@ -219,7 +219,7 @@ def meetup_event(request, sample_user, test_meetup_credentials, meetup,
         """
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
                                 access_token=token)
-        assert response.status_code == 200
+        assert response.status_code == 200 or response.status_code == 403
     request.addfinalizer(fin)
     return event
 
