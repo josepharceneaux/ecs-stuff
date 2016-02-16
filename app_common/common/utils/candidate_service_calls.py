@@ -5,7 +5,7 @@ import json
 from ..models.user import User
 from ..routes import CandidateApiUrl
 from ..utils.handy_functions import create_oauth_headers
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError, InvalidUsage
 
 __author__ = 'jitesh'
 
@@ -25,11 +25,15 @@ def search_candidates_from_params(search_params, access_token, user_id=None):
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
 
-    return requests.get(
-        url=CandidateApiUrl.CANDIDATE_SEARCH_URI,
-        params=search_params,
-        headers=headers
-    ).json()
+    response = requests.get(
+            url=CandidateApiUrl.CANDIDATE_SEARCH_URI,
+            params=search_params,
+            headers=headers
+    )
+    if not response.ok:
+        raise InvalidUsage("Couldn't get candidates from Search API because %s" % response)
+    else:
+        return response.json()
 
 
 def update_candidates_on_cloudsearch(access_token, candidate_ids):

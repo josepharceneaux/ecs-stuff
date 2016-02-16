@@ -61,7 +61,7 @@ class TalentPoolApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
                 }
             }
         elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles:
@@ -72,8 +72,11 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'user_id': talent_pool.owner_user_id
-
+                        'user_id': talent_pool.user_id,
+                        'accessible_to_user_group_ids': [talent_pool_group.user_group_id for talent_pool_group in
+                                                         TalentPoolGroup.query.filter_by(
+                                                                 talent_pool_id=talent_pool.id
+                                                         ).all()]
                     } for talent_pool in talent_pools
                 ]
             }
@@ -193,7 +196,7 @@ class TalentPoolApi(Resource):
                 raise InvalidUsage(error_message="Talent pool '%s' already exists in domain %s" % (name, request.user.domain_id))
 
             talent_pool_object = TalentPool(name=name, description=description, domain_id=request.user.domain_id,
-                                            owner_user_id=request.user.id)
+                                            user_id=request.user.id)
             talent_pool_objects.append(talent_pool_object)
             db.session.add(talent_pool_object)
 
@@ -239,7 +242,7 @@ class TalentPoolGroupApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'owner_user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
 
                 } for talent_pool in talent_pools
             ]
@@ -605,7 +608,7 @@ def get_talent_pool_stats(talent_pool_id):
     if not talent_pool:
         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
 
-    if talent_pool.owner_user_id != request.user.id:
+    if talent_pool.user_id != request.user.id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
                                            % (request.user.id, talent_pool.id))
 

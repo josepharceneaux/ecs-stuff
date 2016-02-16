@@ -8,11 +8,11 @@ __author__ = 'erikfarmer'
 from datetime import datetime
 import json
 import re
+from time import time
 # framework specific
 from flask import Blueprint
 from flask import jsonify
 from flask import request
-
 # application specific
 from activity_service.activities_app import db, logger
 from activity_service.common.models.user import User
@@ -304,14 +304,18 @@ class TalentActivityManager(object):
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, limit=3):
+        start_time = time()
         current_user = User.query.filter_by(id=user_id).first()
-        #
+        logger.info("Fetched current user in {} seconds".format(time() - start_time))
         # # Get the last 25 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
+        logger.info("Fetched domain IDs in {} seconds".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
+        logger.info("Flattened domain IDs in {} seconds".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
-        activities = Activity.query.filter(*filters)  # TODO add limit.
+        activities = Activity.query.filter(*filters).limit(25)
+        logger.info("Fetched limit activities in {} seconds".format(time() - start_time))
 
         aggregated_activities = []
         current_activity_count = 0
@@ -339,6 +343,7 @@ class TalentActivityManager(object):
                     break
 
                 current_activity_count = 0
+        logger.info("Finsihed making readable in {} seconds".format(time() - start_time))
 
         return aggregated_activities
 

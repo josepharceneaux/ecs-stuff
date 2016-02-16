@@ -187,7 +187,7 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
         # Parse out candidate_experience_bullets.
         candidate_experience_bullets = []
         if history_dict.get('description'):
-            candidate_experience_bullets.append(dict(text=history_dict.get('description')))
+            candidate_experience_bullets.append(dict(description=history_dict.get('description')))
 
         work_experiences.append(dict(organization=history_dict.get('company'),
                                      position=history_dict.get('jobTitle'),

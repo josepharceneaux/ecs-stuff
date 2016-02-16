@@ -28,8 +28,8 @@ try:
     from spreadsheet_import_service.common.error_handling import register_error_handlers
     register_error_handlers(app, logger)
 
-    # Enable CORS for all origins & endpoints
-    CORS(app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
 
     logger.info("Starting spreadsheet_import_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 
