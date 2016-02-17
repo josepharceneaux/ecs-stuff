@@ -10,11 +10,10 @@ Run:
 python setup_environment/run_setup.py
 
 """
-
-from flask import Flask
+from common.talent_flask import TalentFlask
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 from common.models.db import db

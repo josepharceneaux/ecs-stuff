@@ -1,14 +1,14 @@
 """Initialize Email campaign service app, register error handlers and register blueprint"""
 
-from flask import Flask
 from flask.ext.cors import CORS
 from email_campaign_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.error_handling import register_error_handlers
 from healthcheck import HealthCheck
 from email_campaign_service.common.routes import HEALTH_CHECK, GTApis
+from email_campaign_service.common.talent_flask import TalentFlask
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 logger = app.config[TalentConfigKeys.LOGGER]
