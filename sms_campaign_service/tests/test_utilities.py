@@ -35,6 +35,10 @@ def test_health_check():
     response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK)
     assert response.status_code == 200
 
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK + '/')
+    assert response.status_code == 200
+
 
 TEST_DATA = dict(
     no_url='Dear candidates, your application has been received',

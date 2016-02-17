@@ -75,3 +75,7 @@ def test_recent_readable(token_fixture):
 def test_health_check():
     response = requests.get(ActivityApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(ActivityApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200
