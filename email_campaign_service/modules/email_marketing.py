@@ -1,5 +1,4 @@
 import re
-import time
 import json
 import datetime
 import requests
@@ -573,49 +572,6 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
-# def does_candidate_have_unique_email(candidate):
-#     """
-#     Here we validate that if candidate has one unique mobile number associated.
-#     If candidate has only one unique mobile number associated, we return that candidate and
-#     its phone value.
-#     Otherwise we log the error.
-#
-#     - This method is used in send_campaign_to_candidate() method.
-#
-#     :param candidate: candidates obj
-#     :type candidate: Candidate
-#     :exception: InvalidUsage
-#     :exception: MultipleCandidatesFound
-#     :exception: CandidateNotFoundInUserDomain
-#     :return: Candidate obj and Candidate's mobile phone
-#     :rtype: tuple
-#
-#     **See Also**
-#     .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
-#     """
-#     raise_if_not_instance_of(candidate, Candidate)
-#     candidate_phones = candidate.candidate_phone
-#     mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
-#
-#     # filter only mobile numbers
-#     candidate_mobile_phone = filter(lambda candidate_phone:
-#                                     candidate_phone.phone_label_id == mobile_label_id,
-#                                     candidate_phones)
-#     if len(candidate_mobile_phone) == 1:
-#         # If this number is associated with multiple candidates, raise exception
-#         phone_number = candidate_mobile_phone[0].value
-#         _get_valid_candidate_phone(phone_number, self.user)
-#         return candidate, get_formatted_phone_number(phone_number)
-#     elif len(candidate_mobile_phone) > 1:
-#         logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-#                      'candidate(id:%s) has multiple mobile phone numbers. '
-#                      'Campaign(id:%s). (User(id:%s))'
-#                      % (candidate.id, self.campaign.id, self.user.id))
-#     else:
-#         logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-#                      'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
-#                      '(User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
-
 def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, exception):
     """ If failed to send email; Mark email bounced.
     """
@@ -649,12 +605,16 @@ def update_hit_count(url_conversion):
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
         if candidate:  # If candidate has been deleted, don't make the activity
+            # TODO: May be add activity using jwt
             # Add activity
-            add_activity(user_id="?",
-                         activity_type=ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
-                         source_id=email_campaign_send.id, source_table=EmailCampaignSend.__tablename__,
-                         params=dict(candidateId=candidate.id, campaign_name=email_campaign_send.email_campaign.name,
-                                     candidate_name=candidate.formatted_name))
+            CampaignBase.create_activity(candidate.user_id,
+                                         ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open
+                                         else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
+                                         email_campaign_send,
+                                         dict(candidateId=candidate.id,
+                                              campaign_name=email_campaign_send.email_campaign.name,
+                                              candidate_name=candidate.formatted_name),
+                                         CampaignBase.get_authorization_header(candidate.user_id))
         else:
             logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
                         "email_campaign_send: %s",
@@ -662,7 +622,7 @@ def update_hit_count(url_conversion):
 
         # Update email_campaign_blast entry only if it's a new hit
         if new_hit_count == 1:
-            email_campaign_blast = EmailCampaignBlast.query.filter_by(and_(send_time=email_campaign_send.send_time,
+            email_campaign_blast = EmailCampaignBlast.query.filter_by(and_(send_time=email_campaign_send.sent_time,
                                                                            email_campaign_id=email_campaign_send.email_campaign_id)).first()
             if email_campaign_blast:
                 if is_open:

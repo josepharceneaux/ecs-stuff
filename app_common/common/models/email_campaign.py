@@ -126,6 +126,10 @@ class EmailClient(db.Model):
     def __repr__(self):
         return "<EmailClient (name = %r)>" % self.name
 
+    @classmethod
+    def get_id_by_name(cls, name):
+        return cls.query.filter_by(name=name).first().id
+
 
 class EmailCampaignSendUrlConversion(db.Model):
     __tablename__ = 'email_campaign_send_url_conversion'

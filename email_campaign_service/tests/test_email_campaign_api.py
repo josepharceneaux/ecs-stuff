@@ -7,7 +7,7 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.common.routes import EmailCampaignUrl, CandidatePoolApiUrl, \
     EmailCampaignEndpoints, HEALTH_CHECK
@@ -222,7 +222,7 @@ class TestSendCampaign(object):
     def test_campaign_send_with_email_client_id(
             self, access_token_first, campaign_with_valid_candidate):
         """
-        Email client id can be Gmail, outlook etc.
+        Email client can be Outlook Plugin, Browser etc.
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate with email address. Email Campaign should be not be sent to candidate as
         we are providing client_id. Response should be something like
@@ -240,7 +240,7 @@ class TestSendCampaign(object):
             }
         """
         campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
-        campaign.update(email_client_id=fake.random_digit())
+        campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
