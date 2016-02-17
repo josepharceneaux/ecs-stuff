@@ -22,7 +22,7 @@ class TestGetCampaigns(object):
     """
     Here are the tests of /v1/campaigns
     """
-    def test_get_all_campaigns(self, campaign_with_smartlist, access_token_first,
+    def test_get_all_campaigns(self, campaign_with_candidate_having_no_email, access_token_first,
                                talent_pipeline):
         """
         Test GET API of email_campaigns for getting all campaigns
@@ -180,8 +180,7 @@ class TestSendCampaign(object):
                                                               None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_email(
-            self, access_token_first, campaign_with_candidate_having_no_email,
-            campaign_with_smartlist):
+            self, access_token_first, campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate having no email associated. So, Custom error should be raised.
@@ -191,39 +190,39 @@ class TestSendCampaign(object):
             self.URL % campaign_with_candidate_having_no_email.id,
             access_token_first, campaign_with_candidate_having_no_email.id)
 
-    def test_campaign_send_to_two_candidate_with_unique_email_addresses(
+    def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with distinct email addresses). Email Campaign should be sent to
-        both candidate.
+        both candidates.
         :return:
         """
         campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
+        assert_mail(campaign_with_valid_candidate.email_subject)
 
-    def test_campaign_send_to_two_candidate_with_same_email_addresses(
+    def test_campaign_send_to_two_candidates_with_same_email_address(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates associated (with same email addresses). Email Campaign should be sent to
-        one email address.
+        candidates associated (with same email addresses). Email Campaign should not be sent to
+        any candidate.
         :return:
         """
         same_email = fake.email()
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
-        campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
-        response = requests.post(
-            self.URL % campaign.id, headers=dict(Authorization='Bearer %s'
-                                                               % access_token_first))
-        assert_campaign_send(response, campaign, user_first)
+        CampaignsCommonTests.campaign_test_with_no_valid_candidate(
+            self.URL % campaign_with_valid_candidate.id,
+            access_token_first, campaign_with_valid_candidate.id)
 
     def test_campaign_send_with_email_client_id(
             self, access_token_first, campaign_with_valid_candidate):
         """
+        Email client id can be Gmail, outlook etc.
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate with email address. Email Campaign should be not be sent to candidate as
         we are providing client_id. Response should be something like
@@ -233,7 +232,9 @@ class TestSendCampaign(object):
                   "candidate_email_address": "basit.qc@gmail.com",
                   "email_campaign_id": 1,
                   "new_html": "email body text",
-                  "new_text": "<img src=\"http://127.0.0.1:8014/v1/redirect/10082954\" />\n<html>\n <body>\n  <h1>\n   Welcome to email campaign service\n  </h1>\n </body>\n</html>"
+                  "new_text": "<img src=\"http://127.0.0.1:8014/v1/redirect/10082954\" />\n
+                  <html>\n <body>\n  <h1>\n   Welcome to email campaign service\n
+                  </h1>\n </body>\n</html>"
                 }
                   ]
             }
@@ -317,25 +318,26 @@ def assert_campaign_send(response, campaign, user, expected_count=1):
     # Need to add this as processing of POST request runs on Celery
     time.sleep(20)
     db.session.commit()
+    assert len(campaign.blasts) == 1
     campaign_blast = campaign.blasts[0]
     assert campaign_blast.sends == expected_count
     # assert on sends
     campaign_sends = campaign.sends
     assert len(campaign_sends) == expected_count
+    sends_url_conversions = []
     # assert on activity of individual campaign sends
-    for sms_campaign_send in campaign_sends:
+    for campaign_send in campaign_sends:
+        # Get "email_campaign_send_url_conversion" records
+        sends_url_conversions.extend(campaign_send.url_conversions)
         CampaignsCommonTests.assert_for_activity(user.id,
                                                  ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
-                                                 sms_campaign_send.id)
+                                                 campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
         CampaignsCommonTests.assert_for_activity(user.id,
                                                  ActivityMessageIds.CAMPAIGN_SEND,
                                                  campaign.id)
-    sends_url_conversions = []
-    # Get "sms_campaign_send_url_conversion" records
-    for campaign_send in campaign_sends:
-        sends_url_conversions.extend(campaign_send.url_conversions)
+
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it

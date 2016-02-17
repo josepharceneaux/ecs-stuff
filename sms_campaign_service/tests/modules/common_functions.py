@@ -52,7 +52,6 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     :param expected_count: Expected number of sends
     :return:
     """
-    # time.sleep(2*SLEEP_TIME)
     # assert on blasts
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.

@@ -191,7 +191,7 @@ class CampaignsCommonTests(object):
     @classmethod
     def campaign_test_with_no_valid_candidate(cls, url, token, campaign_id):
         """
-        This is the test to send campaign to such candidate(s) who do not have valid
+        This is the test to send campaign to candidate(s) who do not have valid
         data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
         will have no email or for SMS campaign, candidate will not have any mobile number
         associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.

@@ -21,14 +21,14 @@ def email_campaign_of_user_first(user_first):
 
 
 @pytest.fixture()
-def email_campaign_in_other_domain(user_from_diff_domain, campaign_with_smartlist):
+def email_campaign_in_other_domain(user_from_diff_domain, campaign_with_candidate_having_no_email):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     for user in different domain
     :return:
     """
     campaign = _create_email_campaign(user_from_diff_domain)
-    smartlist_id = campaign_with_smartlist.smartlists[0].smartlist_id
+    smartlist_id = campaign_with_candidate_having_no_email.smartlists[0].smartlist_id
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
     return campaign
@@ -39,7 +39,7 @@ def campaign_with_candidate_having_no_email(email_campaign_of_user_first,
                                             assign_roles_to_user_first,
                                             access_token_first,  talent_pool):
     """
-    This assigns smartlist ids with given campaign
+    This creates a campaign which has candidates associated having no email
     :param email_campaign_of_user_first:
     :return:
     """
@@ -48,22 +48,11 @@ def campaign_with_candidate_having_no_email(email_campaign_of_user_first,
 
 
 @pytest.fixture()
-def campaign_with_smartlist(email_campaign_of_user_first, assign_roles_to_user_first,
+def campaign_with_valid_candidate(email_campaign_of_user_first,
+                                  assign_roles_to_user_first,
                             access_token_first,  talent_pool):
     """
-    This returns a campaign which has one candidate associated having no email.
-    :param email_campaign_of_user_first:
-    :return:
-    """
-    return _create_email_campaign_smartlist(access_token_first, talent_pool,
-                                            email_campaign_of_user_first, emails_list=False)
-
-
-@pytest.fixture()
-def campaign_with_valid_candidate(email_campaign_of_user_first, assign_roles_to_user_first,
-                            access_token_first,  talent_pool):
-    """
-    This returns a campaign which has one candidate associated having no email.
+    This returns a campaign which has one candidate associated having email address.
     :param email_campaign_of_user_first:
     :return:
     """

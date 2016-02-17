@@ -418,8 +418,10 @@ def get_model(file_name, model_name, service_name=None):
         file_name='sms_campaign' and model_name ='SmsCampaign'
     :param file_name: Name of file from which we want to import some model
     :param model_name: Name of model we want to import
+    :param service_name: Name of service. e.g. sms_campaign_service etc
     :type file_name: str
     :type model_name: str
+    :type service_name: str
     :exception: Invalid usage
     :exception: AttributeError
     :exception: ImportError
@@ -430,6 +432,7 @@ def get_model(file_name, model_name, service_name=None):
     logger = current_app.config[TalentConfigKeys.LOGGER]
     model_name = snake_case_to_pascal_case(model_name)
     if service_name:
+        raise_if_not_instance_of(model_name, basestring)
         module_name = service_name + '_service.common.models.' + file_name
     else:
         module_name = file_name + '_service.common.models.' + file_name

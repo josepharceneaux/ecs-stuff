@@ -375,7 +375,13 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
         .group_by(CandidateEmail.address)
     # list of tuples (candidate id, email address)
-    return [(row.candidate_id, row.address) for row in candidate_email_rows]
+    ids_and_email = [(row.candidate_id, row.address) for row in candidate_email_rows]
+    filtered_email_rows = []
+    for _id, email in ids_and_email:
+        record = CandidateEmail.get_by_address(email)
+        if len(record) == 1:
+            filtered_email_rows.append((_id, email))
+    return filtered_email_rows
 
 
 def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,
@@ -488,7 +494,10 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
                 blast_datetime=blast_datetime
             )
             return result_sent
-        except Exception:
+        except Exception as error:
+            logger.exception('Error while sending campaign to '
+                             'candidate(id:%s). Error is: %s'
+                             % (candidate.id, error.message))
             db.session.rollback()
             return False
 
@@ -563,6 +572,49 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
                                                                email_campaign_send_id=email_campaign_send.id)
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
+
+# def does_candidate_have_unique_email(candidate):
+#     """
+#     Here we validate that if candidate has one unique mobile number associated.
+#     If candidate has only one unique mobile number associated, we return that candidate and
+#     its phone value.
+#     Otherwise we log the error.
+#
+#     - This method is used in send_campaign_to_candidate() method.
+#
+#     :param candidate: candidates obj
+#     :type candidate: Candidate
+#     :exception: InvalidUsage
+#     :exception: MultipleCandidatesFound
+#     :exception: CandidateNotFoundInUserDomain
+#     :return: Candidate obj and Candidate's mobile phone
+#     :rtype: tuple
+#
+#     **See Also**
+#     .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
+#     """
+#     raise_if_not_instance_of(candidate, Candidate)
+#     candidate_phones = candidate.candidate_phone
+#     mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
+#
+#     # filter only mobile numbers
+#     candidate_mobile_phone = filter(lambda candidate_phone:
+#                                     candidate_phone.phone_label_id == mobile_label_id,
+#                                     candidate_phones)
+#     if len(candidate_mobile_phone) == 1:
+#         # If this number is associated with multiple candidates, raise exception
+#         phone_number = candidate_mobile_phone[0].value
+#         _get_valid_candidate_phone(phone_number, self.user)
+#         return candidate, get_formatted_phone_number(phone_number)
+#     elif len(candidate_mobile_phone) > 1:
+#         logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
+#                      'candidate(id:%s) has multiple mobile phone numbers. '
+#                      'Campaign(id:%s). (User(id:%s))'
+#                      % (candidate.id, self.campaign.id, self.user.id))
+#     else:
+#         logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
+#                      'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
+#                      '(User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
 
 def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params, email_campaign_blast_id, exception):
     """ If failed to send email; Mark email bounced.

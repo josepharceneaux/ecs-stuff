@@ -1164,7 +1164,9 @@ class CampaignBase(object):
         .. see also:: send() method in SmsCampaignBase class.
         """
         if not candidates:
-            raise InvalidUsage('At least one candidate is required to send campaign.')
+            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
+                               % (self.campaign_type, self.campaign.id),
+                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
         pre_processed_data = self.pre_process_celery_task(candidates)
         try:
             # callback is a function which will be hit after campaign is sent to all candidates i.e.
