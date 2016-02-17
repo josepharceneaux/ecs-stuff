@@ -71,16 +71,15 @@ def process_resume(parse_params):
         # If there was an issue with candidate creation we want to forward the error message and
         # the error code supplied by Candidate Service.
         existing_candidate_id = response_dict.get('error', {}).get('id')
-        if existing_candidate_id:
-            #We have a candidate already with this email so lets path it up
-            parsed_resume['candidate']['id'] = existing_candidate_id
-            update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
-            response_dict = json.loads(update_response.content)
-            logger.info('Response Dict: {}'.format(response_dict))
-            pass
-        else:
+        if not existing_candidate_id:
             raise InvalidUsage(error_message=response_dict.get('error', {}).get(
                 'message', 'Error in candidate creating from resume service.'))
+        # We have a candidate already with this email so lets patch it up
+        parsed_resume['candidate']['id'] = existing_candidate_id
+        update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
+        response_dict = json.loads(update_response.content)
+        logger.info('Response Dict: {}'.format(response_dict))
+
     candidate_id = response_dict.get('candidates')[0]['id']
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
