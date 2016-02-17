@@ -209,9 +209,14 @@ def test_add_multiple_queue_items(token_fixture):
     assert queue_status == {'redis_key': queue_string, 'quantity': file_count}, (
         'Improperly Formatted redis post response for multiple items')
 
+
 def test_health_check():
     """HealthCheck/PingDom test endpoint."""
     response = requests.get(ResumeApiUrl.HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(ResumeApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200
 
 

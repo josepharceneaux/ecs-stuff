@@ -125,8 +125,7 @@ def reset_password(token):
     except BadSignature:
         raise ForbiddenError(error_message="Your encrypted token is not valid")
     except Exception as e:
-        raise InternalServerError(error_message="Your encrypted token could not be decrypted",
-                                  additional_error_info={"exception": e.message})
+        raise InvalidUsage(error_message="Your encrypted token could not be decrypted")
 
     if request.method == 'GET':
         return '', 204

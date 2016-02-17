@@ -55,7 +55,7 @@ class SmartlistResource(Resource):
     def get(self, **kwargs):
         """Retrieve list information
         List must belong to auth user's domain
-        Call this resource from url: /v1/smartlists :: to retrieve all the smartlists in user's domain
+        Call this resource from url: /v1/smartlists?page=1 :: to retrieve all the smartlists in user's domain
                                      /v1/smartlists/<int:id> :: to get single smartlist
 
         example: http://localhost:8008/v1/smartlists/2
@@ -82,7 +82,9 @@ class SmartlistResource(Resource):
             return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
         else:
             # Return all smartlists from user's domain
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token)}
+            page = request.args.get('page', 1)
+            page_size = request.args.get('page_size', 10)
+            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(page_size))}
 
     def post(self):
         """
