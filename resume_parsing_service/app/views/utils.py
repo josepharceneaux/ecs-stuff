@@ -17,7 +17,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     :return requests.response
     """
     try:
-        candidate_response = requests.post(CandidateApiUrl.CANDIDATES,
+        create_response = requests.post(CandidateApiUrl.CANDIDATES,
                                            data=json.dumps({'candidates': [candidate_dict]}),
                                            headers={'Authorization': formatted_token_str,
                                                     'Content-Type': 'application/json'})
@@ -25,7 +25,20 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
         raise InternalServerError("Resume Parsing service cannot reach Candidates API in "
                                   "create_parsed_resume_candidate. Exception: {}".format(
                                       error.message))
-    return candidate_response
+    return create_response
+
+
+def update_candidate_from_resume(candidate_dict, formatted_token_str):
+    try:
+        update_response = requests.patch(CandidateApiUrl.CANDIDATES,
+                                            data=json.dumps({'candidates': [candidate_dict]}),
+                                            headers={'Authorization': formatted_token_str,
+                                                     'Content-Type': 'application/json'})
+    except requests.exceptions.ConnectionError as error:
+        raise InternalServerError("Resume Parsing service cannot reach Candidates API in "
+                                  "update_candidate_from_resume. Exception: {}".format(
+                                      error.message))
+    return update_response
 
 
 #TODO: write tests for this.
