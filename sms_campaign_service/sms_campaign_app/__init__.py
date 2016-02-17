@@ -9,10 +9,10 @@ from healthcheck import HealthCheck
 from sms_campaign_service.common.routes import HEALTH_CHECK
 from sms_campaign_service.common.utils.models_utils import init_talent_app
 from sms_campaign_service.common.utils.talent_ec2 import get_ec2_instance_id
-from sms_campaign_service.common.talent_config_manager import (load_gettalent_config,
-                                                               TalentConfigKeys)
+from sms_campaign_service.common.talent_config_manager import (load_gettalent_config, TalentConfigKeys)
+from sms_campaign_service.common.talent_flask import TalentFlask
 
-flask_app = Flask(__name__)
+flask_app = TalentFlask(__name__)
 load_gettalent_config(flask_app.config)
 
 # logger setup

@@ -7,8 +7,9 @@ from healthcheck import HealthCheck
 from widget_service.common.models.db import db
 from widget_service.common.routes import WidgetApi, HEALTH_CHECK, GTApis
 from widget_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from widget_service.common.talent_flask import TalentFlask
 
-app = Flask(__name__, template_folder='templates', static_folder='static')
+app = TalentFlask(__name__, template_folder='templates', static_folder='static')
 app.config.from_object(config)  # Widget service has its own config as well
 load_gettalent_config(app.config)
 logger = app.config[TalentConfigKeys.LOGGER]

@@ -556,3 +556,7 @@ def test_health_check():
     response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
+    # Testing Health Check URL with trailing slash
+    response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200
+
