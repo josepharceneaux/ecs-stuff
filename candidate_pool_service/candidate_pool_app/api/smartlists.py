@@ -128,7 +128,6 @@ class SmartlistResource(Resource):
 
 @smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_UPDATE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
-@require_all_roles(DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS)
 def update_smartlists_stats():
     """
     This method will update the statistics of all smartlists daily.

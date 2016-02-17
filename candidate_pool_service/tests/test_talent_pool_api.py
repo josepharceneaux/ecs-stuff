@@ -11,13 +11,6 @@ def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, c
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
     }
 
-    # Logged-in user trying to update statistics of all talent_pools in database
-    status_code = talent_pool_update_stats(access_token_first)
-    assert status_code == 401
-
-    # Adding 'CAN_EDIT_TALENT_POOLS_STATS' role to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS, DomainRole.Roles.CAN_ADD_CANDIDATES])
-
     # Logged-in user trying to add candidates to talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200

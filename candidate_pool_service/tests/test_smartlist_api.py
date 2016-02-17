@@ -38,13 +38,6 @@ class TestSmartlistStatsUpdateApi(object):
 
     def test_update_smartlists_stats(self, access_token_first, user_first):
 
-        # Logged-in user trying to update statistics of all smartlists in database
-        status_code = self.call_smartlist_stats_update_api(access_token_first)
-        assert status_code == 401
-
-        # Adding 'CAN_EDIT_SMARTLISTS_STATS' role to user_first
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_SMARTLISTS_STATS])
-
         # Adding candidates with 'Apple' as current company
         populate_candidates(oauth_token=access_token_first, count=3, current_company='Apple')
 

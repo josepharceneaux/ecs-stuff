@@ -11,12 +11,7 @@ from common_functions import *
 
 def test_update_talent_pipeline_stats(access_token_first, user_first, talent_pipeline):
 
-    # Logged-in user trying to update statistics of all talent_pipelines in database
-    status_code = talent_pipeline_update_stats(access_token_first)
-    assert status_code == 401
-
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES_STATS,
-                                       DomainRole.Roles.CAN_ADD_CANDIDATES])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
 
     # Setting Empty search_params for talent_pipeline
     talent_pipeline.search_params = json.dumps({})
