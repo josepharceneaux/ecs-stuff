@@ -684,8 +684,9 @@ def create_or_update_candidate_from_params(
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
-        raise InvalidUsage(error_message='Candidate already exists, creation failed.',
-                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS)
+        raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                           additional_error_info={'id': candidate_id})
 
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:

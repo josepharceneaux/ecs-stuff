@@ -152,3 +152,7 @@ def test_health_check():
     import requests
     response = requests.get(AuthApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(AuthApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200

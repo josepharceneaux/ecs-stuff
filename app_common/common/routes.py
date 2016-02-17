@@ -127,6 +127,11 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
 
+    # CORS headers
+    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
+                                       "http://127.0.0.1",
+                                       "http://localhost"]}}
+
 
 class AuthApi(object):
     """
@@ -697,6 +702,8 @@ class SchedulerApiUrl(object):
 
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                           GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.CAMPAIGNS
@@ -706,11 +713,9 @@ class EmailCampaignEndpoints(object):
 
 
 class EmailCampaignUrl(object):
-    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
-    CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
+    CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + "/%s"
     SEND = CAMPAIGN + CampaignWords.SEND
-    URL_REDIRECT = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
+    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
                                 CampaignWords.REDIRECT + '/%s')
 

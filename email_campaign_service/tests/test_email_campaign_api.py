@@ -9,7 +9,8 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from email_campaign_service.common.routes import EmailCampaignUrl, CandidatePoolApiUrl
+from email_campaign_service.common.routes import EmailCampaignUrl, CandidatePoolApiUrl, \
+    EmailCampaignEndpoints, HEALTH_CHECK
 from email_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 from email_campaign_service.tests.conftest import (create_smartlist_with_candidate, fake, uuid)
 
@@ -341,3 +342,13 @@ def assert_campaign_send(response, campaign, user, expected_count=1):
         # delete url_conversion record
         assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+
+
+# Test for healthcheck
+def test_health_check():
+    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK + '/')
+    assert response.status_code == 200

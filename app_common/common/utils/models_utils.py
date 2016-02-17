@@ -50,9 +50,13 @@ from flask import current_app
 from flask.ext.cors import CORS
 
 # Application Specific
+from healthcheck import HealthCheck
 from ..models.db import db
+from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
-from ..error_handling import register_error_handlers
+from ..talent_flask import TalentFlask
+from ..utils.talent_ec2 import get_ec2_instance_id
+from ..error_handling import register_error_handlers, InvalidUsage
 from ..utils.handy_functions import camel_case_to_snake_case
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
@@ -199,12 +203,13 @@ def add_model_helpers(cls):
     cls.delete = delete
 
 
-def init_talent_app(flask_app):
+def init_talent_app(app_name):
     """
     This method initializes the flask app by doing followings:
-        1- Loads talent config manager to configure given app
-        2- Gets logger
-        3- Adds model helpers to the app. This is done to save the effort of adding
+        1- Create app by using TalentFlask
+        2- Loads talent config manager to configure given app
+        3- Gets logger
+        4- Adds model helpers to the app. This is done to save the effort of adding
             following lines again and again
 
             db.session.add(instance)
@@ -231,13 +236,19 @@ def init_talent_app(flask_app):
                         user_obj = User.get_by_id(1)
                         user_json_data  = user_obj.to_json()
 
-        4- Initializes redis store on app instance
-        5- Initializes the app by
-                    db.init_app(flask_app) flask SQLAlchemy builtin
-        6- Enable CORS
-        7- Registers error handlers for the app
-    :return: Returns the app
+        5- Initializes redis store on app instance
+        6- Initializes the app by
+                db.init_app(flask_app) flask SQLAlchemy builtin
+        7- Enable CORS
+        8- Registers error handlers for the app
+        9- Wraps the flask app and gives a healthcheck URL
+    :param app_name: Name of app to be initialize
+    :type app_name: str
+    :return: Returns the created app and logger
     """
+    if not app_name:
+        raise InvalidUsage('app_name is required to start an app.')
+    flask_app = TalentFlask(app_name)
     load_gettalent_config(flask_app.config)
     # logger init
     logger = flask_app.config[TalentConfigKeys.LOGGER]
@@ -249,11 +260,19 @@ def init_talent_app(flask_app):
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
 
-        # Enable CORS for all origins & endpoints
-        CORS(flask_app)
+        # Enable CORS for *.gettalent.com and localhost
+        CORS(flask_app, resources=GTApis.CORS_HEADERS)
+
         # Register error handlers
-        logger.debug("%s: Registering error handlers." % flask_app.name)
+        logger.info("%s: Registering error handlers" % flask_app.name)
         register_error_handlers(flask_app, logger)
+
+        # wrap the flask app and give a healthcheck URL
+        health = HealthCheck(flask_app, HEALTH_CHECK)
+        logger.info("Starting app %s in EC2 instance %s", flask_app.import_name,
+                    get_ec2_instance_id())
+        logger.info("Starting %s in %s environment"
+                     % (flask_app.name, flask_app.config[TalentConfigKeys.ENV_KEY]))
         return flask_app, logger
     except Exception as error:
         logger.exception("Couldn't start %s in %s environment because: %s"

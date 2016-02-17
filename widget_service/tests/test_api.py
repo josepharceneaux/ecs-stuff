@@ -168,6 +168,10 @@ def test_health_check():
     response = requests.get(WidgetApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
 
+    # Testing Health Check URL with trailing slash
+    response = requests.get(WidgetApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200
+
 
 def gen_mock_aois():
     subcategory = db.session.query(AreaOfInterest).filter(AreaOfInterest.parent_id != None).first()

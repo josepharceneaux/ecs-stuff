@@ -103,7 +103,7 @@ def add_talent_pool_candidate():
     start = 0
     while start < number_of_candidates:
 
-        for candidate in Candidate.query.slice(start, start + 10).all():
+        for candidate in Candidate.query.slice(start, start + 100).all():
             print "candidate in progress: {}".format(candidate)
             owner_user_id = candidate.user_id
             domain_id = User.get_domain_id(_id=owner_user_id)
@@ -113,7 +113,7 @@ def add_talent_pool_candidate():
                     db.session.add(TalentPoolCandidate(candidate_id=candidate.id, talent_pool_id=talent_pool.id))
                     db.session.commit()
 
-        start += 10
+        start += 100
 
 
 def add_talent_pool_group():
@@ -133,7 +133,6 @@ def add_talent_pool_group():
 
 
 if __name__ == '__main__':
-    print "***** starting role updates *****"
     print "database: {}".format(db)
     try:
         start_time = time.time()
