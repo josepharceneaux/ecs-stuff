@@ -1,13 +1,15 @@
-# TOOD: add docstring
+"""
+Test cases for meetup and eventbrite event i.e get/delete event by id or using with valid and invalid token.
+"""
 
 # Std imports
 import datetime
 import json
-
 import requests
 import sys
 
 # Application imports
+from social_network_service.common.models import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -172,20 +174,22 @@ class TestEventById(object):
         - Then again try to delete event using same event id and expect 403 response
         """
         event_id = event_in_db.id
+        event_data = event_in_db.to_json()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
                                    headers=auth_header(token))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
                                    headers=auth_header(token))
+
+        # check if event delete activity
+        user_id = event_data['user_id']
+        db.db.session.commit()
+        activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
+                                                          source_id=event_id,
+                                                          type_=ActivityMessageIds.EVENT_DELETE)
+        data = json.loads(activity.params)
+        assert data['event_title'] == event_data['title']
+
         logger.info(response.text)
         assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
-
-    # write tests for activity creation/modify/deletion
-    def test_activity_created(self, token, event_in_db):
-        event = event_in_db.to_json()
-        activities = Activity.get_by_user_id_type_source_id(user_id=event['user_id'],
-                                                            source_id=event['id'],
-                                                            type_=ActivityMessageIds.EVENT_CREATE)
-        data = json.loads(activities.params)
-        assert data['event_title'] == event['title']

@@ -468,8 +468,7 @@ class SocialNetworkBase(object):
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
                 status = True
-            # TODO: change hit rate limit
-            # If hit rate limit reached for eventbrite
+            # If hit rate limit reached for eventbrite, Too many requests
             elif response.status_code == 429:
                 data = response.json()
                 raise HitLimitReached('Error: %s, %s' %

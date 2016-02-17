@@ -4,7 +4,6 @@ import requests
 
 # Application specific imports
 from social_network_service.common.models.venue import Venue
-from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, get_headers

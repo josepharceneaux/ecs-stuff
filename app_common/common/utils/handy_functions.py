@@ -170,7 +170,7 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
-    if not isinstance(app, Flask):
+    if app and not isinstance(app, Flask):
         raise InvalidUsage(error_message="app instance should be flask")
     if app:
         logger = app.config[TalentConfigKeys.LOGGER]
@@ -189,7 +189,7 @@ def log_error(message, app=None):
     :return:
     """
 
-    if not isinstance(app, Flask):
+    if app and not isinstance(app, Flask):
         raise InvalidUsage(error_message="app instance should be flask")
     if app:
         logger = app.config[TalentConfigKeys.LOGGER]
@@ -223,7 +223,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
 
-    if not isinstance(app, Flask):
+    if app and not isinstance(app, Flask):
         raise InvalidUsage(error_message="app instance should be flask")
 
     if not isinstance(method_type, basestring):

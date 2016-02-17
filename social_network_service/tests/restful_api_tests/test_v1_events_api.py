@@ -6,14 +6,20 @@ This file contain tests for events api
 import datetime
 
 # Third-Part imports
+import json
+
 import requests
 
 # App specific imports
+from social_network_service.common.models import db
+from social_network_service.common.models.misc import Activity
+from social_network_service.common.utils.activity_utils import ActivityMessageIds
+from social_network_service.modules.custom_exceptions import SocialNetworkApiNotFoundException, VenueNotFound, \
+    EventInputMissing, InvalidDatetime, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
-    event_data_tests, unauthorize_test
-from social_network_service.tests.test_utilities import send_post_request
+    event_data_tests, unauthorize_test, send_post_request
 
 
 class TestResourceEvents:
@@ -68,7 +74,7 @@ class TestResourceEvents:
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
-    def test_events_postw_invalid_social_network_id(self, token, test_event):
+    def test_events_post_with_invalid_social_network_id(self, token, test_event):
         """
         Post event using invalid social_network_id i.e equal to -1. response should be 500 with 4052 error code
         (Social Network not found)
@@ -84,7 +90,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4052, 'Social Network not found'
+        assert 'error' in response and response['error']['code'] == SocialNetworkError.error_code, 'Social Network not found'
 
     def test_events_post_no_event_implementation(self, token, test_event):
         """
@@ -102,7 +108,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4062, 'Social Network have no events implementation'
+        assert 'error' in response and response['error']['code'] == SocialNetworkNotImplemented.error_code, 'Social Network have no events implementation'
 
     def test_events_post_no_event_organizer(self, token, test_event):
         """
@@ -122,7 +128,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 404
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4054, 'Event organizer not found'
+        assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, 'Event organizer not found'
 
     def test_events_post_no_venue(self, token, test_event):
         """
@@ -145,7 +151,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 404
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4065, 'Venue not found'
+        assert 'error' in response and response['error']['code'] == VenueNotFound.error_code, 'Venue not found'
 
     def test_events_post_invalid_start_datetime(self, token, test_event):
         """
@@ -172,7 +178,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 400
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4064, 'Invalid start datetime format'
+        assert 'error' in response and response['error']['code'] == InvalidDatetime.error_code, 'Invalid start datetime format'
 
     def test_events_post_invalid_end_datetime(self, token, test_event):
         """
@@ -200,7 +206,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 400
         response = response.json()
-        assert 'error' in response and response['error']['code'] == 4064, 'Invalid end datetime format'
+        assert 'error' in response and response['error']['code'] == InvalidDatetime.error_code, 'Invalid end datetime format'
         event_data['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     def test_events_post_with_valid_token(self, token, test_event):
@@ -218,6 +224,13 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 201, 'Status should be Ok, Resource Created (201)'
         event_id = response.json()['id']
+        db.db.session.commit()
+        activities = Activity.get_by_user_id_type_source_id(user_id=event_data['user_id'],
+                                                            source_id=event_id,
+                                                            type_=ActivityMessageIds.EVENT_CREATE)
+        data = json.loads(activities.params)
+        assert data['event_title'] == event_data['title']
+
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id     # Add created event id  in test_event so it can be deleted in tear_down
 
@@ -236,7 +249,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 400, 'It should fail'
         response = response.json()
-        assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
+        assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_missing_required_fields(self, token, meetup_missing_data, test_meetup_credentials):
         """
@@ -252,7 +265,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 400, 'It should fail'
         response = response.json()
-        assert response['error']['code'] == 4053, 'There should be an missing field error for %s KeyError' % key
+        assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
 
     def test_meetup_with_valid_address(self, token, meetup_event_data, test_meetup_credentials):
         """
@@ -284,7 +297,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 404, 'Venue not Found in database'
         response = response.json()
-        assert response['error']['code'] == 4065, \
+        assert response['error']['code'] == VenueNotFound.error_code, \
             'Event should not be created, address is invalid according to Meetup API'
 
 

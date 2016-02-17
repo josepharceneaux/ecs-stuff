@@ -3,7 +3,6 @@ import json
 import requests
 
 # App specific imports
-from social_network_service.common.utils.models_utils import get_by_id
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
@@ -17,7 +16,7 @@ class TestOrganizers:
         Send GET request with invalid token in header and response should be unauthorize access
         :return:
         """
-        response = requests.post(SocialNetworkApiUrl.EVENT_ORIGANIZERS,
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS,
                                  headers=auth_header('invalid_token'))
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
@@ -29,7 +28,7 @@ class TestOrganizers:
         :param token:
         :return:
         """
-        response = requests.get(SocialNetworkApiUrl.EVENT_ORIGANIZERS, headers=auth_header(token))
+        response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         results = response.json()
@@ -47,7 +46,7 @@ class TestOrganizers:
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
         }
-        response = requests.post(SocialNetworkApiUrl.EVENT_ORIGANIZERS, data=json.dumps(event_organizer),
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers('invalid_token'))
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
@@ -65,7 +64,7 @@ class TestOrganizers:
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
         }
-        response = requests.post(SocialNetworkApiUrl.EVENT_ORIGANIZERS, data=json.dumps(event_organizer),
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers(token))
         logger.info(response.text)
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
@@ -82,7 +81,7 @@ class TestOrganizers:
         Send DELETE request with invalid token in header and response should be 401 (unauthorize)
         :return:
         """
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORIGANIZERS, data=json.dumps({'ids': []}),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps({'ids': []}),
                                    headers=get_headers('invalid_token'))
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
@@ -94,7 +93,7 @@ class TestOrganizers:
         :return:
         """
         organizer_ids = {'ids': [-1]}  # event id which does not exists, test 207 status
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORIGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token))
         logger.info(response.text)
         assert response.status_code == 207, 'Unable to delete all organizers (207)'
@@ -111,13 +110,13 @@ class TestOrganizers:
         :return:
         """
         organizer_ids = {'ids': [organizer_in_db.id]}
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORIGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
 
         organizer_ids = {'ids': -1}  # invalid ids format to test 400 status code
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORIGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token))
         logger.info(response.text)
         assert response.status_code == 400, 'Bad Request'

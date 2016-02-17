@@ -1,35 +1,35 @@
 """
-
+Helper methods used in social network service test cases. like to create event test data for event creation
+or send request
 """
-# TODO: Comment
 
+# Std Imports
 import json
-
 import datetime
 import requests
 
+# Service imports
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
 
 
 def auth_header(token):
+    """
+    Return dictionary which consist of bearer token only.
+    :param token: bearer token
+    :return:dictionary containing bearer token
+    """
     return dict(Authorization='Bearer %s' % token)
 
 
 def get_headers(token):
+    """
+    Return header dictionary containing bearer token and content-type
+    :param token: bearer token
+    :return: dictionary containing bearer token
+    """
     return {'Authorization': 'Bearer %s' % token,
             'Content-Type': 'application/json'}
-
-
-def send_request(method, url, access_token, data=None, is_json=True):
-    # This method is being used for test cases, so it is sure that method has
-    #  a valid value like 'get', 'post' etc.
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, headers=headers)
 
 
 def unauthorize_test(method, url, data=None):
@@ -39,6 +39,14 @@ def unauthorize_test(method, url, data=None):
 
 
 def event_data_tests(method, url, data, token):
+    """
+
+    :param method:
+    :param url:
+    :param data:
+    :param token:
+    :return:
+    """
     event = data.copy()
 
     # Update with invalid event id
@@ -74,3 +82,26 @@ def event_data_tests(method, url, data, token):
         'start_datetime is modified'
     assert event['end_datetime'] == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
         'end_datetime is modified'
+
+
+def send_request(method, url, access_token, data=None, is_json=True):
+    # This method is being used for test cases, so it is sure that method has
+    #  a valid value like 'get', 'post' etc.
+    request_method = getattr(requests, method)
+    headers = dict(Authorization='Bearer %s' % access_token)
+    if is_json:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(data)
+    return request_method(url, data=data, headers=headers)
+
+
+def send_post_request(url, data, access_token):
+    """
+    This method sends a post request to a URL with given data using access_token for authorization in header
+    :param url: URL where post data needs to be sent
+    :param data: Data which needs to be sent
+    :param access_token: User access_token for authorization
+    :return:
+    """
+    return requests.post(url, data=json.dumps(data),
+                         headers=get_headers(access_token))

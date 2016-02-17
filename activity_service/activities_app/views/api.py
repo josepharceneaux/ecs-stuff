@@ -89,7 +89,7 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
 
 class TalentActivityManager(object):
     """API class for ActivityService."""
-    # TODO: add erik comment
+    # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
     MESSAGES = {
         ActivityMessageIds.RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
                                         "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",

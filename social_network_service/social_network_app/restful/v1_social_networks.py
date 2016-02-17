@@ -1,19 +1,18 @@
-# TODO: modify _ to - in docstring endpoints
 """
 This file contains API endpoints related to social network.
     Following is a list of API endpoints:
-        - Social Networks:  /social_networks
+        - Social Networks:  /social-networks
             GET     : Get all social networks
             POST    : Create a social network
             DELETE  : Delete a social network
 
-        - Meetup Groups: /social_networks/meetup/groups
+        - Meetup Groups: /social-networks/meetup/groups
             GET     : get Meetup groups owned by user.
 
-        - Get Token Validity: /social_networks/<int:id>/token/validity'
+        - Get Token Validity: /social-networks/<int:id>/token/validity'
             GET     : Get user access_token validity status for specified social network.
 
-        - Refresh Access Token: /social_network/<int:id>/token/refresh
+        - Refresh Access Token: /social-network/<int:id>/token/refresh
             GET: This resource refreshes access token for given social network for given user.
 
         - Venues: /venues
@@ -101,7 +100,7 @@ class SocialNetworksResource(Resource):
                        }
             data = json.dumps(social_network)
             response = requests.post(
-                                        API_URL + '/social_network/',
+                                        API_URL + '/social-network/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -142,7 +141,7 @@ class SocialNetworksResource(Resource):
                        }
             data = json.dumps(social_network_ids)
             response = requests.post(
-                                        API_URL + '/social_network/',
+                                        API_URL + '/social-network/',
                                         data=data,
                                         headers=headers,
                                     )
@@ -384,7 +383,7 @@ class GetTokenValidityResource(Resource):
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(
-                                        API_URL + /social_networks/13/token/validity,
+                                        API_URL + /social-networks/13/token/validity,
                                         headers=headers
                                     )
 
@@ -443,7 +442,7 @@ class RefreshTokenResource(Resource):
                         'Authorization': 'Bearer <access_token>',
                        }
             response = requests.get(
-                                        API_URL + '/social_networks/13/token/refresh',
+                                        API_URL + '/social-networks/13/token/refresh',
                                         headers=headers
                                     )
 
@@ -845,8 +844,7 @@ class EventOrganizersResource(Resource):
         organizer_data['user_id'] = request.user.id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
-        # TODO: change it to use routes url
-        headers = {'Location': '/%s/event-organizers/%s' % (SocialNetworkApi.VERSION, organizer.id)}
+        headers = {'Location': (SocialNetworkApi.EVENT_ORGANIZERS + '/%s') % organizer.id}
         return ApiResponse(dict(messsage='Event organizer created successfully',
                                 id=organizer.id),
                            status=201, headers=headers)
@@ -1060,7 +1058,7 @@ class ProcessAccessTokenResource(Resource):
                        }
             data = json.dumps(data)
             response = requests.post(
-                                        API_URL + '/social_networks/13/user/credentials',
+                                        API_URL + '/social-networks/13/user/credentials',
                                         data=data,
                                         headers=headers,
                                     )

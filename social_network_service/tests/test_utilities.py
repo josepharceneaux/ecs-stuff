@@ -6,8 +6,6 @@ __author__ = 'zohaib'
 
 # Standard Library
 from datetime import datetime
-import json
-import requests
 
 # Third Party
 import requests
@@ -26,7 +24,6 @@ from social_network_service.modules.utilities import get_utc_datetime
 from social_network_service.modules.utilities import import_from_dist_packages
 from social_network_service.modules.utilities import milliseconds_since_epoch
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
-from social_network_service.tests.helper_functions import get_headers
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
@@ -219,28 +216,3 @@ def test_milliseconds_since_epoch_to_dt():
 def test_health_check():
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
-
-
-# TODO: Move these methods
-
-def send_request(method, url, access_token, data=None, is_json=True):
-    # This method is being used for test cases, so it is sure that method has
-    #  a valid value like 'get', 'post' etc.
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, headers=headers)
-
-
-def send_post_request(url, data, access_token):
-    """
-    This method sends a post request to a URL with given data using access_token for authorization in header
-    :param url: URL where post data needs to be sent
-    :param data: Data which needs to be sent
-    :param access_token: User access_token for authorization
-    :return:
-    """
-    return requests.post(url, data=json.dumps(data),
-                         headers=get_headers(access_token))

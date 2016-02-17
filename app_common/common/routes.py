@@ -677,7 +677,7 @@ class SocialNetworkApi(object):
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     EVENTS = RELATIVE_VERSION % 'events'
-    EVENT = RELATIVE_VERSION % 'events/<int:id>'
+    EVENT = RELATIVE_VERSION % 'events/<int:event_id>'
     SOCIAL_NETWORKS = RELATIVE_VERSION % 'social-networks'
     MEETUP_GROUPS = RELATIVE_VERSION % 'social-networks/meetup-groups'
     TOKEN_VALIDITY = RELATIVE_VERSION % 'social-networks/<int:id>/token/validity'
@@ -700,7 +700,7 @@ class SocialNetworkApiUrl(object):
                                GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
-    # TODO: Make this url dynamic i.e staging , dev
+    # TODO: Make this URL dynamic i.e different for staging, dev or prod
     UI_APP_URL = 'http://localhost:3000'
     API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
     EVENTS = API_URL % 'events'
@@ -708,8 +708,8 @@ class SocialNetworkApiUrl(object):
     SOCIAL_NETWORKS = API_URL % 'social-networks'
     VENUES = API_URL % 'venues'
     VENUE = API_URL % 'venues/%s'
-    EVENT_ORIGANIZERS = API_URL % 'event-organizers'
-    EVENT_ORIGANIZER = API_URL % 'event-organizers/%s'
+    EVENT_ORGANIZERS = API_URL % 'event-organizers'
+    EVENT_ORGANIZER = API_URL % 'event-organizers/%s'
     TIMEZONES = API_URL % 'data/timezones'
     MEETUP_GROUPS = API_URL % 'social-networks/meetup-groups'
     TOKEN_VALIDITY = API_URL % 'social-networks/%s/token/validity'

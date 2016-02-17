@@ -42,9 +42,13 @@ WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 def index():
     return 'Welcome to social network service'
 
-# TODO: add comment
+
 @app.route(SocialNetworkApi.CODE)
 def authorize():
+    """
+    This is a redirect URL which will be hit when a user accept the invitation on meetup or eventbrite
+    :return:
+    """
     code = request.args.get('code')
     url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
     if 'state' in request.args:
