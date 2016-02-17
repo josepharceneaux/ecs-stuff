@@ -282,14 +282,25 @@ class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
-    list_order = db.Column('ListOrder', db.Integer)
-    filename = db.Column('Filename', db.String(260))
+    image_url = db.Column('ImageUrl', db.String(260))
     is_default = db.Column('IsDefault', db.Boolean)
-    # directory_tag_id = db.Column('DirectoryTagId', db.INT, db.ForeignKey('directory_tag.Id'))
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidatePhoto (id = '%r')>" % self.filename
+        return "<CandidatePhoto (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id: int|long
+        :rtype:  list
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class CandidateRating(db.Model):

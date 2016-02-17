@@ -20,7 +20,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -576,6 +576,19 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
         db.session.add(CandidateSubscriptionPreference(
             candidate_id=candidate_id, frequency_id=frequency_id
         ))
+    db.session.commit()
+
+
+#######################################
+# Helper Functions For Candidate Photos
+#######################################
+def add_photo(candidate_id, image_url, added_time=None):
+    """
+    Function will add a new entry into CandidatePhoto
+    :type candidate_id: int|long
+    :type photo_id:     int|long
+    """
+    db.session.add(CandidatePhoto(candidate_id=candidate_id, image_url=image_url, added_time=added_time))
     db.session.commit()
 
 

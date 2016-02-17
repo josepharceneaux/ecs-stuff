@@ -75,3 +75,6 @@ class CandidateCustomErrors(object):
     PREFERENCE_NOT_FOUND = 3141
     NO_PREFERENCES = 3142
     PREFERENCE_EXISTS = 3143
+
+    # Error codes for CandidatePhoto
+    PHOTO_NOT_FOUND = 3150

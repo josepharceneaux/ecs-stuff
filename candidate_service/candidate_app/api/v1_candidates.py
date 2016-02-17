@@ -42,7 +42,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateSubscriptionPreference
+    CandidateSubscriptionPreference, CandidatePhoto
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -1351,7 +1351,7 @@ class CandidatePreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpint:  DELETE /v1/candidates/:id/preferences
+        Endpoint:  DELETE /v1/candidates/:id/preferences
         Function will delete candidate's subscription preference
         """
         # Authenticated user & candidate ID
@@ -1372,3 +1372,56 @@ class CandidatePreferenceResource(Resource):
         db.session.delete(candidate_subs_pref)
         db.session.commit()
         return '', 204
+
+
+class CandidatePhotosResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/photos
+        Function will add candidate photo to db
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Check if candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+           i.  GET /v1/candidates/:id/photos
+          ii.  GET /v1/candidates/:id/photos/:id
+        Function will return candidate photo(s) information
+        """
+        # Authenticated user, candidate ID, and photo ID
+        authed_user, candidate_id= request.user, kwargs.get('candidate_id')
+        photo_id = kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if photo_id:
+            photo = CandidatePhoto.get_by_id(_id=photo_id)
+            if not photo:
+                raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
+                                    error_code=custom_error.PHOTO_NOT_FOUND)
+            return {'candidate_photo': {'id': photo_id, 'image_url': photo.image_url}}
+
+        else: # Get all of candidate's photos
+            photos = CandidatePhoto.get_by_candidate_id(candidate_id=candidate_id)
+            return {'candidate_photos': [{'id': photo.id, 'image_url': photo.image_url}
+                                         for photo in photos]}
+
