@@ -37,11 +37,8 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
 
     # Emptying TalentPipelineStats table
     TalentPipelineStats.query.delete()
-    talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline.id, total_number_of_candidates=10,
-                                               candidates_engagement=40)
 
-    db.session.add(talent_pipeline_stat)
-    db.session.commit()
+    generate_random_stats('talent-pipeline', talent_pipeline.id)
 
     # Logged-in user trying to get statistics of a non-existing talent_pipeline
     response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
@@ -50,10 +47,6 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
     # Logged-in user trying to get statistics of a talent_pipeline of different user
     response, status_code = talent_pipeline_get_stats(access_token_second, talent_pipeline.id)
     assert status_code == 403
-
-    # Logged-in user trying to get statistics of a talent_pipeline but with empty params
-    response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id)
-    assert status_code == 400
 
     from_date = str(datetime.now() - timedelta(2))
     to_date = str(datetime.now() - timedelta(1))
@@ -68,11 +61,7 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
     response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id)
 
     assert status_code == 200
-    assert len(response.get('talent_pipeline_data')) >= 1
-    assert 10 in [talent_pipeline_data. get('total_number_of_candidates') for talent_pipeline_data in
-                  response.get('talent_pipeline_data')]
-    assert 3 in [talent_pipeline_data. get('number_of_candidates_added') for talent_pipeline_data in
-                 response.get('talent_pipeline_data')]
+    assert len(response.get('talent_pipeline_data')) >= 10
 
 
 def test_talent_pipeline_candidate_get(access_token_first, access_token_second, talent_pool, talent_pipeline,

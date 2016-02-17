@@ -5,18 +5,17 @@ import json
 import requests
 from flask import request, Blueprint
 from flask_restful import Resource
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy import and_
 from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import update_talent_pools_stats_task
 from candidate_pool_service.common.models.user import DomainRole
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
@@ -560,34 +559,7 @@ def update_talent_pools_stats():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-
-    talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
-
-    for talent_pool_id in talent_pool_ids:
-
-        try:
-            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
-                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
-            total_candidates = len(talent_pool_candidate_ids)
-
-            number_of_engaged_candidates = 0
-            if talent_pool_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
-                int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool_id, total_number_of_candidates=total_candidates,
-                                               candidates_engagement=percentage_candidates_engagement)
-            db.session.add(talent_pool_stat)
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
-
+    update_talent_pools_stats_task.delay()
     return '', 204
 
 
@@ -626,8 +598,8 @@ def get_talent_pool_stats(talent_pool_id):
 
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_datetime >= from_date,
-                                                          TalentPoolStats.added_datetime <= to_date)).all().reverse()
-
+                                                          TalentPoolStats.added_datetime <= to_date)).all()
+    talent_pool_stats.reverse()
     talent_pool_stats = talent_pool_stats[::interval]
 
     # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
@@ -681,7 +653,9 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats.query.filter(and_(
             TalentPipelinesInTalentPoolStats.talent_pool_id == talent_pool_id,
             TalentPipelinesInTalentPoolStats.added_datetime >= from_date,
-            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all().reverse()
+            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all()
+
+    talent_pipelines_in_talent_pool_stats.reverse()
 
     talent_pipelines_in_talent_pool_stats = talent_pipelines_in_talent_pool_stats[::interval]
 

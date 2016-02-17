@@ -377,6 +377,8 @@ class CandidatePoolApiUrl(object):
     TALENT_POOL = TALENT_POOLS + '/%s'
     TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
     TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOL+"/%s"+CandidatePoolApiWords.STATS)
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOL + '/%s/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
     TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
     # Talent Pipeline

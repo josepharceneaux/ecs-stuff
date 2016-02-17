@@ -7,20 +7,18 @@ from flask import request, Blueprint
 from dateutil import parser
 from sqlalchemy import and_
 from dateutil.parser import parse
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (TALENT_PIPELINE_SEARCH_PARAMS,
-                                                                                        get_candidates_of_talent_pipeline,
-                                                                                        get_campaigns_of_talent_pipeline)
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
+    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_campaigns_of_talent_pipeline,
+    update_talent_pipelines_stats_task)
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -493,7 +491,7 @@ class TalentPipelineCandidates(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        return get_candidates_of_talent_pipeline(talent_pipeline)
+        return get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=request.oauth_token)
 
 
 class TalentPipelineCampaigns(Resource):
@@ -531,50 +529,7 @@ def update_talent_pipelines_stats():
     This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
-    talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id, TalentPipeline.talent_pool_id).all()
-    talent_pools = dict()
-
-    try:
-        for talent_pipeline_id, talent_pool_id in talent_pipelines:
-            # Return only candidate_ids
-            response = get_candidates_of_talent_pipeline(TalentPipeline.query.get(talent_pipeline_id), fields='id')
-            total_candidates = response.get('total_found')
-            talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
-
-            number_of_engaged_candidates = 0
-            if talent_pipeline_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pipeline_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates) / total_candidates * 100) if \
-                int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            talent_pipeline_stat = TalentPipelineStats(talent_pipeline_id=talent_pipeline_id,
-                                                       total_number_of_candidates=total_candidates,
-                                                       candidates_engagement=percentage_candidates_engagement
-                                                       )
-            db.session.add(talent_pipeline_stat)
-            db.session.commit()
-
-            if talent_pool_id in talent_pools:
-                talent_pools[talent_pool_id][0] += 1
-                talent_pools[talent_pool_id][1] += total_candidates
-            else:
-                talent_pools[talent_pool_id] = (1, total_candidates)
-
-        for talent_pool_id in talent_pools.keys():
-            talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats(
-                    talent_pool_id=talent_pool_id,
-                    average_number_of_candidates= talent_pools[talent_pool_id][1]/talent_pools[talent_pool_id][0]
-            )
-            db.session.add(talent_pipelines_in_talent_pool_stats)
-            db.session.commit()
-
-    except Exception as e:
-        db.session.rollback()
-        logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
-
+    update_talent_pipelines_stats_task.delay()
     return '', 204
 
 
@@ -614,7 +569,9 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     talent_pipeline_stats = TalentPipelineStats.query.filter(
             TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
             TalentPipelineStats.added_datetime >= from_date,
-            TalentPipelineStats.added_datetime <= to_date).all().reverse()
+            TalentPipelineStats.added_datetime <= to_date).all()
+
+    talent_pipeline_stats.reverse()
 
     talent_pipeline_stats = talent_pipeline_stats[::interval]
 
