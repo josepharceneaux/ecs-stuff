@@ -48,6 +48,7 @@ class CandidateCustomErrors(object):
     # Error codes for CandidateMilitaryService
     MILITARY_FORBIDDEN = 3080
     MILITARY_NOT_FOUND = 3081
+    MILITARY_INVALID_DATE = 3082
 
     # Error codes for CandidatePhone
     PHONE_FORBIDDEN = 3090
