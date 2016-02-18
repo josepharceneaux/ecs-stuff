@@ -41,7 +41,6 @@ from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.push_campaign_app import logger, celery_app, app
-from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -167,7 +166,7 @@ class PushCampaignBase(CampaignBase):
                     # expiry duration is of one year
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
                     signed_url = CampaignUtils.sign_redirect_url(redirect_url, expiry_time)
-                    if app.config[TalentConfigKeys.IS_DEV]:
+                    if CampaignUtils.IS_DEV:
                         # update the 'source_url' in "url_conversion" record.
                         # Source URL should not be saved in database. But we have tests written
                         # for Redirection endpoint. That's why in case of DEV,

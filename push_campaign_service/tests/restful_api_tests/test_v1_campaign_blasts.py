@@ -16,22 +16,22 @@ class TestCampaignBlasts(object):
 
     # Test URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
     def test_get_campaign_blasts_with_invalid_token(self, campaign_in_db):
-        unauthorize_test('get', URL % campaign_in_db.id, 'invalid_token')
+        unauthorize_test('get', URL % campaign_in_db['id'], 'invalid_token')
 
-    def test_get_campaign_blasts(self, token, campaign_in_db, test_smartlist,
-                                 campaign_blasts_count):
+    def test_get_campaign_blasts(self, token_first, campaign_in_db, smartlist_first,
+                                 campaign_blasts):
 
         # Wait for campaigns to be sent
-        time.sleep(SLEEP_TIME)
+        # time.sleep(SLEEP_TIME)
 
         # 404 Case, Campaign not found
-        invalid_id = get_non_existing_id(PushCampaign)
-        response = send_request('get', URL % invalid_id, token)
+        invalid_id = campaign_in_db['id'] + 1000
+        response = send_request('get', URL % invalid_id, token_first)
         assert response.status_code == NOT_FOUND, 'Resource should not be found'
 
         # 200 case: Campaign Blast successfully
-        response = send_request('get', URL % campaign_in_db.id, token)
+        response = send_request('get', URL % campaign_in_db['id'], token_first)
         assert response.status_code == OK, 'Could not get campaign blasts info'
         response = response.json()
-        assert response['count'] == campaign_blasts_count
-        assert len(response['blasts']) == campaign_blasts_count
+        assert response['count'] == len(campaign_blasts)
+        assert len(response['blasts']) == len(campaign_blasts)

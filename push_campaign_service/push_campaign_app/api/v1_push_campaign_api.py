@@ -109,6 +109,7 @@ from push_campaign_service.common.campaign_services.campaign_utils import Campai
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.campaign_services.validators import get_valid_json_data
 from push_campaign_service.common.error_handling import *
+from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 from push_campaign_service.common.utils.auth_utils import require_oauth
@@ -365,8 +366,8 @@ class CampaignByIdResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         response = dict(campaign=campaign.to_json())
         return response, 200
 
@@ -418,8 +419,8 @@ class CampaignByIdResource(Resource):
         data = get_valid_json_data(request)
         if not campaign_id > 0:
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         for key, value in data.items():
             if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
                 raise InvalidUsage('Invalid field in campaign data',
@@ -536,13 +537,17 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                   CampaignUtils.PUSH)
-        campaign_obj = PushCampaignBase(user.id)
-        campaign_obj.campaign = pre_processed_data['campaign']
-        task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
-        return dict(message='Campaign(id:%s) has been scheduled.' % campaign_id,
-                    task_id=task_id), 200
+
+        # create object of class PushCampaignBase
+        push_camp_obj = PushCampaignBase(user.id)
+        # call method schedule() to schedule the campaign and get the task_id
+        task_id = push_camp_obj.reschedule(request, campaign_id)
+        if task_id:
+            message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        else:
+            message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
+            task_id = push_camp_obj.campaign.scheduler_task_id
+        return dict(message=message, task_id=task_id), 200
 
     def put(self, campaign_id):
         """
@@ -586,8 +591,9 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.pre_process_schedule(request, campaign_id,
-                                                                   CampaignUtils.PUSH)
+        pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(request,
+                                                                                    campaign_id,
+                                                                                    CampaignUtils.PUSH)
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
@@ -730,8 +736,8 @@ class PushCampaignBlastSends(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         blast = PushCampaignBlast.get_by_id(blast_id)
         if not blast:
             raise ResourceNotFound('Campaign Blast not found with id: %s' % blast_id)
@@ -796,8 +802,8 @@ class PushCampaignSends(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         sends = []
         # Add sends for every blast to `sends` list to get all sends of a campaign.
         # A campaign can have multiple blasts
@@ -862,8 +868,8 @@ class PushCampaignBlasts(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts.all()]
         response = dict(blasts=blasts, count=len(blasts))
@@ -915,8 +921,8 @@ class PushCampaignBlastById(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
-        campaign = CampaignBase.validate_ownership_of_campaign(campaign_id, user.id,
-                                                               CampaignUtils.PUSH)
+        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
+                                                                    CampaignUtils.PUSH)
         # Serialize blasts of a campaign
         blast = campaign.blasts.filter_by(id=blast_id).first()
         if blast:
@@ -1032,10 +1038,10 @@ class PushCampaignUrlRedirection(Resource):
         :return: redirects to the destination URL else raises exception
         """
         try:
-            redirection_url = CampaignBase.process_url_redirect(url_conversion_id, CampaignUtils.PUSH,
-                                                                verify_signature=True,
-                                                                request_args=request.args,
-                                                                requested_url=request.full_path)
+            redirection_url = CampaignBase.url_redirect(url_conversion_id, CampaignUtils.PUSH,
+                                                        verify_signature=True,
+                                                        request_args=request.args,
+                                                        requested_url=request.full_path)
             return redirect(redirection_url)
         # In case any type of exception occurs, candidate should only get internal server error
         except Exception:
@@ -1043,3 +1049,117 @@ class PushCampaignUrlRedirection(Resource):
             # error.
             logger.exception("Error occurred while URL redirection for Push campaign.")
         return dict(message='Internal Server Error'), 500
+
+
+@api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
+class ResourceGetUrlConversionBySendId(Resource):
+
+    decorators = [require_oauth()]
+
+    def get(self, **kwargs):
+        """
+    This endpoint returns a UrlConversion object given by id
+    To get this resource, user must be in same domain as the owner of this send.
+
+        :Example:
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> data = {
+            >>>            "candidate_id": 268,
+            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
+            >>>         }
+            >>> _id = 10
+            >>> response = requests.get(PushCampaignApiUrl.URL_CONVERSION % _id,
+            >>>                          headers=headers)
+
+        .. Response::
+
+                {
+                    "url_conversion": {
+                        "id": 1638,
+                        "last_hit_time": "",
+                        "hit_count": 0,
+                        "added_time": "2016-02-12 12:46:09",
+                        "source_url": "http://127.0.0.1:8013/v1/redirect/1638?valid_until=1486903569.01&auth_user=no_user&extra=&signature=ha9B947UcLJ0jbqqSRF4O82%2Bb5E%3D",
+                        "destination_url": "https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-getting-started"
+                    }
+                }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    403 (Can't get send url conversion with different domain)
+                    500 (Internal Server Error)
+        """
+        user = request.user
+        _id = kwargs.get('_id')
+        send_id = kwargs.get('send_id')
+        if _id:
+            url_conversion = UrlConversion.get_by_id(_id)
+            if not url_conversion:
+                raise ResourceNotFound('Resource not found with id: %s' % _id)
+            if url_conversion.push_campaign_sends_url_conversions.first().send.candidate.user.domain_id == user.domain_id:
+                return {'url_conversion': url_conversion.to_json()}
+            else:
+                raise ForbiddenError('You can not get other domain url_conversion records')
+        elif send_id:
+            send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
+            if not send_url_conversion:
+                raise ResourceNotFound('Resource not found')
+            if send_url_conversion.send.candidate.user.domain_id == user.domain_id:
+                url_conversion = send_url_conversion.url_conversion.to_json()
+                return {'url_conversion': url_conversion}
+            else:
+                raise ForbiddenError('You can not get other domain url_conversion records')
+
+    def delete(self, **kwargs):
+        """
+    This endpoint deletes a UrlConversion object given by id
+    To delete this resource, user must be in same domain as the owner of this send.
+
+        :Example:
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> data = {
+            >>>            "candidate_id": 268,
+            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
+            >>>         }
+            >>> _id = 10
+            >>> response = requests.get(PushCampaignApiUrl.URL_CONVERSION % _id,
+            >>>                          headers=headers)
+
+        .. Response::
+
+                {
+                    "message": "UrlConversion (id: %s) deleted successfully"
+                }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    403 (Can't get send url conversion with different domain)
+                    500 (Internal Server Error)
+        """
+        user = request.user
+        _id = kwargs.get('_id')
+        send_id = kwargs.get('send_id')
+        if _id:
+            url_conversion = UrlConversion.get_by_id(_id)
+            if not url_conversion:
+                raise ResourceNotFound('Resource not found with id: %s' % _id)
+            if url_conversion.push_campaign_sends_url_conversions.first().send.candidate.user.domain_id == user.domain_id:
+                UrlConversion.delete(url_conversion)
+                return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            else:
+                raise ForbiddenError('You can not delete other domain url_conversion records')
+        elif send_id:
+            send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
+            if not send_url_conversion:
+                raise ResourceNotFound('Resource not found')
+            if send_url_conversion.send.candidate.user.domain_id == user.domain_id:
+                url_conversion = send_url_conversion.url_conversion
+                _id = url_conversion.id
+                UrlConversion.delete(url_conversion)
+                return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            else:
+                raise ForbiddenError('You can not delete other domain url_conversion records')

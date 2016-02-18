@@ -2,6 +2,7 @@
 This modules contains tests for Url Redirection endpoint
 If anything goes wrong, this endpoint raises InternalServerError (500)
 """
+from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import send_request
 from push_campaign_service.common.models.candidate import Candidate
 from push_campaign_service.common.models.misc import Activity, UrlConversion
@@ -16,7 +17,7 @@ class TestURLRedirectionApi(object):
     candidate should only get internal server error.
     """
 
-    def test_for_get(self, sample_user, campaign_in_db, schedule_a_campaign,
+    def test_for_get(self, token_first, user_first, campaign_in_db,
                      url_conversion):
         """
         GET method should give OK response. We check the "hit_count" and "clicks" before
@@ -25,26 +26,39 @@ class TestURLRedirectionApi(object):
         :return:
         """
         # stats before making HTTP GET request to source URL
-        campaign_blast = campaign_in_db.blasts.first()
-        hit_count, clicks = url_conversion.hit_count,  campaign_blast.clicks
-        response = send_request('get', url_conversion.source_url, '')
+        response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
+        assert response.status_code == 200
+        blasts = response.json()['blasts']
+        assert len(blasts) == 1
+        blast = blasts[0]
+        hit_count, clicks = url_conversion['hit_count'],  blast['clicks']
+        response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 200, 'Response should be ok'
-        assert response.url == url_conversion.destination_url
-        # stats after making HTTP GET request to source URL
-        PushCampaignBlast.session.commit()
-        updated_hit_counts, updated_clicks = url_conversion.hit_count,  campaign_blast.clicks
+        assert response.url == url_conversion['destination_url']
+
+        response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
+        assert response.status_code == 200
+        blasts = response.json()['blasts']
+        assert len(blasts) == 1
+        blast = blasts[0]
+
+        response = send_request('get', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
+        assert response.status_code == 200
+        url_conversion = response.json()['url_conversion']
+
+        updated_hit_counts, updated_clicks = url_conversion['hit_count'],  blast['clicks']
         assert updated_hit_counts == hit_count + 1
         assert updated_clicks == clicks + 1
-        assert Activity.get_by_user_id_type_source_id(sample_user.id,
-                                                      ActivityMessageIds.CAMPAIGN_PUSH_CLICK,
-                                                      campaign_in_db.id)
+        # assert Activity.get_by_user_id_type_source_id(user_first['id'],
+        #                                               ActivityMessageIds.CAMPAIGN_PUSH_CLICK,
+        #                                               campaign_in_db['id'])
 
     def test_get_with_no_signature(self, url_conversion):
         """
         Removing signature of signed redirect URL. It should get internal server error.
         :return:
         """
-        url_without_signature = url_conversion.source_url.split('?')[0]
+        url_without_signature = url_conversion['source_url'].split('?')[0]
         response = send_request('get', url_without_signature, '')
         assert response.status_code == 500
 
@@ -55,10 +69,10 @@ class TestURLRedirectionApi(object):
         """
         # forcing destination URL to be empty
         url_conversion.update(destination_url='')
-        response = send_request('get', url_conversion.source_url, '')
+        response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 500
 
-    def test_get_with_deleted_campaign(self, token, campaign_in_db,
+    def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):
         """
         Here we first delete the campaign, and then test functionality of process_url_redirect
@@ -67,7 +81,7 @@ class TestURLRedirectionApi(object):
         error.
         """
         PushCampaign.delete(campaign_in_db)
-        response = send_request('get', url_conversion.source_url, '')
+        response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 500
 
     def test_get_with_deleted_candidate(self, url_conversion,
@@ -80,7 +94,7 @@ class TestURLRedirectionApi(object):
         server error.
         """
         Candidate.delete(test_candidate)
-        response = send_request('get', url_conversion.source_url, '')
+        response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 500
 
     def test_get_with_deleted_url_conversion(self, url_conversion):
@@ -91,7 +105,7 @@ class TestURLRedirectionApi(object):
         It should get ResourceNotFound Error. But candidate should only get internal server error.
         So this test asserts we get internal server error.
         """
-        source_url = url_conversion.source_url
+        source_url = url_conversion['source_url']
         UrlConversion.delete(url_conversion)
         response = send_request('get', source_url, '')
         assert response.status_code == 500

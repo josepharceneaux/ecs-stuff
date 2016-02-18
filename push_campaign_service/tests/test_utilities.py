@@ -12,7 +12,7 @@ from push_campaign_service.common.utils.handy_functions import to_utc_str
 
 fake = Faker()
 
-API_URL = PushCampaignApi.HOST_NAME
+API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
 SLEEP_TIME = 20
 OK = 200

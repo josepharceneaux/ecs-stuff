@@ -16,9 +16,9 @@ class TestCampaignSends(object):
 
     # Test URL: /v1/campaigns/<int:campaign_id>/sends [GET]
     def test_get_campaign_sends_with_invalid_token(self, campaign_in_db):
-            unauthorize_test('get', URL % campaign_in_db.id, 'invalid_token')
+            unauthorize_test('get', URL % campaign_in_db['id'], 'invalid_token')
 
-    def test_get_campaign_sends_for_non_existing_campaign(self, token):
+    def test_get_campaign_sends_for_non_existing_campaign(self, token_first, campaign_in_db):
         """
         Test that accessing campaign sends of a non existing campaign
         raises ResourceNotFound 404 error
@@ -26,12 +26,12 @@ class TestCampaignSends(object):
         :return:
         """
         # 404 Case, Campaign not found
-        invalid_id = get_non_existing_id(PushCampaign)
-        response = send_request('get', URL % invalid_id, token)
+        invalid_id = campaign_in_db['id'] + 10000
+        response = send_request('get', URL % invalid_id, token_first)
         assert response.status_code == NOT_FOUND, 'Resource should not be found'
 
-    def test_get_campaign_sends_without_ownership(self, token2, campaign_in_db, test_smartlist,
-                                campaign_blasts_count):
+    def test_get_campaign_sends_without_ownership(self, token_second, campaign_in_db, smartlist_first,
+                                campaign_blasts):
         """
         Test that accessing campaign sends of a campaign created by other user will
         raise Forbidden 403 error
@@ -39,27 +39,25 @@ class TestCampaignSends(object):
         :return:
         """
         # 403 Case, Not authorized
-        response = send_request('get', URL % campaign_in_db.id, token2)
+        response = send_request('get', URL % campaign_in_db['id'], token_second)
         assert response.status_code == FORBIDDEN
 
-    def test_get_campaign_sends(self, token, campaign_in_db, test_smartlist,
-                                campaign_blasts_count):
+    def test_get_campaign_sends(self, token_first, campaign_in_db, smartlist_first,
+                                campaign_blasts):
         """
         Test success case. Get sends of a campaign with valid token, valid campaign id,
         campaign with some sends. It should return OK response (200 status code)
         :param token:
         :param campaign_in_db: push campaign creaed by fixture
-        :param test_smartlist: associated smarlist with this campaign
-        :param campaign_blasts_count: blasts count for above campaign created in fixture
+        :param smartlist_first: associated smarlist with this campaign
+        :param campaign_blasts: blasts for above campaign created in fixture
         :return:
         """
-        # Wait for campaigns to be sent
-        time.sleep(2 * SLEEP_TIME)
 
         # 200 case: Got Campaign Sends successfully
-        response = send_request('get', URL % campaign_in_db.id, token)
+        response = send_request('get', URL % campaign_in_db['id'], token_first)
         assert response.status_code == OK, 'Could not get campaign sends info'
         response = response.json()
         # Since each blast have one send, so total sends will be equal to number of blasts
-        assert response['count'] == campaign_blasts_count
-        assert len(response['sends']) == campaign_blasts_count
+        assert response['count'] == len(campaign_blasts)
+        assert len(response['sends']) == len(campaign_blasts)

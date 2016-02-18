@@ -1,6 +1,6 @@
 """ Initializer for Push Campaign Service App.
 """
-__author__ = 'Zohaib Ijaz <mzohaib.qc@gnail.com>'
+__author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 # Third Party
 from flask import Flask
 from celery import Celery
@@ -16,7 +16,7 @@ from push_campaign_service.common.talent_config_manager import (load_gettalent_c
 flask_app = Flask(__name__)
 load_gettalent_config(flask_app.config)
 
-logger = flask_app.config['LOGGER']
+logger = flask_app.config[TalentConfigKeys.LOGGER]
 
 health = HealthCheck(flask_app, "/healthcheck")
 
