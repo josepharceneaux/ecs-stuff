@@ -78,3 +78,4 @@ class CandidateCustomErrors(object):
 
     # Error codes for CandidatePhoto
     PHOTO_NOT_FOUND = 3150
+    PHOTO_FORBIDDEN = 3151
