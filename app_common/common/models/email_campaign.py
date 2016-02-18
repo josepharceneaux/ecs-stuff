@@ -39,7 +39,6 @@ class EmailCampaign(db.Model):
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all,delete-orphan',
                          passive_deletes=True, backref='blast')
-
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 

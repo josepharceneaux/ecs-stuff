@@ -5,22 +5,23 @@ import imaplib
 import requests
 
 from email_campaign_service.common.models.db import db
+from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from email_campaign_service.common.routes import EmailCampaignUrl, CandidatePoolApiUrl, \
-    EmailCampaignEndpoints, HEALTH_CHECK
+from email_campaign_service.common.routes import (EmailCampaignUrl, CandidatePoolApiUrl,
+                                                  EmailCampaignEndpoints, HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-from email_campaign_service.tests.conftest import (create_smartlist_with_candidate, fake, uuid)
-
+from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
+                                                                  delete_campaign)
 
 __author__ = 'jitesh'
 
 
 class TestGetCampaigns(object):
     """
-    Here are the tests of /v1/campaigns
+    Here are the tests of /v1/email-campaigns
     """
     def test_get_all_campaigns(self, campaign_with_candidate_having_no_email, access_token_first,
                                talent_pipeline):
@@ -46,7 +47,7 @@ class TestGetCampaigns(object):
 
 class TestCreateCampaign(object):
     """
-    Here are the tests for creating a campaign from endpoint /v1/campaigns
+    Here are the tests for creating a campaign from endpoint /v1/email-campaigns
     """
 
     def test_create_email_campaign(self, access_token_first, talent_pool,
@@ -69,7 +70,7 @@ class TestCreateCampaign(object):
             "list_ids": [smartlist_id],
             # "email_client_id": 1
         }
-        # add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
+
         r = requests.post(
             url=EmailCampaignUrl.CAMPAIGNS,
             data=json.dumps(data),
@@ -83,6 +84,7 @@ class TestCreateCampaign(object):
         time.sleep(10)
         # Check for email received.
         assert_mail(email_subject)
+        delete_campaign(resp_object['campaign'])
 
     def test_create_email_campaign_whitespace_campaign_name(self, assign_roles_to_user_first,
                                                             access_token_first, talent_pool):
@@ -116,7 +118,7 @@ class TestCreateCampaign(object):
 
 class TestSendCampaign(object):
     """
-    Here are the tests for sending a campaign from endpoint /v1/campaigns/send
+    Here are the tests for sending a campaign from endpoint /v1/email-campaigns/send
     """
     METHOD = 'post'
     URL = EmailCampaignUrl.SEND
@@ -220,11 +222,11 @@ class TestSendCampaign(object):
             access_token_first, campaign_with_valid_candidate.id)
 
     def test_campaign_send_with_email_client_id(
-            self, access_token_first, campaign_with_valid_candidate):
+            self, user_first, access_token_first, campaign_with_valid_candidate):
         """
         Email client can be Outlook Plugin, Browser etc.
-        User auth token is valid, campaign has one smart list associated. Smartlist has one
-        candidate with email address. Email Campaign should be not be sent to candidate as
+        User auth token is valid, campaign has one smart list associated. Smartlist has tow
+        candidates with email address. Email Campaign should be not be sent to candidate as
         we are providing client_id. Response should be something like
             {
                   "email_campaign_sends": [
@@ -251,6 +253,7 @@ class TestSendCampaign(object):
         assert 'new_text' in email_campaign_sends
         assert 'email_campaign_id' in email_campaign_sends
         assert campaign.id == email_campaign_sends['email_campaign_id']
+        assert_campaign_send(response, campaign, user_first, 2, email_client=True)
 
 
 # def test_create_email_campaign_with_email_client(user_first, access_token_first):
@@ -301,7 +304,7 @@ def assert_mail(email_subject):
     assert mail_found, "Mail with subject %s was not found." % email_subject
 
 
-def assert_campaign_send(response, campaign, user, expected_count=1):
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -313,8 +316,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1):
     """
     assert response.status_code == 200
     assert response.json()
-    json_resp = response.json()
-    assert str(campaign.id) in json_resp['message']
+    if not email_client:
+        json_resp = response.json()
+        assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
     time.sleep(20)
     db.session.commit()
@@ -329,9 +333,10 @@ def assert_campaign_send(response, campaign, user, expected_count=1):
     for campaign_send in campaign_sends:
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
-        CampaignsCommonTests.assert_for_activity(user.id,
-                                                 ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
-                                                 campaign_send.id)
+        if not email_client:
+            CampaignsCommonTests.assert_for_activity(user.id,
+                                                     ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                                     campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
         CampaignsCommonTests.assert_for_activity(user.id,

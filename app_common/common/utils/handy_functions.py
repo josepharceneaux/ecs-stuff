@@ -201,10 +201,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == ResourceNotFound.http_status_code():
                 # 404 is the error code for Resource Not found
-                raise ResourceNotFound(response.json()['error']['message'])
+                raise ResourceNotFound(str(e.response.json()))
             elif e.response.status_code == UnauthorizedError.http_status_code():
                 # 401 is the error code for Not Authorized user(Expired Token)
-                raise UnauthorizedError(response.json()['error']['message'])
+                raise UnauthorizedError(str(e.response.json()))
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:

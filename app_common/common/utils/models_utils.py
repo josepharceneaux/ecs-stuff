@@ -269,10 +269,9 @@ def init_talent_app(app_name):
 
         # wrap the flask app and give a healthcheck URL
         health = HealthCheck(flask_app, HEALTH_CHECK)
-        logger.info("Starting app %s in EC2 instance %s", flask_app.import_name,
-                    get_ec2_instance_id())
-        logger.info("Starting %s in %s environment"
-                     % (flask_app.name, flask_app.config[TalentConfigKeys.ENV_KEY]))
+        logger.info("Starting %s in %s environment in EC2 instance %s"
+                    % (flask_app.import_name, flask_app.config[TalentConfigKeys.ENV_KEY],
+                       get_ec2_instance_id()))
         return flask_app, logger
     except Exception as error:
         logger.exception("Couldn't start %s in %s environment because: %s"

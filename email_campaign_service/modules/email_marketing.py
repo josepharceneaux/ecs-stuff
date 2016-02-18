@@ -1,8 +1,6 @@
 import re
 import json
 import datetime
-import requests
-from operator import itemgetter
 
 from celery import chord
 from sqlalchemy import and_
@@ -10,8 +8,10 @@ from sqlalchemy import desc
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
-from email_campaign_service.modules.utils import (create_email_campaign_url_conversions, do_mergetag_replacements,
-                                                  get_candidates_of_smartlist, TRACKING_URL_TYPE)
+from email_campaign_service.modules.utils import (create_email_campaign_url_conversions,
+                                                  do_mergetag_replacements,
+                                                  get_candidates_of_smartlist,
+                                                  TRACKING_URL_TYPE)
 from email_campaign_service.email_campaign_app import logger, celery_app, app
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import User
@@ -29,7 +29,7 @@ from email_campaign_service.common.utils.talent_reporting import email_notificat
 from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl, CandidateApiUrl
+from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.utils.candidate_service_calls import get_candidate_subscription_preference
 
@@ -70,8 +70,8 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                                    user_id=user_id,
                                    is_hidden=0,
                                    email_subject=email_subject,
-                                   email_from=email_from,
-                                   email_reply_to=email_reply_to,
+                                   email_from=email_from.strip(),
+                                   email_reply_to=email_reply_to.strip(),
                                    email_body_html=email_body_html,
                                    email_body_text=email_body_text,
                                    send_time=send_time,
@@ -144,8 +144,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False,
-                            email_client_id=None):
+def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -153,7 +152,6 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False,
     :param campaign:    email campaign object
     :param list_ids: list associated with email campaign if given it will take the ids provided else extract out from email campaign object
     :param new_candidates_only: If emails need to be sent to new candidates only i.e. to those candidates whom emails were not sent previously
-    :param email_client_id: email_client id if email is sent from email_client.
         If email is sent from client it will not send the actual emails and returns the new html (with url conversions and other replacements)
     :return:            number of emails sent
     """
@@ -188,9 +186,8 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False,
                                                   sent_time=blast_datetime)
         EmailCampaignBlast.save(email_campaign_blast)
         blast_params = dict(sends=0, bounces=0)
-        logger.info('blast record is %s' % email_campaign_blast.to_json())
-        logger.info('campaign record is %s' % campaign.to_dict())
-        logger.info('user id is %s' % user.id)
+        logger.info('Email campaign record is %s. blast record is %s. User(id:%s).'
+                    % (campaign.to_dict(), email_campaign_blast.to_json(), user.id))
         list_of_new_email_html_or_text = []
         # Do not send mail if email_client_id is provided
         if campaign.email_client_id:
@@ -200,19 +197,23 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False,
                     campaign, candidate_id, blast_params=blast_params,
                     email_campaign_blast_id=email_campaign_blast.id,
                     blast_datetime=blast_datetime)[:2]
-                logger.info("Marketing email added through client %s", email_client_id)
+                logger.info("Marketing email added through client %s", campaign.email_client_id)
                 resp_dict = dict()
                 resp_dict['new_html'] = new_html
                 resp_dict['new_text'] = new_text
                 resp_dict['email'] = candidate_address
                 list_of_new_email_html_or_text.append(resp_dict)
             db.session.commit()
-            logger.info('campaign record is %s' % campaign.to_dict())
-            update_candidate_document_on_cloud(user, candidate_ids_and_emails,
-                                               new_candidates_only, campaign,
-                                               len(list_of_new_email_html_or_text))
-            return list_of_new_email_html_or_text
 
+            # This will be needed later
+            # update_candidate_document_on_cloud(user, candidate_ids_and_emails,
+            #                                    new_candidates_only, campaign,
+            #                                    len(list_of_new_email_html_or_text))
+            # Update campaign blast with number of sends
+            _update_blast_sends(email_campaign_blast, len(candidate_ids_and_emails),
+                          campaign, user, new_candidates_only)
+            return list_of_new_email_html_or_text
+        logger.info('Emails are being sent using Celery.')
         # For each candidate, create URL conversions and send the email via Celery task
         send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
                                     blast_datetime, campaign,
@@ -267,44 +268,33 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
 
     logger.info('celery_result: %s' % celery_result)
     sends = celery_result.count(True)
-    email_campaign_blast.update(sends=email_campaign_blast.sends + sends)
-    logger.debug('email campaign has been sent to %s candidates.' % sends)
-    update_candidate_document_on_cloud(user, candidate_ids_and_emails,
-                                       new_candidates_only, campaign, sends)
+    _update_blast_sends(email_campaign_blast, sends, campaign, user, new_candidates_only)
 
-
-def update_candidate_document_on_cloud(user, candidate_ids_and_emails,
-                                       new_candidates_only, campaign, sends):
-    """
-    Once campaign has been sent to candidates, here we update their documents on cloud search.
-    :param user:
-    :param candidate_ids_and_emails:
-    :param new_candidates_only:
-    :param campaign:
-    :param sends:
-    :return:
-    """
-    try:
-        # Update Candidate Documents in Amazon Cloud Search
-        headers = CampaignBase.get_authorization_header(user.id)
-        headers.update(JSON_CONTENT_TYPE_HEADER)
-        with app.app_context():
-            response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
-                                     data=json.dumps({'candidate_ids': map(itemgetter(0),
-                                                                           candidate_ids_and_emails)}))
-
-        if response.status_code != 204:
-            raise Exception("Status Code: %s Response: %s"
-                            % (response.status_code, response.json()))
-    except Exception as e:
-        error_message = "Couldn't update Candidate Documents in Amazon Cloud Search because: %s" \
-                        % e.message
-        logger.exception(error_message)
-        raise InvalidUsage(error_message)
-
-    logger.info("Marketing email batch completed, emails sent=%s, "
-                "campaign=%s, user=%s, new_candidates_only=%s",
-                sends, campaign.name, user.email, new_candidates_only)
+# This will be used in later version
+# def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
+#     """
+#     Once campaign has been sent to candidates, here we update their documents on cloud search.
+#     :param user:
+#     :param candidate_ids_and_emails:
+#     :return:
+#     """
+#     try:
+#         # Update Candidate Documents in Amazon Cloud Search
+#         headers = CampaignBase.get_authorization_header(user.id)
+#         headers.update(JSON_CONTENT_TYPE_HEADER)
+#         with app.app_context():
+#             response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+#                                      data=json.dumps({'candidate_ids': map(itemgetter(0),
+#                                                                            candidate_ids_and_emails)}))
+#
+#         if response.status_code != 204:
+#             raise Exception("Status Code: %s Response: %s"
+#                             % (response.status_code, response.json()))
+#     except Exception as e:
+#         error_message = "Couldn't update Candidate Documents in Amazon Cloud Search because: %s" \
+#                         % e.message
+#         logger.exception(error_message)
+#         raise InvalidUsage(error_message)
 
 
 def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
@@ -380,6 +370,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         record = CandidateEmail.get_by_address(email)
         if len(record) == 1:
             filtered_email_rows.append((_id, email))
+        else:
+            logger.error('%s candidates found for email address %s.' % (len(record), email))
     return filtered_email_rows
 
 
@@ -432,7 +424,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                     # Can't be '', otherwise, text_body will not show in email
                                     text_body=new_text,
                                     to_addresses=to_addresses,
-                                    reply_address=campaign.email_reply_to,
+                                    reply_address=campaign.email_reply_to.strip(),
                                     # BOTO doesn't seem to work with an array as to_addresses
                                     body=None,
                                     email_format='html' if campaign.email_body_html else 'text')
@@ -455,8 +447,10 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                      params=dict(campaign_name=campaign.name,
                                                  candidate_name=candidate.name),
                                      auth_header=headers)
-    except Exception:
-        logger.exception('Error occurred while creating campaign send activity.')
+    except Exception as error:
+        logger.exception('Could not add `campaign send activity` for '
+                         'email-campaign(id:%s) and User(id:%s) because: '
+                         '%s' % (campaign.id, user.id, error.message))
     return True
 
 
@@ -494,9 +488,9 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
             )
             return result_sent
         except Exception as error:
-            logger.exception('Error while sending campaign to '
+            logger.exception('Error while sending email campaign(id:%s) to '
                              'candidate(id:%s). Error is: %s'
-                             % (candidate.id, error.message))
+                             % (campaign.id, candidate.id, error.message))
             db.session.rollback()
             return False
 
@@ -681,3 +675,23 @@ def get_subscription_preference(candidate_id):
         db.session.query(CandidateSubscriptionPreference).filter(
                 CandidateSubscriptionPreference.id.in_(email_prefs_ids)).delete(synchronize_session='fetch')
         return None
+
+
+def _update_blast_sends(blast_obj, new_sends, campaign, user, new_candidates_only):
+    """
+    This updates the email campaign blast object with number of sends and logs that
+    Marketing email batch completed.
+    :param blast_obj:
+    :param new_sends:
+    :param campaign:
+    :param user:
+    :param new_candidates_only:
+    :return:
+    """
+    blast_obj.update(sends=blast_obj.sends + new_sends)
+    # This will be needed later
+    # update_candidate_document_on_cloud(user, candidate_ids_and_emails)
+    logger.info("Marketing email batch completed, emails sent=%s, "
+                "campaign=%s, user=%s, new_candidates_only=%s",
+                new_sends, campaign.name, user.email, new_candidates_only)
+

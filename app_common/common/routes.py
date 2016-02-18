@@ -428,6 +428,7 @@ class CampaignWords(object):
     SEND = '/send'
     BLASTS = '/blasts'
     REPLIES = '/replies'
+    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
 
 
 class SmsCampaignApi(object):
@@ -702,11 +703,12 @@ class SchedulerApiUrl(object):
 
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
+
     HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
                            GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     API_URL = '/%s/%s' % (VERSION, '%s')
-    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.CAMPAIGNS
+    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')

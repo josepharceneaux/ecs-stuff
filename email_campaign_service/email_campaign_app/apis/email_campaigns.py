@@ -85,7 +85,7 @@ class EmailCampaignApi(Resource):
 
 class EmailCampaignSendApi(Resource):
     """
-    This endpoint looks like /v1/campaigns/:id/send
+    This endpoint looks like /v1/email-campaigns/:id/send
     """
 
     decorators = [require_oauth()]
@@ -103,24 +103,22 @@ class EmailCampaignSendApi(Resource):
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-
-        # remove oauth_token instead use trusted server to server calls
         results_send = send_emails_to_campaign(campaign, new_candidates_only=False)
         if campaign.email_client_id:
-            if isinstance(results_send, list):
-                data = {
-                    'email_campaign_sends': [
-                        {
-                            'email_campaign_id': campaign.id,
-                            'new_html': new_email_html_or_text.get('new_html'),
-                            'new_text': new_email_html_or_text.get('new_text'),
-                            'candidate_email_address': new_email_html_or_text.get('email')
-                        } for new_email_html_or_text in results_send
-                    ]
-                }
-                return jsonify(data)
-            else:
+            if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")
+            data = {
+                'email_campaign_sends': [
+                    {
+                        'email_campaign_id': campaign.id,
+                        'new_html': new_email_html_or_text.get('new_html'),
+                        'new_text': new_email_html_or_text.get('new_text'),
+                        'candidate_email_address': new_email_html_or_text.get('email')
+                    } for new_email_html_or_text in results_send
+                ]
+            }
+            return jsonify(data)
+
         return dict(message='email_campaign(id:%s) is being sent to candidates.'
                             % campaign_id), 200
 
