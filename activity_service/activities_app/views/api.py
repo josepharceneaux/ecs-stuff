@@ -83,52 +83,6 @@ def get_activity_messages():
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
-@mod.route(ActivityApi.LAST_READ, methods=['GET', 'PUT'])
-@require_oauth()
-def get_user_last_activity_read_datetime():
-    """
-    This endpoint returns or update last_read_datetime for current user.
-    last_read_datetime helps to know what are the activities that user has not seen yet.
-    url: /v1/last-read
-
-    To send a put request (to update this time field), send JSON data as payload of PUT request
-
-    data = {
-            "last_read_datetime": "2016-02-10T12:12:12.000"
-        }
-
-
-    .. Response::
-
-        for both get and put request
-            {
-                "last_read_datetime": "2016-02-10 20:20:20"
-            }
-    :return: dict
-    """
-    user = request.user
-    if request.method == 'GET':
-        last_read_datetime = user.last_read_datetime
-        return jsonify(dict(last_read_datetime=last_read_datetime))
-    elif request.method == 'PUT':
-        data = request.get_json()
-        if isinstance(data, dict):
-            last_read_datetime = data.get('last_read_datetime')
-            if last_read_datetime:
-                try:
-                    last_read_datetime = datetime.strptime(last_read_datetime, ISO_FORMAT)
-                except:
-                    raise InvalidUsage('last_read_datetime is not in valid format. '
-                                       'Required format: %s' % ISO_FORMAT)
-                user.last_read_datetime = last_read_datetime
-                db.session.commit()
-                return jsonify(dict(last_read_datetime=last_read_datetime))
-            else:
-                raise InvalidUsage('last_read_datetime should have a valid datetime value')
-        else:
-            raise InvalidUsage('Kindly send valid json data')
-
-
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
 @require_oauth()
 def post_activity():
@@ -153,7 +107,7 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         source_table=source_table,
         source_id=source_id,
         params=json.dumps(params) if params else None,
-        added_time=datetime.now()
+        added_time=datetime.utcnow()
     )
     try:
         db.session.add(activity)
