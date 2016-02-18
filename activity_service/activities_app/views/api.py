@@ -9,6 +9,7 @@ from datetime import datetime
 import json
 import re
 from time import time
+from dateutil import parser
 # framework specific
 from flask import Blueprint
 from flask import jsonify
@@ -41,10 +42,10 @@ def get_activities(page):
         return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
     else:
         request_start_time = request_end_time = None
-        if request.args.get('start_time'): request_start_time = datetime.strptime(
-            request.args.get('start_time'), ISO_FORMAT)
-        if request.args.get('end_time'): request_end_time = datetime.strptime(
-            request.args.get('end_time'), ISO_FORMAT)
+        if request.args.get('start_time'):
+            request_start_time = parser.parse(request.args.get('start_time'))
+        if request.args.get('end_time'):
+            request_end_time = parser.parse(request.args.get('start_time'))
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
         try:
             request_page = int(page)
