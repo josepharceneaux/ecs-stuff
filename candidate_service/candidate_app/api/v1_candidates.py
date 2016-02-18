@@ -1386,10 +1386,10 @@ class CandidatePhotosResource(Resource):
         # Authenticated user
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
-        body_dict = get_json_if_exist(_request=request)
-
         # Check if candidate exists & is not web-hidden
         get_candidate_if_exists(candidate_id=candidate_id)
+
+        body_dict = get_json_if_exist(_request=request)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1418,10 +1418,19 @@ class CandidatePhotosResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if photo_id:
+            # Photo must be recognized
             photo = CandidatePhoto.get_by_id(_id=photo_id)
+            """
+            :type photo: CandidatePhoto
+            """
             if not photo:
                 raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
                                     error_code=custom_error.PHOTO_NOT_FOUND)
+
+            # Photo must belong to candidate
+            if photo.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
+
             return {'candidate_photo': {'id': photo_id, 'image_url': photo.image_url,
                                         'is_default': photo.is_default}}
 
@@ -1477,10 +1486,19 @@ class CandidatePhotosResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if photo_id:
+            # Photo must already exist
             photo = CandidatePhoto.get_by_id(_id=photo_id)
+            """
+            :type photo: CandidatePhoto
+            """
             if not photo:
                 raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
                                     error_code=custom_error.PHOTO_NOT_FOUND)
+
+            # Photo must belong to candidate
+            if photo.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
+
             db.session.delete(photo)
 
         else: # Delete all of candidate's photos
