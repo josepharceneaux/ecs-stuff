@@ -153,7 +153,7 @@ def parse_resume(file_obj, filename_str):
             except Exception as e:
                 logger.exception(
                     'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
-                        filename_str), e.message)
+                        filename_str, e.message))
                 return None
             file_obj.seek(0)
             doc_content = file_obj.read()
