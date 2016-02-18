@@ -319,6 +319,7 @@ def validate_and_format_data(request_data):
             request_vars[key] = value
     return request_vars
 
+
 def is_valid_email_client(client_id):
     """
     Validate if client id is in the system
@@ -326,3 +327,16 @@ def is_valid_email_client(client_id):
     :return: string: email client name
     """
     return db.session.query(EmailClient.name).filter(EmailClient.id == int(client_id)).first()
+
+
+def is_date_valid(date):
+    """
+    Checks if date format is: yyyy-mm-dd
+    :type date:  basestring|str
+    :rtype:  bool
+    """
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False
