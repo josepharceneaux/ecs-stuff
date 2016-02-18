@@ -1,4 +1,3 @@
-from flask import Flask
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
 from app_common.common.models.db import db
@@ -21,8 +20,9 @@ from app_common.common.models import (
     widget
 )
 from app_common.common.talent_config_manager import load_gettalent_config
+from app_common.common.talent_flask import TalentFlask
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 db.init_app(app)

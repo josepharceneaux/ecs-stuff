@@ -440,6 +440,9 @@ class DomainRole(db.Model):
         CAN_EDIT_TALENT_PIPELINE_SMART_LISTS = "CAN_EDIT_TALENT_PIPELINE_SMART_LISTS"
         CAN_DELETE_TALENT_PIPELINE_SMART_LISTS = "CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"
 
+        # Admin Roles
+        CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()

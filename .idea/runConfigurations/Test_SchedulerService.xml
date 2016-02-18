@@ -19,7 +19,7 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="" />
+    <option name="params" value="-k test_single_scheduled_job" />
     <option name="USE_PARAM" value="false" />
     <option name="USE_KEYWORD" value="false" />
     <RunnerSettings RunnerId="PythonRunner" />

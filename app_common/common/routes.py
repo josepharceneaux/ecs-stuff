@@ -127,6 +127,11 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
 
+    # CORS headers
+    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
+                                       "http://127.0.0.1",
+                                       "http://localhost"]}}
+
 
 class AuthApi(object):
     """
@@ -634,15 +639,15 @@ class SchedulerApi(object):
 
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
-    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test"
     SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
     SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
     SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
-    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
-    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
-    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
 
 
 class SchedulerApiUrl(object):
@@ -656,14 +661,14 @@ class SchedulerApiUrl(object):
 
     HOST_NAME %= _get_api_relative_version(VERSION)
     # URLs, in case of test cases
-    TASKS = HOST_NAME % "tasks/"
+    TASKS = HOST_NAME % "tasks"
     TASK = HOST_NAME % 'tasks/id/%s'
     TASK_NAME = HOST_NAME % 'tasks/name/%s'
-    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
-    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
-    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
-    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
-    TEST_TASK = HOST_NAME % 'tasks/test/'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume'
+    TEST_TASK = HOST_NAME % 'tasks/test'
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING = '--port=5511'

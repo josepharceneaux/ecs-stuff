@@ -1,12 +1,12 @@
 __author__ = 'ufarooqi'
 
-from flask import Flask
 from flask.ext.cors import CORS
-from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi
+from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi, GTApis
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from candidate_pool_service.common.utils.talent_ec2 import get_ec2_instance_id
+from candidate_pool_service.common.talent_flask import TalentFlask
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 logger = app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
@@ -46,7 +46,7 @@ try:
     schedule_candidate_daily_stats_update()
 
     # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting candidate_pool_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

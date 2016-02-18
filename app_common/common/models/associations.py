@@ -9,7 +9,8 @@ import datetime
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'))
+    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'),
+                                    primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 

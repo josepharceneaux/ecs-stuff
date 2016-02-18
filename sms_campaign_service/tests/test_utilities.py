@@ -10,7 +10,6 @@ This module contains pyTest for utility functions like
 import requests
 
 # Service Specific
-from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.tests.conftest import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.validators import (validate_url_by_http_request,
@@ -24,7 +23,7 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST
 # Common Utils
 from sms_campaign_service.common.models.user import User
 from sms_campaign_service.common.tests.conftest import fake
-from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi)
+from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi, HEALTH_CHECK)
 from sms_campaign_service.common.utils.handy_functions import url_conversion
 from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
 from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
@@ -33,7 +32,11 @@ from sms_campaign_service.common.campaign_services.common_tests import get_inval
 
 # Test for healthcheck
 def test_health_check():
-    response = requests.get(SmsCampaignApi.HOST_NAME % '/healthcheck')
+    response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == 200
 
 

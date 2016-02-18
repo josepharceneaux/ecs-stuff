@@ -48,9 +48,11 @@ from types import MethodType
 # Third Party
 from flask import current_app
 from flask.ext.cors import CORS
+from healthcheck import HealthCheck
 
 # Application Specific
 from ..models.db import db
+from ..routes import GTApis, HEALTH_CHECK
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case
@@ -239,7 +241,8 @@ def init_talent_app(flask_app, logger):
     add_model_helpers(db.Model)
     db.init_app(flask_app)
     db.app = flask_app
-    # Enable CORS for all origins & endpoints
-    CORS(flask_app, resources={r"*": {"origins": [r"*.gettalent.com", "127.0.0.1"]}})
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(flask_app, resources=GTApis.CORS_HEADERS)
+    # Register error handlers
     register_error_handlers(flask_app, logger)
     return flask_app

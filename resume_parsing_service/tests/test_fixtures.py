@@ -115,11 +115,14 @@ def user_fixture(domain_fixture, user_group_fixture, request):
                 added_time=datetime.datetime(2050, 4, 26))
     db.session.add(user)
     db.session.commit()
-    @require_integrity
-    def fin():
-        db.session.delete(user)
-        db.session.commit()
-    request.addfinalizer(fin)
+    # Cannot currently delete users because of constraints on Candidate.OwnerUserId
+    # Cannot delete Candidates after search by this term due to un-implemented or not working
+    # delete cascades.
+    # @require_integrity
+    # def fin():
+    #     db.session.delete(user)
+    #     db.session.commit()
+    # request.addfinalizer(fin)
     return user
 
 
