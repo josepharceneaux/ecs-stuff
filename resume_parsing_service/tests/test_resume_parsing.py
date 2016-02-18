@@ -11,7 +11,6 @@ import requests
 from resume_parsing_service.common.utils.handy_functions import random_word
 from resume_parsing_service.app import redis_store
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
-from resume_parsing_service.app.views.parse_lib import process_resume
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -48,9 +47,7 @@ def test_doc_from_fp_key(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, DOC_FP_KEY)
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 
@@ -59,9 +56,7 @@ def test_doc_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.docx')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_HTML_doc_by_post(token_fixture, user_fixture):
@@ -70,9 +65,7 @@ def test_HTML_doc_by_post(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
     # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
@@ -80,9 +73,7 @@ def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEY)
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_v14_pdf_from_fp_key(token_fixture, user_fixture):
@@ -90,9 +81,7 @@ def test_v14_pdf_from_fp_key(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_14.pdf')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
@@ -100,9 +89,7 @@ def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_13.pdf')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_v14_pdf_by_post(token_fixture, user_fixture):
@@ -110,9 +97,7 @@ def test_v14_pdf_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin_14.pdf')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_v13_pdf_by_post(token_fixture, user_fixture):
@@ -120,9 +105,7 @@ def test_v13_pdf_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status= fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_jpg_from_fp_key(token_fixture, user_fixture):
@@ -130,9 +113,7 @@ def test_jpg_from_fp_key(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_jpg_by_post(token_fixture, user_fixture):
@@ -140,9 +121,7 @@ def test_jpg_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
@@ -150,9 +129,7 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, '2448_3264.jpg')
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
-    assert status == requests.codes.ok
+    assert_non_create_content_and_status(content, status)
 
 
 def test_no_token_fails():
@@ -181,11 +158,7 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
                                          DomainRole.Roles.CAN_GET_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
-    assert 'candidate' in content, "Candidate should be in response content"
-    assert 'id' in content['candidate'], "Candidate should contain id in response if create=True."
-    assert content['candidate']['id'], "Candidate should contain non-None id to signal creation."
-    assert status == requests.codes.ok
-
+    assert_create_or_update_content_and_status(content, status)
 
 
 def test_already_exists_candidate(token_fixture, user_fixture):
@@ -196,10 +169,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_EDIT_CANDIDATES])
     unused_create_response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     update_content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
-    assert 'candidate' in update_content, "Candidate should be in response content"
-    assert 'id' in update_content['candidate'], "Candidate should contain id in response if create=True."
-    assert update_content['candidate']['id'], "Candidate should contain non-None id to signal creation."
-    assert status == requests.codes.ok
+    assert_create_or_update_content_and_status(update_content, status)
 
 
 def test_batch_processing(user_fixture, token_fixture):
@@ -298,3 +268,16 @@ def fetch_resume_fp_key_response(token_fixture, fp_key):
     content = json.loads(test_response.content)
     status_code = test_response.status_code
     return content, status_code
+
+
+def assert_non_create_content_and_status(content, status):
+    assert 'candidate' in content, "Candidate should be in response content"
+    assert 'raw_response' in content and content['raw_response'] is not None, "None create response should return raw content"
+    assert status == requests.codes.ok
+
+
+def assert_create_or_update_content_and_status(content, status):
+    assert 'candidate' in content, "Candidate should be in response content"
+    assert 'id' in content['candidate'], "Candidate should contain id in response if create=True."
+    assert content['candidate']['id'], "Candidate should contain non-None id to signal creation."
+    assert status == requests.codes.ok
