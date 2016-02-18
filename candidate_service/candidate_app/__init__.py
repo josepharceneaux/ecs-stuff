@@ -31,7 +31,9 @@ try:
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource)
+        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidateDeviceResource
+    )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
     from candidate_service.common.talent_api import TalentApi
@@ -236,6 +238,13 @@ try:
         CandidateEditResource,
         '/v1/candidates/<int:id>/edits',
         endpoint='candidate_edit'
+    )
+
+    # ****** CandidateDeviceResource ******
+    api.add_resource(
+        CandidateDeviceResource,
+        '/v1/candidates/<int:id>/devices',
+        endpoint='candidate_devices'
     )
 
     ######################## CandidateViewResource ########################

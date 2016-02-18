@@ -519,6 +519,7 @@ class CandidateApiWords(object):
     CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
     PREFERENCE = "/preferences"
+    DEVICES = '/devices'
 
 
 class CandidateApi(object):
@@ -588,6 +589,8 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
+    DEVICES = RELATIVE_VERSION % CandidateApiWords.DEVICES
+    DEVICE = RELATIVE_VERSION % CandidateApiWords.DEVICES + _INT_ID
 
 
 class CandidateApiUrl(object):
@@ -652,6 +655,9 @@ class CandidateApiUrl(object):
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+    DEVICES = CANDIDATE + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE + CandidateApiWords.DEVICES + '/%s'
+
 
 class SchedulerApi(object):
     """

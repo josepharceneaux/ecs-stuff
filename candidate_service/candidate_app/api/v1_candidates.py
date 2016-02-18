@@ -8,6 +8,7 @@ Notes:
 import logging
 
 # Flask specific
+import datetime
 from flask import request
 from flask_restful import Resource
 
@@ -21,6 +22,7 @@ from candidate_service.modules.validators import (
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist
 )
+from candidate_service.modules.talent_cloud_search import one_signal_client
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
     candidates_resource_schema_get, resource_schema_preferences
@@ -32,8 +34,8 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 
 # Error handling
 from candidate_service.common.error_handling import (
-    ForbiddenError, InvalidUsage, NotFoundError, UnauthorizedError, InternalServerError
-)
+    ForbiddenError, InvalidUsage, NotFoundError, UnauthorizedError, InternalServerError,
+    ResourceNotFound)
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Models
@@ -42,8 +44,8 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateSubscriptionPreference
-)
+    CandidateSubscriptionPreference,
+    CandidateDevice)
 from candidate_service.common.models.misc import AreaOfInterest, Frequency
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
@@ -65,7 +67,6 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
     create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
 )
-
 
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
@@ -1371,3 +1372,95 @@ class CandidatePreferenceResource(Resource):
         db.session.delete(candidate_subs_pref)
         db.session.commit()
         return '', 204
+
+
+class CandidateDeviceResource(Resource):
+    decorators = [require_oauth()]
+
+    def get(self, **kwargs):
+        """
+        Endpoint: GET /v1/candidates/:id/devices
+        Function will return requested candidate's associated devices
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure Candidate exists & is not web-hidden
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate.id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        devices = candidate.devices.all()
+        devices = [dict(id=device.id,
+                        candidate_id=device.candidate_id,
+                        one_signal_device_id=device.one_signal_device_id,
+                        registered_at=str(device.registered_at)) for device in devices]
+        return {'devices': devices}
+
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/devices
+        Function will associate a  device to a candidate
+        This endpoint is used to register a candidate's device with getTalent.
+        Device id is a unique string given by OneSignal API.
+        for more information about device id see here
+        https://documentation.onesignal.com/docs/website-sdk-api#getIdsAvailable
+
+        :Example:
+
+            >>> import json
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> data = {
+            >>>            "candidate_id": 268,
+            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
+            >>>         }
+            >>> data = json.dumps(data)
+            >>> campaign_id = 1
+            >>> response = requests.post(CandidateAPiUrl.DEVICES, data=data,
+            >>>                          headers=headers)
+
+        .. Response::
+
+                {
+                    "message": "Device registered successfully with candidate (id: 268)"
+                }
+
+        .. Status:: 200 (OK)
+                    401 (Unauthorized to access getTalent)
+                    403 (Can't add device for non existing candidate)
+                    500 (Internal Server Error)
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        data = get_json_if_exist(_request=request)
+        if not candidate_id:
+            raise InvalidUsage('candidate_id is not given in post data')
+        device_id = data.get('one_signal_device_id')
+        if not device_id:
+            raise InvalidUsage('device_id is not given in post data')
+
+        # Send a GET request to OneSignal API to confirm that this device id is valid
+        response = one_signal_client.get_player(device_id)
+        if response.ok:
+            # Device exists with id
+            candidate_device = CandidateDevice(candidate_id=candidate.id,
+                                               one_signal_device_id=device_id,
+                                               registered_at=datetime.datetime.utcnow())
+            db.session.add(candidate_device)
+            db.session.commit()
+            return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
+                                % (candidate_device.id, candidate.id)), 201
+        else:
+            # No device was found on OneSignal database.
+            raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
+

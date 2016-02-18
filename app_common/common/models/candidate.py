@@ -960,3 +960,8 @@ class CandidateDevice(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).first()
+
+    @classmethod
+    def get_by_candidate_id_and_device_id(cls, candidate_id, device_id):
+        return cls.query.filter_by(candidate_id=candidate_id, one_signal_device_id=device_id).first()
+
