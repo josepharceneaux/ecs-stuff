@@ -302,6 +302,27 @@ class CandidatePhoto(db.Model):
         """
         return cls.query.filter_by(candidate_id=candidate_id).all()
 
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        """
+        Will set all of candidate's photos' is_default value to False
+        :type candidate_id: int|long
+        """
+        for photo in cls.query.filter_by(candidate_id=candidate_id).all():
+            photo.is_default = False
+
+    @classmethod
+    def exists(cls, candidate_id, image_url):
+        """
+        Checks to see if candidate's image already exists
+        :type candidate_id:  int|long
+        :type image_url:  basestring|str
+        :rtype: bool
+        """
+        if cls.query.filter_by(candidate_id=candidate_id, image_url=image_url).first():
+            return True
+        else: return False
+
 
 class CandidateRating(db.Model):
     __tablename__ = 'candidate_rating'

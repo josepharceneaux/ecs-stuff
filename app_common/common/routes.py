@@ -523,6 +523,7 @@ class CandidateApiWords(object):
     CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
     PREFERENCE = "/preferences"
+    PHOTOS = "/photos"
 
 
 class CandidateApi(object):
@@ -579,6 +580,9 @@ class CandidateApi(object):
 
     SKILLS = _CANDIDATE_ID + CandidateApiWords.SKILLS
     SKILL = SKILLS + _INT_ID
+
+    PHOTOS = _CANDIDATE_ID + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + _INT_ID
 
     SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
@@ -646,6 +650,9 @@ class CandidateApiUrl(object):
 
     SKILLS = CANDIDATE + CandidateApiWords.SKILLS
     SKILL = SKILLS + "/%s"
+
+    PHOTOS = CANDIDATE + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + "/%s"
 
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"

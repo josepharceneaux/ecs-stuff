@@ -349,10 +349,6 @@ def request_to_candidate_work_preference_resource(access_token, request, candida
 
 
 def request_to_candidate_edit_resource(access_token, request, candidate_id=''):
-    """
-    :param access_token:
-    :param request: get
-    """
     url = CandidateApiUrl.CANDIDATE_EDIT % candidate_id
     return define_and_send_request(access_token, request, url)
 
@@ -377,7 +373,16 @@ def request_to_candidate_preference_resource(token, request, candidate_id='', da
     return define_and_send_request(token, request, url, data)
 
 
-def check_for_id(_dict): #TODO: must be updated to account for talen_pool_ids
+def request_to_candidate_photos_resource(token, request, candidate_id=None, photo_id=None,
+                                         data=None):
+    """ Sends request to CandidatePhotosResource """
+    url = CandidateApiUrl.PHOTOS % candidate_id
+    if photo_id:
+        url = CandidateApiUrl.PHOTO % (candidate_id, photo_id)
+    return define_and_send_request(token, request, url, data)
+
+
+def check_for_id(_dict):
     """
     Checks for id-key in candidate_dict and all its nested objects that must have an id-key
     :type _dict:    dict
