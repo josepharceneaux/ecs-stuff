@@ -64,17 +64,18 @@ CONFIG_FILE_NAME = "test.cfg"
 LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
 ROLES = ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS',
          'CAN_ADD_TALENT_POOLS_TO_GROUP', 'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-         'CAN_DELETE_CANDIDATES']
+         'CAN_DELETE_CANDIDATES', 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS',
+         'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS']
 
 
 class TestConfigParser(ConfigParser.ConfigParser):
 
     def to_dict(self):
-        d = dict(self._sections)
-        for k in d:
-            d[k] = dict(self._defaults, **d[k])
-            d[k].pop('__name__', None)
-        return d
+        sections = dict(self._sections)
+        for k in sections:
+            sections[k] = dict(self._defaults, **sections[k])
+            sections[k].pop('__name__', None)
+        return sections
 
 
 fake = Faker()
@@ -226,6 +227,22 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     request.addfinalizer(tear_down)
     return data
 
+@pytest.fixture()
+def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, campaign_data,
+                                       smartlist_same_doamin):
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_doamin['id']]
+    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_first, data)
+    assert response.status_code == 201
+    id = response.json()['id']
+    data['id'] = id
+
+    def tear_down():
+        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id, token_first)
+        assert response.status_code in [OK, NOT_FOUND]
+
+    request.addfinalizer(tear_down)
+    return data
 
 @pytest.fixture()
 def campaign_in_db_second(request, token_second, smartlist_second, campaign_data):
@@ -254,18 +271,21 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
 
 
 @pytest.fixture()
-def blast_and_camapign_in_db(token_first, campaign_in_db, test_smartlist):
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token_first)
+def campaign_blast(token_first, campaign_in_db, candidate_device_first):
+    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     logger.info(response.content)
     assert response.status_code == 200
     time.sleep(SLEEP_TIME)
-    db.session.commit()
-    blast = campaign_in_db.blasts.first()
-    return campaign_in_db, blast
+    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
+    assert response.status_code == OK
+    blasts = response.json()['blasts']
+    assert len(blasts) == 1
+    blast = blasts[0]
+    return blast
 
 
 @pytest.fixture(scope='function')
-def smartlist_first(request, token_first, candidate_first):
+def smartlist_first(request, token_first, candidate_first, candidate_device_first):
     """
     This fixture associates a smartlist with push campaign object
     :param request: request object
@@ -338,69 +358,46 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first)
+        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_same_domain)
         assert response.status_code == OK
     request.addfinalizer(tear_down)
     return smartlist
 
 
-# @pytest.fixture(scope='function')
-# def smartlist_with_no_candidates(request, user_first, campaign_in_db):
-#     """
-#     This fixture associated a smartlist to a push campaign which
-#     is not associated to any candidate.
-#
-#     :param request: request obj
-#     :param sample_user: test user to use api
-#     :param campaign_in_db: push campaign obj
-#     """
-#     smartlist = Smartlist(user_id=user_first['id'],
-#                           name=fake.word())
-#     Smartlist.save(smartlist)
-#
-#     push_smartlist = PushCampaignSmartlist(smartlist_id=smartlist.id,
-#                                            campaign_id=campaign_in_db.id)
-#     PushCampaignSmartlist.save(push_smartlist)
-#
-#     def tear_down():
-#             Smartlist.delete(smartlist)
-#     request.addfinalizer(tear_down)
-#     return smartlist
-
-
 @pytest.fixture()
-def campaign_blasts_count(test_smartlist, campaign_in_db, token_first):
+def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     """
     This fixture hits Push campaign api to send campaign which in turn creates blast.
     At the end just return total blast created.
     :param test_smartlist: smartlist associated with campaign
     :param campaign_in_db: push campaign object
-    :param token: auth token
+    :param token_first: auth token
     """
 
     blasts_counts = 3
-    # campaign_obj = PushCampaignBase(user_id=sample_user.id)
     for num in range(blasts_counts):
-        response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token_first)
-        # campaign_obj.process_send(campaign_in_db)
+        response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
         assert response.status_code == 200
-    return blasts_counts
+    time.sleep(SLEEP_TIME)
+    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
+    assert response.status_code == 200
+    return response.json()['blasts']
 
 
 @pytest.fixture()
-def schedule_a_campaign(request, test_smartlist, campaign_in_db, token_first):
+def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     """
     This fixture sends a POST request to Push campaign api to schedule this campaign,
     which will be further used in tests.
     :param request: request object
-    :param test_smartlist: smartlist associated with campaign
+    :param smartlist_first: smartlist associated with campaign
     :param campaign_in_db: push campaign which is to be scheduled
     :return data: schedule data
     :rtype data: dict
     """
     task_id = None
     data = generate_campaign_schedule_data()
-    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db.id, token_first, data)
+    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
     assert response.status_code == 200
     response = response.json()
     task_id = response['task_id']
@@ -413,34 +410,39 @@ def schedule_a_campaign(request, test_smartlist, campaign_in_db, token_first):
 
 
 @pytest.fixture()
-def url_conversion(request, token_first, campaign_in_db, test_smartlist):
+def url_conversion(request, token_first, campaign_in_db, smartlist_first, candidate_device_first):
     """
     This method Sends a campaign and then returns a UrlConversion object
     associated with this campaign.
     :return:
     """
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db.id, token_first)
+    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == 200
-    time.sleep(2 * SLEEP_TIME)  # had to add this as sending process runs on celery
-    # Need to commit the session because Celery has its own session, and our session does not
-    # know about the changes that Celery session has made.
-    db.session.commit()
+    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # get campaign blast
-    campaign_blast = campaign_in_db.blasts.first()
+    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
+    assert response.status_code == 200
+    blasts = response.json()['blasts']
+    assert len(blasts) == 1
+    blast_id = blasts[0]['id']
     # get campaign sends
-    campaign_send = campaign_blast.blast_sends.first()
+    response = send_request('get', PushCampaignApiUrl.BLAST_SENDS
+                            % (campaign_in_db['id'], blast_id), token_first)
+    assert response.status_code == 200
+    sends = response.json()['sends']
     # get if of record of sms_campaign_send_url_conversion for this campaign
-    assert campaign_send, 'No campaign sends were found'
-    campaign_send_url_conversions = PushCampaignSendUrlConversion.get_by_campaign_send_id(
-        campaign_send.id)
-    # get URL conversion record from database table 'url_conversion'
-    url_conversion_obj = UrlConversion.get_by_id(campaign_send_url_conversions[0].url_conversion_id)
+    assert len(sends) == 1
+    campaign_send = sends[0]
+    response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
+    assert response.status_code == 200
+    url_conversion = response.json()['url_conversion']
 
     def tear_down():
-        UrlConversion.delete(url_conversion_obj)
+        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
+        assert response.status_code == 200
 
     request.addfinalizer(tear_down)
-    return url_conversion_obj
+    return url_conversion
 
 
 @pytest.fixture(scope='function')
@@ -558,6 +560,47 @@ def candidate_first(request, user_first, talent_pool, token_first):
 
 
 @pytest.fixture(scope='function')
+def candidate_same_domain(request, user_same_domain, talent_pool, token_same_domain):
+    """
+    This fixture created a test candidate using sample user and it will be deleted
+    after test has run.
+    """
+    data = {
+        "candidates": [
+            {
+                "first_name": fake.first_name(),
+                "middle_name": fake.user_name(),
+                "last_name": fake.last_name(),
+                "talent_pool_ids": {
+                    "add": [talent_pool['id']]
+                },
+                "emails": [
+                    {
+                        "label": "Primary",
+                        "address": fake.email(),
+                        "is_default": True
+                    }
+                ]
+            }
+
+        ]
+    }
+    response = send_request('post', CandidateApiUrl.CANDIDATES, token_same_domain, data=data)
+    assert response.status_code == 201
+    candidate_id = response.json()['candidates'][0]['id']
+    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_same_domain)
+    assert response.status_code == OK
+    candidate = response.json()['candidate']
+
+    def tear_down():
+        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_same_domain)
+        assert response.status_code == OK
+
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture(scope='function')
 def candidate_second(request, token_second, talent_pool_second):
     """
     This fixture created a test candidate using for domain 2 and it will be deleted
@@ -602,17 +645,43 @@ def candidate_second(request, token_second, talent_pool_second):
 
 
 @pytest.fixture(scope='function')
-def candidate_device_first(request, candidate_first):
+def candidate_device_first(request,token_first, candidate_first):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
     """
-    device = CandidateDevice(candidate_id=candidate_first['id'],
-                             one_signal_device_id=PUSH_DEVICE_ID,
-                             registered_at=datetime.utcnow())
-    CandidateDevice.save(device)
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first,
+                            data=data)
+    response.status_code == 201
+    response = send_request('get', CandidateApiUrl.DEVICES % candidate_first['id'], token_first)
+    assert response.status_code == OK
+    devices = response.json()['devices']
+    assert len(devices) == 1
+    return devices[0]
 
-    return device
+
+@pytest.fixture(scope='function')
+def candidate_device_same_domain(request, token_same_domain, candidate_same_domain):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    """
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_same_domain['id'],
+                            token_same_domain,
+                            data=data)
+    response.status_code == 201
+    response = send_request('get', CandidateApiUrl.DEVICES % candidate_same_domain['id'],
+                            token_same_domain)
+    assert response.status_code == OK
+    devices = response.json()['devices']
+    assert len(devices) == 1
+    return devices[0]
 
 
 @pytest.fixture(scope='function')
