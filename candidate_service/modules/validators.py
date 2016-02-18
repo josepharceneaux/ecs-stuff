@@ -7,10 +7,10 @@ import json
 import re
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import Candidate
-from candidate_service.common.models.email_marketing import EmailClient
+from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError

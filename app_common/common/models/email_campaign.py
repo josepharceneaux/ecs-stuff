@@ -35,6 +35,12 @@ class EmailCampaign(db.Model):
 
     # Relationships
     frequency = relationship("Frequency", backref="frequency")
+    blasts = relationship('EmailCampaignBlast', cascade='all, delete-orphan',
+                          passive_deletes=True, backref='campaign')
+    sends = relationship('EmailCampaignSend', cascade='all,delete-orphan',
+                         passive_deletes=True, backref='blast')
+    smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
+                              passive_deletes=True, backref='campaign')
 
     def to_dict(self, api_version=1):
         """
@@ -45,7 +51,7 @@ class EmailCampaign(db.Model):
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
-                "list_ids": EmailCampaignSmartList.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
+                "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
 
     def get_id(self):
         return unicode(self.id)
@@ -54,18 +60,18 @@ class EmailCampaign(db.Model):
         return "<EmailCampaign(name=' %r')>" % self.name
 
 
-class EmailCampaignSmartList(db.Model):
+class EmailCampaignSmartlist(db.Model):
     __tablename__ = 'email_campaign_smart_list'
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column('SmartListId', db.Integer,
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    campaign_id = db.Column('EmailCampaignId', db.Integer,
+                            db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
-        records = cls.query.filter(EmailCampaignSmartList.email_campaign_id == campaign_id).all()
+        records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
         return records
@@ -104,6 +110,12 @@ class EmailCampaignSend(db.Model):
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
     email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
+    # Relationships
+    url_conversions = relationship('EmailCampaignSendUrlConversion',
+                                   cascade='all,delete-orphan',
+                                   passive_deletes=True,
+                                   backref='send')
+
 
 class EmailClient(db.Model):
     __tablename__ = 'email_client'
@@ -112,6 +124,10 @@ class EmailClient(db.Model):
 
     def __repr__(self):
         return "<EmailClient (name = %r)>" % self.name
+
+    @classmethod
+    def get_id_by_name(cls, name):
+        return cls.query.filter_by(name=name).first().id
 
 
 class EmailCampaignSendUrlConversion(db.Model):
@@ -122,4 +138,6 @@ class EmailCampaignSendUrlConversion(db.Model):
     url_conversion_id = db.Column('UrlConversionId', db.Integer,
                                   db.ForeignKey('url_conversion.Id', ondelete='CASCADE'))
     type = db.Column(db.Integer, default=0)  # 0 = TRACKING, 1 = TEXT, 2 = HTML
+
+    # Relationships
     email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")

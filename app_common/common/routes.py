@@ -416,7 +416,7 @@ class SpreadsheetImportApiUrl(object):
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
 
-class SmsCampaignWords(object):
+class CampaignWords(object):
     """
     This class contains words used for endpoints of SMS Campaign API.
     """
@@ -428,6 +428,7 @@ class SmsCampaignWords(object):
     SEND = '/send'
     BLASTS = '/blasts'
     REPLIES = '/replies'
+    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
 
 
 class SmsCampaignApi(object):
@@ -441,40 +442,40 @@ class SmsCampaignApi(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, SmsCampaignWords.CAMPAIGNS)
+    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.CAMPAIGNS)
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
-    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    SEND = CAMPAIGN + SmsCampaignWords.SEND
+    SEND = CAMPAIGN + CampaignWords.SEND
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    REDIRECT = API_URL % (SmsCampaignWords.REDIRECT + '/<int:url_conversion_id>')
+    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = API_URL % SmsCampaignWords.RECEIVE
+    RECEIVE = API_URL % CampaignWords.RECEIVE
     # endpoint /v1/campaigns/:id/blasts
     # Gives the blasts of a campaign
-    BLASTS = CAMPAIGN + SmsCampaignWords.BLASTS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
     # endpoint /v1/campaigns/:id/blasts/:id
     # Gives the blast object of SMS campaign from given blast id.
-    BLAST = CAMPAIGN + SmsCampaignWords.BLASTS + '/<int:blast_id>'
+    BLAST = CAMPAIGN + CampaignWords.BLASTS + '/<int:blast_id>'
     # endpoint /v1/campaigns/:id/blasts/:id/sends
     # Gives the sends objects of a blast object of SMS campaign from given blast id.
-    BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
     # endpoint /v1/campaigns/:id/blasts/:id/replies
     # Gives the replies objects of a blast object of SMS campaign from given blast id.
-    BLAST_REPLIES = BLAST + SmsCampaignWords.REPLIES
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
-    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
+    SENDS = CAMPAIGN + CampaignWords.SENDS
     # endpoint /v1/campaigns/:id/replies
     # This gives the records from "sms_campaign_reply" for a given id of campaign
-    REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
 
 
 class SmsCampaignApiUrl(object):
@@ -484,17 +485,17 @@ class SmsCampaignApiUrl(object):
     """ Endpoints' complete URLs for pyTests """
     CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + '/%s'
-    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
-    SEND = CAMPAIGN + SmsCampaignWords.SEND
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    SEND = CAMPAIGN + CampaignWords.SEND
     REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
-                                                      SmsCampaignWords.REDIRECT + '/%s')
+                                                      CampaignWords.REDIRECT + '/%s')
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    BLASTS = CAMPAIGN + SmsCampaignWords.BLASTS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
-    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
-    REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
-    BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
-    BLAST_REPLIES = BLAST + SmsCampaignWords.REPLIES
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
 
 
 class CandidateApiWords(object):
@@ -702,18 +703,21 @@ class SchedulerApiUrl(object):
 
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
+
+    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                           GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EMAIL_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns'
-    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS +'/<int:id>'
-    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + '/<int:campaign_id>/send'
-    URL_REDIRECT = EMAIL_CAMPAIGNS + '/redirect/<int:url_conversion_id>'
+    API_URL = '/%s/%s' % (VERSION, '%s')
+    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
+    CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
+    URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
 
 
 class EmailCampaignUrl(object):
-    VERSION = 'v1'
-    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
-    EMAIL_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS
-    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s"
-    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s/send"
-    URL_REDIRECT = EMAIL_CAMPAIGNS + "/redirect/%s"
+    CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
+    CAMPAIGN = CAMPAIGNS + "/%s"
+    SEND = CAMPAIGN + CampaignWords.SEND
+    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
+                                CampaignWords.REDIRECT + '/%s')
+
