@@ -156,4 +156,4 @@ class PushCampaignSendUrlConversion(db.Model):
     @classmethod
     def get_by_campaign_send_id(cls, campaign_send_id):
         assert campaign_send_id, 'No campaign_send_id given'
-        return cls.query.filter_by(push_campaign_send_id=campaign_send_id).all()
+        return cls.query.filter_by(push_campaign_send_id=campaign_send_id).first()

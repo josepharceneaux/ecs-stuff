@@ -707,9 +707,7 @@ class PushCampaignApi(object):
     REST URLs for Push Campaign Service endpoints
     """
     VERSION = 'v1'
-    # HOST_NAME is http://127.0.0.1:8013 for dev
-    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
-                               GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
+
     API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
@@ -734,6 +732,8 @@ class PushCampaignApi(object):
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
     REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
+    URL_CONVERSION = '/%s/%s/<int:_id>' % (VERSION, 'url-conversions')
+    URL_CONVERSION_BY_SEND_ID = '/%s/%s/<int:send_id>' % (VERSION, 'send-url-conversions')
 
 
 class PushCampaignApiUrl(object):
@@ -741,16 +741,21 @@ class PushCampaignApiUrl(object):
     This class contains the REST URLs of push_campaign_service
     """
     """ Endpoints' complete URLs for pyTests """
-    CAMPAIGNS = PushCampaignApi.HOST_NAME % PushCampaignApi.CAMPAIGNS
-    CAMPAIGN = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'campaigns/%s')
+    # HOST_NAME is http://127.0.0.1:8013 for dev
+    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
+                               GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
+    CAMPAIGNS = HOST_NAME % PushCampaignApi.CAMPAIGNS
+    CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'campaigns/%s')
     SENDS = CAMPAIGN + '/sends'
     BLASTS = CAMPAIGN + '/blasts'
     BLAST = CAMPAIGN + '/blasts/%s'
     BLAST_SENDS = CAMPAIGN + '/blasts/%s/sends'
     SEND = CAMPAIGN + '/send'
     SCHEDULE = CAMPAIGN + '/schedule'
-    DEVICES = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
-    REDIRECT = PushCampaignApi.HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
+    DEVICES = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
+    REDIRECT = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
+    URL_CONVERSION = '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
+    URL_CONVERSION_BY_SEND_ID = '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
 
 
 class EmailCampaignEndpoints(object):
