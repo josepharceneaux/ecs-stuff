@@ -6,7 +6,7 @@ from user_service.common.models.candidate import (
     CandidateStatus, ClassificationType, EmailLabel, PhoneLabel, RatingTag, SocialNetwork
 )
 from user_service.common.models.misc import Culture, Frequency, Product
-from user_service.common.models.email_marketing import EmailClient
+from user_service.common.models.email_campaign import EmailClient
 
 
 def create_candidate_status():
