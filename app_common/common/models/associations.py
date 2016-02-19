@@ -18,10 +18,13 @@ class CandidateAreaOfInterest(db.Model):
         return "<CandidateAreaOfInterest (area_of_interest_id = %r)" % self.area_of_interest_id
 
     @classmethod
-    def get_areas_of_interest(cls, candidate_id, area_of_interest_id):
-        return cls.query.filter(db.and_
-                                (CandidateAreaOfInterest.candidate_id == candidate_id,
-                                 CandidateAreaOfInterest.area_of_interest_id == area_of_interest_id)).first()
+    def get_aoi(cls, candidate_id, aoi_id):
+        """
+        :type candidate_id:  int|long
+        :type aoi_id:  int|long
+        :rtype:  CandidateAreaOfInterest
+        """
+        return cls.query.filter_by(candidate_id=candidate_id, area_of_interest_id=aoi_id).first()
 
 
 class ReferenceEmail(db.Model):
