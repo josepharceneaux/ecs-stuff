@@ -167,7 +167,7 @@ def update_smartlists_stats_task():
                                             candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
             db.session.commit()
-            successful_update_smartlist_ids.append(smartlist_id)
+            successful_update_smartlist_ids.append(str(smartlist_id))
 
     except Exception as e:
         db.session.rollback()
@@ -214,7 +214,7 @@ def update_talent_pools_stats_task():
                                                candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
             db.session.commit()
-            successful_update_talent_pool_ids.append(talent_pool_id)
+            successful_update_talent_pool_ids.append(str(talent_pool_id))
 
     except Exception as e:
         db.session.rollback()
@@ -268,7 +268,7 @@ def update_talent_pipelines_stats_task():
                                                        )
             db.session.add(talent_pipeline_stat)
             db.session.commit()
-            successful_update_talent_pipeline_ids.append(talent_pipeline_id)
+            successful_update_talent_pipeline_ids.append(str(talent_pipeline_id))
 
             if talent_pool_id in talent_pool_id_to_tuple:
                 talent_pool_id_to_tuple[talent_pool_id]['total_number_of_talent_pipelines'] += 1
@@ -294,7 +294,7 @@ def update_talent_pipelines_stats_task():
             )
             db.session.add(talent_pipelines_in_talent_pool_stats)
             db.session.commit()
-            successful_update_talent_pool_ids.append(talent_pool_id)
+            successful_update_talent_pool_ids.append(str(talent_pool_id))
 
     except Exception as e:
         db.session.rollback()

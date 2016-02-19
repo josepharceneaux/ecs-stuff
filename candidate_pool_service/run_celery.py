@@ -7,7 +7,7 @@ For Celery to run from command line, script runs as separate process with celery
 """
 
 # Service Specific
-from candidate_pool_service.candidate_pool_app import celery_app as celery
+from candidate_pool_service.candidate_pool_app import logger, celery_app as celery
 
-
-celery.start(argv=['celery', 'worker', '-l', 'info'])
+logger.info("Celery worker has been started successfully")
+celery.start(argv=['celery', 'worker', '-l', 'info', '-Q', 'celery_stats_scheduler'])
