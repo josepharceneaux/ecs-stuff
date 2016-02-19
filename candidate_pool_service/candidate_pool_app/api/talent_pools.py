@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlalchemy import and_
 from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
@@ -558,6 +559,7 @@ def update_talent_pools_stats():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
+    logger.info("TalentPool statistics update process has been started")
     update_talent_pools_stats_task.delay()
     return '', 204
 

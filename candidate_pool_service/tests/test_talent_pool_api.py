@@ -31,7 +31,7 @@ def test_get_talent_pool_stats(access_token_first, access_token_second, talent_p
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
     assert status_code == 404
 
-    # Logged-in user trying to get statistics of a talent_pool of different user
+    # Logged-in user trying to get statistics of a talent_pool of different domain
     response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
     assert status_code == 403
 

@@ -5,9 +5,9 @@ from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
-from candidate_pool_service.common.models.user import DomainRole
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.modules.smartlists import (get_candidates, create_smartlist_dict,
                                                        save_smartlist, get_all_smartlists)
@@ -133,6 +133,7 @@ def update_smartlists_stats():
     This method will update the statistics of all smartlists daily.
     :return: None
     """
+    logger.info("SmartLists statistics update process has been started")
     update_smartlists_stats_task.delay()
     return '', 204
 

@@ -39,7 +39,7 @@ def test_get_talent_pipeline_stats(access_token_first, access_token_second, tale
     response, status_code = talent_pipeline_get_stats(access_token_first, talent_pipeline.id + 1000)
     assert status_code == 404
 
-    # Logged-in user trying to get statistics of a talent_pipeline of different user
+    # Logged-in user trying to get statistics of a talent_pipeline of different domain
     response, status_code = talent_pipeline_get_stats(access_token_second, talent_pipeline.id)
     assert status_code == 403
 

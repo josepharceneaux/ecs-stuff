@@ -41,13 +41,13 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
 
 
-def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_synchronous_call=True):
+def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_celery_task=False):
     """
         Fetch all candidates of a talent-pipeline
         :param talent_pipeline: TalentPipeline Object
         :param fields: Return fields
         :param oauth_token: Authorization Token
-        :param is_synchronous_call: Is this method is called synchronously or asynchronously
+        :param is_celery_task: Is this method is called by a celery task or not
         :return: A dict containing info of all candidates according to query parameters
         """
 
@@ -78,7 +78,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
 
     request_params = dict()
 
-    if is_synchronous_call:
+    if not is_celery_task:
         request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
         request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
@@ -136,10 +136,18 @@ def update_smartlists_stats_task():
     :return: None
     """
     talent_logger = app.config[TalentConfigKeys.LOGGER]
+    successful_update_smartlist_ids = []
     smartlist_ids = map(lambda smartlist: smartlist[0], Smartlist.query.with_entities(Smartlist.id).all())
-    for smartlist_id in smartlist_ids:
 
-        try:
+    try:
+        for smartlist_id in smartlist_ids:
+            is_already_existing_stat_for_today = SmartlistStats.query.filter(
+                    SmartlistStats.smartlist_id == smartlist_id,
+                    SmartlistStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
+                    SmartlistStats.added_datetime <= datetime.utcnow()).all()
+
+            if is_already_existing_stat_for_today:
+                continue
             # Return only candidate_ids
             response = get_candidates(Smartlist.query.get(smartlist_id), candidate_ids_only=True)
             total_candidates = response.get('total_found')
@@ -159,10 +167,14 @@ def update_smartlists_stats_task():
                                             candidates_engagement=percentage_candidates_engagement)
             db.session.add(smartlist_stat)
             db.session.commit()
+            successful_update_smartlist_ids.append(smartlist_id)
 
-        except Exception as e:
-            db.session.rollback()
-            talent_logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
+    except Exception as e:
+        db.session.rollback()
+        talent_logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
+
+    logger.info("Statistics for following %s SmartLists have been updated successfully: "
+                "%s" % len(successful_update_smartlist_ids), ''.join(successful_update_smartlist_ids))
 
 
 @celery_app.task()
@@ -172,10 +184,19 @@ def update_talent_pools_stats_task():
     :return: None
     """
     talent_logger = app.config[TalentConfigKeys.LOGGER]
+    successful_update_talent_pool_ids = []
     talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
-    for talent_pool_id in talent_pool_ids:
 
-        try:
+    try:
+        for talent_pool_id in talent_pool_ids:
+            is_already_existing_stat_for_today = TalentPoolStats.query.filter(
+                    TalentPoolStats.talent_pool_id == talent_pool_id,
+                    TalentPoolStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
+                    TalentPoolStats.added_datetime <= datetime.utcnow()).all()
+
+            if is_already_existing_stat_for_today:
+                continue
+
             talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
                                         TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
             total_candidates = len(talent_pool_candidate_ids)
@@ -193,10 +214,14 @@ def update_talent_pools_stats_task():
                                                candidates_engagement=percentage_candidates_engagement)
             db.session.add(talent_pool_stat)
             db.session.commit()
+            successful_update_talent_pool_ids.append(talent_pool_id)
 
-        except Exception as e:
-            db.session.rollback()
-            talent_logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
+    except Exception as e:
+        db.session.rollback()
+        talent_logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
+
+    logger.info("Statistics for following %s TalentPools have been updated successfully: "
+                "%s" % len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids))
 
 
 @celery_app.task()
@@ -207,13 +232,24 @@ def update_talent_pipelines_stats_task():
     """
     talent_logger = app.config[TalentConfigKeys.LOGGER]
     talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id, TalentPipeline.talent_pool_id).all()
-    talent_pools = dict()
+    talent_pool_id_to_tuple = dict()
+    successful_update_talent_pipeline_ids = []
+    successful_update_talent_pool_ids = []
 
     try:
         for talent_pipeline_id, talent_pool_id in talent_pipelines:
             # Return only candidate_ids
+
+            is_already_existing_stat_for_today = TalentPipelineStats.query.filter(
+                    TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
+                    TalentPipelineStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
+                    TalentPipelineStats.added_datetime <= datetime.utcnow()).all()
+
+            if is_already_existing_stat_for_today:
+                continue
+
             response = get_candidates_of_talent_pipeline(TalentPipeline.query.get(talent_pipeline_id), fields='id',
-                                                         is_synchronous_call=False)
+                                                         is_celery_task=True)
             total_candidates = response.get('total_found')
             talent_pipeline_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
 
@@ -232,24 +268,42 @@ def update_talent_pipelines_stats_task():
                                                        )
             db.session.add(talent_pipeline_stat)
             db.session.commit()
+            successful_update_talent_pipeline_ids.append(talent_pipeline_id)
 
-            if talent_pool_id in talent_pools:
-                talent_pools[talent_pool_id][0] += 1
-                talent_pools[talent_pool_id][1] += total_candidates
+            if talent_pool_id in talent_pool_id_to_tuple:
+                talent_pool_id_to_tuple[talent_pool_id]['total_number_of_talent_pipelines'] += 1
+                talent_pool_id_to_tuple[talent_pool_id]['total_number_of_candidates'] += total_candidates
             else:
-                talent_pools[talent_pool_id] = (1, total_candidates)
+                talent_pool_id_to_tuple[talent_pool_id] = dict(total_number_of_talent_pipelines=1,
+                                                               total_number_of_candidates=total_candidates)
 
-        for talent_pool_id in talent_pools.keys():
+        for talent_pool_id in talent_pool_id_to_tuple.keys():
+            is_already_existing_stat_for_today = TalentPipelinesInTalentPoolStats.query.filter(
+                    TalentPipelinesInTalentPoolStats.talent_pool_id == talent_pool_id,
+                    TalentPipelinesInTalentPoolStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
+                    TalentPipelinesInTalentPoolStats.added_datetime <= datetime.utcnow()).all()
+
+            if is_already_existing_stat_for_today:
+                continue
+
+            total_number_of_candidates = talent_pool_id_to_tuple[talent_pool_id]['total_number_of_candidates']
+            total_number_of_talent_pipelines = talent_pool_id_to_tuple[talent_pool_id]['total_number_of_talent_pipelines']
             talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats(
                     talent_pool_id=talent_pool_id,
-                    average_number_of_candidates= talent_pools[talent_pool_id][1]/talent_pools[talent_pool_id][0]
+                    average_number_of_candidates=total_number_of_candidates/total_number_of_talent_pipelines
             )
             db.session.add(talent_pipelines_in_talent_pool_stats)
             db.session.commit()
+            successful_update_talent_pool_ids.append(talent_pool_id)
 
     except Exception as e:
         db.session.rollback()
         talent_logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+
+    logger.info("Statistics for all TalentPipelines in following %s TalentPools have been updated "
+                "successfully: %s" % len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids))
+    logger.info("Statistics for following %s TalentPipelines have been updated successfully: "
+                "%s" % len(successful_update_talent_pipeline_ids), ''.join(successful_update_talent_pipeline_ids))
 
 
 def schedule_daily_task_unless_already_scheduled(task_name, url):

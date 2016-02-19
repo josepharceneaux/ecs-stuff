@@ -10,6 +10,7 @@ from dateutil.parser import parse
 from datetime import datetime
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
@@ -528,6 +529,7 @@ def update_talent_pipelines_stats():
     This method will update the statistics of all talent-pipelines daily.
     :return: None
     """
+    logger.info("TalentPipeline statistics update process has been started")
     update_talent_pipelines_stats_task.delay()
     return '', 204
 
