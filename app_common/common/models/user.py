@@ -526,7 +526,7 @@ class UserScopedRoles(db.Model):
                         user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
                         db.session.add(user_scoped_role)
                     else:
-                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id))
+                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id), error_code=9000)
                 else:
                     raise InvalidUsage(error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()

@@ -754,8 +754,8 @@ class PushCampaignApiUrl(object):
     SCHEDULE = CAMPAIGN + '/schedule'
     DEVICES = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
     REDIRECT = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
-    URL_CONVERSION = '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
-    URL_CONVERSION_BY_SEND_ID = '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
+    URL_CONVERSION = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
+    URL_CONVERSION_BY_SEND_ID = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
 
 
 class EmailCampaignEndpoints(object):
