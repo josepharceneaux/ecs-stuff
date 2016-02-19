@@ -53,8 +53,7 @@ class TalentPoolStats(db.Model):
     __tablename__ = 'talent_pool_stats'
     id = db.Column(db.Integer, primary_key=True)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
-    total_candidates = db.Column(db.Integer, nullable=False, default=0)
-    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
+    total_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
@@ -63,6 +62,19 @@ class TalentPoolStats(db.Model):
 
     def __repr__(self):
         return "<TalentPoolStats (id = {})>".format(self.id)
+
+
+class TalentPipelinesInTalentPoolStats(db.Model):
+
+    __tablename__ = 'talent_pipelines_in_talent_pool_stats'
+
+    id = db.Column(db.Integer, primary_key=True)
+    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
+    average_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
+    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
+
+    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipelines_in_talent_pool_stats',
+                                                                   cascade="all, delete-orphan"))
 
 
 class TalentPoolGroup(db.Model):
@@ -118,8 +130,7 @@ class TalentPipelineStats(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'),
                                    nullable=False)
-    total_candidates = db.Column(db.Integer, nullable=False, default=0)
-    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
+    total_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 
