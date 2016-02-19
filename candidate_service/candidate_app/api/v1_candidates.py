@@ -19,7 +19,7 @@ from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    get_candidate_if_exists, is_valid_email_client, get_json_if_exist
+    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
@@ -44,7 +44,7 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateSubscriptionPreference, CandidatePhoto
 )
-from candidate_service.common.models.misc import AreaOfInterest, Frequency
+from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -135,10 +135,28 @@ class CandidatesResource(Resource):
                                                additional_error_info={'id': candidate_id})
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
-                all_cf_ids.append(custom_field.get('custom_field_id'))
+                custom_field_id = custom_field.get('custom_field_id')
+                if custom_field_id:
+                    if not CustomField.get_by_id(_id=custom_field_id):
+                        raise NotFoundError('Custom field not recognized: {}'.format(custom_field_id),
+                                            custom_error.CUSTOM_FIELD_NOT_FOUND)
+                all_cf_ids.append(custom_field_id)
 
             for aoi in _candidate_dict.get('areas_of_interest') or []:
-                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+                aoi_id = aoi.get('area_of_interest_id')
+                if aoi_id:
+                    if not AreaOfInterest.get_by_id(_id=aoi_id):
+                        raise NotFoundError('Area of interest not recognized: {}'.format(aoi_id),
+                                            custom_error.AOI_NOT_FOUND)
+                all_aoi_ids.append(aoi_id)
+
+            # to_date & from_date in military_service dict must be formatted properly
+            for military_service in _candidate_dict.get('military_services') or []:
+                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                if from_date or to_date:
+                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
@@ -165,7 +183,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails, # TODO: Parsing to be done in the module
+                emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -243,6 +261,14 @@ class CandidatesResource(Resource):
             for aoi in _candidate_dict.get('areas_of_interest') or []:
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
+            # to_date & from_date in military_service dict must be formatted properly
+            for military_service in _candidate_dict.get('military_services') or []:
+                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                if from_date or to_date:
+                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
             raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
@@ -275,7 +301,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails, # TODO: Parsing to be done in module
+                emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -463,8 +489,7 @@ class CandidateAreaOfInterestResource(Resource):
 
         if area_of_interest_id:  # Delete specified area of interest
             # Area of interest must be associated with candidate's CandidateAreaOfInterest
-            candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id,
-                                                                          area_of_interest_id)
+            candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, area_of_interest_id)
             if not candidate_aoi:
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
@@ -475,7 +500,7 @@ class CandidateAreaOfInterestResource(Resource):
             domain_aois = AreaOfInterest.get_domain_areas_of_interest(authed_user.domain_id)
             areas_of_interest_id = [aoi.id for aoi in domain_aois]
             for aoi_id in areas_of_interest_id:
-                candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, aoi_id)
+                candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, aoi_id)
                 if not candidate_aoi:
                     raise NotFoundError(error_message='Candidate area of interest not found',
                                         error_code=custom_error.AOI_NOT_FOUND)
@@ -1147,7 +1172,7 @@ class CandidateClientEmailCampaignResource(Resource):
     decorators = [require_oauth()]
 
     def post(self, **kwargs):
-        """ POST /web/api/client_email_campaigns
+        """ POST /v1/candidates/client_email_campaigns
             input:
              {
                 'candidates': [{candidateObject1}, {candidateObject2}, ...],
@@ -1162,7 +1187,7 @@ class CandidateClientEmailCampaignResource(Resource):
 
         Function will create a list, email_campaign, email_campaign_send, and a url_conversion
 
-        :return:    email-campaign-send id for each candidate => [int]
+        :return:    email-campaign-send objects for each candidate => [email_campaign_send]
         """
         authed_user = request.user
         body_dict = request.get_json(force=True)
@@ -1224,7 +1249,7 @@ class CandidateClientEmailCampaignResource(Resource):
         except Exception as e:
             raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
 
-        return email_campaign_send_created
+        return email_campaign_send_created, 201
 
 
 class CandidateViewResource(Resource):

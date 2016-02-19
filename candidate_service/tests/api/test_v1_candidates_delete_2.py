@@ -99,20 +99,6 @@ def test_delete_experience_of_a_different_candidate(user_first, access_token_fir
     assert updated_resp.json()['error']['code'] == custom_error.EXPERIENCE_FORBIDDEN
 
 
-def test_delete_candidate_experience_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's experience without providing experience_id
-    Expect: 404
-    """
-    # Remove one of Candidate's experiences without experience_id
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_experience_resource(access_token_first, 'delete',
-                                                            candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_experiences(user_first, access_token_first, talent_pool):
     """
     Test:   Remove all of candidate's experiences from db
@@ -252,20 +238,6 @@ def test_delete_exp_bullets_of_a_different_candidate(user_first, access_token_fi
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
     assert updated_resp.json()['error']['code'] == custom_error.EXPERIENCE_FORBIDDEN
-
-
-def test_delete_candidate_exp_bullets_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's exp-bullets without providing bullet_id
-    Expect: 404
-    """
-    # Remove one of Candidate's exp-bullets without an id
-    AddUserRoles.delete(user=user_first)
-    candidate_id, experience_id = 5, 5 # These are arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_experience_bullet_resource(access_token_first, 'delete',
-                                                                   candidate_id, experience_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
 
 
 def test_delete_candidate_experience_bullets(user_first, access_token_first, talent_pool):
@@ -411,19 +383,6 @@ def test_delete_email_of_a_different_candidate(user_first, access_token_first, t
     assert updated_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
 
 
-def test_delete_candidate_email_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's email without providing email_id
-    Expect: 404
-    """
-    # Remove one of Candidate's emails without an id
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_email_resource(access_token_first, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_emails(user_first, access_token_first, talent_pool):
     """
     Test:   Remove Candidate's emails from db
@@ -560,19 +519,6 @@ def test_delete_military_service_of_a_different_candidate(user_first, access_tok
     assert updated_resp.json()['error']['code'] == custom_error.MILITARY_FORBIDDEN
 
 
-def test_delete_candidate_military_service_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's military_service without providing military_service_id
-    Expect: 404
-    """
-    # Remove one of Candidate's military_services without an id
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_military_service(access_token_first, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_military_services(user_first, access_token_first, talent_pool):
     """
     Test:   Remove Candidate's military services from db
@@ -705,19 +651,6 @@ def test_delete_phone_of_a_different_candidate(user_first, access_token_first, t
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
     assert updated_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
-
-
-def test_delete_candidate_phone_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's phone without providing phone_id
-    Expect: 404
-    """
-    # Remove one of Candidate's phones without an id
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_phone_resource(access_token_first, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
 
 
 def test_delete_candidate_phones(user_first, access_token_first, talent_pool):
@@ -854,20 +787,6 @@ def test_delete_preferred_location_of_a_different_candidate(user_first, access_t
     assert updated_resp.status_code == 403
 
 
-def test_delete_candidate_preferred_location_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's preferred location without providing preferred_location_id
-    Expect: 404
-    """
-    # Remove one of Candidate's preferred location without preferred location ID
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_preferred_location_resource(access_token_first, 'delete',
-                                                                    candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
 def test_delete_candidate_preferred_locations(user_first, access_token_first, talent_pool):
     """
     Test:   Remove Candidate's preferred locations from db
@@ -1000,18 +919,6 @@ def test_delete_skill_of_a_different_candidate(user_first, access_token_first, t
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
     assert updated_resp.json()['error']['code'] == custom_error.SKILL_FORBIDDEN
-
-
-def test_delete_candidate_skill_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's skill without providing skill_id
-    Expect: 404
-    """
-    # Remove one of Candidate's skills without an id
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_skill_resource(access_token_first, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
 
 
 def test_delete_candidate_skills(user_first, access_token_first, talent_pool):
@@ -1148,20 +1055,6 @@ def test_delete_social_network_of_a_different_candidate(user_first, access_token
     print response_info(updated_resp)
     assert updated_resp.status_code == 403
     assert updated_resp.json()['error']['code'] == custom_error.SOCIAL_NETWORK_FORBIDDEN
-
-
-def test_delete_candidate_social_network_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's social network without providing social_network_id
-    Expect: 404
-    """
-    # Remove one of Candidate's social network without social network ID
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_social_network_resource(access_token_first, 'delete',
-                                                                candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
 
 
 def test_delete_candidate_social_networks(user_first, access_token_first, talent_pool):

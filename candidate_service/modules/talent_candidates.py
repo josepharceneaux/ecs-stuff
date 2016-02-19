@@ -27,7 +27,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
@@ -399,8 +399,8 @@ def candidate_military_services(candidate_id):
              'status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
-             'from_date': military_info.from_date.strftime('%Y-%m-%d') if military_info.from_date else None,
-             'to_date': military_info.to_date.strftime('%Y-%m-%d') if military_info.from_date else None,
+             'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
+             'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
              'country': Country.country_name_from_country_id(country_id=military_info.country_id),
              'comments': military_info.comments
              } for military_info in military_experiences]
@@ -1048,7 +1048,6 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
             # CandidateAddress must be recognized before updating
             candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
             if not candidate_address_query.first():
-                error_message = "Candidate address you are requesting to update does not exist."
                 raise InvalidUsage(error_message='Candidate address not found',
                                    error_code=custom_error.ADDRESS_NOT_FOUND)
 
@@ -1073,9 +1072,16 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     Function will add CandidateAreaOfInterest
     """
     for area_of_interest in areas_of_interest:
+        # AreaOfInterest object must be recognized
         aoi_id = area_of_interest['area_of_interest_id']
-        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id,
-                                               area_of_interest_id=aoi_id))
+        # aoi_object = AreaOfInterest.get_by_id(_id=aoi_id)
+
+        # Prevent duplicate insertions
+        candidate_aoi_object = CandidateAreaOfInterest.get_aoi(candidate_id=candidate_id, aoi_id=aoi_id)
+        if candidate_aoi_object:
+            continue
+
+        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time, user_id, edit_time):

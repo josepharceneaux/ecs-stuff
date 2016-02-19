@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_marketing import EmailCampaignSend
+from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -275,7 +275,7 @@ class CandidateEmail(db.Model):
 
     @classmethod
     def get_by_address(cls, email_address):
-        return cls.query.filter_by(address=email_address).all()
+        return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
 
 
 class CandidatePhoto(db.Model):
@@ -759,7 +759,8 @@ class CandidateEducation(db.Model):
 class CandidateEducationDegree(db.Model):
     __tablename__ = 'candidate_education_degree'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_education_id = db.Column('CandidateEducationId', db.BIGINT, db.ForeignKey('candidate_education.Id'))
+    candidate_education_id = db.Column('CandidateEducationId', db.BIGINT,
+                                       db.ForeignKey('candidate_education.Id', ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     degree_type = db.Column('DegreeType', db.String(100))
     degree_title = db.Column('DegreeTitle', db.String(100))
@@ -767,10 +768,11 @@ class CandidateEducationDegree(db.Model):
     start_month = db.Column('StartMonth', db.SmallInteger)
     end_year = db.Column('EndYear', YEAR)
     end_month = db.Column('EndMonth', db.SmallInteger)
-    gpa_num = db.Column('GpaNum', db.DECIMAL)
-    gpa_denom = db.Column('GpaDenom', db.DECIMAL)
+    gpa_num = db.Column('GpaNum', db.DECIMAL(precision=6, scale=2))
+    gpa_denom = db.Column('GpaDenom', db.DECIMAL(precision=6, scale=2))
     added_time = db.Column('AddedTime', db.DateTime)
-    classification_type_id = db.Column('ClassificationTypeId', db.Integer, db.ForeignKey('classification_type.Id'))
+    classification_type_id = db.Column('ClassificationTypeId', db.Integer,
+                                       db.ForeignKey('classification_type.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     start_time = db.Column('StartTime', db.DateTime)
     end_time = db.Column('EndTime', db.DateTime)
@@ -789,7 +791,9 @@ class CandidateEducationDegree(db.Model):
 class CandidateEducationDegreeBullet(db.Model):
     __tablename__ = 'candidate_education_degree_bullet'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_education_degree_id = db.Column('CandidateEducationDegreeId', db.BIGINT, db.ForeignKey('candidate_education_degree.Id'))
+    candidate_education_degree_id = db.Column('CandidateEducationDegreeId', db.BIGINT,
+                                              db.ForeignKey('candidate_education_degree.Id',
+                                                            ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     concentration_type = db.Column('ConcentrationType', db.String(200))
     comments = db.Column('Comments', db.String(5000))
@@ -798,7 +802,8 @@ class CandidateEducationDegreeBullet(db.Model):
 
     # Relationships
     candidate_education_degree = relationship('CandidateEducationDegree', backref=backref(
-        'candidate_education_degree_bullet', cascade='all, delete-orphan', passive_deletes=True))
+        'candidate_education_degree_bullet', cascade='all, delete-orphan', passive_deletes=True
+    ))
 
     def __repr__(self):
         return "<CandidateEducationDegreeBullet (candidate_education_degree_id=' %r')>" % \
@@ -808,7 +813,7 @@ class CandidateEducationDegreeBullet(db.Model):
 class CandidateExperience(db.Model):
     __tablename__ = 'candidate_experience'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
+    candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     organization = db.Column('Organization', db.String(150))
     position = db.Column('Position', db.String(150))
@@ -851,7 +856,7 @@ class CandidateExperienceBullet(db.Model):
     __tablename__ = 'candidate_experience_bullet'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_experience_id = db.Column('CandidateExperienceId', db.BIGINT,
-                                        db.ForeignKey('candidate_experience.Id'))
+                                        db.ForeignKey('candidate_experience.Id', ondelete='CASCADE'))
     list_order = db.Column('ListOrder', db.SmallInteger)
     description = db.Column('Description', db.String(10000))
     added_time = db.Column('AddedTime', db.DateTime)

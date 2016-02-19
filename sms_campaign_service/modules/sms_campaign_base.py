@@ -475,6 +475,7 @@ class SmsCampaignBase(CampaignBase):
                                             self.user.id))
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
+        super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
         return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')

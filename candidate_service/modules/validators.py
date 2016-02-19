@@ -7,10 +7,10 @@ import json
 import re
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import Candidate
-from candidate_service.common.models.email_marketing import EmailClient
+from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError
@@ -319,6 +319,7 @@ def validate_and_format_data(request_data):
             request_vars[key] = value
     return request_vars
 
+
 def is_valid_email_client(client_id):
     """
     Validate if client id is in the system
@@ -326,3 +327,16 @@ def is_valid_email_client(client_id):
     :return: string: email client name
     """
     return db.session.query(EmailClient.name).filter(EmailClient.id == int(client_id)).first()
+
+
+def is_date_valid(date):
+    """
+    Checks if date format is: yyyy-mm-dd
+    :type date:  basestring|str
+    :rtype:  bool
+    """
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False

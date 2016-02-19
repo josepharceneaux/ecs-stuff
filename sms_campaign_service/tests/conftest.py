@@ -13,10 +13,6 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
-from sms_campaign_service.sms_campaign_app import init_sms_campaign_app_and_celery_app
-
-app, _ = init_sms_campaign_app_and_celery_app()
-
 # common conftest
 from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
