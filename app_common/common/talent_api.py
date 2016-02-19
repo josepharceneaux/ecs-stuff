@@ -30,6 +30,6 @@ class TalentApi(Api):
             # Api user should not see this error because it is an unexpected error
             # that was not handled by the API.
             # return jsonify(dict(message='Some Internal Server Error Occurred.')), 500
-            super(TalentApi, self).handle_error(e)
+            return super(TalentApi, self).handle_error(e)
 
 
