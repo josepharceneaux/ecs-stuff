@@ -3,13 +3,11 @@ EmailCampaign is a restful resource and the endpoint which is sending out emails
 using blueprint.
 """
 import json
-import os
 from flask import request, Blueprint, jsonify
 from flask_restful import Resource
 from werkzeug.utils import redirect
 from ...email_campaign_app import logger
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
 from ...modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
@@ -34,8 +32,6 @@ class EmailCampaignApi(Resource):
         GET /email-campaigns               Fetches all email campaign objects from auth user's domain
 
         """
-        env = os.getenv(TalentConfigKeys.ENV_KEY)
-        raise InvalidUsage('GT_ENV(%s) not set correctly.' % env)
         user = request.user
         email_campaign_id = kwargs.get('id')
         if email_campaign_id:
