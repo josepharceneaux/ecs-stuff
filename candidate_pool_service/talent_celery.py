@@ -1,7 +1,7 @@
 from celery import Celery
 
 accept_content = {
-    'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
+    'CELERY_ACCEPT_CONTENT': ['pickle', 'json', 'msgpack', 'yaml']
 }
 
 def make_celery(app):

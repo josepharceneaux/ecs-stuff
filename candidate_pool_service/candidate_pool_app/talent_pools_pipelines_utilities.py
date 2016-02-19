@@ -174,7 +174,7 @@ def update_smartlists_stats_task():
         talent_logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
 
     logger.info("Statistics for following %s SmartLists have been updated successfully: "
-                "%s" % len(successful_update_smartlist_ids), ''.join(successful_update_smartlist_ids))
+                "%s" % (len(successful_update_smartlist_ids), ''.join(successful_update_smartlist_ids)))
 
 
 @celery_app.task()
@@ -221,7 +221,7 @@ def update_talent_pools_stats_task():
         talent_logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
 
     logger.info("Statistics for following %s TalentPools have been updated successfully: "
-                "%s" % len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids))
+                "%s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
 
 
 @celery_app.task()
@@ -301,9 +301,9 @@ def update_talent_pipelines_stats_task():
         talent_logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
     logger.info("Statistics for all TalentPipelines in following %s TalentPools have been updated "
-                "successfully: %s" % len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids))
+                "successfully: %s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
     logger.info("Statistics for following %s TalentPipelines have been updated successfully: "
-                "%s" % len(successful_update_talent_pipeline_ids), ''.join(successful_update_talent_pipeline_ids))
+                "%s" % (len(successful_update_talent_pipeline_ids), ''.join(successful_update_talent_pipeline_ids)))
 
 
 def schedule_daily_task_unless_already_scheduled(task_name, url):
