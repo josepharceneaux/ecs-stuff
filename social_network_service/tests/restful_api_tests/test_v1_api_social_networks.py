@@ -4,12 +4,12 @@ For that, first create an two social network and subscribe to only one of them a
 if social network is subscribed or not
 Also check that the endpoint should not be accessible with invalid token
 """
-import requests
 import json
 
+import requests
 
-from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.social_network_app import logger
 
 
 def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):

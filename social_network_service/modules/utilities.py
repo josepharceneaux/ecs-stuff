@@ -4,13 +4,13 @@ or consumed by various programs.
 """
 
 # Standard Library
-import re
 import imp
-import sys
-import random
-import string
-import inspect
 import importlib
+import inspect
+import random
+import re
+import string
+import sys
 import traceback
 from datetime import datetime
 
@@ -272,8 +272,7 @@ def process_event(data, user_id, method='Create'):
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
 
-        activity_data = {'first_name': request.user.first_name,
-                         'last_name': request.user.last_name,
+        activity_data = {'name': request.user.name,
                          }
 
         if method == 'Create':

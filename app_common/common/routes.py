@@ -13,6 +13,7 @@ Here we have two(or maybe three) classes for each service.
 
 """
 import os
+
 from talent_config_manager import TalentConfigKeys
 
 LOCAL_HOST = 'http://127.0.0.1'
@@ -689,9 +690,9 @@ class SocialNetworkApi(object):
     TOKEN_REFRESH = RELATIVE_VERSION % 'social-networks/<int:id>/token/refresh'
     USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % 'social-networks/<int:id>/user/credentials'
     VENUES = RELATIVE_VERSION % 'venues'
-    VENUE = RELATIVE_VERSION % 'venues/<int:id>'
+    VENUE = RELATIVE_VERSION % 'venues/<int:venue_id>'
     EVENT_ORGANIZERS = RELATIVE_VERSION % 'event-organizers'
-    EVENT_ORGANIZER = RELATIVE_VERSION % 'event-organizers/<int:id>'
+    EVENT_ORGANIZER = RELATIVE_VERSION % 'event-organizers/<int:organizer_id>'
     TIMEZONES = RELATIVE_VERSION % 'data/timezones'
     RSVP = RELATIVE_VERSION % 'rsvp'
     CODE = RELATIVE_VERSION % 'code'

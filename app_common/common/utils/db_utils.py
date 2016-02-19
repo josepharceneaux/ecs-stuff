@@ -1,8 +1,8 @@
 """Utility functions related to database/model code."""
 __author__ = 'erikfarmer'
 # Module Specific
-from sqlalchemy.sql.expression import ClauseElement
 from _mysql_exceptions import IntegrityError
+from sqlalchemy.sql.expression import ClauseElement
 
 
 def get_or_create(session, model, defaults=None, **kwargs):

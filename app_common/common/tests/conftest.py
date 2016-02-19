@@ -1,6 +1,9 @@
 # Standard Library
+import random
+import requests
+import string
+import uuid
 from datetime import datetime
-import random, string, uuid, requests
 
 # Third Party
 import json

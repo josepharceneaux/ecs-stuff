@@ -1,4 +1,5 @@
 import datetime
+
 from db import db
 
 

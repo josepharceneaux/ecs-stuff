@@ -9,7 +9,6 @@ from functools import wraps
 import requests
 # Application/Module Specific
 from ..utils.handy_functions import random_letter_digit_string
-from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
 from ..routes import AuthApiUrl

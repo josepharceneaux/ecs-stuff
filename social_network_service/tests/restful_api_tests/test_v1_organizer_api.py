@@ -1,7 +1,7 @@
 # Std imports
 import json
-import requests
 
+import requests
 # App specific imports
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl

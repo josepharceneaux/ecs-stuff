@@ -1,7 +1,8 @@
 __author__ = 'ufarooqi'
 
-from flask import request
 from flask import current_app as app
+from flask import request
+
 from amazon_ses import send_email, DEFAULT_MAIL_SENDER
 from ..talent_config_manager import TalentConfigKeys
 

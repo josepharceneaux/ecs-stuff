@@ -1,11 +1,13 @@
 """File contains handy functions which can be used to call frequently used candidate_service API calls."""
 
-import requests
 import json
+
+import requests
+
+from ..error_handling import InternalServerError, InvalidUsage
 from ..models.user import User
 from ..routes import CandidateApiUrl
 from ..utils.handy_functions import create_oauth_headers
-from ..error_handling import InternalServerError, InvalidUsage
 
 __author__ = 'jitesh'
 

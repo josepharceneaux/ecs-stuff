@@ -7,8 +7,8 @@ Eventbrite contains methods like get_rsvps(), get_attendee() etc.
 import json
 import re
 from datetime import datetime
-from base import RSVPBase
 
+from base import RSVPBase
 # Application Specific
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential

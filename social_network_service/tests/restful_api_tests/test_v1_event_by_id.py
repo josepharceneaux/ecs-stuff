@@ -5,9 +5,9 @@ Test cases for meetup and eventbrite event i.e get/delete event by id or using w
 # Std imports
 import datetime
 import json
-import requests
 import sys
 
+import requests
 # Application imports
 from social_network_service.common.models import db
 from social_network_service.common.models.event import Event

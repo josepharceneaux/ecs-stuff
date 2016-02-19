@@ -7,11 +7,11 @@ In a developer's local environment, the file given by the below LOCAL_CONFIG_PAT
 Rather, the properties are obtained from ECS environment variables and a private S3 bucket.
 """
 
+import imp
 import logging
 import logging.config
 import os
 import tempfile
-import imp
 
 # Load logging configuration file
 APP_ROOT = os.path.dirname(os.path.abspath(__file__))

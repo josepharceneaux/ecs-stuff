@@ -1,13 +1,14 @@
 __author__ = 'ufarooqi'
 
 import boto
-from flask import current_app as app
 import boto.exception
 from boto.s3.bucket import Bucket
+from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 from boto.s3.key import Key
+from flask import current_app as app
+
 from ..error_handling import InternalServerError, InvalidUsage
 from ..talent_config_manager import TalentConfigKeys
-from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
 
 def get_s3_bucket_and_conn():

@@ -1,6 +1,6 @@
-from db import db
 import datetime
-from talent_pools_pipelines import TalentPipeline
+
+from db import db
 
 
 class Smartlist(db.Model):

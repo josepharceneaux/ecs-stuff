@@ -1,11 +1,9 @@
 # Standard Library
-import json
-import os
 
 # Third Party
-import pytest
-from faker import Faker
 from datetime import datetime, timedelta
+
+import pytest
 
 # App Settings
 from social_network_service.social_network_app import app
@@ -19,18 +17,13 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.user import Client
 from social_network_service.common.models.user import Domain
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.misc import Organization, Activity
+from social_network_service.common.models.misc import Organization
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.modules.utilities import delete_events
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.common.tests.conftest import (user_auth, sample_user,
-                                                          test_domain, test_org, test_culture, first_group, domain_first)
 from social_network_service.tests.helper_functions import send_request
-
-db_session = db.session
-fake = Faker()
 
 
 # This is common data for creating test events
@@ -108,10 +101,7 @@ def test_eventbrite_credentials(request, sample_user, eventbrite):
     :param sample_user: fixture user
     :return:
     """
-    try:
-        event_id = eventbrite.id
-    except Exception:
-        event_id = -1
+    event_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential(
         social_network_id=event_id,
         user_id=sample_user.id,
@@ -123,7 +113,8 @@ def test_eventbrite_credentials(request, sample_user, eventbrite):
         """
         Delete credentials for eventbrite for test user object at the end of test session
         """
-        UserSocialNetworkCredential.delete(user_credentials)
+        with app.app_context():
+            UserSocialNetworkCredential.delete(user_credentials)
 
     request.addfinalizer(fin)
     return user_credentials
@@ -138,10 +129,7 @@ def test_meetup_credentials(request, sample_user, meetup):
     :param sample_user: fixture user
     :return:
     """
-    try:
-        event_id = meetup.id
-    except Exception:
-        event_id = -1
+    event_id = meetup.id
     user_credentials = UserSocialNetworkCredential(
         social_network_id=event_id,
         user_id=sample_user.id,

@@ -1,14 +1,11 @@
-from sqlalchemy import and_
-from db import db
-from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage
+
+from sqlalchemy import and_
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_marketing import EmailCampaignSend
-from associations import ReferenceEmail
-from venue import Venue
-from event import Event
-from sms_campaign import SmsCampaignReply
+from sqlalchemy.orm import relationship, backref
+
+from db import db
+from ..error_handling import InvalidUsage
 
 
 class Candidate(db.Model):

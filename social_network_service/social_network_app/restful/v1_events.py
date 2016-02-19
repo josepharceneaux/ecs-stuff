@@ -150,7 +150,8 @@ class Events(Resource):
         # get json post request data
         event_data = get_valid_json_data(request)
         gt_event_id = process_event(event_data, request.user.id)
-        headers = {'Location': '/%s/events/%s' % (SocialNetworkApi.VERSION, gt_event_id)}
+        headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.EVENT_ORGANIZERS,
+                                                   id=gt_event_id)}
         return ApiResponse(dict(id=gt_event_id), headers=headers,
                            status=201)
 
@@ -251,10 +252,10 @@ class EventById(Resource):
         :return: json for required event
         """
         event = Event.get_by_user_and_event_id(request.user.id, event_id)
-        if event:
-            event_data = add_organizer_venue_data(event)
-            return dict(event=event_data)
-        raise ResourceNotFound('Event does not exist with id %s' % event_id)
+        if not event:
+            raise ResourceNotFound('Event does not exist with id %s' % event_id)
+        event_data = add_organizer_venue_data(event)
+        return dict(event=event_data)
 
     def put(self, event_id):
         """
@@ -322,10 +323,12 @@ class EventById(Resource):
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
             request.user.id, event_id, event_data['social_network_event_id'])
-        if event:
-            process_event(event_data, request.user.id, method='Update')
-            return dict(message='Event updated successfully')
-        raise ResourceNotFound('Event not found')
+
+        if not event:
+            raise ResourceNotFound('Event not found')
+
+        process_event(event_data, request.user.id, method='Update')
+        return dict(message='Event updated successfully')
 
     def delete(self, event_id):
         """

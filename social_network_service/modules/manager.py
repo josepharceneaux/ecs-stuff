@@ -1,6 +1,6 @@
 # Standard Library
-import sys
 import argparse
+import sys
 import traceback
 
 # Third Party

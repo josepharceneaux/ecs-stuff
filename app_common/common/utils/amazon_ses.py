@@ -1,9 +1,10 @@
 __author__ = 'ufarooqi'
 
-import boto
-import os
 import re
+
+import boto
 from flask import current_app as app
+
 from ..talent_config_manager import TalentConfigKeys
 
 DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'

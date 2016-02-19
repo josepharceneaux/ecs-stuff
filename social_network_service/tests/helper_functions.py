@@ -4,10 +4,10 @@ or send request
 """
 
 # Std Imports
-import json
 import datetime
-import requests
+import json
 
+import requests
 # Service imports
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger

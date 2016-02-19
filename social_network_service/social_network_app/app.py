@@ -5,7 +5,6 @@
 """
 # Standard imports
 import json
-import traceback
 
 # 3rd party imports
 import flask
@@ -106,12 +105,11 @@ def handle_rsvp():
 
         data = {'message': 'RSVP Saved',
                 'status_code': 200}
-        return flask.jsonify(**data), 200
+        return flask.jsonify(**data)
 
     else:
-        # return hub_challenge, 200
         error_message = 'No RSVP data received.'
         data = {'message': error_message,
                 'status_code': 200}
-        return flask.jsonify(**data), 200
+        return flask.jsonify(**data)
 

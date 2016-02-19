@@ -14,12 +14,11 @@ import requests
 from social_network_service.common.models import db
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.modules.custom_exceptions import SocialNetworkApiNotFoundException, VenueNotFound, \
+from social_network_service.modules.custom_exceptions import VenueNotFound, \
     EventInputMissing, InvalidDatetime, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.tests.helper_functions import auth_header, get_headers, send_request, \
-    event_data_tests, unauthorize_test, send_post_request
+from social_network_service.tests.helper_functions import auth_header, send_post_request
 
 
 class TestResourceEvents:
@@ -292,7 +291,7 @@ class TestResourceEvents:
         :return:
         """
         event_data = meetup_event_data
-        event_data['venue_id'] = 2
+        event_data['venue_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
         assert response.status_code == 404, 'Venue not Found in database'

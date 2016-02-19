@@ -3,10 +3,11 @@
 
 import json
 import traceback
-from ..utils.handy_functions import http_request
+
 from ..routes import ActivityApiUrl
-from ..utils.talent_reporting import email_error_to_admins
 from ..utils.handy_functions import generate_jwt_headers
+from ..utils.handy_functions import http_request
+from ..utils.talent_reporting import email_error_to_admins
 
 
 def add_activity(user_id, activity_type, source_table, source_id=None, params=None):

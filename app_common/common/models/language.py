@@ -1,5 +1,4 @@
 from db import db
-from candidate import CandidateLanguage
 
 
 class Language(db.Model):

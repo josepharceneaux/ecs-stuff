@@ -1,7 +1,7 @@
 # Std imports
 import json
-import requests
 
+import requests
 # Application specific imports
 from social_network_service.common.models.venue import Venue
 from social_network_service.social_network_app import logger

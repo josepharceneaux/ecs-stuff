@@ -1,8 +1,10 @@
 __author__ = 'basit'
 
 import datetime
-from db import db
+
 from sqlalchemy.orm import relationship
+
+from db import db
 from ..error_handling import InvalidUsage
 
 

@@ -1,7 +1,6 @@
 """Misc functions that have no logical grouping to a module."""
 from werkzeug.exceptions import BadRequest
 
-from app_common.common.error_handling import InvalidUsage
 
 __author__ = 'erikfarmer'
 
@@ -170,14 +169,16 @@ def log_exception(message, app=None):
     :param app:
     :return:
     """
+    if not app:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        logger.exception(message)
+        return
+
     if app and not isinstance(app, Flask):
         raise InvalidUsage(error_message="app instance should be flask")
-    if app:
-        logger = app.config[TalentConfigKeys.LOGGER]
-        with app.app_context():
-            logger.exception(message)
-    else:
-        logger = current_app.config[TalentConfigKeys.LOGGER]
+
+    logger = app.config[TalentConfigKeys.LOGGER]
+    with app.app_context():
         logger.exception(message)
 
 
@@ -188,15 +189,16 @@ def log_error(message, app=None):
     :param app:
     :return:
     """
+    if not app:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        logger.exception(message)
+        return
 
     if app and not isinstance(app, Flask):
         raise InvalidUsage(error_message="app instance should be flask")
-    if app:
-        logger = app.config[TalentConfigKeys.LOGGER]
-        with app.app_context():
-            logger.error(message)
-    else:
-        logger = current_app.config[TalentConfigKeys.LOGGER]
+
+    logger = app.config[TalentConfigKeys.LOGGER]
+    with app.app_context():
         logger.error(message)
 
 

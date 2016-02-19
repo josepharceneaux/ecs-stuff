@@ -48,11 +48,10 @@ from types import MethodType
 # Third Party
 from flask import current_app
 from flask.ext.cors import CORS
-from healthcheck import HealthCheck
 
 # Application Specific
 from ..models.db import db
-from ..routes import GTApis, HEALTH_CHECK
+from ..routes import GTApis
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import register_error_handlers
 from ..utils.handy_functions import camel_case_to_snake_case

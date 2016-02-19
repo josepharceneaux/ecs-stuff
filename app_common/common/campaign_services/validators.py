@@ -22,7 +22,6 @@ from flask import current_app
 from dateutil.parser import parse
 
 # Database Models
-from app_common.common.utils.handy_functions import get_valid_json_data
 from ..models.user import User
 from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
@@ -34,7 +33,7 @@ from ..models.email_marketing import EmailCampaignBlast
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items,
-                                     validate_required_fields)
+                                     validate_required_fields, get_valid_json_data)
 
 
 def validate_datetime_format(str_datetime):

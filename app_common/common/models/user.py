@@ -1,22 +1,18 @@
-import time
-import os
-import uuid
 import datetime
+import os
+import time
+import uuid
+
 from flask import request
-from sqlalchemy.orm import relationship
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 from sqlalchemy.dialects.mysql import TINYINT
+from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
 from db import db
-from ..utils.validators import is_number
 from ..error_handling import *
 from ..redis_cache import redis_store
-from candidate import CandidateSource
-from associations import CandidateAreaOfInterest
-from event_organizer import EventOrganizer
-from misc import AreaOfInterest
-from email_marketing import EmailCampaign
-from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from ..utils.validators import is_number
 
 
 class User(db.Model):
@@ -316,7 +312,7 @@ class Token(db.Model):
     def get_by_user_id(cls, user_id):
         """
         Filter Token based on user_id and return token from db
-        :param access_token: User access_token
+        :param user_id: User access_token
         :return: Token object matched with access_token
         """
         assert user_id, "user_id is None"
@@ -332,8 +328,7 @@ class Token(db.Model):
         """
         assert access_token, "access_token is empty"
         token = Token.query.filter_by(access_token=access_token).first()
-        if not token:
-            raise ResourceNotFound("Token not found")
+        assert token, "Token not found"
         return token
 
 
