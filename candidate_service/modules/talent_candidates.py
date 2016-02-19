@@ -20,7 +20,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -576,6 +576,71 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
         db.session.add(CandidateSubscriptionPreference(
             candidate_id=candidate_id, frequency_id=frequency_id
         ))
+    db.session.commit()
+
+
+#######################################
+# Helper Functions For Candidate Photos
+#######################################
+def add_photos(candidate_id, photos, added_time=None):
+    """
+    Function will add a new entry into CandidatePhoto
+    :type candidate_id: int|long
+    :type user_id: int|long
+    :type photos:  list[dict[str, T]]
+    """
+    # Check if any of the photo objects have is_default value
+    photo_has_default = any(photo.get('is_default') for photo in photos)
+    if photo_has_default:
+        CandidatePhoto.set_is_default_to_false(candidate_id=candidate_id)
+
+    for i, photo in enumerate(photos):
+        # Format inputs
+        is_default = i == 0 if not photo_has_default else photo['is_default']
+        added_time = photo['added_datetime'] if photo.get('added_datetime') else datetime.datetime.utcnow()
+        image_url = photo['image_url']
+
+        # Prevent duplicate insertions
+        if CandidatePhoto.exists(candidate_id=candidate_id, image_url=image_url):
+            continue
+
+        db.session.add(CandidatePhoto(candidate_id=candidate_id, image_url=image_url,
+                                      is_default=is_default, added_datetime=added_time))
+    db.session.commit()
+
+
+def update_photo(candidate_id, photo_id, user_id, update_dict):
+    """
+    Function will update CandidatePhoto data
+    :type candidate_id:  int|long
+    :type photo_id:  int|long
+    :type user_id:   int|long
+    """
+    # Format inputs
+    photo_update_dict = dict(candidate_id=candidate_id,
+                             image_url=update_dict.get('image_url'),
+                             is_default=update_dict.get('is_default'),
+                             updated_time=datetime.datetime.now())
+    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
+
+    photo_query = CandidatePhoto.query.filter_by(id=photo_id)
+    photo_object = photo_query.first()
+
+    # Photo must be recognized
+    if not photo_object:
+        raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
+                            error_code=custom_error.PHOTO_NOT_FOUND)
+
+    # Photo must belong to candidate
+    if photo_object.candidate_id != candidate_id:
+        raise ForbiddenError('Unauthorized candidate photo', error_code=custom_error.PHOTO_FORBIDDEN)
+
+    # Track all changes
+    _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
+                                 datetime.datetime.utcnow())
+
+    # Update candidate's photo
+    photo_query.update(photo_update_dict)
     db.session.commit()
 
 
@@ -2105,6 +2170,28 @@ def _track_candidate_social_network_edits(sn_dict, candidate_social_network, can
 
         # If old_value and new_value are equal, do not add record
         old_value, new_value = getattr(candidate_social_network, field), sn_dict.get(field)
+        if old_value == new_value:
+            continue
+
+        db.session.add(CandidateEdit(
+            user_id=user_id,
+            candidate_id=candidate_id,
+            field_id=field_id,
+            old_value=old_value,
+            new_value=new_value,
+            edit_datetime=edit_time
+        ))
+
+
+def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user_id, edit_time):
+    for field in photo_dict:
+        # If field_id is not found, do not add record
+        field_id = CandidateEdit.get_field_id('candidate_photo', field)
+        if not field:
+            continue
+
+        # If old_value and new_value are equal, do not add record
+        old_value, new_value = getattr(candidate_photo, field), photo_dict.get(field)
         if old_value == new_value:
             continue
 
