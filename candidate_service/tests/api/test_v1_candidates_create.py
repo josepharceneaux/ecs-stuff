@@ -19,6 +19,83 @@ from candidate_service.common.models.candidate import CandidateEmail
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
+def test_candidate_creation_postman(access_token_first, user_first, talent_pool, domain_aoi):
+    """
+
+    :param access_token_first:
+    :param user_first:
+    :param talent_pool:
+    :param domain_aoi:
+    :return:
+    """
+    AddUserRoles.all_roles(user=user_first)
+    data = {
+        "candidates": [
+            {"first_name": "James", "middle_name": "Earl", "last_name": "Jones",
+             "talent_pool_ids": {"add": [talent_pool.id]},
+             "emails": [
+                 {"label": "Primary", "address": "myemail6@gmail.com", "is_default": True},
+                 {"label": "Secondary", "address": "myemail7@gmail.com", "is_default": False}
+             ],
+             "phones": [
+                 {"label": "mobile", "value": "4088368912", "is_default": True},
+                 {"label": "home", "value": "415159408", "is_default": False}
+             ],
+             "areas_of_interest": [
+                 {"area_of_interest_id": domain_aoi[0].id}, {"area_of_interest_id": domain_aoi[1].id}
+             ],
+             "work_preference": {
+                 "authorization": "US Citizen",
+                 "employment_type": "Full-time, Part-timeContract - W2",
+                 "relocate": True,
+                 "telecommute": True,
+                 "travel_percentage": 25,
+                 "security_clearance": False,
+                 "third_party": False,
+                 "hourly_rate": 35.5,
+                 "salary": 75000},
+             "addresses": [{"address_line_1": "840 Battery St.", "address_line_2": "", "city": "San Francisco",
+                            "state": "CA", "country": "US, United States", "po_box": None, "zip_code": "94101",
+                            "is_default": True}],
+             "social_networks": [
+                 {"name": "facebook", "profile_url": "https://www.facebook.com/DavidAvocadoWolfe"},
+                 {"name": "linkedin", "profile_url": "https://www.linkedin.com/in/abeheshtaein"},
+                 {"name": "twitter", "profile_url": "https://twitter.com/AmirBeheshty"}
+             ],
+             "preferred_locations": [
+                 {"address": "250 Hospital Way", "city": "San Jose", "state": "CA", "country": "US, United States",
+                  "zip_code": "95133"},
+                 {"city": "New York", "state": "New York", "country": "US, United States", "zip_code": "95133"}
+             ],
+             "work_experiences": [
+                 {"position": "QA engineer", "organization": "Dice", "city": "San Jose", "state": "CA",
+                  "country": "US, United States",
+                  "start_year": 2006, "end_year": 2010, "start_month": 12, "end_month": 12, "is_current": False,
+                  "bullets": [
+                      {"description": "Did cool things in a certain way to make stuff better."},
+                      {"description": "Did more cool things in yet another way for more betterment."}
+                  ]
+                  }
+             ],
+             "military_services": [
+                 {"country": "US, United States", "highest_rank": "liutenant", "branch": "Air Force",
+                  "status": "active",
+                  "highest_grade": "O-1", "from_date": "2001-12-12", "to_date": "2009-11-01",
+                  "comments": "served 4 years in Iraq"}
+             ],
+             "skills": [
+                 {"name": "PHP", "months_used": 13, "last_used_date": "2010-08-03"},
+                 {"name": "SQL", "months_used": 43, "last_used_date": "2015-08-03"},
+                 {"name": "Payroll", "months_used": 24, "last_used_date": "2014-08-03"}
+             ]
+             }
+        ]
+    }
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data=data)
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 201
+
+
 class CommonData(object):
     @staticmethod
     def data(_talent_pool):

@@ -44,7 +44,7 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateSubscriptionPreference
 )
-from candidate_service.common.models.misc import AreaOfInterest, Frequency
+from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -135,10 +135,20 @@ class CandidatesResource(Resource):
                                                additional_error_info={'id': candidate_id})
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
-                all_cf_ids.append(custom_field.get('custom_field_id'))
+                custom_field_id = custom_field.get('custom_field_id')
+                if custom_field_id:
+                    if not CustomField.get_by_id(_id=custom_field_id):
+                        raise NotFoundError('Custom field not recognized: {}'.format(custom_field_id),
+                                            custom_error.CUSTOM_FIELD_NOT_FOUND)
+                all_cf_ids.append(custom_field_id)
 
             for aoi in _candidate_dict.get('areas_of_interest') or []:
-                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+                aoi_id = aoi.get('area_of_interest_id')
+                if aoi_id:
+                    if not AreaOfInterest.get_by_id(_id=aoi_id):
+                        raise NotFoundError('Area of interest not recognized: {}'.format(aoi_id),
+                                            custom_error.AOI_NOT_FOUND)
+                all_aoi_ids.append(aoi_id)
 
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
@@ -479,8 +489,7 @@ class CandidateAreaOfInterestResource(Resource):
 
         if area_of_interest_id:  # Delete specified area of interest
             # Area of interest must be associated with candidate's CandidateAreaOfInterest
-            candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id,
-                                                                          area_of_interest_id)
+            candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, area_of_interest_id)
             if not candidate_aoi:
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
@@ -491,7 +500,7 @@ class CandidateAreaOfInterestResource(Resource):
             domain_aois = AreaOfInterest.get_domain_areas_of_interest(authed_user.domain_id)
             areas_of_interest_id = [aoi.id for aoi in domain_aois]
             for aoi_id in areas_of_interest_id:
-                candidate_aoi = CandidateAreaOfInterest.get_areas_of_interest(candidate_id, aoi_id)
+                candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, aoi_id)
                 if not candidate_aoi:
                     raise NotFoundError(error_message='Candidate area of interest not found',
                                         error_code=custom_error.AOI_NOT_FOUND)

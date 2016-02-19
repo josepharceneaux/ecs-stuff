@@ -983,7 +983,6 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
             # CandidateAddress must be recognized before updating
             candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
             if not candidate_address_query.first():
-                error_message = "Candidate address you are requesting to update does not exist."
                 raise InvalidUsage(error_message='Candidate address not found',
                                    error_code=custom_error.ADDRESS_NOT_FOUND)
 
@@ -1008,9 +1007,16 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
     Function will add CandidateAreaOfInterest
     """
     for area_of_interest in areas_of_interest:
+        # AreaOfInterest object must be recognized
         aoi_id = area_of_interest['area_of_interest_id']
-        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id,
-                                               area_of_interest_id=aoi_id))
+        # aoi_object = AreaOfInterest.get_by_id(_id=aoi_id)
+
+        # Prevent duplicate insertions
+        candidate_aoi_object = CandidateAreaOfInterest.get_aoi(candidate_id=candidate_id, aoi_id=aoi_id)
+        if candidate_aoi_object:
+            continue
+
+        db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
 def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time, user_id, edit_time):
