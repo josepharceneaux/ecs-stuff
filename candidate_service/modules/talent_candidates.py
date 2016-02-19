@@ -399,8 +399,8 @@ def candidate_military_services(candidate_id):
              'status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
-             'from_date': military_info.from_date.strftime('%Y-%m-%d') if military_info.from_date else None,
-             'to_date': military_info.to_date.strftime('%Y-%m-%d') if military_info.from_date else None,
+             'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
+             'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
              'country': Country.country_name_from_country_id(country_id=military_info.country_id),
              'comments': military_info.comments
              } for military_info in military_experiences]

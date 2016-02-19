@@ -891,6 +891,25 @@ def test_update_existing_phone(access_token_first, user_first, talent_pool):
 
 
 ######################## CandidateMilitaryService ########################
+def test_add_military_service_with_incorrect_date_format(access_token_first, user_first, talent_pool):
+    """
+    Test: Attempt to add military service to candidate with faulty to_date or from_date format
+    Expect: 400
+    """
+    # Create candidate + candidate military service
+    AddUserRoles.add_and_get(user=user_first)
+    data = {'candidates': [
+        {'talent_pool_ids': {'add': [talent_pool.id]}, 'military_services': [
+            # {'from_date': '1974-5-25', 'to_date': '1'},
+            {'from_date': '2005', 'to_date': '2012-12-12'}
+        ]}
+    ]}
+    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+    print response_info(response=create_resp)
+    assert create_resp.status_code == 400
+    assert create_resp.json()['error']['code'] == custom_error.MILITARY_INVALID_DATE
+
+
 def test_add_military_service(access_token_first, user_first, talent_pool):
     """
     Test:   Add a CandidateMilitaryService to an existing Candidate.
@@ -918,6 +937,7 @@ def test_add_military_service(access_token_first, user_first, talent_pool):
     # Retrieve Candidate after update
     candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
         .json()['candidate']
+    print "candidate_dict: {}".format(candidate_dict)
 
     military_services_after_update = candidate_dict['military_services']
     assert candidate_id == candidate_dict['id']
