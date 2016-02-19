@@ -597,7 +597,7 @@ def add_photos(candidate_id, photos, added_time=None):
     for i, photo in enumerate(photos):
         # Format inputs
         is_default = i == 0 if not photo_has_default else photo['is_default']
-        added_time = photo['added_time'] if photo.get('added_time') else datetime.datetime.utcnow()
+        added_time = photo['added_datetime'] if photo.get('added_datetime') else datetime.datetime.utcnow()
         image_url = photo['image_url']
 
         # Prevent duplicate insertions
@@ -605,7 +605,7 @@ def add_photos(candidate_id, photos, added_time=None):
             continue
 
         db.session.add(CandidatePhoto(candidate_id=candidate_id, image_url=image_url,
-                                      is_default=is_default, added_time=added_time))
+                                      is_default=is_default, added_datetime=added_time))
     db.session.commit()
 
 

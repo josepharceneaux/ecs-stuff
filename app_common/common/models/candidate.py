@@ -292,7 +292,7 @@ class CandidatePhoto(db.Model):
 
     @classmethod
     def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+        return cls.query.get(_id)
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):

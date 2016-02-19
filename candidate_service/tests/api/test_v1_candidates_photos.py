@@ -1,5 +1,6 @@
 from candidate_service.tests.api import *
 
+
 class TestCandidatePhoto(object):
     def test_create_candidate_photo(self, access_token_first, user_first, talent_pool):
         """
@@ -15,9 +16,12 @@ class TestCandidatePhoto(object):
 
         # Add Photo to candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        data = {'photos': [{'image_url': 'www.foo.com', 'added_time': datetime.isoformat(datetime.utcnow())}, {'image_url': 'www.goo.com'}]}
-        create_photo = request_to_candidate_photos_resource(access_token_first, 'post',
-                                                            candidate_id=candidate_id,
+        data = {'photos': [
+            {'image_url': 'www.foo.com', 'added_time': datetime.isoformat(datetime.utcnow())},
+            {'image_url': 'www.goo.com'}
+        ]}
+        create_photo = request_to_candidate_photos_resource(token=access_token_first,
+                                                            request='post', candidate_id=candidate_id,
                                                             data=data)
         print response_info(response=create_photo)
         assert create_photo.status_code == 204

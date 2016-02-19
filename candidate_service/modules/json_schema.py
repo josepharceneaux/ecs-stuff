@@ -1335,7 +1335,7 @@ resource_schema_photos_post = {
                 "properties": {
                     "image_url": {"type": "string"},
                     "is_default": {"type": ["boolean", "null"]},
-                    "added_time": {
+                    "added_datetime": {
                         "type": ["string", "null"],
                         # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
                     }
@@ -1361,7 +1361,7 @@ resource_schema_photos_patch = {
                 "properties": {
                     "image_url": {"type": "string"},
                     "is_default": {"type": ["boolean", "null"]},
-                    "added_time": {
+                    "added_datetime": {
                         "type": ["string", "null"],
                         # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
                     }
