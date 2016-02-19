@@ -315,9 +315,15 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
                            error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
     for list_id in list_ids:
         # Get candidates present in smartlist
-        smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)
+        try:
+            smartlist_candidate_ids = get_candidates_of_smartlist(list_id,
+                                                                  candidate_ids_only=True)
+            all_candidate_ids.extend(smartlist_candidate_ids)
+        except Exception as error:
+            logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
+                             ' User(id:%s). Reason: %s'
+                             % (list_id, campaign.user.id, error.message))
         # gather all candidates from various smartlists
-        all_candidate_ids.extend(smartlist_candidate_ids)
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     if not all_candidate_ids:
         raise InvalidUsage('No candidates found for smartlist_ids %s.' % list_ids,

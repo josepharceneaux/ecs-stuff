@@ -4,7 +4,7 @@ from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.error_handling import InternalServerError
+from candidate_pool_service.common.error_handling import InternalServerError, InvalidUsage
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
@@ -21,7 +21,12 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
     """
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
-        search_params = json.loads(smartlist.search_params)
+        try:
+            search_params = json.loads(smartlist.search_params)
+        except ValueError:
+            raise InvalidUsage('search_params(%s) are not JSON serializable for '
+                               'smartlist(id:%s). User(id:%s)'
+                               % (smartlist.search_params, smartlist.id, smartlist.user_id))
         if candidate_ids_only:
             search_params['fields'] = 'id'
         if count_only:
@@ -82,7 +87,6 @@ def create_smartlist_dict(smartlist, oauth_token):
         "name": smartlist.name,
         "search_params": smartlist.search_params
     }
-
 
 
 def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
