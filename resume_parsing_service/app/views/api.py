@@ -53,12 +53,16 @@ def resume_post_reciever():
         filepicker_key = request_json.get('filepicker_key')
         resume_file = None
         resume_file_name = str(filepicker_key)
+        if not filepicker_key:
+            raise InvalidUsage('Invalid JSON data for resume parsing')
     # Handle posted form data. Required for mobile app as it posts a binary file
     elif 'multipart/form-data' in content_type:
         create_candidate = request.form.get('create_candidate')
         filepicker_key = None
         resume_file = request.files.get('resume_file')
         resume_file_name = request.form.get('resume_file_name')
+        if not (resume_file and resume_file_name):
+            raise InvalidUsage('Invalid form data for resume parsing.')
     else:
         logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
             request.form, request.files, request.json

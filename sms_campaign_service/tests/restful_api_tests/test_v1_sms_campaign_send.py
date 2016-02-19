@@ -7,17 +7,14 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Service Specific
-from sms_campaign_service.modules.custom_exceptions import CandidateNotFoundInUserDomain, \
-    SmsCampaignApiException
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.tests.modules.common_functions import \
-    (assert_on_blasts_sends_url_conversion_and_activity, assert_api_send_response)
-
+from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInUserDomain,
+                                                            SmsCampaignApiException)
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
-                                                        ForbiddenError, InvalidUsage)
 from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
@@ -35,37 +32,31 @@ class TestSendSmsCampaign(object):
         User auth token is invalid, it should get Unauthorized error.
         :return:
         """
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
-        assert response.status_code == UnauthorizedError.http_status_code(), \
-            'It should be unauthorized (401)'
+        CampaignsCommonTests.request_with_invalid_token(self.METHOD,
+                                                        self.URL % sms_campaign_of_current_user.id,
+                                                        None)
 
-    def test_post_with_id_of_deleted_record(self, access_token_first, valid_header,
+    def test_post_with_id_of_deleted_record(self, access_token_first,
                                             sms_campaign_of_current_user):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
         to update the record. It should get ResourceNotFound error.
         :return:
         """
-        response_delete = requests.delete(
-            SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id, headers=valid_header)
-        assert response_delete.status_code == 200, 'should get ok response (200)'
-        response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                      headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == ResourceNotFound.http_status_code(), \
-            'Record should not be found (404)'
+        CampaignsCommonTests.request_after_deleting_campaign(
+            sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
+            self.URL % sms_campaign_of_current_user.id, self.METHOD, access_token_first)
 
-    def test_post_with_not_owned_campaign(self, access_token_first,
-                                          sms_campaign_in_other_domain):
+    def test_post_with_campaign_in_some_other_domain(self, access_token_first,
+                                                     sms_campaign_in_other_domain):
         """
         User auth token is valid but given SMS campaign does not belong to domain
         of logged-in user. It should get Forbidden error.
         :return:
         """
-        response_post = requests.post(self.URL % sms_campaign_in_other_domain.id,
-                                      headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == ForbiddenError.http_status_code(), \
-            'It should get forbidden error (403)'
+        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
+                                                         self.URL % sms_campaign_in_other_domain.id,
+                                                         access_token_first)
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):
@@ -77,31 +68,21 @@ class TestSendSmsCampaign(object):
         NoSmartlistAssociatedWithCampaign.
         :return:
         """
-        response_post = requests.post(
-            self.URL % sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error(400)'
-        assert response_post.json()['error']['code'] == \
-               CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-        assert 'No Smartlist'.lower() in response_post.json()['error']['message'].lower()
+        CampaignsCommonTests.campaign_send_with_no_smartlist(
+            self.URL % sms_campaign_of_current_user.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
-                                              sms_campaign_of_current_user,
-                                              smartlist_for_not_scheduled_campaign):
+                                              sms_campaign_of_current_user):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get invalid usage error.
         Custom error should be NoCandidateAssociatedWithSmartlist .
         :return:
         """
-        response_post = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                      headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response_post.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error (400)'
-        assert response_post.json()['error']['code'] == \
-               CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-        assert 'No Candidate'.lower() in response_post.json()['error']['message'].lower()
+        with app.app_context():
+            CampaignsCommonTests.campaign_send_with_no_smartlist_candidate(
+                self.URL % sms_campaign_of_current_user.id, access_token_first,
+                sms_campaign_of_current_user)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -127,9 +108,10 @@ class TestSendSmsCampaign(object):
         response_post = requests.post(
             self.URL % sms_campaign_of_current_user.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 0, sms_campaign_of_current_user)
+        assert response_post.status_code == InvalidUsage.http_status_code()
+        json_resp = response_post.json()['error']
+        assert str(sms_campaign_of_current_user.id) in json_resp['message']
+        assert json_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
             self, user_first, access_token_first, smartlist_for_not_scheduled_campaign,

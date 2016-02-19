@@ -27,7 +27,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 

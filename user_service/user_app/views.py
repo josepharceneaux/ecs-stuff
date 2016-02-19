@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 import random
 import string
 from . import app
-from flask import request,, Blueprint
+from flask import request, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_JWT_SALT, \
