@@ -8,6 +8,12 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
+from ..models.event import Event
+from candidate import CandidateSource
+from associations import CandidateAreaOfInterest
+from event_organizer import EventOrganizer
+from misc import AreaOfInterest
+from email_campaign import EmailCampaign
 from db import db
 from ..error_handling import *
 from ..redis_cache import redis_store
@@ -50,7 +56,7 @@ class User(db.Model):
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
-    events = db.relationship('Event', backref='user', lazy='dynamic',
+    events = db.relationship(Event, backref='user', lazy='dynamic',
                              cascade='all, delete-orphan', passive_deletes=True)
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic',
                                        cascade='all, delete-orphan', passive_deletes=True)
