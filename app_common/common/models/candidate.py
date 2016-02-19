@@ -278,7 +278,7 @@ class CandidateEmail(db.Model):
 
     @classmethod
     def get_by_address(cls, email_address):
-        return cls.query.filter_by(address=email_address).all()
+        return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
 
 
 class CandidatePhoto(db.Model):

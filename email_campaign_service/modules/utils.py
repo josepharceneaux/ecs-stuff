@@ -5,6 +5,7 @@ from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from dateutil.relativedelta import relativedelta
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.misc import UrlConversion
@@ -32,6 +33,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
                             params=params, headers=create_oauth_headers())
+    if response.status_code == InvalidUsage.http_status_code():
+        raise InvalidUsage(response.content)
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
     if candidate_ids_only:

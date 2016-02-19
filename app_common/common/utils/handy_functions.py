@@ -271,6 +271,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
+                logger.exception("http_request: Server error from %s on %s call. "
+                                 "Make sure requested server is running." % (url, method_type))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
