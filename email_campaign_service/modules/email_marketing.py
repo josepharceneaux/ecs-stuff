@@ -160,7 +160,6 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
-    list_of_new_email_html_or_text = []
     # Check if the smart list has more than 0 candidates
     if candidate_ids_and_emails:
         email_notification_to_admins(

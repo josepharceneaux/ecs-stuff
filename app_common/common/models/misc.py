@@ -53,6 +53,10 @@ class AreaOfInterest(db.Model):
         return "<AreaOfInterest (name='%r')>" % self.name
 
     @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
+
+    @classmethod
     def get_area_of_interest(cls, domain_id, name):
         return cls.query.filter(db.and_(
             AreaOfInterest.domain_id == domain_id,
@@ -298,6 +302,10 @@ class CustomField(db.Model):
 
     def __repr__(self):
         return "<CustomField (name = %r)>" % self.name
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def get_domain_custom_fields(cls, domain_id):

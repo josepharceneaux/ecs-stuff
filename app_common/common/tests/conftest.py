@@ -206,7 +206,7 @@ def test_org(request):
 
 @pytest.fixture()
 def domain_aoi(domain_first):
-    """Will add areas-of-interest to domain
+    """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
     areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]

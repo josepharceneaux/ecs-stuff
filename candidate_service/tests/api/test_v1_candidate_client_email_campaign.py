@@ -58,9 +58,12 @@ class TestClientEmailCampaign(object):
             headers={'Authorization': 'Bearer %s' % access_token_first,
                      'content-type': 'application/json'}
         )
+
         # assert it is created and contains email campaign sends objects
         assert email_campaign.status_code == 201
+
         email_campaign_sends = email_campaign.json()['email_campaign_sends']
+
         # assert each email campaign send has an ID, an email address to send to and new_html to send to the user
         for email_campaign_send in email_campaign_sends:
             assert email_campaign_send['email_campaign_id']
