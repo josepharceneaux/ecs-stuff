@@ -54,8 +54,7 @@ class SmartlistStats(db.Model):
     __tablename__ = 'smartlist_stats'
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column(db.Integer, db.ForeignKey('smart_list.Id', ondelete='CASCADE'), nullable=False)
-    total_candidates = db.Column(db.Integer, nullable=False, default=0)
-    number_of_candidates_removed_or_added = db.Column(db.Integer, nullable=False, default=0)
+    total_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
     candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
     added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
 

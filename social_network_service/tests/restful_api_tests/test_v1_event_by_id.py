@@ -16,6 +16,7 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import auth_header, send_request, unauthorize_test
+from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
 
 
 class TestEventById(object):

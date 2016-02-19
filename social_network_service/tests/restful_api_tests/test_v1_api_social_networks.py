@@ -9,6 +9,7 @@ import json
 import requests
 
 from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
 from social_network_service.social_network_app import logger
 
 

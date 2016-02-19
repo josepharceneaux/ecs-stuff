@@ -1,10 +1,10 @@
 __author__ = 'ufarooqi'
-
 from flask.ext.cors import CORS
 from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi, GTApis
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from candidate_pool_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_pool_service.common.talent_flask import TalentFlask
+from candidate_pool_service.talent_celery import make_celery
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
@@ -16,10 +16,12 @@ try:
     print "register error handlers"
     register_error_handlers(app, logger)
 
-
     from candidate_pool_service.common.models.db import db
     db.init_app(app)
     db.app = app
+
+    # Instantiate Celery
+    celery_app = make_celery(app)
 
     # Initialize Redis Cache
     from candidate_pool_service.common.redis_cache import redis_store

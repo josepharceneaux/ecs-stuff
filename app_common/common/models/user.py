@@ -4,7 +4,6 @@ import time
 import uuid
 
 from flask import request
-from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
@@ -13,6 +12,7 @@ from db import db
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 
 class User(db.Model):
@@ -408,12 +408,6 @@ class DomainRole(db.Model):
         CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
         CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
 
-        # Talent Pool Stats
-        CAN_EDIT_TALENT_POOLS_STATS = "CAN_EDIT_TALENT_POOLS_STATS"
-
-        # Smartlist Stats
-        CAN_EDIT_SMARTLISTS_STATS = "CAN_EDIT_SMARTLISTS_STATS"
-
         # Talent Pipeline Candidates
         CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
 
@@ -426,7 +420,6 @@ class DomainRole(db.Model):
         # Talent Pipelines' Stats
         CAN_ADD_TALENT_PIPELINES_STATS = "CAN_ADD_TALENT_PIPELINES_STATS"
         CAN_GET_TALENT_PIPELINES_STATS = "CAN_GET_TALENT_PIPELINES_STATS"
-        CAN_EDIT_TALENT_PIPELINES_STATS = "CAN_EDIT_TALENT_PIPELINES_STATS"
         CAN_DELETE_TALENT_PIPELINES_STATS = "CAN_DELETE_TALENT_PIPELINES_STATS"
 
         # Talent Pipeline Smart lists

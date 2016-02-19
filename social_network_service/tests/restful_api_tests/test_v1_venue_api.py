@@ -4,6 +4,7 @@ import json
 import requests
 # Application specific imports
 from social_network_service.common.models.venue import Venue
+from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, get_headers
@@ -81,7 +82,7 @@ class TestVenues:
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
-    def test_deletew_invalid_values(self, token):
+    def test_delete_with_invalid_values(self, token):
         """
         Send DELETE request with invalid values in ids(post data) and response should be 207
         :param token:

@@ -22,10 +22,10 @@ from pytz import timezone
 # Application Specific Imports
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.social_network_app import logger
 from social_network_service.modules.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.social_network_app import logger
 
 
 class Attendee(object):
@@ -272,7 +272,7 @@ def process_event(data, user_id, method='Create'):
         data['user_id'] = user_id
         event_obj.event_gt_to_sn_mapping(data)
 
-        activity_data = {'name': request.user.name,
+        activity_data = {'username': request.user.name,
                          }
 
         if method == 'Create':

@@ -371,8 +371,8 @@ def second_group(request, domain_second):
 
 
 @pytest.fixture()
-def sample_user(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
+def sample_user(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
 
     def tear_down():
         try:
@@ -385,8 +385,8 @@ def sample_user(test_domain, first_group, request):
 
 
 @pytest.fixture()
-def sample_user_2(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
+def sample_user_2(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
 
     def tear_down():
         try:

@@ -261,23 +261,15 @@ class Frequency(db.Model):
             raise InvalidUsage("Unknown frequency ID: %s" % frequency_id)
         return seconds
 
-    @property
-    def in_seconds(self):
-        """ Returns frequency in seconds, if not found in defined dict (frequency_in_seconds), will return 0.
-        """
-        frequency_in_seconds = self.standard_frequencies()
-        return frequency_in_seconds.get(self.name.lower(), 0)
-
     @classmethod
-    def standard_frequencies(self):
+    def standard_frequencies(cls):
         """Returns a dict of system wide standard frequency names and period in seconds"""
-        return {'once': 0, 'daily': 24 * 3600, 'weekly': 7 * 24 * 3600, 'biweekly': 2 * 7 * 24 * 3600,
-                'monthly': 30 * 24 * 3600, 'yearly': 365 * 24 * 3600}
-
-    @classmethod
-    def get_frequency_from_name(cls, frequency_name):
-        """Returns frequency object wrt given name(case insensitive) """
-        return cls.query.filter_by(name=frequency_name).first()
+        return {'once': cls.get_seconds_from_id(cls.ONCE),
+                'daily': cls.get_seconds_from_id(cls.DAILY),
+                'weekly': cls.get_seconds_from_id(cls.WEEKLY),
+                'biweekly': cls.get_seconds_from_id(cls.BIWEEKLY),
+                'monthly': cls.get_seconds_from_id(cls.MONTHLY),
+                'yearly': cls.get_seconds_from_id(cls.YEARLY)}
 
 
 class CustomField(db.Model):
@@ -376,3 +368,7 @@ class UrlConversion(db.Model):
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+    email_campaign_sends_url_conversions = relationship('EmailCampaignSendUrlConversion',
+                                                        cascade='all,delete-orphan',
+                                                        passive_deletes=True,
+                                                        backref='url_conversion')

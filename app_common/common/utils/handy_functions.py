@@ -248,10 +248,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == ResourceNotFound.http_status_code():
                 # 404 is the error code for Resource Not found
-                raise ResourceNotFound(response.content)
+                raise ResourceNotFound(str(e.response.json()))
             elif e.response.status_code == UnauthorizedError.http_status_code():
                 # 401 is the error code for Not Authorized user(Expired Token)
-                raise UnauthorizedError(response.content)
+                raise UnauthorizedError(str(e.response.json()))
             # checks if error occurred on "Server" or is it a bad request
             elif e.response.status_code < InternalServerError.http_status_code():
                 try:
@@ -410,7 +410,7 @@ def create_oauth_headers():
     """
     oauth_token = request.oauth_token
     if not oauth_token:
-        return generate_jwt_headers('application/json')
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}

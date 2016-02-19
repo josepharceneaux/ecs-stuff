@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pytest
 
 # App Settings
+from social_network_service.common.tests.conftest import user_auth, sample_user
 from social_network_service.social_network_app import app
 
 # Application Specific
@@ -24,7 +25,6 @@ from social_network_service.modules.utilities import delete_events
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.tests.helper_functions import send_request
-
 
 # This is common data for creating test events
 EVENT_DATA = {
@@ -101,9 +101,9 @@ def test_eventbrite_credentials(request, sample_user, eventbrite):
     :param sample_user: fixture user
     :return:
     """
-    event_id = eventbrite.id
+    social_network_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential(
-        social_network_id=event_id,
+        social_network_id=social_network_id,
         user_id=sample_user.id,
         access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN],
         refresh_token='')
@@ -129,9 +129,9 @@ def test_meetup_credentials(request, sample_user, meetup):
     :param sample_user: fixture user
     :return:
     """
-    event_id = meetup.id
+    social_network_id = meetup.id
     user_credentials = UserSocialNetworkCredential(
-        social_network_id=event_id,
+        social_network_id=social_network_id,
         user_id=sample_user.id,
         access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
         refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN])

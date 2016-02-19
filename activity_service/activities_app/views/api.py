@@ -97,16 +97,16 @@ class TalentActivityManager(object):
                                         " on event '%(eventTitle)s'",
                                         "candidate.png"),
 
-        ActivityMessageIds.EVENT_CREATE: ("%(name)s created an event <b>%(event_title)s",
-                                          "%(name)s created %(count)s events.</b>",
+        ActivityMessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
+                                          "%(username)s created %(count)s events.</b>",
                                           "event.png"),
 
-        ActivityMessageIds.EVENT_DELETE: ("%(name)s deleted an event <b>%(event_title)s",
-                                          "%(name)s deleted %(count)s events.</b>",
+        ActivityMessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
+                                          "%(username)s deleted %(count)s events.</b>",
                                           "event.png"),
 
-        ActivityMessageIds.EVENT_UPDATE: ("%(name)s updated an event <b>%(event_title)s.",
-                                          "%(name)s updated %(count)s events.</b>",
+        ActivityMessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
+                                          "%(username)s updated %(count)s events.</b>",
                                           "event.png"),
 
         ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",

@@ -46,7 +46,8 @@ def safe_send_email(source, subject, body, to_addresses, html_body=None, text_bo
     return dict(request_id=request_id, message_id=message_id)
 
 
-def send_email(source, subject, body, to_addresses, html_body=None, text_body=None, reply_address=None, email_format='text'):
+def send_email(source, subject, body, to_addresses, html_body=None, text_body=None,
+               reply_address=None, email_format='text'):
     conn = get_boto_ses_connection()
     email_result = conn.send_email(
         source=source,
