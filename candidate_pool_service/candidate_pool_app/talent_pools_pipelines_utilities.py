@@ -11,7 +11,7 @@ from candidate_pool_service.common.error_handling import InvalidUsage
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
+from candidate_pool_service.common.models.email_campaign import EmailCampaignSend
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
