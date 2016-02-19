@@ -160,7 +160,6 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
-    list_of_new_email_html_or_text = []
     # Check if the smart list has more than 0 candidates
     if candidate_ids_and_emails:
         email_notification_to_admins(
@@ -189,6 +188,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
         blast_params = dict(sends=0, bounces=0)
         logger.info('Email campaign record is %s. blast record is %s. User(id:%s).'
                     % (campaign.to_dict(), email_campaign_blast.to_json(), user.id))
+        list_of_new_email_html_or_text = []
         # Do not send mail if email_client_id is provided
         if campaign.email_client_id:
             # Loop through each candidate and get new_html and new_text
