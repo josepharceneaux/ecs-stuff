@@ -321,7 +321,8 @@ class CandidatePhoto(db.Model):
         """
         if cls.query.filter_by(candidate_id=candidate_id, image_url=image_url).first():
             return True
-        else: return False
+        else:
+            return False
 
 
 class CandidateRating(db.Model):
