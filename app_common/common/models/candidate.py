@@ -284,8 +284,8 @@ class CandidatePhoto(db.Model):
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     image_url = db.Column('ImageUrl', db.String(260))
     is_default = db.Column('IsDefault', db.Boolean)
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    added_datetime = db.Column('AddedDatetime', db.TIMESTAMP, default=datetime.datetime.utcnow())
+    updated_datetime = db.Column('UpdatedDatetime', db.TIMESTAMP, default=datetime.datetime.utcnow())
 
     def __repr__(self):
         return "<CandidatePhoto (id = {})>".format(self.id)

@@ -1285,6 +1285,7 @@ candidates_resource_schema_patch = {
     }
 }
 
+
 candidates_resource_schema_get = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     # "id": "http://jsonschema.net",
@@ -1303,6 +1304,7 @@ candidates_resource_schema_get = {
     }
 }
 
+
 resource_schema_preferences = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     # "id": "http://jsonschema.net",
@@ -1313,6 +1315,58 @@ resource_schema_preferences = {
         "frequency_id": {
             # "id": "http://jsonschema.net/frequency_id",
             "type": "integer"
+        }
+    }
+}
+
+resource_schema_photos_post = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["photos"],
+    "properties": {
+        "photos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["image_url"],
+                # "additionalProperties": False,
+                "properties": {
+                    "image_url": {"type": "string"},
+                    "is_default": {"type": ["boolean", "null"]},
+                    "added_time": {
+                        "type": ["string", "null"],
+                        # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+resource_schema_photos_patch = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["photos"],
+    "properties": {
+        "photos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                # "additionalProperties": False,
+                "properties": {
+                    "image_url": {"type": "string"},
+                    "is_default": {"type": ["boolean", "null"]},
+                    "added_time": {
+                        "type": ["string", "null"],
+                        # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+                    }
+                }
+            }
         }
     }
 }

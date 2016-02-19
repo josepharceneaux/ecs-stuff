@@ -22,8 +22,8 @@ from candidate_service.modules.validators import (
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist
 )
 from candidate_service.modules.json_schema import (
-    candidates_resource_schema_post, candidates_resource_schema_patch,
-    candidates_resource_schema_get, resource_schema_preferences
+    candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
+    resource_schema_photos_post, resource_schema_photos_patch
 )
 from jsonschema import validate, FormatChecker, ValidationError
 
@@ -1389,7 +1389,13 @@ class CandidatePhotosResource(Resource):
         # Check if candidate exists & is not web-hidden
         get_candidate_if_exists(candidate_id=candidate_id)
 
+        # Validate request body
         body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_photos_post, format_checker=FormatChecker())
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1459,7 +1465,13 @@ class CandidatePhotosResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
+        # Validate request body
         body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_photos_patch)
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
 
         # Update candidate's photo
         update_photo(candidate_id, photo_id, authed_user.id, body_dict)

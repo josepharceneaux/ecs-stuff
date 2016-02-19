@@ -597,7 +597,7 @@ def add_photos(candidate_id, photos, added_time=None):
     for i, photo in enumerate(photos):
         # Format inputs
         is_default = i == 0 if not photo_has_default else photo['is_default']
-        added_time = photo['added_time'] if photo.get('added_time') else datetime.datetime.now()
+        added_time = photo['added_time'] if photo.get('added_time') else datetime.datetime.utcnow()
         image_url = photo['image_url']
 
         # Prevent duplicate insertions
@@ -624,19 +624,20 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
 
     photo_query = CandidatePhoto.query.filter_by(id=photo_id)
+    photo_object = photo_query.first()
 
     # Photo must be recognized
-    if not photo_query.first():
+    if not photo_object:
         raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
                             error_code=custom_error.PHOTO_NOT_FOUND)
 
     # Photo must belong to candidate
-    if photo_query.first().candidate_id != candidate_id:
+    if photo_object.candidate_id != candidate_id:
         raise ForbiddenError('Unauthorized candidate photo', error_code=custom_error.PHOTO_FORBIDDEN)
 
     # Track all changes
-    _track_candidate_photo_edits(photo_update_dict, photo_query.first(), candidate_id, user_id,
-                                 datetime.datetime.now())
+    _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
+                                 datetime.datetime.utcnow())
 
     # Update candidate's photo
     photo_query.update(photo_update_dict)
