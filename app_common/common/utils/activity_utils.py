@@ -27,7 +27,6 @@ class ActivityMessageIds(object):
     CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
     CAMPAIGN_PAUSE = 21
     CAMPAIGN_RESUME = 22
-    CAMPAIGN_SCHEDULE = 27
 
     # params=dict(name, is_smartlist=0/1)
     SMARTLIST_CREATE = 8
@@ -60,4 +59,5 @@ class ActivityMessageIds(object):
     CAMPAIGN_PUSH_CREATE = 29
     CAMPAIGN_PUSH_SEND = 30
     CAMPAIGN_PUSH_CLICK = 31
+
 

@@ -6,13 +6,13 @@ __author__ = 'erikfarmer'
 from datetime import datetime
 import json
 import re
-from time import time
 # framework specific
 from flask import Blueprint
 from flask import jsonify
 from flask import request
+
 # application specific
-from activity_service.activities_app import db, logger
+from activity_service.activities_app import db
 from activity_service.common.models.user import User
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
@@ -47,7 +47,7 @@ def get_activities(page):
         try:
             request_page = int(page)
         except ValueError:
-            return jsonify(**{'error': {'message': 'page parameter must be an integer'}}), 400
+            return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
         return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
                                              start_datetime=request_start_time,
                                              end_datetime=request_end_time, page=request_page))
@@ -90,46 +90,6 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
 class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
-    CANDIDATE_CREATE_WEB = 1
-    CANDIDATE_CREATE_CSV = 18
-    CANDIDATE_CREATE_WIDGET = 19
-    CANDIDATE_CREATE_MOBILE = 20  # TODO add in
-    CANDIDATE_UPDATE = 2
-    CANDIDATE_DELETE = 3
-
-    # params=dict(id, name)
-    CAMPAIGN_CREATE = 4
-    CAMPAIGN_DELETE = 5
-    CAMPAIGN_SEND = 6  # also has num_candidates
-    CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
-    CAMPAIGN_PAUSE = 21
-    CAMPAIGN_RESUME = 22
-
-    # params=dict(name, is_smartlist=0/1)
-    SMARTLIST_CREATE = 8
-    SMARTLIST_DELETE = 9
-    SMARTLIST_ADD_CANDIDATE = 10  # also has formattedName (of candidate) and candidateId
-    SMARTLIST_REMOVE_CANDIDATE = 11  # also has formattedName and candidateId
-
-    USER_CREATE = 12  # params=dict(firstName, lastName)
-
-    WIDGET_VISIT = 13  # params=dict(client_ip)
-
-    # TODO implement frontend + backend
-    NOTIFICATION_CREATE = 14  # when we want to show the users a message
-
-    # params=dict(candidateId, campaign_name, candidate_name)
-    CAMPAIGN_EMAIL_SEND = 15
-    CAMPAIGN_EMAIL_OPEN = 16
-    CAMPAIGN_EMAIL_CLICK = 17
-    RSVP_EVENT = 23
-    CAMPAIGN_SMS_SEND = 24
-    CAMPAIGN_SMS_CLICK = 25
-    CAMPAIGN_SMS_REPLY = 26
-    CAMPAIGN_SMS_CREATE = 27
-    CAMPAIGN_PUSH_CREATE = 28
-    CAMPAIGN_PUSH_SEND = 29
-    CAMPAIGN_PUSH_CLICK = 30
 
     MESSAGES = {
         ActivityMessageIds.RSVP_EVENT: (
@@ -185,38 +145,6 @@ class TalentActivityManager(object):
         ActivityMessageIds.SMARTLIST_DELETE: (
             "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists",
             "smartlist.png"),
-        USER_CREATE: ("%(username)s has joined", "%(count)s users have joined", "notification.png"),
-        WIDGET_VISIT: ("Widget was visited", "Widget was visited %(count)s times", "widget.png"),
-        NOTIFICATION_CREATE: (
-            "You received an update notification", "You received %(count)s update notifications", "notification.png"),
-
-        CAMPAIGN_EMAIL_SEND: ("%(candidate_name)s received email of campaign %(campaign_name)s",
-                              "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
-        CAMPAIGN_EMAIL_OPEN: ("%(candidate_name)s opened email of campaign %(campaign_name)s",
-                              "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
-        CAMPAIGN_EMAIL_CLICK: ("%(candidate_name)s clicked email of campaign %(campaign_name)s",
-                               "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
-        CAMPAIGN_SMS_CREATE: ("%(user_name)s created an SMS campaign: '%(campaign_name)s'",
-                              "%(user_name)s created an SMS campaign: '%(campaign_name)s'",
-                              "campaign.png"),
-        CAMPAIGN_SMS_SEND: ("SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
-                     "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
-                     "campaign.png"),
-        CAMPAIGN_SMS_CLICK: ("%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
-                     "%(candidate_name)s clicked on %(campaign_name)s.",
-                     "campaign.png"),
-        CAMPAIGN_SMS_REPLY: ("%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
-                     "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
-                     "campaign.png"),
-        CAMPAIGN_PUSH_CREATE: ("%(user_name)s created a Push campaign: '%(campaign_name)s'",
-                               "%(user_name)s created a Push campaign: '%(campaign_name)s'",
-                               "campaign.png"),
-        CAMPAIGN_PUSH_SEND: ("Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
-                             "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
-                             "campaign.png"),
-        CAMPAIGN_PUSH_CLICK: ("%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
-                              "%(candidate_name)s clicked on %(campaign_name)s.",
-                              "campaign.png"),
         ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
             "%(formattedName)s was added to list %(name)s",
             "%(count)s candidates were added to list %(name)s",
@@ -255,8 +183,20 @@ class TalentActivityManager(object):
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_SCHEDULE: (
-            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
-            "%(username)s scheduled a/an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_CREATE: (
+            "%(user_name)s created a Push campaign: '%(campaign_name)s'",
+            "%(user_name)s created a Push campaign: '%(campaign_name)s'",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_SEND: (
+            "Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
+            "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_CLICK: (
+            "%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
+            "%(candidate_name)s clicked on %(campaign_name)s.",
             "campaign.png")
     }
 
@@ -295,18 +235,14 @@ class TalentActivityManager(object):
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, limit=3):
-        start_time = time()
         current_user = User.query.filter_by(id=user_id).first()
-        logger.info("Fetched current user in {} seconds".format(time() - start_time))
+        #
         # # Get the last 25 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
-        logger.info("Fetched domain IDs in {} seconds".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        logger.info("Flattened domain IDs in {} seconds".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
-        activities = Activity.query.filter(*filters).limit(25)
-        logger.info("Fetched limit activities in {} seconds".format(time() - start_time))
+        activities = Activity.query.filter(*filters)  # TODO add limit.
 
         aggregated_activities = []
         current_activity_count = 0
@@ -331,7 +267,6 @@ class TalentActivityManager(object):
                     break
 
                 current_activity_count = 0
-        logger.info("Finsihed making readable in {} seconds".format(time() - start_time))
 
         return aggregated_activities
 

@@ -392,7 +392,6 @@ class CandidatePoolApiUrl(object):
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
     SMARTLIST = API_URL % CandidatePoolApi.SMARTLISTS + '/%s'
-    SMARTLIST_STATS = API_URL % CandidatePoolApi.SMARTLIST_STATS
     SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
     SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
     SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
