@@ -2,12 +2,9 @@
 This modules contains tests for Url Redirection endpoint
 If anything goes wrong, this endpoint raises InternalServerError (500)
 """
-from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl
 from push_campaign_service.tests.test_utilities import send_request
-from push_campaign_service.common.models.candidate import Candidate
-from push_campaign_service.common.models.misc import Activity, UrlConversion
 from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from push_campaign_service.common.models.push_campaign import PushCampaignBlast, PushCampaign
 
 
 class TestURLRedirectionApi(object):
@@ -49,9 +46,6 @@ class TestURLRedirectionApi(object):
         updated_hit_counts, updated_clicks = url_conversion['hit_count'],  blast['clicks']
         assert updated_hit_counts == hit_count + 1
         assert updated_clicks == clicks + 1
-        # assert Activity.get_by_user_id_type_source_id(user_first['id'],
-        #                                               ActivityMessageIds.CAMPAIGN_PUSH_CLICK,
-        #                                               campaign_in_db['id'])
 
     def test_get_with_no_signature(self, url_conversion):
         """
@@ -62,16 +56,6 @@ class TestURLRedirectionApi(object):
         response = send_request('get', url_without_signature, '')
         assert response.status_code == 500
 
-    def test_get_with_empty_destination_url(self, url_conversion):
-        """
-        Making destination URL an empty string here, it should get internal server error.
-        :return:
-        """
-        # forcing destination URL to be empty
-        url_conversion.update(destination_url='')
-        response = send_request('get', url_conversion['source_url'], '')
-        assert response.status_code == 500
-
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):
         """
@@ -80,12 +64,12 @@ class TestURLRedirectionApi(object):
         But candidate should get Internal server error. Hence this test should get internal server
         error.
         """
-        PushCampaign.delete(campaign_in_db)
+        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % campaign_in_db['id'], token_first)
+        assert response.status_code == 200
         response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 500
 
-    def test_get_with_deleted_candidate(self, url_conversion,
-                                        test_candidate):
+    def test_get_with_deleted_candidate(self, url_conversion, candidate_first, token_first):
         """
         Here we first delete the candidate, which internally deletes the sms_campaign_send record
         as it uses candidate as primary key. We then test functionality of process_url_redirect
@@ -93,11 +77,13 @@ class TestURLRedirectionApi(object):
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
         """
-        Candidate.delete(test_candidate)
+        response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first['id'], token_first)
+        assert response.status_code == 204
+
         response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == 500
 
-    def test_get_with_deleted_url_conversion(self, url_conversion):
+    def test_get_with_deleted_url_conversion(self, url_conversion, token_first):
         """
         Here we first delete the url_conversion object. which internally deletes the
         sms_campaign_send record as it uses url_conversion as primary key. We then test
@@ -106,6 +92,7 @@ class TestURLRedirectionApi(object):
         So this test asserts we get internal server error.
         """
         source_url = url_conversion['source_url']
-        UrlConversion.delete(url_conversion)
+        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
+        assert response.status_code == 200
         response = send_request('get', source_url, '')
         assert response.status_code == 500

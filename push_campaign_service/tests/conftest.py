@@ -4,67 +4,37 @@ Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 This module contains fixtures to be used in tests for push campaign service.
 
 Most of the fixtures are created twice. First one with 'user_first' as owner and those that
-are postfix with  '_2' are owned by 'user_second'. 'user_first' belongs to domain 1 and
+are postfix with  '_second' are owned by 'user_second'. 'user_first' belongs to domain 1 and
 'user_second' belongs to another domain say domain 2.
 
 A user can update or delete objects that  are owned by a user that is from same domain. so there
-are some fixture that are postfix with '_with_same_domain', actually belong to domain 1
+are some fixture that are postfix with '_same_domain', actually belong to domain 1
 but maybe some other user.
 
 """
 import time
-from datetime import datetime
-
+import pytest
 import requests
+import ConfigParser
+from faker import Faker
 
-from push_campaign_service.push_campaign_app.app import app
-from app_common.common.utils.handy_functions import add_role_to_test_user
-from push_campaign_service.common.models.misc import UrlConversion
-# from push_campaign_service.common.tests.conftest import (user_auth, first_group, sample_user,
-#                                                          sample_user_2, user_from_diff_domain,
-#                                                          test_domain, domain_first,
-#                                                          test_org, test_domain_2,
-#                                                          second_group, domain_second,
-#                                                          user_first, user_second, user_same_domain,
-#                                                          access_token_first, access_token_second,
-#                                                          access_token_same, sample_client, talent_pool)
+from push_campaign_service.push_campaign_app import logger
+from push_campaign_service.common.tests.conftest import randomword
+from push_campaign_service.modules.constants import PUSH_DEVICE_ID
+from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.routes import (PushCampaignApiUrl, SchedulerApiUrl,
                                                  CandidatePoolApiUrl, CandidateApiUrl,
                                                  UserServiceApiUrl)
-from push_campaign_service.common.models.db import db
-
-from push_campaign_service.tests.test_utilities import (invalid_data_test,
-                                                        unauthorize_test,
-                                                        missing_key_test,
-                                                        send_request, OK,
-                                                        NOT_FOUND,
-                                                        INVALID_USAGE, FORBIDDEN, add_roles,
-                                                        remove_roles)
-from push_campaign_service.common.models.smartlist import Smartlist
-from push_campaign_service.common.models.candidate import (Candidate,
-                                                           CandidateDevice,
-                                                           CandidateEmail)
-
-
-from push_campaign_service.common.models.push_campaign import (PushCampaign,
-                                                               PushCampaignSmartlist,
-                                                               PushCampaignSendUrlConversion)
-
-from faker import Faker
-import pytest
-
-from push_campaign_service.modules.constants import PUSH_DEVICE_ID
-from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data, SLEEP_TIME,
-                                                        create_smart_list)
-import ConfigParser
+                                                        OK, NOT_FOUND, add_roles, remove_roles)
+
 
 CONFIG_FILE_NAME = "test.cfg"
 LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
-ROLES = ['CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS',
-         'CAN_ADD_TALENT_POOLS_TO_GROUP', 'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES',
-         'CAN_DELETE_CANDIDATES', 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS',
+ROLES = ['CAN_ADD_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS',
+         'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP', 'CAN_ADD_CANDIDATES',
+         'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES', 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS',
          'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS']
 
 
@@ -84,7 +54,7 @@ config = TestConfigParser()
 config.read(LOCAL_CONFIG_PATH)
 print(config.to_dict())
 
-test_config = config.to_dict()
+test_config = load_test_config()  # config.to_dict()
 
 
 @pytest.fixture()
@@ -158,8 +128,7 @@ def user_second(request, token_second):
     """
     This fixture will be used to send request for push campaigns to test same domain functionality
     :param request: request object
-    :param access_token_second: auth token for first user
-    :param user_second: second user for tests
+    :param token_second: auth token for first user
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
@@ -176,22 +145,37 @@ def user_second(request, token_second):
 
 
 @pytest.fixture()
-def user_same_domain(request, token_same_domain):
+def user_same_domain(request, token_same_domain, user_first, token_first):
     """
     This fixture will be used to send request for push campaigns
     :param request: request object
-    :param access_token_same: auth token for a user from same domain as of user first
-    :param user_same_domain: user from same domain as of user first
+    :param token_first: auth token for a user from same domain as of user first
     :return: user dictionary object
     """
-    user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    response = send_request('get', UserServiceApiUrl.USER % user_id, token_same_domain)
-    assert response.status_code == 200
+    data = {
+        "users": [
+            {
+                "first_name": fake.name(),
+                "last_name": fake.name(),
+                "email": fake.email(),
+                "phone": "226 581 1027",
+                "thumbnail_url": "https://www.thumbnail.com/xyz.png"
+            }
+        ]
+    }
+    response = send_request('post', UserServiceApiUrl.USERS, token_first, data=data)
+    assert response.status_code == OK
+    user_ids = response.json()['users']
+    assert len(user_ids) == 1
+    user_id = user_ids[0]
+    response = send_request('get', UserServiceApiUrl.USER % user_id, token_first)
+    assert response.status_code == OK
     user = response.json()['user']
-    add_roles(user['id'], ROLES, token_same_domain)
+    add_roles(user['id'], ROLES, token_first)
 
     def tear_down():
-        remove_roles(user['id'], ROLES, token_same_domain)
+        response = send_request('delete', UserServiceApiUrl.USER % user_id, token_first)
+        assert response.status_code == OK
 
     request.addfinalizer(tear_down)
     return user
@@ -434,12 +418,13 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     assert len(sends) == 1
     campaign_send = sends[0]
     response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     url_conversion = response.json()['url_conversion']
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
-        assert response.status_code == 200
+        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'],
+                                token_first)
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return url_conversion
@@ -454,7 +439,7 @@ def talent_pool(request, token_first):
     data = {
         "talent_pools": [
             {
-                "name": fake.word(),
+                "name": randomword(20),
                 "description": fake.paragraph()
             }
         ]
@@ -553,7 +538,7 @@ def candidate_first(request, user_first, talent_pool, token_first):
 
     def tear_down():
         response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_first)
-        assert response.status_code == OK
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return candidate
@@ -685,17 +670,28 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
 
 
 @pytest.fixture(scope='function')
-def candidate_device_second(request, candidate_second):
+def candidate_device_second(request, candidate_second, token_second):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
     """
-    device = CandidateDevice(candidate_id=candidate_second['id'],
-                             one_signal_device_id=PUSH_DEVICE_ID,
-                             registered_at=datetime.utcnow())
-    CandidateDevice.save(device)
-
-    return device
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    """
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_second['id'],
+                            token_second,
+                            data=data)
+    response.status_code == 201
+    response = send_request('get', CandidateApiUrl.DEVICES % candidate_second['id'],
+                            token_second)
+    assert response.status_code == OK
+    devices = response.json()['devices']
+    assert len(devices) == 1
+    return devices[0]
 
 
 

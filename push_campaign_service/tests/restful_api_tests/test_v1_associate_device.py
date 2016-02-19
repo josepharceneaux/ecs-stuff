@@ -14,7 +14,7 @@ URL = PushCampaignApiUrl.DEVICES
 
 class TestRegisterCandidateDevice(object):
 
-    def test_associate_device_with_invalid_token(self):
+    def test_associate_device_with_invalid_token(self, user_same_domain):
         # We are testing 401 here. so campaign and blast ids will not matter.
         unauthorize_test('post',  URL, 'invalid_token')
 

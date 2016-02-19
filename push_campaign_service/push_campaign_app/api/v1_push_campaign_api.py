@@ -1140,26 +1140,20 @@ class ResourceGetUrlConversionBySendId(Resource):
                     403 (Can't get send url conversion with different domain)
                     500 (Internal Server Error)
         """
-        user = request.user
         _id = kwargs.get('_id')
         send_id = kwargs.get('send_id')
         if _id:
             url_conversion = UrlConversion.get_by_id(_id)
             if not url_conversion:
                 raise ResourceNotFound('Resource not found with id: %s' % _id)
-            if url_conversion.push_campaign_sends_url_conversions.first().send.candidate.user.domain_id == user.domain_id:
-                UrlConversion.delete(url_conversion)
-                return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
-            else:
-                raise ForbiddenError('You can not delete other domain url_conversion records')
+            UrlConversion.delete(url_conversion)
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
         elif send_id:
             send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
             if not send_url_conversion:
                 raise ResourceNotFound('Resource not found')
-            if send_url_conversion.send.candidate.user.domain_id == user.domain_id:
-                url_conversion = send_url_conversion.url_conversion
-                _id = url_conversion.id
-                UrlConversion.delete(url_conversion)
-                return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
-            else:
-                raise ForbiddenError('You can not delete other domain url_conversion records')
+            url_conversion = send_url_conversion.url_conversion
+            _id = url_conversion.id
+            UrlConversion.delete(url_conversion)
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+
