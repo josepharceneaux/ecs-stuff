@@ -3,7 +3,7 @@ __author__ = 'ufarooqi'
 import random
 import string
 from . import app
-from flask import request, url_for, Blueprint
+from flask import request, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_JWT_SALT, \
@@ -63,9 +63,11 @@ def update_password():
 
     # Change user's password & clear out all user's access tokens
     request.user.password = gettalent_generate_password_hash(new_password)
-    Token.query.filter_by(user_id=request.user.id).delete()
 
-    db.session.commit()
+    # Delete all existing tokens for logged-in user
+    tokens = Token.query.filter_by(user_id=request.user.id).all()
+    for token in tokens:
+        token.delete()
 
     return jsonify(dict(success="Your password has been changed successfully"))
 
@@ -125,8 +127,7 @@ def reset_password(token):
     except BadSignature:
         raise ForbiddenError(error_message="Your encrypted token is not valid")
     except Exception as e:
-        raise InternalServerError(error_message="Your encrypted token could not be decrypted",
-                                  additional_error_info={"exception": e.message})
+        raise InvalidUsage(error_message="Your encrypted token could not be decrypted")
 
     if request.method == 'GET':
         return '', 204

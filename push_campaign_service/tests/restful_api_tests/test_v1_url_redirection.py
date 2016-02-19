@@ -4,7 +4,6 @@ If anything goes wrong, this endpoint raises InternalServerError (500)
 """
 from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl
 from push_campaign_service.tests.test_utilities import send_request
-from push_campaign_service.common.utils.activity_utils import ActivityMessageIds
 
 
 class TestURLRedirectionApi(object):

@@ -29,7 +29,7 @@ from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
 from ..models.misc import (UrlConversion, Frequency)
-from ..models.email_marketing import EmailCampaignBlast
+from ..models.email_campaign import EmailCampaignBlast
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
@@ -353,7 +353,7 @@ class CampaignBase(object):
         """
         Here we will update the existing record.
         This does
-            1) validates if campaign belonfs to logged-in user's domain and gets the
+            1) validates if campaign belongs to logged-in user's domain and gets the
                 campaign object
             2) Validates UI data
             3) Updates the respective campaign record in database
@@ -1140,6 +1140,10 @@ class CampaignBase(object):
         :param candidates:
         :return:
         """
+        if not candidates:
+            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
+                               % (self.campaign_type, self.campaign.id),
+                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
         return candidates
 
     def send_campaign_to_candidates(self, candidates):
@@ -1161,9 +1165,11 @@ class CampaignBase(object):
         .. see also:: send() method in SmsCampaignBase class.
         """
         if not candidates:
-            raise InvalidUsage('At least one candidate is required to send campaign.')
+            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
+                               % (self.campaign_type, self.campaign.id),
+                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+        pre_processed_data = self.pre_process_celery_task(candidates)
         try:
-            pre_processed_data = self.pre_process_celery_task(candidates)
             # callback is a function which will be hit after campaign is sent to all candidates i.e.
             # once the async task is done the self.callback_campaign_sent will be called
             # When all tasks assigned to Celery complete their execution, following function

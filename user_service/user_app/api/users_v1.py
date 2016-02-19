@@ -33,11 +33,11 @@ class UserApi(Resource):
             if not requested_user or requested_user.is_disabled == 1:
                 raise NotFoundError(error_message="User with user id %s not found" % requested_user_id)
 
-            if requested_user.domain_id != request.user.domain_id:
+            if requested_user.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
                 raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get user %s" %
                                                       (request.user.id, requested_user_id))
 
-            if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles:
+            if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
 
                 return {'user': {
                         'id': requested_user.id,
@@ -53,14 +53,14 @@ class UserApi(Resource):
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
-        elif 'CAN_GET_USERS' in request.valid_domain_roles:
+        elif 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
                 return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not
                 user.is_disabled]}
 
         # If nothing is returned above then simply raise the custom exception
         raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to get user's info.")
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_USERS)
+    @require_any_role(DomainRole.Roles.CAN_ADD_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self):
         """
         POST /users  Create a new user
@@ -107,8 +107,11 @@ class UserApi(Resource):
             email = user_dict.get('email', "").strip()
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
-            domain_id = request.user.domain_id
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
+            if request.user_can_edit_other_domains:
+                domain_id = user_dict.get('domain_id', request.user.domain_id)
+            else:
+                domain_id = request.user.domain_id
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
                                               domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
@@ -116,7 +119,7 @@ class UserApi(Resource):
 
         return {'users': user_ids}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_USERS)
+    @require_any_role(DomainRole.Roles.CAN_DELETE_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def delete(self, **kwargs):
         """
         DELETE /users/<id>
@@ -137,7 +140,7 @@ class UserApi(Resource):
             if not user_to_delete:
                 raise NotFoundError(error_message="Requested user with user id %s not found" % user_id_to_delete)
 
-        if user_to_delete.domain_id != request.user.domain_id:
+        if user_to_delete.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
             raise UnauthorizedError("User to be deleted belongs to different domain than logged-in user")
 
         # Prevent logged-in user from deleting itself
@@ -177,11 +180,12 @@ class UserApi(Resource):
         if not posted_data:
             raise InvalidUsage(error_message="Request body is empty or not provided")
 
-        if requested_user.domain_id != request.user.domain_id:
-            raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
+        if not request.user_can_edit_other_domains:
+            if requested_user.domain_id != request.user.domain_id:
+                raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
 
-        if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles:
-            raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
+            if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles:
+                raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
 
         first_name = posted_data.get('first_name', '').strip()
         last_name = posted_data.get('last_name', '').strip()

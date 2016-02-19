@@ -22,7 +22,7 @@ from ska import (sign_url, Signature)
 
 # Database Models
 from ..models.db import db
-from ..models.email_marketing import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
+from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast,
                                    SmsCampaignSend)
 from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaignSmartlist,
@@ -33,9 +33,9 @@ from ..routes import SchedulerApiUrl
 from ..talent_config_manager import TalentConfigKeys
 from ..utils.activity_utils import ActivityMessageIds
 from ..error_handling import (InvalidUsage, ResourceNotFound)
-from ..utils.handy_functions import snake_case_to_pascal_case
 from .validators import raise_if_dict_values_are_not_int_or_long
-from ..utils.handy_functions import (http_request, raise_if_not_instance_of)
+from ..utils.handy_functions import (http_request, raise_if_not_instance_of,
+                                     snake_case_to_pascal_case)
 
 
 def _get_campaign_type_prefix(campaign_type):
@@ -415,15 +415,17 @@ def unix_time(dt):
     return delta.total_seconds()
 
 
-def get_model(file_name, model_name):
+def get_model(file_name, model_name, service_name=None):
     """
     This function is used to import module from given parameters.
     e.g. if we want to import SmsCampaign database model, we will provide
         file_name='sms_campaign' and model_name ='SmsCampaign'
     :param file_name: Name of file from which we want to import some model
     :param model_name: Name of model we want to import
+    :param service_name: Name of service. e.g. sms_campaign_service etc
     :type file_name: str
     :type model_name: str
+    :type service_name: str
     :exception: Invalid usage
     :exception: AttributeError
     :exception: ImportError
@@ -433,7 +435,11 @@ def get_model(file_name, model_name):
     raise_if_not_instance_of(model_name, basestring)
     logger = current_app.config[TalentConfigKeys.LOGGER]
     model_name = snake_case_to_pascal_case(model_name)
-    module_name = file_name + '_service.common.models.' + file_name
+    if service_name:
+        raise_if_not_instance_of(model_name, basestring)
+        module_name = service_name + '_service.common.models.' + file_name
+    else:
+        module_name = file_name + '_service.common.models.' + file_name
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)

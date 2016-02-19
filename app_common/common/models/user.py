@@ -15,7 +15,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_marketing import EmailCampaign
+from email_campaign import EmailCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 
@@ -405,12 +405,6 @@ class DomainRole(db.Model):
         CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
         CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
 
-        # Talent Pool Stats
-        CAN_EDIT_TALENT_POOLS_STATS = "CAN_EDIT_TALENT_POOLS_STATS"
-
-        # Smartlist Stats
-        CAN_EDIT_SMARTLISTS_STATS = "CAN_EDIT_SMARTLISTS_STATS"
-
         # Talent Pipeline Candidates
         CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
 
@@ -423,7 +417,6 @@ class DomainRole(db.Model):
         # Talent Pipelines' Stats
         CAN_ADD_TALENT_PIPELINES_STATS = "CAN_ADD_TALENT_PIPELINES_STATS"
         CAN_GET_TALENT_PIPELINES_STATS = "CAN_GET_TALENT_PIPELINES_STATS"
-        CAN_EDIT_TALENT_PIPELINES_STATS = "CAN_EDIT_TALENT_PIPELINES_STATS"
         CAN_DELETE_TALENT_PIPELINES_STATS = "CAN_DELETE_TALENT_PIPELINES_STATS"
 
         # Talent Pipeline Smart lists
@@ -431,6 +424,9 @@ class DomainRole(db.Model):
         CAN_GET_TALENT_PIPELINE_SMART_LISTS = "CAN_GET_TALENT_PIPELINE_SMART_LISTS"
         CAN_EDIT_TALENT_PIPELINE_SMART_LISTS = "CAN_EDIT_TALENT_PIPELINE_SMART_LISTS"
         CAN_DELETE_TALENT_PIPELINE_SMART_LISTS = "CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"
+
+        # Admin Roles
+        CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
 
     def delete(self):
         db.session.delete(self)

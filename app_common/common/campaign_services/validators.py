@@ -28,7 +28,7 @@ from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
 from ..models.sms_campaign import SmsCampaignBlast
 from ..models.misc import (Frequency, UrlConversion)
-from ..models.email_marketing import EmailCampaignBlast
+from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
 from ..talent_config_manager import TalentConfigKeys

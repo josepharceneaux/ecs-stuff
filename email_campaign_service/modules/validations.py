@@ -1,5 +1,6 @@
+from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
-from email_campaign_service.common.models.email_marketing import EmailClient
+from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
 import datetime
@@ -39,7 +40,7 @@ def validate_and_format_request_data(data, user_id):
     email_client_id = data.get('email_client_id')
     send_datetime = data.get('send_datetime')
     stop_datetime = data.get('stop_datetime')
-    frequency = data.get('frequency')
+    frequency_id = data.get('frequency_id')
     template_id = data.get('template_id')
 
     # Raise errors if invalid input
@@ -57,6 +58,7 @@ def validate_and_format_request_data(data, user_id):
         raise InvalidUsage("`list_ids` should be a list of integers")
 
     # If frequency is there then there must be a send time
+    frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not send_datetime:
         raise UnprocessableEntity("Frequency requires send time.")
 
@@ -90,7 +92,7 @@ def validate_and_format_request_data(data, user_id):
         'email_client_id': email_client_id,
         'send_datetime': send_datetime,
         'stop_datetime': stop_datetime,
-        'frequency': frequency,
+        'frequency_id': frequency_id,
         'template_id': template_id
     }
 

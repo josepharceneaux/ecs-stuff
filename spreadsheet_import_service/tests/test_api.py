@@ -77,3 +77,7 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first, tale
 def test_health_check():
     response = requests.get(SpreadsheetImportApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SpreadsheetImportApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200

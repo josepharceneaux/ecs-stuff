@@ -233,3 +233,7 @@ def test_milliseconds_since_epoch_to_dt():
 def test_health_check():
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == 200
