@@ -1,10 +1,14 @@
 __author__ = 'ufarooqi'
+import random
 import json
 import requests
 from werkzeug.security import gen_salt
+from candidate_pool_service.candidate_pool_app import db
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
-from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate, SmartlistStats
+from candidate_pool_service.common.models.talent_pools_pipelines import (
+    TalentPoolStats, TalentPipelinesInTalentPoolStats, TalentPipelineStats)
 
 
 def talent_pool_api(access_token, talent_pool_id='', data='', action='GET'):
@@ -121,7 +125,7 @@ def talent_pipeline_campaigns_api(access_token, talent_pipeline_id):
 def talent_pool_update_stats(access_token):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
-    response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_STATS, headers=headers)
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_POOL_UPDATE_STATS, headers=headers)
     return response.status_code
 
 
@@ -133,10 +137,19 @@ def talent_pool_get_stats(access_token, talent_pool_id, params=''):
     return response.json(), response.status_code
 
 
+def talent_pipelines_in_talent_pool_get_stats(access_token, talent_pool_id, params=''):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS % talent_pool_id,
+                            headers=headers,
+                            params=params)
+    return response.json(), response.status_code
+
+
 def talent_pipeline_update_stats(access_token):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
-    response = requests.post(url=CandidatePoolApiUrl.TALENT_PIPELINE_STATS, headers=headers)
+    response = requests.post(url=CandidatePoolApiUrl.TALENT_PIPELINE_UPDATE_STATS, headers=headers)
     return response.status_code
 
 
@@ -171,7 +184,7 @@ def add_candidates_to_dumb_list(session, access_token, test_dumb_list, candidate
     """
     This function will add a test dumb_list and smart_list to database and talent-pipeline
     :param session: SQLAlchemy Session object
-    :param test_dumb_list: SmartList object
+    :param test_dumb_list: Smartlist object
     :param list candidate_ids: List of candidate_ids that will be added to test dumb_list
     :return: None
     """
@@ -202,3 +215,28 @@ def create_candidates_from_candidate_api(access_token, data):
     )
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]
+
+
+def generate_random_stats(container, id):
+    """
+    This method will generate random statistics for TalentPools, TalentPipelines or SmartLists
+    :param container: talent-pool|smartlist|talent-pipeline
+    :param id: Id of a container
+    :return:
+    """
+    for i in range(10):
+        random_number = int(random.random() * 100)
+        if container == 'smartlist':
+            db.session.add(SmartlistStats(smartlist_id=id, total_number_of_candidates=random_number,
+                                          candidates_engagement=random_number))
+        elif container == 'talent-pool':
+            db.session.add(TalentPoolStats(talent_pool_id=id, total_number_of_candidates=random_number,
+                                           candidates_engagement=random_number))
+        elif container == 'talent-pipeline':
+            db.session.add(TalentPipelineStats(talent_pipeline_id=id, total_number_of_candidates=random_number,
+                                               candidates_engagement=random_number))
+        else:
+            db.session.add(TalentPipelinesInTalentPoolStats(average_number_of_candidates=random_number,
+                                                            talent_pool_id=id))
+
+    db.session.commit()

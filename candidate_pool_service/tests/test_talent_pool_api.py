@@ -1,7 +1,5 @@
 from datetime import timedelta
-from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPoolStats
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *
 
@@ -12,13 +10,6 @@ def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, c
     data = {
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
     }
-
-    # Logged-in user trying to update statistics of all talent_pools in database
-    status_code = talent_pool_update_stats(access_token_first)
-    assert status_code == 401
-
-    # Adding 'CAN_EDIT_TALENT_POOLS_STATS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_POOLS_STATS'])
 
     # Logged-in user trying to add candidates to talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
@@ -33,23 +24,16 @@ def test_get_talent_pool_stats(access_token_first, access_token_second, talent_p
 
     # Emptying TalentPoolStats table
     TalentPoolStats.query.delete()
-    talent_pool_stats = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=10,
-                                        number_of_candidates_removed_or_added=3, candidates_engagement=40)
 
-    db.session.add(talent_pool_stats)
-    db.session.commit()
+    generate_random_stats('talent-pool', talent_pool.id)
 
     # Logged-in user trying to get statistics of a non-existing talent_pool
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
     assert status_code == 404
 
-    # Logged-in user trying to get statistics of a talent_pool of different user
+    # Logged-in user trying to get statistics of a talent_pool of different domain
     response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
     assert status_code == 403
-
-    # Logged-in user trying to get statistics of a talent_pool but with empty params
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
-    assert status_code == 400
 
     from_date = str(datetime.utcnow() - timedelta(2))
     to_date = str(datetime.utcnow() - timedelta(1))
@@ -60,21 +44,45 @@ def test_get_talent_pool_stats(access_token_first, access_token_second, talent_p
     assert status_code == 200
     assert not response.get('talent_pool_data')
 
-    from_date = str(datetime.utcnow() - timedelta(1))
-    to_date = str(datetime.utcnow())
-
     # Logged-in user trying to get statistics of a talent_pool
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
-                                                                                       'to_date': to_date})
+    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
+
     assert status_code == 200
-    assert len(response.get('talent_pool_data')) >= 1
-    assert 10 in [talent_pool_data. get('total_number_of_candidates') for talent_pool_data in
-                  response.get('talent_pool_data')]
-    assert 3 in [talent_pool_data. get('number_of_candidates_removed_or_added') for talent_pool_data in
-                 response.get('talent_pool_data')]
+    assert len(response.get('talent_pool_data')) >= 10
 
 
-def test_talent_pool_api_post(access_token_first, user_first):
+def test_get_talent_pipelines_talent_pool_stats(access_token_first, access_token_second, talent_pool):
+
+    # Emptying TalentPoolStats table
+    TalentPipelinesInTalentPoolStats.query.delete()
+
+    generate_random_stats(container='talent-pipelines-in-talent-pool', id=talent_pool.id)
+
+    # Logged-in user trying to get pipeline statistics of a non-existing talent_pool
+    response, status_code = talent_pipelines_in_talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
+    assert status_code == 404
+
+    # Logged-in user trying to get pipeline statistics of a talent_pool of different user
+    response, status_code = talent_pipelines_in_talent_pool_get_stats(access_token_second, talent_pool.id)
+    assert status_code == 403
+
+    from_date = str(datetime.utcnow() - timedelta(2))
+    to_date = str(datetime.utcnow() - timedelta(1))
+
+    # Logged-in user trying to get pipeline statistics of a talent_pipeline
+    response, status_code = talent_pipelines_in_talent_pool_get_stats(access_token_first, talent_pool.id,
+                                                                      {'from_date': from_date, 'to_date': to_date})
+    assert status_code == 200
+    assert not response.get('talent_pool_data')
+
+    # Logged-in user trying to get pipeline tatistics of a talent_pool
+    response, status_code = talent_pipelines_in_talent_pool_get_stats(access_token_first, talent_pool.id)
+
+    assert status_code == 200
+    assert len(response.get('talent_pool_data')) >= 10
+
+
+def test_talent_pool_api_post(access_token_first, access_token_second, user_first, user_second):
 
     data = {
         'talent_pools': [
@@ -89,8 +97,8 @@ def test_talent_pool_api_post(access_token_first, user_first):
     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
     assert status_code == 401
 
-    # Adding 'CAN_ADD_TALENT_POOLS' in user_first
-    add_role_to_test_user(user_first, ['CAN_ADD_TALENT_POOLS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_POOLS])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
 
     # Logged-in user trying to add a new talent-pool in a domain with empty request body
     response, status_code = talent_pool_api(access_token_first, action='POST')
@@ -111,19 +119,28 @@ def test_talent_pool_api_post(access_token_first, user_first):
     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
     assert status_code == 400
 
+    # Admin user trying to add a new talent-pool in another domain
+    data['talent_pools'][0]['user_id'] = user_first.id
+    data['talent_pools'][0]['name'] = gen_salt(20)
+    response, status_code = talent_pool_api(access_token_second, data=data, action='POST')
+    assert status_code == 200
+    assert len(response.get('talent_pools')) == 1
+
 
 def test_talent_pool_api_put(access_token_first, user_first, talent_pool, talent_pool_second):
 
     data = {
-        'name': '',
-        'description': ''
+        'talent_pool': {
+            'name': '',
+            'description': ''
+        }
     }
     # Logged-in user trying to update a talent-pool
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id, data=data, action='PUT')
     assert status_code == 401
 
     # Adding 'CAN_EDIT_TALENT_POOLS' to user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_POOLS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_TALENT_POOLS, DomainRole.Roles.CAN_ADD_CANDIDATES])
 
     # Logged-in user trying to update a non-existing talent-pool
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id + 1000, data=data,
@@ -144,15 +161,23 @@ def test_talent_pool_api_put(access_token_first, user_first, talent_pool, talent
     assert status_code == 400
 
     # Update a talent-pool with logged-in user of same domain
-    data['name'] = gen_salt(20)
+    data['talent_pool']['name'] = gen_salt(20)
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id, data=data, action='PUT')
     assert status_code == 200
     db.session.commit()
-    assert talent_pool.name == data['name']
+    assert talent_pool.name == data['talent_pool']['name']
 
     # Update a talent-pool with logged-in user of same domain but with already existing name
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool.id, data=data, action='PUT')
     assert status_code == 400
+
+    # Logged-in user trying to update a talent-pool of different domain
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, data=data,
+                                            action='PUT')
+    assert status_code == 200
+    db.session.commit()
+    assert talent_pool_second.name == data['talent_pool']['name']
 
 
 def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, talent_pool_second):
@@ -161,7 +186,7 @@ def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, tal
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, action='DELETE')
     assert status_code == 401
 
-    add_role_to_test_user(user_first, ['CAN_DELETE_TALENT_POOLS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_TALENT_POOLS])
 
     # Logged-in user trying to delete a non-existing talent-pool
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id + 1000,
@@ -175,6 +200,16 @@ def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, tal
     # Delete a talent-pool using admin user
     talent_pool_id = talent_pool.id
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_id, action='DELETE')
+    assert status_code == 200
+    assert response['talent_pool']['id'] == talent_pool_id
+
+    db.session.commit()
+    assert not TalentPool.query.get(talent_pool_id)
+
+    # Delete a talent-pool using logged-in user of different domain
+    talent_pool_id = talent_pool_second.id
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, action='DELETE')
     assert status_code == 200
     assert response['talent_pool']['id'] == talent_pool_id
 
@@ -198,6 +233,12 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
     assert status_code == 200
     assert response['talent_pool']['name'] == talent_pool.name
 
+    # Logged-in user trying to get talent-pool's info of different domain
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id)
+    assert status_code == 200
+    assert response['talent_pool']['name'] == talent_pool_second.name
+
     user_second.domain_id = user_first.domain_id
     db.session.commit()
 
@@ -206,19 +247,12 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
     assert status_code == 403
 
     # Adding 'CAN_GET_TALENT_POOLS' to user_second
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_POOLS'])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
 
     # Logged-in user trying to get talent-pool's info
     response, status_code = talent_pool_api(access_token_second, talent_pool_id=talent_pool.id)
     assert status_code == 200
     assert response['talent_pool']['name'] == talent_pool.name
-
-    # Logged-in user trying to get all talent-pools of a domain
-    response, status_code = talent_pool_api(access_token_first)
-    assert status_code == 403
-
-    # Adding 'CAN_GET_TALENT_POOLS' to user_first
-    add_role_to_test_user(user_first, ['CAN_GET_TALENT_POOLS'])
 
     # GET all talent-pools of a domain using talent-pool-manager user
     response, status_code = talent_pool_api(access_token_first)
@@ -244,6 +278,12 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
     assert len(response['talent_pools']) == 1
     assert response['talent_pools'][0]['name'] == talent_pool.name
 
+    # Logged-in user trying to get talent pools of group of different domain
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
+    assert status_code == 200
+    assert len(response['talent_pools']) == 0
+
     user_second.domain_id = user_first.domain_id
     db.session.commit()
 
@@ -252,7 +292,7 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
     assert status_code == 403
 
     # Adding 'CAN_GET_TALENT_POOLS_OF_GROUP' role in user_second
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_POOLS_OF_GROUP'])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_POOLS_OF_GROUP])
 
     # Logged-in user of same domain but different group trying to get talent pools of another group
     response, status_code = talent_pool_group_api(access_token_second, user_group_id=first_group.id)
@@ -261,8 +301,8 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
     assert response['talent_pools'][0]['name'] == talent_pool.name
 
 
-def test_talent_pool_group_api_post(access_token_first, user_first, talent_pool, talent_pool_second, first_group,
-                                    second_group):
+def test_talent_pool_group_api_post(access_token_first, user_first, user_second, talent_pool, talent_pool_second,
+                                    first_group, second_group):
 
     data = {
         'talent_pools': [talent_pool.id, talent_pool_second.id]
@@ -273,7 +313,7 @@ def test_talent_pool_group_api_post(access_token_first, user_first, talent_pool,
                                                   action='POST')
     assert status_code == 401
 
-    add_role_to_test_user(user_first, ['CAN_ADD_TALENT_POOLS_TO_GROUP'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_POOLS_TO_GROUP])
 
     # Logged-in user trying to add talent-pools in a non-existing group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id + 1000, data=data,
@@ -295,22 +335,23 @@ def test_talent_pool_group_api_post(access_token_first, user_first, talent_pool,
     assert status_code == 400
 
     # Logged-in user trying to add talent-pools in a group
-    data['talent_pools'].pop(0)
+    data['talent_pools'].pop(1)
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id, data=data,
                                                   action='POST')
     assert status_code == 400
 
-    talent_pool_second.domain_id = user_first.domain_id
+    talent_pool.domain_id = user_second.domain_id
     db.session.commit()
 
     # Logged-in user trying to add talent-pools in a group
-    response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id, data=data,
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id, data=data,
                                                   action='POST')
     assert status_code == 200
     assert len(response['added_talent_pools']) == 1
-    assert response['added_talent_pools'] == [talent_pool_second.id]
+    assert response['added_talent_pools'] == [talent_pool.id]
     db.session.commit()
-    assert TalentPoolGroup.query.filter_by(user_group_id=first_group.id, talent_pool_id=talent_pool_second.id).first()
+    assert TalentPoolGroup.query.filter_by(user_group_id=second_group.id, talent_pool_id=talent_pool.id).first()
 
 
 def test_talent_pool_group_api_delete(access_token_first, user_first, talent_pool, talent_pool_second, first_group,
@@ -326,7 +367,7 @@ def test_talent_pool_group_api_delete(access_token_first, user_first, talent_poo
     assert status_code == 401
 
     # Adding 'CAN_DELETE_TALENT_POOLS_FROM_GROUP' to user_first
-    add_role_to_test_user(user_first, ['CAN_DELETE_TALENT_POOLS_FROM_GROUP'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_TALENT_POOLS_FROM_GROUP])
 
     # Logged-in user trying to remove talent-pools from a non-existing group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id + 1000, data=data,
@@ -358,6 +399,18 @@ def test_talent_pool_group_api_delete(access_token_first, user_first, talent_poo
     db.session.commit()
     assert not TalentPoolGroup.query.filter_by(user_group_id=first_group.id, talent_pool_id=talent_pool.id).first()
 
+    # Logged-in user trying to remove talent-pools from a group of different domain
+    data['talent_pools'] = [talent_pool_second.id]
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id, data=data,
+                                                  action='DELETE')
+    assert status_code == 200
+    assert len(response['talent_pools']) == 1
+    assert response['talent_pools'] == [talent_pool_second.id]
+
+    db.session.commit()
+    assert not TalentPoolGroup.query.filter_by(user_group_id=second_group.id, talent_pool_id=talent_pool_second.id).first()
+
 
 def test_talent_pool_candidate_api_post(access_token_first, user_first, talent_pool, talent_pool_second,
                                         candidate_first, candidate_second):
@@ -388,6 +441,8 @@ def test_talent_pool_candidate_api_post(access_token_first, user_first, talent_p
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 404
 
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+
     # Logged-in user trying to add candidates to a talent-pool
     data['talent_pool_candidates'][0] = candidate_first.id
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
@@ -416,7 +471,8 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
     }
 
-    # Logged-in user trying to get candidates from talent_pool
+    # Logged-in user trying to add candidates to talent_pool
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
@@ -456,6 +512,7 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
     }
 
     # Logged-in user trying to add candidates to talent_pool
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
@@ -505,5 +562,9 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
 def test_health_check():
     import requests
     response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(CandidatePoolApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200
 

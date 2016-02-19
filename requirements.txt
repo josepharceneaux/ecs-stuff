@@ -27,18 +27,20 @@ wsgiref==0.1.2
 beautifulsoup4==4.4.0
 BeautifulSoup==3.2.1
 ghostscript==0.4.1
-html5lib==0.999999
 libmagic
 lxml==3.4.4
 MarkupSafe==0.23
 pdfminer==20110515
 phonenumbers==7.0.8
 Pillow==2.9.0
-PyPDF2==1.25.1
 python-magic==0.4.6
-reportlab==3.2.0
 six==1.9.0
-xhtml2pdf==0.0.6
+## xhtml2pdf and dependencies
+# xhtml2pdf==0.0.6
+html5lib==0.999999
+PyPDF2==1.25.1
+reportlab==3.2.0
+xhtml2pdf==0.1a1
 
 # Logging
 loggly-handler==0.1.2
@@ -51,6 +53,10 @@ fake-factory==0.5.2
 greenlet==0.4.7
 loggly-python-handler==1.0.0
 
+# SMS Campaign code
+twilio
+ska==1.5
+
 # Various common packages
 mixer==5.2.2
 python-dateutil==2.4.2
@@ -60,6 +66,7 @@ Flask-Limiter
 newrelic
 healthcheck
 simplejson==3.8.0
+
 enum34
 xlrd==0.9.2
 chardet==2.3.0

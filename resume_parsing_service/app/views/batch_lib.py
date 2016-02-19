@@ -1,4 +1,5 @@
 """Functions used by batch processing endpoints."""
+# pylint: disable=wrong-import-position, fixme
 __author__ = 'erik@getTalent'
 # Standard Library
 from datetime import datetime
@@ -8,12 +9,13 @@ import json
 from flask import jsonify
 import requests
 # Module Specific
+from resume_parsing_service.app import redis_store
+from resume_parsing_service.app.views.parse_lib import process_resume
+from resume_parsing_service.app.views.utils import get_users_talent_pools
+from resume_parsing_service.common.error_handling import TalentError
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_parsing_service.common.utils.handy_functions import grouper
-from resume_parsing_service.app import redis_store
-from resume_parsing_service.app.views.parse_lib import process_resume
-from resume_parsing_service.common.error_handling import TalentError
 
 
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -69,9 +71,12 @@ def _process_batch_item(user_id, create_candidate=True):
     # Adding none here allows for unit-testing and will still result in unauthorized responses
     # given a user does not have a Token.
     oauth_token = Token.query.filter_by(user_id=user_id).first() or None
+    formatted_token_header = "bearer {}".format(oauth_token.access_token)
+    talent_pools = get_users_talent_pools(formatted_token_header)
     parse_params = {
+        'talent_pools': talent_pools,
         'filepicker_key': fp_key,
         'create_candidate': create_candidate,
-        'oauth': oauth_token.access_token
+        'oauth': formatted_token_header
     }
     return process_resume(parse_params)

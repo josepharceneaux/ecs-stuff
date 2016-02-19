@@ -6,12 +6,11 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.candidate_app import logger
 from candidate_service.common.models.candidate import Candidate
-from candidate_service.common.models.email_marketing import EmailClient
+from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError
@@ -285,7 +284,7 @@ def is_backward_compatible(key):
             key = 'military_highest_grade'
 
         if key not in SEARCH_INPUT_AND_VALIDATIONS:
-            raise InvalidUsage("`%s` is an invalid input" % key, 400)
+            return -1
 
     return key
 
@@ -293,9 +292,9 @@ def is_backward_compatible(key):
 def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
-        if key == 'searchSource':
-            continue
         key = is_backward_compatible(key)
+        if key == -1:
+            continue
         if value.strip():
             if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
                 request_vars[key] = value
@@ -320,6 +319,7 @@ def validate_and_format_data(request_data):
             request_vars[key] = value
     return request_vars
 
+
 def is_valid_email_client(client_id):
     """
     Validate if client id is in the system
@@ -327,3 +327,16 @@ def is_valid_email_client(client_id):
     :return: string: email client name
     """
     return db.session.query(EmailClient.name).filter(EmailClient.id == int(client_id)).first()
+
+
+def is_date_valid(date):
+    """
+    Checks if date format is: yyyy-mm-dd
+    :type date:  basestring|str
+    :rtype:  bool
+    """
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+        return True
+    except ValueError:
+        return False

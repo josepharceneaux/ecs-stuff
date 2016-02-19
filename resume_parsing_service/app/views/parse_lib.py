@@ -1,4 +1,5 @@
 """Main resume parsing logic & functions."""
+# pylint: disable=wrong-import-position, fixme
 # Standard library
 from cStringIO import StringIO
 from os.path import basename
@@ -9,7 +10,6 @@ import base64
 import json
 # Third Party/Framework Specific.
 from BeautifulSoup import BeautifulSoup
-from flask import current_app
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
@@ -20,9 +20,11 @@ from xhtml2pdf import pisa
 import magic
 import requests
 # Module Specific
-from .utils import create_parsed_resume_candidate
+from .utils import create_parsed_resume_candidate, update_candidate_from_resume
+from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
@@ -37,11 +39,15 @@ DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
-    :return: dict: {'candidate': {}}
+    :return: dict: {'candidate': {...}, 'raw': {...}}
     """
     filepicker_key = parse_params.get('filepicker_key')
-    create_candidate = parse_params.get('create_candidate')
+    # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
+    create_candidate = parse_params.get('create_candidate', False)
     talent_pools = parse_params.get('talent_pools')
+    #Talent pools are the ONLY thing required to create a candidate.
+    if create_candidate and not talent_pools:
+        raise InvalidUsage('Talent Pools required for candidate creation')
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
@@ -53,20 +59,34 @@ def process_resume(parse_params):
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
-    result_dict = parse_resume(file_obj=resume_file, filename_str=filename_str)
-    # Emails and talent pools are the ONLY thing required to create a candidate.
-    email_present = True if result_dict['candidate'].get('emails') else False
-    if create_candidate and email_present and talent_pools:
-        result_dict['candidate']['talent_pool_ids']['add'] = talent_pools
-        candidate_response = create_parsed_resume_candidate(result_dict['candidate'],
-                                                            parse_params.get('oauth'))
-        # TODO: Check for good response code!
-        response_dict = json.loads(candidate_response)
-        if 'error' in candidate_response:
-            raise InvalidUsage(response_dict['error']['message'])
-        candidate_id = response_dict.get('candidates')
-        result_dict['candidate']['id'] = candidate_id[0]['id'] if candidate_id else None
-    return result_dict
+    parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    if not create_candidate:
+        return parsed_resume
+    oauth_string = parse_params.get('oauth')
+    parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+    candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
+                                                             oauth_string)
+    response_dict = json.loads(candidate_post_response.content)
+    if candidate_post_response.status_code is not requests.codes.created:
+        # If there was an issue with candidate creation we want to forward the error message and
+        # the error code supplied by Candidate Service.
+        existing_candidate_id = response_dict.get('error', {}).get('id')
+        if not existing_candidate_id:
+            raise InvalidUsage(error_message=response_dict.get('error', {}).get(
+                'message', 'Error in candidate creating from resume service.'))
+        # We have a candidate already with this email so lets patch it up
+        parsed_resume['candidate']['id'] = existing_candidate_id
+        update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
+        response_dict = json.loads(update_response.content)
+        logger.info('Response Dict: {}'.format(response_dict))
+
+    candidate_id = response_dict.get('candidates')[0]['id']
+    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
+                                          headers={'Authorization': oauth_string})
+    if candidate_get_response.status_code is not requests.codes.ok:
+        raise InvalidUsage(error_message='Error retrieving created candidate')
+    candidate = json.loads(candidate_get_response.content)
+    return candidate
 
 
 def parse_resume(file_obj, filename_str):
@@ -76,12 +96,12 @@ def parse_resume(file_obj, filename_str):
     :param str filename_str: The file_obj file name.
     :return: A dictionary of processed candidate data or an appropriate error message.
     """
-    current_app.logger.info("Beginning parse_resume(%s)", filename_str)
+    logger.info("Beginning parse_resume(%s)", filename_str)
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
     if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        current_app.logger.error(
+        logger.error(
             'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
         return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
     # Find out if the file is an image
@@ -90,7 +110,7 @@ def parse_resume(file_obj, filename_str):
         if file_ext == '.pdf':
             start_time = time()
             text = convert_pdf_to_text(file_obj)
-            current_app.logger.info(
+            logger.info(
                 "Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
             if not text.strip():
                 # pdf is possibly an image
@@ -104,7 +124,7 @@ def parse_resume(file_obj, filename_str):
         # If file is an image, OCR it
         start_time = time()
         doc_content = ocr_image(file_obj)
-        current_app.logger.info("Benchmark: ocr_image(%s) took %ss",
+        logger.info("Benchmark: ocr_image(%s) took %ss",
                                 filename_str, time() - start_time)
     else:
         """
@@ -116,7 +136,7 @@ def parse_resume(file_obj, filename_str):
         start_time = time()
         doc_content = file_obj.read()
         mime_type = magic.from_buffer(doc_content, mime=True)
-        current_app.logger.info(
+        logger.info(
             "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
             filename_str, time() - start_time
         )
@@ -128,32 +148,34 @@ def parse_resume(file_obj, filename_str):
             try:
                 create_pdf_status = pisa.CreatePDF(doc_content, file_obj)
                 if create_pdf_status.err:
-                    current_app.logger.error('PDF create error: {}'.format(create_pdf_status.err))
+                    logger.error('PDF create error: {}'.format(create_pdf_status.err))
                     return None
             except Exception as e:
-                current_app.logger.error(
-                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF'.format(
-                        filename_str))
+                logger.exception(
+                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
+                        filename_str, e.message))
+                raise InvalidUsage('Unable to convert {} to pdf'.format(filename_str))
                 return None
             file_obj.seek(0)
             doc_content = file_obj.read()
             final_file_ext = '.pdf'
-            current_app.logger.info(
+            logger.info(
                 "Benchmark: pisa.CreatePDF(%s) and reading file took %ss", filename_str,
                 time() - start_time)
 
     if not doc_content:
-        current_app.logger.error('parse_resume: No doc_content')
+        logger.error('parse_resume: No doc_content')
         return {}
 
     encoded_resume = base64.b64encode(doc_content)
     start_time = time()
     optic_response = fetch_optic_response(encoded_resume)
-    current_app.logger.info(
+    logger.info(
         "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
         time() - start_time)
     if optic_response:
         candidate_data = parse_optic_xml(optic_response)
+        # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
         return dict(error='No XML text')
@@ -181,13 +203,13 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
     xml = BeautifulSoup(response.text)
-    current_app.logger.info("ocr_image() - Abby response to processImage: %s", response.text)
+    logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
     task_id = xml.response.task['id']
     estimated_processing_time = int(xml.response.task['estimatedprocessingtime'])
 
     if xml.response.task['status'] != 'Queued':
-        current_app.logger.error('ocr_image() - Non queued status in ABBY OCR')
+        logger.error('ocr_image() - Non queued status in ABBY OCR')
 
     # Keep pinging Abby to get task status. Quit if tried too many times
     ocr_url = ''
@@ -200,11 +222,11 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                                 params=dict(taskId=task_id), auth=abby_ocr_api_auth_tuple)
         xml = BeautifulSoup(response.text)
         ocr_url = xml.response.task.get('resulturl')
-        current_app.logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
+        logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
 
         if not ocr_url:
             if num_tries > max_num_tries:
-                current_app.logger.error('OCR took > {} tries to process image'.format(
+                logger.error('OCR took > {} tries to process image'.format(
                     max_num_tries))
                 raise Exception('OCR took > {} tries to process image'.format(max_num_tries))
             # If not done in originally estimated processing time, wait 2 more seconds.
@@ -215,7 +237,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     if response.status_code == requests.codes.ok:
         start_time = time()
         response = requests.get(ocr_url)
-        current_app.logger.info(
+        logger.info(
             "Benchmark: ocr_image: requests.get(%s) took %ss to download resume",
             ocr_url, time() - start_time
         )
@@ -232,6 +254,7 @@ def convert_pdf_to_text(pdf_file_obj):
     laparams = LAParams()
     device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
 
+    # TODO access if this reassignment is needed.
     fp = pdf_file_obj
 
     parser = PDFParser(fp)

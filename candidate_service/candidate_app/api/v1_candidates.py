@@ -19,7 +19,7 @@ from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    get_candidate_if_exists, is_valid_email_client, get_json_if_exist
+    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch,
@@ -130,14 +130,23 @@ class CandidatesResource(Resource):
                         elif candidate_id in candidate_ids_from_candidate_email_obj:
                             continue
                         else:
-                            raise InvalidUsage('Candidate with email: {}, already exists.'.format(email_address),
-                                               custom_error.CANDIDATE_ALREADY_EXISTS)
+                            raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
+                                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                                               additional_error_info={'id': candidate_id})
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
                 all_cf_ids.append(custom_field.get('custom_field_id'))
 
             for aoi in _candidate_dict.get('areas_of_interest') or []:
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
+
+            # to_date & from_date in military_service dict must be formatted properly
+            for military_service in _candidate_dict.get('military_services') or []:
+                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                if from_date or to_date:
+                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
 
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
@@ -164,7 +173,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails, # TODO: Parsing to be done in the module
+                emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -242,6 +251,14 @@ class CandidatesResource(Resource):
             for aoi in _candidate_dict.get('areas_of_interest') or []:
                 all_aoi_ids.append(aoi.get('area_of_interest_id'))
 
+            # to_date & from_date in military_service dict must be formatted properly
+            for military_service in _candidate_dict.get('military_services') or []:
+                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                if from_date or to_date:
+                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+
         # Custom fields must belong to user's domain
         if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
             raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
@@ -274,7 +291,7 @@ class CandidatesResource(Resource):
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
                 status_id=candidate_dict.get('status_id'),
-                emails=emails, # TODO: Parsing to be done in module
+                emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
                 educations=candidate_dict.get('educations'),
@@ -1124,22 +1141,20 @@ class CandidateOpenWebResource(Resource):
         url = request.args.get('url')
         email = request.args.get('email')
         if url:
-            find_candidate = match_candidate_from_openweb(url, authed_user)
+            is_gt_candidate, find_candidate = match_candidate_from_openweb(url, authed_user)
         elif email:
-            find_candidate = find_in_openweb_by_email(email)
+            is_gt_candidate, find_candidate = find_in_openweb_by_email(email)
         candidate = None
 
-        if int(find_candidate[0]) == 1:
-            candidate = {'candidate': fetch_candidate_info(find_candidate[1])}
+        if is_gt_candidate:
+            candidate = {'candidate': fetch_candidate_info(find_candidate)}
 
-        elif int(find_candidate[0]) == 0:
+        else:
             try:
-                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate[1])}
+                candidate = {'candidate': convert_dice_candidate_dict_to_gt_candidate_dict(find_candidate, authed_user)}
             except Exception as e:
                 logging.exception("Converting candidate from dice to gT went wrong")
                 raise InvalidUsage(error_message=e.message)
-        else:
-            raise NotFoundError(error_message="Candidate not found")
 
         return candidate
 

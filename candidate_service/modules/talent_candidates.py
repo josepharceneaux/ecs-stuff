@@ -27,7 +27,7 @@ from candidate_service.common.models.talent_pools_pipelines import TalentPoolCan
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_marketing import EmailCampaign
+from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
@@ -399,8 +399,8 @@ def candidate_military_services(candidate_id):
              'status': military_info.service_status,
              'highest_grade': military_info.highest_grade,
              'highest_rank': military_info.highest_rank,
-             'from_date': military_info.from_date.strftime('%Y-%m-%d') if military_info.from_date else None,
-             'to_date': military_info.to_date.strftime('%Y-%m-%d') if military_info.from_date else None,
+             'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
+             'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
              'country': Country.country_name_from_country_id(country_id=military_info.country_id),
              'comments': military_info.comments
              } for military_info in military_experiences]
@@ -684,8 +684,9 @@ def create_or_update_candidate_from_params(
 
     # Raise an error if creation is requested and candidate_id is provided/found
     if candidate_id and is_creating:
-        raise InvalidUsage(error_message='Candidate already exists, creation failed.',
-                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS)
+        raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                           additional_error_info={'id': candidate_id})
 
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:

@@ -8,6 +8,7 @@ from candidate_service.common.error_handling import InternalServerError, NotFoun
 from candidate_service.candidate_app import logger
 from candidate_service.common.utils.validators import format_phone_number, parse_openweb_date
 from candidate_service.modules.validators import does_candidate_belong_to_users_domain
+from candidate_service.common.models.talent_pools_pipelines import TalentPool
 import requests, datetime
 
 SOCIALCV_API_KEY = "c96dfb6b9344d07cee29804152f798751ae8fdee"
@@ -47,7 +48,7 @@ def find_in_openweb_by_email(candidate_email):
     :return: json object
     """
     openweb_response = query_openweb(candidate_email, 1).json()
-    return [0, openweb_response]
+    return False, openweb_response
 
 
 def match_candidate_from_openweb(url, auth_user):
@@ -68,11 +69,11 @@ def match_candidate_from_openweb(url, auth_user):
             .filter(CandidateSocialNetwork.social_profile_url.in_(urls)).first()
         if candidate_query:
             if not does_candidate_belong_to_users_domain(auth_user, candidate_query.id):
-                return [0, openweb_response]
+                return False, openweb_response
 
-            return [1, candidate_query]
+            return True, candidate_query
         else:
-            return [0, openweb_response]
+            return False, openweb_response
 
 
 def openweb_crawl(url):
@@ -82,7 +83,7 @@ def openweb_crawl(url):
     :return: None
     """
     if not isinstance(url, basestring):
-        return 0
+        return False
     try:
         crawl_request = requests.get("http://api.thesocialcv.com/v3/profile/crawl.json", params=dict(apiKey=SOCIALCV_API_KEY, profileUrl=url), timeout=10)
         if crawl_request.status_code == 200:
@@ -91,7 +92,7 @@ def openweb_crawl(url):
         logger.exception("Error: %s crawling link: %s", (e, url))
 
 
-def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
+def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed_user):
     """
     ONLY converts the dict object. Won't put in `id` fields or do anything to the DB.
 
@@ -101,6 +102,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
 
     social_profile_dict = dice_candidate_dict
     dice_profile_dict = dice_candidate_dict
+
+    talent_pool_ids = [tid.id for tid in TalentPool.query.filter_by(domain_id=authed_user.domain_id)]
 
     dice_profile_contact_dict = dice_profile_dict.get('contact') or {}
     emails = [social_profile_dict.get('email') or dice_profile_contact_dict.get('email')]
@@ -184,7 +187,7 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         # Parse out candidate_experience_bullets.
         candidate_experience_bullets = []
         if history_dict.get('description'):
-            candidate_experience_bullets.append(dict(text=history_dict.get('description')))
+            candidate_experience_bullets.append(dict(description=history_dict.get('description')))
 
         work_experiences.append(dict(organization=history_dict.get('company'),
                                      position=history_dict.get('jobTitle'),
@@ -287,6 +290,8 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
                    'state': None,
                    'country': None} for university_name in universities_list]
 
+    image_url = social_profile_dict.get('imageUrl', '')
+
     # Addresses
     addresses = [{
         'address_line_1': None,
@@ -312,7 +317,9 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict):
         'skills': skills,
         # 'text_comments': text_comments,
         'openweb_id': social_profile_dict.get('id'),
-        'dice_profile_id': dice_profile_dict.get('id')
+        'dice_profile_id': dice_profile_dict.get('id'),
+        'talent_pool_ids': {"add": talent_pool_ids},
+        'image_url': image_url
     }
 
     return gt_candidate_dict

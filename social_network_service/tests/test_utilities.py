@@ -1,4 +1,3 @@
-from social_network_service.common.routes import SocialNetworkApiUrl
 
 __author__ = 'zohaib'
 
@@ -7,6 +6,7 @@ from datetime import datetime
 from dateutil.parser import parse
 
 # Third Party
+import requests
 from pytz import timezone
 
 # Application Specific
@@ -21,6 +21,7 @@ from social_network_service.utilities import import_from_dist_packages
 from social_network_service.utilities import milliseconds_since_epoch
 from social_network_service.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.utilities import milliseconds_since_epoch_local_time
+from social_network_service.common.routes import SocialNetworkApiUrl
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
@@ -230,6 +231,9 @@ def test_milliseconds_since_epoch_to_dt():
 
 
 def test_health_check():
-    import requests
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200

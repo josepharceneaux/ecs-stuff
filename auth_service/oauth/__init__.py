@@ -1,14 +1,14 @@
 __author__ = 'ufarooqi'
 
-from flask import Flask
 from flask.ext.cors import CORS
 from flask_oauthlib.provider import OAuth2Provider
-from auth_service.common.routes import HEALTH_CHECK
+from auth_service.common.routes import HEALTH_CHECK, GTApis
 from auth_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from auth_service.common.migrate import db_create_all
 from auth_service.common.utils.talent_ec2 import get_ec2_instance_id
+from auth_service.common.talent_flask import TalentFlask
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 logger = app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
@@ -36,8 +36,8 @@ try:
 
     db_create_all()
 
-    # Enable CORS for all origins & endpoints
-    CORS(app)
+    # Enable CORS for *.gettalent.com and localhost
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting auth_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

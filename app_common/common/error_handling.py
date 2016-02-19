@@ -8,7 +8,6 @@ from flask import jsonify
 class TalentError(Exception):
     def __init__(self, error_message=None, error_code=None, additional_error_info=None):
         """
-
         :type error_message: str
         :type error_code: int
         :type additional_error_info: dict[str, T]

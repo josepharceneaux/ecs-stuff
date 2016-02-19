@@ -1,4 +1,5 @@
 """API for the Resume Parsing App"""
+# pylint: disable=wrong-import-position, fixme
 __author__ = 'erikfarmer'
 # Framework specific
 from flask import Blueprint
@@ -6,6 +7,7 @@ from flask import request
 from flask import jsonify
 from flask.ext.cors import CORS
 # Module Specific
+from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.app.views.batch_lib import _process_batch_item
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
@@ -21,7 +23,7 @@ PARSE_MOD = Blueprint('resume_api', __name__)
 # Enable CORS
 CORS(PARSE_MOD, resources={
     r'/v1/{}'.format(ResumeApi.PARSE): {
-        'origins': '*',
+        'origins': [r"*.gettalent.com", "http://localhost"],
         'allow_headers': ['Content-Type', 'Authorization']
     }
 })
@@ -40,29 +42,41 @@ def resume_post_reciever():
     Builds a kwargs dict for used in abstracted process_resume.
     :return: dict: {'candidate': {}}
     """
-    # Get the resume file object from Filepicker or the request body, if provided
-    request_json = request.get_json() or {}
-    filepicker_key = request.form.get('filepicker_key') or request_json.get('filepicker_key')
-    resume_file_name = request.form.get('resume_file_name') or request_json.get('resume_file_name')
-    create_candidate = request.form.get('create_candidate') or request_json.get('create_candidate')
     oauth = request.oauth_token
     talent_pools = get_users_talent_pools(oauth)
-    if filepicker_key:
+    content_type = request.headers.get('content-type')
+    # Handle posted JSON data from web app/future clients. This block should consume filepicker
+    # key and filename.
+    if 'application/json' in content_type:
+        request_json = request.get_json()
+        create_candidate = request_json.get('create_candidate')
+        filepicker_key = request_json.get('filepicker_key')
         resume_file = None
         resume_file_name = str(filepicker_key)
-    elif resume_file_name:
-        if request_json:
-            raise InvalidUsage("Posted Resumes must be sent as forms (multipart/form-data)")
-        resume_file = request.files['resume_file']
+        if not filepicker_key:
+            raise InvalidUsage('Invalid JSON data for resume parsing')
+    # Handle posted form data. Required for mobile app as it posts a binary file
+    elif 'multipart/form-data' in content_type:
+        create_candidate = request.form.get('create_candidate')
+        filepicker_key = None
+        resume_file = request.files.get('resume_file')
+        resume_file_name = request.form.get('resume_file_name')
+        if not (resume_file and resume_file_name):
+            raise InvalidUsage('Invalid form data for resume parsing.')
     else:
-        raise InvalidUsage("Invalid Query Params")
+        logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
+            request.form, request.files, request.json
+        ))
+        raise InvalidUsage("Invalid Request")
+    if create_candidate and not talent_pools:
+        raise InvalidUsage("Could not obtain user talent_pools for candidate creation.")
     parse_params = {
-        'filepicker_key': filepicker_key,
-        'resume_file': resume_file,
-        'filename': resume_file_name,
-        'create_candidate': create_candidate,
         'oauth': oauth,
-        'talent_pools': talent_pools
+        'talent_pools': talent_pools,
+        'create_candidate': create_candidate,
+        'filename': resume_file_name,
+        'filepicker_key': filepicker_key,
+        'resume_file': resume_file
     }
     return jsonify(**process_resume(parse_params))
 

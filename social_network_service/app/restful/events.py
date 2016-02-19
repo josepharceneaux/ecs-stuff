@@ -17,6 +17,7 @@ from social_network_service.custom_exceptions import *
 events_blueprint = Blueprint('events_api', __name__)
 api = TalentApi()
 api.init_app(events_blueprint)
+api.route = types.MethodType(api_route, api)
 
 
 @api.route(SocialNetworkApi.EVENTS)

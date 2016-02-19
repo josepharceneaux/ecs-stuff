@@ -1,6 +1,5 @@
 # Third Party imports
 from celery import Celery
-from flask import Flask
 
 # Service specific imports
 from flask.ext.cors import CORS
@@ -12,20 +11,23 @@ from scheduler_service.common.utils.models_utils import add_model_helpers
 from scheduler_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.common.utils.talent_ec2 import get_ec2_instance_id
+from scheduler_service.common.routes import GTApis
+from scheduler_service.common.talent_flask import TalentFlask
 
 __author__ = 'saad'
 
-flask_app = Flask(__name__)
+
+flask_app = TalentFlask(__name__)
 load_gettalent_config(flask_app.config)
 logger = flask_app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", flask_app.import_name, get_ec2_instance_id())
 
-add_model_helpers(db.Model, logger=logger)
+add_model_helpers(db.Model)
 db.init_app(flask_app)
 db.app = flask_app
 
-# Enable CORS for all origins & endpoints
-CORS(flask_app)
+# Enable CORS for *.gettalent.com and localhost
+CORS(flask_app, resources=GTApis.CORS_HEADERS)
 
 # Initialize Redis Cache
 redis_store.init_app(flask_app)

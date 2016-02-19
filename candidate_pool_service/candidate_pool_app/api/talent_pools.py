@@ -5,18 +5,18 @@ import json
 import requests
 from flask import request, Blueprint
 from flask_restful import Resource
-from datetime import datetime, timedelta
+from datetime import datetime
 from sqlalchemy import and_
 from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import update_talent_pools_stats_task
 from candidate_pool_service.common.models.user import DomainRole
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
@@ -40,31 +40,34 @@ class TalentPoolApi(Resource):
 
         talent_pool_id = kwargs.get('id')
 
+        # Getting a single talent-pool
         if talent_pool_id:
             talent_pool = TalentPool.query.get(talent_pool_id)
 
             if not talent_pool:
                 raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
-            if talent_pool.domain_id != request.user.domain_id:
-                raise ForbiddenError(error_message="User %s is not authorized to get talent-pool's info" %
-                                                   request.user.id)
+            if not request.user_can_edit_other_domains:
+                if talent_pool.domain_id != request.user.domain_id:
+                    raise ForbiddenError(error_message="User %s is not authorized to get talent-pool's info" %
+                                                       request.user.id)
 
-            if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
-                                                   talent_pool_id=talent_pool_id).all() and 'CAN_GET_TALENT_POOLS' \
-                    not in request.valid_domain_roles:
-                raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
-                                                   "talent-pools's info" % request.user.id)
+                talent_pool_group = TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id,
+                                                                    talent_pool_id=talent_pool_id).all()
+                if not talent_pool_group and 'CAN_GET_TALENT_POOLS' not in request.valid_domain_roles:
+                    raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
+                                                       "talent-pools's info" % request.user.id)
             return {
                 'talent_pool': {
                     'id': talent_pool.id,
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
                 }
             }
-        elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles:
+        # Getting all talent-pools of logged-in user's domain
+        elif 'CAN_GET_TALENT_POOLS' in request.valid_domain_roles or request.user_can_edit_other_domains:
             talent_pools = TalentPool.query.filter_by(domain_id=request.user.domain_id).all()
             return {
                 'talent_pools': [
@@ -72,15 +75,18 @@ class TalentPoolApi(Resource):
                         'id': talent_pool.id,
                         'name': talent_pool.name,
                         'description': talent_pool.description,
-                        'user_id': talent_pool.owner_user_id
-
+                        'user_id': talent_pool.user_id,
+                        'accessible_to_user_group_ids': [talent_pool_group.user_group_id for talent_pool_group in
+                                                         TalentPoolGroup.query.filter_by(
+                                                                 talent_pool_id=talent_pool.id
+                                                         ).all()]
                     } for talent_pool in talent_pools
                 ]
             }
         else:
             raise ForbiddenError("User %s is not authorized to get talent-pool's info" % request.user.id)
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS)
+    @require_any_role(DomainRole.Roles.CAN_EDIT_TALENT_POOLS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def put(self, **kwargs):
         """
         PUT /talent-pools/<id>      Modify an already existing talent-pool
@@ -108,7 +114,7 @@ class TalentPoolApi(Resource):
         if not isinstance(posted_data, dict):
             raise InvalidUsage(error_message="Request body is not properly formatted")
 
-        if request.user.domain_id != talent_pool.domain_id:
+        if request.user.domain_id != talent_pool.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="User %s is not authorized to edit talent-pool's info" % request.user.id)
 
         name = posted_data.get('name')
@@ -131,7 +137,7 @@ class TalentPoolApi(Resource):
             'talent_pool': {'id': talent_pool.id}
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_POOLS)
+    @require_any_role(DomainRole.Roles.CAN_DELETE_TALENT_POOLS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def delete(self, **kwargs):
         """
         DELETE /talent-pools/<id>      Delete an already existing talent-pool
@@ -147,7 +153,7 @@ class TalentPoolApi(Resource):
         if not talent_pool:
             raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
 
-        if request.user.domain_id != talent_pool.domain_id:
+        if request.user.domain_id != talent_pool.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="User %s is not authorized to delete a talent-pool" % request.user.id)
 
         talent_pool.delete()
@@ -156,7 +162,7 @@ class TalentPoolApi(Resource):
             'talent_pool': {'id': talent_pool.id}
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_POOLS)
+    @require_any_role(DomainRole.Roles.CAN_ADD_TALENT_POOLS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self, **kwargs):
         """
         POST /talent-pools    Create new empty talent pools
@@ -185,6 +191,10 @@ class TalentPoolApi(Resource):
 
             name = talent_pool.get('name', '').strip()
             description = talent_pool.get('description', '').strip()
+            if request.user_can_edit_other_domains:
+                request.user = User.query.get(talent_pool.get('user_id', request.user.id))
+                if not request.user:
+                    raise InvalidUsage("User with id %s doesn't exist in Database" % request.user.id)
 
             if not name:
                 raise InvalidUsage(error_message="A valid name should be provided to create a talent-pool")
@@ -193,7 +203,7 @@ class TalentPoolApi(Resource):
                 raise InvalidUsage(error_message="Talent pool '%s' already exists in domain %s" % (name, request.user.domain_id))
 
             talent_pool_object = TalentPool(name=name, description=description, domain_id=request.user.domain_id,
-                                            owner_user_id=request.user.id)
+                                            user_id=request.user.id)
             talent_pool_objects.append(talent_pool_object)
             db.session.add(talent_pool_object)
 
@@ -221,13 +231,14 @@ class TalentPoolGroupApi(Resource):
 
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
+        if not request.user_can_edit_other_domains:
+            if user_group.domain_id != request.user.domain_id:
+                raise ForbiddenError(error_message="Logged-in user belongs to different domain as given user group")
 
-        if user_group.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user belongs to different domain as given user group")
-
-        if user_group.id != request.user.user_group_id and 'CAN_GET_TALENT_POOLS_OF_GROUP' not in request.valid_domain_roles:
-            raise ForbiddenError(error_message="Either logged-in user belongs to different group as input user group "
-                                               "or it doesn't have appropriate roles")
+            if user_group.id != request.user.user_group_id and 'CAN_GET_TALENT_POOLS_OF_GROUP' not in \
+                    request.valid_domain_roles:
+                raise ForbiddenError(error_message="Either logged-in user belongs to different group as "
+                                                   "input user group or it doesn't have appropriate roles")
 
         talent_pool_ids = [talent_pool_group.talent_pool_id for talent_pool_group in
                            TalentPoolGroup.query.filter_by(user_group_id=user_group_id).all()]
@@ -239,13 +250,13 @@ class TalentPoolGroupApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'owner_user_id': talent_pool.owner_user_id
+                    'user_id': talent_pool.user_id
 
                 } for talent_pool in talent_pools
             ]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_POOLS_FROM_GROUP)
+    @require_any_role(DomainRole.Roles.CAN_DELETE_TALENT_POOLS_FROM_GROUP, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def delete(self, **kwargs):
         """
         DELETE /groups/<group_id>/talent_pools   Remove given input of talent-pool ids from user group
@@ -272,7 +283,7 @@ class TalentPoolGroupApi(Resource):
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
-        if request.user.domain_id != user_group.domain_id:
+        if request.user.domain_id != user_group.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
@@ -294,7 +305,7 @@ class TalentPoolGroupApi(Resource):
 
         return {'talent_pools': [int(talent_pool_id) for talent_pool_id in talent_pool_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_POOLS_TO_GROUP)
+    @require_any_role(DomainRole.Roles.CAN_ADD_TALENT_POOLS_TO_GROUP, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self, **kwargs):
         """
         POST /groups/<group_id>/talent_pools   Add talent-pools to user_group
@@ -322,7 +333,7 @@ class TalentPoolGroupApi(Resource):
         if not user_group:
             raise NotFoundError(error_message="User group with id %s doesn't exist" % user_group_id)
 
-        if request.user.domain_id != user_group.domain_id:
+        if request.user.domain_id != user_group.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="Logged-in user and given user-group belong to different domains")
 
         for talent_pool_id in talent_pool_ids:
@@ -365,7 +376,6 @@ class TalentPoolCandidateApi(Resource):
         :rtype: dict
         """
         talent_pool_id = kwargs.get('id')
-        count_only = request.args.get('count_only', '0')
         talent_pool = TalentPool.query.get(talent_pool_id)
 
         if not talent_pool:
@@ -542,54 +552,15 @@ class TalentPoolCandidateApi(Resource):
                                            talent_pool_candidate_ids]}
 
 
-@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
-@require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_POOLS_STATS)
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_UPDATE_STATS, methods=['POST'])
+@require_oauth(allow_null_user=True)
 def update_talent_pools_stats():
     """
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-
-    talent_pools = TalentPool.query.all()
-
-    # 2 hours are added to account for scheduled job run time
-    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
-
-    for talent_pool in talent_pools:
-
-        try:
-            yesterday_stat = TalentPoolStats.query.filter(TalentPoolStats.talent_pool_id == talent_pool.id,
-                                                          TalentPoolStats.added_datetime > yesterday_datetime).first()
-            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
-                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool.id).all()]
-            total_candidates = len(talent_pool_candidate_ids)
-
-            number_of_engaged_candidates = 0
-            if talent_pool_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
-                int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            if yesterday_stat:
-                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
-                                                   number_of_candidates_removed_or_added=
-                                                   total_candidates - yesterday_stat.total_candidates,
-                                                   candidates_engagement=percentage_candidates_engagement)
-            else:
-                talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool.id, total_candidates=total_candidates,
-                                                   number_of_candidates_removed_or_added=total_candidates,
-                                                   candidates_engagement=percentage_candidates_engagement)
-            db.session.add(talent_pool_stat)
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
-
+    logger.info("TalentPool statistics update process has been started")
+    update_talent_pools_stats_task.delay()
     return '', 204
 
 
@@ -605,7 +576,7 @@ def get_talent_pool_stats(talent_pool_id):
     if not talent_pool:
         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
 
-    if talent_pool.owner_user_id != request.user.id:
+    if talent_pool.user.domain_id != request.user.domain_id:
         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
                                            % (request.user.id, talent_pool.id))
 
@@ -613,37 +584,93 @@ def get_talent_pool_stats(talent_pool_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
 
-    if not from_date_string or not to_date_string:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
-
     try:
-        from_date = parse(from_date_string)
-        to_date = parse(to_date_string)
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
-    else:
-        interval = int(interval)
-        if interval < 1:
-            raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     talent_pool_stats = TalentPoolStats.query.filter(and_(TalentPoolStats.talent_pool_id == talent_pool_id,
                                                           TalentPoolStats.added_datetime >= from_date,
                                                           TalentPoolStats.added_datetime <= to_date)).all()
-
+    talent_pool_stats.reverse()
     talent_pool_stats = talent_pool_stats[::interval]
 
-    return jsonify({'talent_pool_data': [
-        {
-            'total_number_of_candidates': talent_pool_stat.total_candidates,
-            'number_of_candidates_removed_or_added': talent_pool_stat.number_of_candidates_removed_or_added,
-            'added_datetime': talent_pool_stat.added_datetime,
-            'candidates_engagement': talent_pool_stat.candidates_engagement
-        }
-        for talent_pool_stat in talent_pool_stats
-    ]})
+    # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    talent_pool_stats = map(lambda (i, talent_pool_stat): {
+        'total_number_of_candidates': talent_pool_stat.total_number_of_candidates,
+        'number_of_candidates_added': (talent_pool_stat.total_number_of_candidates - (
+            talent_pool_stats[i + 1].total_number_of_candidates if i + 1 < len(talent_pool_stats)
+            else talent_pool_stat.total_number_of_candidates)),
+        'added_datetime': talent_pool_stat.added_datetime.isoformat(),
+        'candidates_engagement': talent_pool_stat.candidates_engagement
+    }, enumerate(talent_pool_stats))
+
+    return jsonify({'talent_pool_data': talent_pool_stats})
+
+
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS, methods=['GET'])
+@require_oauth()
+def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
+    """
+    This method will return the statistics of all talent-pipelines in a talent_pool over a given period of time
+    with time-period = 1 day
+    :param talent_pool_id: Id of a talent-pool
+    :return: A list of time-series data
+    """
+    talent_pool = TalentPool.query.get(talent_pool_id)
+    if not talent_pool:
+        raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
+
+    if talent_pool.user.domain_id != request.user.domain_id:
+        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
+                                           % (request.user.id, talent_pool.id))
+
+    from_date_string = request.args.get('from_date', '')
+    to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
+
+    try:
+        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
+        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+    except Exception as e:
+        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
+
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+
+    talent_pipelines_in_talent_pool_stats = TalentPipelinesInTalentPoolStats.query.filter(and_(
+            TalentPipelinesInTalentPoolStats.talent_pool_id == talent_pool_id,
+            TalentPipelinesInTalentPoolStats.added_datetime >= from_date,
+            TalentPipelinesInTalentPoolStats.added_datetime <= to_date)).all()
+
+    talent_pipelines_in_talent_pool_stats.reverse()
+
+    talent_pipelines_in_talent_pool_stats = talent_pipelines_in_talent_pool_stats[::interval]
+
+    # Computing average_number_of_candidates_added by subtracting candidate count of previous day from candidate
+    # count of current_day
+    talent_pipelines_in_talent_pool_stats = map(lambda (i, stat_row): {
+        'average_number_of_candidates': stat_row.average_number_of_candidates,
+        'average_number_of_candidates_added': (stat_row.average_number_of_candidates - (
+            talent_pipelines_in_talent_pool_stats[i + 1].average_number_of_candidates
+            if i + 1 < len(talent_pipelines_in_talent_pool_stats) else stat_row.average_number_of_candidates)),
+        'added_datetime': stat_row.added_datetime.isoformat()
+    }, enumerate(talent_pipelines_in_talent_pool_stats))
+
+    return jsonify({'talent_pool_data': talent_pipelines_in_talent_pool_stats})
 
 api = TalentApi(talent_pool_blueprint)
 api.add_resource(TalentPoolApi, CandidatePoolApi.TALENT_POOL, CandidatePoolApi.TALENT_POOLS)
