@@ -284,14 +284,47 @@ class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
-    list_order = db.Column('ListOrder', db.Integer)
-    filename = db.Column('Filename', db.String(260))
+    image_url = db.Column('ImageUrl', db.String(260))
     is_default = db.Column('IsDefault', db.Boolean)
-    # directory_tag_id = db.Column('DirectoryTagId', db.INT, db.ForeignKey('directory_tag.Id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    added_datetime = db.Column('AddedDatetime', db.TIMESTAMP, default=datetime.datetime.utcnow())
+    updated_datetime = db.Column('UpdatedDatetime', db.TIMESTAMP, default=datetime.datetime.utcnow())
 
     def __repr__(self):
-        return "<CandidatePhoto (id = '%r')>" % self.filename
+        return "<CandidatePhoto (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.get(_id)
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id: int|long
+        :rtype:  list
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
+    @classmethod
+    def set_is_default_to_false(cls, candidate_id):
+        """
+        Will set all of candidate's photos' is_default value to False
+        :type candidate_id: int|long
+        """
+        for photo in cls.query.filter_by(candidate_id=candidate_id).all():
+            photo.is_default = False
+
+    @classmethod
+    def exists(cls, candidate_id, image_url):
+        """
+        Checks to see if candidate's image already exists
+        :type candidate_id:  int|long
+        :type image_url:  basestring|str
+        :rtype: bool
+        """
+        if cls.query.filter_by(candidate_id=candidate_id, image_url=image_url).first():
+            return True
+        else:
+            return False
 
 
 class CandidateRating(db.Model):

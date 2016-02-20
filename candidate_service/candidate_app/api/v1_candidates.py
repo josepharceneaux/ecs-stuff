@@ -24,8 +24,8 @@ from candidate_service.modules.validators import (
 )
 from candidate_service.modules.talent_cloud_search import one_signal_client
 from candidate_service.modules.json_schema import (
-    candidates_resource_schema_post, candidates_resource_schema_patch,
-    candidates_resource_schema_get, resource_schema_preferences
+    candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
+    resource_schema_photos_post, resource_schema_photos_patch
 )
 from jsonschema import validate, FormatChecker, ValidationError
 
@@ -44,7 +44,9 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateSubscriptionPreference, CandidateDevice)
+    CandidateSubscriptionPreference, CandidateDevice, CandidateSubscriptionPreference,
+    CandidatePhoto
+)
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
@@ -54,7 +56,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
-    add_or_update_candidate_subs_preference
+    add_or_update_candidate_subs_preference, add_photos, update_photo
 )
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
@@ -1376,7 +1378,7 @@ class CandidatePreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpint:  DELETE /v1/candidates/:id/preferences
+        Endpoint:  DELETE /v1/candidates/:id/preferences
         Function will delete candidate's subscription preference
         """
         # Authenticated user & candidate ID
@@ -1489,3 +1491,147 @@ class CandidateDeviceResource(Resource):
             # No device was found on OneSignal database.
             raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
 
+
+class CandidatePhotosResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/photos
+        Function will add candidate photo to db
+        """
+        # Authenticated user
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Validate request body
+        body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_photos_post, format_checker=FormatChecker())
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        add_photos(candidate_id, body_dict['photos'])
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+           i.  GET /v1/candidates/:id/photos
+          ii.  GET /v1/candidates/:candidate_id/photos/:id
+        Function will return candidate photo(s) information
+        """
+        # Authenticated user, candidate ID, and photo ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+        photo_id = kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if photo_id:
+            # Photo must be recognized
+            photo = CandidatePhoto.get_by_id(_id=photo_id)
+            """
+            :type photo: CandidatePhoto
+            """
+            if not photo:
+                raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
+                                    error_code=custom_error.PHOTO_NOT_FOUND)
+
+            # Photo must belong to candidate
+            if photo.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
+
+            return {'candidate_photo': {'id': photo_id, 'image_url': photo.image_url,
+                                        'is_default': photo.is_default}}
+
+        else: # Get all of candidate's photos
+            photos = CandidatePhoto.get_by_candidate_id(candidate_id=candidate_id)
+            return {'candidate_photos': [
+                {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
+                                         for photo in photos]}
+
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        """
+        Endpoint:
+            i.  PATCH /v1/candidates/:candidate_id/photos/:id
+        Function will update candidate's photo information
+        :param kwargs:
+        :return:
+        """
+        # Authenticated user, candidate ID, and photo ID
+        authed_user, candidate_id, photo_id = request.user, kwargs['candidate_id'], kwargs['id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        # Validate request body
+        body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_photos_patch)
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
+
+        # Update candidate's photo
+        update_photo(candidate_id, photo_id, authed_user.id, body_dict)
+
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i.  DELETE /v1/candidates/:id/photos
+            ii.  DELETE /v1/candidates/:candidate_id/photos/:id
+        Function will delete candidate's photo(s) from database
+        """
+        # Authenticated user, Candidate ID, and photo ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+        photo_id = kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        if photo_id:
+            # Photo must already exist
+            photo = CandidatePhoto.get_by_id(_id=photo_id)
+            """
+            :type photo: CandidatePhoto
+            """
+            if not photo:
+                raise NotFoundError('Candidate photo not found; photo-id: {}'.format(photo_id),
+                                    error_code=custom_error.PHOTO_NOT_FOUND)
+
+            # Photo must belong to candidate
+            if photo.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
+
+            db.session.delete(photo)
+
+        else: # Delete all of candidate's photos
+            map(db.session.delete, candidate.photos)
+
+        db.session.commit()
+        return '', 204
