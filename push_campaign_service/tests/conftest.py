@@ -14,171 +14,27 @@ but maybe some other user.
 """
 import time
 import pytest
-import requests
-import ConfigParser
 from faker import Faker
 
 from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.common.tests.conftest import randomword
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 from push_campaign_service.common.test_config_manager import load_test_config
+from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
+                                                             token_second, user_first,
+                                                             user_same_domain, user_second)
 from push_campaign_service.common.routes import (PushCampaignApiUrl, SchedulerApiUrl,
-                                                 CandidatePoolApiUrl, CandidateApiUrl,
-                                                 UserServiceApiUrl)
+                                                 CandidatePoolApiUrl, CandidateApiUrl)
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data, SLEEP_TIME,
-                                                        OK, NOT_FOUND, add_roles, remove_roles)
+                                                        OK, NOT_FOUND)
 
 
 CONFIG_FILE_NAME = "test.cfg"
 LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
-ROLES = ['CAN_ADD_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS', 'CAN_GET_TALENT_POOLS',
-         'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP', 'CAN_ADD_CANDIDATES',
-         'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES', 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS',
-         'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS']
-
-
-class TestConfigParser(ConfigParser.ConfigParser):
-
-    def to_dict(self):
-        sections = dict(self._sections)
-        for k in sections:
-            sections[k] = dict(self._defaults, **sections[k])
-            sections[k].pop('__name__', None)
-        return sections
-
 
 fake = Faker()
-
-config = TestConfigParser()
-config.read(LOCAL_CONFIG_PATH)
-print(config.to_dict())
-
-test_config = load_test_config()  # config.to_dict()
-
-
-@pytest.fixture()
-def token_first(request):
-    info = test_config['USER_FIRST']
-    data = {'client_id': info['client_id'],
-            'client_secret': info['client_secret'],
-            'username': info['username'],
-            'password': info['password'],
-            'grant_type': 'password'
-            }
-    resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
-    assert resp.status_code == 200
-    token = resp.json()['access_token']
-    return token
-
-
-@pytest.fixture()
-def token_same_domain(request):
-    info = test_config['USER_SAME_DOMAIN']
-    data = {'client_id': info['client_id'],
-            'client_secret': info['client_secret'],
-            'username': info['username'],
-            'password': info['password'],
-            'grant_type': 'password'
-            }
-    resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
-    assert resp.status_code == 200
-    token = resp.json()['access_token']
-    return token
-
-
-@pytest.fixture()
-def token_second(request):
-    info = test_config['USER_SECOND']
-    data = {'client_id': info['client_id'],
-            'client_secret': info['client_secret'],
-            'username': info['username'],
-            'password': info['password'],
-            'grant_type': 'password'
-            }
-    resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
-    assert resp.status_code == 200
-    token = resp.json()['access_token']
-    return token
-
-
-@pytest.fixture()
-def user_first(request, token_first):
-    """
-    This fixture will be used to send request for push campaigns
-    :param request: request object
-    :param token_first: auth token for first user
-    :return: user dictionary object
-    """
-    user_id = test_config['USER_FIRST']['user_id']
-    response = send_request('get', UserServiceApiUrl.USER % user_id, token_first)
-    assert response.status_code == 200
-    user = response.json()['user']
-    add_roles(user['id'], ROLES, token_first)
-
-    def tear_down():
-        remove_roles(user['id'], ROLES, token_first)
-
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def user_second(request, token_second):
-    """
-    This fixture will be used to send request for push campaigns to test same domain functionality
-    :param request: request object
-    :param token_second: auth token for first user
-    :return: user dictionary object
-    """
-    user_id = test_config['USER_SECOND']['user_id']
-    response = send_request('get', UserServiceApiUrl.USER % user_id, token_second)
-    assert response.status_code == 200
-    user = response.json()['user']
-    add_roles(user['id'], ROLES, token_second)
-
-    def tear_down():
-        remove_roles(user['id'], ROLES, token_second)
-
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def user_same_domain(request, token_same_domain, user_first, token_first):
-    """
-    This fixture will be used to send request for push campaigns
-    :param request: request object
-    :param token_first: auth token for a user from same domain as of user first
-    :return: user dictionary object
-    """
-    data = {
-        "users": [
-            {
-                "first_name": fake.name(),
-                "last_name": fake.name(),
-                "email": fake.email(),
-                "phone": "226 581 1027",
-                "thumbnail_url": "https://www.thumbnail.com/xyz.png"
-            }
-        ]
-    }
-    response = send_request('post', UserServiceApiUrl.USERS, token_first, data=data)
-    assert response.status_code == OK
-    user_ids = response.json()['users']
-    assert len(user_ids) == 1
-    user_id = user_ids[0]
-    response = send_request('get', UserServiceApiUrl.USER % user_id, token_first)
-    assert response.status_code == OK
-    user = response.json()['user']
-    add_roles(user['id'], ROLES, token_first)
-
-    def tear_down():
-        response = send_request('delete', UserServiceApiUrl.USER % user_id, token_first)
-        assert response.status_code == OK
-
-    request.addfinalizer(tear_down)
-    return user
+test_config = load_test_config()
 
 
 @pytest.fixture(scope='function')
@@ -211,6 +67,7 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     request.addfinalizer(tear_down)
     return data
 
+
 @pytest.fixture()
 def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, campaign_data,
                                        smartlist_same_doamin):
@@ -227,6 +84,7 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
 
     request.addfinalizer(tear_down)
     return data
+
 
 @pytest.fixture()
 def campaign_in_db_second(request, token_second, smartlist_second, campaign_data):
@@ -692,6 +550,3 @@ def candidate_device_second(request, candidate_second, token_second):
     devices = response.json()['devices']
     assert len(devices) == 1
     return devices[0]
-
-
-

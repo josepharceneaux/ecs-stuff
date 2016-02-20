@@ -5,12 +5,12 @@ This module contains tests related to Push Campaign RESTful API endpoints.
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.models.push_campaign import *
+from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl
-from push_campaign_service.common.models.candidate import Candidate
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 
 URL = PushCampaignApiUrl.DEVICES
+
 
 class TestRegisterCandidateDevice(object):
 
@@ -23,7 +23,7 @@ class TestRegisterCandidateDevice(object):
 
     # Test URL: /v1/devices [POST]
     def test_associate_device_with_invalid_candidate_id(self, token_first, candidate_first):
-        invalid_candiate_id = get_non_existing_id(Candidate)
+        invalid_candiate_id = candidate_first['id'] + 10000
         valid_device_id = PUSH_DEVICE_ID
         invalid_candidate_data = {
             '': (INVALID_USAGE, 'candidate_id is not given in post data'),

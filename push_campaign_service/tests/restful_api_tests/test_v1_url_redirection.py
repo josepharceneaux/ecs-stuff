@@ -2,8 +2,8 @@
 This modules contains tests for Url Redirection endpoint
 If anything goes wrong, this endpoint raises InternalServerError (500)
 """
+from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl
-from push_campaign_service.tests.test_utilities import send_request
 
 
 class TestURLRedirectionApi(object):

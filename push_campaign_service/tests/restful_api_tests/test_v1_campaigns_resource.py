@@ -5,11 +5,10 @@ This module contains tests related to Push Campaign RESTful API endpoints.
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (invalid_data_test,
-                                                        unauthorize_test,
-                                                        missing_key_test,
-                                                        send_request, OK,
+                                                        missing_key_test, OK,
                                                         INVALID_USAGE, FORBIDDEN)
 from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.utils.test_utils import unauthorize_test, send_request
 
 
 URL = PushCampaignApiUrl.CAMPAIGNS

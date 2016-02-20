@@ -6,8 +6,8 @@ import time
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.utils.test_utils import unauthorize_test
 
 URL = PushCampaignApiUrl.BLASTS
 

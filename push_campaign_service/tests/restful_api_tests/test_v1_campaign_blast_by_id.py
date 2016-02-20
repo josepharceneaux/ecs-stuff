@@ -3,9 +3,9 @@ This module contains tests related to Push Campaign RESTful API endpoint
 /v1/campaigns/:id/blasts/:id
 """
 # Application specific imports
-from push_campaign_service.common.models.push_campaign import PushCampaign, PushCampaignBlast
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.common.utils.test_utils import unauthorize_test
 
 URL = PushCampaignApiUrl.BLAST
 
@@ -27,7 +27,7 @@ class TestCampaignBlastById(object):
 
     def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast, campaign_in_db):
         # 404 Case, Blast not found
-        invalid_blast_id = get_non_existing_id(PushCampaignBlast)
+        invalid_blast_id = campaign_blast['id'] + 10000
         response = send_request('get', URL
                                 % (campaign_in_db['id'], invalid_blast_id), token_first)
         assert response.status_code == NOT_FOUND
