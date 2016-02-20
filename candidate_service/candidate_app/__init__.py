@@ -234,12 +234,6 @@ try:
     )
 
     # ****** CandidateEditResource ******
-    api.add_resource(
-        CandidateEditResource,
-        '/v1/candidates/<int:id>/edits',
-        endpoint='candidate_edit'
-    )
-
     api.add_resource(CandidateEditResource, '/v1/candidates/<int:id>/edits', endpoint='candidate_edit')
 
     # ****** CandidateViewResource ******
@@ -251,11 +245,6 @@ try:
         '/v1/candidates/<int:id>/devices',
         endpoint='candidate_devices'
     )
-
-    ######################## CandidateViewResource ########################
-    api.add_resource(CandidateViewResource,
-                     CandidateApi.CANDIDATE_VIEWS,
-                     endpoint='candidate_views')
 
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
