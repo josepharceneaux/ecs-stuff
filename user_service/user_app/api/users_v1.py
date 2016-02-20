@@ -5,7 +5,7 @@ from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db, DomainRole, Token
-from user_service.common.utils.validators import is_valid_email
+from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 
@@ -158,7 +158,7 @@ class UserApi(Resource):
         phone = posted_data.get('phone', '').strip()
         thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
-        is_disabled = posted_data.get('is_disabled', '').strip()
+        is_disabled = posted_data.get('is_disabled', 0).strip()
 
         try:
             last_read_datetime = parser.parse(last_read_datetime)
@@ -171,6 +171,11 @@ class UserApi(Resource):
         if check_if_user_exists(email):
             raise InvalidUsage(error_message="Email Address %s already exists" % email)
 
+        if not is_number(is_disabled) or (int(is_disabled) != 0 and int(is_disabled) != 1):
+            raise InvalidUsage("Possible vaues of `is_disabled` are 0 and 1")
+
+        is_disabled = int(is_disabled)
+        
         # Update user
         update_user_dict = {
             'first_name': first_name,
@@ -184,6 +189,12 @@ class UserApi(Resource):
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
         User.query.filter(User.id == requested_user_id).update(update_user_dict)
         db.session.commit()
+
+        if is_disabled:
+            # Delete all tokens of deleted user
+            tokens = Token.query.filter_by(user_id=requested_user_id).all()
+            for token in tokens:
+                token.delete()
 
         return {'updated_user': {'id': requested_user_id}}
 
