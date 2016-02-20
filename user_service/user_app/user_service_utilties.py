@@ -51,8 +51,8 @@ def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organizat
 
 def check_if_user_exists(email):
     # Get user if user exists
-    domain_users = User.query.filter(User.email == email).all()
-    return True if domain_users else False
+    domain_user = User.query.filter(User.email == email).first()
+    return domain_user if domain_user else False
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
