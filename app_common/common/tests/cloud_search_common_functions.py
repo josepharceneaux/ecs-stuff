@@ -1,14 +1,12 @@
 __author__ = 'ufarooqi'
 
-import json
-import time
 import uuid
+import time
 from datetime import datetime
-from random import randint
-
+import json
 import requests
+from random import randint
 from faker import Faker
-
 from ..routes import CandidateApiUrl
 
 fake = Faker()

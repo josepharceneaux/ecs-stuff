@@ -1,6 +1,4 @@
 """Misc functions that have no logical grouping to a module."""
-from werkzeug.exceptions import BadRequest
-
 
 __author__ = 'erikfarmer'
 
@@ -19,6 +17,7 @@ from requests import ConnectionError
 from ..talent_config_manager import TalentConfigKeys
 from ..models.user import User, UserScopedRoles, DomainRole
 from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
+from werkzeug.exceptions import BadRequest
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 

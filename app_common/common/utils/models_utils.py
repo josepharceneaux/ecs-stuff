@@ -48,10 +48,9 @@ from types import MethodType
 # Third Party
 from flask import current_app
 from flask.ext.cors import CORS
-
-# Application Specific
 from healthcheck import HealthCheck
 
+# Application Specific
 from ..models.db import db
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store

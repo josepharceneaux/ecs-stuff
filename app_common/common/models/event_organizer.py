@@ -1,4 +1,5 @@
 from db import db
+import event
 
 
 class EventOrganizer(db.Model):

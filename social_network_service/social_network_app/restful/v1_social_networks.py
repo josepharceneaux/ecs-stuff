@@ -371,7 +371,7 @@ class MeetupGroupsResource(Resource):
 class GetTokenValidityResource(Resource):
     decorators = [require_oauth()]
 
-    def get(self, id, **kwargs):
+    def get(self, _id, **kwargs):
         """
         Get user access_token validity status for specified social network.
         :param social_network_id: id for specified social network
@@ -406,9 +406,9 @@ class GetTokenValidityResource(Resource):
         """
         user_id = request.user.id
         # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(id)
+        social_network = SocialNetwork.get_by_id(_id)
         if social_network:
-            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, id)
+            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, _id)
             if user_social_network_credential:
                 # Get social network specific Social Network class
                 social_network_class = get_class(social_network.name, 'social_network')
@@ -430,7 +430,7 @@ class RefreshTokenResource(Resource):
 
     decorators = [require_oauth()]
 
-    def put(self, id):
+    def put(self, _id):
         """
         Update access token for specified user and social network.
         :return:
@@ -459,7 +459,7 @@ class RefreshTokenResource(Resource):
         """
         user_id = request.user.id
         try:
-            social_network = SocialNetwork.get_by_id(id)
+            social_network = SocialNetwork.get_by_id(_id)
             if not social_network:
                 raise ResourceNotFound("Social Network not found")
             # creating class object for respective social network
@@ -569,7 +569,8 @@ class VenuesResource(Resource):
         venue_data['user_id'] = user_id
         venue = Venue(**venue_data)
         Venue.save(venue)
-        headers = {'Location': '/%s/venues/%s' % (SocialNetworkApi.VERSION, venue.id)}
+        headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.VENUES,
+                                                   id=venue.id)}
         return ApiResponse(dict(message='Venue created successfully', id=venue.id),
                            status=201,
                            headers=headers)
@@ -678,7 +679,7 @@ class VenueByIdResource(Resource):
         venue = venue.to_json()
         return dict(venue=venue)
 
-    def put(self, id):
+    def put(self, venue_id):
         """
         Updates a venue for current user
         :param venue_id: id of the requested venue
@@ -723,7 +724,7 @@ class VenueByIdResource(Resource):
         """
         user_id = request.user.id
         venue_data = get_valid_json_data(request)
-        venue = Venue.get_by_user_id_venue_id(user_id, id)
+        venue = Venue.get_by_user_id_venue_id(user_id, venue_id)
         if venue:
             venue_data['user_id'] = user_id
             venue.update(**venue_data)
@@ -731,10 +732,10 @@ class VenueByIdResource(Resource):
         else:
             raise ResourceNotFound('Venue not found')
 
-    def delete(self, id):
+    def delete(self, venue_id):
         """
         This endpoint deletes one venue owned by this user.
-        :param id: id of venue on getTalent database to be deleted
+        :param venue_id: id of venue on getTalent database to be deleted
         :return:
 
         :Example:
@@ -757,7 +758,7 @@ class VenueByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        venue = Venue.get_by_user_id_venue_id(request.user.id, id)
+        venue = Venue.get_by_user_id_venue_id(request.user.id, venue_id)
         if not venue:
             raise ResourceNotFound('Venue not found')
         Venue.delete(venue)
@@ -993,7 +994,7 @@ class EventOrganizerByIdResource(Resource):
         else:
             raise ResourceNotFound("Organizer not found")
 
-    def delete(self, id):
+    def delete(self, venue_id):
         """
         This endpoint deletes one organizer owned by this user.
         :param kwargs:
@@ -1019,7 +1020,7 @@ class EventOrganizerByIdResource(Resource):
                          500 (Internal Server Error)
 
         """
-        organizer = EventOrganizer.get_by_user_id_organizer_id(request.user.id, id)
+        organizer = EventOrganizer.get_by_user_id_organizer_id(request.user.id, venue_id)
         if organizer:
             EventOrganizer.delete(organizer)
             return dict(message='Organizer has been deleted successfully')

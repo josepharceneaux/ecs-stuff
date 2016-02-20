@@ -1,7 +1,5 @@
 import uuid
-
 from faker import Faker
-
 fake = Faker()
 
 __author__ = 'jitesh'

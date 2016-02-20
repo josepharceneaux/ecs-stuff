@@ -2,13 +2,11 @@ __author__ = 'ufarooqi'
 
 import random
 import string
-
 import requests
-from sqlalchemy.sql.expression import ClauseElement
-
 from ..models.user import User
 from ..routes import AuthApiUrl
 from ..utils.auth_utils import gettalent_generate_password_hash
+from sqlalchemy.sql.expression import ClauseElement
 
 
 def get_or_create(session, model, defaults=None, **kwargs):

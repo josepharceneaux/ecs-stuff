@@ -1,11 +1,9 @@
 """
 CandidateEdit table is designed to keep track of changes made to the Candidate's records
 """
-import datetime
-
-from sqlalchemy.dialects.mysql import TINYINT
-
 from db import db
+from sqlalchemy.dialects.mysql import TINYINT
+import datetime
 
 
 class CandidateEdit(db.Model):

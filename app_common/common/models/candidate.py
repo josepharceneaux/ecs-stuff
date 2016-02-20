@@ -1,10 +1,7 @@
-import datetime
-
 from sqlalchemy import and_
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from sqlalchemy.orm import relationship, backref
-
 from db import db
+from sqlalchemy.orm import relationship, backref
+import datetime
 from ..error_handling import InvalidUsage
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from email_campaign import EmailCampaignSend

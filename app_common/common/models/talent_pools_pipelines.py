@@ -1,6 +1,8 @@
 __author__ = 'ufarooqi'
 
 from db import db
+from user import Domain, UserGroup, User
+from candidate import Candidate
 
 
 class TalentPool(db.Model):

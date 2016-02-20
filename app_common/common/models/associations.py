@@ -1,6 +1,5 @@
-import datetime
-
 from db import db
+import datetime
 
 
 # All tables below are Association Tables. SQLAlchemy docs on Association Object:

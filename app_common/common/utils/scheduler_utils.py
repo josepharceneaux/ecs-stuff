@@ -1,7 +1,7 @@
 __author__ = 'basit'
 
-import os
 
+import os
 from ..talent_config_manager import TalentConfigKeys
 
 

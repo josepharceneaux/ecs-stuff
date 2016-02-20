@@ -1,6 +1,5 @@
-from flask import current_app
-
 from ..error_handling import InternalServerError
+from flask import current_app
 
 DEFAULT_AREAS_OF_INTEREST = ['Production & Development', 'Marketing', 'Sales', 'Design', 'Finance',
                              'Business & Legal Affairs', 'Human Resources', 'Technology', 'Other']

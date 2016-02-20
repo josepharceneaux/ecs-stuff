@@ -1,6 +1,5 @@
-from flask import current_app, jsonify
 from flask.ext.restful import Api
-
+from flask import current_app, jsonify
 from talent_config_manager import TalentConfigKeys
 
 

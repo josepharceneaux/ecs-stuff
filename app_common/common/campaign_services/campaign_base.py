@@ -17,8 +17,8 @@ Any service can inherit from this class to implement/override functionality acco
 # Standard Library
 import json
 from abc import ABCMeta
-from abc import abstractmethod
 from datetime import datetime
+from abc import abstractmethod
 
 # Third Party
 from celery import chord

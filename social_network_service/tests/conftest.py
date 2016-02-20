@@ -329,12 +329,9 @@ def meetup_venue(meetup, sample_user):
     """
     This fixture returns meetup venue in getTalent database
     """
-    try:
-        event_id = meetup.id
-    except Exception:
-        event_id = -1
+    social_network_id = meetup.id
     venue = {
-        "social_network_id": event_id,
+        "social_network_id": social_network_id,
         "user_id": sample_user.id,
         "zip_code": "95014",
         "address_line_2": "",
@@ -356,12 +353,9 @@ def eventbrite_venue(sample_user, eventbrite):
     """
     This fixture returns eventbrite venue in getTalent database
     """
-    try:
-        event_id = eventbrite.id
-    except Exception:
-        event_id = -1
+    social_network_id = eventbrite.id
     venue = {
-    "social_network_id": event_id,
+    "social_network_id": social_network_id,
     "user_id": sample_user.id,
     "zip_code": "54600",
     "address_line_2": "H# 163, Block A",

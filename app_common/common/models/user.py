@@ -318,12 +318,11 @@ class Token(db.Model):
     def get_by_user_id(cls, user_id):
         """
         Filter Token based on user_id and return token from db
-        :param user_id: User access_token
+        :param user_id: User id whose token is required
         :return: Token object matched with access_token
         """
         assert user_id, "user_id is None"
-        token = cls.query.filter(cls.user_id == user_id).first()
-        return token
+        return cls.query.filter(cls.user_id == user_id).first()
 
     @staticmethod
     def get_token(access_token):
