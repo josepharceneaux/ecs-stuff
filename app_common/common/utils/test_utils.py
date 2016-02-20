@@ -1,9 +1,8 @@
 import json
 import requests
-import ConfigParser
 from faker import Faker
 
-from ..routes import UserServiceApiUrl
+from ..routes import UserServiceApiUrl, AuthApiUrl
 
 fake = Faker()
 
@@ -15,16 +14,6 @@ FORBIDDEN = 403
 INTERNAL_SERVER_ERROR = 500
 
 
-class TestConfigParser(ConfigParser.ConfigParser):
-
-    def to_dict(self):
-        sections = dict(self._sections)
-        for k in sections:
-            sections[k] = dict(self._defaults, **sections[k])
-            sections[k].pop('__name__', None)
-        return sections
-
-
 def send_request(method, url, access_token, data=None, is_json=True):
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.
@@ -34,6 +23,46 @@ def send_request(method, url, access_token, data=None, is_json=True):
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
     return request_method(url, data=data, headers=headers)
+
+
+def get_user(user_id, token):
+    """
+    This utility is used to get user info from UserService
+    :param user_id: user unique identifier
+    :type user_id: int | long
+    :param token: authentication token for user
+    :type token: str
+    :return: user dictionary
+    :rtype: dict
+    """
+    assert isinstance(token, basestring), \
+        'token must be a string, given type is %s' % type(token)
+    assert str(user_id).isdigit(), 'user_id must be valid number'
+    response = send_request('get', UserServiceApiUrl.USER % user_id, token)
+    assert response.status_code == 200
+    return response.json()['user']
+
+
+def get_token(info):
+    """
+    This utility function gets required data (client_id, client_secret, username, password)
+    from info (dict) and retrieves token from AuthService
+    :param info: a dictionary containing client info
+    :type info: dict
+    :return: auth token for user
+    :rtype: str
+    """
+    assert isinstance(info, dict), 'info must be dictionary'
+    data = {'client_id': info.get('client_id'),
+            'client_secret': info.get('client_secret'),
+            'username': info.get('username'),
+            'password': info.get('password'),
+            'grant_type': 'password'
+            }
+    resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
+    assert resp.status_code == 200
+    token = resp.json()['access_token']
+    return token
 
 
 def unauthorize_test(method, url, access_token, data=None):
@@ -87,22 +116,6 @@ def get_fake_dict(key_count=3):
     return data
 
 
-def get_non_existing_id(model):
-    """
-    This functions takes a model class and returns a non existing id
-    by getting last object and then adding a large number in it and
-    if table is empty, simply return that number
-    :param model:
-    :return: non_existing_id
-    :rtype int | long
-    """
-    last_obj = model.query.order_by(model.id.desc()).first()
-    if last_obj:
-        return last_obj.id + 1000
-    else:
-        return 1000
-
-
 def add_roles(user_id, roles, token):
     """
     This method sends a POST request to UserService to add given roles to given user
@@ -116,6 +129,8 @@ def add_roles(user_id, roles, token):
     }
     response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
+    if response.status_code == 400 and response.json()['error']['code'] == 9000:
+        return None
     assert response.status_code == 200
 
 
@@ -130,7 +145,5 @@ def remove_roles(user_id, roles, token):
     data = {
         "roles": roles
     }
-    response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
-                            token, data=data)
-    assert response.status_code == 200
-
+    send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
+                 token, data=data)
