@@ -620,7 +620,7 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     photo_update_dict = dict(candidate_id=candidate_id,
                              image_url=update_dict.get('image_url'),
                              is_default=update_dict.get('is_default'),
-                             updated_time=datetime.datetime.now())
+                             updated_datetime=datetime.datetime.utcnow())
     photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
 
     photo_query = CandidatePhoto.query.filter_by(id=photo_id)

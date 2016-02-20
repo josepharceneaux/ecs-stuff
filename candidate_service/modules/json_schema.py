@@ -1336,7 +1336,7 @@ resource_schema_photos_post = {
                     "image_url": {"type": "string"},
                     "is_default": {"type": ["boolean", "null"]},
                     "added_datetime": {
-                        "type": ["string", "null"],
+                        "type": ["string", "null"]
                         # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
                     }
                 }
@@ -1345,28 +1345,16 @@ resource_schema_photos_post = {
     }
 }
 
-
 resource_schema_photos_patch = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
-    "required": ["photos"],
     "properties": {
-        "photos": {
-            "type": "array",
-            "minItems": 1,
-            "items": {
-                "type": "object",
-                # "additionalProperties": False,
-                "properties": {
-                    "image_url": {"type": "string"},
-                    "is_default": {"type": ["boolean", "null"]},
-                    "added_datetime": {
-                        "type": ["string", "null"],
-                        # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
-                    }
-                }
-            }
+        "image_url": {"type": "string"},
+        "is_default": {"type": ["boolean", "null"]},
+        "added_datetime": {
+            "type": ["string", "null"]
+            # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
         }
     }
 }
