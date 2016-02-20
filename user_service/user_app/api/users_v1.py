@@ -123,50 +123,6 @@ class UserApi(Resource):
 
         return {'users': user_ids}
 
-    @require_any_role(DomainRole.Roles.CAN_DELETE_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
-    def delete(self, **kwargs):
-        """
-        DELETE /users/<id>
-
-        Function will disable user-object in db
-        User will be prevented from deleting itself
-        Last user in domain cannot be disabled
-
-        :return: {'deleted_user' {'id': user_id}}
-        :rtype:  dict
-        """
-
-        user_id_to_delete = kwargs.get('id')
-
-        # Return 404 if requested user does not exist
-        if user_id_to_delete:
-            user_to_delete = User.query.filter(User.id == user_id_to_delete).first()
-            if not user_to_delete:
-                raise NotFoundError(error_message="Requested user with user id %s not found" % user_id_to_delete)
-
-        if user_to_delete.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
-            raise UnauthorizedError("User to be deleted belongs to different domain than logged-in user")
-
-        # Prevent logged-in user from deleting itself
-        if user_id_to_delete == request.user.id:
-            raise UnauthorizedError("Logged-in user cannot delete itself")
-
-        # Prevent user from deleting the last user in the domain
-        all_users_of_domain_of_user_to_delete = User.query.filter_by(domain_id=user_to_delete.domain_id).all()
-        if len(all_users_of_domain_of_user_to_delete) < 3:
-            raise InvalidUsage(error_message="Last user in domain %s cannot be deleted" % user_to_delete.domain_id)
-
-        # Disable the user by setting is_disabled field to 1
-        User.query.filter(User.id == user_id_to_delete).update({'is_disabled': '1'})
-        db.session.commit()
-
-        # Delete all tokens of deleted user
-        tokens = Token.query.filter_by(user_id=user_id_to_delete).all()
-        for token in tokens:
-            token.delete()
-
-        return {'deleted_user': {'id': user_id_to_delete}}
-
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', DomainRole.Roles.CAN_EDIT_USERS)
     def put(self, **kwargs):
@@ -202,7 +158,7 @@ class UserApi(Resource):
         phone = posted_data.get('phone', '').strip()
         thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
-        is_disabled = posted_data.get('is_disabled', '0').strip()
+        is_disabled = posted_data.get('is_disabled', '').strip()
 
         try:
             last_read_datetime = parser.parse(last_read_datetime)
