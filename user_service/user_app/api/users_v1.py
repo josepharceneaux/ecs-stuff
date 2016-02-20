@@ -174,6 +174,8 @@ class UserApi(Resource):
         if not is_number(is_disabled) or (int(is_disabled) != 0 and int(is_disabled) != 1):
             raise InvalidUsage("Possible vaues of `is_disabled` are 0 and 1")
 
+        is_disabled = int(is_disabled)
+        
         # Update user
         update_user_dict = {
             'first_name': first_name,
