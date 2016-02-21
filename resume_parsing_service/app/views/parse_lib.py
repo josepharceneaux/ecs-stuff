@@ -23,7 +23,7 @@ import requests
 from .utils import create_parsed_resume_candidate, update_candidate_from_resume
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
@@ -79,7 +79,7 @@ def process_resume(parse_params):
         update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
         if update_response.status_code is not requests.codes.ok:
             logger.info("ResumetoCandidateError. {} received from CandidateService (update)".format(update_response.status_code))
-            raise InvalidUsage('Candidate from {} exists, error updating info'.format(filename_str))
+            raise InternalServerError('Candidate from {} exists, error updating info'.format(filename_str))
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 

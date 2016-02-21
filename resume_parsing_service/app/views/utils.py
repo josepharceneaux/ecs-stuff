@@ -7,7 +7,7 @@ import json
 import requests
 # Module Specific
 from resume_parsing_service.app import logger
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
@@ -25,9 +25,9 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
                                                  'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
         logger.debug("create_parsed_resume_candidate. Exception: {}".format(error.message))
-        raise InvalidUsage("Unable to reach Candidates API in during candidate creation")
+        raise InternalServerError("Unable to reach Candidates API in during candidate creation")
     if create_response.status_code in xrange(500, 511):
-        raise InvalidUsage('Error in response from candidate service during creation')
+        raise InternalServerError('Error in response from candidate service during creation')
     return create_response
 
 
