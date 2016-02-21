@@ -117,6 +117,7 @@ class UserApi(Resource):
                 else:
                     domain_id = request.user.domain_id
 
+                print domain_id
                 user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
                                                   domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
                 user_ids.append(user_id)
