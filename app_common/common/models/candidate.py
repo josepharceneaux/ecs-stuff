@@ -279,6 +279,11 @@ class CandidateEmail(db.Model):
                                 cls.candidate_id.in_(candidate_ids)).group_by(CandidateEmail.candidate_id).all()
 
 
+    @classmethod
+    def get_by_address(cls, email_address):
+        return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
+
+
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
     id = db.Column('Id', db.BIGINT, primary_key=True)
