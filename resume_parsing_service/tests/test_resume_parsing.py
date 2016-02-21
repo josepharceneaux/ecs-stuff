@@ -42,6 +42,22 @@ def test_base_url():
     assert ResumeApi.PARSE in base_response.content
 
 
+# This resume was failing to parse. Keeping it here for debugging until issue resolved/error confirmed.
+def test_get_890(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, "0382RHQRwSWq6jytZm1w_Patrick.David_11.doc")
+    assert_non_create_content_and_status(content, status)
+
+
+def test_invalid_fp_key(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, "MichaelKane/AlfredFromBatman.doc")
+    assert 'error' in content
+    assert status == requests.codes.bad_request
+
+
 def test_doc_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -104,7 +120,7 @@ def test_v13_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status= fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
+    content, status = fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status)
 
 
@@ -239,7 +255,7 @@ def test_health_check():
     assert response.status_code == requests.codes.ok
 
 
-def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
+def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:

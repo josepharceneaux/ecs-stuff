@@ -1,0 +1,1608 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:w="urn:schemas-microsoft-com:office:word"
+xmlns:m="http://schemas.microsoft.com/office/2004/12/omml"
+xmlns="http://www.w3.org/TR/REC-html40">
+
+<head>
+<meta name=Title content=Information>
+<meta name=Keywords content="">
+<meta http-equiv=Content-Type content="text/html; charset=utf-8">
+<meta name=ProgId content=Word.Document>
+<meta name=Generator content="Microsoft Word 2008">
+<meta name=Originator content="Microsoft Word 2008">
+<link rel=File-List href="Bridgeport.Ave_files/filelist.xml">
+<title>Information</title>
+<!--[if gte mso 9]><xml>
+ <o:DocumentProperties>
+  <o:Author>Dr Mad</o:Author>
+  <o:Template>Normal.dotm</o:Template>
+  <o:LastAuthor>Dr Mad</o:LastAuthor>
+  <o:Revision>2</o:Revision>
+  <o:TotalTime>0</o:TotalTime>
+  <o:Created>2012-09-04T16:31:00Z</o:Created>
+  <o:LastSaved>2012-09-04T16:31:00Z</o:LastSaved>
+  <o:Pages>2</o:Pages>
+  <o:Words>1177</o:Words>
+  <o:Characters>6712</o:Characters>
+  <o:Company>KAOS</o:Company>
+  <o:Lines>55</o:Lines>
+  <o:Paragraphs>13</o:Paragraphs>
+  <o:CharactersWithSpaces>8242</o:CharactersWithSpaces>
+  <o:Version>12.0</o:Version>
+ </o:DocumentProperties>
+ <o:OfficeDocumentSettings>
+  <o:AllowPNG/>
+ </o:OfficeDocumentSettings>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:WordDocument>
+  <w:Zoom>150</w:Zoom>
+  <w:TrackMoves>false</w:TrackMoves>
+  <w:TrackFormatting/>
+  <w:ValidateAgainstSchemas/>
+  <w:SaveIfXMLInvalid>false</w:SaveIfXMLInvalid>
+  <w:IgnoreMixedContent>false</w:IgnoreMixedContent>
+  <w:AlwaysShowPlaceholderText>false</w:AlwaysShowPlaceholderText>
+  <w:Compatibility>
+   <w:SplitPgBreakAndParaMark/>
+   <w:DontVertAlignCellWithSp/>
+   <w:DontBreakConstrainedForcedTables/>
+   <w:DontVertAlignInTxbx/>
+   <w:Word11KerningPairs/>
+   <w:CachedColBalance/>
+   <w:UseFELayout/>
+  </w:Compatibility>
+ </w:WordDocument>
+</xml><![endif]--><!--[if gte mso 9]><xml>
+ <w:LatentStyles DefLockedState="false" LatentStyleCount="276">
+ </w:LatentStyles>
+</xml><![endif]-->
+<style>
+<!--
+ /* Font Definitions */
+@font-face
+	{font-family:Arial;
+	panose-1:2 11 6 4 2 2 2 2 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:3 0 0 0 1 0;}
+@font-face
+	{font-family:"Courier New";
+	panose-1:2 7 3 9 2 2 5 2 4 4;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:3 0 0 0 1 0;}
+@font-face
+	{font-family:Times;
+	panose-1:2 0 5 0 0 0 0 0 0 0;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:3 0 0 0 1 0;}
+@font-face
+	{font-family:Tahoma;
+	panose-1:2 11 6 4 3 5 4 4 2 4;
+	mso-font-charset:0;
+	mso-generic-font-family:auto;
+	mso-font-pitch:variable;
+	mso-font-signature:3 0 0 0 1 0;}
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{mso-style-name:"Normal\,normal";
+	mso-style-parent:"";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	mso-believe-normal-left:yes;}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:1;
+	font-size:24.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+h2
+	{mso-style-link:"Heading 2 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:2;
+	font-size:18.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+h3
+	{mso-style-link:"Heading 3 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:3;
+	font-size:13.5pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+h4
+	{mso-style-link:"Heading 4 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:4;
+	font-size:12.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+h5
+	{mso-style-link:"Heading 5 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:5;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+h6
+	{mso-style-link:"Heading 6 Char";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	mso-outline-level:6;
+	font-size:7.5pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;
+	mso-bidi-font-weight:normal;}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:blue;
+	text-decoration:underline;
+	text-underline:single;}
+p
+	{margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-locked:yes;
+	mso-style-link:"Heading 1";
+	mso-ansi-font-size:16.0pt;
+	mso-bidi-font-size:16.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#345A8A;
+	font-weight:bold;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-noshow:yes;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 2";
+	mso-ansi-font-size:13.0pt;
+	mso-bidi-font-size:13.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#4F81BD;
+	font-weight:bold;}
+span.Heading3Char
+	{mso-style-name:"Heading 3 Char";
+	mso-style-noshow:yes;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 3";
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#4F81BD;
+	font-weight:bold;}
+span.Heading4Char
+	{mso-style-name:"Heading 4 Char";
+	mso-style-noshow:yes;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 4";
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#4F81BD;
+	font-weight:bold;
+	font-style:italic;}
+span.Heading5Char
+	{mso-style-name:"Heading 5 Char";
+	mso-style-noshow:yes;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 5";
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#244061;}
+span.Heading6Char
+	{mso-style-name:"Heading 6 Char";
+	mso-style-noshow:yes;
+	mso-style-locked:yes;
+	mso-style-link:"Heading 6";
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:Calibri;
+	mso-ascii-font-family:Calibri;
+	mso-ascii-theme-font:major-latin;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:major-fareast;
+	mso-hansi-font-family:Calibri;
+	mso-hansi-theme-font:major-latin;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:major-bidi;
+	color:#244061;
+	font-style:italic;}
+p.normalchar, li.normalchar, div.normalchar
+	{mso-style-name:normal__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.html0020markup, li.html0020markup, div.html0020markup
+	{mso-style-name:html_0020markup;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:red;}
+p.html0020markupchar, li.html0020markupchar, div.html0020markupchar
+	{mso-style-name:html_0020markup__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:red;}
+p.hyperlink1, li.hyperlink1, div.hyperlink1
+	{mso-style-name:hyperlink1;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:blue;}
+p.hyperlinkchar, li.hyperlinkchar, div.hyperlinkchar
+	{mso-style-name:hyperlink__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:blue;}
+p.heading00201, li.heading00201, div.heading00201
+	{mso-style-name:heading_00201;
+	margin:0in;
+	margin-bottom:.0001pt;
+	text-align:center;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Arial;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Arial;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;}
+p.heading00201char, li.heading00201char, div.heading00201char
+	{mso-style-name:heading_00201__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:11.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Arial;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Arial;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;}
+p.balloon0020text, li.balloon0020text, div.balloon0020text
+	{mso-style-name:balloon_0020text;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:8.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Tahoma;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Tahoma;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.balloon0020textchar, li.balloon0020textchar, div.balloon0020textchar
+	{mso-style-name:balloon_0020text__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:8.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Tahoma;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Tahoma;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.html0020preformatted, li.html0020preformatted, div.html0020preformatted
+	{mso-style-name:html_0020preformatted;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:"Courier New";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:"Courier New";
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.html0020preformattedchar, li.html0020preformattedchar, div.html0020preformattedchar
+	{mso-style-name:html_0020preformatted__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:"Courier New";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:"Courier New";
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.h6, li.h6, div.h6
+	{mso-style-name:h6;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:8.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;}
+p.h6char, li.h6char, div.h6char
+	{mso-style-name:h6__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:8.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	font-weight:bold;}
+p.normal00200028web0029, li.normal00200028web0029, div.normal00200028web0029
+	{mso-style-name:normal_0020_0028web_0029;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.normal00200028web0029char, li.normal00200028web0029char, div.normal00200028web0029char
+	{mso-style-name:normal_0020_0028web_0029__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.preformatted, li.preformatted, div.preformatted
+	{mso-style-name:preformatted;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Courier;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Courier;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.preformattedchar, li.preformattedchar, div.preformattedchar
+	{mso-style-name:preformatted__char;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Courier;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Courier;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;}
+p.NormalWeb1, li.NormalWeb1, div.NormalWeb1
+	{mso-style-name:"Normal \(Web\)1";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";}
+p.NormalWeb2, li.NormalWeb2, div.NormalWeb2
+	{mso-style-name:"Normal \(Web\)2";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";}
+p.hyperlink2, li.hyperlink2, div.hyperlink2
+	{mso-style-name:hyperlink2;
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";
+	mso-bidi-theme-font:minor-bidi;
+	color:blue;}
+p.NormalWeb3, li.NormalWeb3, div.NormalWeb3
+	{mso-style-name:"Normal \(Web\)3";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";}
+p.NormalWeb4, li.NormalWeb4, div.NormalWeb4
+	{mso-style-name:"Normal \(Web\)4";
+	margin:0in;
+	margin-bottom:.0001pt;
+	mso-pagination:widow-orphan;
+	font-size:10.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Times;
+	mso-fareast-font-family:"Times New Roman";
+	mso-fareast-theme-font:minor-fareast;
+	mso-hansi-font-family:Times;
+	mso-bidi-font-family:"Times New Roman";}
+span.html0020markupchar1
+	{mso-style-name:html_0020markup__char1;
+	color:red;}
+span.normalchar1
+	{mso-style-name:normal__char1;
+	mso-ansi-font-size:12.0pt;
+	mso-bidi-font-size:12.0pt;
+	font-family:Times;
+	mso-ascii-font-family:Times;
+	mso-hansi-font-family:Times;}
+span.hyperlinkchar1
+	{mso-style-name:hyperlink__char1;
+	color:blue;}
+span.heading00201char1
+	{mso-style-name:heading_00201__char1;
+	mso-ansi-font-size:11.0pt;
+	mso-bidi-font-size:11.0pt;
+	font-family:Arial;
+	mso-ascii-font-family:Arial;
+	mso-hansi-font-family:Arial;
+	font-weight:bold;}
+span.html0020preformattedchar1
+	{mso-style-name:html_0020preformatted__char1;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:"Courier New";
+	mso-ascii-font-family:"Courier New";
+	mso-hansi-font-family:"Courier New";}
+span.normal00200028web0029char1
+	{mso-style-name:normal_0020_0028web_0029__char1;
+	mso-ansi-font-size:12.0pt;
+	mso-bidi-font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:"Times New Roman";
+	mso-hansi-font-family:"Times New Roman";}
+span.preformattedchar1
+	{mso-style-name:preformatted__char1;
+	mso-ansi-font-size:10.0pt;
+	mso-bidi-font-size:10.0pt;
+	font-family:Courier;
+	mso-ascii-font-family:Courier;
+	mso-hansi-font-family:Courier;}
+@page Section1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.25in 1.0in 1.25in;
+	mso-header-margin:.5in;
+	mso-footer-margin:.5in;
+	mso-paper-source:0;}
+div.Section1
+	{page:Section1;}
+ /* List Definitions */
+@list l0
+	{mso-list-id:60255940;
+	mso-list-template-ids:1286088186;}
+@list l0:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l1
+	{mso-list-id:285088951;
+	mso-list-template-ids:-1999712982;}
+@list l1:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l2
+	{mso-list-id:917788150;
+	mso-list-template-ids:138472518;}
+@list l2:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l3
+	{mso-list-id:1064832199;
+	mso-list-template-ids:-1526067880;}
+@list l3:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l4
+	{mso-list-id:1135416193;
+	mso-list-template-ids:-56453190;}
+@list l4:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l5
+	{mso-list-id:1143739322;
+	mso-list-template-ids:319702506;}
+@list l5:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l6
+	{mso-list-id:1183200162;
+	mso-list-template-ids:-12824940;}
+@list l6:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l7
+	{mso-list-id:1202136748;
+	mso-list-template-ids:-1049833052;}
+@list l7:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l8
+	{mso-list-id:1704937520;
+	mso-list-template-ids:1174072956;}
+@list l8:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+@list l9
+	{mso-list-id:1767340953;
+	mso-list-template-ids:17305976;}
+@list l9:level1
+	{mso-level-number-format:bullet;
+	mso-level-text:;
+	mso-level-tab-stop:.5in;
+	mso-level-number-position:left;
+	text-indent:-.25in;
+	mso-ansi-font-size:10.0pt;
+	font-family:Symbol;}
+ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+<!--[if gte mso 10]>
+<style>
+ /* Style Definitions */
+table.MsoNormalTable
+	{mso-style-name:"Table Normal";
+	mso-tstyle-rowband-size:0;
+	mso-tstyle-colband-size:0;
+	mso-style-noshow:yes;
+	mso-style-parent:"";
+	mso-padding-alt:0in 5.4pt 0in 5.4pt;
+	mso-para-margin-top:0in;
+	mso-para-margin-right:0in;
+	mso-para-margin-bottom:10.0pt;
+	mso-para-margin-left:0in;
+	mso-pagination:widow-orphan;
+	font-size:12.0pt;
+	font-family:"Times New Roman";
+	mso-ascii-font-family:Cambria;
+	mso-ascii-theme-font:minor-latin;
+	mso-hansi-font-family:Cambria;
+	mso-hansi-theme-font:minor-latin;}
+</style>
+<![endif]--><![if mso 9]>
+<style>
+p.MsoNormal
+	{margin-left:57.0pt;}
+</style>
+<![endif]>
+</head>
+
+<body bgcolor=white lang=EN-US link=blue vlink=blue style='tab-interval:.5in;
+margin-left:57.0pt;margin-right:57.0pt'>
+
+<div class=Section1>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal align=center style='text-align:center'><span
+class=normalchar1><b><span style='font-size:15.0pt;font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>ROY D. SADLER</span></b></span><span
+class=normalchar1><span style='font-size:15.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'> </span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal align=center style='text-align:center'><span
+class=normalchar1><b><span style='font-size:10.0pt;font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>207 Union Ave Bridgeport, PA
+19405&nbsp;&nbsp; (727) 643-7398&nbsp; </span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<div style='border:none;border-bottom:double black 6.75pt;padding:0in 0in 1.0pt 0in'>
+
+<p class=MsoNormal align=center style='text-align:center'><span
+class=normalchar1><b><span style='font-size:10.0pt;font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>E-mail: </span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><a
+href="mailto:terraman1@yahoo.com"><span class=hyperlinkchar1><b><span
+style='font-size:10.0pt;font-family:Arial;color:black'>terraman1@yahoo.com</span></b></span></a><o:p></o:p></span></p>
+
+</div>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Accomplished network
+administrator and computer technician seeking to leverage extensive background
+in hardware management, support, installation, and training in a <b>User
+Support Analyst</b> position. Extremely motivated for career change goal and
+eager to contribute to a company's IT division.</span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<h1 align=center style='text-align:center'><span class=heading00201char1><span
+style='font-size:11.0pt'>COMPUTER SKILLS</span></span><span style='font-size:
+11.0pt;font-family:Arial;mso-bidi-font-weight:bold'><o:p></o:p></span></h1>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>OPERATING SYSTEMS</span></b></span><span
+class=normalchar1><b><span style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>
+</span></b></span><span class=normalchar1><span style='font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>-<b> </b></span></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Windows XP Pro, 2000 Pro</span></span><span
+class=normalchar1><span style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>,
+</span></span><span class=normalchar1><span style='font-size:10.0pt;font-family:
+Arial;mso-bidi-font-family:"Times New Roman"'>Windows 98 SE, and OS X</span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>SOFTWARE PACKAGES -</span></b></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'> Microsoft Excel for MAC OS and Windows, Microsoft Access
+2003, Microsoft Publisher</span></span><span class=normalchar1><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>,<b> </b></span></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Adobe PageMaker, Microsoft Office 2003, XP, and 2000, Apple
+Works for MAC and Windows, Front Page 2003, HTML, Internet Explorer 7.0,
+Firefox, Micro Grade, and IG Pro /SASI</span></span><span style='mso-bidi-font-family:
+"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>NETWORKING</span></b></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'> - MS Server 2000/2003, VPN/LAN/WLAN/WAN design,
+installation, troubleshooting and maintenance.&nbsp;</span></span><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'><br>
+<span class=normalchar1><b><span style='mso-ansi-font-size:10.0pt;mso-bidi-font-size:
+10.0pt;font-family:Arial'>SECURITY:</span></b></span><span class=normalchar1><span
+style='mso-ansi-font-size:10.0pt;mso-bidi-font-size:10.0pt;font-family:Arial'>
+McAfee Enterprise Security Suite 8, Norton 360, Norton Enterprise Security. Ad
+ware, spy ware, mal ware, and virus removal</span></span></span><span
+class=normalchar1><span style='font-size:10.0pt;mso-bidi-font-family:"Times New Roman"'>.</span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>HARDWARE - </span></b></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Installation, configuration, networking, repair, and
+upgrading of PCs / Macs</span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal align=center style='text-align:center'><span
+class=normalchar1><b><span style='font-size:11.0pt;font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>PROFESSIONAL EXPERIENCE</span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Robert Half
+International – Technology Division, PA – Service Desk Analyst – Level II&nbsp;
+</span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Client – Keystone
+Food, LLC – Food Services and Restaurant Supplier</span></b></span><span
+class=normalchar1><b><span style='font-size:11.0pt;font-family:Arial;
+mso-bidi-font-family:"Times New Roman"'>&nbsp;</span></b></span><b><span
+style='font-size:11.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'><br>
+</span></b><span class=normalchar1><b><span style='font-size:10.0pt;font-family:
+Arial;mso-bidi-font-family:"Times New Roman"'>04/2009 – Present &nbsp;( 10
+months) </span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Support 150 + in house users and 2500+ remote users
+for assigned client, in a customer service focused department to solve software
+and hardware related incidents in a Windows XP enterprise computing
+environment.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Use Active Directory 2003 &amp; 2008 as a management
+tool to support users at all levels.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assist users with Juniper Networks Network Connect
+VPN Client to gain remote access to corporate network.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assist users with functionality issues in MS Office
+2003, 2007, Acrobat Professional, and various other software titles.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assist hardware services team with PC diagnostics on
+the Lenovo Laptop and Desktop platforms </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Installation, troubleshooting, maintenance, and
+updating of various software applications and operating systems via RAdmin
+remote assistance clients. &quot;Track IT&quot; is used for incident documentation,reporting,
+and tracking.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Operated and maintained Everdream Control Center back
+up service by Dell Computer Services</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assisted Network Operations team with migration from
+AD 2003 to AD2008 and new AD OU structure</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l5 level1 lfo1;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Worked on Avaya VOIP management platform to provision
+extensions and trouble shoot incidents</span></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Robert Half
+International – Technology Division, Atlanta, GA&nbsp;- Desktop Support Analyst
+- Level II</span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Client –
+Dixon-Hughes, PLLC – Accountants and
+Advisors&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>02/2008 to 10/2008 </span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Supported 150 in house users and 1300 remote users
+for assigned client, in a customer service focused department to solve software
+and hardware related incidents in a Windows XP environment.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Used Microsoft Server 2003 to assist users with
+various issues.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Used Active Directory as a management tool to support
+users at all levels.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assisted users with Cisco VPN Client to gain remote
+access to corporate network</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assisted users with functionality issues in MS Office
+2003 and 2007.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Trouble shot specialized accounting software
+including Pro System FX Tax and Pro System Engagement, to solve user problems
+with software performance.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Assisted hardware services team with PC diagnostics
+and troubleshooting to asses PC problems.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Installation, troubleshooting, maintenance, and
+updating of various software applications and operating systems via Dameware
+and Bomgar remote assistance clients.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l4 level1 lfo2;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>New user set up, training, and configuration of
+hardware and user workstations in a Windows enterprise networked environment.</span></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted><span class=html0020preformattedchar1><b><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Roy D. Sadler
+– Page 2</span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<div style='border:none;border-top:double black 6.75pt;padding:1.0pt 0in 0in 0in'>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+</div>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Pinellas County
+School District, Largo, FL&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>1995 – 2007</span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-indent:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Bay
+Point Middle School, <b>Technology Education Teacher - Magnet Program, </b></span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-indent:.25in'><span class=normalchar1><b><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>(</span></b></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>2001 – 2007)</span></span><span style='mso-bidi-font-family:
+"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><span style='mso-bidi-font-family:
+"Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l6 level1 lfo3;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Taught software applications to approximately 300
+students per school year.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l6 level1 lfo3;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Provided instruction/guidance in keyboarding,
+Microsoft Office Word, Excel, and Power Point.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l6 level1 lfo3;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Taught Photo editing using Adobe Photo Shop
+Elements.&nbsp; Utilized Windows Movie Maker to teach video editing.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l6 level1 lfo3;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Taught web page design utilizing HTML and Front
+Page.&nbsp; Taught cyber-ethics.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l6 level1 lfo3;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Delivered curriculum using multimedia projection
+equipment, computers, and other visual/teaching aids.</span></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>&nbsp;</span></span><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'><br>
+<span class=normalchar1><span style='mso-ansi-font-size:10.0pt;mso-bidi-font-size:
+10.0pt;font-family:Arial'>Northwest Elementary School<b>, </b>St. Petersburg,
+FL <b>Technology Specialist / Network Administrator, </b></span></span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='text-indent:.25in'><span class=normalchar1><b><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>(</span></b></span><span
+class=normalchar1><span style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>1999 – 2001)</span></span><span style='mso-bidi-font-family:
+"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l0 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normal00200028web0029char1><span
+style='font-size:10.0pt;font-family:Arial'>Coordinated management of
+instructional and non-instructional school networks using Win NT and AppleShare
+</span></span><span style='font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l0 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normal00200028web0029char1><span
+style='font-size:10.0pt;font-family:Arial'>Installed, troubleshot, and
+maintained hardware and software in a hybrid Macintosh / Windows network.</span></span><span
+style='font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l0 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normal00200028web0029char1><span
+style='font-size:10.0pt;font-family:Arial'>Trained and assisted 62 teachers in
+integrating technology in the classroom using All-in-1 Macs.</span></span><span
+style='font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l0 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normal00200028web0029char1><span
+style='font-size:10.0pt;font-family:Arial'>Trained 90 end users in applications
+on the network to include Claris Works and MS Office</span></span><span
+style='font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l0 level1 lfo4;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normal00200028web0029char1>Coordinated
+activities of outside vendors, consultants and trainers<span style='color:darkblue'>.</span></span><span
+style='font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Carwise Middle School, Palm Harbor, FL - <b>Technology
+Education Teacher, </b></span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:22.0pt;text-indent:-22.0pt'><span
+class=html0020preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>(</b>1996 – 1999)&nbsp;</span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l2 level1 lfo5;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Delivered technology program via a
+hands-on module curriculum to 300 students per school year.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l2 level1 lfo5;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Facilitated learning through
+collaborative learning efforts resulting in improved student teamwork,
+cooperation, and communication.</span></span><span style='font-size:10.0pt;
+font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l2 level1 lfo5;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Taught modules covering topics such
+as alternative energy, applied physics, audio broadcasting, CADD, CNC
+manufacturing, computer technology, electricity, electronics, robotics,
+rocketry/space, and several other technology related topics. </span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Dixie Hollins High School<b>,</b> St. Petersburg, FL <b>-
+Technology Education/Adult Instructor, </b></span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><b><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>(</span></b></span><span class=html0020preformattedchar1><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>1995 – 1996)</span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l8 level1 lfo6;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Taught 3 Earth Science courses and 2
+Technology Education courses to 125 students per semester.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l8 level1 lfo6;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Utilized Windows application to
+teach science and technology curriculum.</span></span><span style='font-size:
+10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l8 level1 lfo6;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Delivered curriculum using
+computers, overhead projectors, and other multimedia equipment.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l8 level1 lfo6;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Used career exploration activities
+and writing projects as an instruction modality to teach Electronics, Manufacturing,
+Automotive, Construction, and Agricultural technologies.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>Dixie Hollins High School, St. Petersburg, FL&nbsp; - <b>Computer
+Lab Manager, </b></span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><b><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>(</span></b></span><span class=html0020preformattedchar1><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>1995) </span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Managed and maintained all computer
+hardware in Apple Macintosh based learning lab. </span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Kept all schedules for learning
+sessions that took place in the lab. </span></span><span style='font-size:10.0pt;
+font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Consulted with teachers on best
+training lab supplemental practices for use in various disciplines. </span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Scheduled and delivered teacher
+staff training in the lab on an ongoing basis. </span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Worked with teachers and students in
+the lab to accomplish various academic goals on campus.&nbsp;</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Handled all maintenance coordination
+with third party repair vendors.&nbsp; Kept repair logs.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l9 level1 lfo7;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span style='font-size:10.0pt;font-family:"Courier New"'><o:p>&nbsp;</o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted><span class=html0020preformattedchar1><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+Operation PAR, St. Petersburg, FL. - <b>Database Manager/
+Programmer,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </b></span></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted style='margin-left:.25in'><span
+class=html0020preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'>(1994 -1995)</span></span><span style='mso-bidi-font-family:
+"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l3 level1 lfo8;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Extracted information from a
+mainframe.&nbsp; Performed data entry, editing and verification of data sets.</span></span><span
+style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l3 level1 lfo8;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+font-family:Symbol;mso-fareast-font-family:Symbol;mso-bidi-font-family:Symbol'><span
+style='mso-list:Ignore'>·<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=html0020preformattedchar1><span
+style='font-size:10.0pt;font-family:Arial'>Structured data sets and statistical
+programming.</span></span><span style='font-size:10.0pt;font-family:"Courier New"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=html0020preformatted><span class=html0020preformattedchar1><b><span
+style='font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Roy D. Sadler
+– Page 3</span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=html0020preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<div style='border:none;border-top:double black 6.75pt;padding:1.0pt 0in 0in 0in'>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+</div>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>All-in-1
+Computer Consulting, St. Petersburg, FL - <b>Consultant / Trainer</b> (Part
+–Time)&nbsp;&nbsp;</span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>(1991
+– 1996) </span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l7 level1 lfo9;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Installed and configured computer networks.&nbsp;
+Repaired and upgraded PCs/Macs. </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l7 level1 lfo9;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Delivered private and corporate training sessions to
+a diverse customer base.</span></span></p>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Train
+U.S. Software Learning Centers, Tampa, FL - <b>District Training Manager /
+Consultant</b>&nbsp;</span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'><span class=normalchar1><span
+style='font-size:10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>(1990
+– 1991)<b>&nbsp;</b></span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l1 level1 lfo10;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Managed computer software training branch
+center.&nbsp; Developed/implemented marketing &amp; promotional campaigns
+including direct mail/ad layout/print media.&nbsp; Designed and conducted
+training programs.&nbsp; </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l1 level1 lfo10;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Coordinated and directed telemarketing functions and
+script development. </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l1 level1 lfo10;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Utilized needs analysis to develop specialized
+training programs for clients. </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in;text-indent:0in;mso-list:l1 level1 lfo10;
+tab-stops:list .5in'><![if !supportLists]><span style='font-size:10.0pt;
+mso-bidi-font-size:12.0pt;font-family:Symbol;mso-fareast-font-family:Symbol;
+mso-bidi-font-family:Symbol'><span style='mso-list:Ignore'>·<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+</span></span></span><![endif]><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial'>Increased product exposure in excess of 100% by
+developing strategies for determining new target markets.</span></span></p>
+
+<h1 align=center style='text-align:center'><span class=heading00201char1><span
+style='font-size:11.0pt'>EDUCATION</span></span><span style='font-size:11.0pt;
+font-family:Arial;mso-bidi-font-weight:bold'><o:p></o:p></span></h1>
+
+<p class=MsoNormal><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Florida Teacher
+Certification</span></b></span><span class=normalchar1><span style='font-size:
+10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'>, Technology
+Education, 1997</span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>CompTIA A+ Certified
+IT Technician</span></b></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Train U.S. Corporate
+Training Center, Jacksonville, FL &nbsp;</span></span><span style='font-size:
+10.0pt;font-family:Arial;mso-bidi-font-family:"Times New Roman"'><br>
+<span class=normalchar1><b><span style='mso-ansi-font-size:10.0pt;mso-bidi-font-size:
+10.0pt;font-family:Arial'>Train-the-Trainer - Trainer Update and Methods
+Seminar</span></b></span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=MsoNormal><span class=normalchar1><b><span style='font-size:10.0pt;
+font-family:Arial;mso-bidi-font-family:"Times New Roman"'>Bachelor of
+Industrial Technology, Concentration in Manufacturing Technology </span></b></span><span
+style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=preformatted><span class=preformattedchar1><span style='font-family:
+Arial;mso-bidi-font-family:"Times New Roman"'>Andrews University, Berrien
+Springs, MI.</span></span><span style='mso-bidi-font-family:"Times New Roman"'><o:p></o:p></span></p>
+
+<p class=preformatted><span style='mso-bidi-font-family:"Times New Roman"'>&nbsp;<o:p></o:p></span></p>
+
+<p class=preformatted><span class=preformattedchar1><b><span style='font-family:
+Arial;mso-bidi-font-family:"Times New Roman"'>12 hours</span></b></span><span
+class=preformattedchar1><span style='font-family:Arial;mso-bidi-font-family:
+"Times New Roman"'> completed towards a 30 hour Masters Degree in Industrial
+Technology &amp; Management</span></span><span style='mso-bidi-font-family:
+"Times New Roman"'><o:p></o:p></span></p>
+
+</div>
+
+</body>
+
+</html>
