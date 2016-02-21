@@ -224,7 +224,7 @@ class Eventbrite(SocialNetworkBase):
         try:
             webhook_id = response.json()['id']
             user_credentials.update(webhook=webhook_id)
-        except:
+        except Exception:
             logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
             raise SNServerException("Eventbrite Webhook wasn't created successfully")
 

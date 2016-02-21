@@ -107,6 +107,8 @@ class TestEventById(object):
         :param event_in_db:
         :return:
         """
+
+        # TODO we need to update and choose a better method name
         event = event_in_db.to_json()
         event_id = event['id']
 
@@ -130,6 +132,8 @@ class TestEventById(object):
         :param event_in_db:
         :return:
         """
+
+        #TODO Kindly make sure comments reflect exactly what's going on in the code
         event = event_in_db.to_json()
         social_network_event_id = event['social_network_event_id']
 

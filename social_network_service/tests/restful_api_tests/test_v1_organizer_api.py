@@ -31,6 +31,8 @@ class TestOrganizers:
         """
         response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token))
         logger.info(response.text)
+        # TODO I think we should put the message telling why the result wasn't 200 on the RHS of assert and it applies
+        # to most messages we placed on RHS of asserts
         assert response.status_code == 200, 'Status should be Ok (200)'
         results = response.json()
         assert 'event_organizers' in results

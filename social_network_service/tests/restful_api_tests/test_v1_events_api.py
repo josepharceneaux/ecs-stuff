@@ -108,6 +108,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
+        # TODO break the line to respect Pylint
         assert 'error' in response and response['error']['code'] == SocialNetworkNotImplemented.error_code, 'Social Network have no events implementation'
 
     def test_events_post_no_event_organizer(self, token, test_event):
@@ -128,6 +129,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 404
         response = response.json()
+        # TODO break the line to respect Pylint
         assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, 'Event organizer not found'
 
     def test_events_post_no_venue(self, token, test_event):
@@ -144,7 +146,7 @@ class TestResourceEvents:
 
         event_data['social_network_id'] = social_network_id
         event_data['organizer_id'] = organizer_id
-
+        # TODO can we set invalid data to None all over in our code instead of setting them to -1?
         # test with invalid venue
         event_data['venue_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
@@ -170,7 +172,7 @@ class TestResourceEvents:
         event_data['organizer_id'] = organizer_id
 
         event_data['venue_id'] = venue_id
-
+        # TODO in this and the following test comment what exactly makes teh date valid OR what valid date looks like
         # Now test with invalid start datetime UTC format
         datetime_now = datetime.datetime.now()
         event_data['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%S')
@@ -178,6 +180,7 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 400
         response = response.json()
+        # TODO break the line
         assert 'error' in response and response['error']['code'] == InvalidDatetime.error_code, 'Invalid start datetime format'
 
     def test_events_post_invalid_end_datetime(self, token, test_event):
@@ -263,6 +266,7 @@ class TestResourceEvents:
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
+        #TODO assert message sohuld be more clear e.g. "Couldn't create event because required fields were missing"
         assert response.status_code == 400, 'It should fail'
         response = response.json()
         assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
