@@ -45,7 +45,7 @@ class TestSendSmsCampaign(object):
         """
         CampaignsCommonTests.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL % sms_campaign_of_current_user.id, self.METHOD, access_token_first)
+            self.URL, self.METHOD, access_token_first)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):
@@ -126,7 +126,11 @@ class TestSendSmsCampaign(object):
         candidate_1, candidate_2 = candidates_with_same_phone
         obj = SmsCampaignBase(user_first.id)
         obj.campaign = sms_campaign_of_current_user
-        assert not obj.pre_process_celery_task([candidate_1, candidate_2])
+        try:
+            obj.pre_process_celery_task([candidate_1, candidate_2])
+            assert None, 'Invalid usage should occur'
+        except InvalidUsage as error:
+            assert error.message
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
             self, user_first, access_token_first, sms_campaign_of_current_user,

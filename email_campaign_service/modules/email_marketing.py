@@ -373,7 +373,9 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     ids_and_email = [(row.candidate_id, row.address) for row in candidate_email_rows]
     filtered_email_rows = []
     for _id, email in ids_and_email:
-        record = CandidateEmail.get_by_address(email)
+        record = CandidateEmail.search_email_in_user_domain(email,
+                                                            [candidate.id for candidate in
+                                                             campaign.user.candidates])
         if len(record) == 1:
             filtered_email_rows.append((_id, email))
         else:
