@@ -13,7 +13,7 @@ from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
-                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group']
+                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)

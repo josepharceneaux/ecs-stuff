@@ -93,7 +93,7 @@ def test_get_candidate_without_id_or_email(access_token_first, user_first, talen
     assert resp.status_code == 201
 
     # Retrieve Candidate without providing ID or Email
-    resp = requests.get(url=CandidateApiUrl.CANDIDATE,
+    resp = requests.get(url=CandidateApiUrl.CANDIDATE % 'example',
                         headers={'Authorization': 'Bearer {}'.format(access_token_first)})
     print response_info(resp)
     assert resp.status_code == 400
