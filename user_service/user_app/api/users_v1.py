@@ -158,7 +158,7 @@ class UserApi(Resource):
         phone = posted_data.get('phone', '').strip()
         thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
-        is_disabled = posted_data.get('is_disabled', 0).strip()
+        is_disabled = posted_data.get('is_disabled', 0)
 
         try:
             last_read_datetime = parser.parse(last_read_datetime)

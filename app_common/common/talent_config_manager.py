@@ -24,6 +24,7 @@ CONFIG_FILE_NAME = "web.cfg"
 LOCAL_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
 STAGING_CONFIG_FILE_S3_BUCKET = "gettalent-private-staging"
 PROD_CONFIG_FILE_S3_BUCKET = "gettalent-private"
+JENKINS_CONFIG_FILE_S3_BUCKET = "gettalent-private-jenkins"
 
 
 class TalentConfigKeys(object):
@@ -65,12 +66,17 @@ def load_gettalent_config(app_config):
     app_config[TalentConfigKeys.LOGGER] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
 
     # Load up config from private S3 bucket, if environment is qa or prod
-    if app_config[TalentConfigKeys.ENV_KEY] in ('qa', 'prod'):
+    if app_config[TalentConfigKeys.ENV_KEY] in ('qa', 'prod', 'jenkins'):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars
         from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
-        bucket_name = PROD_CONFIG_FILE_S3_BUCKET if app_config[TalentConfigKeys.ENV_KEY] == 'prod' else \
-            STAGING_CONFIG_FILE_S3_BUCKET
+        if app_config[TalentConfigKeys.ENV_KEY] == 'prod':
+            bucket_name = PROD_CONFIG_FILE_S3_BUCKET
+        elif app_config[TalentConfigKeys.ENV_KEY] == 'qa':
+            bucket_name = STAGING_CONFIG_FILE_S3_BUCKET
+        else:
+            bucket_name = JENKINS_CONFIG_FILE_S3_BUCKET
+
         bucket_obj = s3_connection.get_bucket(bucket_name)
         app_config[TalentConfigKeys.LOGGER].info("Loading getTalent config from private S3 bucket %s", bucket_name)
 
@@ -99,12 +105,6 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['DEBUG'] = True
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
-    elif environment == 'jenkins':
-        app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
-        app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://:s!jenkinsRedis974812@jenkins.gettalent.com:6379'
-        app_config['DEBUG'] = True
-        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
-        app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent-jenkins:s!jenkins976892@jenkins.gettalent.com/talent_jenkins'
 
 
 def verify_all_config_keys_defined(app_config):
