@@ -39,7 +39,11 @@ test_config = load_test_config()
 
 @pytest.fixture(scope='function')
 def campaign_data(request):
-    """ Generate random data for a push campaign
+    """
+    This fixtures returns random campaign data which includes name of campaign,
+    body_text and url for campaign
+    :param request: request object
+    :return: campaign data dict
     """
     data = generate_campaign_data()
 
@@ -53,6 +57,14 @@ def campaign_data(request):
 
 @pytest.fixture()
 def campaign_in_db(request, token_first, smartlist_first, campaign_data):
+    """
+    This fixture creates a campaign in database by hitting push campaign service api
+    :param request: request object
+    :param token_first: authentication token for user_first
+    :param smartlist_first: smartlist dict object
+    :param campaign_data: data to create campaign
+    :return:
+    """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id']]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_first, data)
@@ -71,6 +83,17 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
 @pytest.fixture()
 def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, campaign_data,
                                        smartlist_same_doamin):
+    """
+    This fixtures creates a campaign which is associated with multiple two smartlist,
+    one th
+    :param request:
+    :param token_first: at belongs to same users, and one created by other
+    user from same domain
+    :param smartlist_first: smartlist dict object owned by user_first
+    :param smartlist_same_doamin: smartlist dict object owned by user_same_domain
+    :param campaign_data: dict data to create campaign
+    :return:
+    """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_doamin['id']]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_first, data)
@@ -106,7 +129,7 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
     def tear_down():
         response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id,
                                 token_second, data)
-        assert response.status_code == OK
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return data
@@ -114,6 +137,13 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
 
 @pytest.fixture()
 def campaign_blast(token_first, campaign_in_db, candidate_device_first):
+    """
+    This fixture creates a campaign blast for given campaign by sending a campaign
+    :param token_first: authentication token
+    :param campaign_in_db: campaign dict object
+    :param candidate_device_first: candidate device dict object
+    :return:
+    """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     logger.info(response.content)
     assert response.status_code == 200
@@ -133,7 +163,8 @@ def smartlist_first(request, token_first, candidate_first, candidate_device_firs
     :param request: request object
     :param candidate_first: candidate object
     :param token_first: access token for user_first
-    :return: smartlist id
+    :param candidate_device_first: candidate device object
+    :return: smartlist objects (dict)
     """
     data = {
         'candidate_ids': [candidate_first['id']],
@@ -146,7 +177,7 @@ def smartlist_first(request, token_first, candidate_first, candidate_device_firs
 
     def tear_down():
         response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first)
-        assert response.status_code == OK
+        assert response.status_code in [OK, NOT_FOUND]
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -156,10 +187,10 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
     """
     This fixture associates a smartlist with push campaign object
     :param request: request object
-    :param sample_user: test user to use pai
-    :param test_candidate: candidate object
-    :param test_candidate_device: device associated with candidate
-    :param campaign_in_db: push campaign obj
+    :param user_second: user from a different domain
+    :param candidate_second: candidate object
+    :param candidate_device_second: device associated with candidate
+    :param token_second: access token for user_second
     :return: smartlist object
     """
     data = {
@@ -173,7 +204,7 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
 
     def tear_down():
         response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_second)
-        assert response.status_code == OK
+        assert response.status_code in [OK, NOT_FOUND]
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -184,10 +215,12 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
     This fixture is similar to "test_smartlist".
     it just associates another smartlist with given campaign
     :param request:
-    :param sample_user:
-    :param test_candidate:
-    :param test_candidate_device:
+    :param user_same_domain: user from same domain as of user_first, to test
+     same domain functionality
+    :param token_same_domain: auth token for user_same_domain
+    :param candidate_same_domain: candidate from domain as of user_same_domain
     :param campaign_in_db:
+    :param candidate_device_same_domain: device associated to candidate_same_domain
     :return: smaertlist object
     """
     data = {
@@ -201,7 +234,7 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
 
     def tear_down():
         response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_same_domain)
-        assert response.status_code == OK
+        assert response.status_code in [OK, NOT_FOUND]
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -210,8 +243,8 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
 def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     """
     This fixture hits Push campaign api to send campaign which in turn creates blast.
-    At the end just return total blast created.
-    :param test_smartlist: smartlist associated with campaign
+    At the end just return list of blasts created
+    :param candidate_device_first: device associated to first candidate
     :param campaign_in_db: push campaign object
     :param token_first: auth token
     """
@@ -219,10 +252,10 @@ def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     blasts_counts = 3
     for num in range(blasts_counts):
         response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
-        assert response.status_code == 200
+        assert response.status_code == OK
     time.sleep(SLEEP_TIME)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     return response.json()['blasts']
 
 
@@ -245,8 +278,8 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     task_id = response['task_id']
 
     def fin():
-        send_request('delete', SchedulerApiUrl.TASK % task_id, token_first)
-
+        response = send_request('delete', SchedulerApiUrl.TASK % task_id, token_first)
+        assert response.status_code in [OK, NOT_FOUND]
     request.addfinalizer(fin)
     return data
 
@@ -256,28 +289,32 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     """
     This method Sends a campaign and then returns a UrlConversion object
     associated with this campaign.
+    :param token_first: authentication token
+    :param campaign_in_db: campaign dict object
+    :param smartlist_first: smarlist dict object associated with campaign
+    :param candidate_device_first: candidate device dict object
     :return:
     """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # get campaign blast
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     blasts = response.json()['blasts']
     assert len(blasts) == 1
     blast_id = blasts[0]['id']
     # get campaign sends
     response = send_request('get', PushCampaignApiUrl.BLAST_SENDS
                             % (campaign_in_db['id'], blast_id), token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     sends = response.json()['sends']
     # get if of record of sms_campaign_send_url_conversion for this campaign
     assert len(sends) == 1
     campaign_send = sends[0]
     response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
     assert response.status_code == OK
-    url_conversion = response.json()['url_conversion']
+    url_conversion_obj = response.json()['url_conversion']
 
     def tear_down():
         response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'],
@@ -285,14 +322,15 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
         assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
-    return url_conversion
+    return url_conversion_obj
 
 
 @pytest.fixture(scope='function')
 def talent_pool(request, token_first):
     """
-    This fixture created a test candidate using sample user and it will be deleted
-    after test has run.
+    This fixture created a talent pool that is associated to user_first
+    :param request: request object
+    :param token_first: authentication token for user_first
     """
     data = {
         "talent_pools": [
@@ -303,32 +341,33 @@ def talent_pool(request, token_first):
         ]
     }
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token_first, data=data)
-    assert response.status_code == 200
+    assert response.status_code == OK
     talent_pool_id = response.json()['talent_pools'][0]
 
     response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token_first)
-    assert response.status_code == 200
+    assert response.status_code == OK
     talent_pool = response.json()['talent_pool']
     data = {
         "talent_pools": [talent_pool_id]
     }
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 1, token_first, data=data)
-    assert response.status_code == 200
+    assert response.status_code == OK
 
     def tear_down():
         response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token_first)
-        assert response.status_code == 200
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return talent_pool
 
 
 @pytest.fixture(scope='function')
-def talent_pool_second(request, user_second, token_second):
+def talent_pool_second(request, token_second):
     """
-    This fixture created a test talent pool that is associated to user_second of domain_second
+    This fixture created a talent pool that is associated to user_second of domain_second
+    :param token_second: authentication token for user_second
     """
     data = {
         "talent_pools": [
@@ -344,28 +383,30 @@ def talent_pool_second(request, user_second, token_second):
 
     response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token_second)
-    assert response.status_code == 200
+    assert response.status_code == OK
     talent_pool = response.json()['talent_pool']
     data = {
         "talent_pools": [talent_pool_id]
     }
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 2, token_second, data=data)
-    assert response.status_code == 200
+    assert response.status_code == OK
 
     def tear_down():
         response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token_second)
-    assert response.status_code == 200
+        assert response.status_code in [OK, NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return talent_pool
 
 
 @pytest.fixture(scope='function')
-def candidate_first(request, user_first, talent_pool, token_first):
+def candidate_first(request, talent_pool, token_first):
     """
-    This fixture created a test candidate using sample user and it will be deleted
+    This fixture created a test candidate in domain first and it will be deleted
     after test has run.
+    :param request: request object
+    :param talent_pool: talent pool dict object associated to user_first
     """
     data = {
         "candidates": [
@@ -403,10 +444,13 @@ def candidate_first(request, user_first, talent_pool, token_first):
 
 
 @pytest.fixture(scope='function')
-def candidate_same_domain(request, user_same_domain, talent_pool, token_same_domain):
+def candidate_same_domain(request, talent_pool, token_same_domain):
     """
-    This fixture created a test candidate using sample user and it will be deleted
+    This fixture created a candidate in domain first  and it will be deleted
     after test has run.
+    :param request: request object
+    :param talent_pool: talent pool dict object
+    :param token_same_domain: authentication token
     """
     data = {
         "candidates": [
@@ -446,12 +490,12 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
 @pytest.fixture(scope='function')
 def candidate_second(request, token_second, talent_pool_second):
     """
-    This fixture created a test candidate using for domain 2 and it will be deleted
+    This fixture created a test candidate using for domain second and it will be deleted
     after test has run.
+    :param request: request object
+    :param token_second: authentication token for user_second
+    :param talent_pool_second: talent pool dict object from domain second
     """
-    # with app.app_context():
-    #         add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
-
     data = {
         "candidates": [
             {
@@ -488,10 +532,12 @@ def candidate_second(request, token_second, talent_pool_second):
 
 
 @pytest.fixture(scope='function')
-def candidate_device_first(request,token_first, candidate_first):
+def candidate_device_first(token_first, candidate_first):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
     """
     data = {
         'one_signal_device_id': PUSH_DEVICE_ID
@@ -507,10 +553,12 @@ def candidate_device_first(request,token_first, candidate_first):
 
 
 @pytest.fixture(scope='function')
-def candidate_device_same_domain(request, token_same_domain, candidate_same_domain):
+def candidate_device_same_domain(token_same_domain, candidate_same_domain):
     """
-    This fixture associates a device with test candidate which is required to
+    This fixture associates a device with  candidate from domain first which is required to
     send push campaign to candidate.
+    :param token_same_domain: authentication token
+    :param candidate_same_domain: candidate dict object
     """
     data = {
         'one_signal_device_id': PUSH_DEVICE_ID
@@ -528,10 +576,12 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
 
 
 @pytest.fixture(scope='function')
-def candidate_device_second(request, candidate_second, token_second):
+def candidate_device_second(token_second, candidate_second):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
+    :param token_second: authentication token
+    :param candidate_second: candidate dict object
     """
     """
     This fixture associates a device with test candidate which is required to
