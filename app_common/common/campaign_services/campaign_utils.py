@@ -71,7 +71,7 @@ class CampaignUtils(object):
     # This is set to False in case of 'prod'.
     # Also in case of dev/qa/Jenkins we do not want Emails and SMS to be sent to candidates, so
     # this variable is used there as well.
-    IS_DEV = False if os.getenv(TalentConfigKeys.ENV_KEY) is 'prod' else True
+    IS_DEV = False if os.getenv(TalentConfigKeys.ENV_KEY) == 'prod' else True
 
     @classmethod
     def get_campaign_type_prefix(cls, campaign_type):
