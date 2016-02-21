@@ -72,55 +72,54 @@ class UserApi(Resource):
         :return:  A dictionary containing array of user ids
         :rtype: dict
         """
-        try:
-            posted_data = request.get_json(silent=True)
-            if not posted_data or 'users' not in posted_data:
-                raise InvalidUsage(error_message="Request body is empty or not provided")
 
-            # Save user object(s)
-            users = posted_data['users']
+        posted_data = request.get_json(silent=True)
+        if not posted_data or 'users' not in posted_data:
+            raise InvalidUsage(error_message="Request body is empty or not provided")
 
-            # User object(s) must be in a list
-            if not isinstance(users, list):
-                raise InvalidUsage(error_message="Request body is not properly formatted")
+        # Save user object(s)
+        users = posted_data['users']
 
-            for user_dict in users:
+        # User object(s) must be in a list
+        if not isinstance(users, list):
+            raise InvalidUsage(error_message="Request body is not properly formatted")
 
-                first_name = user_dict.get('first_name', "").strip()
-                last_name = user_dict.get('last_name', "").strip()
-                email = user_dict.get('email', "").strip()
+        for user_dict in users:
 
-                if not first_name or not last_name or not email:
-                    raise InvalidUsage(error_message="first name, last name or email is missing in request body")
+            first_name = user_dict.get('first_name', "").strip()
+            last_name = user_dict.get('last_name', "").strip()
+            email = user_dict.get('email', "").strip()
 
-                if not is_valid_email(email=email):
-                    raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
+            if not first_name or not last_name or not email:
+                raise InvalidUsage(error_message="first name, last name or email is missing in request body")
 
-                # Check if user already exist
-                already_existing_user = check_if_user_exists(email)
-                if already_existing_user:
-                    if already_existing_user.is_disabled:
-                        raise InvalidUsage(error_message="User with email=%s already exists in Database but is disabled" % email)
-                    else:
-                        raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
+            if not is_valid_email(email=email):
+                raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
-            user_ids = []  # Newly created user object's id(s) are appended to this list
-            for user_dict in users:
-                first_name = user_dict.get('first_name', "").strip()
-                last_name = user_dict.get('last_name', "").strip()
-                email = user_dict.get('email', "").strip()
-                phone = user_dict.get('phone', "").strip()
-                dice_user_id = user_dict.get('dice_user_id')
-                thumbnail_url = user_dict.get('thumbnail_url', '').strip()
-                if request.user_can_edit_other_domains:
-                    domain_id = user_dict.get('domain_id', request.user.domain_id)
+            # Check if user already exist
+            already_existing_user = check_if_user_exists(email)
+            if already_existing_user:
+                if already_existing_user.is_disabled:
+                    raise InvalidUsage(error_message="User with email=%s already exists in Database but is disabled" % email)
                 else:
-                    domain_id = request.user.domain_id
-                user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
-                                                  domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
-                user_ids.append(user_id)
-        except Exception as e:
-            raise InvalidUsage('Ok %s id %s' % (e.message, domain_id))
+                    raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
+
+        user_ids = []  # Newly created user object's id(s) are appended to this list
+        for user_dict in users:
+            first_name = user_dict.get('first_name', "").strip()
+            last_name = user_dict.get('last_name', "").strip()
+            email = user_dict.get('email', "").strip()
+            phone = user_dict.get('phone', "").strip()
+            dice_user_id = user_dict.get('dice_user_id')
+            thumbnail_url = user_dict.get('thumbnail_url', '').strip()
+            if request.user_can_edit_other_domains:
+                domain_id = user_dict.get('domain_id', request.user.domain_id)
+            else:
+                domain_id = request.user.domain_id
+
+            user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
+                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
+            user_ids.append(user_id)
 
         return {'users': user_ids}
 
