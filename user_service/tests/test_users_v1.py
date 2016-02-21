@@ -173,6 +173,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     # Logged-in user trying to add new users into different domain
     add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_second, data=data, action='POST')
+    print response
     assert status_code == 200
 
     user_ids = response['users']
