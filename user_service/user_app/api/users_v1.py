@@ -4,8 +4,8 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, db, DomainRole
-from user_service.common.utils.validators import is_valid_email
+from user_service.common.models.user import User, db, DomainRole, Token
+from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
 
@@ -97,8 +97,12 @@ class UserApi(Resource):
                 raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
             # Check if user already exist
-            if check_if_user_exists(email):
-                raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
+            already_existing_user = check_if_user_exists(email)
+            if already_existing_user:
+                if already_existing_user.is_disabled:
+                    raise InvalidUsage(error_message="User with email=%s already exists in Database but is disabled" % email)
+                else:
+                    raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
 
         user_ids = []  # Newly created user object's id(s) are appended to this list
         for user_dict in users:
@@ -118,45 +122,6 @@ class UserApi(Resource):
             user_ids.append(user_id)
 
         return {'users': user_ids}
-
-    @require_any_role(DomainRole.Roles.CAN_DELETE_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
-    def delete(self, **kwargs):
-        """
-        DELETE /users/<id>
-
-        Function will disable user-object in db
-        User will be prevented from deleting itself
-        Last user in domain cannot be disabled
-
-        :return: {'deleted_user' {'id': user_id}}
-        :rtype:  dict
-        """
-
-        user_id_to_delete = kwargs.get('id')
-
-        # Return 404 if requested user does not exist
-        if user_id_to_delete:
-            user_to_delete = User.query.filter(User.id == user_id_to_delete).first()
-            if not user_to_delete:
-                raise NotFoundError(error_message="Requested user with user id %s not found" % user_id_to_delete)
-
-        if user_to_delete.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
-            raise UnauthorizedError("User to be deleted belongs to different domain than logged-in user")
-
-        # Prevent logged-in user from deleting itself
-        if user_id_to_delete == request.user.id:
-            raise UnauthorizedError("Logged-in user cannot delete itself")
-
-        # Prevent user from deleting the last user in the domain
-        all_users_of_domain_of_user_to_delete = User.query.filter_by(domain_id=user_to_delete.domain_id).all()
-        if len(all_users_of_domain_of_user_to_delete) < 3:
-            raise InvalidUsage(error_message="Last user in domain %s cannot be deleted" % user_to_delete.domain_id)
-
-        # Disable the user by setting is_disabled field to 1
-        User.query.filter(User.id == user_id_to_delete).update({'is_disabled': '1'})
-        db.session.commit()
-
-        return {'deleted_user': {'id': user_id_to_delete}}
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', DomainRole.Roles.CAN_EDIT_USERS)
@@ -193,6 +158,8 @@ class UserApi(Resource):
         phone = posted_data.get('phone', '').strip()
         thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
+        is_disabled = posted_data.get('is_disabled', 0).strip()
+
         try:
             last_read_datetime = parser.parse(last_read_datetime)
         except Exception as e:
@@ -204,6 +171,11 @@ class UserApi(Resource):
         if check_if_user_exists(email):
             raise InvalidUsage(error_message="Email Address %s already exists" % email)
 
+        if not is_number(is_disabled) or (int(is_disabled) != 0 and int(is_disabled) != 1):
+            raise InvalidUsage("Possible vaues of `is_disabled` are 0 and 1")
+
+        is_disabled = int(is_disabled)
+        
         # Update user
         update_user_dict = {
             'first_name': first_name,
@@ -211,11 +183,18 @@ class UserApi(Resource):
             'email': email,
             'phone': phone,
             'thumbnail_url': thumbnail_url,
-            'last_read_datetime': last_read_datetime
+            'last_read_datetime': last_read_datetime,
+            'is_disabled': is_disabled
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
         User.query.filter(User.id == requested_user_id).update(update_user_dict)
         db.session.commit()
+
+        if is_disabled:
+            # Delete all tokens of deleted user
+            tokens = Token.query.filter_by(user_id=requested_user_id).all()
+            for token in tokens:
+                token.delete()
 
         return {'updated_user': {'id': requested_user_id}}
 
