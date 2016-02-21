@@ -473,7 +473,7 @@ class TalentPoolCandidateApi(Resource):
                                      data=json.dumps({'candidate_ids': talent_pool_candidate_ids}))
 
             if response.status_code != 204:
-                raise Exception(error_message="Status Code: %s Response: %s" % (response.status_code, response.json()))
+                raise Exception("Status Code: %s Response: %s" % (response.status_code, response.json()))
 
         except Exception as e:
             raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search. "
