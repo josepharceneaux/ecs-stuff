@@ -206,7 +206,7 @@ class TestSendCampaign(object):
         assert_campaign_send(response, campaign, user_first, 2)
         assert_mail(campaign_with_valid_candidate.email_subject)
 
-    def test_campaign_send_to_two_candidates_with_same_email_address(
+    def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -220,6 +220,21 @@ class TestSendCampaign(object):
         CampaignsCommonTests.campaign_test_with_no_valid_candidate(
             self.URL % campaign_with_valid_candidate.id,
             access_token_first, campaign_with_valid_candidate.id)
+
+    def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
+            self, access_token_first, user_first,
+            campaign_with_candidates_having_same_email_in_diff_domain):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates associated. One more candidate exists in some other domain with same email
+        address. Email Campaign should be sent to 2 candidates only.
+        :return:
+        """
+        campaign = campaign_with_candidates_having_same_email_in_diff_domain
+        response = requests.post(
+            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert_campaign_send(response, campaign, user_first, 2)
+        assert_mail(campaign.email_subject)
 
     def test_campaign_send_with_email_client_id(
             self, user_first, access_token_first, campaign_with_valid_candidate):

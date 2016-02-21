@@ -274,6 +274,12 @@ class CandidateEmail(db.Model):
             email.is_default = False
 
     @classmethod
+    def search_email_in_user_domain(cls, email_address, candidate_ids):
+        return cls.query.filter(cls.address == email_address,
+                                cls.candidate_id.in_(candidate_ids)).group_by(CandidateEmail.candidate_id).all()
+
+
+    @classmethod
     def get_by_address(cls, email_address):
         return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
 
