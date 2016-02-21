@@ -59,13 +59,13 @@ def test_doc_by_post(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-def test_HTML_doc_by_post(token_fixture, user_fixture):
-    """Test that .doc files that are posted to the end point can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
-    # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
-    assert_non_create_content_and_status(content, status)
+# def test_HTML_doc_by_post(token_fixture, user_fixture):
+#     """Test that .doc files that are posted to the end point can be parsed."""
+#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
+#     content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
+#     # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
+#     assert_non_create_content_and_status(content, status)
 
 
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture):

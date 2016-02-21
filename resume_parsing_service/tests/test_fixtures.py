@@ -28,7 +28,7 @@ def require_integrity(func):
     def wrapped(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except IntegrityError:
+        except Exception:
             db.session.rollback()
     return wrapped
 
