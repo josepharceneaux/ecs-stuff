@@ -68,5 +68,8 @@ def get_users_talent_pools(formatted_token_str):
     except requests.exceptions.ConnectionError:
         raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in "
                            "get_users_talent_pools")
-    talent_pools = json.loads(talent_pool_request.content)
-    return [talent_pool['id'] for talent_pool in talent_pools['talent_pools']]
+    talent_pools_response = json.loads(talent_pool_request.content)
+    if 'error' in talent_pools_response:
+        raise InvalidUsage(error_message=talent_pools_response['error'].get(
+            'message', 'Error in getting user talent pools.'))
+    return [talent_pool['id'] for talent_pool in talent_pools_response['talent_pools']]

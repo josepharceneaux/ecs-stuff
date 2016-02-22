@@ -84,7 +84,7 @@ def process_resume(parse_params):
         logger.info('Response Dict: {}'.format(response_dict))
 
     candidate_id = response_dict.get('candidates')[0]['id']
-    logger.debug(candidate_id)
+    logger.debug('Candidate created with id: {}'.format(candidate_id))
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
     if candidate_get_response.status_code is not requests.codes.ok:
