@@ -7,9 +7,5 @@ from email_campaign_service.common.campaign_services.campaign_utils import Campa
 app, logger = init_talent_app(__name__)
 
 # Celery app
-celery_app = init_celery_app(app, CampaignUtils.EMAIL,
+celery_app = init_celery_app(app, CampaignUtils.SMS,
                              ['email_campaign_service.modules.email_marketing'])
-
-# Register API endpoints
-from apis.email_campaigns import email_campaign_blueprint
-app.register_blueprint(email_campaign_blueprint)
