@@ -49,7 +49,7 @@ def resume_post_reciever():
     # key and filename.
     if 'application/json' in content_type:
         request_json = request.get_json()
-        create_candidate = request_json.get('create_candidate')
+        create_candidate = request_json.get('create_candidate', False)
         filepicker_key = request_json.get('filepicker_key')
         resume_file = None
         resume_file_name = str(filepicker_key)
@@ -57,17 +57,23 @@ def resume_post_reciever():
             raise InvalidUsage('Invalid JSON data for resume parsing')
     # Handle posted form data. Required for mobile app as it posts a binary file
     elif 'multipart/form-data' in content_type:
-        create_candidate = request.form.get('create_candidate')
+        # create_candidate is passed as a string from a form so this extra processing is needed.
+        create_mode = request.form.get('create_candidate', 'false')
+        create_candidate = True if create_mode.lower() == 'true' else False
+        logger.debug(type(create_candidate))
+        logger.debug(create_candidate)
         filepicker_key = None
         resume_file = request.files.get('resume_file')
         resume_file_name = request.form.get('resume_file_name')
         if not (resume_file and resume_file_name):
             raise InvalidUsage('Invalid form data for resume parsing.')
     else:
-        logger.error("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
+        logger.debug("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
             request.form, request.files, request.json
         ))
-        raise InvalidUsage("Invalid Request")
+        raise InvalidUsage("Invalid Request. Bad Headers set.")
+    if not isinstance(create_candidate, bool):
+        raise InvalidUsage('Invalid parameter for create_candidate.')
     if create_candidate and not talent_pools:
         raise InvalidUsage("Could not obtain user talent_pools for candidate creation.")
     parse_params = {

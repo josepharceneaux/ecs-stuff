@@ -12,6 +12,7 @@ def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, c
     }
 
     # Logged-in user trying to add candidates to talent_pool
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 

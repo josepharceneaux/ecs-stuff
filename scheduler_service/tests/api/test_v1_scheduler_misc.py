@@ -47,14 +47,14 @@ class TestSchedulerMisc(object):
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=5)
         expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
-        _update_token_expiry_(auth_token_row['user_id'], expiry)
-
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
 
         assert response.status_code == 201
         data = response.json()
         assert data['id']
+
+        _update_token_expiry_(auth_token_row['user_id'], expiry)
 
         # Sleep for 25 seconds till the job start and refresh oauth token
         sleep(25)
