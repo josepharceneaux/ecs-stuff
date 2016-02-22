@@ -50,5 +50,3 @@ done
 sleep 10
 
 py.test -n 24 email_campaign_service/tests
-
-python celery -A email_campaign_service.email_campaign_app.celery_app worker --loglevel=info

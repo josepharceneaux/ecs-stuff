@@ -495,7 +495,6 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
     :type blast_datetime: datetime.datetime
     """
     with app.app_context():
-        logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('sending campaign to candidate(id:%s).' % candidate.id)
         try:
             result_sent = send_campaign_emails_to_candidate(
