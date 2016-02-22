@@ -374,6 +374,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     filtered_email_rows = []
     for _id, email in ids_and_email:
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
+        # If there is only one candidate for an email-address in user's domain, we are good to go,
+        # otherwise log and raise the invalid error.
         if len(search_result) == 1:
             filtered_email_rows.append((_id, email))
         else:
