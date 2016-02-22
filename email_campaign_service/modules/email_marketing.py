@@ -8,6 +8,7 @@ from sqlalchemy import desc
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.modules.utils import (create_email_campaign_url_conversions,
                                                   do_mergetag_replacements,
                                                   get_candidates_of_smartlist,
@@ -494,6 +495,8 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
     :type blast_datetime: datetime.datetime
     """
     with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('sending campaign to candidate(id:%s).' % candidate.id)
         try:
             result_sent = send_campaign_emails_to_candidate(
                 user=user,
