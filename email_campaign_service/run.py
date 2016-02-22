@@ -1,4 +1,4 @@
-from email_campaign_service.email_campaign_app import app
+from email_campaign_app.app import app
 from email_campaign_service.common.routes import GTApis
 
 __author__ = 'jitesh'
