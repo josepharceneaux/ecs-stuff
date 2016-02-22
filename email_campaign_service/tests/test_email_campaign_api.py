@@ -3,6 +3,7 @@ import time
 import email
 import imaplib
 import requests
+from email_campaign_service.common.error_handling import InvalidUsage
 
 from email_campaign_service.common.models.db import db
 from email_campaign_service.tests.conftest import fake, uuid
@@ -211,15 +212,16 @@ class TestSendCampaign(object):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should not be sent to
-        any candidate.
+        any candidate. Response should get Invalid usage.
         :return:
         """
         same_email = fake.email()
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
-        CampaignsCommonTests.campaign_test_with_no_valid_candidate(
+        response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
-            access_token_first, campaign_with_valid_candidate.id)
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,

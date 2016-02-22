@@ -363,7 +363,6 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
-
     # Get emails
     candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
                                                               CandidateEmail.address) \
@@ -373,14 +372,26 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     ids_and_email = [(row.candidate_id, row.address) for row in candidate_email_rows]
     filtered_email_rows = []
     for _id, email in ids_and_email:
-        record = CandidateEmail.search_email_in_user_domain(email,
-                                                            [candidate.id for candidate in
-                                                             campaign.user.candidates])
-        if len(record) == 1:
+        candidate_emails = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
+        if len(candidate_emails) == 1:
             filtered_email_rows.append((_id, email))
         else:
-            logger.error('%s candidates found for email address %s.' % (len(record), email))
+            logger.error('%s candidates found for email address %s in user`s domain. '
+                         'Candidate ids are: %s'
+                         % (len(candidate_emails), email,
+                            [candidate_email.candidate_id for candidate_email in candidate_emails]))
+            raise InvalidUsage('There exist multiple candidates with same email address '
+                               'in user`s domain')
     return filtered_email_rows
+
+
+def do_emails_of_candidates_are_unique_in_user_domain(candidate_emails, user):
+    return CandidateEmail.query.with_entities(CandidateEmail.address,
+                                              CandidateEmail.candidate_id).\
+               group_by(CandidateEmail.candidate_id).\
+               join(Candidate, CandidateEmail.candidate_id == Candidate.id).\
+               filter(and_(User.domain_id == user.domain_id,
+                           CandidateEmail.address.in_(candidate_emails))).count() == len(candidate_emails)
 
 
 def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,

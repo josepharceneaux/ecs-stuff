@@ -50,5 +50,5 @@ done
 
 sleep 10
 
-py.test -n 24 sms_campaign_service/tests
+py.test -n 24 email_campaign_service/tests
 
