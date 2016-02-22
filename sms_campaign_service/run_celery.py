@@ -16,7 +16,7 @@ from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 try:
-    celery_app.start(argv=['celery', 'worker', '-l', 'info', '-Q', CampaignUtils.SMS])
+    celery_app.start(argv=['celery', 'worker', '-l', 'info', '-Q', CampaignUtils.SMS, '-n', CampaignUtils.SMS])
     logger.info("Celery worker has been started successfully for %s" % app.import_name)
 except Exception as e:
     logger.exception("Couldn't start Celery app for sms_campaign_service in "

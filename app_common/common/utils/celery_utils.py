@@ -27,36 +27,37 @@ def init_celery_app(flask_app, queue_name, modules_to_include):
     if not isinstance(modules_to_include, list):
         raise InvalidUsage('Include modules containing Celery tasks in a list')
     # Celery settings
-    default_queue = {'CELERY_DEFAULT_QUEUE': queue_name}
-    default_serializer = {'CELERY_RESULT_SERIALIZER': 'json'}
-    resultant_db_tables = {
-        'CELERY_RESULT_DB_TABLENAMES': {
-            'task': queue_name + '_taskmeta',
-            'group': queue_name + '_groupmeta'
-        }
-    }
-    accept_content = {
-        'CELERY_ACCEPT_CONTENT': ['pickle', 'json', 'msgpack', 'yaml']
-    }
+    # default_queue = {'CELERY_DEFAULT_QUEUE': queue_name}
+    # default_serializer = {'CELERY_RESULT_SERIALIZER': 'json'}
+    # default_broker_serializer = {'CELERY_TASK_SERIALIZER': 'yaml'}
+    # resultant_db_tables = {
+    #     'CELERY_RESULT_DB_TABLENAMES': {
+    #         'task': queue_name + '_taskmeta',
+    #         'group': queue_name + '_groupmeta'
+    #     }
+    # }
+    # accept_content = {
+    #     'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
+    # }
     # Initialize Celery app
     celery_app = Celery(flask_app,
                         broker=flask_app.config[TalentConfigKeys.REDIS_URL_KEY],
                         backend=flask_app.config[TalentConfigKeys.CELERY_RESULT_BACKEND_URL],
                         include=modules_to_include)
-
-    celery_app.conf.update(default_queue)
-    celery_app.conf.update(resultant_db_tables)
-    celery_app.conf.update(default_serializer)
-    celery_app.conf.update(accept_content)
-    TaskBase = celery_app.Task
-
-    class ContextTask(TaskBase):
-        abstract = True
-
-        def __call__(self, *args, **kwargs):
-            with flask_app.app_context():
-                return TaskBase.__call__(self, *args, **kwargs)
-    celery_app.Task = ContextTask
+    # celery_app.conf.update(default_queue)
+    # celery_app.conf.update(resultant_db_tables)
+    # celery_app.conf.update(default_serializer)
+    # celery_app.conf.update(accept_content)
+    # celery_app.conf.update(default_broker_serializer)
+    # TaskBase = celery_app.Task
+    #
+    # class ContextTask(TaskBase):
+    #     abstract = True
+    #
+    #     def __call__(self, *args, **kwargs):
+    #         with flask_app.app_context():
+    #             return TaskBase.__call__(self, *args, **kwargs)
+    # celery_app.Task = ContextTask
     logger = flask_app.config[TalentConfigKeys.LOGGER]
     logger.info("Celery has been configured for %s successfully" % flask_app.import_name)
     return celery_app
