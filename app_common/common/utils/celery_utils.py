@@ -48,5 +48,13 @@ def init_celery_app(flask_app, queue_name, modules_to_include):
     celery_app.conf.update(resultant_db_tables)
     celery_app.conf.update(default_serializer)
     celery_app.conf.update(accept_content)
+    TaskBase = celery_app.Task
 
+    class ContextTask(TaskBase):
+        abstract = True
+
+        def __call__(self, *args, **kwargs):
+            with flask_app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+    celery_app.Task = ContextTask
     return celery_app
