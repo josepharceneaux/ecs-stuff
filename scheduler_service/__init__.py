@@ -37,29 +37,24 @@ logger.info("Starting scheduler service in %s environment",
             flask_app.config[TalentConfigKeys.ENV_KEY])
 
 # Celery settings
-# default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}
-# default_serializer = {'CELERY_RESULT_SERIALIZER': 'json'}
-# default_broker_serializer = {'CELERY_TASK_SERIALIZER': 'yaml'}
-# resultant_db_tables = {
-#     'CELERY_RESULT_DB_TABLENAMES': {
-#         'task': 'scheduler_taskmeta',
-#         'group': 'scheduler_groupmeta'
-#     }
-# }
-# accept_content = {
-#     'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
-# }
+default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}
+resultant_db_tables = {
+    'CELERY_RESULT_DB_TABLENAMES': {
+        'task': 'scheduler_taskmeta',
+        'group': 'scheduler_groupmeta'
+    }
+}
+accept_content = {
+    'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
+}
 celery_app = Celery(flask_app, broker=flask_app.config[TalentConfigKeys.REDIS_URL_KEY],
                     backend=flask_app.config[TalentConfigKeys.CELERY_RESULT_BACKEND_URL],
                     include=['scheduler_service.tasks'])
-# celery_app.conf.update(default_queue)
-# celery_app.conf.update(resultant_db_tables)
-# celery_app.conf.update(default_serializer)
-# celery_app.conf.update(accept_content)
-# celery_app.conf.update(default_broker_serializer)
+celery_app.conf.update(default_queue)
+celery_app.conf.update(resultant_db_tables)
+celery_app.conf.update(accept_content)
 
 from scheduler_service.api.scheduler_api import scheduler_blueprint
-
 flask_app.register_blueprint(scheduler_blueprint)
 
 # Start APS Scheduler

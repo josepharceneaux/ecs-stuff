@@ -9,6 +9,7 @@ WORKDIR /root/base_service_container/email_campaign_service
 RUN sed -i -e 's/APP_NAME/email_campaign_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
+ENV C_FORCE_ROOT true
 
 # Set PYTHON PATH
 ENV PYTHONPATH ../
