@@ -108,13 +108,15 @@ class UserApi(Resource):
             phone = user_dict.get('phone', "").strip()
             dice_user_id = user_dict.get('dice_user_id')
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
+            user_group_id = user_dict.get('user_group_id')
             if request.user_can_edit_other_domains:
                 domain_id = user_dict.get('domain_id', request.user.domain_id)
             else:
                 domain_id = request.user.domain_id
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
-                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
+                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
+                                              user_group_id=user_group_id)
             user_ids.append(user_id)
 
         return {'users': user_ids}
