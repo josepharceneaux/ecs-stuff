@@ -366,7 +366,7 @@ def _assert_results(candidate_ids, response):
     print 'candidate_ids: {}'.format(candidate_ids)
     print 'resultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
-    assert set(candidate_ids).issubset(resultant_candidate_ids)
+    assert set(candidate_ids).issubset(set(resultant_candidate_ids))
 
 
 def get_response_from_authorized_user(access_token, arguments_to_url):
