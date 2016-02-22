@@ -291,6 +291,7 @@ def assert_mail(email_subject):
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
     # 'lqsgrthhqepcjafd' here is an app specific password for this account
     # to allow less secure apps
+    # mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     mail.login('gettalentmailtest@gmail.com', 'lqsgrthhqepcjafd')
     # mail.list()  # Out: list of "folders" aka labels in gmail.
     print "Check for mail with subject: %s" % email_subject

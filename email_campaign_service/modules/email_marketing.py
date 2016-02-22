@@ -373,26 +373,17 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     ids_and_email = [(row.candidate_id, row.address) for row in candidate_email_rows]
     filtered_email_rows = []
     for _id, email in ids_and_email:
-        candidate_emails = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
-        if len(candidate_emails) == 1:
+        search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
+        if len(search_result) == 1:
             filtered_email_rows.append((_id, email))
         else:
             logger.error('%s candidates found for email address %s in user`s domain. '
                          'Candidate ids are: %s'
-                         % (len(candidate_emails), email,
-                            [candidate_email.candidate_id for candidate_email in candidate_emails]))
+                         % (len(search_result), email,
+                            [candidate_email.candidate_id for candidate_email in search_result]))
             raise InvalidUsage('There exist multiple candidates with same email address '
                                'in user`s domain')
     return filtered_email_rows
-
-
-def do_emails_of_candidates_are_unique_in_user_domain(candidate_emails, user):
-    return CandidateEmail.query.with_entities(CandidateEmail.address,
-                                              CandidateEmail.candidate_id).\
-               group_by(CandidateEmail.candidate_id).\
-               join(Candidate, CandidateEmail.candidate_id == Candidate.id).\
-               filter(and_(User.domain_id == user.domain_id,
-                           CandidateEmail.address.in_(candidate_emails))).count() == len(candidate_emails)
 
 
 def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,
