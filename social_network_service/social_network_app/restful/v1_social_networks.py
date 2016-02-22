@@ -371,7 +371,7 @@ class MeetupGroupsResource(Resource):
 class GetTokenValidityResource(Resource):
     decorators = [require_oauth()]
 
-    def get(self, _id, **kwargs):
+    def get(self, social_network_id, **kwargs):
         """
         Get user access_token validity status for specified social network.
         :param social_network_id: id for specified social network
@@ -406,9 +406,9 @@ class GetTokenValidityResource(Resource):
         """
         user_id = request.user.id
         # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(_id)
+        social_network = SocialNetwork.get_by_id(social_network_id)
         if social_network:
-            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, _id)
+            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network_id)
             if user_social_network_credential:
                 # Get social network specific Social Network class
                 social_network_class = get_class(social_network.name, 'social_network')
@@ -430,7 +430,7 @@ class RefreshTokenResource(Resource):
 
     decorators = [require_oauth()]
 
-    def put(self, _id):
+    def put(self, social_network_id):
         """
         Update access token for specified user and social network.
         :return:
@@ -459,7 +459,7 @@ class RefreshTokenResource(Resource):
         """
         user_id = request.user.id
         try:
-            social_network = SocialNetwork.get_by_id(_id)
+            social_network = SocialNetwork.get_by_id(social_network_id)
             if not social_network:
                 raise ResourceNotFound("Social Network not found")
             # creating class object for respective social network
@@ -1037,7 +1037,7 @@ class ProcessAccessTokenResource(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, _id):
+    def post(self, social_network_id):
         """
         Adds credentials for user for given social network.
         Gets data from POST request which contains 'code' and 'social_credentials'
@@ -1077,7 +1077,7 @@ class ProcessAccessTokenResource(Resource):
         # Get json request data
         req_data = get_valid_json_data(request)
         code = req_data['code']
-        social_network = SocialNetwork.get_by_id(_id)
+        social_network = SocialNetwork.get_by_id(social_network_id)
         # if social network does not exists, send failure message
         if social_network:
             # Get social network specific Social Network class

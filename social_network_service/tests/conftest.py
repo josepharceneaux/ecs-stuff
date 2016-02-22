@@ -56,7 +56,7 @@ def base_url():
 @pytest.fixture()
 def token(request, user_auth, sample_user):
     """
-    returns the access token for a different user so that we can test forbidden error etc.
+    Returns the access token for a different user so that we can test forbidden error etc.
     :param user_auth: fixture in common/tests/conftest.py
     :param sample_user: fixture in common/tests/conftest.py
     :return token

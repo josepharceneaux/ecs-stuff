@@ -98,17 +98,15 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == 404, 'Event not found with this id'
 
-    def test_put_with_invalid_event_id_(self, token, event_in_db):
+    def test_put_with_invalid_event_id_and_sn(self, token, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
-        - Modify social_network_id to -1 in event data object
-        - Send request to update event data. response should be 404 as there is no social network id = -1
+        - Modify social_network_id to max int value in event data object
+        - Send request to update event data. response should be 404 as there is no social network id = max int
         :param token:
         :param event_in_db:
         :return:
         """
-
-        # TODO we need to update and choose a better method name
         event = event_in_db.to_json()
         event_id = event['id']
 
@@ -117,7 +115,7 @@ class TestEventById(object):
 
         # Update with invalid social network event id
         event['id'] = event_id
-        event['social_network_event_id'] = -1
+        event['social_network_event_id'] = sys.maxint
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token, data=event)
         logger.info(response.text)
         assert response.status_code == 404, 'Event not found with this social network event id'
@@ -125,15 +123,14 @@ class TestEventById(object):
     def test_put_with_valid_token(self, token, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
-        - Modify event id to highest possible int number
         - Using event id, send PUT request to update event data
-        - Should get 404 response because event doesn't exist
+        - Should get 200 response
+        - Check if activity is created or not
         :param token:
         :param event_in_db:
         :return:
         """
 
-        #TODO Kindly make sure comments reflect exactly what's going on in the code
         event = event_in_db.to_json()
         social_network_event_id = event['social_network_event_id']
 

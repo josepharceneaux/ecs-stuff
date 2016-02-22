@@ -417,7 +417,7 @@ def create_oauth_headers():
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
 
 
-def validate_header(request):
+def validate_json_header(request):
     """
     Proper header should be {'content-type': 'application/json'} for POSTing
     some data on SMS campaign API.
@@ -440,7 +440,7 @@ def get_valid_json_data(req):
     :param req:
     :return:
     """
-    validate_header(req)
+    validate_json_header(req)
     try:
         data = req.get_json()
     except BadRequest:

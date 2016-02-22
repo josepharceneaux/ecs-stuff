@@ -332,9 +332,7 @@ class Token(db.Model):
         :return: Token object matched with access_token
         """
         assert access_token, "access_token is empty"
-        token = Token.query.filter_by(access_token=access_token).first()
-        assert token, "Token not found"
-        return token
+        return Token.query.filter_by(access_token=access_token).first()
 
 
 class DomainRole(db.Model):

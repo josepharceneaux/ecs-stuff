@@ -11,6 +11,8 @@ import json
 import requests
 
 # App specific imports
+import sys
+
 from social_network_service.common.models import db
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
@@ -108,8 +110,9 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 500
         response = response.json()
-        # TODO break the line to respect Pylint
-        assert 'error' in response and response['error']['code'] == SocialNetworkNotImplemented.error_code, 'Social Network have no events implementation'
+
+        assert 'error' in response and response['error']['code'] == SocialNetworkNotImplemented.error_code, \
+            'Social Network have no events implementation'
 
     def test_events_post_no_event_organizer(self, token, test_event):
         """
@@ -129,8 +132,9 @@ class TestResourceEvents:
         logger.info(response.text)
         assert response.status_code == 404
         response = response.json()
-        # TODO break the line to respect Pylint
-        assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, 'Event organizer not found'
+
+        assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \
+            'Event organizer not found'
 
     def test_events_post_no_venue(self, token, test_event):
         """
@@ -146,9 +150,9 @@ class TestResourceEvents:
 
         event_data['social_network_id'] = social_network_id
         event_data['organizer_id'] = organizer_id
-        # TODO can we set invalid data to None all over in our code instead of setting them to -1?
+
         # test with invalid venue
-        event_data['venue_id'] = -1
+        event_data['venue_id'] = sys.maxint
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
         assert response.status_code == 404
