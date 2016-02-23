@@ -2,6 +2,7 @@
 This module contains tests related to Push Campaign RESTful API endpoints.
 """
 # Builtin imports
+import sys
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
@@ -15,13 +16,22 @@ class TestCampaignById(object):
 
     # URL: /v1/campaigns/:id [GET]
     def test_get_by_id_with_invalid_token(self, campaign_in_db):
+        """
+        We will try to get a valid campaign with invalid token and api will raise
+        Unauthorized 401 error
+        :param campaign_in_db: campaign object
+        :return:
+        """
         unauthorize_test('get', URL % campaign_in_db['id'], 'invalid_token')
 
     def test_get_by_id(self, token_first, campaign_in_db):
-
-        response = send_request('get', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == OK, 'Status code is not 200'
-        json_response = response.json()
+        """
+        We will try to get campaign with a valid token and we are expecting OK (200) response
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        :return:
+        """
+        json_response = get_campaign(campaign_in_db['id'], token_first)
         campaign = json_response['campaign']
         assert campaign_in_db['id'] == campaign['id']
         assert campaign_in_db['body_text'] == campaign['body_text']
@@ -33,55 +43,96 @@ class TestUpdateCampaign(object):
     # update campaign test
     # URL: /v1/campaigns/:id [PUT]
     def test_put_by_id_with_invalid_token(self, campaign_in_db, smartlist_first):
+        """
+        Try to update a campaign with invalid token and API will raise Unauthorized (401) error
+        :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist object
+        :return:
+        """
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         unauthorize_test('put', URL % campaign_in_db['id'],
                          'invalid_token', data)
 
     def test_put_by_id_without_ownership(self, token_second, campaign_in_db, smartlist_first):
+        """
+        We will try to update a campaign but user is not owner and from a different domain,
+        so we are expecting Forbidden (403) error
+        :param token_second: auth token
+        :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist object
+        :return:
+        """
         # Test `raise ForbiddenError`
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        response = send_request('put', URL % campaign_in_db['id'], token_second, data)
-        assert response.status_code == FORBIDDEN
+        campaign_id = campaign_in_db['id']
+        update_campaign(campaign_id, data, token_second, expected_status=(FORBIDDEN,))
 
-    def test_put_by_id_with_invalid_id(self, token_first, smartlist_first, campaign_in_db):
+    def test_put_by_id_with_invalid_id(self, token_first, smartlist_first):
+        """
+        Try to update a campaign that does not exist, API will raise ResourceNotFound (404) error
+        :param token_first: auth token
+        :param smartlist_first: smartlist object
+        :param campaign_in_db: campaign object
+        :return:
+        """
         # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        invalid_id = campaign_in_db['id'] + 10000
+        invalid_id = sys.maxint
         for _id in [0, invalid_id]:
-            response = send_request('put', URL % _id, token_first, data)
-            assert response.status_code == NOT_FOUND, 'ResourceNotFound exception should be raised'
+            update_campaign(_id, data, token_first, expected_status=(NOT_FOUND,))
 
     def test_put_by_id_with_invalid_field(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Try to update a campaign with an invalid key in campaign data , API will raise
+        InvalidUsage (400) error
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist object
+        :return:
+        """
         # Test invalid field
         data = generate_campaign_data()
         data['invalid_field_name'] = 'Any Value'
-        response = send_request('put', URL % campaign_in_db['id'], token_first, data)
-        assert response.status_code == INVALID_USAGE, 'InvalidUsage exception should be raised'
-        error = response.json()['error']
+        campaign_id = campaign_in_db['id']
+        response = update_campaign(campaign_id, data, token_first, expected_status=(INVALID_USAGE,))
+        error = response['error']
         assert error['invalid_field'] == 'invalid_field_name'
 
     def test_put_by_id_with_missing_required_key(self, token_first, smartlist_first, campaign_in_db):
+        """
+        Try to update a campaign with some required field missing, and API will raise
+        InvalidUsage (400) error
+        :param token_first: auth token
+        :param smartlist_first: smartlist object
+        :param campaign_in_db: campaign object
+        :return:
+        """
         # Test valid fields with invalid/ empty values
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         for key in ['name', 'body_text', 'url', 'smartlist_ids']:
             invalid_value_test(data, key, token_first, campaign_in_db['id'])
 
-    def test_put_by_id(self, token_first, campaign_in_db, campaign_data, smartlist_first):
+    def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Try to update a campaign with valid data, we are expecting that API will
+        update the campaign successfully (200)
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist object
+        :return:
+        """
         # Test positive case with valid data
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        response = send_request('put', URL % campaign_in_db['id'], token_first, data)
-        assert response.status_code == OK, 'Campaign was not updated successfully'
-        data['id'] = campaign_in_db['id']
+        campaign_id = campaign_in_db['id']
+        update_campaign(campaign_id, data, token_first, expected_status=(OK,))
 
         # Now get campaign from API and compare data.
-        response = send_request('get', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == OK, 'Status code is not 200'
-        json_response = response.json()
+        json_response = get_campaign(campaign_id, token_first)
         campaign = json_response['campaign']
         # Compare sent campaign dict and campaign dict returned by API.
         compare_campaign_data(data, campaign)
@@ -100,18 +151,16 @@ class TestCampaignDeleteById(object):
         unauthorize_test('delete',  URL % campaign_in_db['id'],
                          'invalid_token')
 
-    def test_delete_non_existing_campaign(self, token_first, campaign_in_db):
+    def test_delete_non_existing_campaign(self, token_first):
         """
         Test that if someone wants to delete a campaign that does not exists,
         it should raise ResourceNotFound 404
         :param token_first: auth token_first
         :return:
         """
-        non_existing_campaign_id = campaign_in_db['id'] + 10000
+        non_existing_campaign_id = sys.maxint
         # 404 Case, Campaign not found
-        # 404 with invalid campaign id and valid blast id
-        response = send_request('delete', URL % non_existing_campaign_id, token_first)
-        assert response.status_code == NOT_FOUND, 'Resource should not be found'
+        delete_campaign(non_existing_campaign_id, token_first, expected_status=(NOT_FOUND,))
 
     def test_delete_campaign_with_invalid_id(self, token_first):
         """
@@ -120,30 +169,35 @@ class TestCampaignDeleteById(object):
         :return:
         """
         invalid_id = 0
-        response = send_request('delete', URL % invalid_id, token_first)
-        assert response.status_code == INVALID_USAGE, 'Resource should not be found'
+        delete_campaign(invalid_id, token_first, expected_status=(INVALID_USAGE,))
 
     def test_delete_campaign_without_ownership(self, token_second, campaign_in_db):
-        # 404 Case, Campaign not found
-        # 404 with invalid campaign id and valid blast id
-        response = send_request('delete', URL % campaign_in_db['id'], token_second)
-        assert response.status_code == FORBIDDEN
+        """
+        Try to delete a campaign but the user is not owner of given campaign and
+        he is from different domain. So API should not allow (403)
+        :param token_second: auth token
+        :param campaign_in_db: campaign object
+        :return:
+        """
+        delete_campaign(campaign_in_db['id'], token_second, expected_status=(FORBIDDEN,))
 
     def test_delete_unscheduled_campaign(self, token_first, campaign_in_db):
         """
         Try deleting a campaign that is not scheduled yet and it should
         successfully delete
-        :param token_first:
-        :param campaign_in_db:
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
         :return:
         """
-        # 404 Case, Campaign not found
-        # 404 with invalid campaign id and valid blast id
-        response = send_request('delete', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == OK
+        # 200 Case, Campaign not found
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(OK,))
 
     def test_delete_scheduled_campaign(self, token_first, campaign_in_db, schedule_a_campaign):
-        # 404 Case, Campaign not found
-        # 404 with invalid campaign id and valid blast id
-        response = send_request('delete', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == OK
+        """
+        Try to delete a scheduled campaign , API should successfully delete that campaign
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        :param schedule_a_campaign:
+        :return:
+        """
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(OK,))

@@ -2,8 +2,9 @@
 This modules contains tests for Url Redirection endpoint
 If anything goes wrong, this endpoint raises InternalServerError (500)
 """
-from push_campaign_service.common.utils.test_utils import send_request
+from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl
+from push_campaign_service.tests.test_utilities import get_blasts
 
 
 class TestURLRedirectionApi(object):
@@ -22,24 +23,23 @@ class TestURLRedirectionApi(object):
         :return:
         """
         # stats before making HTTP GET request to source URL
-        response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-        assert response.status_code == 200
-        blasts = response.json()['blasts']
+        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(OK,))
+        blasts = response['blasts']
         assert len(blasts) == 1
         blast = blasts[0]
         hit_count, clicks = url_conversion['hit_count'],  blast['clicks']
         response = send_request('get', url_conversion['source_url'], '')
-        assert response.status_code == 200, 'Response should be ok'
+        assert response.status_code == OK, 'Response should be ok'
         assert response.url == url_conversion['destination_url']
 
         response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-        assert response.status_code == 200
+        assert response.status_code == OK
         blasts = response.json()['blasts']
         assert len(blasts) == 1
         blast = blasts[0]
 
         response = send_request('get', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
-        assert response.status_code == 200
+        assert response.status_code == OK
         url_conversion = response.json()['url_conversion']
 
         updated_hit_counts, updated_clicks = url_conversion['hit_count'],  blast['clicks']
@@ -53,7 +53,7 @@ class TestURLRedirectionApi(object):
         """
         url_without_signature = url_conversion['source_url'].split('?')[0]
         response = send_request('get', url_without_signature, '')
-        assert response.status_code == 500
+        assert response.status_code == INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):
@@ -63,10 +63,9 @@ class TestURLRedirectionApi(object):
         But candidate should get Internal server error. Hence this test should get internal server
         error.
         """
-        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % campaign_in_db['id'], token_first)
-        assert response.status_code == 200
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(OK,))
         response = send_request('get', url_conversion['source_url'], '')
-        assert response.status_code == 500
+        assert response.status_code == INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_candidate(self, url_conversion, candidate_first, token_first):
         """
@@ -76,11 +75,9 @@ class TestURLRedirectionApi(object):
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
         """
-        response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first['id'], token_first)
-        assert response.status_code == 204
-
+        delete_candidate(candidate_first['id'], token_first, expected_status=(204,))
         response = send_request('get', url_conversion['source_url'], '')
-        assert response.status_code == 500
+        assert response.status_code == INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_url_conversion(self, url_conversion, token_first):
         """
@@ -92,6 +89,6 @@ class TestURLRedirectionApi(object):
         """
         source_url = url_conversion['source_url']
         response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
-        assert response.status_code == 200
+        assert response.status_code == OK
         response = send_request('get', source_url, '')
-        assert response.status_code == 500
+        assert response.status_code == INTERNAL_SERVER_ERROR
