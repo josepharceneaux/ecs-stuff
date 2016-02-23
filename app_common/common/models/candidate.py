@@ -741,6 +741,7 @@ class CandidateAddress(db.Model):
     city = db.Column('City', db.String(100))
     state = db.Column('State', db.String(100))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    # _country = db.Column('_Country', db.String(100))
     zip_code = db.Column('ZipCode', db.String(10))
     po_box = db.Column('POBox', db.String(20))
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
