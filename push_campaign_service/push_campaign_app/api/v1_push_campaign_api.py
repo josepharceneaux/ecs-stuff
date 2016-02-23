@@ -241,15 +241,8 @@ class PushCampaignsResource(Resource):
             raise InvalidUsage('Some required fields are missing',
                                additional_error_info=dict(missing_fields=missing_fields),
                                error_code=CampaignException.MISSING_REQUIRED_FIELD)
-        # push_campaign = PushCampaign(body_text=data['body_text'], url=data['url'],
-        #                              name=data['name'], user_id=user.id)
         campaign = PushCampaignBase(user_id=user.id)
         campaign_id, invalid_smartlist_ids = campaign.save(data)
-        # smartlist_ids = data.get('smartlist_ids')
-        # if isinstance(smartlist_ids, list):
-        #     for smartlist_id in smartlist_ids:
-        #         push_campaign_smartlist = PushCampaignSmartlist(smartlist_id=smartlist_id, campaign_id=push_campaign.id)
-        #         PushCampaignSmartlist.save(push_campaign_smartlist)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
         headers = dict(Location='/%s/campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
