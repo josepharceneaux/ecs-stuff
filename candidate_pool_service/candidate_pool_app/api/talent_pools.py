@@ -597,7 +597,6 @@ class TalentPipelinesOfTalentPools(Resource):
                 'positions': talent_pipeline.positions,
                 'search_params': json.loads(
                     talent_pipeline.search_params) if talent_pipeline.search_params else None,
-                'talent_pool_id': talent_pipeline.talent_pool_id,
                 'date_needed': str(talent_pipeline.date_needed),
                 'added_time': str(talent_pipeline.added_time),
                 'updated_time': str(talent_pipeline.updated_time)
