@@ -348,7 +348,8 @@ def generate_jwt_headers(content_type=None, user_id=None):
     :param str content_type: content-type header value
     :return:
     """
-    secret_key_id, jw_token = User.generate_jw_token(user_id=request.user.id if request.user else user_id)
+    secret_key_id, jw_token = User.generate_jw_token(
+        user_id=request.user.id if hasattr(request, 'user') else user_id)
     headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
     if content_type:
         headers['Content-Type'] = content_type

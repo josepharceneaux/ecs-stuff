@@ -13,7 +13,7 @@ Here we have two(or maybe three) classes for each service.
 
 """
 import os
-from talent_config_manager import TalentConfigKeys
+from talent_config_manager import TalentConfigKeys, TalentEnvs
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
@@ -39,32 +39,36 @@ def _get_host_name(service_name, port_number):
     :type port_number: int
     :return:  A string that looks like https://auth-service.gettalent.com%s
     """
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env == 'dev':
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env == TalentEnvs.DEV:
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
-    elif env == 'jenkins':
+    elif env == TalentEnvs.JENKINS:
         return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
-    elif env == 'qa':
+    elif env == TalentEnvs.QA:
         # This looks like:  https://auth-service-staging.gettalent.com%s
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
-    elif env == 'prod':
+    elif env == TalentEnvs.PROD:
         # This looks like: https://auth-service.gettalent.com%s
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: "
+                        "Should be %s, %s, %s or %s"
+                        % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
 
 
 def get_web_app_url():
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ('dev', 'jenkins'):
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env in (TalentEnvs.DEV, TalentEnvs.JENKINS):
         return LOCAL_HOST + ':3000'
-    elif env == 'qa':
+    elif env == TalentEnvs.QA:
         return 'https://staging.gettalent.com'
-    elif env == 'prod':
+    elif env == TalentEnvs.PROD:
         return 'https://app.gettalent.com'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: "
+                        "Should be %s, %s, %s or %s"
+                        % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
 
 
 def _get_api_relative_version(api_version):
