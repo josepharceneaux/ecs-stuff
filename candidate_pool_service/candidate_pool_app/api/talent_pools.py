@@ -202,10 +202,16 @@ class TalentPoolApi(Resource):
             if name and TalentPool.query.filter_by(name=name, domain_id=request.user.domain_id).all():
                 raise InvalidUsage(error_message="Talent pool '%s' already exists in domain %s" % (name, request.user.domain_id))
 
+            # Add TalentPool
             talent_pool_object = TalentPool(name=name, description=description, domain_id=request.user.domain_id,
                                             user_id=request.user.id)
             talent_pool_objects.append(talent_pool_object)
             db.session.add(talent_pool_object)
+            db.session.flush()
+
+            # Add TalentPoolGroup to associate new TalentPool with existing UserGroup
+            db.session.add(TalentPoolGroup(talent_pool_id=talent_pool_object.id,
+                                           user_group_id=request.user.user_group_id))
 
         db.session.commit()
         return {'talent_pools': [talent_pool_object.id for talent_pool_object in talent_pool_objects]}
