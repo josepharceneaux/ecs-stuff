@@ -27,9 +27,11 @@ python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
-FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "email-campaign-service")
+# FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "email-campaign-service")
 
-FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8014")
+FLASK_APPS=("social-network-service")
+
+FLASK_APP_PORTS=("8007")
 
 output=""
 
@@ -50,4 +52,4 @@ done
 
 sleep 10
 
-py.test -n 24 scheduler_service/tests/ auth_service/tests/ user_service/tests activity_service/tests/ resume_parsing_service/tests candidate_pool_service/tests/ candidate_service/tests spreadsheet_import_service/tests/ email_campaign_service/tests social_network_service/tests/
+py.test -n 5 social_network_service/tests/
