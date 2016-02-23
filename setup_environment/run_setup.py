@@ -62,9 +62,9 @@ with app.app_context():
             create_cultures, create_phone_labels, create_classification_types, create_products,
             create_rating_tags, create_social_networks
         )
-        from user_service.domain_user_role_updates import (
+        from user_service.migration_scripts.domain_user_role_updates import (
             add_domain_roles, add_user_group_to_domains, update_users_group_id, add_talent_pool,
-            add_talent_pool_group
+            add_talent_pool_group, add_default_talent_pipelines
         )
         create_candidate_status()
         create_email_labels()
@@ -81,6 +81,7 @@ with app.app_context():
         update_users_group_id()
         add_talent_pool()
         add_talent_pool_group()
+        add_default_talent_pipelines()
 
 print 'Local Environment setup has been completed successfully'
 
