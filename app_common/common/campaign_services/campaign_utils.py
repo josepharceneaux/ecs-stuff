@@ -28,7 +28,7 @@ from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaig
 
 # Common Utils
 from ..routes import SchedulerApiUrl
-from ..talent_config_manager import TalentConfigKeys
+from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from ..utils.activity_utils import ActivityMessageIds
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 from .validators import raise_if_dict_values_are_not_int_or_long
@@ -71,7 +71,7 @@ class CampaignUtils(object):
     # This is set to False in case of 'prod'.
     # Also in case of dev/qa/Jenkins we do not want Emails and SMS to be sent to candidates, so
     # this variable is used there as well.
-    IS_DEV = False if os.getenv(TalentConfigKeys.ENV_KEY) == 'prod' else True
+    IS_DEV = False if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.PROD else True
 
     @classmethod
     def get_campaign_type_prefix(cls, campaign_type):

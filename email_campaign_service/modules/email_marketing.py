@@ -453,13 +453,11 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
     # Add activity
     try:
-        headers = CampaignBase.get_authorization_header(user.id)
         CampaignBase.create_activity(user.id,
                                      _type=ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
                                      source=email_campaign_send,
                                      params=dict(campaign_name=campaign.name,
-                                                 candidate_name=candidate.name),
-                                     auth_header=headers)
+                                                 candidate_name=candidate.name))
     except Exception as error:
         logger.exception('Could not add `campaign send activity` for '
                          'email-campaign(id:%s) and User(id:%s) because: '
@@ -612,8 +610,12 @@ def update_hit_count(url_conversion):
         email_campaign_send = email_campaign_send_url_conversion.email_campaign_send
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
-        if candidate:  # If candidate has been deleted, don't make the activity
-            # TODO: May be add activity using jwt
+        # If candidate has been deleted, don't make the activity
+        if not candidate or candidate.is_web_hidden:
+            logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
+                        "email_campaign_send: %s",
+                        email_campaign_send.candidate_id, email_campaign_send.id)
+        else:
             # Add activity
             CampaignBase.create_activity(candidate.user_id,
                                          ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open
@@ -621,10 +623,8 @@ def update_hit_count(url_conversion):
                                          email_campaign_send,
                                          dict(candidateId=candidate.id,
                                               campaign_name=email_campaign_send.email_campaign.name,
-                                              candidate_name=candidate.formatted_name),
-                                         CampaignBase.get_authorization_header(candidate.user_id))
-        else:
-            logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
+                                              candidate_name=candidate.formatted_name))
+            logger.info("Activity has been added for URL redirect for candidate: %s. "
                         "email_campaign_send: %s",
                         email_campaign_send.candidate_id, email_campaign_send.id)
 
