@@ -6,4 +6,4 @@ __author__ = 'zohaib'
 from social_network_service.common.utils.models_utils import init_talent_app
 
 
-app, logger = init_talent_app(__name__)
+app, logger = init_talent_app('social_network_app')
