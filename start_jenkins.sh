@@ -18,7 +18,7 @@ cd spreadsheet_import_service && tar -czh . | docker build -t gettalent/spreadsh
 cd scheduler_service && tar -czh . | docker build -t gettalent/scheduler-service:latest - && cd ../
 cd sms_campaign_service && tar -czh . | docker build -t gettalent/sms-campaign-service:latest - && cd ../
 cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campaign-service:latest - && cd ../
-cd social_network_service && tar -czh . | docker build -t gettalent/social_network_service:latest - && cd ../
+cd social_network_service && tar -czh . | docker build -t gettalent/social-network-service:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
@@ -27,7 +27,7 @@ python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
-FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social_network_service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "email-campaign-service")
+FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "email-campaign-service")
 
 FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8014")
 
