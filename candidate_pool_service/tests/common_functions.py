@@ -67,6 +67,13 @@ def talent_pool_candidate_api(access_token, talent_pool_id, data='', action='GET
         raise Exception('No valid action is provided')
 
 
+def get_talent_pipelines_of_talent_pools(access_token, talent_pool_id):
+
+    headers = {'Authorization': 'Bearer %s' % access_token}
+    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINES_OF_TALENT_POOLS % talent_pool_id, headers=headers)
+    return response.json(), response.status_code
+
+
 def talent_pipeline_api(access_token, talent_pipeline_id='', data='', action='GET'):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
