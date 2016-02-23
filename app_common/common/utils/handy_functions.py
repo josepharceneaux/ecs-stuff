@@ -270,7 +270,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                logger.exception("http_request: Server error from %s on %s call. "
+                log_exception("http_request: Server error from %s on %s call. "
                                  "Make sure requested server is running." % (url, method_type))
                 raise
         except ConnectionError:
@@ -291,8 +291,6 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         log_error('http_request: Unknown Method type %s ' % method_type, app=app)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
-
-
 
 
 def validate_required_fields(data_dict, required_fields):
