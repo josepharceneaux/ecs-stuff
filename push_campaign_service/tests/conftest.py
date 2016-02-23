@@ -27,7 +27,16 @@ from push_campaign_service.common.routes import (PushCampaignApiUrl, SchedulerAp
                                                  CandidatePoolApiUrl, CandidateApiUrl)
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data, SLEEP_TIME,
-                                                        OK, NOT_FOUND)
+                                                        OK, NOT_FOUND, get_campaigns,
+                                                        create_campaign, delete_campaign,
+                                                        send_campaign, get_blasts, create_smartlist,
+                                                        delete_smartlist, schedule_campaign,
+                                                        delete_scheduler_task, create_talent_pools,
+                                                        get_talent_pool, delete_talent_pool,
+                                                        create_candidate, get_candidate,
+                                                        delete_candidate,
+                                                        associate_device_to_candidate,
+                                                        get_candidate_devices)
 
 
 CONFIG_FILE_NAME = "test.cfg"
@@ -65,16 +74,15 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     :param campaign_data: data to create campaign
     :return:
     """
+    previous_count = len(get_campaigns(token_first))
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id']]
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_first, data)
-    assert response.status_code == 201
-    id = response.json()['id']
+    id = create_campaign(data, token_first)['id']
     data['id'] = id
+    data['previous_count'] = previous_count
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id, token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_campaign(id, token_first, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -96,14 +104,11 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_doamin['id']]
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_first, data)
-    assert response.status_code == 201
-    id = response.json()['id']
+    id = create_campaign(data, token_first)['id']
     data['id'] = id
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id, token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_campaign(id, token_first, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -121,15 +126,11 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
     """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_second['id']]
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token_second, data)
-    assert response.status_code == 201
-    id = response.json()['id']
+    id = create_campaign(data, token_second)['id']
     data['id'] = id
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % id,
-                                token_second, data)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_campaign(id, token_second, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -144,13 +145,9 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
     :param candidate_device_first: candidate device dict object
     :return:
     """
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
-    logger.info(response.content)
-    assert response.status_code == 200
+    send_campaign(campaign_in_db['id'], token_first)
     time.sleep(SLEEP_TIME)
-    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == OK
-    blasts = response.json()['blasts']
+    blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     assert len(blasts) == 1
     blast = blasts[0]
     return blast
@@ -166,18 +163,13 @@ def smartlist_first(request, token_first, candidate_first, candidate_device_firs
     :param candidate_device_first: candidate device object
     :return: smartlist objects (dict)
     """
-    data = {
-        'candidate_ids': [candidate_first['id']],
-        'name': fake.word()
-    }
-    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token_first, data=data)
-    assert response.status_code == 201
-    smartlist = response.json()['smartlist']
+    candidate_ids = [candidate_first['id']]
+    smartlist = create_smartlist(candidate_ids, token_first)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_smartlist(smartlist_id, token_first, expected_status=(OK, NOT_FOUND))
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -193,18 +185,12 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
     :param token_second: access token for user_second
     :return: smartlist object
     """
-    data = {
-        'candidate_ids': [candidate_second['id']],
-        'name': fake.word()
-    }
-    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token_second, data=data)
-    assert response.status_code == 201
-    smartlist = response.json()['smartlist']
+    candidate_ids = [candidate_second['id']]
+    smartlist = create_smartlist(candidate_ids, token_second)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_second)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_smartlist(smartlist_id, token_second, expected_status=(OK, NOT_FOUND))
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -223,18 +209,13 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
     :param candidate_device_same_domain: device associated to candidate_same_domain
     :return: smaertlist object
     """
-    data = {
-        'candidate_ids': [candidate_same_domain['id']],
-        'name': fake.word()
-    }
-    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token_same_domain, data=data)
-    assert response.status_code == 201
-    smartlist = response.json()['smartlist']
+    candidate_ids = [candidate_same_domain['id']]
+    smartlist = create_smartlist(candidate_ids, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token_same_domain)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_smartlist(smartlist_id, token_same_domain, expected_status=(OK, NOT_FOUND))
+
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -248,15 +229,12 @@ def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     :param campaign_in_db: push campaign object
     :param token_first: auth token
     """
-
     blasts_counts = 3
     for num in range(blasts_counts):
-        response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
-        assert response.status_code == OK
+        send_campaign(campaign_in_db['id'], token_first)
     time.sleep(SLEEP_TIME)
-    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == OK
-    return response.json()['blasts']
+    blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
+    return blasts
 
 
 @pytest.fixture()
@@ -272,14 +250,11 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     """
     task_id = None
     data = generate_campaign_schedule_data()
-    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
-    assert response.status_code == 200
-    response = response.json()
-    task_id = response['task_id']
+    task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
 
     def fin():
-        response = send_request('delete', SchedulerApiUrl.TASK % task_id, token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_scheduler_task(task_id, token_first, expected_status=(OK, NOT_FOUND))
+
     request.addfinalizer(fin)
     return data
 
@@ -317,7 +292,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     url_conversion_obj = response.json()['url_conversion']
 
     def tear_down():
-        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'],
+        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion_obj['id'],
                                 token_first)
         assert response.status_code in [OK, NOT_FOUND]
 
@@ -332,22 +307,9 @@ def talent_pool(request, token_first):
     :param request: request object
     :param token_first: authentication token for user_first
     """
-    data = {
-        "talent_pools": [
-            {
-                "name": randomword(20),
-                "description": fake.paragraph()
-            }
-        ]
-    }
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token_first, data=data)
-    assert response.status_code == OK
-    talent_pool_id = response.json()['talent_pools'][0]
-
-    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
-                            token_first)
-    assert response.status_code == OK
-    talent_pool = response.json()['talent_pool']
+    talent_pools = create_talent_pools(token_first)
+    talent_pool_id = talent_pools['talent_pools'][0]
+    talent_pool = get_talent_pool(talent_pool_id, token_first)['talent_pool']
     data = {
         "talent_pools": [talent_pool_id]
     }
@@ -355,9 +317,7 @@ def talent_pool(request, token_first):
     assert response.status_code == OK
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
-                            token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_talent_pool(talent_pool_id, token_first, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool
@@ -369,22 +329,9 @@ def talent_pool_second(request, token_second):
     This fixture created a talent pool that is associated to user_second of domain_second
     :param token_second: authentication token for user_second
     """
-    data = {
-        "talent_pools": [
-            {
-                "name": fake.word(),
-                "description": fake.paragraph()
-            }
-        ]
-    }
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token_second, data=data)
-    assert response.status_code == 200
-    talent_pool_id = response.json()['talent_pools'][0]
-
-    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
-                            token_second)
-    assert response.status_code == OK
-    talent_pool = response.json()['talent_pool']
+    talent_pools = create_talent_pools(token_second)
+    talent_pool_id = talent_pools['talent_pools'][0]
+    talent_pool = get_talent_pool(talent_pool_id, token_second)['talent_pool']
     data = {
         "talent_pools": [talent_pool_id]
     }
@@ -392,9 +339,7 @@ def talent_pool_second(request, token_second):
     assert response.status_code == OK
 
     def tear_down():
-        response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
-                            token_second)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_talent_pool(talent_pool_id, token_second, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool
@@ -408,36 +353,12 @@ def candidate_first(request, talent_pool, token_first):
     :param request: request object
     :param talent_pool: talent pool dict object associated to user_first
     """
-    data = {
-        "candidates": [
-            {
-                "first_name": fake.first_name(),
-                "middle_name": fake.user_name(),
-                "last_name": fake.last_name(),
-                "talent_pool_ids": {
-                    "add": [talent_pool['id']]
-                },
-                "emails": [
-                    {
-                        "label": "Primary",
-                        "address": fake.email(),
-                        "is_default": True
-                    }
-                ]
-            }
-
-        ]
-    }
-    response = send_request('post', CandidateApiUrl.CANDIDATES, token_first, data=data)
-    assert response.status_code == 201
-    candidate_id = response.json()['candidates'][0]['id']
-    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_first)
-    assert response.status_code == OK
-    candidate = response.json()['candidate']
+    response = create_candidate(talent_pool['id'], token_first)
+    candidate_id = response['candidates'][0]['id']
+    candidate = get_candidate(candidate_id, token_first)['candidate']
 
     def tear_down():
-        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        delete_candidate(candidate_id, token_first, expected_status=(204, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -452,36 +373,12 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
     :param talent_pool: talent pool dict object
     :param token_same_domain: authentication token
     """
-    data = {
-        "candidates": [
-            {
-                "first_name": fake.first_name(),
-                "middle_name": fake.user_name(),
-                "last_name": fake.last_name(),
-                "talent_pool_ids": {
-                    "add": [talent_pool['id']]
-                },
-                "emails": [
-                    {
-                        "label": "Primary",
-                        "address": fake.email(),
-                        "is_default": True
-                    }
-                ]
-            }
-
-        ]
-    }
-    response = send_request('post', CandidateApiUrl.CANDIDATES, token_same_domain, data=data)
-    assert response.status_code == 201
-    candidate_id = response.json()['candidates'][0]['id']
-    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_same_domain)
-    assert response.status_code == OK
-    candidate = response.json()['candidate']
+    response = create_candidate(talent_pool['id'], token_same_domain)
+    candidate_id = response['candidates'][0]['id']
+    candidate = get_candidate(candidate_id, token_same_domain)['candidate']
 
     def tear_down():
-        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_same_domain)
-        assert response.status_code == OK
+        delete_candidate(candidate_id, token_same_domain, expected_status=(204, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -496,36 +393,12 @@ def candidate_second(request, token_second, talent_pool_second):
     :param token_second: authentication token for user_second
     :param talent_pool_second: talent pool dict object from domain second
     """
-    data = {
-        "candidates": [
-            {
-                "first_name": fake.first_name(),
-                "middle_name": fake.user_name(),
-                "last_name": fake.last_name(),
-                "talent_pool_ids": {
-                    "add": [talent_pool_second['id']]
-                },
-                "emails": [
-                    {
-                        "label": "Primary",
-                        "address": fake.email(),
-                        "is_default": True
-                    }
-                ]
-            }
-
-        ]
-    }
-    response = send_request('post', CandidateApiUrl.CANDIDATES, token_second, data=data)
-    assert response.status_code == 201
-    candidate_id = response.json()['candidates'][0]['id']
-    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_second)
-    assert response.status_code == OK
-    candidate = response.json()['candidate']
+    response = create_candidate(talent_pool_second['id'], token_second)
+    candidate_id = response['candidates'][0]['id']
+    candidate = get_candidate(candidate_id, token_second)['candidate']
 
     def tear_down():
-        response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token_second)
-        assert response.status_code == OK
+        delete_candidate(candidate_id, token_second, expected_status=(204, NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -539,15 +412,9 @@ def candidate_device_first(token_first, candidate_first):
     :param token_first: authentication token
     :param candidate_first: candidate dict object
     """
-    data = {
-        'one_signal_device_id': PUSH_DEVICE_ID
-    }
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first,
-                            data=data)
-    response.status_code == 201
-    response = send_request('get', CandidateApiUrl.DEVICES % candidate_first['id'], token_first)
-    assert response.status_code == OK
-    devices = response.json()['devices']
+    candidate_id = candidate_first['id']
+    associate_device_to_candidate(candidate_id, token_first)
+    devices = get_candidate_devices(candidate_id, token_first)['devices']
     assert len(devices) == 1
     return devices[0]
 
@@ -560,17 +427,9 @@ def candidate_device_same_domain(token_same_domain, candidate_same_domain):
     :param token_same_domain: authentication token
     :param candidate_same_domain: candidate dict object
     """
-    data = {
-        'one_signal_device_id': PUSH_DEVICE_ID
-    }
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_same_domain['id'],
-                            token_same_domain,
-                            data=data)
-    response.status_code == 201
-    response = send_request('get', CandidateApiUrl.DEVICES % candidate_same_domain['id'],
-                            token_same_domain)
-    assert response.status_code == OK
-    devices = response.json()['devices']
+    candidate_id = candidate_same_domain['id']
+    associate_device_to_candidate(candidate_id, token_same_domain)
+    devices = get_candidate_devices(candidate_id, token_same_domain)['devices']
     assert len(devices) == 1
     return devices[0]
 
@@ -583,20 +442,8 @@ def candidate_device_second(token_second, candidate_second):
     :param token_second: authentication token
     :param candidate_second: candidate dict object
     """
-    """
-    This fixture associates a device with test candidate which is required to
-    send push campaign to candidate.
-    """
-    data = {
-        'one_signal_device_id': PUSH_DEVICE_ID
-    }
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_second['id'],
-                            token_second,
-                            data=data)
-    response.status_code == 201
-    response = send_request('get', CandidateApiUrl.DEVICES % candidate_second['id'],
-                            token_second)
-    assert response.status_code == OK
-    devices = response.json()['devices']
+    candidate_id = candidate_second['id']
+    associate_device_to_candidate(candidate_id, token_second)
+    devices = get_candidate_devices(candidate_id, token_second)['devices']
     assert len(devices) == 1
     return devices[0]
