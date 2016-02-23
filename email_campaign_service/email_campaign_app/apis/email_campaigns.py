@@ -2,14 +2,13 @@
 EmailCampaign is a restful resource and the endpoint which is sending out emails which is called by scheduler API is
 using blueprint.
 """
-import json
 from flask import request, Blueprint, jsonify
 from flask_restful import Resource
 from werkzeug.utils import redirect
-from ...email_campaign_app import logger
+from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from ...modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
-from ...modules.validations import validate_and_format_request_data
+from email_campaign_service.modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
+from email_campaign_service.modules.validations import validate_and_format_request_data
 from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign

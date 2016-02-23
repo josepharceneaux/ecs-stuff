@@ -5,7 +5,7 @@ import json
 import requests
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..error_handling import InternalServerError, InvalidUsage
+from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.handy_functions import create_oauth_headers, http_request
 
 __author__ = 'jitesh'
@@ -101,6 +101,8 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 def get_candidate_subscription_preference(candidate_id):
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers())
+    if resp.status_code == ForbiddenError.http_status_code():
+        raise ForbiddenError('Not authorized to get Candidate(id:%s)' % candidate_id)
     assert resp.status_code == 200
     response = resp.json()
     # return candidate's subscription_preference
