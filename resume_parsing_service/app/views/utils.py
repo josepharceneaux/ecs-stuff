@@ -24,7 +24,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
                                         headers={'Authorization': formatted_token_str,
                                                  'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
-        logger.debug("create_parsed_resume_candidate. Exception: {}".format(error.message))
+        logger.exception("create_parsed_resume_candidate. Could not reach CandidateService POST")
         raise InternalServerError("Unable to reach Candidates API in during candidate creation")
     if create_response.status_code in xrange(500, 511):
         raise InternalServerError('Error in response from candidate service during creation')
@@ -45,8 +45,8 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str):
                                          headers={'Authorization': formatted_token_str,
                                                   'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
-        logger.debug("update_candidate_from_resume. Exception {}".format(error.message))
-        raise InvalidUsage("Unable to reach Candidates API in during candidate creation")
+        logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
+        raise InvalidUsage("Unable to reach Candidates API in during candidate update")
     if update_response.status_code is not requests.codes.ok:
         logger.debug("Unable to update candidate due to response code: {}".format(
             update_response.status_code))
@@ -68,5 +68,8 @@ def get_users_talent_pools(formatted_token_str):
     except requests.exceptions.ConnectionError:
         raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in "
                            "get_users_talent_pools")
-    talent_pools = json.loads(talent_pool_request.content)
-    return [talent_pool['id'] for talent_pool in talent_pools['talent_pools']]
+    talent_pools_response = json.loads(talent_pool_request.content)
+    if 'error' in talent_pools_response:
+        raise InvalidUsage(error_message=talent_pools_response['error'].get(
+            'message', 'Error in getting user talent pools.'))
+    return [talent_pool['id'] for talent_pool in talent_pools_response['talent_pools']]
