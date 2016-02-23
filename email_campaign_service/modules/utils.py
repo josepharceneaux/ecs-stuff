@@ -208,6 +208,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     # Convert soup object into new HTML
     if new_html and soup:
         new_html = soup.prettify()
+        new_html = new_html.replace('&amp;', '&')
 
     return new_text, new_html
 
