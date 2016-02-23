@@ -612,7 +612,7 @@ class UserGroup(db.Model):
         for group in groups:
             if not isinstance(group, dict):
                 raise InvalidUsage(error_message="Request body is not properly formatted")
-            name = group.get('name')
+            name = group.get('name') or 'default'
             description = group.get('description')
             already_existing_group = UserGroup.query.filter_by(name=name, domain_id=domain_id).first()
             if not already_existing_group:
