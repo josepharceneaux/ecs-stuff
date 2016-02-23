@@ -1211,7 +1211,7 @@ class CandidateClientEmailCampaignResource(Resource):
 
         candidate_ids = [int(candidate['id']) for candidate in body_dict.get('candidates')]
         if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
-            raise UnauthorizedError(error_message="Candidates do not belong to logged-in user")
+            raise ForbiddenError(error_message="Candidates do not belong to logged-in user")
 
         email_client_name = is_valid_email_client(email_client_id)
         if not email_client_name:
