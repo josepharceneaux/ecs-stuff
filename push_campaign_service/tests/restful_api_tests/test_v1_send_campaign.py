@@ -1,5 +1,17 @@
 """
-This module contains tests related to Push Campaign RESTful API endpoints.
+This module contains test for API endpoint
+        /v1/push-campaigns/:id/send
+
+In these tests, we will try to create, get and delete
+push campaigns with different scenarios
+
+Send a Campaign: /v1/push-campaigns/:id/send [POST]
+    - with invalid token
+    - with non existing campaign id
+    - with token for a different user from same domain
+    - with token for a different user from different domain
+    - with valid token
+    - with multiple smartlists associated with campaign
 """
 # Builtin imports
 import sys
@@ -8,7 +20,6 @@ import time
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test, send_request
 
 URL = PushCampaignApiUrl.SEND
 
@@ -22,7 +33,7 @@ class TestSendCampaign(object):
         :param campaign_in_db: campaign object
         :return:
         """
-        unauthorize_test('post', URL % campaign_in_db['id'], 'invalid_token')
+        send_campaign(campaign_in_db['id'], 'invalid_token', expected_status=(401,))
 
     def test_send_campaign_with_non_existing_campaign(self, token_first):
         """

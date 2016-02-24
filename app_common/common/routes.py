@@ -603,8 +603,8 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
-    DEVICES = RELATIVE_VERSION % CandidateApiWords.DEVICES
-    DEVICE = RELATIVE_VERSION % CandidateApiWords.DEVICES + _INT_ID
+    DEVICES = CANDIDATE_ID + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE_ID + CandidateApiWords.DEVICES + _INT_ID
 
 
 class CandidateApiUrl(object):

@@ -1,5 +1,31 @@
 """
-This module contains tests related to Push Campaign RESTful API endpoints.
+This module contains test for API endpoint
+        /v1/push-campaigns
+
+In these tests, we will try to create, get and delete
+push campaigns with different scenarios
+
+Create Campaign: /v1/push-campaigns [POST]
+    - with invalid token
+    - with invalid data (empty body, invalid json, without json headers)
+    - with missing required fields in data
+    - with valid data
+
+Get Campaigns: /v1/push-campaigns [GET]
+    - with invalid token
+    - with valid token
+
+Delete Multiple Campaigns: /v1/push-campaigns [DELETE]
+    - with invalid token
+    - with invalid data (empty body, invalid json, without json headers)
+    - with valid format but without json dumps
+    - with non list ids
+    - with non existing ids
+    - with valid data
+    - with different user from same domain
+    - with different user from different domain
+    - with campaign ids for different domains
+    - with a campaign id that has been deleted
 """
 # Builtin imports
 import sys
@@ -27,7 +53,7 @@ class TestCreateCampaign(object):
         :param campaign_data: dictionary data for campaign
         :return:
         """
-        unauthorize_test('post', URL, 'invalid_token', campaign_data)
+        create_campaign(campaign_data, 'invalid_token', expected_status=(401,))
 
     def test_create_campaign_with_invalid_data(self, token_first):
         """
@@ -65,12 +91,10 @@ class TestCreateCampaign(object):
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_first['id']]
-        response = send_request('post', URL, token_first, data)
-        assert response.status_code == 201, 'Push campaign has been created'
-        json_response = response.json()
-        _id = json_response['id']
-        assert json_response['message'] == 'Push campaign was created successfully'
-        assert response.headers['Location'] == PushCampaignApiUrl.CAMPAIGN % _id
+        response = create_campaign(data, token_first, expected_status=(201,))
+        _id = response['id']
+        assert response['message'] == 'Push campaign was created successfully'
+        assert response['headers']['Location'] == PushCampaignApiUrl.CAMPAIGN % _id
 
         # To delete this in finalizer, add id and token
         campaign_data['id'] = _id
@@ -85,7 +109,7 @@ class TestGetListOfCampaigns(object):
         We will try to get a list of campaigns with invalid token and
         we are expecting 401 status
         """
-        unauthorize_test('get', URL, 'invalid_token')
+        get_campaigns('invalid_token', expected_status=(401,))
 
     # URL: /v1/campaigns [GET]
     def test_get_list_of_one_campaign(self, token_first, campaign_in_db):
@@ -97,12 +121,12 @@ class TestGetListOfCampaigns(object):
         :return:
         """
         previous_count = campaign_in_db['previous_count']
-        json_response = get_campaigns(token_first)
+        response = get_campaigns(token_first)
 
-        assert json_response['count'] == (1 + previous_count), \
+        assert response['count'] == (1 + previous_count), \
             'Campaign Count should be 1 this time'
-        assert len(json_response['campaigns']) == (1 + previous_count), 'Got one campaign in list'
-        campaign = json_response['campaigns'][previous_count]
+        assert len(response['campaigns']) == (1 + previous_count), 'Got one campaign in list'
+        campaign = response['campaigns'][previous_count]
 
         assert campaign['name'] == campaign_in_db['name']
         assert campaign['body_text'] == campaign_in_db['body_text']
@@ -114,12 +138,15 @@ class TestDeleteMultipleCampaigns(object):
     """
     # URL: /v1/campaigns/ [DELETE]
 
-    def test_campaigns_delete_with_invalid_token(self):
+    def test_campaigns_delete_with_invalid_token(self, campaign_in_db):
         """
         User auth token is invalid, it should get Unauthorized.
         :return:
         """
-        unauthorize_test('delete', URL, 'invalid_token')
+        data = {
+            'ids': [campaign_in_db['id']]
+        }
+        delete_campaigns(data, 'invalid_token', expected_status=(401,))
 
     def test_campaigns_delete_with_invalid_data(self, token_first):
         """
@@ -128,13 +155,6 @@ class TestDeleteMultipleCampaigns(object):
         :return:
         """
         invalid_data_test('delete', URL, token_first)
-
-    def test_campaigns_delete_with_no_data(self, token_first):
-        """
-        User auth token is valid, but no data provided. It should get bad request error.
-        :return:
-        """
-        delete_campaigns({}, token_first, expected_status=(INVALID_USAGE,))
 
     def test_campaigns_delete_with_non_json_data(self, token_first):
         """

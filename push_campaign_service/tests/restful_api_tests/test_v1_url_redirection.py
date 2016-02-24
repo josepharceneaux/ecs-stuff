@@ -1,6 +1,21 @@
 """
 This modules contains tests for Url Redirection endpoint
 If anything goes wrong, this endpoint raises InternalServerError (500)
+This module contains test for API endpoint
+        /v1/redirect/:id
+
+In these tests, we will try to emulate push notification click, which will actually
+hit out API endpint to update stats of that campaign
+
+Here are scenarios:
+
+Hit endpoint:
+    - with invalid redirect url, and after that check that campaign
+        stats has changed as expected
+    - without signature in url
+    - but campaign associated has been deleted
+    - but associated candidate has been delete
+    - but url conversion object has been deleted from database
 """
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.routes import PushCampaignApiUrl, CandidateApiUrl

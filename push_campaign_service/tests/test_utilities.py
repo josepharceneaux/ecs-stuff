@@ -152,7 +152,10 @@ def create_campaign(data, token, expected_status=(201,)):
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
     logger.info(response.content)
     assert response.status_code in expected_status
-    return response.json()
+    headers = response.headers
+    response = response.json()
+    response['headers'] = headers
+    return response
 
 
 def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
@@ -195,6 +198,12 @@ def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
     assert response.status_code in expected_status
     return response.json()
 
+
+def get_blast_sends(campaign_id, blast_id, token,  expected_status=(200,)):
+    response = send_request('get', PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
+                            token)
+    assert response.status_code in expected_status
+    return response.json()
 
 def get_campaign_sends(campaign_id, token, expected_status=(200,)):
     response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id, token)

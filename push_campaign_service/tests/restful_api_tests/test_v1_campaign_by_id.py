@@ -1,6 +1,33 @@
 """
-This module contains tests related to Push Campaign RESTful API endpoints.
+This module contains test for API endpoint
+        /v1/push-campaigns/:id
+
+In these tests, we will try to update, get and delete a specific campaign
+in different scenarios like:
+
+Update Campaign: /v1/push-campaigns/:id [PUT]
+    - with invalid token
+    - that is created by user from different domain (403)
+    - with invalid fields in data
+    - with missing required fields in data
+    - with valid data
+    - that does not exist (invalid campaign id)
+    - with valid data (200)
+
+Get Campaign: /v1/push-campaigns/:id [GET]
+    - with invalid token
+    - with valid token
+
+Delete a Campaign: /v1/push-campaigns/:id [DELETE]
+    - with invalid token
+    - with valid token
+    - with invalid campaign id
+    - that belongs to a user from different domain
+    - that belongs to user from same domain
+    - that is not yet scheduled
+    - that is scheduled
 """
+
 # Builtin imports
 import sys
 
@@ -170,6 +197,16 @@ class TestCampaignDeleteById(object):
         """
         invalid_id = 0
         delete_campaign(invalid_id, token_first, expected_status=(INVALID_USAGE,))
+
+    def test_delete_campaign_with_user_from_diff_domain(self, token_same_domain, campaign_in_db):
+        """
+        Try to delete a campaign but the user is not owner of given campaign but from
+         same domain So API should allow him to do so (200)
+        :param token_same_domain: auth token
+        :param campaign_in_db: campaign object
+        :return:
+        """
+        delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
 
     def test_delete_campaign_without_ownership(self, token_second, campaign_in_db):
         """

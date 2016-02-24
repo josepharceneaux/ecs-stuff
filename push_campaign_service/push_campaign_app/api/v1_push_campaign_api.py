@@ -1045,7 +1045,7 @@ class PushCampaignUrlRedirection(Resource):
 
 
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
-class ResourceGetUrlConversionBySendId(Resource):
+class ResourceGetUrlConversion(Resource):
 
     decorators = [require_oauth()]
 

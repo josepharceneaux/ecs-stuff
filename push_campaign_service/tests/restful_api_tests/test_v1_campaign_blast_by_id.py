@@ -1,13 +1,22 @@
 """
-This module contains tests related to Push Campaign RESTful API endpoint
-/v1/campaigns/:id/blasts/:id
+This module contains test for API endpoint
+        /v1/push-campaigns/:id/blasts/:id
+
+In these tests, we will try to get a campaign's blast by Id
+in different scenarios like:
+
+Get Campaign's Blast: /v1/push-campaigns/:id/blasts/:id [GET]
+    - with invalid token
+    - with non existing campaign
+    - with invalid blast id
+    - where campaign is created by user from different domain (403)
+    - where campaign is created by different user from same domain (200)
 """
 # Application specific imports
 import sys
 
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test
 
 URL = PushCampaignApiUrl.BLAST
 
@@ -22,8 +31,9 @@ class TestCampaignBlastById(object):
         :param campaign_in_db: campaign object
         :return:
         """
-        unauthorize_test('get', URL % (campaign_in_db['id'], campaign_blast['id']),
-                         'invalid_token')
+        blast_id = campaign_blast['id']
+        campaign_id = campaign_in_db['id']
+        get_blast(blast_id, campaign_id, 'invalid_token', expected_status=(401,))
 
     def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
                                                            campaign_in_db):
@@ -37,7 +47,7 @@ class TestCampaignBlastById(object):
         """
         # 404 Case, Campaign not found
         blast_id = campaign_blast['id']
-        invalid_campaign_id = campaign_in_db['id'] + 10000
+        invalid_campaign_id = sys.maxint
         get_blast(blast_id, invalid_campaign_id, token_first, expected_status=(NOT_FOUND,))
 
     def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,

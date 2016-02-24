@@ -1,5 +1,38 @@
 """
-This module contains tests related to Push Campaign RESTful API endpoints.
+This module contains test for API endpoint
+        /v1/push-campaigns/:id/schedule
+
+In these tests, we will try to get a campaign's sends
+in different scenarios like:
+
+Schedule a campaign: /v1/push-campaigns/:id/schedule [POST]
+    - with invalid token
+    - with invalid data (empty data, invalid data, with json headers)
+    - with non existing campaign
+    - with PUT method (400)
+    - With missing required fields in schedule data
+    - with invalid datetime format in schedule data
+    - where campaign is created by user from different domain (403)
+    - where campaign is created by different user from same domain (200)
+    - with valid token and valid schedule data (200)
+
+Reschedule a campaign: /v1/push-campaigns/:id/schedule [PUT]
+    - with invalid token
+    - with invalid data (empty data, invalid data, with json headers)
+    - with non existing campaign
+    - with POST method (400)
+    - With missing required fields in schedule data
+    - with invalid datetime format in schedule data
+    - where campaign is created by user from different domain (403)
+    - where campaign is created by different user from same domain (200)
+    - with valid token and valid schedule data (200)
+
+Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
+    - with invalid token
+    - with non existing campaign
+    - where campaign is created by user from different domain (403)
+    - where campaign is created by different user from same domain (200)
+    - with valid token (200)
 """
 # Builtin imports
 import sys
@@ -7,9 +40,8 @@ import time
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.routes import SchedulerApiUrl
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test, send_request
+from push_campaign_service.common.utils.test_utils import unauthorize_test
 
 URL = PushCampaignApiUrl.SCHEDULE
 
@@ -21,8 +53,8 @@ class TestScheduleCampaignUsingPOST(object):
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
-        unauthorize_test('post',  URL % campaign_in_db['id'],
-                         'invalid_token', data)
+        campaign_id = campaign_in_db['id']
+        schedule_campaign(campaign_id, data, 'invalid_token', expected_status=(401,))
 
     def test_schedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
         invalid_data_test('post', URL % campaign_in_db['id'], token_first)
@@ -35,18 +67,6 @@ class TestScheduleCampaignUsingPOST(object):
                        (non_existing_id, NOT_FOUND)]
         for _id, status_code in invalid_ids:
             schedule_campaign(_id, data, token_first, expected_status=(status_code,))
-
-    def test_schedule_campaign_with_other_user(self, token_second, campaign_in_db):
-        """
-        Test with a valid campaign but user is not owner of campaign
-        Here we created campaign with user whose Auth token_first is "token_first"
-        and we want to schedule this campaign with other user with token_first "token_second"
-        :param token_second:
-        :param campaign_in_db:
-        :return:
-        """
-        data = generate_campaign_schedule_data()
-        schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(FORBIDDEN,))
 
     def test_schedule_campaign_with_put_method(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -87,8 +107,8 @@ class TestScheduleCampaignUsingPOST(object):
         error = response['error']
         assert 'Invalid DateTime' in error['message']
 
-    def test_schedule_a_campaign_with_valid_data(self, token_first, campaign_in_db, smartlist_first):
-
+    def test_schedule_a_campaign_with_valid_data(self, token_first, campaign_in_db,
+                                                 smartlist_first):
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
                                      expected_status=(OK,))
@@ -107,6 +127,42 @@ class TestScheduleCampaignUsingPOST(object):
 
         # Now remove the task from scheduler
         delete_scheduler_task(task_id, token_first, expected_status=(OK,))
+
+    def test_schedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
+                                                            campaign_in_db, smartlist_first):
+
+        data = generate_campaign_schedule_data()
+        response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
+                                     expected_status=(OK,))
+        assert 'task_id' in response
+        assert 'message' in response
+        task_id = response['task_id']
+        assert task_id
+        time.sleep(3 * SLEEP_TIME)
+
+        response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
+        blasts = response['blasts']
+        assert len(blasts) == 1
+        blast = blasts[0]
+        # One send expected since only one candidate is associated with campaign
+        assert blast['sends'] == 1
+
+        # Now remove the task from scheduler
+        delete_scheduler_task(task_id, token_first, expected_status=(OK,))
+
+    def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
+                                                            campaign_in_db, smartlist_first):
+        """
+        Test with a valid campaign but user is not owner of campaign
+        Here we created campaign with user whose Auth token_first is "token_first"
+        and we want to schedule this campaign with other user with token_first "token_second"
+        :param token_second: auth token for user from different domain
+        :param token_first: auth token for first user
+        :param campaign_in_db:
+        :return:
+        """
+        data = generate_campaign_schedule_data()
+        schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(FORBIDDEN,))
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -212,6 +268,27 @@ class TestRescheduleCampaignUsingPUT(object):
         # Now remove the task from scheduler
         delete_scheduler_task(task_id, token_first, expected_status=(OK,))
 
+    def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
+                                                            campaign_in_db, smartlist_first):
+
+        data = generate_campaign_schedule_data()
+        response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
+                                       expected_status=(OK,))
+        assert 'task_id' in response
+        assert 'message' in response
+        task_id = response['task_id']
+        assert task_id
+        time.sleep(3 * SLEEP_TIME)
+        response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
+        blasts = response['blasts']
+        assert len(blasts) == 1
+        blast = blasts[0]
+        # One send expected since only one candidate is associated with campaign
+        assert blast['sends'] == 1
+
+        # Now remove the task from scheduler
+        delete_scheduler_task(task_id, token_first, expected_status=(OK,))
+
 
 class TestUnscheduleCamapignUsingDELETE(object):
 
@@ -229,6 +306,14 @@ class TestUnscheduleCamapignUsingDELETE(object):
         # Here we created campaign with user whose Auth token_first is "token_first"
         # and we have a a test user token_first "test_auth_token" to test ownership
         unschedule_campaign(campaign_in_db['id'], token_second, expected_status=(FORBIDDEN,))
+
+    def test_unschedule_campaign_with_other_user_but_same_domain(self, token_same_domain, campaign_in_db):
+        """
+        Test with a valid campaign and user is not owner of campaign but from same domain
+        This user should be allowed to unschedule the campaign
+        Here we created campaign with user whose Auth token_first is "token_first"
+        """
+        unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(FORBIDDEN,))
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db):
         # Test with invalid integer id
