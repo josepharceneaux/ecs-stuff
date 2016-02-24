@@ -104,7 +104,7 @@ class TestSchedulerCreate(object):
         assert data['id']
 
         # Wait till job run
-        time.sleep(16)
+        time.sleep(60)
 
         # Scheduler endpoint should delete test user
         db.session.commit()
