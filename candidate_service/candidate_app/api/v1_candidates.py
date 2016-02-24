@@ -69,6 +69,7 @@ from candidate_service.common.inter_service_calls.candidate_pool_service_calls i
     create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
 )
 
+
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 

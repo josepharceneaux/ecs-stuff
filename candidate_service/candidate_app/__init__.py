@@ -241,8 +241,7 @@ try:
 
     # ****** CandidateDeviceResource ******
     api.add_resource(
-        CandidateDeviceResource,
-        '/v1/candidates/<int:id>/devices',
+        CandidateDeviceResource, CandidateApi.DEVICES,
         endpoint='candidate_devices'
     )
 

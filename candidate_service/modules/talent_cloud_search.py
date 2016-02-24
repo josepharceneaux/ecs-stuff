@@ -18,6 +18,7 @@ from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.error_handling import InternalServerError
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 
@@ -141,8 +142,8 @@ search_queries_list = []
 coordinates = []
 geo_params = dict()
 
-one_signal_client = OneSignalSdk(user_auth_key=app.config[TalentConfigKeys.ONE_SIGNAL_REST_API_KEY],
-                                 app_id=app.config[TalentConfigKeys.ONE_SIGNAL_REST_API_KEY])
+one_signal_client = OneSignalSdk(user_auth_key=ONE_SIGNAL_REST_API_KEY,
+                                 app_id=ONE_SIGNAL_APP_ID)
 
 
 def get_cloud_search_connection():
