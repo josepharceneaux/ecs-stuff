@@ -44,7 +44,7 @@ from validators import (validate_datetime_format, validate_form_data,
                         validate_blast_candidate_url_conversion_in_db,
                         raise_if_dict_values_are_not_int_or_long)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     raise_if_not_instance_of)
+                                     raise_if_not_instance_of, generate_jwt_headers)
 
 
 class CampaignBase(object):
@@ -342,8 +342,7 @@ class CampaignBase(object):
         self.create_campaign_smartlist(campaign_obj, form_data['smartlist_ids'])
         # Create Activity, and If we get any error, we log it.
         try:
-            self.create_activity_for_campaign_creation(campaign_obj, self.user,
-                                                       self.oauth_header)
+            self.create_activity_for_campaign_creation(campaign_obj, self.user)
         except Exception:
             logger.exception('Error creating campaign creation activity.')
         return campaign_obj.id, invalid_smartlist_ids
@@ -405,7 +404,7 @@ class CampaignBase(object):
                 campaign_smartlist_model.save(new_record)
 
     @classmethod
-    def create_activity_for_campaign_creation(cls, source, user, oauth_header):
+    def create_activity_for_campaign_creation(cls, source, user):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for created Campaign.
@@ -428,8 +427,7 @@ class CampaignBase(object):
         cls.create_activity(user.id,
                             _type=ActivityMessageIds.CAMPAIGN_CREATE,
                             source=source,
-                            params=params,
-                            auth_header=oauth_header)
+                            params=params)
 
     @classmethod
     def get_campaign_and_scheduled_task(cls, campaign_id, current_user, campaign_type):
@@ -601,8 +599,7 @@ class CampaignBase(object):
             self.user.id,
             _type=ActivityMessageIds.CAMPAIGN_DELETE,
             source=source,
-            params=params,
-            auth_header=self.oauth_header
+            params=params
         )
 
     @classmethod
@@ -824,8 +821,7 @@ class CampaignBase(object):
         cls.create_activity(user.id,
                             _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
                             source=source,
-                            params=params,
-                            auth_header=oauth_header)
+                            params=params)
 
     @classmethod
     def unschedule(cls, campaign_id, request, campaign_type):
@@ -1332,8 +1328,7 @@ class CampaignBase(object):
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_SEND,
                             source=source,
-                            params=params,
-                            auth_header=oauth_header)
+                            params=params)
 
     @classmethod
     def pre_process_url_redirect(cls, request_args, requested_url):
@@ -1539,8 +1534,7 @@ class CampaignBase(object):
         cls.create_activity(candidate.user_id,
                             _type=_type,
                             source=source,
-                            params=params,
-                            auth_header=oauth_header)
+                            params=params)
         current_app.config[TalentConfigKeys.LOGGER].info(
             'create_campaign_clicked_activity: candidate(id:%s) clicked on %s(id:%s). '
             '(User(id:%s))' % (candidate.id, source.__tablename__, source.id, candidate.user_id))
@@ -1650,11 +1644,12 @@ class CampaignBase(object):
         return url_conversion_id
 
     @staticmethod
-    def create_activity(user_id, _type, source, params, auth_header):
+    def create_activity(user_id, _type, source, params):
         """
         - Once we have all the parameters to save the activity in database table "Activity",
             we call "activity_service"'s endpoint /activities/ with HTTP POST call
             to save the activity in db.
+        - This makes server-to-server trusted call usign JWT.
 
         - This method is called from create_sms_send_activity() and
             create_campaign_send_activity() methods of class SmsCampaignBase inside
@@ -1677,9 +1672,9 @@ class CampaignBase(object):
         """
         if not isinstance(params, dict):
             raise InvalidUsage('params should be dictionary.')
-        if not isinstance(auth_header, dict) or not auth_header:
-            raise InvalidUsage('auth_header should be dictionary and cannot be empty.')
         raise_if_dict_values_are_not_int_or_long(dict(source_id=source.id, type=_type))
+        auth_header = generate_jwt_headers(content_type=JSON_CONTENT_TYPE_HEADER['content-type'],
+                                           user_id=user_id)
         json_data = json.dumps({'source_table': source.__tablename__,
                                 'source_id': source.id,
                                 'type': _type,

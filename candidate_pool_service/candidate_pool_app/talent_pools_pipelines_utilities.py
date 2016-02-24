@@ -97,7 +97,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
         if response.ok:
             return response.json()
         else:
-            raise Exception("Status Code: %s, Response: %s" % (response.status_code, response.json()))
+            raise Exception("Status Code: %s" % response.status_code)
     except Exception as e:
         raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
                                          "%s" % e.message)

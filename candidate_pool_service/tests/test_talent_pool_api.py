@@ -493,7 +493,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     user_first.user_group_id = None
     db.session.commit()
 
-    # Logged-in user trying to add existing candidates to a talent-pool
+    # Logged-in user trying to get candidates from talent_pool of different group
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
     assert status_code == 403
 
@@ -558,6 +558,38 @@ def test_talent_pool_candidate_api_delete(access_token_first, user_first, talent
     # Logged-in user trying to delete existing candidates from a talent-pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='DELETE')
     assert status_code == 404
+
+
+def test_get_all_talent_pipelines_of_talent_pools(access_token_first, user_first, talent_pool, talent_pool_second,
+                                                  talent_pipeline):
+
+    # Logged-in user trying to get all talent-pipelines of a non-existing talent_pool
+    response, status_code = get_talent_pipelines_of_talent_pools(access_token_first, talent_pool.id + 1000)
+    assert status_code == 404
+
+    # Logged-in user trying to get all talent-pipelines of a non-existing talent_pool
+    response, status_code = get_talent_pipelines_of_talent_pools(access_token_first, talent_pool_second.id)
+    assert status_code == 403
+
+    # Logged-in user trying to get all talent-pipelines of a talent_pool
+    response, status_code = get_talent_pipelines_of_talent_pools(access_token_first, talent_pool.id)
+    assert status_code == 200
+    assert len(response.get('talent_pipelines')) == 1
+    assert response.get('talent_pipelines')[0].get('id') == talent_pipeline.id
+
+    user_first.user_group_id = None
+    db.session.commit()
+
+    # Logged-in user trying to get all talent-pipelines of a talent_pool of different group
+    response, status_code = get_talent_pipelines_of_talent_pools(access_token_first, talent_pool.id)
+    assert status_code == 403
+
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS])
+
+    # Logged-in user trying to get all talent-pipelines of a talent_pool
+    response, status_code = get_talent_pipelines_of_talent_pools(access_token_first, talent_pool.id)
+    assert status_code == 200
+    assert len(response.get('talent_pipelines')) == 1
 
 
 def test_health_check():
