@@ -88,10 +88,30 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
+        max_offset = '30'
+        max_offset_limit = 200
+
+        start_point, offset = request.args.get('start') or '0', request.args.get('offset') or max_offset
+        if int(offset) > max_offset_limit:
+            offset = str(max_offset_limit)
+
+        if not (str(start_point).isdigit() and int(start_point) >= 0):
+            raise InvalidUsage(error_message="'start' arg should be a digit. Greater or equal to 0")
+
+        if request.args.get('offset') and not (str(offset).isdigit() and int(offset) > 0):
+            raise InvalidUsage(
+                error_message="'offset' arg should be a digit and its value should be greater than 0")
+
+        start_point, offset = int(start_point), int(offset)
+
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
+        tasks_count = len(tasks)
+
+        tasks = [tasks[i] for i in range(start_point, start_point + offset) if i < tasks_count]
+
         tasks = [serialize_task(task) for task in tasks]
         tasks = [task for task in tasks if task]
         return dict(tasks=tasks, count=len(tasks))
