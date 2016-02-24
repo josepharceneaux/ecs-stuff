@@ -7,6 +7,8 @@ pip install -r requirements.txt
 sudo service docker restart
 sudo usermod -aG docker jenkins
 
+docker rmi gettalent/social-network-service
+
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
 cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
