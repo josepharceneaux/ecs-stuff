@@ -25,7 +25,7 @@ class Smartlist(db.Model):
         db.session.commit()
 
     def __repr__(self):
-        return "<Smartlist(name= %r)>" % self.name
+        return "%s(%s)" % (self.__class__.__name__, self.id)
 
 
 class SmartlistCandidate(db.Model):
