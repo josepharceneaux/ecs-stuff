@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -*- coding: -utf-8 -*-
 
 """
 Script for new developers to use to set up their local & remote resources, like DB data and AWS resources.
@@ -10,11 +10,10 @@ Run:
 python setup_environment/run_setup.py
 
 """
-
-from flask import Flask
+from common.talent_flask import TalentFlask
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 from common.models.db import db
@@ -57,4 +56,32 @@ with app.app_context():
         create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
                     last_name='Doe', expiration=None)
 
+        # Insert necessary records into static tables
+        from user_service.populate_static_tables import (
+            create_candidate_status, create_email_clients, create_email_labels, create_frequencies,
+            create_cultures, create_phone_labels, create_classification_types, create_products,
+            create_rating_tags, create_social_networks
+        )
+        from user_service.migration_scripts.domain_user_role_updates import (
+            add_domain_roles, add_user_group_to_domains, update_users_group_id, add_talent_pool,
+            add_talent_pool_group, add_default_talent_pipelines
+        )
+        create_candidate_status()
+        create_email_labels()
+        create_email_clients()
+        create_frequencies()
+        create_cultures()
+        create_phone_labels()
+        create_classification_types()
+        create_products()
+        create_rating_tags()
+        create_social_networks()
+        add_domain_roles()
+        add_user_group_to_domains()
+        update_users_group_id()
+        add_talent_pool()
+        add_talent_pool_group()
+        add_default_talent_pipelines()
+
 print 'Local Environment setup has been completed successfully'
+

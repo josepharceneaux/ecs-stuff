@@ -1,11 +1,10 @@
 __author__ = 'ufarooqi'
 
 from datetime import timedelta
-from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
-from candidate_pool_service.common.models.email_marketing import EmailCampaign, EmailCampaignSmartList
+from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -481,13 +480,13 @@ def test_talent_pipeline_campaigns_api_get(access_token_first, user_first, talen
     db.session.add(test_smart_list)
 
     # Adding a test email_campaign
-    test_email_campaign = EmailCampaign(name=gen_salt(5))
+    test_email_campaign = EmailCampaign(name=gen_salt(5), user_id=user_first.id)
     db.session.add(test_email_campaign)
     db.session.commit()
 
     # Adding test_smart_list to test_email_campaign
-    test_email_campaign_smart_list = EmailCampaignSmartList(smartlist_id=test_smart_list.id,
-                                                            email_campaign_id=test_email_campaign.id)
+    test_email_campaign_smart_list = EmailCampaignSmartlist(smartlist_id=test_smart_list.id,
+                                                            campaign_id=test_email_campaign.id)
     db.session.add(test_email_campaign_smart_list)
     db.session.commit()
 

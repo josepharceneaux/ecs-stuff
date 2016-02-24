@@ -8,14 +8,14 @@ This file entails script for adding:
     5. TalentPoolGroup for each talent-pool & user-group
 """
 import time
+from datetime import datetime
 from user_service.user_app import app
 from user_service.common.models.db import db
-from user_service.common.models.user import (
-    User, UserGroup, UserScopedRoles, Domain, DomainRole
-)
+from user_service.common.models.user import User, UserGroup, UserScopedRoles, Domain, DomainRole
 from user_service.common.models.talent_pools_pipelines import (
-    TalentPool, TalentPoolCandidate, TalentPoolGroup
+    TalentPool, TalentPoolCandidate, TalentPoolGroup, TalentPipeline
 )
+from user_service.common.models.smartlist import Smartlist
 from user_service.common.models.candidate import Candidate
 
 
@@ -103,7 +103,7 @@ def add_talent_pool_candidate():
     start = 0
     while start < number_of_candidates:
 
-        for candidate in Candidate.query.slice(start, start + 10).all():
+        for candidate in Candidate.query.slice(start, start + 100).all():
             print "candidate in progress: {}".format(candidate)
             owner_user_id = candidate.user_id
             domain_id = User.get_domain_id(_id=owner_user_id)
@@ -113,7 +113,7 @@ def add_talent_pool_candidate():
                     db.session.add(TalentPoolCandidate(candidate_id=candidate.id, talent_pool_id=talent_pool.id))
                     db.session.commit()
 
-        start += 10
+        start += 100
 
 
 def add_talent_pool_group():
@@ -132,8 +132,31 @@ def add_talent_pool_group():
             db.session.commit()
 
 
+def add_default_talent_pipelines():
+    """ Function will add TalentPipeline for every "default" TalentPool
+        It will also assign domain's Smartlist to the TalentPipeline
+    """
+    print "running: add_default_talent_pipelines()"
+    default_talent_pools = TalentPool.query.filter_by(name='default').all()
+    for talent_pool in default_talent_pools:
+        tp_user_id = talent_pool.user_id
+        talent_pipeline = TalentPipeline.query.filter_by(talent_pool_id=talent_pool.id, user_id=tp_user_id).first()
+        if talent_pipeline:  # Update smartlists
+            smart_list = Smartlist.query.filter_by(user_id=tp_user_id, talent_pipeline_id=talent_pipeline.id).first()
+            if not smart_list:  # Add Smartlist
+                db.session.add(Smartlist(user_id=tp_user_id, talent_pipeline_id=talent_pipeline.id))
+                db.session.commit()
+        else:  # Add TalentPipeline & Smartlist
+            talent_pipeline = TalentPipeline(name='default', talent_pool_id=talent_pool.id, user_id=tp_user_id,
+                                             date_needed=datetime.utcnow())
+            db.session.add(talent_pipeline)
+            db.session.flush()
+            # Add Smartlist
+            db.session.add(Smartlist(user_id=tp_user_id, talent_pipeline_id=talent_pipeline.id))
+            db.session.commit()
+
+
 if __name__ == '__main__':
-    print "***** starting role updates *****"
     print "database: {}".format(db)
     try:
         start_time = time.time()
@@ -163,6 +186,10 @@ if __name__ == '__main__':
         time_5 = time.time()
         add_talent_pool_group()
         print "completed: add_talent_pool_group()\ntime: {}".format(time.time() - time_5)
+
+        time_6 = time.time()
+        add_default_talent_pipelines()
+        print "completed: add_default_talent_pipelines()\ntime: {}".format(time.time() - time_6)
         print "total time: {}".format(time.time() - start_time)
     except Exception as e:
         db.session.rollback()

@@ -9,13 +9,13 @@ python setup_environment/reset_database_and_cloud_search.py
 
 """
 
-from flask import Flask
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from common.talent_flask import TalentFlask
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
-                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group']
+                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:

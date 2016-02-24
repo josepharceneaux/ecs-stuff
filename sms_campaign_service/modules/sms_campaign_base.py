@@ -35,7 +35,6 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              )
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -475,6 +474,7 @@ class SmsCampaignBase(CampaignBase):
                                             self.user.id))
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
+        super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
         return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -770,8 +770,7 @@ class SmsCampaignBase(CampaignBase):
         self.create_activity(self.user.id,
                              _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
                              source=source,
-                             params=params,
-                             auth_header=self.oauth_header)
+                             params=params)
 
     @classmethod
     def process_candidate_reply(cls, reply_data):
@@ -919,8 +918,7 @@ class SmsCampaignBase(CampaignBase):
         cls.create_activity(user_id,
                             _type=ActivityMessageIds.CAMPAIGN_SMS_REPLY,
                             source=sms_campaign_reply,
-                            params=params,
-                            auth_header=auth_header)
+                            params=params)
 
 
 def _get_valid_user_phone(user_phone_value):

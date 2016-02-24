@@ -4,14 +4,14 @@ from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.error_handling import InternalServerError
+from candidate_pool_service.common.error_handling import InternalServerError, InvalidUsage
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
 __author__ = 'jitesh'
 
 
-def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_candidates=0):
+def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_candidates=0, oauth_token=None):
     """
     Get the candidates of a smart or dumb list.
     :param smartlist: Smartlist row object
@@ -21,12 +21,17 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
     """
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
-        search_params = json.loads(smartlist.search_params)
+        try:
+            search_params = json.loads(smartlist.search_params)
+        except ValueError:
+            raise InvalidUsage('search_params(%s) are not JSON serializable for '
+                               'smartlist(id:%s). User(id:%s)'
+                               % (smartlist.search_params, smartlist.id, smartlist.user_id))
         if candidate_ids_only:
             search_params['fields'] = 'id'
         if count_only:
             search_params['fields'] = 'count_only'
-        search_results = search_candidates_from_params(search_params, request.oauth_token, smartlist.user_id)
+        search_results = search_candidates_from_params(search_params, oauth_token, smartlist.user_id)
     # If a dumblist & getting count only, just do count
     elif count_only:
         count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
@@ -73,7 +78,7 @@ def create_smartlist_dict(smartlist, oauth_token):
     :param smartlist: smartlist row object
     :param oauth_token: oauth token
     """
-    candidate_count = get_candidates(smartlist, oauth_token, count_only=True)['total_found']
+    candidate_count = get_candidates(smartlist, count_only=True, oauth_token=oauth_token)['total_found']
 
     return {
         "total_found": candidate_count,
@@ -82,7 +87,6 @@ def create_smartlist_dict(smartlist, oauth_token):
         "name": smartlist.name,
         "search_params": smartlist.search_params
     }
-
 
 
 def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):

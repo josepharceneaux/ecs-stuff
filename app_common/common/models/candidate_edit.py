@@ -139,6 +139,10 @@ class CandidateEdit(db.Model):
             'social_network_id': 84,
             'social_profile_url': 85,
             'updated_time': 86
+        },
+        'candidate_photo': {
+            'image_url': 87,
+            'is_default': 88
         }
     }
 

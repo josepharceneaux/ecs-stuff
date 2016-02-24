@@ -35,7 +35,6 @@ from sms_campaign_service.common.campaign_services.validators import \
 
 # Database Models
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.candidate import Candidate
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
 

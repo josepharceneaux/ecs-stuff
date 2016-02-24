@@ -10,7 +10,7 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
 
     # Get info of domain when no domain_id is provided
     response, status_code = domain_api(access_token_first)
-    assert status_code == 400
+    assert status_code == 401
 
     # Logged-in user getting info of a domain which doesn't exist
     response, status_code = domain_api(access_token_first, user_first.domain_id + 1000)
@@ -27,7 +27,7 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
     assert response['domain']['name'] == domain_first.name
 
     # Adding 'CAN_GET_DOMAINS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_GET_DOMAINS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
 
     # Logged-in user trying to get info of domain which different than its own domain
     response, status_code = domain_api(access_token_first, domain_second.id)
@@ -35,15 +35,20 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
     assert response['domain']['id'] == domain_second.id
     assert response['domain']['name'] == domain_second.name
 
+    # Logged-in user trying to get info of all domains
+    response, status_code = domain_api(access_token_first)
+    assert status_code == 200
+    assert len(response['domains']) >= 2
+
 
 # Test DELETE operation of domain API
-def test_domain_service_delete(access_token_first, user_first, user_second, domain_first, domain_second):
+def test_domain_service_delete(access_token_first, user_first, domain_first, domain_second):
 
     # Logged-in user trying to delete a domain
     response, status_code = domain_api(access_token_first, domain_first.id, action='DELETE')
     assert status_code == 401
 
-    add_role_to_test_user(user_first, ['CAN_DELETE_DOMAINS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_DOMAINS])
 
     # Logged-in user trying to delete a domain where domain is not provided
     response, status_code = domain_api(access_token_first, action='DELETE')
@@ -81,7 +86,7 @@ def test_domain_service_put(access_token_first, user_first, domain_first, domain
     assert status_code == 401
 
     # Adding 'CAN_EDIT_DOMAINS' to user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_DOMAINS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
 
     # Logged-in user trying to update a non-existing domain
     response, status_code = domain_api(access_token_first, domain_first.id + 1000, data=data, action='PUT')
@@ -150,7 +155,7 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     assert status_code == 401
 
     # Adding 'CAN_ADD_DOMAINS' to user_first
-    add_role_to_test_user(user_first, ['CAN_ADD_DOMAINS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_DOMAINS])
 
     # Logged-in user trying to add new domains with empty request body
     response, status_code = domain_api(access_token_first, action='POST')

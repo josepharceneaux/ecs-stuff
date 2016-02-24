@@ -13,7 +13,7 @@ Here we have two(or maybe three) classes for each service.
 
 """
 import os
-from talent_config_manager import TalentConfigKeys
+from talent_config_manager import TalentConfigKeys, TalentEnvs
 
 LOCAL_HOST = 'http://127.0.0.1'
 TALENT_DOMAIN = '.gettalent.com'
@@ -39,32 +39,36 @@ def _get_host_name(service_name, port_number):
     :type port_number: int
     :return:  A string that looks like https://auth-service.gettalent.com%s
     """
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env == 'dev':
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env == TalentEnvs.DEV:
         # This looks like http://127.0.0.1:8001 (for auth service)
         return LOCAL_HOST + ':' + str(port_number) + '%s'
-    elif env == 'jenkins':
+    elif env == TalentEnvs.JENKINS:
         return 'http://jenkins.gettalent.com' + ':' + str(port_number) + '%s'
-    elif env == 'qa':
+    elif env == TalentEnvs.QA:
         # This looks like:  https://auth-service-staging.gettalent.com%s
         return 'https://' + service_name + '-staging' + TALENT_DOMAIN + '%s'
-    elif env == 'prod':
+    elif env == TalentEnvs.PROD:
         # This looks like: https://auth-service.gettalent.com%s
         return 'https://' + service_name + TALENT_DOMAIN + '%s'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: "
+                        "Should be %s, %s, %s or %s"
+                        % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
 
 
 def get_web_app_url():
-    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    if env in ('dev', 'jenkins'):
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env in (TalentEnvs.DEV, TalentEnvs.JENKINS):
         return LOCAL_HOST + ':3000'
-    elif env == 'qa':
+    elif env == TalentEnvs.QA:
         return 'https://staging.gettalent.com'
-    elif env == 'prod':
+    elif env == TalentEnvs.PROD:
         return 'https://app.gettalent.com'
     else:
-        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: Should be dev, jenkins, qa, or prod")
+        raise Exception("Environment variable GT_ENVIRONMENT not set correctly: "
+                        "Should be %s, %s, %s or %s"
+                        % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
 
 
 def _get_api_relative_version(api_version):
@@ -126,6 +130,11 @@ class GTApis(object):
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
+
+    # CORS headers
+    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
+                                       "http://127.0.0.1",
+                                       "http://localhost"]}}
 
 
 class AuthApi(object):
@@ -339,21 +348,24 @@ class CandidatePoolApi(object):
     TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
     TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINES_OF_TALENT_POOLS = TALENT_POOL + '/' +CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
-    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    TALENT_POOL_UPDATE_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
+    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     # Talent Pipelines
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
     TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
     TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
     TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
-    TALENT_PIPELINE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    TALENT_PIPELINE_UPDATE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
     # Smartlists
     SMARTLISTS = 'smartlists'
     SMARTLIST = SMARTLISTS + _INT_ID
     SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
-    SMARTLIST_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
+    SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
     SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
 
 
@@ -368,21 +380,26 @@ class CandidatePoolApiUrl(object):
     # Talent Pool
     TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL = TALENT_POOLS + '/%s'
-    TALENT_POOL_STATS = API_URL % CandidatePoolApi.TALENT_POOL_STATS
-    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOL+"/%s"+CandidatePoolApiWords.STATS)
+    TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
+    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
     TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
+                                                  CandidatePoolApiWords.TALENT_PIPELINES)
+
     # Talent Pipeline
     TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
-    TALENT_PIPELINE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.CANDIDATES)
-    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.CAMPAIGNS)
-    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +'/%s'+CandidatePoolApiWords.SMART_LISTS)
-    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES +"/%s"+CandidatePoolApiWords.STATS)
+    TALENT_PIPELINE_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS
+    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s'+ CandidatePoolApiWords.CANDIDATES)
+    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.CAMPAIGNS)
+    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.SMART_LISTS)
+    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + "/%s" + CandidatePoolApiWords.STATS)
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
-    SMARTLIST_STATS = API_URL % CandidatePoolApi.SMARTLIST_STATS
+    SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
     SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
     SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
 
@@ -411,7 +428,7 @@ class SpreadsheetImportApiUrl(object):
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
 
 
-class SmsCampaignWords(object):
+class CampaignWords(object):
     """
     This class contains words used for endpoints of SMS Campaign API.
     """
@@ -423,6 +440,7 @@ class SmsCampaignWords(object):
     SEND = '/send'
     BLASTS = '/blasts'
     REPLIES = '/replies'
+    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
 
 
 class SmsCampaignApi(object):
@@ -436,40 +454,40 @@ class SmsCampaignApi(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, SmsCampaignWords.CAMPAIGNS)
+    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.CAMPAIGNS)
     # endpoint /v1/campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
     # /v1/campaigns/:id/schedule
     # To schedule an SMS campaign
-    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    SEND = CAMPAIGN + SmsCampaignWords.SEND
+    SEND = CAMPAIGN + CampaignWords.SEND
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    REDIRECT = API_URL % (SmsCampaignWords.REDIRECT + '/<int:url_conversion_id>')
+    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = API_URL % SmsCampaignWords.RECEIVE
+    RECEIVE = API_URL % CampaignWords.RECEIVE
     # endpoint /v1/campaigns/:id/blasts
     # Gives the blasts of a campaign
-    BLASTS = CAMPAIGN + SmsCampaignWords.BLASTS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
     # endpoint /v1/campaigns/:id/blasts/:id
     # Gives the blast object of SMS campaign from given blast id.
-    BLAST = CAMPAIGN + SmsCampaignWords.BLASTS + '/<int:blast_id>'
+    BLAST = CAMPAIGN + CampaignWords.BLASTS + '/<int:blast_id>'
     # endpoint /v1/campaigns/:id/blasts/:id/sends
     # Gives the sends objects of a blast object of SMS campaign from given blast id.
-    BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
     # endpoint /v1/campaigns/:id/blasts/:id/replies
     # Gives the replies objects of a blast object of SMS campaign from given blast id.
-    BLAST_REPLIES = BLAST + SmsCampaignWords.REPLIES
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
-    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
+    SENDS = CAMPAIGN + CampaignWords.SENDS
     # endpoint /v1/campaigns/:id/replies
     # This gives the records from "sms_campaign_reply" for a given id of campaign
-    REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
 
 
 class SmsCampaignApiUrl(object):
@@ -479,17 +497,17 @@ class SmsCampaignApiUrl(object):
     """ Endpoints' complete URLs for pyTests """
     CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + '/%s'
-    SCHEDULE = CAMPAIGN + SmsCampaignWords.SCHEDULE
-    SEND = CAMPAIGN + SmsCampaignWords.SEND
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    SEND = CAMPAIGN + CampaignWords.SEND
     REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
-                                                      SmsCampaignWords.REDIRECT + '/%s')
+                                                      CampaignWords.REDIRECT + '/%s')
     RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    BLASTS = CAMPAIGN + SmsCampaignWords.BLASTS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
-    SENDS = CAMPAIGN + SmsCampaignWords.SENDS
-    REPLIES = CAMPAIGN + SmsCampaignWords.REPLIES
-    BLAST_SENDS = BLAST + SmsCampaignWords.SENDS
-    BLAST_REPLIES = BLAST + SmsCampaignWords.REPLIES
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
 
 
 class CandidateApiWords(object):
@@ -518,6 +536,7 @@ class CandidateApiWords(object):
     CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
     PREFERENCE = "/preferences"
+    PHOTOS = "/photos"
 
 
 class CandidateApi(object):
@@ -574,6 +593,9 @@ class CandidateApi(object):
 
     SKILLS = _CANDIDATE_ID + CandidateApiWords.SKILLS
     SKILL = SKILLS + _INT_ID
+
+    PHOTOS = _CANDIDATE_ID + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + _INT_ID
 
     SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
@@ -642,6 +664,9 @@ class CandidateApiUrl(object):
     SKILLS = CANDIDATE + CandidateApiWords.SKILLS
     SKILL = SKILLS + "/%s"
 
+    PHOTOS = CANDIDATE + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + "/%s"
+
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
@@ -650,6 +675,7 @@ class CandidateApiUrl(object):
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
 
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
 class SchedulerApi(object):
     """
@@ -697,18 +723,21 @@ class SchedulerApiUrl(object):
 
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
+
+    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
+                           GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EMAIL_CAMPAIGNS = RELATIVE_VERSION % 'email-campaigns'
-    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS +'/<int:id>'
-    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + '/<int:campaign_id>/send'
-    URL_REDIRECT = EMAIL_CAMPAIGNS + '/redirect/<int:url_conversion_id>'
+    API_URL = '/%s/%s' % (VERSION, '%s')
+    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
+    CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
+    URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
 
 
 class EmailCampaignUrl(object):
-    VERSION = 'v1'
-    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
-    EMAIL_CAMPAIGNS = HOST_NAME % EmailCampaignEndpoints.EMAIL_CAMPAIGNS
-    EMAIL_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s"
-    SEND_CAMPAIGN = EMAIL_CAMPAIGNS + "/%s/send"
-    URL_REDIRECT = EMAIL_CAMPAIGNS + "/redirect/%s"
+    CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
+    CAMPAIGN = CAMPAIGNS + "/%s"
+    SEND = CAMPAIGN + CampaignWords.SEND
+    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
+                                CampaignWords.REDIRECT + '/%s')
+

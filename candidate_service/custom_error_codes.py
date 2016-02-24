@@ -48,6 +48,7 @@ class CandidateCustomErrors(object):
     # Error codes for CandidateMilitaryService
     MILITARY_FORBIDDEN = 3080
     MILITARY_NOT_FOUND = 3081
+    MILITARY_INVALID_DATE = 3082
 
     # Error codes for CandidatePhone
     PHONE_FORBIDDEN = 3090
@@ -75,3 +76,7 @@ class CandidateCustomErrors(object):
     PREFERENCE_NOT_FOUND = 3141
     NO_PREFERENCES = 3142
     PREFERENCE_EXISTS = 3143
+
+    # Error codes for CandidatePhoto
+    PHOTO_NOT_FOUND = 3150
+    PHOTO_FORBIDDEN = 3151

@@ -9,7 +9,8 @@ import datetime
 class CandidateAreaOfInterest(db.Model):
     __tablename__ = 'candidate_area_of_interest'
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), primary_key=True)
-    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'))
+    area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'),
+                                    primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -17,10 +18,13 @@ class CandidateAreaOfInterest(db.Model):
         return "<CandidateAreaOfInterest (area_of_interest_id = %r)" % self.area_of_interest_id
 
     @classmethod
-    def get_areas_of_interest(cls, candidate_id, area_of_interest_id):
-        return cls.query.filter(db.and_
-                                (CandidateAreaOfInterest.candidate_id == candidate_id,
-                                 CandidateAreaOfInterest.area_of_interest_id == area_of_interest_id)).first()
+    def get_aoi(cls, candidate_id, aoi_id):
+        """
+        :type candidate_id:  int|long
+        :type aoi_id:  int|long
+        :rtype:  CandidateAreaOfInterest
+        """
+        return cls.query.filter_by(candidate_id=candidate_id, area_of_interest_id=aoi_id).first()
 
 
 class ReferenceEmail(db.Model):

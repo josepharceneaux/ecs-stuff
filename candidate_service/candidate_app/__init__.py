@@ -1,10 +1,10 @@
-from flask import Flask
 from flask.ext.cors import CORS
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, HEALTH_CHECK
+from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
+from candidate_service.common.talent_flask import TalentFlask
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 logger = app.config[TalentConfigKeys.LOGGER]
 logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
@@ -31,14 +31,16 @@ try:
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource)
+        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidatePhotosResource
+    )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
 
     # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources={r"*": {"origins": [r".*\.gettalent\.com", "http://127.0.0.1", "http://localhost"]}})
+    CORS(app, resources=GTApis.CORS_HEADERS)
 
     # API RESOURCES
     # ****** CandidateResource ******
@@ -232,16 +234,14 @@ try:
     )
 
     # ****** CandidateEditResource ******
-    api.add_resource(
-        CandidateEditResource,
-        '/v1/candidates/<int:id>/edits',
-        endpoint='candidate_edit'
-    )
+    api.add_resource(CandidateEditResource, '/v1/candidates/<int:id>/edits', endpoint='candidate_edit')
 
-    ######################## CandidateViewResource ########################
-    api.add_resource(CandidateViewResource,
-                     CandidateApi.CANDIDATE_VIEWS,
-                     endpoint='candidate_views')
+    # ****** CandidateViewResource ******
+    api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
+
+    # ****** CandidatePhotosResource ******
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO ,endpoint='candidate_photo')
 
     # ****** Candidate Search *******
     api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)

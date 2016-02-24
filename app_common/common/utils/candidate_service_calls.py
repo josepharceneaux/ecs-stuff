@@ -1,11 +1,12 @@
-"""File contains handy functions which can be used to call frequently used candidate_service API calls."""
+"""File contains handy functions which can be used to call frequently used
+candidate_service API calls."""
 
-import requests
 import json
+import requests
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..utils.handy_functions import create_oauth_headers
-from ..error_handling import InternalServerError, InvalidUsage
+from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
+from ..utils.handy_functions import create_oauth_headers, http_request
 
 __author__ = 'jitesh'
 
@@ -20,7 +21,9 @@ def search_candidates_from_params(search_params, access_token, user_id=None):
     """
     if not access_token:
         secret_key_id, jw_token = User.generate_jw_token(user_id=user_id)
-        headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id, 'Content-Type': 'application/json'}
+        headers = {'Authorization': jw_token,
+                   'X-Talent-Secret-Key-ID': secret_key_id,
+                   'Content-Type': 'application/json'}
     else:
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
@@ -51,7 +54,9 @@ def update_candidates_on_cloudsearch(access_token, candidate_ids):
                              data=json.dumps({'candidate_ids': candidate_ids}))
 
     if response.status_code != 204:
-        raise InternalServerError("Error occurred while uplaoding candidates on cloudsearch. Status Code: %s Response: %s" % (response.status_code, response.json()))
+        raise InternalServerError("Error occurred while uplaoding candidates on cloudsearch. "
+                                  "Status Code: %s Response: %s"
+                                  % (response.status_code, response.json()))
 
 
 def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids_only=False):
@@ -65,7 +70,8 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     """
     resp = requests.post(
             url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
+                                                                                  % oauth_token,
                      'content-type': 'application/json'},
             data=json.dumps(data)
     )
@@ -76,8 +82,10 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
 
 def get_candidate_subscription_preference(candidate_id):
-    resp = requests.get(CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
+    resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers())
+    if resp.status_code == ForbiddenError.http_status_code():
+        raise ForbiddenError('Not authorized to get Candidate(id:%s)' % candidate_id)
     assert resp.status_code == 200
     response = resp.json()
     # return candidate's subscription_preference
