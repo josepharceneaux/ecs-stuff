@@ -10,6 +10,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 
+
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """
     Sends candidate dict to candidate service POST and returns response.
@@ -46,9 +47,9 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str):
                                                   'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
         logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
-        raise InvalidUsage("Unable to reach Candidates API in during candidate update")
+        raise InternalServerError("Unable to reach Candidates API in during candidate update")
     if update_response.status_code is not requests.codes.ok:
-        logger.debug("Unable to update candidate due to response code: {}".format(
+        logger.warn("Unable to update candidate due to response code: {}".format(
             update_response.status_code))
         raise InvalidUsage('Error in response from candidate service during update')
     return update_response

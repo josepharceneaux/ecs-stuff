@@ -348,10 +348,11 @@ class CandidatePoolApi(object):
     TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
     TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINES_OF_TALENT_POOLS = TALENT_POOL + '/' +CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL_UPDATE_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
-    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOL + '/<int:talent_pool_id>/' \
+    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>/' \
                                                 + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     # Talent Pipelines
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
@@ -380,11 +381,14 @@ class CandidatePoolApiUrl(object):
     TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
     TALENT_POOL = TALENT_POOLS + '/%s'
     TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
-    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOL+"/%s"+CandidatePoolApiWords.STATS)
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOL + '/%s/' \
+    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
                                                 + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
     TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
+                                                  CandidatePoolApiWords.TALENT_PIPELINES)
+
     # Talent Pipeline
     TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
     TALENT_PIPELINE = TALENT_PIPELINES + '/%s'

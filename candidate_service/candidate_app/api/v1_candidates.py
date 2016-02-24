@@ -22,6 +22,7 @@ from candidate_service.modules.validators import (
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
+
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch
 )
@@ -32,7 +33,7 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 
 # Error handling
 from candidate_service.common.error_handling import (
-    ForbiddenError, InvalidUsage, NotFoundError, UnauthorizedError, InternalServerError
+    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError
 )
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -159,22 +160,25 @@ class CandidatesResource(Resource):
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
         # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
-            raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
+        if all_cf_ids:
+            if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+                raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         # Areas of interest must belong to user's domain
-        if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
-            raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
+        if all_aoi_ids:
+            if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+                raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Create candidate(s)
         created_candidate_ids = []
         for candidate_dict in candidates:
 
+            user_id = authed_user.id
             emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
             resp_dict = create_or_update_candidate_from_params(
-                user_id=authed_user.id,
+                user_id=user_id,
                 is_creating=is_creating,
                 is_updating=is_updating,
                 candidate_id=candidate_id,
@@ -207,7 +211,6 @@ class CandidatesResource(Resource):
 
         # Add candidates to cloud search
         upload_candidate_documents(created_candidate_ids)
-
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -270,12 +273,14 @@ class CandidatesResource(Resource):
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
         # Custom fields must belong to user's domain
-        if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
-            raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
+        if all_cf_ids:
+            if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+                raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         # Areas of interest must belong to user's domain
-        if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
-            raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
+        if all_aoi_ids:
+            if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+                raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Candidates must belong to user's domain
         list_of_candidate_ids = [_candidate_dict['id'] for _candidate_dict in candidates]
@@ -325,9 +330,7 @@ class CandidatesResource(Resource):
 
         # Update candidates in cloud search
         upload_candidate_documents(updated_candidate_ids)
-
-        return {'candidates': [{'id': updated_candidate_id}
-                               for updated_candidate_id in updated_candidate_ids]}
+        return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
 
 class CandidateResource(Resource):
@@ -371,7 +374,6 @@ class CandidateResource(Resource):
 
         # Add to CandidateView
         add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
-
         return {'candidate': candidate_data_dict}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
