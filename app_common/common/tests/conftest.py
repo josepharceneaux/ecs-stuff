@@ -267,7 +267,7 @@ def user_same_domain(request, domain_first, first_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -281,7 +281,7 @@ def user_second(request, domain_second, second_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -295,7 +295,7 @@ def domain_first(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -314,7 +314,7 @@ def domain_second(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -332,7 +332,7 @@ def domain_roles(request):
             db.session.delete(DomainRole.query.get(test_role_first_id))
             db.session.delete(DomainRole.query.get(test_role_second_id))
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
@@ -348,7 +348,7 @@ def first_group(request, domain_first):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
@@ -364,7 +364,7 @@ def second_group(request, domain_second):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
@@ -412,7 +412,7 @@ def talent_pool(request, domain_first, first_group, user_first):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -432,7 +432,7 @@ def talent_pool_second(request, domain_second, second_group, user_second):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -455,7 +455,7 @@ def talent_pipeline(request, user_first, talent_pool):
         try:
             db.session.delete(talent_pipeline)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pipeline
@@ -471,7 +471,7 @@ def candidate_first(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate
@@ -487,7 +487,7 @@ def candidate_second(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate

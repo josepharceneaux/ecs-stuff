@@ -194,7 +194,7 @@ class Meetup(SocialNetworkBase):
                 status = self.save_user_credentials_in_db(user_credentials_dict)
                 logger.debug("Access token has been refreshed for %s(UserId:%s)."
                              % (self.user.name, self.user.id))
-            except:
+            except Exception:
                 logger.exception('refresh_access_token: user_id: %s' % self.user.id)
         else:
             # Error has been logged inside http_request()

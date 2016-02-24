@@ -82,7 +82,7 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         db.session.add(activity)
         db.session.commit()
         return json.dumps({'activity': {'id': activity.id}}), 200
-    except:
+    except Exception:
         # TODO logging
         return json.dumps({'error': 'There was an error saving your log entry'}), 500
 

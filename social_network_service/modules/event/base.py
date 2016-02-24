@@ -395,7 +395,7 @@ class EventBase(object):
                 logger.debug('Event "%s" has been deleted from '
                              'database.' % event_name)
                 return True
-            except:  # some error while removing event
+            except Exception:  # some error while removing event
                 logger.exception('delete_event: user_id: %s, event_id: %s, '
                                  ' social network: %s(id: %s)'
                                  % (self.user.id, event.id, self.social_network.name,
