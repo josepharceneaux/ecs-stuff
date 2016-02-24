@@ -60,8 +60,6 @@ def resume_post_reciever():
         # create_candidate is passed as a string from a form so this extra processing is needed.
         create_mode = request.form.get('create_candidate', 'false')
         create_candidate = True if create_mode.lower() == 'true' else False
-        logger.debug(type(create_candidate))
-        logger.debug(create_candidate)
         filepicker_key = None
         resume_file = request.files.get('resume_file')
         resume_file_name = request.form.get('resume_file_name')

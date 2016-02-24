@@ -558,6 +558,52 @@ class TalentPoolCandidateApi(Resource):
                                            talent_pool_candidate_ids]}
 
 
+class TalentPipelinesOfTalentPools(Resource):
+
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    # 'SELF' is for readability. It means this endpoint will be accessible to any user
+    @require_any_role('SELF', DomainRole.Roles.CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS)
+    def get(self, **kwargs):
+        """
+        GET /talent-pools/<id>/talent-pipelines  Fetch all talent-pipelines of a Talent-Pool
+
+        :return A dictionary containing all talent-pipelines of a Talent Pool
+        :rtype: dict
+        """
+        talent_pool_id = kwargs.get('id')
+        talent_pool = TalentPool.query.get(talent_pool_id)
+
+        if not talent_pool:
+            raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
+
+        if talent_pool.domain_id != request.user.domain_id:
+            raise ForbiddenError(error_message="Talent pool and logged in user belong to different domains")
+
+        if not TalentPoolGroup.query.filter_by(user_group_id=request.user.user_group_id, talent_pool_id=talent_pool_id)\
+                .all() and DomainRole.Roles.CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS not in request.valid_domain_roles:
+            raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
+                                               "candidates" % request.user.id)
+
+        talent_pipelines = TalentPipeline.query.filter_by(talent_pool_id=talent_pool_id).all()
+
+        return {
+            'talent_pipelines': [{
+                'id': talent_pipeline.id,
+                'name': talent_pipeline.name,
+                'description': talent_pipeline.description,
+                'user_id': talent_pipeline.user_id,
+                'positions': talent_pipeline.positions,
+                'search_params': json.loads(
+                    talent_pipeline.search_params) if talent_pipeline.search_params else None,
+                'date_needed': str(talent_pipeline.date_needed),
+                'added_time': str(talent_pipeline.added_time),
+                'updated_time': str(talent_pipeline.updated_time)
+            } for talent_pipeline in talent_pipelines]
+        }
+
+
 @talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_UPDATE_STATS, methods=['POST'])
 @require_oauth(allow_null_user=True)
 def update_talent_pools_stats():
@@ -682,3 +728,4 @@ api = TalentApi(talent_pool_blueprint)
 api.add_resource(TalentPoolApi, CandidatePoolApi.TALENT_POOL, CandidatePoolApi.TALENT_POOLS)
 api.add_resource(TalentPoolGroupApi, CandidatePoolApi.TALENT_POOL_GROUPS)
 api.add_resource(TalentPoolCandidateApi, CandidatePoolApi.TALENT_POOL_CANDIDATES)
+api.add_resource(TalentPipelinesOfTalentPools, CandidatePoolApi.TALENT_PIPELINES_OF_TALENT_POOLS)

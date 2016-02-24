@@ -28,7 +28,6 @@ from email_campaign_service.common.models.candidate import (Candidate, Candidate
 from email_campaign_service.common.error_handling import *
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.amazon_ses import send_email
-from email_campaign_service.common.inter_service_calls.activity_service_calls import add_activity
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
@@ -86,12 +85,14 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
 
     try:
         # Add activity
-        add_activity(user_id=user_id,
-                     activity_type=ActivityMessageIds.CAMPAIGN_CREATE,
-                     source_id=email_campaign.id, source_table=EmailCampaign.__tablename__,
-                     params=dict(id=email_campaign.id, name=email_campaign_name))
+        CampaignBase.create_activity(user_id,
+                                     ActivityMessageIds.CAMPAIGN_CREATE,
+                                     email_campaign,
+                                     dict(id=email_campaign.id,
+                                          name=email_campaign_name))
     except Exception:
-        logger.exception('Error occurred while creating activity for campaign creation.')
+        logger.exception('Error occurred while creating activity for'
+                         'email-campaign creation. User(id:%s)' % user_id)
     # create email_campaign_smartlist record
     create_email_campaign_smartlists(smartlist_ids=list_ids,
                                      email_campaign_id=email_campaign.id)
@@ -173,14 +174,17 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                     "new_candidates_only=%s, address list size=%s"
                     % (campaign.name, user.email, new_candidates_only,
                        len(candidate_ids_and_emails)))
-
         # Add activity
-        add_activity(user_id=user.id,
-                     activity_type=ActivityMessageIds.CAMPAIGN_SEND,
-                     source_id=campaign.id, source_table=EmailCampaign.__tablename__,
-                     params=dict(id=campaign.id, name=campaign.name,
-                                 num_candidates=len(candidate_ids_and_emails)))
-
+        try:
+            CampaignBase.create_activity(user.id,
+                                         ActivityMessageIds.CAMPAIGN_SEND,
+                                         campaign,
+                                         dict(id=campaign.id, name=campaign.name,
+                                                     num_candidates=len(candidate_ids_and_emails)))
+        except Exception as error:
+            logger.error('Error occurred while creating activity for '
+                         'email-campaign(id:%s) batch send. Error is %s'
+                         % (campaign.id, error.message))
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()
         email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id,
@@ -453,13 +457,11 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
     # Add activity
     try:
-        headers = CampaignBase.get_authorization_header(user.id)
         CampaignBase.create_activity(user.id,
-                                     _type=ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
-                                     source=email_campaign_send,
-                                     params=dict(campaign_name=campaign.name,
-                                                 candidate_name=candidate.name),
-                                     auth_header=headers)
+                                     ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                     email_campaign_send,
+                                     dict(campaign_name=campaign.name,
+                                          candidate_name=candidate.name))
     except Exception as error:
         logger.exception('Could not add `campaign send activity` for '
                          'email-campaign(id:%s) and User(id:%s) because: '
@@ -612,20 +614,28 @@ def update_hit_count(url_conversion):
         email_campaign_send = email_campaign_send_url_conversion.email_campaign_send
         candidate = Candidate.query.get(email_campaign_send.candidate_id)
         is_open = email_campaign_send_url_conversion.type == TRACKING_URL_TYPE
-        if candidate:  # If candidate has been deleted, don't make the activity
-            # TODO: May be add activity using jwt
-            # Add activity
-            CampaignBase.create_activity(candidate.user_id,
-                                         ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open
-                                         else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
-                                         email_campaign_send,
-                                         dict(candidateId=candidate.id,
-                                              campaign_name=email_campaign_send.email_campaign.name,
-                                              candidate_name=candidate.formatted_name),
-                                         CampaignBase.get_authorization_header(candidate.user_id))
-        else:
+        # If candidate has been deleted, don't make the activity
+        if not candidate or candidate.is_web_hidden:
             logger.info("Tried performing URL redirect for nonexistent candidate: %s. "
                         "email_campaign_send: %s",
+                        email_campaign_send.candidate_id, email_campaign_send.id)
+        else:
+            # Add activity
+            try:
+                CampaignBase.create_activity(candidate.user_id,
+                                             ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open
+                                             else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
+                                             email_campaign_send,
+                                             dict(candidateId=candidate.id,
+                                                  campaign_name=email_campaign_send.email_campaign.name,
+                                                  candidate_name=candidate.formatted_name))
+            except Exception as error:
+                logger.error('Error occurred while creating activity for '
+                             'email-campaign(id:%s) open/click. '
+                             'Error is %s' % (email_campaign_send.email_campaign_id,
+                                              error.message))
+            logger.info("Activity has been added for URL redirect for candidate(id:%s). "
+                        "email_campaign_send(id:%s)",
                         email_campaign_send.candidate_id, email_campaign_send.id)
 
         # Update email_campaign_blast entry only if it's a new hit
