@@ -1647,24 +1647,22 @@ class CampaignBase(object):
     def create_activity(user_id, _type, source, params):
         """
         - Once we have all the parameters to save the activity in database table "Activity",
-            we call "activity_service"'s endpoint /activities/ with HTTP POST call
+            we call "activity_service"'s endpoint /v1/activities/ with HTTP POST call
             to save the activity in db.
-        - This makes server-to-server trusted call usign JWT.
-
+        - This makes server-to-server trusted call using JWT as system should create the
+            activity, not the user.
         - This method is called from create_sms_send_activity() and
             create_campaign_send_activity() methods of class SmsCampaignBase inside
-            sms_campaign_service/sms_campaign_base.py.
+            sms_campaign_service/sms_campaign_base.py etc.
 
         :param user_id: id of user
         :param _type: type of activity (using underscore with type as "type" reflects built in name)
         :param source: source object. Basically it will be Model object.
         :param params: params to store for activity
-        :param auth_header: Authorization header to make HTTP POST call on activity_service
         :type user_id: int
         :type _type: int,
         :type source: SmsCampaign | SmsCampaignBlast etc.
         :type params: dict
-        :type auth_header: dict
         :exception: ForbiddenError
 
         **See Also**
@@ -1673,13 +1671,12 @@ class CampaignBase(object):
         if not isinstance(params, dict):
             raise InvalidUsage('params should be dictionary.')
         raise_if_dict_values_are_not_int_or_long(dict(source_id=source.id, type=_type))
-        auth_header = generate_jwt_headers(content_type=JSON_CONTENT_TYPE_HEADER['content-type'],
+        auth_header = generate_jwt_headers(content_type='application/json',
                                            user_id=user_id)
         json_data = json.dumps({'source_table': source.__tablename__,
                                 'source_id': source.id,
                                 'type': _type,
                                 'params': params})
-        auth_header.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header,
                      data=json_data, user_id=user_id)
