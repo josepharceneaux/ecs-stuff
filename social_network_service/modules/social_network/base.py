@@ -464,6 +464,7 @@ class SocialNetworkBase(object):
         """
         status = False
         url = self.api_url + self.api_relative_url
+        logger.info("Eventbrite url: %s" % url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
