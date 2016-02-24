@@ -743,7 +743,7 @@ def create_or_update_candidate_from_params(
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
-    if is_creating:
+    if not is_creating:
         candidate_id = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id,
                                                  domain_id, emails)
 

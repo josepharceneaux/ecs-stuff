@@ -10,6 +10,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 
+
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """
     Sends candidate dict to candidate service POST and returns response.
