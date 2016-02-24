@@ -160,12 +160,12 @@ class CandidatesResource(Resource):
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
         # Custom fields must belong to user's domain
-        if all_cf_ids:  # If list is empty, move on. This is for improved performance
+        if all_cf_ids:
             if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
                 raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         # Areas of interest must belong to user's domain
-        if all_aoi_ids:   # If list is empty, move on. This is for improved performance
+        if all_aoi_ids:
             if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
