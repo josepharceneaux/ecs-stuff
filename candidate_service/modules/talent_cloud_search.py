@@ -397,7 +397,7 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
     :param candidate_ids: id of candidates for documents to be uploaded
     :return:
     """
-    if isinstance(candidate_ids, int) or isinstance(candidate_ids, long):
+    if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
     logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
     start_time = time.time()

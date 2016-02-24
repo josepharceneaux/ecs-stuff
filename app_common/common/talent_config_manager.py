@@ -49,6 +49,16 @@ class TalentConfigKeys(object):
     EVENTBRITE_ACCESS_TOKEN = "EVENTBRITE_ACCESS_TOKEN"
 
 
+class TalentEnvs(object):
+    """
+    Here are the values of different environments used for getTalent app.
+    """
+    DEV = 'dev'
+    JENKINS = 'jenkins'
+    QA = 'qa'
+    PROD = 'prod'
+
+
 def load_gettalent_config(app_config):
     """
     Load configuration variables from env vars, conf file, or S3 bucket (if QA/prod)
@@ -69,13 +79,13 @@ def load_gettalent_config(app_config):
     app_config[TalentConfigKeys.LOGGER] = logging.getLogger("flask_service.%s" % app_config[TalentConfigKeys.ENV_KEY])
 
     # Load up config from private S3 bucket, if environment is qa or prod
-    if app_config[TalentConfigKeys.ENV_KEY] in ('qa', 'prod', 'jenkins'):
+    if app_config[TalentConfigKeys.ENV_KEY] in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY env vars
         from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
-        if app_config[TalentConfigKeys.ENV_KEY] == 'prod':
+        if app_config[TalentConfigKeys.ENV_KEY] == TalentEnvs.PROD:
             bucket_name = PROD_CONFIG_FILE_S3_BUCKET
-        elif app_config[TalentConfigKeys.ENV_KEY] == 'qa':
+        elif app_config[TalentConfigKeys.ENV_KEY] == TalentEnvs.QA:
             bucket_name = STAGING_CONFIG_FILE_S3_BUCKET
         else:
             bucket_name = JENKINS_CONFIG_FILE_S3_BUCKET
@@ -102,7 +112,7 @@ def load_gettalent_config(app_config):
 def _set_environment_specific_configurations(environment, app_config):
     app_config['DEBUG'] = False
 
-    if environment == 'dev':
+    if environment == TalentEnvs.DEV:
         app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['DEBUG'] = True

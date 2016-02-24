@@ -3,9 +3,11 @@ import time
 import email
 import imaplib
 import requests
+from email_campaign_service.common.talent_config_manager import TalentEnvs
 from email_campaign_service.common.error_handling import InvalidUsage
 
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.email_campaign_app import app
@@ -289,10 +291,7 @@ def assert_mail(email_subject):
     start = time.time()
     mail_found = False
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
-    # 'lqsgrthhqepcjafd' here is an app specific password for this account
-    # to allow less secure apps
-    # mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-    mail.login('gettalentmailtest@gmail.com', 'lqsgrthhqepcjafd')
+    mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     # mail.list()  # Out: list of "folders" aka labels in gmail.
     print "Check for mail with subject: %s" % email_subject
     header_subject = '(HEADER Subject "%s")' % email_subject
