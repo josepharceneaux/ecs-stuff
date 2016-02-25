@@ -22,8 +22,7 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound,
                                                         ForbiddenError,
                                                         InvalidUsage)
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests, \
-    get_invalid_ids
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -94,7 +93,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
                                                               self.METHOD,
                                                               self.URL,
                                                               access_token_first,
@@ -262,7 +261,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         :return:
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
         data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=valid_header,
@@ -278,7 +277,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         :return:
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
         data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user.id,
                                 headers=valid_header,
@@ -292,7 +291,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
                                                               self.METHOD,
                                                               self.URL,
                                                               access_token_first,
@@ -355,7 +354,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
                                                               self.METHOD,
                                                               self.URL,
                                                               access_token_first,

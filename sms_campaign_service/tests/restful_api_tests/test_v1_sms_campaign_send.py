@@ -15,7 +15,7 @@ from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInU
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
 
@@ -32,7 +32,7 @@ class TestSendSmsCampaign(object):
         User auth token is invalid, it should get Unauthorized error.
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_token(self.METHOD,
+        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD,
                                                         self.URL % sms_campaign_of_current_user.id,
                                                         None)
 
@@ -43,7 +43,7 @@ class TestSendSmsCampaign(object):
         to update the record. It should get ResourceNotFound error.
         :return:
         """
-        CampaignsCommonTests.request_after_deleting_campaign(
+        CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
             self.URL, self.METHOD, access_token_first)
 
@@ -54,7 +54,7 @@ class TestSendSmsCampaign(object):
         of logged-in user. It should get Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
+        CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
                                                          self.URL % sms_campaign_in_other_domain.id,
                                                          access_token_first)
 
@@ -68,7 +68,7 @@ class TestSendSmsCampaign(object):
         NoSmartlistAssociatedWithCampaign.
         :return:
         """
-        CampaignsCommonTests.campaign_send_with_no_smartlist(
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(
             self.URL % sms_campaign_of_current_user.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
@@ -80,7 +80,7 @@ class TestSendSmsCampaign(object):
         :return:
         """
         with app.app_context():
-            CampaignsCommonTests.campaign_send_with_no_smartlist_candidate(
+            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % sms_campaign_of_current_user.id, access_token_first,
                 sms_campaign_of_current_user)
 
@@ -90,7 +90,7 @@ class TestSendSmsCampaign(object):
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
                                                               self.METHOD,
                                                               self.URL,
                                                               access_token_first,

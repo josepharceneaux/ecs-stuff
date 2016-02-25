@@ -26,8 +26,8 @@ from sms_campaign_service.common.tests.conftest import fake
 from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi, HEALTH_CHECK)
 from sms_campaign_service.common.utils.handy_functions import url_conversion
 from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
-from sms_campaign_service.common.campaign_services.common_tests import get_invalid_ids, \
-    CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import (get_invalid_ids,
+                                                                         CampaignsTestsHelpers)
 
 
 # Test for healthcheck
@@ -281,7 +281,7 @@ class TestTSmsCampaignBase(object):
         Creating object of SmsCampaignBase class with non-existing user_ids.
         :return:
         """
-        last_campaign_id_in_db = CampaignsCommonTests.get_last_id(User)
+        last_campaign_id_in_db = CampaignsTestsHelpers.get_last_id(User)
         ids = get_invalid_ids(last_campaign_id_in_db)
         error_message = None
         for _id in ids:

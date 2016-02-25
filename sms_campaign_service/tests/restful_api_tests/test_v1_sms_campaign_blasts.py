@@ -9,10 +9,7 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-
-# Service Specific
-from sms_campaign_service.tests.modules.common_functions import assert_ok_response_and_counts
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignBlasts(object):
@@ -29,7 +26,7 @@ class TestSmsCampaignBlasts(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_token(self.METHOD, self.URL
+        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD, self.URL
                                                         % sms_campaign_of_current_user.id, None)
 
     def test_get_with_no_blasts_saved(self, access_token_first, sms_campaign_of_current_user):
@@ -42,7 +39,7 @@ class TestSmsCampaignBlasts(object):
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
     def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_current_user):
         """
@@ -52,7 +49,7 @@ class TestSmsCampaignBlasts(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_after_deleting_campaign(sms_campaign_of_current_user,
+        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
                                                              SmsCampaignApiUrl.CAMPAIGN,
                                                              self.URL, self.METHOD,
                                                              access_token_first)
@@ -73,7 +70,7 @@ class TestSmsCampaignBlasts(object):
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['id'] == sms_campaign_of_current_user.blasts[0].id
         assert json_resp['campaign_id'] == sms_campaign_of_current_user.id
@@ -86,6 +83,6 @@ class TestSmsCampaignBlasts(object):
         some other user. It should get Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
+        CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
                                                          self.URL % sms_campaign_in_other_domain.id,
                                                          access_token_first)

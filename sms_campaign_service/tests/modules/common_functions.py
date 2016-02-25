@@ -13,7 +13,7 @@ from sms_campaign_service.common.models.misc import UrlConversion
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpersimport CampaignsTestsHelpers
 
 SLEEP_TIME = 30
 
@@ -78,7 +78,7 @@ def assert_for_activity(user_id, type_, source_id):
     :param source_id:
     :return:
     """
-    CampaignsCommonTests.assert_for_activity(user_id, type_, source_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, type_, source_id)
 
 
 def get_reply_text(candidate_phone):
@@ -142,24 +142,3 @@ def delete_test_scheduled_task(task_id, headers):
     """
     with app.app_context():
         CampaignUtils.delete_scheduled_task(task_id, headers)
-
-
-def assert_ok_response_and_counts(response, count=0, entity='sends', check_count=True):
-    """
-    This is the common function to assert that response is returning valid 'count'
-    and 'sends' or 'replies' for a particular campaign.
-    :param response:
-    :param count:
-    :return:
-    """
-    assert response.status_code == 200, 'Response should be ok (200)'
-    assert response.json()
-    resp = response.json()
-    assert entity in resp
-    if check_count:
-        assert 'count' in resp
-        assert resp['count'] == count
-        if not count:  # if count is 0, campaign_sends should be []
-            assert not resp[entity]
-        else:
-            assert resp[entity]

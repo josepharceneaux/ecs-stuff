@@ -9,11 +9,8 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
-
-# Service Specific
-from sms_campaign_service.tests.modules.common_functions import assert_ok_response_and_counts
 
 
 class TestSmsCampaignBlastReplies(object):
@@ -30,7 +27,7 @@ class TestSmsCampaignBlastReplies(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_token(
+        CampaignsTestsHelpers.request_with_invalid_token(
             self.METHOD, self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             None)
 
@@ -46,7 +43,7 @@ class TestSmsCampaignBlastReplies(object):
         response = requests.get(
             self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
     def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_current_user,
                                        create_sms_campaign_blast):
@@ -58,7 +55,7 @@ class TestSmsCampaignBlastReplies(object):
         :return:
         """
         blast_id = create_sms_campaign_blast.id
-        CampaignsCommonTests.request_after_deleting_campaign(
+        CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
             self.URL % ('%s', blast_id), self.METHOD, access_token_first)
 
@@ -78,7 +75,7 @@ class TestSmsCampaignBlastReplies(object):
         response = requests.get(
             self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['blast_id'] == sms_campaign_of_current_user.blasts[0].id
         assert json_resp['candidate_phone_id'] == candidate_phone_1.id
@@ -90,7 +87,7 @@ class TestSmsCampaignBlastReplies(object):
         some other user. It should get Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(
+        CampaignsTestsHelpers.request_for_forbidden_error(
             self.METHOD, self.URL % (sms_campaign_in_other_domain.id, create_sms_campaign_blast.id),
             access_token_first)
 
@@ -104,7 +101,7 @@ class TestSmsCampaignBlastReplies(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(
+        CampaignsTestsHelpers.request_for_forbidden_error(
             self.METHOD,
             self.URL % (sms_campaign_of_current_user.id, create_blast_for_not_owned_campaign.id),
             access_token_first)
@@ -114,7 +111,7 @@ class TestSmsCampaignBlastReplies(object):
         This is a test to get blasts of a campaign which does not exists in database.
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(
             SmsCampaign, self.METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
             access_token_first,
             None)
@@ -124,6 +121,6 @@ class TestSmsCampaignBlastReplies(object):
         This is a test to get blasts of a campaign using non-existing blast_id
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(
             SmsCampaignBlast, self.METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
             access_token_first, None)
