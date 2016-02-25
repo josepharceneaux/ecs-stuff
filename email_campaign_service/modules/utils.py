@@ -208,7 +208,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     # Convert soup object into new HTML
     if new_html and soup:
         new_html = soup.prettify()
-        new_html = HTMLParser.HTMLParser().unescape(new_html)#BeautifulSoup(new_html, convertEntities=BeautifulSoup.HTML_ENTITIES).contents[0]
+        new_html = HTMLParser.HTMLParser().unescape(new_html)
 
     return new_text, new_html
 

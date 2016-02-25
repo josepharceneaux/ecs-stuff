@@ -135,10 +135,13 @@ def candidate_in_other_domain(request, user_from_diff_domain):
     request.addfinalizer(tear_down)
     return candidate
 @pytest.fixture()
-def check_send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
+def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     for user in different domain
+    :param access_token_first:
+    :param campaign_with_valid_candidate:
+    :return:
     :return:
     """
     URL = EmailCampaignUrl.SEND

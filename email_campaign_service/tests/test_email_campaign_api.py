@@ -5,6 +5,8 @@ import imaplib
 import requests
 import re
 
+from sqlalchemy import desc
+
 from email_campaign_service.common.talent_config_manager import TalentEnvs
 from email_campaign_service.common.error_handling import InvalidUsage
 
@@ -20,6 +22,7 @@ from email_campaign_service.common.routes import (EmailCampaignUrl, CandidatePoo
 from email_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
                                                                   delete_campaign)
+from email_campaign_service.common.models.email_campaign import (EmailCampaignBlast)
 
 __author__ = 'jitesh'
 
@@ -243,7 +246,7 @@ class TestSendCampaign(object):
         assert_mail(campaign.email_subject)
 
     def test_campaign_send_with_email_client_id(
-            self, check_send_email_campaign_by_client_id_response, user_first):
+            self, send_email_campaign_by_client_id_response, user_first):
         """
         Email client can be Outlook Plugin, Browser etc.
         User auth token is valid, campaign has one smart list associated. Smartlist has tow
@@ -262,21 +265,44 @@ class TestSendCampaign(object):
                   ]
             }
         """
-        response = check_send_email_campaign_by_client_id_response['response']
-        campaign = check_send_email_campaign_by_client_id_response['campaign']
+        response = send_email_campaign_by_client_id_response['response']
+        campaign = send_email_campaign_by_client_id_response['campaign']
         assert_campaign_send(response, campaign, user_first, 2, email_client=True)
 
-    def test_redirect_url(self, check_send_email_campaign_by_client_id_response):
-        response = check_send_email_campaign_by_client_id_response['response']
+    def test_redirect_url(self, send_email_campaign_by_client_id_response):
+        """
+        Sanity testing for redirect URL, hits the URL, checks the response to be ok
+        and does checking in DB to verify if relevant fields in tables are being
+        updated accordingly after hitting URL
+        :param send_email_campaign_by_client_id_response:
+        """
+        response = send_email_campaign_by_client_id_response['response']
+        campaign = send_email_campaign_by_client_id_response['campaign']
         json_response = response.json()
         email_campaign_sends = json_response['email_campaign_sends'][0]
         new_html = email_campaign_sends['new_html']
         redirect_url = re.findall('"([^"]*)"', new_html)
         assert len(redirect_url) > 0
         redirect_url = redirect_url[0]
-        #url_conversion_id = re.findall( '*redirect\/\s*([^\n\r]*', redirect_url)
+        url_conversion_id = re.findall( '[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
+        assert len(url_conversion_id) > 0
+        url_conversion_id = int(url_conversion_id[0])
+        db.session.commit()
+        url_conversion = UrlConversion.query.get(url_conversion_id)
+        assert url_conversion
+        email_campaign_blast = EmailCampaignBlast.query.filter(
+            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
+        assert email_campaign_blast
+        opens_count_before = email_campaign_blast.opens
+        hit_count_before = url_conversion.hit_count
         response = requests.get(redirect_url)
         assert response.status_code == 200
+        db.session.commit()
+        opens_count_after = email_campaign_blast.opens
+        hit_count_after = url_conversion.hit_count
+        assert opens_count_after == opens_count_before + 1
+        assert hit_count_after == hit_count_before + 1
+        UrlConversion.delete(url_conversion)
 
 
 def assert_mail(email_subject):
