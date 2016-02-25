@@ -4,93 +4,84 @@ This module contains Restful API endpoints for Push Campaign Service.
 A brief overview of all endpoints is as follows:
 
     1. Create a push campaign
-        URL: /v1/campaigns [POST]
+        URL: /v1/push-campaigns [POST]
 
         Send a POST request to this endpoint with required data to create a push campaign.
         It actually creates a draft for campaign. To send a campaign, you need to schedule it.
 
     2. Get campaigns of a user
-        URL: /v1/campaigns [GET]
+        URL: /v1/push-campaigns [GET]
 
-        To get all campaigns of a user, send a GET request to this endpoint
+        To get all push campaigns of a user, send a GET request to this endpoint
 
-    3. Delete multiple campaigns of a user
-        URL: /v1/campaigns [DELETE]
+    3. Delete multiple push campaigns of a user
+        URL: /v1/push-campaigns [DELETE]
 
         APi user can send a DELETE request to this endpoint with campaign ids as list
         { ids: [1,2,3]}  to delete multiple campaigns.
 
     4. Get a single campaign of a user
-        URL: /v1/campaigns/:id [GET]
+        URL: /v1/push-campaigns/:id [GET]
 
         To get a specific campaign of a user, send a GET request to this endpoint
 
     5. Update a specific campaign of a user
-        URL: /v1/campaigns/:id [PUT]
+        URL: /v1/push-campaigns/:id [PUT]
 
         To update a specific campaign of a user, send a PUT request to this endpoint
 
     6. Delete a specific campaign of a user
-        URL: /v1/campaigns/:id [DELETE]
+        URL: /v1/push-campaigns/:id [DELETE]
 
         To delete a specific campaign of a user, send a DELETE request to this endpoint
 
     7. Schedule a campaign
-        URL: /v1/campaigns/:id/schedule [POST]
+        URL: /v1/push-campaigns/:id/schedule [POST]
 
         User can schedule a campaign by sending a POST request to this endpoint with frequency,
         start_datetime and end_datetime.
 
     8. Reschedule a campaign
-        URL: /v1/campaigns/:id/schedule [PUT]
+        URL: /v1/push-campaigns/:id/schedule [PUT]
 
         User can reschedule his campaign by updating the frequency, start_datetime or end_datetime
         by sending a PUT request to this point.
 
     9. Unschedule a campaign
-        URL: /v1/campaigns/:id/schedule [DELETE]
+        URL: /v1/push-campaigns/:id/schedule [DELETE]
 
         User can unschedule his campaign by by sending a DELETE request to this point.
 
     10. Send a campaign
-        URL: /v1/campaigns/:id/send [POST]
+        URL: /v1/push-campaigns/:id/send [POST]
 
         This endpoint is used to send a campaign (that has already been created) to associated
         candidates by send a POST request to this endpoint.
 
     12. Get `Sends` of a Blast
-        URL: /v1/campaigns/:id/blasts/:blast_id/sends [GET]
+        URL: /v1/push-campaigns/:id/blasts/:blast_id/sends [GET]
 
         A campaign can have multiple blast. To get sends of a single blast for a specific campaign
         send a GET request to this endpoint.
 
     13. Get `Sends` of a campaign
-        URL: /v1/campaigns/<int:campaign_id>/sends [GET]
+        URL: /v1/push-campaigns/<int:campaign_id>/sends [GET]
 
         To get all sends of a campaign, use this endpoint
 
     14. Get `Blasts` of a campaign
-        URL: /v1/campaigns/:id/blasts [GET]
+        URL: /v1/push-campaigns/:id/blasts [GET]
 
         To get a list of all blasts associated to a campaign, send a GET request
         to this endpoint.A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
 
     15. Get a specific `Blast` of a campaign
-        URL: /v1/campaigns/:id/blasts/:blast_id [GET]
+        URL: /v1/push-campaigns/:id/blasts/:blast_id [GET]
 
         To get details of a specific blast associated to a campaign, send a GET request
         to this endpoint.A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
-
-    16. Register a device for candidate
-        URL: /v1/devices [POST]
-
-        Push notifications are sent to candidate devices using OneSignal API. One signal
-        assigns a device id to each device which we need to assign to a candidate in getTalent
-        database. In order to do that, we need to send a POST request to this endpoint with
-        candidate id and device id (from OneSignal).
-
 
 """
 # Standard Library
@@ -235,8 +226,10 @@ class PushCampaignsResource(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
-        missing_fields = [key for key in ['name', 'body_text',
-                                          'url', 'smartlist_ids'] if key not in data or not data[key]]
+        missing_fields = [key for key in ['name',
+                                          'body_text',
+                                          'url',
+                                          'smartlist_ids'] if key not in data or not data[key]]
         if missing_fields:
             raise InvalidUsage('Some required fields are missing',
                                additional_error_info=dict(missing_fields=missing_fields),
@@ -245,7 +238,7 @@ class PushCampaignsResource(Resource):
         campaign_id, invalid_smartlist_ids = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
-        headers = dict(Location='/%s/campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
+        headers = dict(Location='/%s/push-campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
         return ApiResponse(response, headers=headers, status=201)
 
     def delete(self):
@@ -434,7 +427,8 @@ class CampaignByIdResource(Resource):
                 if smartlist_id not in associated_smartlist_ids:
                     associate_smart_list_with_campaign(smartlist_id, campaign.id)
                 else:
-                    logger.info('Smartlist (id: %s) already associated with campaign' % smartlist_id)
+                    logger.info('Smartlist (id: %s) already associated with campaign'
+                                % smartlist_id)
         elif isinstance(smartlist_ids, (int, long)):
             associate_smart_list_with_campaign(smartlist_ids, campaign.id)
 
@@ -503,7 +497,7 @@ class SchedulePushCampaignResource(Resource):
             >>>             }
             >>> campaign_id = str(1)
             >>> schedule_data = json.dumps(schedule_data)
-            >>> response = requests.post(API_URL + '/v1/campaigns/' + campaign_id + '/schedule',
+            >>> response = requests.post(PushCampaignApiUrl.SCHEDULE % campaign_id,
             >>>                             headers=headers, data=schedule_data)
 
         .. Response::
@@ -561,7 +555,7 @@ class SchedulePushCampaignResource(Resource):
             >>>             }
             >>> campaign_id = 1
             >>> data = json.dumps(schedule_data)
-            >>> response = requests.put(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+            >>> response = requests.put(PushCampaignApiUrl.CAMPAIGN % campaign_id,
             >>>                             headers=headers, data=data)
 
         .. Response::
@@ -584,9 +578,8 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(request,
-                                                                                    campaign_id,
-                                                                                    CampaignUtils.PUSH)
+        pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
+            request, campaign_id, CampaignUtils.PUSH)
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
@@ -608,7 +601,7 @@ class SchedulePushCampaignResource(Resource):
             >>>             'Authorization': 'Bearer <access_token>',
             >>>            }
             >>> campaign_id = 1
-            >>> response = requests.delete(API_URL + '/campaigns/' + str(campaign_id) + '/schedule',
+            >>> response = requests.delete(PushCampaignApiUrl.CAMPAIGN % campaign_id,
             >>>                             headers=headers,
             >>>                         )
 
@@ -647,7 +640,7 @@ class SendPushCampaign(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
-            >>> response = requests.post(API_URL + '/v1/campaigns/' + str(campaign_id)
+            >>> response = requests.post(API_URL + '/v1/push-campaigns/' + str(campaign_id)
             >>>                     + '/send', headers=headers)
 
         .. Response::
@@ -739,7 +732,7 @@ class PushCampaignBlastSends(Resource):
             response = dict(sends=sends, count=len(sends))
             return response, 200
         else:
-            raise ForbiddenError('Campaign Blast (id: %s) is not assciated with campaign (id: %s)'
+            raise ForbiddenError('Campaign Blast (id: %s) is not associated with campaign (id: %s)'
                                  % (blast_id, campaign.id))
 
 
@@ -764,8 +757,8 @@ class PushCampaignSends(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
-            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)
-            >>>                     + '/sends/', headers=headers)
+            >>> response = requests.get(API_URL + '/v1/push-campaigns/' + str(campaign_id)
+            >>>                     + '/sends', headers=headers)
 
         .. Response::
 
@@ -817,7 +810,8 @@ class PushCampaignBlasts(Resource):
 
     def get(self, campaign_id):
         """
-        This endpoint returns a list of blast objects (dict) associated with a specific push campaign.
+        This endpoint returns a list of blast objects (dict) associated with a
+        specific push campaign.
 
         :param campaign_id: int, unique id of a push campaign
         :return: json data containing list of blasts and their counts
@@ -828,7 +822,7 @@ class PushCampaignBlasts(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
-            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ '/blasts',
+            >>> response = requests.get(PushCampaignApiUrl.BLASTS % campaign_id,
             >>>                         headers=headers)
 
         .. Response::
@@ -890,8 +884,7 @@ class PushCampaignBlastById(Resource):
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
             >>> blast_id = 3
-            >>> response = requests.get(API_URL + '/v1/campaigns/' + str(campaign_id)+ \
-            >>>                         '/blasts/' + str(blast_id),
+            >>> response = requests.get(PushCampaignApiUrl.BLAST % (campaign_id, blast_id),
             >>>                         headers=headers)
 
         .. Response::
@@ -924,70 +917,6 @@ class PushCampaignBlastById(Resource):
         else:
             raise ResourceNotFound('Blast not found for campaign (id: %s) with id %s'
                                    % (campaign_id, blast_id))
-
-
-@api.route(PushCampaignApi.DEVICES)
-class AssociateDevice(Resource):
-
-    decorators = [require_oauth()]
-
-    def post(self):
-        """
-        This endpoint is used to register a candidate's device with getTalent.
-        Device id is a unique string given by OneSignal API.
-        for more information about device id see here
-        https://documentation.onesignal.com/docs/website-sdk-api#getIdsAvailable
-
-        :Example:
-
-            >>> import json
-            >>> import requests
-            >>> headers = {'Authorization': 'Bearer <access_token>'}
-            >>> data = {
-            >>>            "candidate_id": 268,
-            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
-            >>>         }
-            >>> data = json.dumps(data)
-            >>> campaign_id = 1
-            >>> response = requests.post(PushCampaignApiUrl.DEVICES, data=data,
-            >>>                          headers=headers)
-
-        .. Response::
-
-                {
-                    "message": "Device registered successfully with candidate (id: 268)"
-                }
-
-        .. Status:: 200 (OK)
-                    401 (Unauthorized to access getTalent)
-                    403 (Can't add device for non existing candidate)
-                    500 (Internal Server Error)
-        """
-        data = get_valid_json_data(request)
-        candidate_id = data.get('candidate_id')
-        if not candidate_id:
-            raise InvalidUsage('candidate_id is not given in post data')
-        device_id = data.get('device_id')
-        if not device_id:
-            raise InvalidUsage('device_id is not given in post data')
-
-        candidate = Candidate.get_by_id(candidate_id)
-        # if candidate does not exists with given id, we can not add this device id
-        if not candidate:
-            raise ResourceNotFound('Unable to associate device with a non existing candidate id: %s' % candidate_id)
-
-        # Send a GET request to OneSignal API to confirm that this device id is valid
-        response = one_signal_client.get_player(device_id)
-        if response.ok:
-            # Device exists with id
-            candidate_device = CandidateDevice(candidate_id=candidate_id,
-                                               one_signal_device_id=device_id,
-                                               registered_at=datetime.datetime.now())
-            CandidateDevice.save(candidate_device)
-            return dict(message='Device registered successfully with candidate (id: %s)' % candidate_id)
-        else:
-            # No device was found on OneSignal database.
-            raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
 
 
 @api.route(PushCampaignApi.REDIRECT)
@@ -1074,8 +1003,11 @@ class ResourceGetUrlConversion(Resource):
                         "last_hit_time": "",
                         "hit_count": 0,
                         "added_time": "2016-02-12 12:46:09",
-                        "source_url": "http://127.0.0.1:8013/v1/redirect/1638?valid_until=1486903569.01&auth_user=no_user&extra=&signature=ha9B947UcLJ0jbqqSRF4O82%2Bb5E%3D",
-                        "destination_url": "https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-getting-started"
+                        "source_url": "http://127.0.0.1:8013/v1/redirect/1638?valid_until=
+                        1486903569.01&auth_user=no_user&extra=&signature=ha9B947UcLJ0
+                        jbqqSRF4O82%2Bb5E%3D",
+                        "destination_url": "https://www.digitalocean.com/community/tutorials/
+                        how-to-install-and-use-docker-getting-started"
                     }
                 }
 
@@ -1091,10 +1023,16 @@ class ResourceGetUrlConversion(Resource):
             url_conversion = UrlConversion.get_by_id(_id)
             if not url_conversion:
                 raise ResourceNotFound('Resource not found with id: %s' % _id)
-            if url_conversion.push_campaign_sends_url_conversions.first().send.candidate.user.domain_id == user.domain_id:
-                return {'url_conversion': url_conversion.to_json()}
-            else:
+
+            send_url_conversion = url_conversion.push_campaign_sends_url_conversions.first()
+            if not(send_url_conversion and send_url_conversion.send):
+                raise ResourceNotFound('Resource not found')
+
+            if send_url_conversion.send.candidate.user.domain_id != user.domain_id:
                 raise ForbiddenError('You can not get other domain url_conversion records')
+
+            return {'url_conversion': url_conversion.to_json()}
+
         elif send_id:
             send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
             if not send_url_conversion:

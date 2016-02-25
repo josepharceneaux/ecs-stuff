@@ -74,7 +74,7 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     :param campaign_data: data to create campaign
     :return:
     """
-    previous_count = len(get_campaigns(token_first))
+    previous_count = len(get_campaigns(token_first)['campaigns'])
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id']]
     id = create_campaign(data, token_first)['id']
@@ -150,6 +150,7 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
     blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     assert len(blasts) == 1
     blast = blasts[0]
+    blast['campaign_id'] = campaign_in_db['id']
     return blast
 
 

@@ -1,3 +1,6 @@
+"""
+This modules run the service on specific port
+"""
 from push_campaign_app.app import app
 from common.routes import GTApis
 

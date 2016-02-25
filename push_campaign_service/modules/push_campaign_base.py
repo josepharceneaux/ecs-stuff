@@ -1,9 +1,9 @@
 """
-This module contain PushCampaignVase class which is sub class of CamapignBase.
+This module contain PushCampaignVase class which is sub class of CampaignBase.
 
     PushCampaignBase class contains method that do following actions:
         - __init__():
-            Constructor calls supper method to intiliaze default values for a push campaign
+            Constructor calls supper method to initialize default values for a push campaign
 
         - get_all_campaigns():
             This method retrieves all push campaigns from getTalent push_campaign table.
@@ -72,14 +72,14 @@ class PushCampaignBase(CampaignBase):
     def get_all_campaigns(self):
         """
         This gets all the campaigns created by current user
-        :return: all campaigns associated to with user
-        :rtype: list
+        :return: all campaigns associated to a user
+        :rtype: list[dict]
         """
         return PushCampaign.get_by_user_id(self.user_id)
 
     def get_campaign_type(self):
         """
-        This sets the value of self.campaign_type to be 'sms_campaign'.
+        This provides the value of self.campaign_type to be used in campaign base.
         """
         return CampaignUtils.PUSH
 
@@ -95,13 +95,12 @@ class PushCampaignBase(CampaignBase):
             4- task_id (Task created on APScheduler)
         Finally we return the "task_id".
 
-        - This method is called from the endpoint /v1/campaigns/:id/schedule on HTTP method POST/PUT
+        - This method is called from the endpoint /v1/push-campaigns/:id/schedule on HTTP method POST/PUT
 
         :param data_to_schedule: required data to schedule an Push campaign
         :type data_to_schedule: dict
-        :return: task_id (Task created on APScheduler), and status of task(already scheduled
-                            or new scheduled)
-        :rtype: tuple
+        :return: task_id (Task created on APScheduler)
+        :rtype: str
 
         **See Also**
         .. see also:: SchedulePushCampaignResource  in v1_push_campaign_api.py.
@@ -122,7 +121,7 @@ class PushCampaignBase(CampaignBase):
         will override this if needed.
         :param candidates: list of candidates
         :type candidates: list
-        :return:
+        :return: generator
         """
         return (candidate.id for candidate in candidates)
 
@@ -196,7 +195,7 @@ class PushCampaignBase(CampaignBase):
                                      'Errors: %s' % (candidate_id, errors))
                         UrlConversion.delete(url_conversion_id)
 
-                except Exception as e:
+                except Exception:
                     logger.exception('Unable to send push  campaign (id: %s) to candidate (id: %s)'
                                      % (self.campaign.id, candidate.id))
 
@@ -229,8 +228,8 @@ class PushCampaignBase(CampaignBase):
                         common/utils/campaign_base.py
         """
         with app.app_context():
-            CampaignUtils.post_campaign_sent_processing(CampaignBase, sends_result, user_id, campaign_type,
-                                          blast_id, auth_header)
+            CampaignUtils.post_campaign_sent_processing(CampaignBase, sends_result, user_id,
+                                                        campaign_type, blast_id, auth_header)
 
     @staticmethod
     @celery_app.task(name='celery_error_handler')
@@ -245,11 +244,11 @@ class PushCampaignBase(CampaignBase):
 
     def save(self, form_data):
         """
-        This overrides tha CampaignBase class method. This appends user_phone_id in
+        This overrides tha CampaignBase class method. This appends user_id in
         form_data and calls super constructor to save the campaign in database.
         :param form_data: data from UI
         :type form_data: dict
-        :return: id of sms_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
+        :return: id of push_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
         :rtype: tuple
         """
         form_data['user_id'] = self.user.id

@@ -148,7 +148,7 @@ class TestScheduleCampaignUsingPOST(object):
         assert blast['sends'] == 1
 
         # Now remove the task from scheduler
-        delete_scheduler_task(task_id, token_first, expected_status=(OK,))
+        delete_scheduler_task(task_id, token_same_domain, expected_status=(OK,))
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first):
@@ -269,25 +269,11 @@ class TestRescheduleCampaignUsingPUT(object):
         delete_scheduler_task(task_id, token_first, expected_status=(OK,))
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
-                                                            campaign_in_db, smartlist_first):
+                                                            campaign_in_db, schedule_a_campaign):
 
         data = generate_campaign_schedule_data()
-        response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
-                                       expected_status=(OK,))
-        assert 'task_id' in response
-        assert 'message' in response
-        task_id = response['task_id']
-        assert task_id
-        time.sleep(3 * SLEEP_TIME)
-        response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
-        blasts = response['blasts']
-        assert len(blasts) == 1
-        blast = blasts[0]
-        # One send expected since only one candidate is associated with campaign
-        assert blast['sends'] == 1
-
-        # Now remove the task from scheduler
-        delete_scheduler_task(task_id, token_first, expected_status=(OK,))
+        reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
+                            expected_status=(FORBIDDEN,))
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
@@ -307,13 +293,14 @@ class TestUnscheduleCamapignUsingDELETE(object):
         # and we have a a test user token_first "test_auth_token" to test ownership
         unschedule_campaign(campaign_in_db['id'], token_second, expected_status=(FORBIDDEN,))
 
-    def test_unschedule_campaign_with_other_user_but_same_domain(self, token_same_domain, campaign_in_db):
+    def test_unschedule_campaign_with_other_user_but_same_domain(self, token_same_domain,
+                                                                 campaign_in_db):
         """
         Test with a valid campaign and user is not owner of campaign but from same domain
         This user should be allowed to unschedule the campaign
         Here we created campaign with user whose Auth token_first is "token_first"
         """
-        unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(FORBIDDEN,))
+        unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db):
         # Test with invalid integer id

@@ -60,40 +60,35 @@ class TestCampaignBlastSends(object):
         campaign_id = campaign_in_db['id']
         get_blast_sends(invalid_blast_id, campaign_id, token_first, expected_status=(NOT_FOUND,))
 
-    def test_get_campaign_blast_sends(self, token_first, campaign_in_db,
-                                      campaign_blast):
+    def test_get_campaign_blast_sends(self, token_first, campaign_blast):
         """
         Try to get sends with a valid campaign and blast id and we hope that we will get
         200 (OK) response.
         :param token_first: auth token
-        :param campaign_in_db: campaign object
         :param campaign_blast: campaign blast object
         :return:
         """
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
-        campaign_id = campaign_in_db['id']
+        campaign_id = campaign_blast['campaign_id']
         response = get_blast_sends(blast_id, campaign_id, token_first, expected_status=(200,))
         # Since each blast have one send, so total sends will be equal to number of blasts
         assert response['count'] == 1
         assert len(response['sends']) == 1
 
-    def test_get_campaign_blast_sends_with_user_from_same_domain(self, token_same_domain,
-                                                                 campaign_in_db, campaign_blast):
+    def test_get_campaign_blast_sends_with_user_from_same_domain(self, token_same_domain, campaign_blast):
         """
         Test if a user from same domain can access sends of a campaign blast or not.
         API should allow this user
         :param token_same_domain:
-        :param campaign_in_db:
         :param campaign_blast:
         :return:
         """
         blast_id = campaign_blast['id']
-        campaign_id = campaign_in_db['id']
+        campaign_id = campaign_blast['campaign_id']
         get_blast_sends(blast_id, campaign_id, token_same_domain, expected_status=(200,))
 
-    def test_get_campaign_blast_sends_with_user_from_diff_domain(self, token_second,
-                                                                 campaign_in_db, campaign_blast):
+    def test_get_campaign_blast_sends_with_user_from_diff_domain(self, token_second, campaign_blast):
         """
         Test if a user from same domain can not access sends of a campaign blast or not.
         API should not allow this user
@@ -103,5 +98,5 @@ class TestCampaignBlastSends(object):
         :return:
         """
         blast_id = campaign_blast['id']
-        campaign_id = campaign_in_db['id']
+        campaign_id = campaign_blast['campaign_id']
         get_blast_sends(blast_id, campaign_id, token_second, expected_status=(403,))

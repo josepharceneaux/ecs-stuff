@@ -123,9 +123,8 @@ class TestGetListOfCampaigns(object):
         previous_count = campaign_in_db['previous_count']
         response = get_campaigns(token_first)
 
-        assert response['count'] == (1 + previous_count), \
-            'Campaign Count should be 1 this time'
-        assert len(response['campaigns']) == (1 + previous_count), 'Got one campaign in list'
+        assert response['count'] == (1 + previous_count)
+        assert len(response['campaigns']) == (1 + previous_count)
         campaign = response['campaigns'][previous_count]
 
         assert campaign['name'] == campaign_in_db['name']

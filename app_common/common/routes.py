@@ -726,13 +726,13 @@ class PushCampaignApi(object):
     VERSION = 'v1'
 
     API_URL = '/%s/%s' % (VERSION, '%s')
-    # endpoint /v1/campaigns
+    # endpoint /v1/push-campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
     DEVICES = '/%s/%s' % (VERSION, 'devices')
-    # endpoint /v1/campaigns/:id
+    # endpoint /v1/push-campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
-    CAMPAIGN = '/%s/%s' % (VERSION, 'campaigns/<int:campaign_id>')
+    CAMPAIGN = '/%s/%s' % (VERSION, 'push-campaigns/<int:campaign_id>')
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + '/sends'
@@ -762,7 +762,7 @@ class PushCampaignApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
                                GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
     CAMPAIGNS = HOST_NAME % PushCampaignApi.CAMPAIGNS
-    CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'campaigns/%s')
+    CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'push-campaigns/%s')
     SENDS = CAMPAIGN + '/sends'
     BLASTS = CAMPAIGN + '/blasts'
     BLAST = CAMPAIGN + '/blasts/%s'

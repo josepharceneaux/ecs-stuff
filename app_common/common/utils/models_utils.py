@@ -58,7 +58,6 @@ from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
 from ..error_handling import register_error_handlers, InvalidUsage
-from ..utils.handy_functions import camel_case_to_snake_case
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -67,8 +66,34 @@ def to_json(self, include=None, field_parsers=dict()):
     Converts SqlAlchemy object to serializable dictionary
 
     Some data types are not json serializable e.g. DATETIME, TIMESTAMP
-    so we are making a dictionary where keys are types and values are types to which we want to
-    convert this data.
+    so we are making a dictionary where keys are types and values are functions / callable that
+     will be used to convert that field to specific type e.g. string
+
+     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+     to json serializable dict but we want out datetime object to be converted in
+     ISO 8601 format, fo we can pass a parser functions like
+
+     This methods handles any naming conventions for db column names and model attributes name.
+     e.g. if we have a column name "UserId" in database and "owner_user_id", it will handle nicely.
+
+     Serializable dictionary will contain model attribute name as key, "owner_user_id" in this case.
+
+
+        : Example:
+            Let say event is an instance of Event model class, with some state
+            >>> parsers = dict(start_datetime=to_utc_str,
+            >>>                end_datetime=to_utc_str)
+            >>> event.to_json()
+
+            >>> {
+            >>>     ...
+            >>>     ...
+            >>>     start_datetime: '2016-02-12T12:12:00Z',
+            >>>     end_datetime: '2016-03-20T10:10:00Z',
+            >>>     ...
+            >>> }
+
+        Now
     :param self: instance of respected model class
     :type self: db.Model (some sub class)
     :param include: which columns we need to add in json data
@@ -85,31 +110,32 @@ def to_json(self, include=None, field_parsers=dict()):
     # data dictionary which will contain add data for this instance
     data = dict()
     cls = self.__class__
+    # get model properties
     properties = inspect(cls).attrs._data
     all_keys = properties._list
+    # only get those properties name that represent columns and not other ones starting with __ or
+    # relationship attributes' names
     columns = [key for key in all_keys if properties[key].strategy_wildcard_key == 'column']
-    columns = zip(cls.__table__.columns, columns)
+    # Pack column name (str) and column objects (Column)
+    columns = zip(columns, cls.__table__.columns)
     if isinstance(include, (list, tuple)):
-        allowed_columns = [col for col in columns if col[1] in include]
+        allowed_columns = [(name, column) for name, column in columns if name in include]
         if not allowed_columns:
             raise InvalidUsage('All given column names are invalid: %s' % include)
     else:
         allowed_columns = columns
     # iterate through all columns key, values
-    for col, name in allowed_columns:
+    for name, column in allowed_columns:
         # get value against this column name
         value = getattr(self, name)
-        # get column type and check if there as any conversion method given for that type.
-        # if it is, then use that method or type for data conversion
-        typ = str(col.type)
+        # get column type and check if there as any parsers or conversion method given
+        # for that type. If it is, then use that method or type for data conversion
+        typ = str(column.type)
         if name in field_parsers and callable(field_parsers[name]):
             data[name] = field_parsers[name](value)
         elif typ in converters and value is not None:
-            try:
-                # try to convert column value by given converter method
-                data[name] = converters[typ](value)
-            except:
-                data[name] = "Error:  Failed to covert using ", str(converters[typ])
+            # try to convert column value by given converter method
+            data[name] = converters[typ](value)
         elif value is None:
             # if value is None, make it empty string
             data[name] = str()
