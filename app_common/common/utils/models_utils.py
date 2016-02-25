@@ -47,50 +47,90 @@ from types import MethodType
 
 # Third Party
 from flask import current_app
+from sqlalchemy import inspect
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 
 # Application Specific
+
+
 from ..models.db import db
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
 from ..error_handling import register_error_handlers, InvalidUsage
-from ..utils.handy_functions import camel_case_to_snake_case
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
-def to_json(instance):
+def to_json(self, include=None, field_parsers=dict()):
     """
     Converts SqlAlchemy object to serializable dictionary
 
     Some data types are not json serializable e.g. DATETIME, TIMESTAMP
-    so we are making a dictionary where keys are types and values are types to which we want to
-    convert this data.
+    so we are making a dictionary where keys are types and values are functions / callable that
+     will be used to convert that field to specific type e.g. string
+
+     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+     to json serializable dict but we want out datetime object to be converted in
+     ISO 8601 format, fo we can pass a parser functions like
+
+        : Example:
+            Let say event is an instance of Event model class, with some state
+            >>> parsers = dict(start_datetime=to_utc_str,
+            >>>                end_datetime=to_utc_str)
+            >>> event.to_json()
+
+            >>> {
+            >>>     ...
+            >>>     ...
+            >>>     start_datetime: '2016-02-12T12:12:00Z',
+            >>>     end_datetime: '2016-03-20T10:10:00Z',
+            >>>     ...
+            >>> }
+
+        Now
+    :param self: instance of respected model class
+    :type self: db.Model (some sub class)
+    :param include: which columns we need to add in json data
+    :type include: list | tuple
+    :param field_parsers: a dictionary with keys as model attributes and values as
+     function to parse or convert to specific format
+    :type field_parsers: dict
     """
     # add your conversions for things like datetime's
-    # and what-not that aren't serializable.
-    convert = dict(DATETIME=str, TIMESTAMP=str,
-                   DATE=str, TIME=str)
+    # and timestamp etc. that aren't serializable.
+    converters = dict(DATETIME=str, TIMESTAMP=str,
+                      DATE=str, TIME=str)
 
     # data dictionary which will contain add data for this instance
     data = dict()
+    cls = self.__class__
+    properties = inspect(cls).attrs._data
+    all_keys = properties._list
+    columns = [key for key in all_keys if properties[key].strategy_wildcard_key == 'column']
+    columns = zip(cls.__table__.columns, columns)
+    if isinstance(include, (list, tuple)):
+        allowed_columns = [col for col in columns if col[1] in include]
+        if not allowed_columns:
+            raise InvalidUsage('All given column names are invalid: %s' % include)
+    else:
+        allowed_columns = columns
     # iterate through all columns key, values
-    for col in instance.__class__.__table__.columns:
-        # if name is in camel case convert it to snake case
-        name = camel_case_to_snake_case(col.name)
+    for col, name in allowed_columns:
         # get value against this column name
-        value = getattr(instance, name)
+        value = getattr(self, name)
         # get column type and check if there as any conversion method given for that type.
         # if it is, then use that method or type for data conversion
         typ = str(col.type)
-        if typ in convert.keys() and value is not None:
+        if name in field_parsers and callable(field_parsers[name]):
+            data[name] = field_parsers[name](value)
+        elif typ in converters and value is not None:
             try:
                 # try to convert column value by given converter method
-                data[name] = convert[typ](value)
+                data[name] = converters[typ](value)
             except:
-                data[name] = "Error:  Failed to covert using ", str(convert[typ])
+                data[name] = "Error:  Failed to covert using ", str(converters[typ])
         elif value is None:
             # if value is None, make it empty string
             data[name] = str()
