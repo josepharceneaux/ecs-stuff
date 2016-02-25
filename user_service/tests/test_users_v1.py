@@ -52,52 +52,6 @@ def test_user_service_get(access_token_first, user_first, user_second):
     assert len(response['users']) == 2
 
 
-# Test DELETE operation of user API
-def test_user_service_delete(access_token_first, access_token_second, user_first, user_second):
-
-    # User trying to delete user
-    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
-    assert status_code == 401
-
-    # Adding CAN_DELETE_USERS to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_USERS])
-
-    # User trying to delete non-existing user
-    response, status_code = user_api(access_token_first, user_first.id + 1000, action='DELETE')
-    assert status_code == 404
-
-    # User trying to delete user of different domain
-    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
-    assert status_code == 401
-
-    # User trying to delete itself
-    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
-    assert status_code == 401
-
-    # Changing domain of user_second
-    user_second.domain_id = user_first.domain_id
-    db.session.commit()
-
-    # User trying to delete user but as there are only two users in Domain so this user cannot be deleted
-    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
-    assert status_code == 400
-
-    temp_user = User(domain_id=user_first.domain_id, email='%s@gettalent.com' % gen_salt(20))
-    db.session.add(temp_user)
-    db.session.commit()
-
-    # User trying to delete user
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
-    response, status_code = user_api(access_token_second, user_first.id, action='DELETE')
-    assert status_code == 200
-    db.session.refresh(user_first)
-    db.session.commit()
-    assert user_first.is_disabled == 1
-
-    db.session.delete(temp_user)
-    db.session.commit()
-
-
 # Test PUT operation of user API
 def test_user_service_put(access_token_first, access_token_second, user_first, user_second):
 
@@ -173,7 +127,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
         'first_name': '',
         'last_name': gen_salt(6),
         'phone': '+1 226-581-1027',
-        'domain_id': 1,
+        'domain_id': user_first.domain_id,
     }
     second_user = {
         'first_name': gen_salt(6),

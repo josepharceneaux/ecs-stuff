@@ -33,15 +33,133 @@ from resume_parsing_service.common.utils.handy_functions import add_role_to_test
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
+DOC_890 = "0382RHQRwSWq6jytZm1w_Patrick.David_11.doc"
 REDIS_EXPIRE_TIME = 10
 
 
+####################################################################################################
+# Static URL tests
+####################################################################################################
 def test_base_url():
     """Test that the application root lists the endpoint."""
     base_response = requests.get(ResumeApiUrl.API_URL % '')
     assert ResumeApi.PARSE in base_response.content
 
 
+def test_health_check():
+    """HealthCheck/PingDom test endpoint."""
+    response = requests.get(ResumeApiUrl.HEALTH_CHECK)
+    assert response.status_code == requests.codes.ok
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(ResumeApiUrl.HEALTH_CHECK + '/')
+    assert response.status_code == requests.codes.ok
+
+
+####################################################################################################
+# Test Invalid Inputs
+####################################################################################################
+def test_invalid_fp_key(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, "MichaelKane/AlfredFromBatman.doc")
+    assert 'error' in content
+    assert status == requests.codes.bad_request
+
+
+def test_none_fp_key(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, None)
+    assert 'error' in content
+    assert status == requests.codes.bad_request
+
+
+def test_posting_no_file(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    invalid_post = requests.post(ResumeApiUrl.PARSE,
+                                  headers={
+                                      'Authorization': 'Bearer {}'.format(
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                   'create_candidate': True})
+                                 )
+    content = json.loads(invalid_post.content)
+    assert 'error' in content
+    assert invalid_post.status_code == requests.codes.bad_request
+
+
+def test_posting_None_file(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    invalid_post = requests.post(ResumeApiUrl.PARSE,
+                                  headers={
+                                      'Authorization': 'Bearer {}'.format(
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'resume_file': None,
+                                                   'create_candidate': True})
+                                 )
+    content = json.loads(invalid_post.content)
+    assert 'error' in content
+    assert invalid_post.status_code == requests.codes.bad_request
+
+
+def test_talent_pool_error(token_fixture):
+    invalid_post = requests.post(ResumeApiUrl.PARSE,
+                                  headers={
+                                      'Authorization': 'Bearer {}'.format(
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                   'create_candidate': True})
+                                 )
+    content = json.loads(invalid_post.content)
+    assert 'error' in content
+    assert invalid_post.status_code == requests.codes.bad_request
+
+def test_no_token_fails():
+    """Test that tokens are required."""
+    filepicker_key = DOC_FP_KEY
+    test_response = requests.post(ResumeApiUrl.PARSE, data=dict(filepicker_key=filepicker_key))
+    json_obj = json.loads(test_response.content)
+    assert 'error' in json_obj, "There should be an error if no token is provided"
+    assert test_response.status_code == requests.codes.unauthorized
+
+
+def test_invalid_token_fails():
+    """Test that VALID tokens are required."""
+    filepicker_key = DOC_FP_KEY
+    test_response = requests.post(ResumeApiUrl.PARSE,
+                                  headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
+                                  data=dict(filepicker_key=filepicker_key))
+    json_obj = json.loads(test_response.content)
+    assert 'error' in json_obj, "There should be an error if a bad token is provided"
+    assert test_response.status_code == requests.codes.unauthorized
+
+
+def test_bad_header(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    invalid_post = requests.post(ResumeApiUrl.PARSE,
+                                  headers={
+                                      'Authorization': 'Bearer {}'.format(
+                                          token_fixture.access_token),
+                                      'Content-Type': 'text/csv'
+                                  },
+                                  data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                   'create_candidate': True})
+                                 )
+    content = json.loads(invalid_post.content)
+    assert 'error' in content
+    assert invalid_post.status_code == requests.codes.bad_request
+
+
+####################################################################################################
+# Test FilePicker Key Parsing without create option
+####################################################################################################
 def test_doc_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -50,22 +168,13 @@ def test_doc_from_fp_key(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-
-def test_doc_by_post(token_fixture, user_fixture):
-    """Test that .doc files that are posted to the end point can be parsed."""
+def test_985_from_fp_key(token_fixture, user_fixture):
+    """Test that .doc files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status = fetch_resume_post_response(token_fixture, 'test_bin.docx')
-    assert_non_create_content_and_status(content, status)
-
-
-def test_HTML_doc_by_post(token_fixture, user_fixture):
-    """Test that .doc files that are posted to the end point can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
-    # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
-    assert_non_create_content_and_status(content, status)
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+    content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
 
 
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
@@ -92,6 +201,36 @@ def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_jpg_from_fp_key(token_fixture, user_fixture):
+    """Test that jpg files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
+    assert_non_create_content_and_status(content, status)
+
+
+####################################################################################################
+# Test JSON POST Parsing without create option
+####################################################################################################
+
+
+def test_doc_by_post(token_fixture, user_fixture):
+    """Test that .doc files that are posted to the end point can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'test_bin.docx')
+    assert_non_create_content_and_status(content, status)
+
+
+def test_HTML_doc_by_post(token_fixture, user_fixture):
+    """Test that .doc files that are posted to the end point can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
+    # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
+    assert_non_create_content_and_status(content, status)
+
+
 def test_v14_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.4 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -104,15 +243,7 @@ def test_v13_pdf_by_post(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status= fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
-    assert_non_create_content_and_status(content, status)
-
-
-def test_jpg_from_fp_key(token_fixture, user_fixture):
-    """Test that jpg files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
+    content, status = fetch_resume_post_response(token_fixture, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status)
 
 
@@ -132,26 +263,9 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-def test_no_token_fails():
-    """Test that tokens are required."""
-    filepicker_key = DOC_FP_KEY
-    test_response = requests.post(ResumeApiUrl.PARSE, data=dict(filepicker_key=filepicker_key))
-    json_obj = json.loads(test_response.content)
-    assert 'error' in json_obj, "There should be an error if no token is provided"
-    assert test_response.status_code == requests.codes.unauthorized
-
-
-def test_invalid_token_fails():
-    """Test that VALID tokens are required."""
-    filepicker_key = DOC_FP_KEY
-    test_response = requests.post(ResumeApiUrl.PARSE,
-                                  headers={'Authorization': 'Bearer %s' % 'invalidtokenzzzz'},
-                                  data=dict(filepicker_key=filepicker_key))
-    json_obj = json.loads(test_response.content)
-    assert 'error' in json_obj, "There should be an error if a bad token is provided"
-    assert test_response.status_code == requests.codes.unauthorized
-
-
+####################################################################################################
+# Test Candidate Creation
+####################################################################################################
 def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -161,6 +275,17 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
+def test_doc_FP_with_create(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+####################################################################################################
+# Test Candidate Updating
+####################################################################################################
 def test_already_exists_candidate(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -172,6 +297,9 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(update_content, status)
 
 
+####################################################################################################
+# Batch Processing tests
+####################################################################################################
 def test_batch_processing(user_fixture, token_fixture):
     # create a single file queue
     user_id = user_fixture.id
@@ -229,17 +357,10 @@ def test_add_multiple_queue_items(token_fixture):
         'Improperly Formatted redis post response for multiple items')
 
 
-def test_health_check():
-    """HealthCheck/PingDom test endpoint."""
-    response = requests.get(ResumeApiUrl.HEALTH_CHECK)
-    assert response.status_code == requests.codes.ok
-
-    # Testing Health Check URL with trailing slash
-    response = requests.get(ResumeApiUrl.HEALTH_CHECK + '/')
-    assert response.status_code == requests.codes.ok
-
-
-def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
+####################################################################################################
+# Test Helper/Utility Functions
+####################################################################################################
+def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
     with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
@@ -255,7 +376,7 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=''):
     return content, status_code
 
 
-def fetch_resume_fp_key_response(token_fixture, fp_key):
+def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
     """Posts FilePicker key to local test auth server for json formatted resumes."""
     test_response = requests.post(ResumeApiUrl.PARSE,
                                   headers={
@@ -263,7 +384,8 @@ def fetch_resume_fp_key_response(token_fixture, fp_key):
                                           token_fixture.access_token),
                                       'Content-Type': 'application/json'
                                   },
-                                  data=json.dumps({'filepicker_key': fp_key})
+                                  data=json.dumps({'filepicker_key': fp_key,
+                                                   'create_candidate': create_mode})
                                  )
     content = json.loads(test_response.content)
     status_code = test_response.status_code

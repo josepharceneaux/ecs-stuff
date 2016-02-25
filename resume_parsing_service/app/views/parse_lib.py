@@ -23,7 +23,7 @@ import requests
 from .utils import create_parsed_resume_candidate, update_candidate_from_resume
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
@@ -77,10 +77,14 @@ def process_resume(parse_params):
         # We have a candidate already with this email so lets patch it up
         parsed_resume['candidate']['id'] = existing_candidate_id
         update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
+        if update_response.status_code is not requests.codes.ok:
+            logger.info("ResumetoCandidateError. {} received from CandidateService (update)".format(update_response.status_code))
+            raise InternalServerError('Candidate from {} exists, error updating info'.format(filename_str))
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 
     candidate_id = response_dict.get('candidates')[0]['id']
+    logger.debug('Candidate created with id: {}'.format(candidate_id))
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
     if candidate_get_response.status_code is not requests.codes.ok:
@@ -124,8 +128,7 @@ def parse_resume(file_obj, filename_str):
         # If file is an image, OCR it
         start_time = time()
         doc_content = ocr_image(file_obj)
-        logger.info("Benchmark: ocr_image(%s) took %ss",
-                                filename_str, time() - start_time)
+        logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         """
         BurningGlass doesn't work when the file's MIME type is text/html, even if the file is a .doc
@@ -149,13 +152,13 @@ def parse_resume(file_obj, filename_str):
                 create_pdf_status = pisa.CreatePDF(doc_content, file_obj)
                 if create_pdf_status.err:
                     logger.error('PDF create error: {}'.format(create_pdf_status.err))
-                    return None
+                    raise InvalidUsage('Error processing {}. Cannot convert text/html to pdf'.format(filename_str))
             except Exception as e:
                 logger.exception(
                     'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
                         filename_str, e.message))
                 raise InvalidUsage('Unable to convert {} to pdf'.format(filename_str))
-                return None
+
             file_obj.seek(0)
             doc_content = file_obj.read()
             final_file_ext = '.pdf'
@@ -178,7 +181,7 @@ def parse_resume(file_obj, filename_str):
         # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
-        return dict(error='No XML text')
+        raise InvalidUsage('No XML text received from Optic Response for {}'.format(filename_str))
 
 
 def ocr_image(img_file_obj, export_format='pdfSearchable'):

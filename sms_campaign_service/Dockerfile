@@ -10,8 +10,8 @@ RUN sed -i -e 's/APP_NAME/sms_campaign_service/g' newrelic.ini /etc/rsyslog.d/*l
 
 EXPOSE 80
 
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
+# For Celery worker
+ENV C_FORCE_ROOT true
 
 # Set PYTHON PATH
 ENV PYTHONPATH ../

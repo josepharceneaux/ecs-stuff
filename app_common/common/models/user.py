@@ -394,6 +394,7 @@ class DomainRole(db.Model):
         CAN_GET_TALENT_POOLS = "CAN_GET_TALENT_POOLS"
         CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
         CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
+        CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS = "CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS"
 
         # Talent Pool Group
         CAN_GET_TALENT_POOLS_OF_GROUP = "CAN_GET_TALENT_POOLS_OF_GROUP"
@@ -613,7 +614,7 @@ class UserGroup(db.Model):
         for group in groups:
             if not isinstance(group, dict):
                 raise InvalidUsage(error_message="Request body is not properly formatted")
-            name = group.get('name')
+            name = group.get('name') or 'default'
             description = group.get('description')
             already_existing_group = UserGroup.query.filter_by(name=name, domain_id=domain_id).first()
             if not already_existing_group:

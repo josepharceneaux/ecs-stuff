@@ -2,7 +2,6 @@ from common_functions import generate_random_stats
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
-from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistStats
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
@@ -310,8 +309,6 @@ class TestSmartlistResource(object):
             """
             Test GET API for smartlist (with search_params)
             """
-
-            add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
             list_name = fake.name()
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
@@ -331,8 +328,6 @@ class TestSmartlistResource(object):
         def test_get_smartlist_from_outside_domain(self, user_first, access_token_first,
                                                    access_token_second):
             """Test for validate_list_belongs_to_domain"""
-
-            add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
             list_name = fake.name()
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
@@ -398,7 +393,6 @@ class TestSmartlistResource(object):
                                                                        access_token_first):
             """Test GET all smartlists in domain should not include the deleted smartlist"""
 
-            add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
             smartlist1 = save_smartlist(user_id=user_first.id,
                                         name=fake.name(),
                                         search_params=json.dumps({"query": ""}))

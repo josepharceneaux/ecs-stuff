@@ -47,7 +47,7 @@ def assign_roles(user):
 
 
 def create_email_campaign_smartlist(access_token, talent_pool, campaign,
-                                     emails_list=True, count=1):
+                                    emails_list=True, count=1):
     """
     This associates smartlist ids with given campaign
     :param access_token:
@@ -101,4 +101,3 @@ def delete_campaign(campaign):
                 EmailCampaign.delete(campaign.id)
     except Exception:
         db.session.rollback()
-

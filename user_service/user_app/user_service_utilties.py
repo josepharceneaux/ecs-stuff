@@ -4,7 +4,7 @@ from werkzeug.security import gen_salt
 
 from user_service.common.error_handling import InvalidUsage
 from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
-from user_service.common.models.user import db, Domain, User
+from user_service.common.models.user import db, Domain, User, UserGroup
 from user_service.common.utils.amazon_ses import send_email
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 
@@ -51,12 +51,12 @@ def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organizat
 
 def check_if_user_exists(email):
     # Get user if user exists
-    domain_users = User.query.filter(User.email == email).all()
-    return True if domain_users else False
+    domain_user = User.query.filter(User.email == email).first()
+    return domain_user if domain_user else False
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None, thumbnail_url=''):
+                            dice_user_id=None, thumbnail_url='', user_group_id=None):
 
     from dateutil import parser
     expiration = None
@@ -68,7 +68,8 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
 
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
-                       expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
+                       expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
+                       user_group_id=user_group_id)
 
     return user.id
 
@@ -108,14 +109,22 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
-def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None, thumbnail_url=''):
+def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
+                thumbnail_url='', user_group_id=None):
 
     temp_password = gen_salt(20)
     hashed_password = gettalent_generate_password_hash(temp_password)
 
+    # Get user's group ID
+    if not user_group_id:
+        user_groups = UserGroup.all_groups_of_domain(domain_id=domain_id)
+        if user_groups:  # TODO: this shouldn't be necessary since each domain must belong to a user_group
+            user_group_id = user_groups[0].id
+
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
-                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url)
+                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
+                user_group_id=user_group_id)
 
     db.session.add(user)
     db.session.commit()
