@@ -101,8 +101,8 @@ def test_edit_candidate_custom_field(access_token_first, user_first, talent_pool
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_custom_field_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['custom_fields'][0]
+    old_custom_field_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['custom_fields'][0]
     db.session.commit()
 
     # Update Candidate's custom field
@@ -114,8 +114,8 @@ def test_edit_candidate_custom_field(access_token_first, user_first, talent_pool
     request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate custom fields
-    new_custom_field_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
-        json()['candidate']['custom_fields'][0]
+    new_custom_field_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['custom_fields'][0]
 
     # Retrieve Candidate Edits
     edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)

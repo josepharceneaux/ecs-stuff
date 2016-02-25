@@ -158,6 +158,7 @@ def parse_resume(file_obj, filename_str):
                     'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
                         filename_str, e.message))
                 raise InvalidUsage('Unable to convert {} to pdf'.format(filename_str))
+
             file_obj.seek(0)
             doc_content = file_obj.read()
             final_file_ext = '.pdf'
