@@ -532,8 +532,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     candidate = Candidate.get_by_id(candidate_id)
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
-        email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
+        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")

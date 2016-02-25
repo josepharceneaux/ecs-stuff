@@ -5,24 +5,21 @@ import imaplib
 import requests
 import re
 
-from sqlalchemy import desc
-
-from email_campaign_service.common.talent_config_manager import TalentEnvs
 from email_campaign_service.common.error_handling import InvalidUsage
 
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
+from email_campaign_service.common.models.email_campaign import (EmailCampaign,
+                                                                 EmailCampaignBlast)
 from email_campaign_service.common.routes import (EmailCampaignUrl, CandidatePoolApiUrl,
                                                   EmailCampaignEndpoints, HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
                                                                   delete_campaign)
-from email_campaign_service.common.models.email_campaign import (EmailCampaignBlast)
+
 
 __author__ = 'jitesh'
 
@@ -208,7 +205,7 @@ class TestSendCampaign(object):
         both candidates.
         :return:
         """
-        campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
+        campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
@@ -288,10 +285,9 @@ class TestSendCampaign(object):
         assert len(url_conversion_id) > 0
         url_conversion_id = int(url_conversion_id[0])
         db.session.commit()
-        url_conversion = UrlConversion.query.get(url_conversion_id)
+        url_conversion = UrlConversion.get(url_conversion_id)
         assert url_conversion
-        email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
+        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
         assert email_campaign_blast
         opens_count_before = email_campaign_blast.opens
         hit_count_before = url_conversion.hit_count

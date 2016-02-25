@@ -134,6 +134,7 @@ def candidate_in_other_domain(request, user_from_diff_domain):
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate
+
 @pytest.fixture()
 def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
@@ -145,7 +146,7 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     :return:
     """
     URL = EmailCampaignUrl.SEND
-    campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
+    campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(
         URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
