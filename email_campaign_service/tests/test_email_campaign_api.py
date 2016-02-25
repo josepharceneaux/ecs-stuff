@@ -1,9 +1,9 @@
+import re
 import json
 import time
 import email
 import imaplib
 import requests
-import re
 
 from email_campaign_service.common.error_handling import InvalidUsage
 

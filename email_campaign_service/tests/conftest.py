@@ -1,6 +1,6 @@
-import re
-
 __author__ = 'basit'
+
+import re
 
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
