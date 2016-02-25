@@ -3,6 +3,8 @@ import time
 import email
 import imaplib
 import requests
+import re
+
 from email_campaign_service.common.talent_config_manager import TalentEnvs
 from email_campaign_service.common.error_handling import InvalidUsage
 
@@ -241,7 +243,7 @@ class TestSendCampaign(object):
         assert_mail(campaign.email_subject)
 
     def test_campaign_send_with_email_client_id(
-            self, user_first, access_token_first, campaign_with_valid_candidate):
+            self, check_send_email_campaign_by_client_id_response, user_first):
         """
         Email client can be Outlook Plugin, Browser etc.
         User auth token is valid, campaign has one smart list associated. Smartlist has tow
@@ -260,23 +262,21 @@ class TestSendCampaign(object):
                   ]
             }
         """
-        campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
-        campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        response = requests.post(
-            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 200
-        json_response = response.json()
-        assert 'email_campaign_sends' in json_response
-        email_campaign_sends = json_response['email_campaign_sends'][0]
-        assert 'new_html' in email_campaign_sends
-        assert 'new_text' in email_campaign_sends
-        assert 'email_campaign_id' in email_campaign_sends
-        assert campaign.id == email_campaign_sends['email_campaign_id']
+        response = check_send_email_campaign_by_client_id_response['response']
+        campaign = check_send_email_campaign_by_client_id_response['campaign']
         assert_campaign_send(response, campaign, user_first, 2, email_client=True)
 
-
-# def test_create_email_campaign_with_email_client(user_first, access_token_first):
-#
+    def test_redirect_url(self, check_send_email_campaign_by_client_id_response):
+        response = check_send_email_campaign_by_client_id_response['response']
+        json_response = response.json()
+        email_campaign_sends = json_response['email_campaign_sends'][0]
+        new_html = email_campaign_sends['new_html']
+        redirect_url = re.findall('"([^"]*)"', new_html)
+        assert len(redirect_url) > 0
+        redirect_url = redirect_url[0]
+        #url_conversion_id = re.findall( '*redirect\/\s*([^\n\r]*', redirect_url)
+        response = requests.get(redirect_url)
+        assert response.status_code == 200
 
 
 def assert_mail(email_subject):
