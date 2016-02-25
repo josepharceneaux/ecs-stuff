@@ -692,7 +692,7 @@ class SchedulerApi(object):
     SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
     SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
     SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume"
     SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
     SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
     SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
