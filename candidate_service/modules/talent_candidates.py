@@ -32,14 +32,14 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
 # Error handling
-from candidate_service.common.error_handling import (
-    InvalidUsage, NotFoundError, UnauthorizedError, ForbiddenError
-)
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
-from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist
+from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist, \
+    does_education_degree_bullet_exist, get_education_if_exists, get_work_experience_if_exists, \
+    does_experience_bullet_exist
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -793,11 +793,11 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's education(s)
     if educations:
-        _add_or_update_educations(candidate_id, educations, added_time, user_id, edit_time)
+        _add_or_update_educations(candidate, educations, added_time, user_id, edit_time)
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate_id, work_experiences, added_time, user_id, edit_time)
+        _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_time)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
@@ -1136,19 +1136,20 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 db.session.add(CandidateCustomField(**custom_field_dict))
 
 
-def _add_or_update_educations(candidate_id, educations, added_time, user_id, edit_time):
+def _add_or_update_educations(candidate, educations, added_time, user_id, edit_time):
     """
     Function will update CandidateEducation, CandidateEducationDegree, and
     CandidateEducationDegreeBullet or create new ones.
     """
     # If any of educations is_current, set all of Candidate's educations' is_current to False
+    candidate_id, candidate_educations = candidate.id, candidate.educations
     if any([education.get('is_current') for education in educations]):
         CandidateEducation.set_is_current_to_false(candidate_id=candidate_id)
 
     for education in educations:
         # CandidateEducation
         education_dict = dict(
-            list_order=education.get('list_order', 1) or 1,
+            list_order=education.get('list_order') or 1,
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
             city=education.get('city'),
@@ -1196,8 +1197,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_time,
-                    classification_type_id=classification_type_id_from_degree_type(
-                            education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
@@ -1267,13 +1267,16 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                             can_edu_degree_bullet_query.update(education_degree_bullet_dict) # Update
                         else:   # Add CandidateEducationDegreeBullet
                             education_degree_bullet_dict.update(dict(added_time=added_time))
-                            db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
+                            # Prevent duplicate entries
+                            if not does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
+                                db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
                 else:   # Add CandidateEducationDegree
                     education_degree_dict.update(dict(candidate_education_id=education_id))
                     candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
                     db.session.add(candidate_education_degree)
                     db.session.flush()
+                    # TODO: prevent duplicate entires
 
                     can_edu_degree_id = candidate_education_degree.id
 
@@ -1290,14 +1293,16 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
         else:  # Add
             # CandidateEducation
             education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: resume_id to be removed once all tables have been added & migrated
-            candidate_education = CandidateEducation(**education_dict)
-            db.session.add(candidate_education)
-            db.session.flush()
-
-            education_id = candidate_education.id
+            # Prevent duplicate entries
+            education_degrees = education.get('degrees') or []
+            education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
+            if not education_id:
+                candidate_education = CandidateEducation(**education_dict)
+                db.session.add(candidate_education)
+                db.session.flush()
+                education_id = candidate_education.id
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
 
                 # Add CandidateEducationDegree
@@ -1312,8 +1317,7 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_time,
-                    classification_type_id=classification_type_id_from_degree_type(
-                            education_degree.get('type')),
+                    classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
@@ -1325,23 +1329,25 @@ def _add_or_update_educations(candidate_id, educations, added_time, user_id, edi
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
-
-                    # Add CandidateEducationDegreeBullet
-                    db.session.add(CandidateEducationDegreeBullet(
+                    education_degree_bullet_dict = dict(
                         candidate_education_degree_id=education_degree_id,
-                        list_order=degree_bullet.get('list_order'),
                         concentration_type=degree_bullet.get('major'),
                         comments=degree_bullet.get('comments'),
                         added_time=added_time
-                    ))
+                    )
+                    # Prevent duplicate entries
+                    if not does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
+                        # Add CandidateEducationDegreeBullet
+                        db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
 
-def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, user_id, edit_time):
+def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_time):
     """
     Function will update CandidateExperience and CandidateExperienceBullet
     or create new ones.
     """
     # If any of work_experiences' is_current is True, set all of candidate's experiences' is_current to False
+    candidate_id, candidate_experiences = candidate.id, candidate.experiences
     if any([experience.get('is_current') for experience in work_experiences]):
         CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
 
@@ -1424,23 +1430,26 @@ def _add_or_update_work_experiences(candidate_id, work_experiences, added_time, 
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
         else:  # Add
-            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time,
-                                        resume_id=candidate_id))
-            experience = CandidateExperience(**experience_dict)
-            db.session.add(experience)
-            db.session.flush()
-
-            experience_id = experience.id
+            experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time, resume_id=candidate_id))
+            # Prevent duplicate entries
+            experience_id = get_work_experience_if_exists(candidate_experiences, experience_dict)
+            if not experience_id:
+                experience = CandidateExperience(**experience_dict)
+                db.session.add(experience)
+                db.session.flush()
+                experience_id = experience.id
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                db.session.add(CandidateExperienceBullet(
-                    candidate_experience_id=experience_id,
-                    list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet.get('description'),
-                    added_time=added_time
-                ))
+                experience_bullet_dict = {
+                    'candidate_experience_id': experience_id,
+                    'description': experience_bullet.get('description'),
+                    'added_time': added_time
+                }
+                # Prevent duplicate entries
+                if not does_experience_bullet_exist(candidate_experiences, experience_bullet_dict):
+                    db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
 
 def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_time):
@@ -1487,7 +1496,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
 
     else:  # Add
         # Only 1 CandidateWorkPreference is permitted for each Candidate
-        if db.session.query(CandidateWorkPreference).filter_by(candidate_id=candidate_id).first():
+        if CandidateWorkPreference.get_by_candidate_id(candidate_id=candidate_id):
             raise InvalidUsage(error_message="Candidate work preference already exists",
                                error_code=custom_error.WORK_PREF_EXISTS)
 

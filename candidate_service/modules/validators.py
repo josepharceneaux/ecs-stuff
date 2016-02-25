@@ -6,7 +6,7 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.candidate import Candidate, CandidateEducation, CandidateExperience
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
@@ -351,7 +351,7 @@ def does_address_exist(candidate, address_dict):
     for address in candidate.addresses:
         address_line_1 = address.address_line_1
         if address_line_1:
-            if address_line_1.lower() == address_dict.get('address_line_1').lower():
+            if address_line_1.lower() == (address_dict.get('address_line_1') or '').lower():
                 return True
     return False
 
@@ -365,6 +365,77 @@ def does_candidate_cf_exist(candidate, custom_field_dict):
     for custom_field in candidate.custom_fields:
         custom_field_value = custom_field.value
         if custom_field_value:
-            if custom_field_value.lower() == custom_field_dict.get('value').lower():
+            if custom_field_value.lower() == (custom_field_dict.get('value') or '').lower():
                 return True
     return False
+
+
+def get_education_if_exists(educations, education_dict, education_degrees):
+    """
+    :type educations:  list[CandidateEducation]
+    :type education_dict: dict[str]
+    """
+    for education in educations:
+        if education.school_name:
+            if education.school_name.lower() == (education_dict.get('school_name') or '').lower():
+                for degree in education.degrees:
+                    if any([ed.get('end_year') for ed in education_degrees
+                            if ed.get('end_year') == degree.end_year]) or \
+                            any([ed.get('start_year') for ed in education_degrees
+                                 if ed.get('start_year') == degree.start_year]):
+                        return education.id
+
+
+def does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
+    """
+    :type candidate_educations:  list[CandidateEducation]
+    :type education_degree_bullet_dict:  dict[str]
+    :rtype:  bool
+    """
+    for education in candidate_educations:
+        for degree in education.degrees:
+            for bullet in degree.bullets:
+                if bullet:
+                    if bullet.concentration_type:
+                        if bullet.concentration_type.lower() == (
+                                    education_degree_bullet_dict.get('concentration_type') or '').lower():
+                            return True
+    return False
+
+
+def get_work_experience_if_exists(experiences, experience_dict):
+    """
+    :type experiences:  list[CandidateExperience]
+    :type experience_dict: dict[str]
+    """
+    for experience in experiences:
+        organization = (experience_dict.get('organization') or '').lower()
+        if experience.organization and (experience.start_year or experience.end_year):
+            if experience.start_year == experience_dict.get('start_year') and \
+                            experience.organization.lower() == organization:
+                return experience.id
+
+            if experience.end_year == experience_dict.get('end_year') and \
+                            experience.organization.lower() == organization:
+                return experience.id
+        elif experience.organization and not (experience.start_year or experience.end_year):
+            if experience.organization.lower() == organization:
+                return experience.id
+
+
+def does_experience_bullet_exist(experiences, bullet_dict):
+    """
+    :type experiences:  list[CandidateExperience]
+    :type bullet_dict:  dict[str]
+    :rtype:  bool
+    """
+    for experience in experiences:
+        for bullet in experience.bullets:
+            if bullet.description:
+                if bullet.description.lower() == (bullet_dict.get('description') or '').lower():
+                    return True
+    return False
+
+
+
+
