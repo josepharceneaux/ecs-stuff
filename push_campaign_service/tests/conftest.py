@@ -310,18 +310,13 @@ def talent_pool(request, token_first):
     """
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-    data = {
-        "talent_pools": [talent_pool_id]
-    }
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 1, token_first, data=data)
-    assert response.status_code == OK
+    talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return talent_pool
+    return talent_pool_obj
 
 
 @pytest.fixture(scope='function')
@@ -332,18 +327,13 @@ def talent_pool_second(request, token_second):
     """
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool = get_talent_pool(talent_pool_id, token_second)['talent_pool']
-    data = {
-        "talent_pools": [talent_pool_id]
-    }
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOL_GROUP % 2, token_second, data=data)
-    assert response.status_code == OK
+    talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second, expected_status=(OK, NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return talent_pool
+    return talent_pool_obj
 
 
 @pytest.fixture(scope='function')
