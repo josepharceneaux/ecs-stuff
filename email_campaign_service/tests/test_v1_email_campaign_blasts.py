@@ -15,6 +15,7 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailClient, EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.email_campaign_app import app
 
 
 class TestEmailCampaignBlasts(object):
@@ -82,7 +83,8 @@ class TestEmailCampaignBlasts(object):
         :return:
         """
         campaign_id = campaign_with_valid_candidate.id
-        EmailCampaign.delete(campaign_id)
+        with app.app_context():
+            EmailCampaign.delete(campaign_id)
         CampaignsTestsHelpers.request_for_resource_not_found_error(self.METHOD,
                                                                    self.URL % campaign_id,
                                                                    access_token_first)
