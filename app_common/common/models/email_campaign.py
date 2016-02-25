@@ -1,5 +1,6 @@
 import datetime
 
+from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 
 from db import db
@@ -95,6 +96,10 @@ class EmailCampaignBlast(db.Model):
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
+    @classmethod
+    def get_latest_blast_by_campaign_id(cls, campaign_id):
+        return cls.query.filter(
+            cls.email_campaign_id == campaign_id).order_by(desc(cls.sent_time)).first()
 
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
