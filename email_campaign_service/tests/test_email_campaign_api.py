@@ -278,9 +278,11 @@ class TestSendCampaign(object):
         json_response = response.json()
         email_campaign_sends = json_response['email_campaign_sends'][0]
         new_html = email_campaign_sends['new_html']
-        redirect_url = re.findall('"([^"]*)"', new_html)
+        redirect_url = re.findall('"([^"]*)"', new_html) #get the redirect URL from html
         assert len(redirect_url) > 0
         redirect_url = redirect_url[0]
+
+        #get the url conversion id from the redirect url
         url_conversion_id = re.findall( '[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
         assert len(url_conversion_id) > 0
         url_conversion_id = int(url_conversion_id[0])

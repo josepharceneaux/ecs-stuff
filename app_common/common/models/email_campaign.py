@@ -101,6 +101,7 @@ class EmailCampaignBlast(db.Model):
         return cls.query.filter(
             cls.email_campaign_id == campaign_id).order_by(desc(cls.sent_time)).first()
 
+
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)

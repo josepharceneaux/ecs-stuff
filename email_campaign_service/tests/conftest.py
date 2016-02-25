@@ -1,6 +1,6 @@
+import re
 
 __author__ = 'basit'
-import re
 
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
@@ -10,7 +10,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign)
-from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
+from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.common.routes import EmailCampaignUrl
 
 
@@ -104,6 +104,7 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
 
     def fin():
         delete_campaign(campaign_with_valid_candidate)
+
     request.addfinalizer(fin)
     return campaign_with_valid_candidate
 
@@ -132,32 +133,34 @@ def candidate_in_other_domain(request, user_from_diff_domain):
             Candidate.delete(candidate)
         except Exception:
             db.session.rollback()
+
     request.addfinalizer(tear_down)
     return candidate
+
 
 @pytest.fixture()
 def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
-    This fixture creates an email campaign in database table 'email_campaign'
-    for user in different domain
+    TThis fixture sends an email using client_id so that we can get html
+    to be sent to the client. It validates the response of sending and
+    returns the response along with the campaign obj in a dict.
     :param access_token_first:
     :param campaign_with_valid_candidate:
-    :return:
     :return:
     """
     URL = EmailCampaignUrl.SEND
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(
-        URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
     assert response.status_code == 200
     json_response = response.json()
     assert 'email_campaign_sends' in json_response
     email_campaign_sends = json_response['email_campaign_sends'][0]
     assert 'new_html' in email_campaign_sends
     new_html = email_campaign_sends['new_html']
-    matched = re.search(r'&\w+;', new_html)
-    assert not matched
+    matched = re.search(r'&\w+;', new_html) #check the new_html for escaped HTML characters
+    assert not matched  #fail if escaped characters found
     assert 'new_text' in email_campaign_sends
     assert 'email_campaign_id' in email_campaign_sends
     assert campaign.id == email_campaign_sends['email_campaign_id']
@@ -165,3 +168,4 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
+
