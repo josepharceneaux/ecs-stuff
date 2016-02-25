@@ -82,3 +82,4 @@ redis==2.10.5
 jsonschema==2.5.1
 functools32
 strict-rfc3339==0.6
+Flask-Cache==0.13.1
