@@ -33,9 +33,9 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
 
 # Third Party
 from dateutil.relativedelta import relativedelta
+from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
-from one_signal_sdk import OneSignalSdk
 # Import all model classes from push_campaign module
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.misc import UrlConversion
@@ -46,9 +46,8 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
-
 one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
-                                 rest_key=ONE_SIGNAL_REST_API_KEY)
+                                 user_auth_key=ONE_SIGNAL_REST_API_KEY)
 
 
 class PushCampaignBase(CampaignBase):
@@ -173,10 +172,10 @@ class PushCampaignBase(CampaignBase):
                         self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                              source_url=signed_url)
                     # url_conversion.update(source_url=signed_url)
-                    response = one_signal_client.send_notification(signed_url,
-                                                                   self.campaign.body_text,
-                                                                   self.campaign.name,
-                                                                   players=device_ids)
+                    response = one_signal_client.create_notification(self.campaign.body_text,
+                                                                     heading=self.campaign.name,
+                                                                     url=signed_url,
+                                                                     player_ids=device_ids)
                     if response.ok:
                         campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
                                                          candidate_id=candidate.id

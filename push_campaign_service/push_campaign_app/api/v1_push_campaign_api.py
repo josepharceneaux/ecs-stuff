@@ -85,6 +85,7 @@ A brief overview of all endpoints is as follows:
 
 """
 # Standard Library
+import json
 import types
 
 # Third Party
@@ -92,25 +93,23 @@ from flask import request
 from flask import redirect
 from flask import Blueprint
 from flask.ext.restful import Resource
-
+from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.campaign_services.validators import get_valid_json_data
-from push_campaign_service.common.error_handling import *
+from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
+                                                         ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
+from push_campaign_service.common.routes import PushCampaignApi
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
-
-
-from push_campaign_service.modules.custom_exceptions import *
-from push_campaign_service.common.models.candidate import *
-from push_campaign_service.common.models.push_campaign import *
-from push_campaign_service.modules.one_signal_sdk import OneSignalSdk
+from push_campaign_service.common.models.push_campaign import (PushCampaign,
+                                                               PushCampaignBlast,
+                                                               PushCampaignSendUrlConversion)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.constants import (ONE_SIGNAL_REST_API_KEY,
                                                      ONE_SIGNAL_APP_ID)
@@ -124,15 +123,17 @@ api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
 
 one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
-                                 rest_key=ONE_SIGNAL_REST_API_KEY)
+                                 user_auth_key=ONE_SIGNAL_REST_API_KEY)
 
 
 @api.route(PushCampaignApi.CAMPAIGNS)
 class PushCampaignsResource(Resource):
-
+    """
+    Resource to get, create and delete campaigns
+    """
     decorators = [require_oauth()]
 
-    def get(self, *args, **kwargs):
+    def get(self):
         """
         This action returns a list of all push campaigns for current user.
 
@@ -235,7 +236,7 @@ class PushCampaignsResource(Resource):
                                additional_error_info=dict(missing_fields=missing_fields),
                                error_code=CampaignException.MISSING_REQUIRED_FIELD)
         campaign = PushCampaignBase(user_id=user.id)
-        campaign_id, invalid_smartlist_ids = campaign.save(data)
+        campaign_id, _ = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
         headers = dict(Location='/%s/push-campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
@@ -314,13 +315,16 @@ class PushCampaignsResource(Resource):
 
 @api.route(PushCampaignApi.CAMPAIGN)
 class CampaignByIdResource(Resource):
-
+    """
+    Resource to update, get and delete a specific campaign.
+    """
     decorators = [require_oauth()]
 
     def get(self, campaign_id):
         """
         This action returns a single campaign created by current user.
-
+        :param campaign_id: push campaign id
+        :type campaign_id: int | long
         :return campaign_data: a dictionary containing campaign json serializable data
         :rtype json
 
@@ -467,15 +471,16 @@ class CampaignByIdResource(Resource):
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
         else:
-            # TODO: replace with actual error code from common campaign code
             raise InternalServerError(
                 'Campaign(id:%s) was not deleted.' % campaign_id,
-                error_code=8020)
+                error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
 
 
 @api.route(PushCampaignApi.SCHEDULE)
 class SchedulePushCampaignResource(Resource):
-
+    """
+    This resource is used to schedule, reschedule and unschedule a specific campaign.
+    """
     decorators = [require_oauth()]
 
     def post(self, campaign_id):
@@ -627,7 +632,9 @@ class SchedulePushCampaignResource(Resource):
 
 @api.route(PushCampaignApi.SEND)
 class SendPushCampaign(Resource):
-
+    """
+    Resource sends a specific campaign to associated candidates.
+    """
     decorators = [require_oauth()]
 
     def post(self, campaign_id):
@@ -757,8 +764,8 @@ class PushCampaignSends(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
-            >>> response = requests.get(API_URL + '/v1/push-campaigns/' + str(campaign_id)
-            >>>                     + '/sends', headers=headers)
+            >>> response = requests.get(PushCampaignApiUrl.SENDS % campaign_id,
+            >>>                         headers=headers)
 
         .. Response::
 
@@ -865,7 +872,9 @@ class PushCampaignBlasts(Resource):
 
 @api.route(PushCampaignApi.BLAST)
 class PushCampaignBlastById(Resource):
-
+    """
+    Resource is used to retrieve a specific campaign's blast.
+    """
     decorators = [require_oauth()]
 
     def get(self, campaign_id, blast_id):
@@ -975,7 +984,9 @@ class PushCampaignUrlRedirection(Resource):
 
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
 class ResourceGetUrlConversion(Resource):
-
+    """
+    Resource is used to retrieve url conversion object.
+    """
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
