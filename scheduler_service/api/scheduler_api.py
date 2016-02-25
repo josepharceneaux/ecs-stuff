@@ -88,6 +88,7 @@ class Tasks(Resource):
                     500 (Internal Server Error)
 
         """
+        # TODO; Comment why these needed
         max_offset = '30'
         max_offset_limit = 200
 
@@ -102,6 +103,7 @@ class Tasks(Resource):
             raise InvalidUsage(
                 error_message="'offset' arg should be a digit and its value should be greater than 0")
 
+        # TODO; take this line above the both of the 'if' statements
         start_point, offset = int(start_point), int(offset)
 
         user_id = request.user.id if request.user else None
@@ -110,6 +112,12 @@ class Tasks(Resource):
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks_count = len(tasks)
 
+        # TODO; the following loop looks correct but kindly double if the need to loop until (start_point + offset + 1)
+        # TODO; Also, instead of using 'i' use some other navriable name
+        # TODO; also we can do the 'serialize_task(tasks[i])' in the same loop instead of creating another one below
+        # TODO; So may be we can do something like following, I am commenting because we really need to make it look more Pythonic
+        #  tasks = filter(lambda task: task,
+        #   [serialize_task(tasks[i]) for i in range(start_point, start_point + offset) if i < tasks_count])
         tasks = [tasks[i] for i in range(start_point, start_point + offset) if i < tasks_count]
 
         tasks = [serialize_task(task) for task in tasks]

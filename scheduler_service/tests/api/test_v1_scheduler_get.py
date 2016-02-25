@@ -234,23 +234,22 @@ class TestSchedulerGet(object):
 
     def test_multiple_jobs_with_start_point(self, auth_header, job_config, job_cleanup):
         """
-        Create multiple jobs and save the ids in a list. Then get 5 tasks of the current user using start arg.
+        Create multiple jobs and save the ids in a list. Then get 5 tasks of the current user using 'start' arg.
         Then check if there are 5 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
+            job_config (dict): Fixture that contains job config to be used as POST data while hitting the endpoint.
         :return:
         """
         jobs_id = []
 
-        for i in range(10):
+        for idx in range(10):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
             jobs_id.append(response.json()['id'])
 
-        # Get only 5 jobs limit
+        # Get only 5 jobs
         limit = 5
         # Should get 5 jobs in response instead of all 10
         response_get = requests.get('{0}?start={1}'.format(SchedulerApiUrl.TASKS, limit),
@@ -260,15 +259,16 @@ class TestSchedulerGet(object):
         set_jobs_ids = set(jobs_id)
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 5
-
+        # TODO ; Will the above make sure that returned job-ids were among the ones we created?
+        # TODO; kindly comment why do we need the following to delete jobs
         # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
     def test_multiple_jobs_with_offset(self, auth_header, job_config, job_cleanup):
         """
-        Create multiple jobs and save the ids in a list. Then get 2 tasks of the current user using start and offset arg
-        Then check if there are 2 jobs returned. If yes, then show status code 200
+        Create multiple jobs and save the ids in a list. Then get 2 tasks of the current user using 'start' and 'offset'
+        arg. Then check if there are 2 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -277,7 +277,7 @@ class TestSchedulerGet(object):
         """
         jobs_id = []
 
-        for i in range(10):
+        for idx in range(10):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
@@ -288,6 +288,8 @@ class TestSchedulerGet(object):
 
         # Get only 2 jobs
         offset = 2
+        #TODO ; clear comment that we will get jobs 5, 6 and 7
+        #TODO; why not add sort by functionality later on
         # Should get 5 jobs in response instead of all 10
         response_get = requests.get('{0}?start={1}&offset={2}'.format(SchedulerApiUrl.TASKS, limit, offset),
                                     headers=auth_header)
@@ -296,7 +298,7 @@ class TestSchedulerGet(object):
         set_jobs_ids = set(jobs_id)
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 8
-
+        # TODO same questions as I put in, in above test
         # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
@@ -313,7 +315,7 @@ class TestSchedulerGet(object):
         """
         jobs_id = []
 
-        for i in range(10):
+        for idx in range(10):
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header)
             assert response.status_code == 201
@@ -331,6 +333,8 @@ class TestSchedulerGet(object):
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
+        # TODO; add another GET requerst that gives both -ve start and end points
+        # TODO comment why do we need the following, I don't think we should need the following
         # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
