@@ -76,15 +76,14 @@ class TestEmailCampaignBlasts(object):
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
 
-    def test_get_with_deleted_campaign(self, access_token_first, campaign_with_valid_candidate):
+    def test_with_invalid_campaign_id(self, access_token_first):
         """
-        It first deletes a campaign from database and try to get its blasts.
-        It should get ResourceNotFound error.
+        This is a test to get the blasts of a campaign which does not exists in database.
+        :param access_token_first:
         :return:
         """
-        campaign_id = campaign_with_valid_candidate.id
-        with app.app_context():
-            EmailCampaign.delete(campaign_id)
-        CampaignsTestsHelpers.request_for_resource_not_found_error(self.METHOD,
-                                                                   self.URL % campaign_id,
-                                                                   access_token_first)
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(EmailCampaign,
+                                                               self.METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)
