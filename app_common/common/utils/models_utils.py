@@ -136,11 +136,8 @@ def to_json(self, include=None, field_parsers=dict()):
         if name in field_parsers and callable(field_parsers[name]):
             data[name] = field_parsers[name](value)
         elif typ in converters and value is not None:
-            try:
-                # try to convert column value by given converter method
-                data[name] = converters[typ](value)
-            except:
-                data[name] = str(value)
+            # try to convert column value by given converter method
+            data[name] = converters[typ](value)
         elif value is None:
             # if value is None, make it empty string
             data[name] = str()
