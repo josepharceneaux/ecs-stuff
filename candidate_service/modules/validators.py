@@ -340,3 +340,31 @@ def is_date_valid(date):
         return True
     except ValueError:
         return False
+
+
+def does_address_exist(candidate, address_dict):
+    """
+    :type candidate:  Candidate
+    :type address_dict:  dict[str]
+    :rtype:  bool
+    """
+    for address in candidate.addresses:
+        address_line_1 = address.address_line_1
+        if address_line_1:
+            if address_line_1.lower() == address_dict.get('address_line_1').lower():
+                return True
+    return False
+
+
+def does_candidate_cf_exist(candidate, custom_field_dict):
+    """
+    :type candidate:  Candidate
+    :type custom_field_dict: dict[str]
+    :rtype:  bool
+    """
+    for custom_field in candidate.custom_fields:
+        custom_field_value = custom_field.value
+        if custom_field_value:
+            if custom_field_value.lower() == custom_field_dict.get('value').lower():
+                return True
+    return False
