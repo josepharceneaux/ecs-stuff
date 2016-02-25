@@ -1,25 +1,86 @@
-"""File contains APIs for email campaign.
-EmailCampaign is a restful resource and the endpoint which is sending out emails which is called by scheduler API is
-using blueprint.
 """
-from flask import request, Blueprint, jsonify
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+This file contains API endpoints related to email_campaign_service.
+    Following is a list of API endpoints:
+
+        - EmailCampaigns: /v1/email-campaigns
+
+            GET     : Gets list of all the email campaigns that belong to user
+            POST    : Creates new campaign and save it in database
+
+        - EmailCampaigns: /v1/email-campaigns/:id
+
+            GET     : Gets campaign data using given id
+
+        - SendEmailCampaign: /v1/email-campaigns/:id/send
+
+            POST    : Sends the email campaign by campaign id
+
+        - EmailCampaignUrlRedirection: /v1/redirect/:id
+
+            GET    : Redirects the candidate to our app to keep track of number of clicks, hit_count
+                    and create activity.
+
+        - EmailCampaignBlasts:  /v1/email-campaigns/:id/blasts
+
+            GET    : Gets the all the "blast" records for given email campaign id from db table
+                    "email_campaign_blast"
+
+        - EmailCampaignBlastById:  /v1/email-campaigns/:id/blasts/:id
+
+            GET    : Gets the "blast" record for given email campaign id and blast_id from db table
+                    "email_campaign_blast"
+
+        - EmailCampaignBlastSends:  /v1/email-campaigns/:id/blasts/:id/sends
+
+            GET    : Gets the "sends" records for given email campaign id and blast_id
+                        from db table 'email_campaign_sends'.
+
+        - EmailCampaignSends:  /v1/email-campaigns/:id/sends
+
+            GET    : Gets all the "sends" records for given email campaign id
+                        from db table email_campaign_sends
+"""
+
+# Third Party
+import types
 from flask_restful import Resource
 from werkzeug.utils import redirect
+from flask import request, Blueprint, jsonify
+
+# Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from email_campaign_service.modules.email_marketing import (create_email_campaign, send_emails_to_campaign, update_hit_count)
+from email_campaign_service.modules.email_marketing import (create_email_campaign,
+                                                            send_emails_to_campaign,
+                                                            update_hit_count)
 from email_campaign_service.modules.validations import validate_and_format_request_data
-from email_campaign_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
+
+# Common utils
+from email_campaign_service.common.talent_api import TalentApi
+from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.utils.api_utils import api_route
+from email_campaign_service.common.routes import EmailCampaignEndpoints
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.routes import EmailCampaignEndpoints
-from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
+                                                          ForbiddenError)
+from email_campaign_service.common.campaign_services.validators import \
+    raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
+
+# Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
+api = TalentApi()
+api.init_app(email_campaign_blueprint)
+api.route = types.MethodType(api_route, api)
 
 
+@api.route(EmailCampaignEndpoints.CAMPAIGNS, EmailCampaignEndpoints.CAMPAIGN)
 class EmailCampaignApi(Resource):
 
     # Access token decorator
@@ -27,8 +88,8 @@ class EmailCampaignApi(Resource):
 
     def get(self, **kwargs):
         """
-        GET /email-campaigns/<id>          Fetch email campaign object
-        GET /email-campaigns               Fetches all email campaign objects from auth user's domain
+        GET /email-campaigns/<id>    Fetch email campaign object
+        GET /email-campaigns         Fetches all email campaign objects from auth user's domain
 
         """
         user = request.user
@@ -38,7 +99,8 @@ class EmailCampaignApi(Resource):
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not email_campaign:
-                raise NotFoundError("Email campaign with id: %s does not exists" % email_campaign_id)
+                raise NotFoundError("Email campaign with id: %s does not exists"
+                                    % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
             email_campaign_object = email_campaign.to_dict()
@@ -46,7 +108,8 @@ class EmailCampaignApi(Resource):
         else:
             # Get all email campaigns from logged in user's domain
             email_campaigns = EmailCampaign.query.filter(EmailCampaign.user_id == user.id)
-            return {"email_campaigns": [email_campaign.to_dict() for email_campaign in email_campaigns]}
+            return {"email_campaigns": [email_campaign.to_dict()
+                                        for email_campaign in email_campaigns]}
 
     def post(self):
         """
@@ -82,6 +145,7 @@ class EmailCampaignApi(Resource):
         return {'campaign': campaign}, 201
 
 
+@api.route(EmailCampaignEndpoints.SEND)
 class EmailCampaignSendApi(Resource):
     """
     This endpoint looks like /v1/email-campaigns/:id/send
@@ -143,6 +207,75 @@ def url_redirect(url_conversion_id):
     return redirect(destination_url)
 
 
-api = TalentApi(email_campaign_blueprint)
-api.add_resource(EmailCampaignApi, EmailCampaignEndpoints.CAMPAIGN, EmailCampaignEndpoints.CAMPAIGNS)
-api.add_resource(EmailCampaignSendApi, EmailCampaignEndpoints.SEND)
+@api.route(EmailCampaignEndpoints.BLASTS)
+class EmailCampaignBlasts(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/blasts.
+    This class returns all the blast objects associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id):
+        """
+        This endpoint returns a list of blast objects (dict) associated with a specific
+        email campaign.
+
+        :param campaign_id: int, unique id of a email campaign
+        :type campaign_id: int | long
+        :return: JSON data containing list of blasts and their counts
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(EmailCampaignUrl.BLASTS % campaign_id, headers=headers)
+
+        .. Response::
+
+           {
+              "count": 2,
+              "blasts": [
+                            {
+                              "sent_time": "2016-02-19 00:49:21",
+                              "sends": 1,
+                              "bounces": 0,
+                              "updated_time": "2016-02-19 00:53:53",
+                              "text_clicks": 0,
+                              "email_campaign_id": 1230,
+                              "html_clicks": 0,
+                              "complaints": 0,
+                              "id": 4811,
+                              "opens": 1
+                            },
+                            {
+                              "sent_time": "2016-02-19 00:50:24",
+                              "sends": 1,
+                              "bounces": 0,
+                              "updated_time": "2016-02-19 00:50:27",
+                              "text_clicks": 0,
+                              "email_campaign_id": 1230,
+                              "html_clicks": 0,
+                              "complaints": 0,
+                              "id": 4812,
+                              "opens": 0
+                            }
+                       ]
+            }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+        """
+        # Get a campaign that was created by this user
+        campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
+                                                                CampaignUtils.EMAIL)
+        # Serialize blasts of a campaign
+        blasts = [blast.to_json() for blast in campaign.blasts]
+        response = dict(blasts=blasts, count=len(blasts))
+        return response, 200
+

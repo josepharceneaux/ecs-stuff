@@ -115,8 +115,7 @@ class CampaignsCommonTests(object):
 
     @classmethod
     def request_with_invalid_campaign_id(cls, model, method, url, token, data):
-        # Test with invalid integer id
-        # Test for 404, Schedule a campaign which does not exists or id is invalid
+        # Request a campaign which does not exists or id is invalid
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
