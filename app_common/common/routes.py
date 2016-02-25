@@ -170,6 +170,8 @@ class ActivityApi(object):
     ACTIVITIES = RELATIVE_VERSION % 'activities/'
     # /v1/activities/<page>
     ACTIVITIES_PAGE = ACTIVITIES + '<page>'
+    ACTIVITY_MESSAGES = RELATIVE_VERSION % 'messages'
+    LAST_READ = RELATIVE_VERSION % 'last-read'
 
 
 class ActivityApiUrl(object):
