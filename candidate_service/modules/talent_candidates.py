@@ -39,6 +39,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
+from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -768,6 +769,11 @@ def create_or_update_candidate_from_params(
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary)
 
+    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    """
+    :type candidate: Candidate
+    """
+
     # Add or update Candidate's talent-pools
     if talent_pool_ids:
         _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating,
@@ -775,7 +781,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's address(es)
     if addresses:
-        _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edit_time)
+        _add_or_update_candidate_addresses(candidate, addresses, user_id, edit_time)
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
@@ -783,7 +789,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time, user_id, edit_time)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, edit_time)
 
     # Add or update Candidate's education(s)
     if educations:
@@ -1012,12 +1018,13 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_time):
+def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_time):
     """
     Function will update CandidateAddress or create a new one.
     :type addresses: list[dict[str, T]]
     """
     # If any of addresses is_default, set candidate's addresses' is_default to False
+    candidate_id = candidate.id
     address_has_default = any([address.get('is_default') for address in addresses])
     if address_has_default:
         CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
@@ -1065,7 +1072,9 @@ def _add_or_update_candidate_addresses(candidate_id, addresses, user_id, edited_
             candidate_address_query.update(address_dict)
 
         else:  # Create if not an update
-            db.session.add(CandidateAddress(**address_dict))
+            # Prevent duplicate insertions
+            if not does_address_exist(candidate=candidate, address_dict=address_dict):
+                db.session.add(CandidateAddress(**address_dict))
 
 
 def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
@@ -1077,18 +1086,17 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
         aoi_id = area_of_interest['area_of_interest_id']
 
         # Prevent duplicate insertions
-        candidate_aoi_object = CandidateAreaOfInterest.get_aoi(candidate_id=candidate_id,
-                                                               aoi_id=aoi_id)
-        if candidate_aoi_object:
+        if CandidateAreaOfInterest.get_aoi(candidate_id=candidate_id, aoi_id=aoi_id):
             continue
 
         db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
 
-def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added_time, user_id, edit_time):
+def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, edit_time):
     """
     Function will update CandidateCustomField or create a new one.
     """
+    candidate_id = candidate.id
     for custom_field in custom_fields:
         custom_field_dict = dict(
             value=custom_field.get('value'),
@@ -1099,8 +1107,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
         if candidate_custom_field_id:   # Update
 
             # Remove keys with None values
-            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems()
-                                     if v is not None)
+            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
             can_custom_field_query = db.session.query(CandidateCustomField).\
@@ -1108,8 +1115,7 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
             can_custom_field_obj = can_custom_field_query.first()
             if not can_custom_field_obj:
                 error_message = 'Candidate custom field you are requesting to update does not exist'
-                raise InvalidUsage(error_message=error_message,
-                                   error_code=custom_error.CUSTOM_FIELD_NOT_FOUND)
+                raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             # CandidateCustomField must belong to Candidate
             if can_custom_field_obj.candidate_id != candidate_id:
@@ -1125,7 +1131,9 @@ def _add_or_update_candidate_custom_field_ids(candidate_id, custom_fields, added
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
-            db.session.add(CandidateCustomField(**custom_field_dict))
+            # Prevent duplicate insertions
+            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=custom_field_dict):
+                db.session.add(CandidateCustomField(**custom_field_dict))
 
 
 def _add_or_update_educations(candidate_id, educations, added_time, user_id, edit_time):
