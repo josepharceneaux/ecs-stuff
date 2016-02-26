@@ -112,23 +112,23 @@ class Tasks(Resource):
         # a limited number of jobs by specifying offset and limit parameter, then return only specified jobs
 
         # Limit the jobs to 200 if user requests for more than 200
-        max_offset_limit = 200
+        max_offset = 200
 
         # If user didn't specify offset or limit, then it should be set to default 0 and 30 respectively.
         offset, limit = request.args.get('offset', 0), request.args.get('limit', 30)
 
-        if request.args.get('offset') and not (str(offset).isdigit() and int(offset) >= 0):
+        if not (str(offset).isdigit() and int(offset) >= 0):
             raise InvalidUsage(error_message="'offset' arg should be a digit. Greater or equal to 0")
 
-        if request.args.get('limit') and not (str(limit).isdigit() and int(limit) > 0):
+        if not (str(limit).isdigit() and int(limit) > 0):
             raise InvalidUsage(
                 error_message="'limit' arg should be a digit and its value should be greater than 0")
 
         offset, limit = int(offset), int(limit)
 
         # Limit the jobs if user requests jobs greater than 200
-        if limit > max_offset_limit:
-            limit = max_offset_limit
+        if limit > max_offset:
+            limit = max_offset
 
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
