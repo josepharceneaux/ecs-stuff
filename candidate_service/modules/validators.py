@@ -6,7 +6,9 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate, CandidateEducation, CandidateExperience
+from candidate_service.common.models.candidate import Candidate, CandidateEmail, \
+    CandidateEducation, CandidateExperience, CandidatePhone, CandidatePreferredLocation, \
+    CandidateSkill, CandidateSocialNetwork
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
@@ -16,6 +18,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
+from candidate_service.common.utils.validators import format_phone_number
 from datetime import datetime
 
 
@@ -370,6 +373,20 @@ def does_candidate_cf_exist(candidate, custom_field_dict):
     return False
 
 
+def get_candidate_email_from_domain_if_exists(user_id, email_address):
+    """
+    Function will retrieve CandidateEmail belonging to the requested candidate
+    in the same domain if found.
+    :type user_id:       int|long
+    :type email_address: basestring
+    :rtype: CandidateEmail|None
+    """
+    user_domain_id = User.get_domain_id(_id=user_id)
+    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+    return candidate_email if candidate_email else None
+
+
 def get_education_if_exists(educations, education_dict, education_degrees):
     """
     :type educations:  list[CandidateEducation]
@@ -437,5 +454,54 @@ def does_experience_bullet_exist(experiences, bullet_dict):
     return False
 
 
+def does_phone_exist(phones, phone_dict):
+    """
+    :type phones:  list[CandidatePhone]
+    :type phone_dict:  dict[str]
+    :rtype:  bool
+    """
+    for phone in phones:
+        value = phone_dict.get('value')
+        if value:
+            if phone.value == format_phone_number(phone_number=value)['formatted_number']:
+                return True
+    return False
 
 
+def does_preferred_location_exist(preferred_locations, preferred_location_dict):
+    """
+    :type preferred_locations:  list[CandidatePreferredLocation]
+    :type preferred_location_dict:  dict[str]
+    :rtype:
+    """
+    for location in preferred_locations:
+        city, region = preferred_location_dict.get('city') or '', preferred_location_dict.get('region') or ''
+        if (location.city or '').lower() == city.lower() and (location.region or '').lower() == region.lower():
+            return True
+    return False
+
+
+def does_skill_exist(skills, skill_dict):
+    """
+    :type skills:  list[CandidateSkill]
+    :type skill_dict:  dict[str]
+    :rtype:  bool
+    """
+    for skill in skills:
+        description = (skill_dict.get('description') or '').lower()
+        if (skill.description or '').lower() == description:
+            return True
+    return False
+
+
+def does_social_network_exist(social_networks, social_network_dict):
+    """
+    :type social_networks:  list[CandidateSocialNetwork]
+    :type social_network_dict:  dict[str]
+    :rtype:  bool
+    """
+    for social_network in social_networks:
+        profile_url = (social_network_dict.get('social_profile_url') or '').lower()
+        if (social_network.social_profile_url or '').lower() == profile_url:
+            return True
+    return False
