@@ -10,6 +10,7 @@ from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
 
+
 class Candidate(db.Model):
     __tablename__ = 'candidate'
     id = db.Column('Id', db.BIGINT, primary_key=True)

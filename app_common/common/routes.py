@@ -10,6 +10,7 @@ Here we have two(or maybe three) classes for each service.
  1) CandidateApi which contains REST endpoints
  2) CandidateApiUrl which contains complete URLs of REST endpoints
  3) CandidateApiWords which contains common words for both above classes.
+
 """
 import os
 from talent_config_manager import TalentConfigKeys, TalentEnvs
@@ -25,7 +26,8 @@ def _get_host_name(service_name, port_number):
     If api_version is provided, it also appends the version of API.
 
     For DEV, CIRCLE, In case of auth_service we'll get
-        http://127.0.0.1:8001%s
+
+            http://127.0.0.1:8001%s
     For QA:
             http://auth-service-staging.gettalent.com (for auth service)
     For PROD:
@@ -687,11 +689,12 @@ class CandidateApiUrl(object):
 
 class SchedulerApi(object):
     """
-    Rest URLs of scheduler_service
+    Rest Relative URLs of scheduler_service
     """
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                GTApis.SCHEDULER_SERVICE_PORT)
     VERSION = 'v1'
+
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
@@ -711,6 +714,7 @@ class SchedulerApiUrl(object):
     """
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
                                GTApis.SCHEDULER_SERVICE_PORT)
+
     VERSION = 'v1'
 
     HOST_NAME %= _get_api_relative_version(VERSION)
