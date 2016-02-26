@@ -1,5 +1,5 @@
 import json
-from flask import request
+from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
@@ -31,7 +31,11 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
             search_params['fields'] = 'id'
         if count_only:
             search_params['fields'] = 'count_only'
-        search_results = search_candidates_from_params(search_params, oauth_token, smartlist.user_id)
+            smartlist.oauth_token = oauth_token
+            search_results = search_and_count_candidates_from_params(smartlist)
+        else:
+            search_results = search_candidates_from_params(search_params, oauth_token, smartlist.user_id)
+
     # If a dumblist & getting count only, just do count
     elif count_only:
         count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
@@ -54,6 +58,16 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
         search_results = create_candidates_dict(candidate_ids)
 
     return search_results
+
+
+@cache.memoize(timeout=86400)
+def search_and_count_candidates_from_params(smartlist):
+    """
+    This function will search and count candidates using search_params
+    :param smartlist: SmartList object
+    :return:
+    """
+    return search_candidates_from_params(smartlist.search_params, smartlist.oauth_token, smartlist.user_id)
 
 
 def create_candidates_dict(candidate_ids):
