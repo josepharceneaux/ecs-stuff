@@ -154,8 +154,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
@@ -267,8 +271,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
