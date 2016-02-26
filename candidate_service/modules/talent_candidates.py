@@ -39,7 +39,8 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
 from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist, \
     does_education_degree_bullet_exist, get_education_if_exists, get_work_experience_if_exists, \
-    does_experience_bullet_exist
+    does_experience_bullet_exist, get_candidate_email_from_domain_if_exists, does_phone_exist, \
+    does_preferred_location_exist, does_skill_exist, does_social_network_exist
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -809,23 +810,23 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's phone(s)
     if phones:
-        _add_or_update_phones(candidate_id, phones, user_id, edit_time)
+        _add_or_update_phones(candidate, phones, user_id, edit_time)
 
     # Add or update Candidate's military service(s)
     if military_services:
-        _add_or_update_military_services(candidate_id, military_services, user_id, edit_time)
+        _add_or_update_military_services(candidate, military_services, user_id, edit_time)
 
     # Add or update Candidate's preferred location(s)
     if preferred_locations:
-        _add_or_update_preferred_locations(candidate_id, preferred_locations, user_id, edit_time)
+        _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_time)
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time)
+        _add_or_update_skills(candidate, skills, added_time, user_id, edit_time)
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_time)
+        _add_or_update_social_networks(candidate, social_networks, user_id, edit_time)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -1551,18 +1552,19 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_time):
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email = get_candidate_email_from_domain_if_exists(candidate_id, user_id, email_dict['address'])
+            email = get_candidate_email_from_domain_if_exists(user_id, email_dict['address'])
             # Prevent duplicate email address for the same candidate in the same domain
-            if email is None:
+            if not email:
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 
 
-def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
+def _add_or_update_phones(candidate, phones, user_id, edit_time):
     """
     Function will update CandidatePhone or create new one(s).
     """
     # If any of phones' is_default is True, set all of candidate's phones' is_default to False
+    candidate_id, candidate_phones = candidate.id, candidate.phones
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
 
@@ -1576,7 +1578,7 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number_dict = format_phone_number(value) if value else None
+        phone_number_dict = format_phone_number(phone_number=value) if value else None
 
         phone_dict = dict(
             value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
@@ -1611,13 +1613,16 @@ def _add_or_update_phones(candidate_id, phones, user_id, edit_time):
 
         else:  # Add
             phone_dict.update(dict(candidate_id=candidate_id))
-            db.session.add(CandidatePhone(**phone_dict))
+            # Prevent duplicate entries
+            if not does_phone_exist(candidate_phones, phone_dict):
+                db.session.add(CandidatePhone(**phone_dict))
 
 
-def _add_or_update_military_services(candidate_id, military_services, user_id, edit_time):
+def _add_or_update_military_services(candidate, military_services, user_id, edit_time):
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
+    candidate_id, candidate_military_services = candidate.id, candidate.military_services
     for military_service in military_services:
 
         # Convert ISO 8061 date object to datetime object
@@ -1670,13 +1675,15 @@ def _add_or_update_military_services(candidate_id, military_services, user_id, e
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
+            # TODO: Prevent duplicate entries
             db.session.add(CandidateMilitaryService(**military_service_dict))
 
 
-def _add_or_update_preferred_locations(candidate_id, preferred_locations, user_id, edit_time):
+def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_time):
     """
     Function will update CandidatePreferredLocation or create a new one.
     """
+    candidate_id, candidate_preferred_locations = candidate.id, candidate.preferred_locations
     for preferred_location in preferred_locations:
 
         preferred_location_dict = dict(
@@ -1717,13 +1724,16 @@ def _add_or_update_preferred_locations(candidate_id, preferred_locations, user_i
 
         else:  # Add
             preferred_location_dict.update(dict(candidate_id=candidate_id))
-            db.session.add(CandidatePreferredLocation(**preferred_location_dict))
+            # Prevent duplicate entries
+            if not does_preferred_location_exist(candidate_preferred_locations, preferred_location_dict):
+                db.session.add(CandidatePreferredLocation(**preferred_location_dict))
 
 
-def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
+def _add_or_update_skills(candidate, skills, added_time, user_id, edit_time):
     """
     Function will update CandidateSkill or create new one(s).
     """
+    candidate_id, candidate_skills = candidate.id, candidate.skills
     for skill in skills:
 
         # Convert ISO 8601 date format to datetime object
@@ -1731,7 +1741,7 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
         if last_used_date:
             last_used_date = dateutil.parser.parse(skill.get('last_used_date'))
 
-        skills_dict = dict(
+        skill_dict = dict(
             list_order=skill.get('list_order'),
             description=skill.get('name'),
             total_months=skill.get('months_used'),
@@ -1742,7 +1752,7 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
         if skill_id:  # Update
 
             # Remove keys with None values
-            skills_dict = dict((k, v) for k, v in skills_dict.iteritems() if v is not None)
+            skill_dict = dict((k, v) for k, v in skill_dict.iteritems() if v is not None)
 
             # CandidateSkill must be recognized
             can_skill_query = db.session.query(CandidateSkill).filter_by(id=skill_id)
@@ -1757,20 +1767,23 @@ def _add_or_update_skills(candidate_id, skills, added_time, user_id, edit_time):
                                      error_code=custom_error.SKILL_FORBIDDEN)
 
             # Track all changes
-            _track_candidate_skill_edits(skills_dict, can_skill_obj, candidate_id, user_id, edit_time)
+            _track_candidate_skill_edits(skill_dict, can_skill_obj, candidate_id, user_id, edit_time)
 
             # Update CandidateSkill
-            can_skill_query.update(skills_dict)
+            can_skill_query.update(skill_dict)
 
         else:  # Add
-            skills_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
-            db.session.add(CandidateSkill(**skills_dict))
+            skill_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
+            # Prevent duplicate entries
+            if not does_skill_exist(candidate_skills, skill_dict):
+                db.session.add(CandidateSkill(**skill_dict))
 
 
-def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_time):
+def _add_or_update_social_networks(candidate, social_networks, user_id, edit_time):
     """
     Function will update CandidateSocialNetwork or create new one(s).
     """
+    candidate_id, candidate_sns = candidate.id, candidate.social_networks
     for social_network in social_networks:
 
         if not social_network.get('name'):
@@ -1804,7 +1817,9 @@ def _add_or_update_social_networks(candidate_id, social_networks, user_id, edit_
 
         else:  # Add
             social_network_dict.update(dict(candidate_id=candidate_id))
-            db.session.add(CandidateSocialNetwork(**social_network_dict))
+            # Prevent duplicate entries
+            if not does_social_network_exist(candidate_sns, social_network_dict):
+                db.session.add(CandidateSocialNetwork(**social_network_dict))
 
 
 def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):
@@ -2227,18 +2242,3 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
             new_value=new_value,
             edit_datetime=edit_time
         ))
-
-
-def get_candidate_email_from_domain_if_exists(candidate_id, user_id, email_address):
-    """
-    Function will retrieve CandidateEmail belonging to the requested candidate
-    in the same domain if found.
-    :type candidate_id:  int|long
-    :type user_id:       int|long
-    :type email_address: basestring
-    :rtype: CandidateEmail|None
-    """
-    user_domain_id = User.get_domain_id(_id=user_id)
-    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
-    return candidate_email if candidate_email else None
