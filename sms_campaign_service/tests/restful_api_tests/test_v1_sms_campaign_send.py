@@ -25,16 +25,16 @@ class TestSendSmsCampaign(object):
     This class contains tests for endpoint /campaigns/:id/send
     """
     URL = SmsCampaignApiUrl.SEND
-    METHOD = 'post'
+    HTTP_METHOD = 'post'
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid, it should result in Unauthorized error.
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD,
-                                                        self.URL % sms_campaign_of_current_user.id,
-                                                        None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % sms_campaign_of_current_user.id,
+                                                         None)
 
     def test_post_with_id_of_deleted_record(self, access_token_first,
                                             sms_campaign_of_current_user):
@@ -45,7 +45,7 @@ class TestSendSmsCampaign(object):
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL, self.METHOD, access_token_first)
+            self.URL, self.HTTP_METHOD, access_token_first)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):
@@ -54,9 +54,9 @@ class TestSendSmsCampaign(object):
         of logged-in user. It should result in Forbidden error.
         :return:
         """
-        CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          access_token_first)
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):
@@ -91,10 +91,10 @@ class TestSendSmsCampaign(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
             self, access_token_first, user_first, sms_campaign_of_current_user,

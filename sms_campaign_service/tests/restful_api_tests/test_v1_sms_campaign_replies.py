@@ -18,7 +18,7 @@ class TestSmsCampaignReplies(object):
     This class contains tests for endpoint /v1/campaigns/:id/replies
     """
     URL = SmsCampaignApiUrl.REPLIES
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     ENTITY = 'replies'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
@@ -27,8 +27,8 @@ class TestSmsCampaignReplies(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD, self.URL
-                                                        % sms_campaign_of_current_user.id, None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
+                                                         % sms_campaign_of_current_user.id, None)
 
     def test_get_with_no_replies_on_campaign(self, access_token_first,
                                              sms_campaign_of_current_user):
@@ -52,9 +52,9 @@ class TestSmsCampaignReplies(object):
         :return:
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
-                                                             SmsCampaignApiUrl.CAMPAIGN,
-                                                             self.URL, self.METHOD,
-                                                             access_token_first)
+                                                              SmsCampaignApiUrl.CAMPAIGN,
+                                                              self.URL, self.HTTP_METHOD,
+                                                              access_token_first)
 
     def test_get_with_valid_token_and_one_reply(self, access_token_first, candidate_phone_1,
                                                 sms_campaign_of_current_user,
@@ -82,9 +82,9 @@ class TestSmsCampaignReplies(object):
         some other user. It should result in Forbidden error.
         :return:
         """
-        CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first):
         """
@@ -93,7 +93,7 @@ class TestSmsCampaignReplies(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)

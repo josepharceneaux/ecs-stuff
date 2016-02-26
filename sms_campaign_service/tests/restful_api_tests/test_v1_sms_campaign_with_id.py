@@ -30,7 +30,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method GET.
 
     """
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     URL = SmsCampaignApiUrl.CAMPAIGN
 
     def test_with_invalid_token(self, sms_campaign_of_current_user):
@@ -94,17 +94,17 @@ class TestSmsCampaignWithIdHTTPGET(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)
 
 
 class TestSmsCampaignWithIdHTTPPUT(object):
     """
     This class contains tests for endpoint /campaigns/:id and HTTP method POST.
     """
-    METHOD = 'put'
+    HTTP_METHOD = 'put'
     URL = SmsCampaignApiUrl.CAMPAIGN
 
     def test_with_invalid_token(self, sms_campaign_of_current_user):
@@ -292,10 +292,10 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              campaign_valid_data)
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               campaign_valid_data)
 
 
 class TestSmsCampaignWithIdHTTPDelete(object):
@@ -303,7 +303,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
     This class contains tests for endpoint /campaigns/:id and HTTP method DELETE.
     """
     URL = SmsCampaignApiUrl.CAMPAIGN
-    METHOD = 'delete'
+    HTTP_METHOD = 'delete'
 
     def test_delete_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -355,7 +355,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)

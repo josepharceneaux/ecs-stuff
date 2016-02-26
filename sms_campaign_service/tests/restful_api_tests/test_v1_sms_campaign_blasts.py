@@ -17,7 +17,7 @@ class TestSmsCampaignBlasts(object):
     This class contains tests for endpoint /v1/campaigns/:id/blasts
     """
     URL = SmsCampaignApiUrl.BLASTS
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     ENTITY = 'blasts'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
@@ -26,8 +26,8 @@ class TestSmsCampaignBlasts(object):
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD, self.URL
-                                                        % sms_campaign_of_current_user.id, None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
+                                                         % sms_campaign_of_current_user.id, None)
 
     def test_get_with_no_blasts_saved(self, access_token_first, sms_campaign_of_current_user):
         """
@@ -50,9 +50,9 @@ class TestSmsCampaignBlasts(object):
         :return:
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
-                                                             SmsCampaignApiUrl.CAMPAIGN,
-                                                             self.URL, self.METHOD,
-                                                             access_token_first)
+                                                              SmsCampaignApiUrl.CAMPAIGN,
+                                                              self.URL, self.HTTP_METHOD,
+                                                              access_token_first)
 
     def test_get_with_saved_blasts(self, access_token_first, candidate_phone_1,
                                    sms_campaign_of_current_user,
@@ -83,6 +83,6 @@ class TestSmsCampaignBlasts(object):
         some other user. It should result in Forbidden error.
         :return:
         """
-        CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          access_token_first)

@@ -18,7 +18,7 @@ class TestSmsCampaignBlastSends(object):
     This class contains tests for endpoint /v1/campaigns/:id/blasts/:id/sends
     """
     URL = SmsCampaignApiUrl.BLAST_SENDS
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     ENTITY = 'sends'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user, create_sms_campaign_blast):
@@ -28,7 +28,8 @@ class TestSmsCampaignBlastSends(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_token(
-            self.METHOD, self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
+            self.HTTP_METHOD,
+            self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             None)
 
     def test_get_with_no_campaign_sent(self, access_token_first, sms_campaign_of_current_user,
@@ -57,7 +58,7 @@ class TestSmsCampaignBlastSends(object):
         blast_id = create_sms_campaign_blast.id
         CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL % ('%s', blast_id), self.METHOD, access_token_first)
+            self.URL % ('%s', blast_id), self.HTTP_METHOD, access_token_first)
 
     def test_get_with_one_campaign_send(self, access_token_first, candidate_first,
                                         sms_campaign_of_current_user, create_sms_campaign_blast,
@@ -88,7 +89,8 @@ class TestSmsCampaignBlastSends(object):
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.METHOD, self.URL % (sms_campaign_in_other_domain.id, create_sms_campaign_blast.id),
+            self.HTTP_METHOD,
+            self.URL % (sms_campaign_in_other_domain.id, create_sms_campaign_blast.id),
             access_token_first)
 
     def test_get_with_blast_id_associated_with_not_owned_campaign(
@@ -102,7 +104,7 @@ class TestSmsCampaignBlastSends(object):
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.METHOD,
+            self.HTTP_METHOD,
             self.URL % (sms_campaign_of_current_user.id, create_blast_for_not_owned_campaign.id),
             access_token_first)
 
@@ -112,7 +114,7 @@ class TestSmsCampaignBlastSends(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(
-            SmsCampaign, self.METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
+            SmsCampaign, self.HTTP_METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
             access_token_first,
             None)
 
@@ -122,5 +124,5 @@ class TestSmsCampaignBlastSends(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(
-            SmsCampaignBlast, self.METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
+            SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
             access_token_first, None)

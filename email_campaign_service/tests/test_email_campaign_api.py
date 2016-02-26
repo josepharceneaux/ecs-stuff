@@ -125,14 +125,14 @@ class TestSendCampaign(object):
     """
     Here are the tests for sending a campaign from endpoint /v1/email-campaigns/send
     """
-    METHOD = 'post'
+    HTTP_METHOD = 'post'
     URL = EmailCampaignUrl.SEND
 
     def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
         """
         Here we try to send email campaign with invalid access token
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD,
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL % email_campaign_of_user_first.id,
                                                          None)
 
@@ -171,7 +171,7 @@ class TestSendCampaign(object):
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -180,7 +180,7 @@ class TestSendCampaign(object):
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(EmailCampaign,
-                                                               self.METHOD,
+                                                               self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,
                                                                None)
