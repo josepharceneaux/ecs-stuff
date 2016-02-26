@@ -11,12 +11,13 @@ Rather, the properties are obtained from ECS environment variables and a private
 import os
 import tempfile
 import ConfigParser
-from talent_config_manager import TalentConfigKeys
+from talent_config_manager import TalentConfigKeys, TalentEnvs
 
 CONFIG_FILE_NAME = "common_test.cfg"
 TEST_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
 STAGING_TEST_CONFIG_FILE_S3_BUCKET = "test-private-staging"
 PROD_TEST_CONFIG_FILE_S3_BUCKET = "test-private"
+JENKINS_TEST_CONFIG_FILE_S3_BUCKET = "test-private-jenkins"
 
 
 class TestConfigParser(ConfigParser.ConfigParser):
@@ -37,19 +38,23 @@ def load_test_config():
     """
     config_parse = TestConfigParser()
     env = os.getenv(TalentConfigKeys.ENV_KEY)
-    if env == 'dev':
+    if env == TalentEnvs.DEV:
         path = os.path.join(os.path.expanduser('~'), TEST_CONFIG_PATH)
         config_parse.read(path)
         test_config = config_parse.to_dict()
 
     # Load up config from private S3 bucket, if environment is qa or prod
-    elif env in ('qa', 'prod'):
+    elif env in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and
         # AWS_SECRET_ACCESS_KEY env vars
         from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
-        bucket_name = PROD_TEST_CONFIG_FILE_S3_BUCKET if env == 'prod' else \
-            STAGING_TEST_CONFIG_FILE_S3_BUCKET
+        if env == TalentEnvs.PROD:
+            bucket_name = PROD_TEST_CONFIG_FILE_S3_BUCKET
+        elif env == TalentEnvs.QA:
+            bucket_name = STAGING_TEST_CONFIG_FILE_S3_BUCKET
+        else:
+            bucket_name = JENKINS_TEST_CONFIG_FILE_S3_BUCKET
         bucket_obj = s3_connection.get_bucket(bucket_name)
         # Download into temporary file & load it as a Python module into the app_config
         tmp_test_config_file = tempfile.NamedTemporaryFile()
