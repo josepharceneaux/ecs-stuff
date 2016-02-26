@@ -69,7 +69,7 @@ def to_json(self, allowed_columns=None, field_parsers=dict()):
 
     Some data types are not json serializable e.g. DATETIME, TIMESTAMP
     so we are making a dictionary where keys are types and values are functions which
-     will be used to convert these fields to specific type e.g. string
+     will be used to convert these fields to specific type e.g. str
 
      field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
      to json serializable dict but we want our datetime object to be converted in
@@ -104,12 +104,11 @@ def to_json(self, allowed_columns=None, field_parsers=dict()):
             >>>     ...
             >>> }
     """
-    # add your conversions for things like datetime's
+    # add your conversions for things like datetime
     # and timestamp etc. that aren't serializable.
     converters = dict(DATETIME=str, TIMESTAMP=str,
                       DATE=str, TIME=str)
 
-    # data dictionary which will contain add data for this instance
     data = dict()
     cls = self.__class__
 
@@ -130,7 +129,7 @@ def to_json(self, allowed_columns=None, field_parsers=dict()):
     else:
         allowed_names_columns = columns
 
-    # iterate through all columns key, values
+    # iterate through all columns names, values
     for name, column in allowed_names_columns:
         # get value against this column name
         value = getattr(self, name)
