@@ -9,7 +9,7 @@ import datetime
 class CandidateEdit(db.Model):
     __tablename__ = 'candidate_edit'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer)  # ID of the candidate being updated
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     field_id = db.Column(db.Integer)  # Hardcoded constants associated with Candidate's fie ld
     user_id = db.Column(db.Integer)  # ID of the user updating the Candidate, NULL if OpenWeb is updating
     is_custom_field = db.Column(db.Boolean, default=False)  # If True, field_id must = custom_field.id

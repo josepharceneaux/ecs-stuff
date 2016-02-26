@@ -22,6 +22,7 @@ def test_check_for_id(access_token_first, user_first, talent_pool):
     AddUserRoles.add_and_get(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     resp = request_to_candidates_resource(access_token_first, 'post', data)
+    print response_info(resp)
     candidate_id = resp.json()['candidates'][0]['id']
 
     candidate_dict = request_to_candidate_resource(
