@@ -1,8 +1,11 @@
+import requests
+import time
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     create_smartlist_from_api
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
 from email_campaign_service.common.models.user import DomainRole
+from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.utils.candidate_service_calls import \
@@ -95,9 +98,25 @@ def delete_campaign(campaign):
     """
     try:
         with app.app_context():
-            if 'id' in campaign:
+            if isinstance(campaign, dict):
                 EmailCampaign.delete(campaign['id'])
             else:
                 EmailCampaign.delete(campaign.id)
     except Exception:
-        db.session.rollback()
+        pass
+
+
+def send_campaign(campaign, access_token):
+    """
+    This function sends the campaign via /v1/email-campaigns/:id/send
+    :param campaign: Email campaign obj
+    :param access_token: Auth token to make HTTP request
+    :return:
+    """
+    # send campaign
+    campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+    response = requests.post(EmailCampaignUrl.SEND % campaign.id,
+                             headers=dict(Authorization='Bearer %s' % access_token))
+    assert response.ok
+    time.sleep(20)
+    db.session.commit()

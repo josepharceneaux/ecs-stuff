@@ -268,6 +268,12 @@ def access_token_same(user_same_domain, sample_client):
 
 
 @pytest.fixture()
+def access_token_other(user_from_diff_domain, sample_client):
+    return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
+                            sample_client.client_secret)
+
+
+@pytest.fixture()
 def user_first(request, domain_first, first_group):
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
     db.session.commit()
@@ -418,6 +424,27 @@ def talent_pool(request, domain_first, first_group, user_first):
 def talent_pool_second(request, domain_second, second_group, user_second):
     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
                              user_id=user_second.id)
+    db.session.add(talent_pool)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pool)
+            db.session.commit()
+        except:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pool
+
+
+@pytest.fixture()
+def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domain):
+    talent_pool = TalentPool(name=gen_salt(20),
+                             description='', domain_id=test_domain_2.id,
+                             user_id=user_from_diff_domain.id)
     db.session.add(talent_pool)
     db.session.commit()
 

@@ -187,12 +187,12 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                          % (campaign.id, error.message))
         # Create the email_campaign_blast for this blast
         blast_datetime = datetime.datetime.now()
-        email_campaign_blast = EmailCampaignBlast(email_campaign_id=campaign.id,
+        email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,
                                                   sent_time=blast_datetime)
         EmailCampaignBlast.save(email_campaign_blast)
         blast_params = dict(sends=0, bounces=0)
         logger.info('Email campaign record is %s. blast record is %s. User(id:%s).'
-                    % (campaign.to_dict(), email_campaign_blast.to_json(), user.id))
+                    % (campaign.to_dict(), email_campaign_blast.to_dict(), user.id))
         list_of_new_email_html_or_text = []
         # Do not send mail if email_client_id is provided
         if campaign.email_client_id:
@@ -533,7 +533,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
+            EmailCampaignBlast.campaign_id == campaign.id).order_by(desc(EmailCampaignBlast.sent_time)).first()
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")

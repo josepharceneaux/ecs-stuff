@@ -275,7 +275,64 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts]
+        blasts = [blast.to_dict() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
+
+@api.route(EmailCampaignEndpoints.BLAST)
+class EmailCampaignBlastById(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
+    This class returns all the blast objects associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, blast_id):
+        """
+        This endpoint returns a blast object for a given campaign_id and blast_id. From which
+        we can extract sends, clicks etc.
+        :param campaign_id: int, unique id of a SMS campaign
+        :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
+        :return: JSON data containing list of blasts and their counts
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(EmailCampaignUrl.BLAST % (campaign_id, blast_id),
+        >>>                         headers=headers)
+
+        .. Response::
+
+               {
+                  "blast": {
+                            "text_clicks": 0,
+                            "complaints": 0,
+                            "html_clicks": 0,
+                            "sent_time": "2016-02-10 19:37:04",
+                            "sends": 1,
+                            "bounces": 0,
+                            "id": 1,
+                            "opens": 0,
+                            "campaign_id": 1
+                          }
+               }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain)
+                    404 (Campaign not found)
+                    500 (Internal server error)
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        # Get valid blast object
+        blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
+                                                     request.user,
+                                                     CampaignUtils.EMAIL)
+        return dict(blast=blast_obj.to_dict()), 200

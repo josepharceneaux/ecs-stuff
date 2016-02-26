@@ -204,11 +204,11 @@ class TestSendCampaign(object):
         both candidates.
         :return:
         """
-        campaign = EmailCampaign.get_by_id(str(campaign_with_valid_candidate.id))
+        campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_mail(campaign_with_valid_candidate.email_subject)
+        assert_mail(campaign.email_subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
