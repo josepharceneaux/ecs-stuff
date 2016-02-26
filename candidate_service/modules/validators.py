@@ -6,9 +6,10 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate, CandidateEmail, \
-    CandidateEducation, CandidateExperience, CandidatePhone, CandidatePreferredLocation, \
-    CandidateSkill, CandidateSocialNetwork
+from candidate_service.common.models.candidate import (
+    Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork
+)
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
@@ -352,9 +353,14 @@ def does_address_exist(candidate, address_dict):
     :rtype:  bool
     """
     for address in candidate.addresses:
-        address_line_1 = address.address_line_1
-        if address_line_1:
-            if address_line_1.lower() == (address_dict.get('address_line_1') or '').lower():
+        address_line_1, address_line_2 = (address.address_line_1 or '').lower(), (address.address_line_2 or '').lower()
+        address_dict_address_line_1 = (address_dict.get('address_line_1') or '').lower()
+        address_dict_address_line_2 = (address_dict.get('address_line_2') or '').lower()
+        if address_line_1 and not address_line_2:
+            if address_line_1 == address_dict_address_line_1:
+                return True
+        elif address_line_1 and address_line_2:
+            if address_line_1 == address_dict_address_line_1 and address_line_2 == address_dict_address_line_2:
                 return True
     return False
 
@@ -366,10 +372,9 @@ def does_candidate_cf_exist(candidate, custom_field_dict):
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        custom_field_value = custom_field.value
-        if custom_field_value:
-            if custom_field_value.lower() == (custom_field_dict.get('value') or '').lower():
-                return True
+        custom_field_value = (custom_field.value or '').lower()
+        if custom_field_value == (custom_field_dict.get('value') or '').lower():
+            return True
     return False
 
 
@@ -393,14 +398,15 @@ def get_education_if_exists(educations, education_dict, education_degrees):
     :type education_dict: dict[str]
     """
     for education in educations:
-        if education.school_name:
-            if education.school_name.lower() == (education_dict.get('school_name') or '').lower():
-                for degree in education.degrees:
-                    if any([ed.get('end_year') for ed in education_degrees
-                            if ed.get('end_year') == degree.end_year]) or \
-                            any([ed.get('start_year') for ed in education_degrees
-                                 if ed.get('start_year') == degree.start_year]):
-                        return education.id
+        school_name = (education.school_name or '').lower()
+        if school_name == (education_dict.get('school_name') or '').lower():
+            for degree in education.degrees:
+                if any([ed.get('end_year') for ed in education_degrees
+                        if ed.get('end_year') == degree.end_year]) or \
+                        any([ed.get('start_year') for ed in education_degrees
+                             if ed.get('start_year') == degree.start_year]):
+                    return education.id
+    return None  # for readability
 
 
 def does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
@@ -413,10 +419,9 @@ def does_education_degree_bullet_exist(candidate_educations, education_degree_bu
         for degree in education.degrees:
             for bullet in degree.bullets:
                 if bullet:
-                    if bullet.concentration_type:
-                        if bullet.concentration_type.lower() == (
-                                    education_degree_bullet_dict.get('concentration_type') or '').lower():
-                            return True
+                    concentration_type = (bullet.concentration_type or '').lower()
+                    if concentration_type == (education_degree_bullet_dict.get('concentration_type') or '').lower():
+                        return True
     return False
 
 
@@ -438,6 +443,7 @@ def get_work_experience_if_exists(experiences, experience_dict):
         elif experience.organization and not (experience.start_year or experience.end_year):
             if experience.organization.lower() == organization:
                 return experience.id
+    return None  # for readability
 
 
 def does_experience_bullet_exist(experiences, bullet_dict):
@@ -448,9 +454,9 @@ def does_experience_bullet_exist(experiences, bullet_dict):
     """
     for experience in experiences:
         for bullet in experience.bullets:
-            if bullet.description:
-                if bullet.description.lower() == (bullet_dict.get('description') or '').lower():
-                    return True
+            description = (bullet.description or '').lower()
+            if description == (bullet_dict.get('description') or '').lower():
+                return True
     return False
 
 
@@ -463,7 +469,7 @@ def does_phone_exist(phones, phone_dict):
     for phone in phones:
         value = phone_dict.get('value')
         if value:
-            if phone.value == format_phone_number(phone_number=value)['formatted_number']:
+            if phone.value == format_phone_number(value)['formatted_number']:
                 return True
     return False
 

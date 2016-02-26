@@ -1497,7 +1497,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
 
     else:  # Add
         # Only 1 CandidateWorkPreference is permitted for each Candidate
-        if CandidateWorkPreference.get_by_candidate_id(candidate_id=candidate_id):
+        if CandidateWorkPreference.get_by_candidate_id(candidate_id):
             raise InvalidUsage(error_message="Candidate work preference already exists",
                                error_code=custom_error.WORK_PREF_EXISTS)
 
@@ -1578,7 +1578,7 @@ def _add_or_update_phones(candidate, phones, user_id, edit_time):
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number_dict = format_phone_number(phone_number=value) if value else None
+        phone_number_dict = format_phone_number(value) if value else None
 
         phone_dict = dict(
             value=phone_number_dict.get('formatted_number') if phone_number_dict else None,

@@ -527,6 +527,9 @@ class CandidateWorkPreference(db.Model):
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        """
         return cls.query.filter_by(candidate_id=candidate_id).first()
 
 
