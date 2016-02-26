@@ -132,6 +132,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     assert len(set(apple_candidate_ids + cs_sw_engineers_candidate_ids)) == response.get('total_found')
 
 
+
 def test_talent_pipeline_campaign_get(access_token_first, access_token_second, talent_pool, talent_pipeline,
                                        user_first, user_second):
     """

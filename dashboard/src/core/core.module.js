@@ -27,6 +27,6 @@
         'toastr',
         'ui.bootstrap',
         'ui.router',
-        'ncy-angular-breadcrumb'
+        'angularMoment'
     ]);
 })();

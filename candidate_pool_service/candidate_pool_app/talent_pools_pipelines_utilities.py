@@ -54,16 +54,15 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     # Get all smartlists and dumblists of a talent-pipeline
     smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline.id).all()
 
-    search_params, dumb_lists = [], []
+    smartlist_ids, dumblist_ids = [], []
 
     try:
-        if talent_pipeline.search_params and json.loads(talent_pipeline.search_params):
-            search_params.append(json.loads(talent_pipeline.search_params))
+        request_params = json.loads(talent_pipeline.search_params)
         for smartlist in smartlists:
             if smartlist.search_params and json.loads(smartlist.search_params):
-                search_params.append(json.loads(smartlist.search_params))
+                smartlist_ids.append(str(smartlist.id))
             else:
-                dumb_lists.append(str(smartlist.id))
+                dumblist_ids.append(str(smartlist.id))
 
     except Exception as e:
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
@@ -76,16 +75,14 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     else:
         headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
 
-    request_params = dict()
-
     if not is_celery_task:
         request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
         request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
-        request_params['dumb_list_ids'] = ','.join(dumb_lists) if dumb_lists else None
-        request_params['search_params'] = json.dumps(search_params) if search_params else None
+        request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
+        request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
     else:
         request_params['fields'] = fields
 
