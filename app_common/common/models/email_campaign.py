@@ -98,7 +98,12 @@ class EmailCampaignBlast(db.Model):
 
     @classmethod
     def get_latest_blast_by_campaign_id(cls, campaign_id):
-        # TODO add comments here
+        """
+        Method to get latest email campaign blast for campaign whose id is
+        provided. Returns on the basis of most recent sent_time.
+        :param campaign_id:
+        :return:
+        """
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
             cls.email_campaign_id == campaign_id).order_by(desc(cls.sent_time)).first()

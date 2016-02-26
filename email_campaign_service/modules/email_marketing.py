@@ -201,7 +201,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
                     campaign, candidate_id, blast_params=blast_params,
                     email_campaign_blast_id=email_campaign_blast.id,
-                    blast_datetime=blast_datetime)[:2]
+                    blast_sent_time=blast_datetime)[:2]
                 logger.info("Marketing email added through client %s", campaign.email_client_id)
                 resp_dict = dict()
                 resp_dict['new_html'] = new_html
@@ -418,7 +418,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         get_new_text_html_subject_and_campaign_send(campaign, candidate.id,
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
-                                                    blast_datetime=blast_datetime)
+                                                    blast_sent_time=blast_datetime)
     logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate.id)
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
@@ -513,7 +513,7 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
 
 def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
                                                 blast_params=None, email_campaign_blast_id=None,
-                                                blast_datetime=None):
+                                                blast_sent_time=None):
     """
     This gets new_html and new_text by URL conversion method and returns
     new_html, new_text, subject, email_campaign_send, blast_params, candidate.
@@ -521,7 +521,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     :param candidate_id: id of candidate
     :param blast_params: email_campaign blast params
     :param email_campaign_blast_id:  email campaign blast id
-    :param blast_datetime: email campaign blast datetime
+    :param blast_sent_time: email campaign blast datetime
     :type campaign: EmailCampaign
     :type candidate_id: int | long
     :type blast_params: dict | None
@@ -534,25 +534,22 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
         if not email_campaign_blast:
-            # TODO why do the message start with send_campaign_emails_to_candidate, may be we can use something
-            # more meaningful and related
-            logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
+            logger.error("""error sending campaign emails: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
 
-            # TODO; I think it's a bug to return False from where, because it's unpacking 6 variable where
-            # this method is being called so I am not certain if you can just return False. Kindly tripple check
-            return False
+            raise InvalidUsage('No email campaign blast found for campaign(id:%s).'
+                           % campaign.id,
+                           error_code = CampaignException.NO_EMAIL_CAMPAIGN_BLAST_FOUND)
         email_campaign_blast_id = email_campaign_blast.id
-        # TODO followoing variable should be 'blast_sent_time'
-        blast_datetime = email_campaign_blast.sent_time
-    if not blast_datetime:
-        blast_datetime = datetime.datetime.now()
+        blast_sent_time = email_campaign_blast.sent_time
+    if not blast_sent_time:
+        blast_sent_time = datetime.datetime.now()
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
     email_campaign_send = EmailCampaignSend(email_campaign_id=campaign.id,
                                             candidate_id=candidate.id,
-                                            sent_time=blast_datetime)
+                                            sent_time=blast_sent_time)
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here

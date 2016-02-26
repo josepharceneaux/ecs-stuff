@@ -141,33 +141,30 @@ def candidate_in_other_domain(request, user_from_diff_domain):
 @pytest.fixture()
 def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
-    This fixture sends an email using client_id so that we can get HTML
-    to be sent to the client. It validates the response of sending and
-    returns the response along with the campaign obj in a dict.
+    This fixture is used to get the response of sending campaign emails with client id
+    for a particular campaign. It also ensures that response is in proper format. Used in
+    multiple tests.
     :param access_token_first:
     :param campaign_with_valid_candidate:
     :return:
     """
-    #TODO please make the comment above more meaningful and easy to understand. Also it should the tell store as to
-    # what's happening in the test
-    URL = EmailCampaignUrl.SEND
+    url = EmailCampaignUrl.SEND
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(
-            URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            url % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
     assert response.status_code == 200
     json_response = response.json()
     assert 'email_campaign_sends' in json_response
     email_campaign_sends = json_response['email_campaign_sends'][0]
     assert 'new_html' in email_campaign_sends
     new_html = email_campaign_sends['new_html']
-    # TODO there should always be a space after the # sign, I made that change below for now so FYI
-    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters
-    # There has to be more comments about what's going on here, I didn't get that sorry
-    assert not matched  # fail if escaped characters found
-    assert 'new_text' in email_campaign_sends
-    assert 'email_campaign_id' in email_campaign_sends
-    assert campaign.id == email_campaign_sends['email_campaign_id']
+    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
+    # There have to be more comments about what's going on here, I didn't get that sorry
+    assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
+    assert 'new_text' in email_campaign_sends # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends # Check if there is email campaign id in response
+    assert campaign.id == email_campaign_sends['email_campaign_id'] # Check if both IDs are same
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign

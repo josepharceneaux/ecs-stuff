@@ -268,13 +268,16 @@ class TestSendCampaign(object):
 
     def test_redirect_url(self, send_email_campaign_by_client_id_response):
         """
-        Sanity testing for redirect URL, hits the URL, checks the response to be ok
-        and does checking in DB to verify if relevant fields in tables are being
-        updated accordingly after hitting URL
+        Test the url which is sent to candidates in email to be valid.
+        This is the url which included in email to candidate in order to be
+        redirected to the get talent campaign page. After checking that the url is valid,
+        this test sends a get request to the url and checks the response to be ok (200).
+        After that it checks the database if the hit count in UrlConversion table
+        has been updated. It also checks that the relevant fields in
+        EmailCampaignBlast table have been updated after getting ok response
+        from get request.
         :param send_email_campaign_by_client_id_response:
         """
-        # TODO I didn't get from what comment what's going on here. Need it to be more simple so outsiders can even
-        # understand
         response = send_email_campaign_by_client_id_response['response']
         campaign = send_email_campaign_by_client_id_response['campaign']
         json_response = response.json()

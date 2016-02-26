@@ -1,6 +1,5 @@
-# TODO please don't import like this. One per line and in order.
-
-import json, HTMLParser
+import json
+import HTMLParser
 
 from urllib import urlencode
 from datetime import datetime

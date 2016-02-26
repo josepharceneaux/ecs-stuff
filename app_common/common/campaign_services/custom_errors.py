@@ -25,6 +25,7 @@ class CampaignException(InternalServerError):
     MISSING_REQUIRED_FIELD = 5104
     ERROR_DELETING_CAMPAIGN = 5015
     NO_VALID_CANDIDATE_FOUND = 5018
+    NO_EMAIL_CAMPAIGN_BLAST_FOUND = 5019
 
     # used as custom exceptions
     MULTIPLE_CANDIDATES_FOUND = 5016
