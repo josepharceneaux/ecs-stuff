@@ -7,8 +7,9 @@ pip install -r requirements.txt
 sudo service docker restart
 sudo usermod -aG docker jenkins
 
-# Remove all dangling images from Jenkins container
-docker rm $(docker ps -a -q);
+# Sopping all containers and removing all dangling images from Jenkins container
+docker stop $(docker ps -a -q)
+docker rm $(docker ps -a -q)
 docker images -qf dangling=true | xargs docker rmi
 
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
