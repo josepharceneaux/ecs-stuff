@@ -11,10 +11,10 @@
     function providerFunction() {
         this.$get = $get;
 
-        $get.$inject = [];
+        $get.$inject = ['toastr'];
 
         /* @ngInject */
-        function $get() {
+        function $get(toastr) {
             var isLockedOpen = false;
             var isOpen = false;
             var events = {
@@ -22,8 +22,10 @@
                 closed: 'closed',
                 locked: 'locked',
                 unlocked: 'unlocked',
+                activityCountChanged: 'activityCountChanged',
                 openStateChanged: 'openStateChanged',
-                lockStateChanged: 'lockStateChanged'
+                lockStateChanged: 'lockStateChanged',
+                clearActivity: 'clearActivity'
             };
             var listeners = {};
 
@@ -40,12 +42,18 @@
                 close: close,
                 lock: lock,
                 unlock: unlock,
-                addListener: addListener
+                addListener: addListener,
+                clearActivity: clearActivity,
+                removeAllToasts: removeAllToasts,
+                activityCountChanged: activityCountChanged,
+                hideNotificationCount: hideNotificationCount
             };
 
             function isLockedOpen() {
                 return isLockedOpen;
             }
+
+
 
             function isOpen() {
                 return isOpen;
@@ -119,6 +127,23 @@
                     });
                 }
             }
+
+            function clearActivity(){
+                broadcast('clearActivity');
+            }
+
+            function activityCountChanged (count){
+                broadcast('activityCountChanged', count);
+            }
+
+            function removeAllToasts (){
+                toastr.clear();
+            }
+
+            function hideNotificationCount(){
+                broadcast(events.opened);
+            }
+
         }
     }
 

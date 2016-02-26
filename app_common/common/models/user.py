@@ -58,6 +58,7 @@ class User(db.Model):
     events = db.relationship('Event', backref='user', lazy='dynamic')
     event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
     venues = db.relationship('Venue', backref='user', lazy='dynamic')
+    activities = db.relationship('Activity', backref='user', lazy='dynamic')
 
     @staticmethod
     def generate_jw_token(expiration=600, user_id=None):

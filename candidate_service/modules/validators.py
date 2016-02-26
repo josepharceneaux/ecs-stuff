@@ -233,13 +233,14 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
-    "search_params": 'json_encoded',
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
     "talent_pool_id": 'digit',
     # List of ids of dumb_lists (For Internal TalentPipeline Search Only)
     "dumb_list_ids": 'id_list',
+    # List of ids of smart_lists (For Internal TalentPipeline Search Only)
+    "smartlist_ids": 'id_list',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }
@@ -313,8 +314,6 @@ def validate_and_format_data(request_data):
                 request_vars[key] = validate_fields(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
                 request_vars[key] = convert_date(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'json_encoded':
-                request_vars[key] = validate_encoded_json(value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
