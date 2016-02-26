@@ -1845,8 +1845,10 @@ def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_crea
             if talent_pool_candidate and is_updating:
                 pass
             else:
-                db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
-                                                   talent_pool_id=talent_pool_id))
+                # Prevent duplicate entries
+                if not TalentPoolCandidate.get(candidate_id, talent_pool_id):
+                    db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
+                                                       talent_pool_id=talent_pool_id))
 
     if is_updating and talent_pools_to_be_deleted:
         for talent_pool_id in talent_pools_to_be_deleted:
