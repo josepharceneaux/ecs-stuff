@@ -647,8 +647,8 @@ class SendPushCampaign(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> campaign_id = 1
-            >>> response = requests.post(API_URL + '/v1/push-campaigns/' + str(campaign_id)
-            >>>                     + '/send', headers=headers)
+            >>> response = requests.post(PushCampaignApiUrl.SEND % campaign_id,
+            >>>                          headers=headers)
 
         .. Response::
 
@@ -675,7 +675,7 @@ class SendPushCampaign(Resource):
 @api.route(PushCampaignApi.BLAST_SENDS)
 class PushCampaignBlastSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id/sends
+    Endpoint looks like /v1/push-campaigns/:id/blasts/:id/sends
     This resource is used to GET Campaign "sends" for one particular blast of a given campaign.
     """
 
@@ -746,7 +746,7 @@ class PushCampaignBlastSends(Resource):
 @api.route(PushCampaignApi.SENDS)
 class PushCampaignSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/sends
+    Endpoint looks like /v1/push-campaigns/:id/sends
     This resource is used to GET Campaign sends
     """
 
@@ -810,7 +810,7 @@ class PushCampaignSends(Resource):
 @api.route(PushCampaignApi.BLASTS)
 class PushCampaignBlasts(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts.
+    Endpoint looks like /v1/push-campaigns/:id/blasts.
     This class returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]

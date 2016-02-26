@@ -26,7 +26,7 @@ URL = PushCampaignApiUrl.SEND
 
 class TestSendCampaign(object):
     # Send a campaign
-    # URL: /v1/campaigns/<int:campaign_id>/send [POST]
+    # URL: /v1/push-campaigns/<int:campaign_id>/send [POST]
     def test_send_campaign_with_invalid_token(self, campaign_in_db):
         """
         Try to send a campaign with an invalid token, API should raise Unauthorized error
@@ -89,7 +89,7 @@ class TestSendCampaign(object):
     def test_campaign_send_with_multiple_smartlists(self, token_first,
                                                     campaign_in_db_multiple_smartlists):
         """
-        - This tests the endpoint /v1/campaigns/:id/send
+        - This tests the endpoint /v1/push-campaigns/:id/send
 
         User auth token_first is valid, campaign has one smart list associated. Smartlist has one
         candidate.

@@ -23,7 +23,7 @@ URL = PushCampaignApiUrl.BLAST
 
 class TestCampaignBlastById(object):
 
-    # Test URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id> [GET]
+    # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts/<int:blast_id> [GET]
     def test_get_campaign_blast_with_invalid_token(self, campaign_blast, campaign_in_db):
         """
         We are getting campaign blast with invalid token and it will raise Unauthorized error 401

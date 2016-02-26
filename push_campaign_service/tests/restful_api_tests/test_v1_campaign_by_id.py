@@ -41,7 +41,7 @@ URL = PushCampaignApiUrl.CAMPAIGN
 
 class TestCampaignById(object):
 
-    # URL: /v1/campaigns/:id [GET]
+    # URL: /v1/push-campaigns/:id [GET]
     def test_get_by_id_with_invalid_token(self, campaign_in_db):
         """
         We will try to get a valid campaign with invalid token and api will raise
@@ -68,7 +68,7 @@ class TestCampaignById(object):
 
 class TestUpdateCampaign(object):
     # update campaign test
-    # URL: /v1/campaigns/:id [PUT]
+    # URL: /v1/push-campaigns/:id [PUT]
     def test_put_by_id_with_invalid_token(self, campaign_in_db, smartlist_first):
         """
         Try to update a campaign with invalid token and API will raise Unauthorized (401) error
@@ -166,7 +166,7 @@ class TestUpdateCampaign(object):
 
 
 class TestCampaignDeleteById(object):
-    # Test URL: /v1/campaigns/<int:id> [DELETE]
+    # Test URL: /v1/push-campaigns/<int:id> [DELETE]
     def test_delete_campaign_with_invalid_token(self, campaign_in_db):
         """
         Hit the url with invalid authentication token_first and it should

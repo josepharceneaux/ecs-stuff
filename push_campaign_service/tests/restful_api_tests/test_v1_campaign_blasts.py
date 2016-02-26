@@ -22,7 +22,7 @@ URL = PushCampaignApiUrl.BLASTS
 
 class TestCampaignBlasts(object):
 
-    # Test URL: /v1/campaigns/<int:campaign_id>/blasts [GET]
+    # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts [GET]
     def test_get_campaign_blasts_with_invalid_token(self, campaign_in_db):
         """
         We are getting campaign blasts with invalid token and it will

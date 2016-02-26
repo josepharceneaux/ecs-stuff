@@ -25,7 +25,7 @@ URL = PushCampaignApiUrl.SENDS
 
 class TestCampaignSends(object):
 
-    # Test URL: /v1/campaigns/<int:campaign_id>/sends [GET]
+    # Test URL: /v1/push-campaigns/<int:campaign_id>/sends [GET]
     def test_get_campaign_sends_with_invalid_token(self, campaign_in_db):
         """
         Try to get a campaign send with invalid token, we are expecting that we will get

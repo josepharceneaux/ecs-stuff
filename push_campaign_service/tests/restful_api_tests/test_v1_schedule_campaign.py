@@ -48,7 +48,7 @@ URL = PushCampaignApiUrl.SCHEDULE
 
 class TestScheduleCampaignUsingPOST(object):
 
-    # Test URL: /v1/campaigns/{id}/schedule [POST]
+    # Test URL: /v1/push-campaigns/{id}/schedule [POST]
     def test_schedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
         # data not needed here but just to be consistent with other requests of
         # this resource test
@@ -167,7 +167,7 @@ class TestScheduleCampaignUsingPOST(object):
 
 class TestRescheduleCampaignUsingPUT(object):
 
-    # Test URL: /v1/campaigns/{id}/schedule [PUT]
+    # Test URL: /v1/push-campaigns/{id}/schedule [PUT]
     def test_reschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
         # data not needed here but just to be consistent with other requests of
         # this resource test
@@ -278,7 +278,7 @@ class TestRescheduleCampaignUsingPUT(object):
 
 class TestUnscheduleCamapignUsingDELETE(object):
 
-    # Test URL: /v1/campaigns/{id}/schedule [DELETE]
+    # Test URL: /v1/push-campaigns/{id}/schedule [DELETE]
     def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first,
                                                     schedule_a_campaign):
         # data not needed here but just to be consistent with other requests of

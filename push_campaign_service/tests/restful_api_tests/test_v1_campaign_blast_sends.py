@@ -24,7 +24,7 @@ URL = PushCampaignApiUrl.BLAST_SENDS
 
 class TestCampaignBlastSends(object):
 
-    # Test URL: /v1/campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
+    # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
 
     def test_get_campaign_blast_sends_with_invalid_token(self, campaign_in_db, campaign_blast):
         """

@@ -46,7 +46,7 @@ URL = PushCampaignApiUrl.CAMPAIGNS
 
 class TestCreateCampaign(object):
 
-    # URL: /v1/campaigns [POST]
+    # URL: /v1/push-campaigns [POST]
     def test_create_campaign_with_invalid_token(self, campaign_data):
         """
         Send request with invalid token and 401 status code is expected
@@ -103,7 +103,7 @@ class TestCreateCampaign(object):
 
 class TestGetListOfCampaigns(object):
 
-    # URL: /v1/campaigns/ [GET]
+    # URL: /v1/push-campaigns/ [GET]
     def test_get_list_with_invalid_token(self):
         """
         We will try to get a list of campaigns with invalid token and
@@ -111,7 +111,7 @@ class TestGetListOfCampaigns(object):
         """
         get_campaigns('invalid_token', expected_status=(401,))
 
-    # URL: /v1/campaigns [GET]
+    # URL: /v1/push-campaigns [GET]
     def test_get_list_of_one_campaign(self, token_first, campaign_in_db):
         """
         This method tests get list of push campaign created by this user.
@@ -133,9 +133,9 @@ class TestGetListOfCampaigns(object):
 
 class TestDeleteMultipleCampaigns(object):
     """
-    This class contains tests for endpoint /v1/campaigns/ and HTTP method DELETE.
+    This class contains tests for endpoint /v1/push-campaigns/ and HTTP method DELETE.
     """
-    # URL: /v1/campaigns/ [DELETE]
+    # URL: /v1/push-campaigns/ [DELETE]
 
     def test_campaigns_delete_with_invalid_token(self, campaign_in_db):
         """
