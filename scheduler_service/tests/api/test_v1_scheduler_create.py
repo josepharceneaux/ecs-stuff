@@ -37,6 +37,7 @@ class TestSchedulerCreate(object):
         data = response.json()
         assert data['id']
 
+        # Delete all jobs created in this test case using fixture finalizer
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 
@@ -139,6 +140,7 @@ class TestSchedulerCreate(object):
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
+        # Delete all jobs created in this test case using fixture finalizer
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
@@ -160,6 +162,7 @@ class TestSchedulerCreate(object):
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
+        # Delete all jobs created in this test case using fixture finalizer
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs
 

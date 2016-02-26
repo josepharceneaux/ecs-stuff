@@ -91,6 +91,7 @@ class TestSchedulerGet(object):
                                     headers=auth_header_no_user)
         assert response_get.status_code == 200
 
+        # Delete all jobs created in this test case using fixture finalizer
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
@@ -192,6 +193,7 @@ class TestSchedulerGet(object):
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
         for job in jobs_id:
             assert job in get_jobs_id
+
         # Delete all jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
@@ -232,7 +234,7 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_jobs_with_start_point(self, auth_header, job_config, job_cleanup):
+    def test_multiple_jobs_with_start_point(self, auth_header, post_ten_jobs, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get 5 tasks of the current user using 'start' arg.
         Then check if there are 5 jobs returned. If yes, then show status code 200
@@ -241,33 +243,26 @@ class TestSchedulerGet(object):
             job_config (dict): Fixture that contains job config to be used as POST data while hitting the endpoint.
         :return:
         """
-        jobs_id = []
-
-        for idx in range(10):
-            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                     headers=auth_header)
-            assert response.status_code == 201
-            jobs_id.append(response.json()['id'])
+        jobs_id = post_ten_jobs
 
         # Get only 5 jobs
         limit = 5
         # Should get 5 jobs in response instead of all 10
-        response_get = requests.get('{0}?start={1}'.format(SchedulerApiUrl.TASKS, limit),
+        response_get = requests.get('{0}?limit={1}'.format(SchedulerApiUrl.TASKS, limit),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
         set_jobs_ids = set(jobs_id)
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 5
-        # TODO ; Will the above make sure that returned job-ids were among the ones we created?
-        # TODO; kindly comment why do we need the following to delete jobs
-        # Delete all jobs
+
+        # Delete all 10 created jobs in a fixture
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_multiple_jobs_with_offset(self, auth_header, job_config, job_cleanup):
+    def test_multiple_jobs_with_offset(self, auth_header, post_ten_jobs, job_cleanup):
         """
-        Create multiple jobs and save the ids in a list. Then get 2 tasks of the current user using 'start' and 'offset'
+        Get 2 tasks of the current user using 'start' and 'offset'
         arg. Then check if there are 2 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
@@ -275,66 +270,92 @@ class TestSchedulerGet(object):
             POST data while hitting the endpoint.
         :return:
         """
-        jobs_id = []
-
-        for idx in range(10):
-            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                     headers=auth_header)
-            assert response.status_code == 201
-            jobs_id.append(response.json()['id'])
-
+        jobs_id = post_ten_jobs
         # Get only 5 jobs limit
         limit = 5
 
         # Get only 2 jobs
         offset = 2
-        #TODO ; clear comment that we will get jobs 5, 6 and 7
-        #TODO; why not add sort by functionality later on
-        # Should get 5 jobs in response instead of all 10
-        response_get = requests.get('{0}?start={1}&offset={2}'.format(SchedulerApiUrl.TASKS, limit, offset),
+        # Should get jobs from 5, 6, 7 in response instead of all 10
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, limit, offset),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
         set_jobs_ids = set(jobs_id)
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 8
-        # TODO same questions as I put in, in above test
-        # Delete all jobs
+
+        response_get = requests.get('{0}?limit={1}'.format(SchedulerApiUrl.TASKS, offset),
+                                    headers=auth_header)
+
+        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
+
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 8
+
+        # There are 10 jobs scheduled, try to get the jobs from 9 and onwards
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 9, 10),
+                                    headers=auth_header)
+
+        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
+
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 9
+
+        # If we request job higher than 10, it will return 0 jobs instead
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
+                                    headers=auth_header)
+
+        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
+
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 10
+
+        # If we request job higher than 10, it will return 0 jobs instead
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 10, 15),
+                                    headers=auth_header)
+
+        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
+
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 10
+
+        # Delete all 10 created jobs in a fixture
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_multiple_jobs_with_invalid_start_offset(self, auth_header, job_config, job_cleanup):
+    def test_multiple_jobs_with_invalid_start_offset(self, auth_header, post_ten_jobs, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get 2 tasks of the current user using invalid start
-        Then check if there are 2 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
         :return:
         """
-        jobs_id = []
+        jobs_id = post_ten_jobs
 
-        for idx in range(10):
-            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                     headers=auth_header)
-            assert response.status_code == 201
-            jobs_id.append(response.json()['id'])
-
-        response_get = requests.get('{0}?start={1}'.format(SchedulerApiUrl.TASKS, -1),
+        response_get = requests.get('{0}?offset={1}'.format(SchedulerApiUrl.TASKS, -1),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
-        response_get = requests.get('{0}?start={1}&offset={2}'.format(SchedulerApiUrl.TASKS, 3, -1),
+        # Try with invalid offset 0
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 0, 0),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
-        # TODO; add another GET requerst that gives both -ve start and end points
-        # TODO comment why do we need the following, I don't think we should need the following
-        # Delete all jobs
+        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 3, -1),
+                                    headers=auth_header)
+
+        # Response should be 400 as start arg is invalid
+        assert response_get.status_code == 400
+
+        response_get = requests.get('{0}?start={1}&limit={2}'.format(SchedulerApiUrl.TASKS, -1, -1),
+                                    headers=auth_header)
+
+        # Response should be 400 as start and offset arg is invalid
+        assert response_get.status_code == 400
+
+        # Delete all created jobs
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id

@@ -37,16 +37,34 @@ api.route = types.MethodType(api_route, api)
 @api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
-        This resource returns a list of tasks or it can be used to create or schedule a task using POST.
+        This resource returns a list of tasks particular to a user by using pagination concept
+         or it can be used to create or schedule a task using POST.
     """
     @require_oauth(allow_null_user=True)
-    def get(self, **kwargs):
+    def get(self):
         """
         This action returns a list of user tasks and their count
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
         :return tasks_data: a dictionary containing list of tasks and their count
         :rtype json
+
+
+        :Example (in case of pagination):
+        By default, it will return 30 jobs (max)
+            Case 1:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?offset=3', headers=headers)
+
+            # Returns 30 jobs ranging from 3-33
+
+            Case 2:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?offset=5&limit=12', headers=headers)
+
+            # Returns 7 jobs ranging from 5-12
 
         :Example:
         In case of authenticated user
@@ -63,6 +81,7 @@ class Tasks(Resource):
         .. Response::
 
             {
+                "total_count": 1
                 "count": 1,
                 "tasks": [
                     {
@@ -85,26 +104,31 @@ class Tasks(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Invalid Usage)
                     500 (Internal Server Error)
 
         """
-        # TODO; Comment why these needed
-        max_offset = '30'
+        # In case of higher number of scheduled task running for a particular user and user want to get only
+        # a limited number of jobs by specifying offset and limit parameter, then return only specified jobs
+
+        # Limit the jobs to 200 if user requests for more than 200
         max_offset_limit = 200
 
-        start_point, offset = request.args.get('start') or '0', request.args.get('offset') or max_offset
-        if int(offset) > max_offset_limit:
-            offset = str(max_offset_limit)
+        # If user didn't specify offset or limit, then it should be set to default 0 and 30 respectively.
+        offset, limit = request.args.get('offset', 0), request.args.get('limit', 30)
 
-        if not (str(start_point).isdigit() and int(start_point) >= 0):
-            raise InvalidUsage(error_message="'start' arg should be a digit. Greater or equal to 0")
+        if request.args.get('offset') and not (str(offset).isdigit() and int(offset) >= 0):
+            raise InvalidUsage(error_message="'offset' arg should be a digit. Greater or equal to 0")
 
-        if request.args.get('offset') and not (str(offset).isdigit() and int(offset) > 0):
+        if request.args.get('limit') and not (str(limit).isdigit() and int(limit) > 0):
             raise InvalidUsage(
-                error_message="'offset' arg should be a digit and its value should be greater than 0")
+                error_message="'limit' arg should be a digit and its value should be greater than 0")
 
-        # TODO; take this line above the both of the 'if' statements
-        start_point, offset = int(start_point), int(offset)
+        offset, limit = int(offset), int(limit)
+
+        # Limit the jobs if user requests jobs greater than 200
+        if limit > max_offset_limit:
+            limit = max_offset_limit
 
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
@@ -112,20 +136,15 @@ class Tasks(Resource):
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         tasks_count = len(tasks)
 
-        # TODO; the following loop looks correct but kindly double if the need to loop until (start_point + offset + 1)
-        # TODO; Also, instead of using 'i' use some other navriable name
-        # TODO; also we can do the 'serialize_task(tasks[i])' in the same loop instead of creating another one below
-        # TODO; So may be we can do something like following, I am commenting because we really need to make it look more Pythonic
-        #  tasks = filter(lambda task: task,
-        #   [serialize_task(tasks[i]) for i in range(start_point, start_point + offset) if i < tasks_count])
-        tasks = [tasks[i] for i in range(start_point, start_point + offset) if i < tasks_count]
+        tasks = [serialize_task(tasks[index])
+                 for index in range(offset, offset + limit) if index < tasks_count and tasks[index]]
 
-        tasks = [serialize_task(task) for task in tasks]
         tasks = [task for task in tasks if task]
-        return dict(tasks=tasks, count=len(tasks))
+        return dict(tasks=tasks, count=len(tasks),
+                    total_count=tasks_count)
 
     @require_oauth(allow_null_user=True)
-    def post(self, **kwargs):
+    def post(self):
         """
         This method takes data to create or schedule a task for scheduler.
 
@@ -206,7 +225,7 @@ class Tasks(Resource):
         return ApiResponse(response, status=201, headers=headers)
 
     @require_oauth()
-    def delete(self, **kwargs):
+    def delete(self):
         """
         Deletes multiple tasks whose ids are given in list in request data.
         :param kwargs:
@@ -275,7 +294,7 @@ class ResumeTasks(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):
+    def post(self):
         """
         Resume a previously paused tasks/jobs
         :param id: id of task
@@ -335,7 +354,7 @@ class PauseTasks(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):
+    def post(self):
         """
         Pause tasks which are currently running.
 
@@ -393,7 +412,7 @@ class TaskByName(Resource):
     """
 
     @require_oauth(allow_null_user=True)
-    def get(self, _name, **kwargs):
+    def get(self, _name):
         """
         This action returns a task owned by other service
         :param _name: name of task
@@ -465,7 +484,7 @@ class TaskByName(Resource):
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
     @require_oauth(allow_null_user=True)
-    def delete(self, _name, **kwargs):
+    def delete(self, _name):
         """
         Deletes/removes a tasks from scheduler jobstore
         :param kwargs:
@@ -508,7 +527,7 @@ class TaskById(Resource):
     """
 
     @require_oauth(allow_null_user=True)
-    def get(self, _id, **kwargs):
+    def get(self, _id):
         """
         This action returns a task owned by a this user
         :param _id: id of task
@@ -584,10 +603,11 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
     @require_oauth(allow_null_user=True)
-    def delete(self, _id, **kwargs):
+    def delete(self, _id):
         """
         Deletes/removes a tasks from scheduler store
         :param kwargs:
+        :param _id: job_id
         :return:
 
         :Example:
@@ -631,7 +651,7 @@ class ResumeTaskById(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, _id, **kwargs):
+    def post(self, _id):
         """
         Resume a previously paused task/job
         :param _id: id of task
@@ -673,7 +693,7 @@ class PauseTaskById(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, _id, **kwargs):
+    def post(self, _id):
         """
         Pause a task which is currently running.
         :param id: id of task
@@ -746,7 +766,7 @@ class SendRequestTest(Resource):
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
             run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
-                task.get('post_data', dict()))
+                    task.get('post_data', dict()))
         else:
             db.db.session.commit()
             test_user_id = task['test_user_id']
