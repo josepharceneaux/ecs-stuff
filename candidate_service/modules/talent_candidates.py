@@ -11,6 +11,7 @@ from datetime import date
 
 # Database connection and logger
 from candidate_service.common.models.db import db
+from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
 
 # Models
@@ -2244,3 +2245,29 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
             new_value=new_value,
             edit_datetime=edit_time
         ))
+
+
+def get_search_params_of_smartlists(smartlist_ids):
+    """
+    This method will return list of search_params of smartlists
+    :param smartlist_ids: IDs of smartlist_ids
+    :return:
+    """
+    try:
+        smartlist_ids = map(int, smartlist_ids.split(','))
+    except Exception as e:
+        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+
+    search_params = []
+
+    for smartlist in smartlists:
+        try:
+            if smartlist.search_params and json.loads(smartlist.search_params):
+                search_params.append(json.loads(smartlist.search_params))
+        except Exception as e:
+            raise InvalidUsage(error_message="Search params of smartlist %s are in bad format "
+                                             "because: %s" % (smartlist.id, e.message))
+
+    return search_params
