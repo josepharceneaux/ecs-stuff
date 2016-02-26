@@ -1,12 +1,16 @@
 # Standard Library
 
 # Third Party
+import json
 from datetime import datetime, timedelta
 
 import pytest
 
 # App Settings
+import redis
+
 from social_network_service.common.tests.conftest import user_auth, sample_user
+from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
 
 # Application Specific
@@ -129,13 +133,41 @@ def test_meetup_credentials(request, sample_user, meetup):
     :param sample_user: fixture user
     :return:
     """
+    # Create a redis object and add meetup access_token and refresh_token entry with 1.5 hour expiry time.
+    redis_object = redis.Redis()
+    redis_object.from_url(url=app.config[TalentConfigKeys.REDIS_URL_KEY])
+
+    meetup_key = 'Meetup'
+
+    # If there is no entry with name 'Meetup' then create one using app config
+    if not redis_object.get(meetup_key):
+        redis_object.setex(meetup_key,
+                           json.dumps(dict(
+                                       access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
+                                       refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN]
+                           )), 5400)
+
+    # Get the key value pair of access_token and refresh_token
+    meetup_kv = json.loads(redis_object.get(meetup_key))
+
     social_network_id = meetup.id
     user_credentials = UserSocialNetworkCredential(
         social_network_id=social_network_id,
         user_id=sample_user.id,
-        access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
-        refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN])
+        access_token=meetup_kv['access_token'],
+        refresh_token=meetup_kv['refresh_token'])
     UserSocialNetworkCredential.save(user_credentials)
+
+    Meetup(user_id=sample_user.id)
+    db.session.commit()
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(social_network_id=social_network_id,
+                                                                                     user_id=sample_user.id)
+    if meetup_kv['access_token'] != user_credentials.access_token:
+        redis_object.set(meetup_key,
+                         json.dumps(dict(
+                                       access_token=user_credentials.access_token,
+                                       refresh_token=user_credentials.refresh_token
+                           )))
 
     def fin():
         """
@@ -175,7 +207,7 @@ def eventbrite_event_data(request, eventbrite, sample_user, eventbrite_venue,
     return data
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def meetup_event(request, sample_user, test_meetup_credentials, meetup,
                  meetup_venue, organizer_in_db, token):
     event = EVENT_DATA.copy()
@@ -210,7 +242,7 @@ def meetup_event(request, sample_user, test_meetup_credentials, meetup,
     return event
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def auth_header(request, token):
     """
     returns the header which contains bearer token and content type
@@ -222,7 +254,7 @@ def auth_header(request, token):
     return header
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def meetup_event_dict(request, sample_user, meetup_event):
     """
     This puts meetup event in a dict 'meetup_event_in_db'.
@@ -528,3 +560,4 @@ def teardown_fixtures(user, client_credentials, domain, organization):
     User.delete(user.id)
     Domain.delete(domain.id)
     Organization.delete(organization.id)
+
