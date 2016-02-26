@@ -524,7 +524,7 @@ class CampaignBase(object):
         blast_obj = blast_model.get_by_id(blast_id)
         if not blast_obj:
             raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exists in database."
-                                   % (campaign_type, campaign.id, blast_id))
+                                   % (blast_id, campaign_type, campaign.id))
         if not blast_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("%s's Blast(id:%s) is not associated with (id:%s)."
                                  % (campaign_type, blast_id, requested_campaign_id))

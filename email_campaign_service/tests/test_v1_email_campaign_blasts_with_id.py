@@ -95,7 +95,7 @@ class TestEmailCampaignBlastsWithId(object):
         This is a test to get blasts of a campaign using non-existing blast_id
         :return:
         """
-        blast_id = sent_campaign_with_client_id.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_resource_id(
-            EmailCampaignBlast, self.HTTP_METHOD, self.URL % (blast_id, '%s'),
+            EmailCampaignBlast, self.HTTP_METHOD,
+            self.URL % (sent_campaign_with_client_id.id, '%s'),
             access_token_first, None)
