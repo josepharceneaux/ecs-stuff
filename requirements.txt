@@ -83,3 +83,6 @@ jsonschema==2.5.1
 functools32
 strict-rfc3339==0.6
 Flask-Cache==0.13.1
+
+# Push Campaign Service
+OneSignalPythonSdk==0.1
