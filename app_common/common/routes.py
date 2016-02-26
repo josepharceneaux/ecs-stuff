@@ -736,7 +736,7 @@ class PushCampaignApi(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     # endpoint /v1/push-campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, 'campaigns')
+    CAMPAIGNS = '/%s/%s' % (VERSION, 'push-campaigns')
     DEVICES = '/%s/%s' % (VERSION, 'devices')
     # endpoint /v1/push-campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id

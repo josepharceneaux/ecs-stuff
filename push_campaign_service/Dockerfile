@@ -4,7 +4,7 @@
 
 FROM gettalent/base-service-container:latest
 
-# Add sms campaign service stuff
+# Add push campaign service stuff
 WORKDIR /root/base_service_container
 ADD . push_campaign_service
 
@@ -14,7 +14,7 @@ RUN sed -i -e 's/TAG/PushCampaignService/g' /etc/syslog-ng/syslog-ng.conf
 WORKDIR /root/base_service_container/push_campaign_service
 
 # Replace FLASK_APP_NAME with PusCampaignService in newrelic.ini
-RUN sed -i -e 's/FLASK_APP_NAME/SmsCampaignService/g' newrelic.ini
+RUN sed -i -e 's/FLASK_APP_NAME/PushCampaignService/g' newrelic.ini
 
 EXPOSE 80
 
