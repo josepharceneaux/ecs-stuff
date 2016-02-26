@@ -114,8 +114,11 @@ class CampaignsTestsHelpers(object):
         _invalid_data_test('put', url, token)
 
     @classmethod
-    def request_with_invalid_campaign_id(cls, model, method, url, token, data):
-        # Request a campaign which does not exists or id is invalid
+    def request_with_invalid_resource_id(cls, model, method, url, token, data):
+        """
+        Requests a resource (as specified by model) which does not exists or id of
+        which is invalid
+        """
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
@@ -412,7 +415,7 @@ def get_invalid_ids(last_id_of_obj_in_db):
     Given a database model object, here we create a list of two Invalid ids. One of them
     is 0 and other one is 100 plus the id of last record.
     """
-    return 0, last_id_of_obj_in_db + 100
+    return 0, last_id_of_obj_in_db + 1000
 
 
 def _get_invalid_id_and_status_code_pair(invalid_ids):

@@ -84,7 +84,7 @@ class TestEmailCampaignBlastsWithId(object):
         :return:
         """
         blast_id = sent_campaign_with_client_id.blasts[0].id
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
             EmailCampaign, self.HTTP_METHOD, self.URL % ('%s', blast_id),
             access_token_first,
             None)
@@ -96,6 +96,6 @@ class TestEmailCampaignBlastsWithId(object):
         :return:
         """
         blast_id = sent_campaign_with_client_id.blasts[0].id
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
             EmailCampaignBlast, self.HTTP_METHOD, self.URL % (blast_id, '%s'),
             access_token_first, None)

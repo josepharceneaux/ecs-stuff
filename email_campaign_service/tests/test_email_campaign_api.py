@@ -179,7 +179,7 @@ class TestSendCampaign(object):
         :param access_token_first:
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(EmailCampaign,
+        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,
