@@ -76,7 +76,7 @@ class TestEmailCampaignBlasts(object):
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.ENTITY, self.URL % email_campaign_in_other_domain.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
 
     def test_with_invalid_campaign_id(self, access_token_first):
         """
