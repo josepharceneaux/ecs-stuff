@@ -23,7 +23,7 @@ class TestSmsCampaignBlastReplies(object):
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user, create_sms_campaign_blast):
         """
-         User auth token is invalid. It should get Unauthorized error.
+         User auth token is invalid. It should result in Unauthorized error.
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
@@ -49,7 +49,7 @@ class TestSmsCampaignBlastReplies(object):
                                        create_sms_campaign_blast):
         """
         It first deletes a campaign from database and try to get its replies for given blast_id.
-        It should get ResourceNotFound error.
+        It should result in ResourceNotFound error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -84,7 +84,7 @@ class TestSmsCampaignBlastReplies(object):
                                          create_sms_campaign_blast):
         """
         This is the case where we try to get blast of a campaign which was created by
-        some other user. It should get Forbidden error.
+        some other user. It should result in Forbidden error.
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
@@ -96,7 +96,7 @@ class TestSmsCampaignBlastReplies(object):
             create_blast_for_not_owned_campaign):
         """
         Here we assume that requested blast_id is associated with such a campaign which does not
-        belong to domain of logged-in user. It should get Forbidden error.
+        belong to domain of logged-in user. It should result in Forbidden error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -108,7 +108,7 @@ class TestSmsCampaignBlastReplies(object):
 
     def test_get_with_invalid_campaign_id(self, access_token_first, create_sms_campaign_blast):
         """
-        This is a test to get blasts of a campaign which does not exists in database.
+        This is a test to get blasts of a campaign which does not exist in database.
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_campaign_id(

@@ -52,7 +52,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
 
     def test_campaign_schedule_with_invalid_token(self, sms_campaign_of_current_user):
         """
-        User auth token is invalid. It should get Unauthorized error.
+        User auth token is invalid. It should result in Unauthorized error.
         :return:
         """
         CampaignsTestsHelpers.request_with_invalid_token(
@@ -62,7 +62,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     def test_campaign_schedule_with_invalid_header(self, access_token_first,
                                                    sms_campaign_of_current_user):
         """
-        Making POST call with no content-type specifying. It should get bad request error.
+        Making POST call with no content-type specifying. It should result in bad request error.
         :return:
         """
         response = requests.post(self.URL % sms_campaign_of_current_user.id,
@@ -73,7 +73,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                               sms_campaign_of_current_user):
         """
         Trying to schedule a campaign with invalid frequency Id, Valid ids are in [1,2,3..6] for
-        now. It should get bad request error.
+        now. It should get result in request error.
         :return:
         """
         data = generate_campaign_schedule_data()
@@ -86,7 +86,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     def test_campaign_schedule_with_invalid_frequency_id(self, valid_header,
                                                          sms_campaign_of_current_user):
         """
-        Trying to schedule a campaign with non int frequency Id, It should get bad request error,
+        Trying to schedule a campaign with non int frequency Id, It should result in bad request error.
         :return:
         """
         data = generate_campaign_schedule_data()
@@ -99,7 +99,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     def test_campaign_schedule_with_not_owned_campaign(self, access_token_first,
                                                        sms_campaign_in_other_domain):
         """
-        Trying to schedule a campaign of some other user, It should get forbidden error,
+        Trying to schedule a campaign of some other user, It should result in forbidden error.
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.METHOD,
@@ -109,7 +109,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     def test_campaign_schedule_with_non_json_data_type(self, valid_header,
                                                        sms_campaign_of_current_user):
         """
-        Trying to schedule a campaign of with Non JSON data, It should get bad request error,
+        Trying to schedule a campaign of with Non JSON data, It should get result in request error.
         :return:
         """
         response = requests.post(self.URL % sms_campaign_of_current_user.id,
@@ -119,7 +119,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
 
     def test_campaign_schedule_with_no_data(self, valid_header, sms_campaign_of_current_user):
         """
-        Trying to schedule a campaign of with no data, It should get bad request error,
+        Trying to schedule a campaign of with no data, It should get result in request error.
         :return:
         """
         response = requests.post(self.URL % sms_campaign_of_current_user.id,
@@ -130,7 +130,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                      sms_campaign_of_current_user):
         """
         Here we first delete the campaign from database. Then we try to schedule it. It
-        should get ResourceNotFound error,
+        should result in ResourceNotFound error.
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
                                                              SmsCampaignApiUrl.CAMPAIGN,
@@ -362,7 +362,7 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
                                               scheduled_sms_campaign_of_current_user):
         """
         Here we first delete the campaign from database. Then we try to unschedule it. It
-        should get ResourceNotFound error,
+        should result in ResourceNotFound error,
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(scheduled_sms_campaign_of_current_user,
                                                              SmsCampaignApiUrl.CAMPAIGN,

@@ -99,7 +99,7 @@ class EmailCampaignApi(Resource):
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not email_campaign:
-                raise NotFoundError("Email campaign with id: %s does not exists"
+                raise NotFoundError("Email campaign with id: %s does not exist"
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
@@ -113,12 +113,12 @@ class EmailCampaignApi(Resource):
 
     def post(self):
         """
-        POST /email-campaigns
-        Required parameters:
-        email_campaign_name: Name of email campaign
-        email_subject: subject of email
-        email_body_html: email body
-        list_ids: smartlist ids to which emails will be sent
+            POST /email-campaigns
+            Required parameters:
+            email_campaign_name: Name of email campaign
+            email_subject: subject of email
+            email_body_html: email body
+            list_ids: smartlist ids to which emails will be sent
         """
         user_id = request.user.id
         # Get and validate request data

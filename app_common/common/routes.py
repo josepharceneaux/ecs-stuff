@@ -270,6 +270,7 @@ class CandidateApiWords(object):
     """
     CANDIDATES = "candidates"
     ADDRESSES = "/addresses"
+    # TODO following should be AOI (singular)
     AOIS = "/areas_of_interest"
     CUSTOM_FIELD = "/custom_fields"
     EDUCATIONS = "/educations"
@@ -289,6 +290,7 @@ class CandidateApiWords(object):
     OPENWEB = '/openweb'
     CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
     VIEWS = "/views"
+    # TODO following should be PREFERENCES (plural)
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
 

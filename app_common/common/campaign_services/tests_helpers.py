@@ -224,9 +224,13 @@ class CampaignsTestsHelpers(object):
         :param count:
         :return:
         """
-        assert response.status_code == 200, 'Response should be ok (200)'
+        assert response.status_code == 200, 'Response should be "OK" (200)'
         assert response.json()
         resp = response.json()
+        # TODO I think we can still name 'resp' as 'response' here for more clarity
+        # TODO; I think the idea of 'entity' is great. I was just thinking if we
+        # TODO we could make it 'entities' (i.e. a list) and assert whether we have everything in 'entities' in the resposne
+        # TODO I think 'count' should be a mndatory argument.
         assert entity in resp
         if check_count:
             assert 'count' in resp
