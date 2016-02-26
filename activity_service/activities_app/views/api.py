@@ -1,12 +1,15 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
+from activity_service.common.error_handling import InvalidUsage
+
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
 import json
 import re
 from time import time
+from dateutil import parser
 # framework specific
 from flask import Blueprint
 from flask import jsonify
@@ -39,18 +42,46 @@ def get_activities(page):
         return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
     else:
         request_start_time = request_end_time = None
-        if request.args.get('start_time'): request_start_time = datetime.strptime(
-            request.args.get('start_time'), ISO_FORMAT)
-        if request.args.get('end_time'): request_end_time = datetime.strptime(
-            request.args.get('end_time'), ISO_FORMAT)
+        if request.args.get('start_time'):
+            request_start_time = parser.parse(request.args.get('start_time'))
+        if request.args.get('end_time'):
+            request_end_time = parser.parse(request.args.get('start_time'))
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
         try:
             request_page = int(page)
         except ValueError:
-            return jsonify(**{'error': {'message': 'page parameter must be an integer'}}), 400
-        return json.dumps(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
-                                             start_datetime=request_start_time,
-                                             end_datetime=request_end_time, page=request_page))
+            return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
+        return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
+                                          start_datetime=request_start_time,
+                                          end_datetime=request_end_time, page=request_page))
+
+
+@mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
+@require_oauth()
+def get_activity_messages():
+    """
+    This endpoint returns a dictionary where keys are activity type ids and values are
+    raw messages for that kind of activities.
+
+    .. Response::
+
+        {
+            1: [
+                "%(username)s uploaded resume of candidate %(formattedName)s",
+                "%(username)s uploaded %(count)s candidate resumes",
+                "candidate.png" ],
+
+            2: [
+                "%(username)s updated candidate %(formattedName)s",
+                "%(username)s updated %(count)s candidates",
+                "candidate.png" ],
+            .
+            .
+            .
+        }
+    :return:
+    """
+    return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
 @mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
@@ -76,7 +107,8 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         type=type_,
         source_table=source_table,
         source_id=source_id,
-        params=json.dumps(params) if params else None
+        params=json.dumps(params) if params else None,
+        added_time=datetime.utcnow()
     )
     try:
         db.session.add(activity)
@@ -216,20 +248,24 @@ class TalentActivityManager(object):
         filters = [Activity.user_id.in_(flattened_user_ids)]
         if start_datetime: filters.append(Activity.added_time > start_datetime)
         if end_datetime: filters.append(Activity.added_time < end_datetime)
-        activities = Activity.query.filter(*filters).paginate(page, post_qty, False)
-        activities_reponse = {
+        activities = Activity.query.filter(*filters).order_by(Activity.added_time.desc())\
+            .paginate(page, post_qty, False)
+        activities_response = {
             'total_count': activities.total,
             'items': [{
-                          'params': json.loads(a.params),
-                          'source_table': a.source_table,
-                          'source_id': a.source_id,
-                          'type': a.type,
-                          'user_id': a.user_id
+                          'params': json.loads(activity.params),
+                          'source_table': activity.source_table,
+                          'source_id': activity.source_id,
+                          'type': activity.type,
+                          'user_id': activity.user_id,
+                          'user_name': activity.user.name if activity.user else '',
+                          'added_time': str(activity.added_time),
+                          'id': activity.id
                       }
-                      for a in activities.items
+                      for activity in activities.items
                       ]
         }
-        return activities_reponse
+        return activities_response
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, limit=3):
@@ -252,6 +288,9 @@ class TalentActivityManager(object):
         for i, activity in enumerate(activities):
             current_activity_count += 1
             current_activity_type = activity.type
+            if current_activity_type not in self.MESSAGES:
+                logger.error('Given Campaign Type (%s) not found.' % current_activity_type)
+                continue
             next_activity_type = activities[i + 1].type if (
                 i < activities.count() - 1) else None  # None means last activity
 
