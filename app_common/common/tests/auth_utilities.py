@@ -8,23 +8,6 @@ from ..routes import AuthApiUrl
 from ..utils.auth_utils import gettalent_generate_password_hash
 from sqlalchemy.sql.expression import ClauseElement
 
-# Frequencies
-ONCE = 1
-DAILY = 2
-WEEKLY = 3
-BIWEEKLY = 4
-MONTHLY = 5
-YEARLY = 6
-__author__ = 'ufarooqi'
-
-import random
-import string
-import requests
-from ..models.user import User
-from ..routes import AuthApiUrl
-from sqlalchemy.sql.expression import ClauseElement
-from werkzeug.security import generate_password_hash
-
 
 def get_or_create(session, model, defaults=None, **kwargs):
     instance = session.query(model).filter_by(**kwargs).first()

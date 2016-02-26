@@ -46,8 +46,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateSubscriptionPreference, CandidateDevice, CandidateSubscriptionPreference,
-    CandidatePhoto
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest

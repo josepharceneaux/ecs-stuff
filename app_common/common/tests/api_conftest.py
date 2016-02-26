@@ -1,15 +1,15 @@
 """
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 
-This module contains fixtures to be used in tests for push campaign service.
+This module contains fixtures to be used in tests.
 
-Most of the fixtures are created twice. First one with 'user_first' as owner and those that
+Some ixtures are created twice. First one with 'user_first' as owner and those that
 are postfix with  '_second' are owned by 'user_second'. 'user_first' belongs to domain 1 and
 'user_second' belongs to another domain say domain 2.
 
 A user can update or delete objects that  are owned by a user that is from same domain. so there
 are some fixture that are postfix with '_same_domain', actually belong to domain 1
-but maybe some other user.
+but user is different.
 
 """
 import pytest
