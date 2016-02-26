@@ -975,6 +975,10 @@ class CandidateSubscriptionPreference(db.Model):
     def __repr__(self):
         return "<CandidateSubscriptionPreference (candidate_id = %r)>" % self.candidate_id
 
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        return cls.query.filter_by(candidate_id=candidate_id).first()
+
 
 class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
@@ -984,7 +988,8 @@ class CandidateDevice(db.Model):
     registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+        return "<CandidateDevice (Id: %s, OneSignalId: %s)>" % (self.id,
+                                                                self.one_signal_device_id)
 
     @classmethod
     def get_devices_by_candidate_id(cls, candidate_id):
