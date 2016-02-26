@@ -534,10 +534,16 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
         if not email_campaign_blast:
+            # TODO why do the message start with send_campaign_emails_to_candidate, may be we can use something
+            # more meaningful and related
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
+
+            # TODO; I think it's a bug to return False from where, because it's unpacking 6 variable where
+            # this method is being called so I am not certain if you can just return False. Kindly tripple check
             return False
         email_campaign_blast_id = email_campaign_blast.id
+        # TODO followoing variable should be 'blast_sent_time'
         blast_datetime = email_campaign_blast.sent_time
     if not blast_datetime:
         blast_datetime = datetime.datetime.now()

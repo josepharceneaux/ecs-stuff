@@ -98,6 +98,7 @@ class EmailCampaignBlast(db.Model):
 
     @classmethod
     def get_latest_blast_by_campaign_id(cls, campaign_id):
+        # TODO add comments here
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
             cls.email_campaign_id == campaign_id).order_by(desc(cls.sent_time)).first()
