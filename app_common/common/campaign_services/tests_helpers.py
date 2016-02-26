@@ -226,19 +226,15 @@ class CampaignsTestsHelpers(object):
         """
         assert response.status_code == 200, 'Response should be "OK" (200)'
         assert response.json()
-        resp = response.json()
-        # TODO I think we can still name 'resp' as 'response' here for more clarity
-        # TODO; I think the idea of 'entity' is great. I was just thinking if we
-        # TODO we could make it 'entities' (i.e. a list) and assert whether we have everything in 'entities' in the resposne
-        # TODO I think 'count' should be a mndatory argument.
-        assert entity in resp
+        json_response = response.json()
+        assert entity in json_response
         if check_count:
-            assert 'count' in resp
-            assert resp['count'] == count
+            assert 'count' in json_response
+            assert json_response['count'] == count
             if not count:  # if count is 0, campaign_sends should be []
-                assert not resp[entity]
+                assert not json_response[entity]
             else:
-                assert resp[entity]
+                assert json_response[entity]
 
 
 class FixtureHelpers(object):

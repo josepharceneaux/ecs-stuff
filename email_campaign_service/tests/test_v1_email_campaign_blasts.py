@@ -23,7 +23,6 @@ class TestEmailCampaignBlasts(object):
     This class contains tests for endpoint /v1/email-campaigns/:id/blasts
     """
     URL = EmailCampaignUrl.BLASTS
-    # TODO ; kindly rename the following to HTTP_GET
     METHOD = 'get'
     ENTITY = 'blasts'
 
@@ -61,7 +60,6 @@ class TestEmailCampaignBlasts(object):
         time.sleep(20)
         response = requests.get(self.URL % campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        # TODO I am just wondering if we should rename the 'count' to blast_count, you know better though
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         db.session.commit()
@@ -69,8 +67,7 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['email_campaign_id'] == campaign.id
         assert json_resp['sends'] == 2
 
-    # TODO probably just rename the following test to 'test_get_not_owned_campaign()
-    def test_get_with_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
+    def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
         """
         This is the case where we try to get sends of a campaign which was created by
         some other user. It should result in 'forbidden' error.
