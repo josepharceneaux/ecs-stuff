@@ -55,14 +55,14 @@ class Tasks(Resource):
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?offset=3', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
 
             # Returns 30 jobs ranging from 3-33
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?offset=5&limit=12', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks?page=5&page_size=12', headers=headers)
 
             # Returns 7 jobs ranging from 5-12
 
@@ -109,26 +109,26 @@ class Tasks(Resource):
 
         """
         # In case of higher number of scheduled task running for a particular user and user want to get only
-        # a limited number of jobs by specifying offset and limit parameter, then return only specified jobs
+        # a limited number of jobs by specifying page and page_size parameter, then return only specified jobs
 
         # Limit the jobs to 200 if user requests for more than 200
-        max_offset = 200
+        max_page_size = 200
 
-        # If user didn't specify offset or limit, then it should be set to default 0 and 30 respectively.
-        offset, limit = request.args.get('offset', 0), request.args.get('limit', 30)
+        # If user didn't specify page or page_size, then it should be set to default 0 and 30 respectively.
+        page, page_size = request.args.get('page', 0), request.args.get('page_size', 30)
 
-        if not (str(offset).isdigit() and int(offset) >= 0):
-            raise InvalidUsage(error_message="'offset' arg should be a digit. Greater or equal to 0")
+        if not (str(page).isdigit() and int(page) >= 0):
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 0")
 
-        if not (str(limit).isdigit() and int(limit) > 0):
+        if not (str(page_size).isdigit() and int(page_size) > 0):
             raise InvalidUsage(
-                error_message="'limit' arg should be a digit and its value should be greater than 0")
+                error_message="'page_size' arg should be a digit and its value should be greater than 0")
 
-        offset, limit = int(offset), int(limit)
+        page, page_size = int(page), int(page_size)
 
         # Limit the jobs if user requests jobs greater than 200
-        if limit > max_offset:
-            limit = max_offset
+        if page_size > max_page_size:
+            page_size = max_page_size
 
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
@@ -137,7 +137,7 @@ class Tasks(Resource):
         tasks_count = len(tasks)
 
         tasks = [serialize_task(tasks[index])
-                 for index in range(offset, offset + limit) if index < tasks_count and tasks[index]]
+                 for index in range(page, page + page_size) if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
         return dict(tasks=tasks, count=len(tasks),

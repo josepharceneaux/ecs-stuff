@@ -234,7 +234,7 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    def test_multiple_jobs_with_start_point(self, auth_header, post_ten_jobs, job_cleanup):
+    def test_multiple_jobs_with_page_only(self, auth_header, post_ten_jobs, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get 5 tasks of the current user using 'start' arg.
         Then check if there are 5 jobs returned. If yes, then show status code 200
@@ -248,7 +248,7 @@ class TestSchedulerGet(object):
         # Get only 5 jobs
         limit = 5
         # Should get 5 jobs in response instead of all 10
-        response_get = requests.get('{0}?limit={1}'.format(SchedulerApiUrl.TASKS, limit),
+        response_get = requests.get('{0}?page_size={1}'.format(SchedulerApiUrl.TASKS, limit),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -260,9 +260,9 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_multiple_jobs_with_offset(self, auth_header, post_ten_jobs, job_cleanup):
+    def test_multiple_jobs_with_page(self, auth_header, post_ten_jobs, job_cleanup):
         """
-        Get 2 tasks of the current user using 'start' and 'offset'
+        Get 2 tasks of the current user using 'page' and 'page_size'
         arg. Then check if there are 2 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
@@ -272,12 +272,12 @@ class TestSchedulerGet(object):
         """
         jobs_id = post_ten_jobs
         # Get only 5 jobs limit
-        limit = 5
+        page = 5
 
         # Get only 2 jobs
-        offset = 2
+        page_size = 2
         # Should get jobs from 5, 6, 7 in response instead of all 10
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, limit, offset),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, page, page_size),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -285,7 +285,7 @@ class TestSchedulerGet(object):
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 8
 
-        response_get = requests.get('{0}?limit={1}'.format(SchedulerApiUrl.TASKS, offset),
+        response_get = requests.get('{0}?page_size={1}'.format(SchedulerApiUrl.TASKS, page_size),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -293,7 +293,7 @@ class TestSchedulerGet(object):
         assert len(set_jobs_ids.difference(get_jobs_id)) == 8
 
         # There are 10 jobs scheduled, try to get the jobs from 9 and onwards
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 9, 10),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, 9, 10),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -301,7 +301,7 @@ class TestSchedulerGet(object):
         assert len(set_jobs_ids.difference(get_jobs_id)) == 9
 
         # If we request job higher than 10, it will return 0 jobs instead
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -309,7 +309,7 @@ class TestSchedulerGet(object):
         assert len(set_jobs_ids.difference(get_jobs_id)) == 10
 
         # If we request job higher than 10, it will return 0 jobs instead
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 10, 15),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, 10, 15),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -320,7 +320,7 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_multiple_jobs_with_invalid_start_offset(self, auth_header, post_ten_jobs, job_cleanup):
+    def test_multiple_jobs_with_invalid_page_page_size(self, auth_header, post_ten_jobs, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get 2 tasks of the current user using invalid start
         Args:
@@ -331,29 +331,29 @@ class TestSchedulerGet(object):
         """
         jobs_id = post_ten_jobs
 
-        response_get = requests.get('{0}?offset={1}'.format(SchedulerApiUrl.TASKS, -1),
+        response_get = requests.get('{0}?page={1}'.format(SchedulerApiUrl.TASKS, -1),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
-        # Try with invalid offset 0
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 0, 0),
+        # Try with invalid page_size 0
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, 0, 0),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
-        response_get = requests.get('{0}?offset={1}&limit={2}'.format(SchedulerApiUrl.TASKS, 3, -1),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, 3, -1),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
         assert response_get.status_code == 400
 
-        response_get = requests.get('{0}?start={1}&limit={2}'.format(SchedulerApiUrl.TASKS, -1, -1),
+        response_get = requests.get('{0}?page={1}&page_size={2}'.format(SchedulerApiUrl.TASKS, -1, -1),
                                     headers=auth_header)
 
-        # Response should be 400 as start and offset arg is invalid
+        # Response should be 400 as page and page_size arg is invalid
         assert response_get.status_code == 400
 
         # Delete all created jobs
