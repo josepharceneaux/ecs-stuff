@@ -68,7 +68,7 @@ class EmailCampaignSmartlist(db.Model):
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
     campaign_id = db.Column('EmailCampaignId', db.Integer,
                             db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
@@ -103,7 +103,7 @@ class EmailCampaignSend(db.Model):
     email_campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    sent_time = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)

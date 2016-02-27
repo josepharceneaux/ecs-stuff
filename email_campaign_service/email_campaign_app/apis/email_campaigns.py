@@ -73,6 +73,7 @@ from email_campaign_service.common.campaign_services.validators import \
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 
+
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 api = TalentApi()
@@ -138,8 +139,8 @@ class EmailCampaignApi(Resource):
                                          list_ids=data['list_ids'],
                                          email_client_id=data['email_client_id'],
                                          template_id=data['template_id'],
-                                         send_time=data['send_datetime'],
-                                         stop_time=data['stop_datetime'],
+                                         send_datetime=data['send_datetime'],
+                                         stop_datetime=data['stop_datetime'],
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, 201
@@ -234,35 +235,36 @@ class EmailCampaignBlasts(Resource):
 
         .. Response::
 
-           {
-              "count": 2,
-              "blasts": [
-                            {
-                              "sent_time": "2016-02-19 00:49:21",
-                              "sends": 1,
-                              "bounces": 0,
-                              "updated_time": "2016-02-19 00:53:53",
-                              "text_clicks": 0,
-                              "email_campaign_id": 1230,
-                              "html_clicks": 0,
-                              "complaints": 0,
-                              "id": 4811,
-                              "opens": 1
-                            },
-                            {
-                              "sent_time": "2016-02-19 00:50:24",
-                              "sends": 1,
-                              "bounces": 0,
-                              "updated_time": "2016-02-19 00:50:27",
-                              "text_clicks": 0,
-                              "email_campaign_id": 1230,
-                              "html_clicks": 0,
-                              "complaints": 0,
-                              "id": 4812,
-                              "opens": 0
-                            }
-                       ]
+            {
+                  "count": 2,
+                  "blasts": [
+                    {
+                      "updated_datetime": "2016-02-10 19:37:15",
+                      "sends": 1,
+                      "bounces": 0,
+                      "text_clicks": 0,
+                      "email_campaign_id": 1,
+                      "html_clicks": 0,
+                      "complaints": 0,
+                      "id": "1",
+                      "opens": 0,
+                      "sent_datetime": "2016-02-10 19:37:04"
+                    },
+                    {
+                      "updated_datetime": "2016-02-10 19:40:46",
+                      "sends": 1,
+                      "bounces": 0,
+                      "text_clicks": 0,
+                      "email_campaign_id": 1,
+                      "html_clicks": 0,
+                      "complaints": 0,
+                      "id": "2",
+                      "opens": 0,
+                      "sent_datetime": "2016-02-10 19:40:38"
+                    }
+                ]
             }
+
 
         .. Status:: 200 (OK)
                     400 (Bad request)
@@ -275,7 +277,7 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts]
+        parsers = dict(sent_datetime=str, updated_datetime=str)
+        blasts = [blast.to_json(field_parsers=parsers) for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
-
