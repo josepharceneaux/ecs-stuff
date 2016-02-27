@@ -265,7 +265,6 @@ class EmailCampaignBlasts(Resource):
                 ]
             }
 
-
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
@@ -277,8 +276,7 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        parsers = dict(sent_datetime=str)
-        blasts = [blast.to_json(field_parsers=parsers) for blast in campaign.blasts]
+        blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
@@ -334,9 +332,10 @@ class EmailCampaignBlastById(Resource):
                     404 (Campaign not found)
                     500 (Internal server error)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      blast_id=blast_id))
         # Get valid blast object
         blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
                                                      request.user,
                                                      CampaignUtils.EMAIL)
-        return dict(blast=blast_obj.to_json(field_parsers=dict(sent_datetime=str))), 200
+        return dict(blast=blast_obj.to_json()), 200
