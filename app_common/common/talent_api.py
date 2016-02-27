@@ -39,7 +39,7 @@ class TalentApi(Api):
                 error = json.loads(response.data)
             except Exception:
                 # if error body was not json serializable, simply return as it is.
-                error = response.data
+                return response
 
             status_code = response.status_code
             response = {
