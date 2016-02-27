@@ -525,6 +525,13 @@ class CandidateWorkPreference(db.Model):
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).first()
+
 
 class CandidatePreferredLocation(db.Model):
     __tablename__ = 'candidate_preferred_location'
