@@ -7,10 +7,12 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Third Party
 import requests
 
+# Service Specific
+from email_campaign_service.tests.modules.handy_functions import send_campaign
+
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.tests.modules.handy_functions import send_campaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 
