@@ -62,7 +62,7 @@ from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
-def to_json(self, allowed_columns=None, field_parsers=dict()):
+def to_json(self, allowed_keys=None, field_parsers=dict()):
     """
     Converts SqlAlchemy object to serializable dictionary
 
@@ -74,34 +74,38 @@ def to_json(self, allowed_columns=None, field_parsers=dict()):
      to json serializable dict but we want our datetime object to be converted in
      ISO 8601 format, fo we can pass a parser functions like
 
+        >>> from app_common.common.utils.handy_functions import to_utc_str
+        >>> parsers = dict(start_datetime=to_utc_str,
+        >>>                end_datetime=to_utc_str)
+        >>> event.to_json(field_parsers=parsers)
+
+        >>> {
+        >>>     ...
+        >>>     ...
+        >>>     start_datetime: '2016-02-12T12:12:00Z',
+        >>>     end_datetime: '2016-03-20T10:10:00Z',
+        >>>     ...
+        >>> }
+
      to_json() also handles any naming conventions for db column name and model attribute name.
-     e.g. if we have a column name "UserId" in database and "owner_user_id", it will handle nicely.
+     e.g. if we have a column name "UserId" in database and "owner_user_id" in model,
+     it will handle nicely.
 
      Serializable dictionary will contain model attribute name as key,
      "owner_user_id" in this case not the db column name "UserId".
 
+     We can get get only required fields by passing names / keys of columns as list or tuple.
+
+        >>> fields = ('first_name', 'last_name', 'status_id', 'added_time')
+        >>> candidate = candidate.to_json(include=fields)
+
     :param self: instance of respective model class
-    :type self: db.Model (some sub class)
-    :param allowed_columns: which columns we need to add in json data
-    :type allowed_columns: list | tuple
+    :type self: db.Model
+    :param allowed_keys: which columns we need to add in json data
+    :type allowed_keys: list | tuple
     :param field_parsers: a dictionary with keys as model attributes and values as
-     function to parse or convert to specific format
+     function to parse or convert the field value to specific format
     :type field_parsers: dict
-
-        : Example:
-            Let's say event is an instance of Event model class
-            >>> from app_common.common.utils.handy_functions import to_utc_str
-            >>> parsers = dict(start_datetime=to_utc_str,
-            >>>                end_datetime=to_utc_str)
-            >>> event.to_json()
-
-            >>> {
-            >>>     ...
-            >>>     ...
-            >>>     start_datetime: '2016-02-12T12:12:00Z',
-            >>>     end_datetime: '2016-03-20T10:10:00Z',
-            >>>     ...
-            >>> }
     """
     # add your conversions for things like datetime
     # and timestamp etc. that aren't serializable.
@@ -111,30 +115,23 @@ def to_json(self, allowed_columns=None, field_parsers=dict()):
     data = dict()
     cls = self.__class__
 
-    # get model properties
-    properties = inspect(cls).attrs._data
-    all_keys = properties._list
+    # get column properties
+    columns = inspect(cls).column_attrs._data
 
-    # only get those properties name that represent columns and not other ones starting with __ or
-    # relationship attributes' names
-    columns = [key for key in all_keys if properties[key].strategy_wildcard_key == 'column']
-
-    # Pack column name (str) and column objects (Column)
-    columns = zip(columns, cls.__table__.columns)
-    if isinstance(allowed_columns, (list, tuple)):
-        allowed_names_columns = [(name, column) for name, column in columns if name in allowed_columns]
-        if not allowed_names_columns:
-            raise InvalidUsage('All given column names are invalid: %s' % allowed_columns)
+    if isinstance(allowed_keys, (list, tuple)):
+        allowed_columns = {name: column for name, column in columns.items() if name in allowed_keys}
+        if not allowed_columns:
+            raise InvalidUsage('All given column names are invalid: %s' % allowed_keys)
     else:
-        allowed_names_columns = columns
+        allowed_columns = columns
 
     # iterate through all columns names, values
-    for name, column in allowed_names_columns:
+    for name, column in allowed_columns.items():
         # get value against this column name
         value = getattr(self, name)
 
-        # e.g. in case of datetime column, column.type will be "DATETIME"
-        column_type = str(column.type)
+        # e.g. in case of datetime column, column_type will be "DATETIME"
+        column_type = str(column.columns[0].type)
         if name in field_parsers and callable(field_parsers[name]):
             # get column type and check if there is any parser or conversion method given
             # for that type. If any, then use parser for conversion

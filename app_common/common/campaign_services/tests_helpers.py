@@ -22,7 +22,7 @@ from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 
 
-class CampaignsCommonTests(object):
+class CampaignsTestsHelpers(object):
     """
     This class contains common tests for sms_campaign_service and push_campaign_service.
     """
@@ -48,9 +48,9 @@ class CampaignsCommonTests(object):
                                         method_after_delete, token):
         campaign_id = campaign.id
         # Delete the campaign first
-        CampaignsCommonTests.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
+        CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
                                                      token, None)
-        CampaignsCommonTests.request_for_resource_not_found_error(method_after_delete,
+        CampaignsTestsHelpers.request_for_resource_not_found_error(method_after_delete,
                                                                   url_after_delete % campaign_id,
                                                                   token)
 
@@ -115,8 +115,7 @@ class CampaignsCommonTests(object):
 
     @classmethod
     def request_with_invalid_campaign_id(cls, model, method, url, token, data):
-        # Test with invalid integer id
-        # Test for 404, Schedule a campaign which does not exists or id is invalid
+        # Request a campaign which does not exists or id is invalid
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
@@ -216,6 +215,27 @@ class CampaignsCommonTests(object):
         db.session.commit()
         assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
 
+    @classmethod
+    def assert_ok_response_and_counts(cls, response, count=0, entity='sends', check_count=True):
+        """
+        This is the common function to assert that response is returning valid 'count'
+        and 'sends' or 'replies' for a particular campaign.
+        :param response:
+        :param count:
+        :return:
+        """
+        assert response.status_code == 200, 'Response should be "OK" (200)'
+        assert response.json()
+        json_response = response.json()
+        assert entity in json_response
+        if check_count:
+            assert 'count' in json_response
+            assert json_response['count'] == count
+            if not count:  # if count is 0, campaign_sends should be []
+                assert not json_response[entity]
+            else:
+                assert json_response[entity]
+
 
 class FixtureHelpers(object):
     """
@@ -303,7 +323,7 @@ def _assert_api_response_for_missing_field(method, url, token, data, field_to_re
     removed_value = data[field_to_remove]
     del data[field_to_remove]
     response = send_request(method, url, token, data)
-    error = CampaignsCommonTests.assert_api_response(response)
+    error = CampaignsTestsHelpers.assert_api_response(response)
     assert field_to_remove in error['message'], '%s should be in error_message' % field_to_remove
     # assign removed field again
     data[field_to_remove] = removed_value
@@ -324,7 +344,7 @@ def _assert_invalid_datetime_format(method, url, token, data, key):
     old_value = data[key]
     data[key] = str_datetime  # Invalid datetime format
     response = send_request(method, url, token, data)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     data[key] = old_value
 
 
@@ -342,7 +362,7 @@ def _assert_invalid_datetime(method, url, token, data, key):
     old_value = data[key]
     data[key] = to_utc_str(datetime.utcnow() - timedelta(hours=10))  # Past datetime
     response = send_request(method, url, token, data)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     data[key] = old_value
 
 
@@ -371,20 +391,20 @@ def _invalid_data_test(method, url, token):
     # test with None Data
     data = None
     response = send_request(method, url, token, data)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     # Test with empty dict
     data = {}
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     response = send_request(method, url, token, data)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     # Test with valid data and invalid header
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
     # Test with Non JSON data and valid header
     data = get_invalid_fake_dict()
     response = send_request(method, url, token, data, data_dumps=False)
-    CampaignsCommonTests.assert_api_response(response)
+    CampaignsTestsHelpers.assert_api_response(response)
 
 
 def get_invalid_ids(last_id_of_obj_in_db):

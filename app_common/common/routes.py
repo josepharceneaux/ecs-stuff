@@ -268,6 +268,174 @@ class UserServiceApiUrl(object):
     RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
 
 
+class CandidateApiWords(object):
+    """
+    This class contains words used for endpoints of Candidate API.
+    """
+    CANDIDATES = "candidates"
+    ADDRESSES = "/addresses"
+    AOIS = "/areas_of_interest"
+    CUSTOM_FIELD = "/custom_fields"
+    EDUCATIONS = "/educations"
+    DEGREES = "/degrees"
+    BULLETS = "/bullets"
+    EXPERIENCES = "/experiences"
+    EMAILS = "/emails"
+    MILITARY_SERVICES = "/military_services"
+    PHONES = "/phones"
+    PREFERRED_LOCATIONS = "/preferred_locations"
+    SKILLS = "/skills"
+    SOCIAL_NETWORKS = "/social_networks"
+    WORK_PREFERENCES = "/work_preference"
+    EDITS = "/edits"
+    SEARCH = "/search"
+    DOCUMENTS = "/documents"
+    OPENWEB = '/openweb'
+    CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
+    VIEWS = "/views"
+    PREFERENCE = "/preferences"
+    PHOTOS = "/photos"
+
+
+class CandidateApi(object):
+    """
+    API relative URLs for candidate_service. e,g /v1/candidates
+    """
+    VERSION = 'v1'
+    _INT_ID = "/<int:id>"
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
+                               GTApis.CANDIDATE_SERVICE_PORT)
+    RELATIVE_VERSION = '/%s/%s' % (VERSION, '%s')
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    CANDIDATES = RELATIVE_VERSION % CandidateApiWords.CANDIDATES
+    _CANDIDATE_ID = CANDIDATES + "/<int:candidate_id>"
+    CANDIDATE_ID = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + _INT_ID)
+    CANDIDATE_EMAIL = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + "/<email>")
+
+    ADDRESSES = _CANDIDATE_ID + CandidateApiWords.ADDRESSES
+    ADDRESS = ADDRESSES + _INT_ID
+
+    AOIS = _CANDIDATE_ID + CandidateApiWords.AOIS
+    AOI = AOIS + _INT_ID
+
+    CUSTOM_FIELDS = _CANDIDATE_ID + CandidateApiWords.CUSTOM_FIELD
+    CUSTOM_FIELD = CUSTOM_FIELDS + _INT_ID
+
+    EDUCATIONS = _CANDIDATE_ID + CandidateApiWords.EDUCATIONS
+    EDUCATION = EDUCATIONS + _INT_ID
+
+    DEGREES = EDUCATIONS + '/<int:education_id>' + CandidateApiWords.DEGREES
+    DEGREE = DEGREES + _INT_ID
+
+    DEGREE_BULLETS = DEGREES + "/<int:degree_id>" + CandidateApiWords.BULLETS
+    DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
+
+    EXPERIENCES = _CANDIDATE_ID + CandidateApiWords.EXPERIENCES
+    EXPERIENCE = EXPERIENCES + _INT_ID
+
+    EXPERIENCE_BULLETS = EXPERIENCES + "/<int:experience_id>" + CandidateApiWords.BULLETS
+    EXPERIENCE_BULLET = EXPERIENCE_BULLETS + _INT_ID
+
+    EMAILS = _CANDIDATE_ID + CandidateApiWords.EMAILS
+    EMAIL = EMAILS + _INT_ID
+
+    MILITARY_SERVICES = _CANDIDATE_ID + CandidateApiWords.MILITARY_SERVICES
+    MILITARY_SERVICE = MILITARY_SERVICES + _INT_ID
+
+    PHONES = _CANDIDATE_ID + CandidateApiWords.PHONES
+    PHONE = PHONES + _INT_ID
+
+    PREFERRED_LOCATIONS = _CANDIDATE_ID + CandidateApiWords.PREFERRED_LOCATIONS
+    PREFERRED_LOCATION = PREFERRED_LOCATIONS + _INT_ID
+
+    SKILLS = _CANDIDATE_ID + CandidateApiWords.SKILLS
+    SKILL = SKILLS + _INT_ID
+
+    PHOTOS = _CANDIDATE_ID + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + _INT_ID
+
+    SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
+    SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
+
+    WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
+    CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
+
+    CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
+    CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
+    OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+    CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
+    CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
+
+
+class CandidateApiUrl(object):
+    """
+    Rest URLs of candidate_service
+    """
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
+                               GTApis.CANDIDATE_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    CANDIDATES = HOST_NAME % CandidateApi.CANDIDATES
+    CANDIDATE = CANDIDATES + "/%s"
+
+    ADDRESSES = CANDIDATE + CandidateApiWords.ADDRESSES
+    ADDRESS = ADDRESSES + "/%s"
+
+    AOIS = CANDIDATE + CandidateApiWords.AOIS
+    AOI = AOIS + "/%s"
+
+    CUSTOM_FIELDS = CANDIDATE + CandidateApiWords.CUSTOM_FIELD
+    CUSTOM_FIELD = CUSTOM_FIELDS + "/%s"
+
+    CANDIDATE_SEARCH_URI = CANDIDATES + CandidateApiWords.SEARCH
+
+    CANDIDATES_DOCUMENTS_URI = CANDIDATES + CandidateApiWords.DOCUMENTS
+
+    EDUCATIONS = CANDIDATE + CandidateApiWords.EDUCATIONS
+    EDUCATION = EDUCATIONS + "/%s"
+
+    DEGREES = EDUCATION + CandidateApiWords.DEGREES
+    DEGREE = DEGREES + "/%s"
+
+    DEGREE_BULLETS = DEGREE + CandidateApiWords.BULLETS
+    DEGREE_BULLET = DEGREE_BULLETS + "/%s"
+
+    EMAILS = CANDIDATE + CandidateApiWords.EMAILS
+    EMAIL = EMAILS + "/%s"
+
+    EXPERIENCES = CANDIDATE + CandidateApiWords.EXPERIENCES
+    EXPERIENCE = EXPERIENCES + "/%s"
+
+    EXPERIENCE_BULLETS = EXPERIENCE + CandidateApiWords.BULLETS
+    EXPERIENCE_BULLET = EXPERIENCE_BULLETS + "/%s"
+
+    MILITARY_SERVICES = CANDIDATE + CandidateApiWords.MILITARY_SERVICES
+    MILITARY_SERVICE = MILITARY_SERVICES + "/%s"
+
+    PHONES = CANDIDATE + CandidateApiWords.PHONES
+    PHONE = PHONES + "/%s"
+
+    PREFERRED_LOCATIONS = CANDIDATE + CandidateApiWords.PREFERRED_LOCATIONS
+    PREFERRED_LOCATION = PREFERRED_LOCATIONS + "/%s"
+
+    SKILLS = CANDIDATE + CandidateApiWords.SKILLS
+    SKILL = SKILLS + "/%s"
+
+    PHOTOS = CANDIDATE + CandidateApiWords.PHOTOS
+    PHOTO = PHOTOS + "/%s"
+
+    SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
+    SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
+
+    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
+    CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
+    CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
+
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+
+
 class WidgetApi(object):
     """
     API relative URLs for widget_service. e.g. /v1/universities
@@ -430,6 +598,50 @@ class SpreadsheetImportApiUrl(object):
     API_URL = HOST_NAME % _get_api_relative_version(SpreadsheetImportApi.VERSION)
     CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
     IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
+
+
+class SchedulerApi(object):
+    """
+    Rest Relative URLs of scheduler_service
+    """
+
+    VERSION = 'v1'
+
+    # URLs, in case of API
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
+    SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
+
+
+class SchedulerApiUrl(object):
+    """
+    Rest URLs of scheduler_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
+                               GTApis.SCHEDULER_SERVICE_PORT)
+
+    VERSION = 'v1'
+
+    HOST_NAME %= _get_api_relative_version(VERSION)
+    # URLs, in case of test cases
+    TASKS = HOST_NAME % "tasks/"
+    TASK = HOST_NAME % 'tasks/id/%s'
+    TASK_NAME = HOST_NAME % 'tasks/name/%s'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
+    TEST_TASK = HOST_NAME % 'tasks/test/'
+
+    # Use different port of scheduler service URL
+    FLOWER_MONITORING = '--port=5511'
 
 
 class CampaignWords(object):
@@ -792,20 +1004,27 @@ class EmailCampaignEndpoints(object):
     VERSION = 'v1'
 
     HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                           GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
+                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
+    # endpoint /v1/email-campaigns/:id/blasts
+    # Gives the blasts of a campaign
+    BLASTS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS
 
 
 class EmailCampaignUrl(object):
+    """
+    This class contains URLs to be used in Py-tests
+    """
     CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + "/%s"
     SEND = CAMPAIGN + CampaignWords.SEND
-    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
-                                CampaignWords.REDIRECT + '/%s')
+    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
+                                                       + '/' + CampaignWords.REDIRECT + '/%s')
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
 
 

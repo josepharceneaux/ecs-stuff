@@ -1195,7 +1195,7 @@ class CandidateClientEmailCampaignResource(Resource):
                 'email_body_html': '<html><body>Email Body</body></html>',
                 'email_body_text': 'Plaintext part of email goes here, if any',
                 'email_client_id': int,
-                'sent_time': datetime,
+                'sent_datetime': datetime,
              }
 
         Function will create a list, email_campaign, email_campaign_send, and a url_conversion
@@ -1214,7 +1214,6 @@ class CandidateClientEmailCampaignResource(Resource):
         email_body_html = body_dict.get('email_body_html')
         email_body_text = body_dict.get('email_body_text')
         email_client_id = body_dict.get('email_client_id')
-        send_time = body_dict.get('sent_time', 0)
 
         if not email_from or not email_reply_to or not email_client_id or not candidates_list:
             raise InvalidUsage(error_message="Fields are missing.")

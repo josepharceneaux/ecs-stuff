@@ -838,9 +838,9 @@ class SmsCampaignBlasts(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        # Get a campaign that was created by this user
+        # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                                  CampaignUtils.SMS)
+                                                                   CampaignUtils.SMS)
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
@@ -896,7 +896,7 @@ class SmsCampaignBlastById(Resource):
                     500 (Internal server error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
-        # Get a campaign that was created by this user
+        # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
@@ -963,7 +963,7 @@ class SmsCampaignBlastSends(Resource):
                     500 (Internal Server Error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
-        # Get a campaign that was created by this user
+        # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
@@ -1030,9 +1030,8 @@ class SmsCampaignBlastReplies(Resource):
                     500 (Internal server error)
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
-        # Get a campaign that was created by this user
-        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                       CampaignUtils.SMS)
+        # Validate that campaign object belongs to user's domain
+        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         replies = [replies_obj.to_json() for replies_obj in blast_obj.blast_replies]
         response = dict(replies=replies, count=len(replies))
@@ -1094,7 +1093,7 @@ class SmsCampaignSends(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
         """
-        # Get a campaign that was created by this user
+        # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                   CampaignUtils.SMS)
 
@@ -1158,9 +1157,9 @@ class SmsCampaignReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        # Get a campaign that was created by this user
+        # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                                  CampaignUtils.SMS)
+                                                                   CampaignUtils.SMS)
         # Get replies objects from database table 'sms_campaign_reply'
         replies = sum([blast.blast_replies for blast in campaign.blasts], [])
         # Get JSON serializable data
