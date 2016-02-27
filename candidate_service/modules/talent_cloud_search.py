@@ -10,7 +10,7 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from candidate_service.candidate_app import app
+from candidate_service.candidate_app import app, celery_app
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
@@ -389,24 +389,29 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     return action_dicts
 
 
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
+    :param domain_id: Domain Id
     :return:
     """
+    talent_logger = app.config[TalentConfigKeys.LOGGER]
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
-    logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
-    start_time = time.time()
-    action_dicts = _build_candidate_documents(candidate_ids, domain_id)
-    logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
-                len(action_dicts))
-    adds, deletes = _send_batch_request(action_dicts)
-    if deletes:
-        logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s deletes.candidate_ids: %s",
-                     deletes, candidate_ids)
-    return adds
+    for i in xrange(0, len(candidate_ids), 10):
+        talent_logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids[i:i+10]))
+        start_time = time.time()
+        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], domain_id)
+        talent_logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
+                           len(action_dicts))
+        adds, deletes = _send_batch_request(action_dicts)
+        if deletes:
+            talent_logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
+                                "deletes.candidate_ids: %s", deletes, candidate_ids[i:i+10])
+        if adds:
+            talent_logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i+10]))
 
 
 def upload_candidate_documents_in_domain(domain_id):
@@ -420,7 +425,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents(candidate_ids, domain_id)
+    return upload_candidate_documents.delay(candidate_ids, domain_id)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -432,7 +437,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents(candidate_ids=candidate_ids)
+    return upload_candidate_documents.delay(candidate_ids)
 
 
 def upload_all_candidate_documents():
@@ -444,8 +449,7 @@ def upload_all_candidate_documents():
     domains = Domain.query.with_entities(Domain.id).all()
     for domain in domains:
         logger.info("Uploading all candidates of domain %s", domain.id)
-        adds += upload_candidate_documents_in_domain(domain.id)
-    return adds
+        upload_candidate_documents_in_domain(domain.id)
 
 
 def delete_candidate_documents(candidate_ids):
