@@ -62,7 +62,7 @@ class Tasks(Resource):
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?page=5&page_size=12', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
 
             # Returns 7 jobs ranging from 5-12
 
@@ -109,26 +109,26 @@ class Tasks(Resource):
 
         """
         # In case of higher number of scheduled task running for a particular user and user want to get only
-        # a limited number of jobs by specifying page and page_size parameter, then return only specified jobs
+        # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
         # Limit the jobs to 200 if user requests for more than 200
-        max_page_size = 200
+        max_per_page = 200
 
-        # If user didn't specify page or page_size, then it should be set to default 0 and 30 respectively.
-        page, page_size = request.args.get('page', 0), request.args.get('page_size', 30)
+        # If user didn't specify page or per_page, then it should be set to default 0 and 30 respectively.
+        page, per_page = request.args.get('page', 0), request.args.get('per_page', 30)
 
         if not (str(page).isdigit() and int(page) >= 0):
             raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 0")
 
-        if not (str(page_size).isdigit() and int(page_size) > 0):
+        if not (str(per_page).isdigit() and int(per_page) > 0):
             raise InvalidUsage(
-                error_message="'page_size' arg should be a digit and its value should be greater than 0")
+                error_message="'per_page' arg should be a digit and its value should be greater than 0")
 
-        page, page_size = int(page), int(page_size)
+        page, per_page = int(page), int(per_page)
 
         # Limit the jobs if user requests jobs greater than 200
-        if page_size > max_page_size:
-            page_size = max_page_size
+        if per_page > max_per_page:
+            per_page = max_per_page
 
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
@@ -137,7 +137,7 @@ class Tasks(Resource):
         tasks_count = len(tasks)
 
         tasks = [serialize_task(tasks[index])
-                 for index in range(page, page + page_size) if index < tasks_count and tasks[index]]
+                 for index in range(page, page + per_page) if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
         return dict(tasks=tasks, count=len(tasks),
@@ -768,10 +768,14 @@ class SendRequestTest(Resource):
             run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
                     task.get('post_data', dict()))
         else:
-            db.db.session.commit()
-            test_user_id = task['test_user_id']
-            test_user = User.query.filter_by(id=test_user_id).first()
-            test_user.delete()
+            try:
+                # Try deleting the user if exist
+                db.db.session.commit()
+                test_user_id = task['test_user_id']
+                test_user = User.query.filter_by(id=test_user_id).first()
+                test_user.delete()
+            except Exception:
+                pass
 
         return dict(message='Dummy Endpoint called')
 
