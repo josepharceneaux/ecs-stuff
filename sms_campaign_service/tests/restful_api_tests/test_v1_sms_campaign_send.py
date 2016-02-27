@@ -15,7 +15,7 @@ from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInU
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
 
@@ -25,38 +25,38 @@ class TestSendSmsCampaign(object):
     This class contains tests for endpoint /campaigns/:id/send
     """
     URL = SmsCampaignApiUrl.SEND
-    METHOD = 'post'
+    HTTP_METHOD = 'post'
 
     def test_post_with_invalid_token(self, sms_campaign_of_current_user):
         """
-        User auth token is invalid, it should get Unauthorized error.
+        User auth token is invalid, it should result in Unauthorized error.
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_token(self.METHOD,
-                                                        self.URL % sms_campaign_of_current_user.id,
-                                                        None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % sms_campaign_of_current_user.id,
+                                                         None)
 
     def test_post_with_id_of_deleted_record(self, access_token_first,
                                             sms_campaign_of_current_user):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
-        to update the record. It should get ResourceNotFound error.
+        to update the record. It should result in ResourceNotFound error.
         :return:
         """
-        CampaignsCommonTests.request_after_deleting_campaign(
+        CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL, self.METHOD, access_token_first)
+            self.URL, self.HTTP_METHOD, access_token_first)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):
         """
         User auth token is valid but given SMS campaign does not belong to domain
-        of logged-in user. It should get Forbidden error.
+        of logged-in user. It should result in Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          access_token_first)
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                sms_campaign_of_current_user):
@@ -64,37 +64,37 @@ class TestSendSmsCampaign(object):
         User auth token is valid but given SMS campaign has no associated smartlist with it. So
         up til this point we only have created a user and SMS campaign of that user (using fixtures
         passed in as params).
-        It should get Invalid usage error. Custom error should be
+        It should result in Invalid usage error. Custom error should be
         NoSmartlistAssociatedWithCampaign.
         :return:
         """
-        CampaignsCommonTests.campaign_send_with_no_smartlist(
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(
             self.URL % sms_campaign_of_current_user.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
                                               sms_campaign_of_current_user):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
+        no candidate associated with it. It should result in invalid usage error.
         Custom error should be NoCandidateAssociatedWithSmartlist .
         :return:
         """
         with app.app_context():
-            CampaignsCommonTests.campaign_send_with_no_smartlist_candidate(
+            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % sms_campaign_of_current_user.id, access_token_first,
                 sms_campaign_of_current_user)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
-        This is a test to update a campaign which does not exists in database.
+        This is a test to update a campaign which does not exist in database.
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
             self, access_token_first, user_first, sms_campaign_of_current_user,
@@ -139,7 +139,7 @@ class TestSendSmsCampaign(object):
         """
         User auth token is valid. Campaign has one smart list associated. Smartlist has two
         candidates. One candidate exists in more than one domains with same phone. It should
-        not get any error.
+        not result in any error.
         :return:
         """
         obj = SmsCampaignBase(user_first.id)
@@ -153,7 +153,7 @@ class TestSendSmsCampaign(object):
             sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have different phone numbers. It should not get any error.
+        candidates. Both candidates have different phone numbers. It should not result in any error.
         :return:
         """
         obj = SmsCampaignBase(user_first.id)

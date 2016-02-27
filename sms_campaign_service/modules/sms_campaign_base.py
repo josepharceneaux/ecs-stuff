@@ -35,6 +35,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
                                                              )
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -644,16 +645,17 @@ class SmsCampaignBase(CampaignBase):
             url_conversion_id = self.create_or_update_url_conversion(destination_url=url,
                                                                      source_url='')
             # URL to redirect candidates to our end point
-            # TODO: remove this when app is up
-            app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
-            # redirect URL looks like
-            # http://127.0.0.1:8012/redirect/1
+            app_redirect_url = SmsCampaignApiUrl.REDIRECT
+            if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV:
+                app_redirect_url = replace_localhost_with_ngrok(SmsCampaignApiUrl.REDIRECT)
+            # redirect URL looks like (for prod)
+            # http://sms-campaing-service.gettalent.com/redirect/1
             redirect_url = str(app_redirect_url % url_conversion_id)
             # sign the redirect URL
             long_url = CampaignUtils.sign_redirect_url(redirect_url,
                                                        datetime.now() + relativedelta(years=+1))
-            # long_url looks like
-            # http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
+            # long_url looks like (for prod)
+            # http://sms-campaing-service.gettalent.com/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
             # Use Google's API to shorten the long URL
             short_url, error = url_conversion(long_url)
