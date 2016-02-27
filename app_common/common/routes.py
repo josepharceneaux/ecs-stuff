@@ -170,6 +170,8 @@ class ActivityApi(object):
     ACTIVITIES = RELATIVE_VERSION % 'activities/'
     # /v1/activities/<page>
     ACTIVITIES_PAGE = ACTIVITIES + '<page>'
+    ACTIVITY_MESSAGES = RELATIVE_VERSION % 'messages'
+    LAST_READ = RELATIVE_VERSION % 'last-read'
 
 
 class ActivityApiUrl(object):
@@ -262,252 +264,6 @@ class UserServiceApiUrl(object):
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
     RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
-
-
-class WidgetApi(object):
-    """
-    API relative URLs for widget_service. e.g. /v1/universities
-    """
-    VERSION = 'v1'
-    # This is /v1/
-    URL_PREFIX = _get_url_prefix(VERSION)
-    DOMAINS = 'domains'
-    _ENCRYPTED_DOMAIN_ID = '/<path:encrypted_domain_id>'
-    DOMAIN_WIDGETS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/widgets/<path:encrypted_widget_id>'
-    DOMAIN_INTERESTS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/interests'
-    DOMAIN_MAJORS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/majors'
-    UNIVERSITIES = 'universities'
-
-
-class WidgetApiUrl(object):
-    """
-    Rest URLs of widget_service
-    """
-    HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME,
-                               GTApis.WIDGET_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(WidgetApi.VERSION)
-    DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
-    DOMAIN_INTERESTS = API_URL % (WidgetApi.DOMAINS + '/%s/interests')
-    DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
-    DOMAINS = API_URL % WidgetApi.DOMAINS
-    UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
-
-
-class SocialNetworkApi(object):
-    """
-    API relative URLs for social_network_service
-    """
-    VERSION = 'v1'
-    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EVENTS = RELATIVE_VERSION % 'events/'
-    EVENT = RELATIVE_VERSION % '/events/<int:event_id>'
-
-
-class SocialNetworkApiUrl(object):
-    """
-    API absolute URLs for social_network_service
-    """
-    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-
-    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
-    EVENTS = API_URL % 'events'
-
-
-class CandidatePoolApiWords(object):
-    """
-    This class contains words used for endpoints of candidate_pool API.
-    """
-    TALENT_POOLS = 'talent-pools'
-    TALENT_POOL = 'talent-pool'
-    TALENT_PIPELINES = 'talent-pipelines'
-    TALENT_PIPELINE = 'talent-pipeline'
-    STATS = '/stats'
-    CANDIDATES = '/candidates'
-    CAMPAIGNS = '/campaigns'
-    GROUPS = 'groups'
-    SMART_LISTS = '/smartlists'
-
-
-class CandidatePoolApi(object):
-    """
-    API relative URLs for candidate_pool_service. e.g. /v1/smartlists
-    """
-    VERSION = 'v1'
-    # /v1/
-    URL_PREFIX = _get_url_prefix(VERSION)
-    _INT_ID = '/<int:id>'
-    # Talent Pools
-    TALENT_PIPELINES = CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
-    TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
-    TALENT_PIPELINES_OF_TALENT_POOLS = TALENT_POOL + '/' +CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL_UPDATE_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
-    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>/' \
-                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    # Talent Pipelines
-    TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
-    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
-    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
-    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
-    TALENT_PIPELINE_UPDATE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
-    # Smartlists
-    SMARTLISTS = 'smartlists'
-    SMARTLIST = SMARTLISTS + _INT_ID
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
-    SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
-
-
-class CandidatePoolApiUrl(object):
-    """
-    Rest URLs of candidate_pool_service
-    """
-    HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
-                               GTApis.CANDIDATE_POOL_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
-    # Talent Pool
-    TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL = TALENT_POOLS + '/%s'
-    TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
-    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
-                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
-    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
-                                                  CandidatePoolApiWords.TALENT_PIPELINES)
-
-    # Talent Pipeline
-    TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
-    TALENT_PIPELINE_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s'+ CandidatePoolApiWords.CANDIDATES)
-    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.CAMPAIGNS)
-    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.SMART_LISTS)
-    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + "/%s" + CandidatePoolApiWords.STATS)
-    # Smartlists
-    SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
-    SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
-
-
-class SpreadsheetImportApi(object):
-    """
-    API relative URLs for spreadsheet_import_service. e.g. /v1/parse_spreadsheet/convert_to_table
-    """
-    VERSION = 'v1'
-    # This is /v1/
-    URL_PREFIX = _get_url_prefix(VERSION)
-    _PARSE_SPREADSHEET = 'parse_spreadsheet'
-    CONVERT_TO_TABLE = _PARSE_SPREADSHEET + '/convert_to_table'
-    IMPORT_CANDIDATES = _PARSE_SPREADSHEET + '/import_candidates'
-
-
-class SpreadsheetImportApiUrl(object):
-    """
-    Rest URLs of spreadsheet_import_service
-    """
-    HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
-                               GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(SpreadsheetImportApi.VERSION)
-    CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
-    IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
-
-
-class CampaignWords(object):
-    """
-    This class contains words used for endpoints of SMS Campaign API.
-    """
-    CAMPAIGNS = 'campaigns'
-    SCHEDULE = '/schedule'
-    REDIRECT = 'redirect'
-    RECEIVE = 'receive'
-    SENDS = '/sends'
-    SEND = '/send'
-    BLASTS = '/blasts'
-    REPLIES = '/replies'
-    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
-
-
-class SmsCampaignApi(object):
-    """
-    This class contains the REST endpoints of sms_campaign_service
-    """
-    VERSION = 'v1'
-    # HOST_NAME is http://127.0.0.1:8012 for dev
-    HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
-                               GTApis.SMS_CAMPAIGN_SERVICE_PORT)
-    API_URL = '/%s/%s' % (VERSION, '%s')
-    # endpoint /v1/campaigns
-    # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.CAMPAIGNS)
-    # endpoint /v1/campaigns/:id
-    # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
-    CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
-    # /v1/campaigns/:id/schedule
-    # To schedule an SMS campaign
-    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
-    # endpoint /v1/campaigns/:id/send
-    # To send a campaign to candidates
-    SEND = CAMPAIGN + CampaignWords.SEND
-    # endpoint /v1/redirect/:id
-    # This endpoint is hit when candidate clicks on any URL present in SMS body text.
-    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
-    # endpoint /v1/receive
-    # This endpoint is callback URL when candidate replies to a campaign via SMS
-    RECEIVE = API_URL % CampaignWords.RECEIVE
-    # endpoint /v1/campaigns/:id/blasts
-    # Gives the blasts of a campaign
-    BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    # endpoint /v1/campaigns/:id/blasts/:id
-    # Gives the blast object of SMS campaign from given blast id.
-    BLAST = CAMPAIGN + CampaignWords.BLASTS + '/<int:blast_id>'
-    # endpoint /v1/campaigns/:id/blasts/:id/sends
-    # Gives the sends objects of a blast object of SMS campaign from given blast id.
-    BLAST_SENDS = BLAST + CampaignWords.SENDS
-    # endpoint /v1/campaigns/:id/blasts/:id/replies
-    # Gives the replies objects of a blast object of SMS campaign from given blast id.
-    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
-    # endpoint /v1/campaigns/:id/sends
-    # This gives the records from "sends" for a given id of campaign
-    SENDS = CAMPAIGN + CampaignWords.SENDS
-    # endpoint /v1/campaigns/:id/replies
-    # This gives the records from "sms_campaign_reply" for a given id of campaign
-    REPLIES = CAMPAIGN + CampaignWords.REPLIES
-
-
-class SmsCampaignApiUrl(object):
-    """
-    This class contains the REST URLs of sms_campaign_service
-    """
-    """ Endpoints' complete URLs for pyTests """
-    CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
-    CAMPAIGN = CAMPAIGNS + '/%s'
-    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
-    SEND = CAMPAIGN + CampaignWords.SEND
-    REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
-                                                      CampaignWords.REDIRECT + '/%s')
-    RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
-    BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    BLAST = BLASTS + '/%s'
-    SENDS = CAMPAIGN + CampaignWords.SENDS
-    REPLIES = CAMPAIGN + CampaignWords.REPLIES
-    BLAST_SENDS = BLAST + CampaignWords.SENDS
-    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
 
 
 class CandidateApiWords(object):
@@ -678,6 +434,170 @@ class CandidateApiUrl(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
 
+class WidgetApi(object):
+    """
+    API relative URLs for widget_service. e.g. /v1/universities
+    """
+    VERSION = 'v1'
+    # This is /v1/
+    URL_PREFIX = _get_url_prefix(VERSION)
+    DOMAINS = 'domains'
+    _ENCRYPTED_DOMAIN_ID = '/<path:encrypted_domain_id>'
+    DOMAIN_WIDGETS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/widgets/<path:encrypted_widget_id>'
+    DOMAIN_INTERESTS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/interests'
+    DOMAIN_MAJORS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/majors'
+    UNIVERSITIES = 'universities'
+
+
+class WidgetApiUrl(object):
+    """
+    Rest URLs of widget_service
+    """
+    HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME,
+                               GTApis.WIDGET_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    API_URL = HOST_NAME % _get_api_relative_version(WidgetApi.VERSION)
+    DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
+    DOMAIN_INTERESTS = API_URL % (WidgetApi.DOMAINS + '/%s/interests')
+    DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
+    DOMAINS = API_URL % WidgetApi.DOMAINS
+    UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
+
+
+class SocialNetworkApi(object):
+    """
+    API relative URLs for social_network_service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    EVENTS = RELATIVE_VERSION % 'events/'
+    EVENT = RELATIVE_VERSION % '/events/<int:event_id>'
+
+
+class SocialNetworkApiUrl(object):
+    """
+    API absolute URLs for social_network_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
+    EVENTS = API_URL % 'events'
+
+
+class CandidatePoolApiWords(object):
+    """
+    This class contains words used for endpoints of candidate_pool API.
+    """
+    TALENT_POOLS = 'talent-pools'
+    TALENT_POOL = 'talent-pool'
+    TALENT_PIPELINES = 'talent-pipelines'
+    TALENT_PIPELINE = 'talent-pipeline'
+    STATS = '/stats'
+    CANDIDATES = '/candidates'
+    CAMPAIGNS = '/campaigns'
+    GROUPS = 'groups'
+    SMART_LISTS = '/smartlists'
+
+
+class CandidatePoolApi(object):
+    """
+    API relative URLs for candidate_pool_service. e.g. /v1/smartlists
+    """
+    VERSION = 'v1'
+    # /v1/
+    URL_PREFIX = _get_url_prefix(VERSION)
+    _INT_ID = '/<int:id>'
+    # Talent Pools
+    TALENT_PIPELINES = CandidatePoolApiWords.TALENT_PIPELINES
+    TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
+    TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
+    TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINES_OF_TALENT_POOLS = TALENT_POOL + '/' +CandidatePoolApiWords.TALENT_PIPELINES
+    TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
+    TALENT_POOL_UPDATE_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
+    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    # Talent Pipelines
+    TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
+    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
+    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
+    TALENT_PIPELINE_UPDATE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
+    # Smartlists
+    SMARTLISTS = 'smartlists'
+    SMARTLIST = SMARTLISTS + _INT_ID
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
+    SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
+    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
+
+
+class CandidatePoolApiUrl(object):
+    """
+    Rest URLs of candidate_pool_service
+    """
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
+                               GTApis.CANDIDATE_POOL_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
+    # Talent Pool
+    TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
+    TALENT_POOL = TALENT_POOLS + '/%s'
+    TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
+    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
+                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
+                                                  CandidatePoolApiWords.TALENT_PIPELINES)
+
+    # Talent Pipeline
+    TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
+    TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
+    TALENT_PIPELINE_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS
+    TALENT_PIPELINE_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s'+ CandidatePoolApiWords.CANDIDATES)
+    TALENT_PIPELINE_CAMPAIGN = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.CAMPAIGNS)
+    TALENT_PIPELINE_SMARTLISTS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.SMART_LISTS)
+    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + "/%s" + CandidatePoolApiWords.STATS)
+    # Smartlists
+    SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
+    SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
+    SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
+    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
+
+
+class SpreadsheetImportApi(object):
+    """
+    API relative URLs for spreadsheet_import_service. e.g. /v1/parse_spreadsheet/convert_to_table
+    """
+    VERSION = 'v1'
+    # This is /v1/
+    URL_PREFIX = _get_url_prefix(VERSION)
+    _PARSE_SPREADSHEET = 'parse_spreadsheet'
+    CONVERT_TO_TABLE = _PARSE_SPREADSHEET + '/convert_to_table'
+    IMPORT_CANDIDATES = _PARSE_SPREADSHEET + '/import_candidates'
+
+
+class SpreadsheetImportApiUrl(object):
+    """
+    Rest URLs of spreadsheet_import_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
+                               GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    API_URL = HOST_NAME % _get_api_relative_version(SpreadsheetImportApi.VERSION)
+    CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
+    IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
+
+
 class SchedulerApi(object):
     """
     Rest Relative URLs of scheduler_service
@@ -722,23 +642,112 @@ class SchedulerApiUrl(object):
     FLOWER_MONITORING_PORT = '--port=5511'
 
 
+class CampaignWords(object):
+    """
+    This class contains words used for endpoints of SMS Campaign API.
+    """
+    CAMPAIGNS = 'campaigns'
+    SCHEDULE = '/schedule'
+    REDIRECT = 'redirect'
+    RECEIVE = 'receive'
+    SENDS = '/sends'
+    SEND = '/send'
+    BLASTS = '/blasts'
+    REPLIES = '/replies'
+    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
+
+
+class SmsCampaignApi(object):
+    """
+    This class contains the REST endpoints of sms_campaign_service
+    """
+    VERSION = 'v1'
+    # HOST_NAME is http://127.0.0.1:8012 for dev
+    HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
+                               GTApis.SMS_CAMPAIGN_SERVICE_PORT)
+    API_URL = '/%s/%s' % (VERSION, '%s')
+    # endpoint /v1/campaigns
+    # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
+    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.CAMPAIGNS)
+    # endpoint /v1/campaigns/:id
+    # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
+    CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
+    # /v1/campaigns/:id/schedule
+    # To schedule an SMS campaign
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    # endpoint /v1/campaigns/:id/send
+    # To send a campaign to candidates
+    SEND = CAMPAIGN + CampaignWords.SEND
+    # endpoint /v1/redirect/:id
+    # This endpoint is hit when candidate clicks on any URL present in SMS body text.
+    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
+    # endpoint /v1/receive
+    # This endpoint is callback URL when candidate replies to a campaign via SMS
+    RECEIVE = API_URL % CampaignWords.RECEIVE
+    # endpoint /v1/campaigns/:id/blasts
+    # Gives the blasts of a campaign
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    # endpoint /v1/campaigns/:id/blasts/:id
+    # Gives the blast object of SMS campaign from given blast id.
+    BLAST = CAMPAIGN + CampaignWords.BLASTS + '/<int:blast_id>'
+    # endpoint /v1/campaigns/:id/blasts/:id/sends
+    # Gives the sends objects of a blast object of SMS campaign from given blast id.
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    # endpoint /v1/campaigns/:id/blasts/:id/replies
+    # Gives the replies objects of a blast object of SMS campaign from given blast id.
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
+    # endpoint /v1/campaigns/:id/sends
+    # This gives the records from "sends" for a given id of campaign
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    # endpoint /v1/campaigns/:id/replies
+    # This gives the records from "sms_campaign_reply" for a given id of campaign
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
+
+
+class SmsCampaignApiUrl(object):
+    """
+    This class contains the REST URLs of sms_campaign_service
+    """
+    """ Endpoints' complete URLs for pyTests """
+    CAMPAIGNS = SmsCampaignApi.HOST_NAME % SmsCampaignApi.CAMPAIGNS
+    CAMPAIGN = CAMPAIGNS + '/%s'
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    SEND = CAMPAIGN + CampaignWords.SEND
+    REDIRECT = SmsCampaignApi.HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
+                                                      CampaignWords.REDIRECT + '/%s')
+    RECEIVE = SmsCampaignApi.HOST_NAME % SmsCampaignApi.RECEIVE
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    REPLIES = CAMPAIGN + CampaignWords.REPLIES
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
+
+
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
 
     HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                           GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
+                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
+    # endpoint /v1/email-campaigns/:id/blasts
+    # Gives the blasts of a campaign
+    BLASTS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS
 
 
 class EmailCampaignUrl(object):
+    """
+    This class contains URLs to be used in Py-tests
+    """
     CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + "/%s"
     SEND = CAMPAIGN + CampaignWords.SEND
-    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/' +
-                                CampaignWords.REDIRECT + '/%s')
+    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
+                                                       + '/' + CampaignWords.REDIRECT + '/%s')
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
 
