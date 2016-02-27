@@ -24,13 +24,13 @@ class EmailCampaign(db.Model):
     email_body_text = db.Column('EmailBodyText', db.Text(65535))
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
-    send_time = db.Column('SendTime', db.DateTime)
-    stop_time = db.Column('StopTime', db.DateTime)
+    send_datetime = db.Column('SendTime', db.DateTime)
+    stop_datetime = db.Column('StopTime', db.DateTime)
     scheduler_task_id = db.Column('SchedulerTaskIds', db.String(255))
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
 
     # Relationships
@@ -42,7 +42,7 @@ class EmailCampaign(db.Model):
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
-    def to_dict(self, api_version=1):
+    def to_dict(self):
         """
         :param int api_version: The API version that return dict will correspond to
         :rtype: dict[str, T]
@@ -51,7 +51,8 @@ class EmailCampaign(db.Model):
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
-                "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id, smartlist_ids_only=True)}
+                "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
+                                                                              smartlist_ids_only=True)}
 
     def get_id(self):
         return unicode(self.id)
@@ -67,7 +68,7 @@ class EmailCampaignSmartlist(db.Model):
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
     campaign_id = db.Column('EmailCampaignId', db.Integer,
                             db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
@@ -88,28 +89,12 @@ class EmailCampaignBlast(db.Model):
     opens = db.Column('Opens', db.Integer, default=0)
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
-    sent_time = db.Column('SentTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    sent_datetime = db.Column('SentTime', db.DateTime)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
-
-    def to_dict(self):
-        """
-        This returns required data from table `email_campaign_blast` for a particular
-        blast object
-        """
-        return {"id": self.id,
-                "campaign_id": self.campaign_id,
-                "sends": self.sends,
-                "html_clicks": self.html_clicks,
-                "text_clicks": self.text_clicks,
-                "opens": self.opens,
-                "bounces": self.bounces,
-                "complaints": self.complaints,
-                "sent_time": str(self.sent_time),
-                }
 
 
 class EmailCampaignSend(db.Model):
@@ -118,12 +103,12 @@ class EmailCampaignSend(db.Model):
     email_campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    sent_time = db.Column('SentTime', db.DateTime)
+    sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
     email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
     # Relationships

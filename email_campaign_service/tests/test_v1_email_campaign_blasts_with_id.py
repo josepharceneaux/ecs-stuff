@@ -51,7 +51,7 @@ class TestEmailCampaignBlastsWithId(object):
         assert json_resp['campaign_id'] == sent_campaign_with_client_id.id
         assert json_resp['sends'] == 2
 
-    def test_get_campaign_in_some_other_domain(self, access_token_first,
+    def test_get_campaign_of_some_other_domain(self, access_token_first,
                                                email_campaign_in_other_domain):
         """
         This is the case where we try to get blast of a campaign which was created by

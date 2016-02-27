@@ -65,8 +65,8 @@ class TestEmailCampaignBlasts(object):
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         db.session.commit()
-        assert json_resp['id'] == campaign_with_valid_candidate.blasts[0].id
-        assert json_resp['campaign_id'] == campaign.id
+        assert json_resp['id'] == str(campaign_with_valid_candidate.blasts[0].id)
+        assert json_resp['email_campaign_id'] == campaign.id
         assert json_resp['sends'] == 2
 
     def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
