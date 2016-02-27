@@ -4,7 +4,6 @@ This module contains tests code that is common across services. e.g SMS and Push
 __author__ = 'basit'
 
 # Standard Imports
-import sys
 import json
 from datetime import datetime, timedelta
 
@@ -414,9 +413,9 @@ def _invalid_data_test(method, url, token):
 def get_invalid_ids(last_id_of_obj_in_db):
     """
     Given a database model object, here we create a list of two Invalid ids. One of them
-    is 0 and other one is 100 plus the id of last record.
+    is 0 and other one is 1000 plus the id of last record.
     """
-    return 0, last_id_of_obj_in_db + sys.maxint
+    return 0, last_id_of_obj_in_db + 1000
 
 
 def _get_invalid_id_and_status_code_pair(invalid_ids):

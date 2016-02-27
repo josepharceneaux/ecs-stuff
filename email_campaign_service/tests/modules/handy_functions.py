@@ -1,18 +1,22 @@
-import requests
+# Standard Imports
 import time
-from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    create_smartlist_from_api
+import requests
+
+# Application Specific
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
+from email_campaign_service.email_campaign_app import app
+from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.tests.conftest import fake
+from email_campaign_service.common.models.email_campaign import (EmailCampaign,
+                                                                 EmailClient)
+from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
+    create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
-from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
-from email_campaign_service.email_campaign_app import app
-from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 
 __author__ = 'basit'
 
