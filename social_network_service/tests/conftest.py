@@ -3,12 +3,15 @@
 # Third Party
 import json
 from datetime import datetime, timedelta
+from urllib import urlencode
 
 import pytest
 
 # App Settings
 import redis
+import requests
 
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.tests.conftest import user_auth, sample_user
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
@@ -134,21 +137,18 @@ def test_meetup_credentials(request, sample_user, meetup):
     :return:
     """
     # Create a redis object and add meetup access_token and refresh_token entry with 1.5 hour expiry time.
-    redis_object = redis.Redis()
-    redis_object.from_url(url=app.config[TalentConfigKeys.REDIS_URL_KEY])
-
     meetup_key = 'Meetup'
 
     # If there is no entry with name 'Meetup' then create one using app config
-    if not redis_object.get(meetup_key):
-        redis_object.setex(meetup_key,
+    if not redis_store.get(meetup_key):
+        redis_store.set(meetup_key,
                            json.dumps(dict(
                                        access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
                                        refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN]
-                           )), 5400)
+                           )))
 
     # Get the key value pair of access_token and refresh_token
-    meetup_kv = json.loads(redis_object.get(meetup_key))
+    meetup_kv = json.loads(redis_store.get(meetup_key))
 
     social_network_id = meetup.id
     user_credentials = UserSocialNetworkCredential(
@@ -158,12 +158,17 @@ def test_meetup_credentials(request, sample_user, meetup):
         refresh_token=meetup_kv['refresh_token'])
     UserSocialNetworkCredential.save(user_credentials)
 
+    # Validate token expiry and generate a new token if expired
     Meetup(user_id=sample_user.id)
     db.session.commit()
+
+    # Get the updated user_credentials
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(social_network_id=social_network_id,
                                                                                      user_id=sample_user.id)
+
+    # If token is changed, then update the new token in redis too
     if meetup_kv['access_token'] != user_credentials.access_token:
-        redis_object.set(meetup_key,
+        redis_store.set(meetup_key,
                          json.dumps(dict(
                                        access_token=user_credentials.access_token,
                                        refresh_token=user_credentials.refresh_token

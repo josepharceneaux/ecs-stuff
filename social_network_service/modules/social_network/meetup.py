@@ -7,6 +7,8 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 import json
 
 # Application Specific
+from urllib import urlencode
+
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
@@ -167,7 +169,7 @@ class Meetup(SocialNetworkBase):
         """
         status = False
         user_refresh_token = self.user_credentials.refresh_token
-        auth_url = self.social_network.auth_url + "/access"
+        auth_url = self.social_network.auth_url + "/access?"
         client_id = self.social_network.client_key
         client_secret = self.social_network.secret_key
 
