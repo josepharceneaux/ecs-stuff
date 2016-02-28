@@ -387,7 +387,6 @@ def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
         action_dict['fields'] = field_name_to_sql_value
         action_dicts.append(action_dict)
 
-    talent_logger.info("Action Dicts %s" % action_dicts)
     return action_dicts
 
 
@@ -400,7 +399,6 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
     :return:
     """
     talent_logger = app.config[TalentConfigKeys.LOGGER]
-    talent_logger.info("Session is %s" % db.session)
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
     for i in xrange(0, len(candidate_ids), 10):
