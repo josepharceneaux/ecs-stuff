@@ -1,3 +1,4 @@
+# TODO ; comment at the top of the file
 import json
 import requests
 from faker import Faker
@@ -6,6 +7,8 @@ from ..routes import UserServiceApiUrl, AuthApiUrl
 
 fake = Faker()
 
+# TODO following is really nice, we can bundle them in a dict for more clarity e.g.
+# http_statuses = {  'OK': 200, 'CREATED': 201, 'NOT_FOUND': 404  and etc  }
 OK = 200
 CREATED = 201
 INVALID_USAGE = 400
@@ -17,6 +20,7 @@ INTERNAL_SERVER_ERROR = 500
 def send_request(method, url, access_token, data=None, is_json=True):
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.
+    # TODO assert on method, url and access_token. Also comment the method
     request_method = getattr(requests, method)
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
@@ -40,6 +44,7 @@ def get_user(user_id, token):
     assert str(user_id).isdigit(), 'user_id must be valid number'
     response = send_request('get', UserServiceApiUrl.USER % user_id, token)
     assert response.status_code == 200
+    # TODO can we kindly comment how the returned data look like?
     return response.json()['user']
 
 
@@ -67,6 +72,7 @@ def get_token(info):
 
 def unauthorize_test(method, url, access_token, data=None):
     # TODO: Use a hard coded token invalid
+    # TODO put up a comment here and also assert on params
     response = send_request(method, url, access_token,  data)
     assert response.status_code == 401
 
@@ -80,6 +86,7 @@ def invalid_data_test(method, url, token):
     :param token: auth token
     :return:
     """
+    # TODO assert on params
     data = None
     response = send_request(method, url, token, data, is_json=True)
     assert response.status_code == INVALID_USAGE
@@ -147,3 +154,4 @@ def remove_roles(user_id, roles, token):
     }
     send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
                  token, data=data)
+    # TODO; kindly assert on response

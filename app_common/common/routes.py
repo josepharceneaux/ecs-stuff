@@ -750,11 +750,11 @@ class PushCampaignApi(object):
     # To send a campaign to candidates
     SEND = CAMPAIGN + '/send'
     # /v1/campaigns/:id/schedule
-    # To schedule an Push campaign
+    # To schedule a Push campaign
     SCHEDULE = CAMPAIGN + '/schedule'
-    """ Followings are not REST endpoints, but App endpoints """
+    ####    Followings are not REST endpoints, but App endpoints ####
     # endpoint /v1/redirect/:id
-    # This endpoint is hit when candidate clicks on any URL present in SMS body text.
+    # This endpoint is hit when candidate clicks on any URL present in Push campaign's body text.
     REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
     URL_CONVERSION = '/%s/%s/<int:_id>' % (VERSION, 'url-conversions')
     URL_CONVERSION_BY_SEND_ID = '/%s/%s/<int:send_id>' % (VERSION, 'send-url-conversions')

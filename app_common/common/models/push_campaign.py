@@ -1,3 +1,4 @@
+# TODO ; let's put a nice comment here at the top
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
@@ -7,9 +8,11 @@ __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
 
 class PushCampaign(db.Model):
+    # TODO comment at the start of the class
     __tablename__ = 'push_campaign'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
+    # TODO ; Is the body text limited because of OneSignal limitation?
     body_text = db.Column(db.String(255))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
@@ -89,6 +92,13 @@ class PushCampaignSend(db.Model):
         :param candidate_id: candidate id associated with this send
         :return:
         """
+
+        # TODO ; I see what are you doing here and nice try. But there is an issue, looking at the method's signature
+        # it gives me impression that I can get the obj even if I give all 3 which isn't the case. I think we need
+        # separate methods for claity. Or we can write a generic get_by() in the base model class that takes any parameter
+        # adn then see if the parameter matches with any of the class attributes and then return the value. Or may be
+        # SQLAlchemy already has a method like that built-in
+
         if _id:
             return cls.get_by_id(_id)
         elif isinstance(campaign_id,
@@ -122,6 +132,7 @@ class PushCampaignSmartlist(db.Model):
     def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
         assert isinstance(campaign_id, (int, long)) and campaign_id > 0, \
             'PushCampaign Id should be a valid positive number'
+        # TODO ; following message should mention smartlist_id
         assert isinstance(smartlist_id, (int, long)) and smartlist_id > 0, \
             'PushCampaign Id should be a valid positive number'
         return cls.query.filter_by(

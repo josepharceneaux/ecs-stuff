@@ -3,7 +3,7 @@
 
 Push Campaign Service API allows users (recruiters) to send push notification campaigns to their
 candidates. To send a push notification to a candidate, candidate must be registered with our app
-using OneSignal api and we must have his device id (player_id in onesignal terminology).
+using OneSignal API and we must have his device id (player_id in onesignal terminology).
 
 Users will be able to see the activities on the
 campaign from activity history. In this API, we will implement functionality for
@@ -36,26 +36,26 @@ campaign from activity history. In this API, we will implement functionality for
 
 ### Devices
 To send a push notification, this service makes use of OneSignal REST API for Push Notifications.
-We specifiy the target candidate for a push notification using the `device_id (player_id for OneSignal)`. A device id is a unique
+We specify the target candidate for a push notification using the `device_id (player_id for OneSignal)`. A device id is a unique
 identifier for a device. Candidates have some registered `device_ids` and when this service
-wants to send a campaign (push notification) to a candidate, it looks for asociated device ids.
+wants to send a campaign (push notification) to a candidate, it looks for associated device ids.
 If candidate has no device registered with getTalent,
 he will not get any push notifications and if device is associated with a candidate, we will send push notification to this device using
 device_id.
 
+# TODO Commnet  briefly how can a candidate get a device id
 
 ### Sends
-Every campaign has `sends` which is the information about campaign i.e.
-to whom (candidate) this campaign was sent.
+Every campaign has `sends` which is the information about campaign i.e. to whom (candidate) this campaign was sent.
 Sends are associated to a campaign through campaign blast, i.e. a campaign may have multiple
-blasts and each blast has one or more sends. So for example, if we are supposed
-to send 50 messages in a campaign to 50 candidates then the campaign must
-have 50 sends in the database (after the messages have been sent).
+blasts and each blast has one or more sends. So for example, if we are supposed to send 50 messages
+in a campaign to 50 candidates then the campaign must have 50 sends in the database
+(after the messages have been sent).
 
 
 ### Blast
 A campaign blast contains statistics of a campaign which includes number of sends and how many persons responded to a campaign `(clicks)`.
-Everytime a campaign is sent to smartlist/s, a new blast is created which may contain
+Every time a campaign is sent to smartlist/s, a new blast is created which may contain
 different number of sends and clicks.
 
 ### Authentication
@@ -85,10 +85,10 @@ payload = {
 ```
 
 ### Schedule a Campaign
-In first step, you created a campaign draft but you need to schedule it to send it to
+Firstly, you create a campaign draft (possibly in UI) but you need to schedule it to send it to
 candidates associated with smartlists associated with this campaign.
-To schedule a campaign, you need to send a POST request to '/v1/push-campaigns/{id}/schedule' endpoint with JSON data like this
-You need to specify a frequency which can be:
+To schedule a campaign, you need to send a POST request to '/v1/push-campaigns/{id}/schedule' endpoint with JSON data given below.
+You need to also specify a frequency which can be any of the following:
 - Frequencies:
     +  1 `(Once)`
     +  2 `(Daily)`
@@ -187,7 +187,7 @@ Returns a list of all push campaigns created by a specific user/recruiter.
 
 ### Create a New Push Notification Campaign [POST]
 
-User can create Push Notitification campaign on this endpoint.
+User can create Push Notification campaign on this endpoint.
 It takes a JSON object containing campaign data and returns campaign id from database
 or returns an error message.
 
@@ -562,8 +562,8 @@ Deletes a campaign for given campaign id.
 
 ### Schedule a Campaign [POST]
 
-User can schedule a Push Notification campaign on this endpoint.
-It takes a JSON object containing schdule data and returns
+User can schedule a Push Notification campaign using this endpoint.
+It takes a JSON object containing schedule data and returns
 task_id(Task id on Scheduler Service) or returns an error message.
 
 `start_datetime` and `end_datetime` must be in `2015-12-12T22:30:00Z` format and
@@ -641,8 +641,8 @@ for a periodic campaign, `start_datetime` must come before `end_datetime`
 
 ### Reschedule a Campaign [PUT]
 
-User can reschedule a Push Notification campaign on this endpoint.
-It takes a JSON object containing schdule data. It first removes existing task in
+User can reschedule a Push Notification campaign using this endpoint.
+It takes a JSON object containing schedule data. It first removes existing task in
 scheduler service for this campaign and creates a new task (either one-time or periodic) and then
 returns task_id(Task id on Scheduler Service) or returns an error message.
 
@@ -781,13 +781,12 @@ campaign periodically as per the frequency of campaign.
 
 ### Campaign Blasts [GET]
 
-Everytime a campaign is sent to some candidates , a campaign blast is created which contains
+Every time a campaign is sent to some candidates, a campaign blast is created which contains
 information about how many push notification were successfully sent and how many persons responded
 to those sent push notifications.
 
 This endpoint is used to get statistics of a campaign which includes multiple blasts where
-each blast contains info about number of sends
-and how many responded to that campaign for that blast.
+each blast contains info about number of sends and how many responded to that campaign for that blast.
 
 + Parameters
     + id (required) - ID of the campaign in getTalent database
@@ -854,13 +853,14 @@ and how many responded to that campaign for that blast.
 
 ### Campaign Blasts [GET]
 
-Everytime a campaign is sent to some candidates , a campaign blast is created which contains
+Every time a campaign is sent to some candidates, a campaign blast is created which contains
 information about how many push notification were successfully sent and how many persons responded
 to those sent push notifications.
 
 This endpoint is used to get statistics of a campaign which includes multiple blasts where
-each blast contains info about number of sends
-and how many responded to that campaign for that blast.
+each blast contains info about number of sends and how many responded to that campaign for that blast.
+
+#TODO I cannot find a difference between this and the above one. I think this one needs to be updated
 
 + Parameters
     + id (required) - ID of the blast associated with campaign in getTalent database
@@ -932,7 +932,7 @@ and how many responded to that campaign for that blast.
 ### Campaign Sends [GET]
 
 This endpoint returns all sends of a campaign which may belong to different blast for
-the same campaign. Everytime a campaign is sent to candidates, a blast is created and
+the same campaign. Every time a campaign is sent to candidates, a blast is created and
 a campaign `send` to a candidate is associated with that blast.
 
 + Parameters

@@ -989,6 +989,7 @@ class CandidateSubscriptionPreference(db.Model):
 
 
 class CandidateDevice(db.Model):
+    # TODO I think we need to comment here what this is, why did we need that table and what purpose does it serve
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
@@ -996,30 +997,37 @@ class CandidateDevice(db.Model):
     registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
+        # TODO Why mention OneSignal in message, is it OneSignal dependent?
         return "<CandidateDevice (Id: %s, OneSignalId: %s)>" % (self.id,
                                                                 self.one_signal_device_id)
 
     @classmethod
     def get_devices_by_candidate_id(cls, candidate_id):
+        # TODO ; the message below isn't correct
         assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
             'device_ids list should contain at least one id'
         return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
     def get_candidate_ids_from_device_ids(cls, device_ids):
+        # TODO ; method name suggests it will return candidate ids but from what I gather we are returning CandidateDevice obj?
+        # TODO ; so name and implementation should match so kindly corrrect
         assert isinstance(device_ids, list) and len(device_ids), 'device_ids list should contain at least one id'
         return cls.query.filter_by(cls.one_signal_device_id.in_(device_ids)).all()
 
     @classmethod
     def get_candidate_id_from_one_signal_device_id(cls, device_id):
-        assert device_id, 'device_id has invalid value'
+        # TODO ; method name suggests it will get candidate_ids but we are returning complete object
+        assert device_id, 'device_id has an invalid value'
         return cls.query.filter_by(one_signal_device_id=device_id).first()
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
+        # TODO ; assert on candidate_id
         return cls.query.filter_by(candidate_id=candidate_id).first()
 
     @classmethod
     def get_by_candidate_id_and_device_id(cls, candidate_id, device_id):
+        # TODO ; assert on params
         return cls.query.filter_by(candidate_id=candidate_id, one_signal_device_id=device_id).first()
 

@@ -39,7 +39,7 @@ def get_candidate_if_exists(candidate_id):
     """
     Function checks to see if candidate exists in the database and is not web-hidden.
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
-    otherwise the Candidate-query-object will be returned
+    otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
     """
     assert isinstance(candidate_id, (int, long))
@@ -47,6 +47,7 @@ def get_candidate_if_exists(candidate_id):
     if not candidate:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_NOT_FOUND)
+    # TODO in the following case can we change the error_message to reflect it's web hidden
     if candidate.is_web_hidden:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)

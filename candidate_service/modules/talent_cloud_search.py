@@ -140,6 +140,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 coordinates = []
 geo_params = dict()
 
+# TODO: Why did we define it here in this file?
 one_signal_client = OneSignalSdk(user_auth_key=ONE_SIGNAL_REST_API_KEY,
                                  app_id=ONE_SIGNAL_APP_ID)
 

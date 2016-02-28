@@ -23,6 +23,7 @@ from candidate_service.tests.api.helpers import define_and_send_request, AddUser
 
 
 def test_associate_device_with_invalid_token(candidate_first):
+    # TODO All great tests. kindly comment all methods albeit briefly
     data = {
         'one_signal_device_id': PUSH_DEVICE_ID
     }

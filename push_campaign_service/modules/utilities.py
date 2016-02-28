@@ -16,6 +16,7 @@ def associate_smart_list_with_campaign(_id, camapaign_id):
     :type campaign_id: int | long
     :return:
     """
+    # TODO assert on id and campaign_id
     smartlist = Smartlist.get_by_id(_id)
     if not smartlist:
         raise ResourceNotFound('Smartlist was not found with id %s' % _id)
