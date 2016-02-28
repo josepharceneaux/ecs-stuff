@@ -17,7 +17,7 @@ from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
                                                                  assert_campaign_delete)
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 # Models
@@ -294,7 +294,7 @@ class TestSmsCampaignHTTPPost(object):
         :return:
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
         data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -310,7 +310,7 @@ class TestSmsCampaignHTTPPost(object):
         :return:
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsCommonTests.get_last_id(Smartlist)
+        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
         data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -467,7 +467,7 @@ class TestSmsCampaignHTTPDelete(object):
         It should get 207 status code.
         :return:
         """
-        last_id = CampaignsCommonTests.get_last_id(SmsCampaign)
+        last_id = CampaignsTestsHelpers.get_last_id(SmsCampaign)
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({

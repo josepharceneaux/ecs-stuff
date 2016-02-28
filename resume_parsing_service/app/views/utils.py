@@ -73,4 +73,8 @@ def get_users_talent_pools(formatted_token_str):
     if 'error' in talent_pools_response:
         raise InvalidUsage(error_message=talent_pools_response['error'].get(
             'message', 'Error in getting user talent pools.'))
-    return [talent_pool['id'] for talent_pool in talent_pools_response['talent_pools']]
+    try:
+        return [talent_pools_response['talent_pools'][0]['id']]
+    except IndexError:
+        return []
+    # return [talent_pool['id'] for talent_pool in talent_pools_response['talent_pools']]
