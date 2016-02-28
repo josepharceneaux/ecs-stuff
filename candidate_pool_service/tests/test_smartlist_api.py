@@ -550,7 +550,7 @@ class TestSmartlistCandidatesApi(object):
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
 
         # Wait for cloudsearch to upload candidate documents
-        time.sleep(20)
+        time.sleep(30)
         search_params = json.dumps({"query": "%s" % first_name})
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    search_params=search_params)
