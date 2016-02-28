@@ -1,4 +1,6 @@
-from celery import Celery
+from flask import has_app_context
+from celery import Celery, Task
+from ..common.models.db import db
 
 accept_content = {
     'CELERY_ACCEPT_CONTENT': ['pickle', 'json', 'msgpack', 'yaml']
@@ -16,7 +18,19 @@ def make_celery(app, default_queue):
         abstract = True
 
         def __call__(self, *args, **kwargs):
-            with app.app_context():
+            if has_app_context():
                 return TaskBase.__call__(self, *args, **kwargs)
+            else:
+                with app.app_context():
+                    return TaskBase.__call__(self, *args, **kwargs)
     celery.Task = ContextTask
     return celery
+
+
+class SqlAlchemyTask(Task):
+    """An abstract Celery Task that ensures that the connection the the
+    database is closed on task completion"""
+    abstract = True
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        db.session.remove()

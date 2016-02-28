@@ -11,6 +11,7 @@ from copy import deepcopy
 from datetime import datetime
 from flask import request
 from candidate_service.candidate_app import app, celery_app
+from candidate_service.common.talent_celery import SqlAlchemyTask
 from candidate_service.candidate_app import db, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
@@ -237,13 +238,13 @@ def index_documents():
     conn.layer1.index_documents(_cloud_search_domain.name)
 
 
-def _build_candidate_documents(candidate_ids, domain_id=None):
+def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
     """
     if not candidate_ids:
-        logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
+        talent_logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
         return []
     group_concat_separator = '~~~'
 
@@ -362,7 +363,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
             if not index_field_options:
-                logger.error("Unknown field name, could not build document: %s", field_name)
+                talent_logger.error("Unknown field name, could not build document: %s", field_name)
                 continue
 
             sql_value = field_name_to_sql_value[field_name]
@@ -386,10 +387,11 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         action_dict['fields'] = field_name_to_sql_value
         action_dicts.append(action_dict)
 
+    talent_logger.info("Action Dicts %s" % action_dicts)
     return action_dicts
 
 
-@celery_app.task()
+@celery_app.task(base=SqlAlchemyTask)
 def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
@@ -398,12 +400,13 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
     :return:
     """
     talent_logger = app.config[TalentConfigKeys.LOGGER]
+    talent_logger.info("Session is %s" % db.session)
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
     for i in xrange(0, len(candidate_ids), 10):
         talent_logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids[i:i+10]))
         start_time = time.time()
-        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], domain_id)
+        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], talent_logger, domain_id)
         talent_logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                            len(action_dicts))
         adds, deletes = _send_batch_request(action_dicts)
