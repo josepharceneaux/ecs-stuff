@@ -36,7 +36,4 @@ class SqlAlchemyTask(Task):
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
         environment = db.app.config[TalentConfigKeys.ENV_KEY]
-        if environment == 'dev':
-            db.session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=db.engine))
-        else:
-            db.session.remove()
+        db.session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=db.engine))

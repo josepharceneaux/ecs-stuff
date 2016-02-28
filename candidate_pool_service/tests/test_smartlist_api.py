@@ -555,11 +555,9 @@ class TestSmartlistCandidatesApi(object):
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    search_params=search_params)
 
-
         add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
-
 
         response = resp.json()
         output_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
