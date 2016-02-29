@@ -10,7 +10,8 @@ from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient)
-from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
+from email_campaign_service.common.utils.handy_functions import add_role_to_test_user, \
+    raise_if_not_instance_of
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
@@ -110,19 +111,21 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token):
+def send_campaign(campaign, access_token, sleep_time=20):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
+    sleep_time is set to be 20s here. One can modify this by passing required value.
     :param campaign: Email campaign obj
     :param access_token: Auth token to make HTTP request
+    :param sleep_time: time in seconds to wait for the task to be run on Celery.
     :return:
     """
-    # TODO--w: assert on params:
+    raise_if_not_instance_of(campaign, EmailCampaign)
+    raise_if_not_instance_of(access_token, basestring)
     # send campaign
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    # TODO--w: minor nit, we can make the sleep configurable in a param
-    time.sleep(20)
+    time.sleep(sleep_time)
     db.session.commit()

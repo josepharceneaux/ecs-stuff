@@ -17,7 +17,7 @@ from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
 from campaign_utils import (to_utc_str, get_model)
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 
@@ -121,7 +121,10 @@ class CampaignsTestsHelpers(object):
         that does not exist in database for given model. It then asserts to check we get status code 400
         in case of id 0 and status code 404 in case of non-existing id.
         """
-        # TODO--w; assert on params
+        raise_if_not_instance_of(model, db.Model)
+        raise_if_not_instance_of(method, basestring)
+        raise_if_not_instance_of(url, basestring)
+        raise_if_not_instance_of(token, basestring)
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
@@ -427,6 +430,5 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     :param invalid_ids:
     :return:
     """
-    # TODO--w I am not sure if this can be "easily" reused so may be remove this
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]

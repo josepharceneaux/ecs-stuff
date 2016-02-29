@@ -287,7 +287,6 @@ class EmailCampaignBlasts(Resource):
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
-#TODO--w: kindly update the comment at the top of this file with this endpoint and Apiary as well
 
 @api.route(EmailCampaignEndpoints.BLAST)
 class EmailCampaignBlastById(Resource):

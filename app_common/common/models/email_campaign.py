@@ -43,9 +43,8 @@ class EmailCampaign(db.Model):
                               passive_deletes=True, backref='campaign')
 
     def to_dict(self):
-        # TODO--w: we need to update the comment below I guess
         """
-        :param int api_version: The API version that return dict will correspond to
+        This returns required fields when an email-campaign object is requested.
         :rtype: dict[str, T]
         """
         return {"id": self.id,

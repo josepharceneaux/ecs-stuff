@@ -38,11 +38,11 @@ class TestEmailCampaignBlastsWithId(object):
 
     def test_get_with_valid_token(self, access_token_first, sent_campaign_with_client_id):
         """
-        This is the test where we send a campaign and try to get its blast with valid
+        Here we user `sent_campaign_with_client_id` fixture to send campaign via email-client-id
+        to 2 candidates. This is the test where we get campaign's blast with valid
         access token. It should get OK response and number of sends should be 2.
         :return:
         """
-        # TODO--w: kindly add more info in comment above as in why should number of sends be 2?
         blast_id = sent_campaign_with_client_id.blasts[0].id
         response = requests.get(
             self.URL % (sent_campaign_with_client_id.id, blast_id),

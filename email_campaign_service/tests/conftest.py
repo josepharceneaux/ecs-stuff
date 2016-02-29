@@ -38,7 +38,6 @@ def email_campaign_in_other_domain(request,
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
-    # TODO--w: I wonder if we should create a smartlist in a separate fixture
     create_email_campaign_smartlist(access_token_other, talent_pool_other,
                                     campaign)
 

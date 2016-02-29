@@ -269,7 +269,13 @@ def access_token_same(user_same_domain, sample_client):
 
 @pytest.fixture()
 def access_token_other(user_from_diff_domain, sample_client):
-    #TODO--w: kindly comment and assert params where possible
+    """
+    This returns the access token for user_from_diff_domain. We need this to create a resource
+    e.g. email-campaign for some user in other domain and test the functionality of API.
+    :param user_from_diff_domain:
+    :param sample_client:
+    :return:
+    """
     return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
 

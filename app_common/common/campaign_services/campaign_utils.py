@@ -62,7 +62,6 @@ class CampaignUtils(object):
     SMARTLIST_MODELS = SmsCampaignSmartlist
     BLAST_MODELS = (SmsCampaignBlast, EmailCampaignBlast)
     SEND_MODELS = (SmsCampaignSend, EmailCampaignSend)
-    # TODO--w: It should contain, PUSH as well. I think Zohaib code needs to merge in right?
     NAMES = (SMS, EMAIL)
     # This contains campaign types for which we need to append 'an' in activity message.
     # e.g. 'John' created an SMS campaign
@@ -107,8 +106,7 @@ class CampaignUtils(object):
         :exception: Invalid Usage
         """
         raise_if_not_instance_of(campaign_type, basestring)
-        # TODO--w: there is an underline under the 'not' below, we can address that
-        if not campaign_type in CampaignUtils.NAMES:
+        if campaign_type not in CampaignUtils.NAMES:
             raise InvalidUsage('%s is not a valid campaign type. Valid types are %s'
                                % (campaign_type, CampaignUtils.NAMES))
 
