@@ -1683,7 +1683,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            if does_military_service_exist(candidate_military_services, military_service_dict):
+            if not does_military_service_exist(candidate_military_services, military_service_dict):
                 db.session.add(CandidateMilitaryService(**military_service_dict))
 
 
