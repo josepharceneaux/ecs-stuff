@@ -101,7 +101,7 @@ class EmailCampaignBlast(db.Model):
     def get_latest_blast_by_campaign_id(cls, campaign_id):
         """
         Method to get latest email campaign blast for campaign whose id is
-        provided. Returns on the basis of most recent sent_time.
+        provided. Returns on the basis of most recent sent_datetime.
         :param campaign_id:
         :return:
         """
