@@ -1,4 +1,6 @@
-# TODO ; comment at the top of the file
+"""
+This module contains utility methods will be used in API based tests.
+"""
 import json
 import requests
 from faker import Faker
@@ -7,20 +9,37 @@ from ..routes import UserServiceApiUrl, AuthApiUrl
 
 fake = Faker()
 
-# TODO following is really nice, we can bundle them in a dict for more clarity e.g.
-# http_statuses = {  'OK': 200, 'CREATED': 201, 'NOT_FOUND': 404  and etc  }
-OK = 200
-CREATED = 201
-INVALID_USAGE = 400
-NOT_FOUND = 404
-FORBIDDEN = 403
-INTERNAL_SERVER_ERROR = 500
+
+class HttpStatus(object):
+    """
+    This class contains standard HTTP status codes.
+    """
+    OK = 200
+    CREATED = 201
+    UPDATED = 204
+    MULTI_STATUS = 207
+    INVALID_USAGE = 400
+    UNAUTHORIZED = 401
+    NOT_FOUND = 404
+    FORBIDDEN = 403
+    INTERNAL_SERVER_ERROR = 500
 
 
 def send_request(method, url, access_token, data=None, is_json=True):
-    # This method is being used for test cases, so it is sure that method has
-    #  a valid value like 'get', 'post' etc.
-    # TODO assert on method, url and access_token. Also comment the method
+    """
+    This is a generic method to send HTTP request. We can just pass our data/ payload
+    and it will make it json and send it to target url with application/json as content-type
+    header.
+    :param method: standard HTTP method like post, get (in lowercase)
+    :param url: target url
+    :param access_token: authentication token, token can be empty, None or invalid
+    :param data: payload data for request
+    :param is_json: a flag to determine, whether we need to dump given data or not.
+            default value is true because most of the APIs are using json content-type.
+    :return:
+    """
+    assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
+    assert url and isinstance(url, basestring), 'url must have a valid string value'
     request_method = getattr(requests, method)
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
@@ -43,8 +62,7 @@ def get_user(user_id, token):
         'token must be a string, given type is %s' % type(token)
     assert str(user_id).isdigit(), 'user_id must be valid number'
     response = send_request('get', UserServiceApiUrl.USER % user_id, token)
-    assert response.status_code == 200
-    # TODO can we kindly comment how the returned data look like?
+    assert response.status_code == HttpStatus.OK
     return response.json()['user']
 
 
@@ -65,16 +83,21 @@ def get_token(info):
             'grant_type': 'password'
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
-    assert resp.status_code == 200
+    assert resp.status_code == HttpStatus.OK
     token = resp.json()['access_token']
     return token
 
 
-def unauthorize_test(method, url, access_token, data=None):
-    # TODO: Use a hard coded token invalid
-    # TODO put up a comment here and also assert on params
-    response = send_request(method, url, access_token,  data)
-    assert response.status_code == 401
+def unauthorize_test(method, url, data=None):
+    """
+    This method is used to test for unauthorized requests (401).
+    :param method: http method
+    :param url: target url
+    :param data: dictionary payload
+    :return:
+    """
+    response = send_request(method, url, 'invalid_token',  data)
+    assert response.status_code == HttpStatus.UNAUTHORIZED
 
 
 def invalid_data_test(method, url, token):
@@ -86,20 +109,22 @@ def invalid_data_test(method, url, token):
     :param token: auth token
     :return:
     """
-    # TODO assert on params
+    assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
+    assert url and isinstance(url, basestring), 'url must have a valid string value'
+    assert token and isinstance(token, basestring), 'token must have a valid string value'
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
 
 
 def get_fake_dict(key_count=3):
@@ -152,6 +177,7 @@ def remove_roles(user_id, roles, token):
     data = {
         "roles": roles
     }
-    send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
-                 token, data=data)
-    # TODO; kindly assert on response
+    response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
+                            token, data=data)
+    assert response.status_code == HttpStatus.OK
+

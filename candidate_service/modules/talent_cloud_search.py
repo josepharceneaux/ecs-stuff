@@ -18,9 +18,6 @@ from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.error_handling import InternalServerError
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
-from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
-from onesignalsdk.one_signal_sdk import OneSignalSdk
-
 
 API_VERSION = "2013-01-01"
 MYSQL_DATE_FORMAT = '%Y-%m-%dT%H:%i:%S.%fZ'
@@ -139,10 +136,6 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
 coordinates = []
 geo_params = dict()
-
-# TODO: Why did we define it here in this file?
-one_signal_client = OneSignalSdk(user_auth_key=ONE_SIGNAL_REST_API_KEY,
-                                 app_id=ONE_SIGNAL_APP_ID)
 
 
 def get_cloud_search_connection():

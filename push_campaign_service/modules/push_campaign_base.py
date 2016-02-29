@@ -18,8 +18,8 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
 
         - send_campaign_to_candidate():
             This method is core of the whole service. It receives a candidate id,
-            retrieves candidate, campaign. It creates a blast and then updates it
-            after sending a campaign.
+            retrieves candidate and campaign object using self.campaign_id. It then creates a
+            blast and after sending the campaign, updates blast object with campaign stats.
 
         - callback_campaign_sent():
             This method is invoked when campaign has been sent to all associated campaigns.
@@ -29,8 +29,6 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
             This method is invoked if some error occurs during sending a campaign
             in celery task. It then rollbacks that transaction. (Celery task has it's own scoped session)
 """
-
-# TODO kindly try to update comment above for send_campaign_to_candidate(). I guess it contains typos.
 # Third Party
 from dateutil.relativedelta import relativedelta
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -46,8 +44,6 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
-one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
-                                 user_auth_key=ONE_SIGNAL_REST_API_KEY)
 
 
 class PushCampaignBase(CampaignBase):
@@ -65,7 +61,6 @@ class PushCampaignBase(CampaignBase):
         self.campaign_blast = None
         self.campaign_blast_id = None
         self.campaign_id = None
-        # TODO what if the queue_name is none in kwargs? Cater that please.
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
 
@@ -159,11 +154,9 @@ class PushCampaignBase(CampaignBase):
                     url_conversion_id = self.create_or_update_url_conversion(
                         destination_url=destination_url,
                         source_url='')
-                    # url_conversion = UrlConversion(source_url='', destination_url=destination_url)
-                    # UrlConversion.save(url_conversion)
+
                     redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion_id
                     # expiry duration is of one year
-                    # TODO kindly double check following as cautionary measure
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
                     signed_url = CampaignUtils.sign_redirect_url(redirect_url, expiry_time)
                     if CampaignUtils.IS_DEV:
@@ -173,7 +166,9 @@ class PushCampaignBase(CampaignBase):
                         # I am saving source URL here.
                         self.create_or_update_url_conversion(url_conversion_id=url_conversion_id,
                                                              source_url=signed_url)
-                    # url_conversion.update(source_url=signed_url)
+
+                    one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
+                                                     user_auth_key=ONE_SIGNAL_REST_API_KEY)
                     response = one_signal_client.create_notification(self.campaign.body_text,
                                                                      heading=self.campaign.name,
                                                                      url=signed_url,

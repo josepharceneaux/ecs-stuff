@@ -16,6 +16,7 @@ import time
 import pytest
 from faker import Faker
 
+from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.common.tests.conftest import randomword
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
@@ -23,11 +24,10 @@ from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
                                                              user_same_domain, user_second)
-from push_campaign_service.common.routes import (PushCampaignApiUrl, SchedulerApiUrl,
-                                                 CandidatePoolApiUrl, CandidateApiUrl)
+from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data, SLEEP_TIME,
-                                                        OK, NOT_FOUND, get_campaigns,
+                                                        get_campaigns,
                                                         create_campaign, delete_campaign,
                                                         send_campaign, get_blasts, create_smartlist,
                                                         delete_smartlist, schedule_campaign,
@@ -59,7 +59,7 @@ def campaign_data(request):
     def tear_down():
         if 'id' in data and 'token' in data:
             response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % data['id'], data['token'])
-            assert response.status_code in [OK, NOT_FOUND]
+            assert response.status_code in [HttpStatus.OK, HttpStatus.NOT_FOUND]
     request.addfinalizer(tear_down)
     return data
 
@@ -82,7 +82,7 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     data['previous_count'] = previous_count
 
     def tear_down():
-        delete_campaign(id, token_first, expected_status=(OK, NOT_FOUND))
+        delete_campaign(id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -108,7 +108,7 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     data['id'] = id
 
     def tear_down():
-        delete_campaign(id, token_first, expected_status=(OK, NOT_FOUND))
+        delete_campaign(id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -130,7 +130,7 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
     data['id'] = id
 
     def tear_down():
-        delete_campaign(id, token_second, expected_status=(OK, NOT_FOUND))
+        delete_campaign(id, token_second, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -169,7 +169,8 @@ def smartlist_first(request, token_first, candidate_first, candidate_device_firs
     smartlist_id = smartlist['id']
 
     def tear_down():
-        delete_smartlist(smartlist_id, token_first, expected_status=(OK, NOT_FOUND))
+        delete_smartlist(smartlist_id, token_first,
+                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -191,7 +192,8 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
     smartlist_id = smartlist['id']
 
     def tear_down():
-        delete_smartlist(smartlist_id, token_second, expected_status=(OK, NOT_FOUND))
+        delete_smartlist(smartlist_id, token_second,
+                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -215,7 +217,8 @@ def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidat
     smartlist_id = smartlist['id']
 
     def tear_down():
-        delete_smartlist(smartlist_id, token_same_domain, expected_status=(OK, NOT_FOUND))
+        delete_smartlist(smartlist_id, token_same_domain,
+                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -254,7 +257,8 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
 
     def fin():
-        delete_scheduler_task(task_id, token_first, expected_status=(OK, NOT_FOUND))
+        delete_scheduler_task(task_id, token_first,
+                              expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(fin)
     return data
@@ -272,30 +276,30 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :return:
     """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
-    assert response.status_code == OK
+    assert response.status_code == HttpStatus.OK
     time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # get campaign blast
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == OK
+    assert response.status_code == HttpStatus.OK
     blasts = response.json()['blasts']
     assert len(blasts) == 1
     blast_id = blasts[0]['id']
     # get campaign sends
     response = send_request('get', PushCampaignApiUrl.BLAST_SENDS
                             % (campaign_in_db['id'], blast_id), token_first)
-    assert response.status_code == OK
+    assert response.status_code == HttpStatus.OK
     sends = response.json()['sends']
     # get if of record of sms_campaign_send_url_conversion for this campaign
     assert len(sends) == 1
     campaign_send = sends[0]
     response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
-    assert response.status_code == OK
+    assert response.status_code == HttpStatus.OK
     url_conversion_obj = response.json()['url_conversion']
 
     def tear_down():
         response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion_obj['id'],
                                 token_first)
-        assert response.status_code in [OK, NOT_FOUND]
+        assert response.status_code in [HttpStatus.OK, HttpStatus.NOT_FOUND]
 
     request.addfinalizer(tear_down)
     return url_conversion_obj
@@ -313,7 +317,8 @@ def talent_pool(request, token_first):
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
     def tear_down():
-        delete_talent_pool(talent_pool_id, token_first, expected_status=(OK, NOT_FOUND))
+        delete_talent_pool(talent_pool_id, token_first,
+                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj
@@ -330,7 +335,8 @@ def talent_pool_second(request, token_second):
     talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
     def tear_down():
-        delete_talent_pool(talent_pool_id, token_second, expected_status=(OK, NOT_FOUND))
+        delete_talent_pool(talent_pool_id, token_second,
+                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj
@@ -349,7 +355,8 @@ def candidate_first(request, talent_pool, token_first):
     candidate = get_candidate(candidate_id, token_first)['candidate']
 
     def tear_down():
-        delete_candidate(candidate_id, token_first, expected_status=(204, NOT_FOUND))
+        delete_candidate(candidate_id, token_first,
+                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -369,7 +376,8 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
     candidate = get_candidate(candidate_id, token_same_domain)['candidate']
 
     def tear_down():
-        delete_candidate(candidate_id, token_same_domain, expected_status=(204, NOT_FOUND))
+        delete_candidate(candidate_id, token_same_domain,
+                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -389,7 +397,8 @@ def candidate_second(request, token_second, talent_pool_second):
     candidate = get_candidate(candidate_id, token_second)['candidate']
 
     def tear_down():
-        delete_candidate(candidate_id, token_second, expected_status=(204, NOT_FOUND))
+        delete_candidate(candidate_id, token_second,
+                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate

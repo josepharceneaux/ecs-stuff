@@ -16,6 +16,7 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts/:id [GET]
 import sys
 
 from push_campaign_service.tests.test_utilities import *
+from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST
@@ -33,7 +34,8 @@ class TestCampaignBlastById(object):
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        get_blast(blast_id, campaign_id, 'invalid_token', expected_status=(401,))
+        get_blast(blast_id, campaign_id, 'invalid_token',
+                  expected_status=(HttpStatus.UNAUTHORIZED,))
 
     def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
                                                            campaign_in_db):
@@ -48,7 +50,8 @@ class TestCampaignBlastById(object):
         # 404 Case, Campaign not found
         blast_id = campaign_blast['id']
         invalid_campaign_id = sys.maxint
-        get_blast(blast_id, invalid_campaign_id, token_first, expected_status=(NOT_FOUND,))
+        get_blast(blast_id, invalid_campaign_id, token_first,
+                  expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
                                                       campaign_in_db):
@@ -63,7 +66,8 @@ class TestCampaignBlastById(object):
         # 404 Case, Blast not found
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
-        get_blast(invalid_blast_id, campaign_id, token_first, expected_status=(NOT_FOUND,))
+        get_blast(invalid_blast_id, campaign_id, token_first,
+                  expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_without_ownership(self, token_second, campaign_blast,
                                                   campaign_in_db):
@@ -77,13 +81,15 @@ class TestCampaignBlastById(object):
         # 403 Case, User is not owner of campaign
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        get_blast(blast_id, campaign_id, token_second, expected_status=(FORBIDDEN,))
+        get_blast(blast_id, campaign_id, token_second,
+                  expected_status=(HttpStatus.FORBIDDEN,))
 
     def test_get_campaign_blast(self, token_first, campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = get_blast(blast_id, campaign_id, token_first, expected_status=(OK,))
+        response = get_blast(blast_id, campaign_id, token_first,
+                             expected_status=(HttpStatus.OK,))
         blast = response['blast']
         assert blast['sends'] == campaign_blast['sends']
         assert blast['clicks'] == campaign_blast['clicks']
@@ -94,7 +100,8 @@ class TestCampaignBlastById(object):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = get_blast(blast_id, campaign_id, token_same_domain, expected_status=(OK,))
+        response = get_blast(blast_id, campaign_id, token_same_domain,
+                             expected_status=(HttpStatus.OK,))
         blast = response['blast']
         assert blast['sends'] == campaign_blast['sends']
         assert blast['clicks'] == campaign_blast['clicks']

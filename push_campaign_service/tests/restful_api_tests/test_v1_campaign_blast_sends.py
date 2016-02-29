@@ -17,6 +17,7 @@ import sys
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
+from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST_SENDS
@@ -36,7 +37,8 @@ class TestCampaignBlastSends(object):
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        get_blast_sends(blast_id, campaign_id, 'invalid_token', expected_status=(401,))
+        get_blast_sends(blast_id, campaign_id, 'invalid_token',
+                        expected_status=(HttpStatus.UNAUTHORIZED,))
 
     def test_get_campaign_blast_sends_with_invalid_campaign_id(self, token_first, campaign_blast):
         """
@@ -47,7 +49,8 @@ class TestCampaignBlastSends(object):
         """
         blast_id = campaign_blast['id']
         campaign_id = sys.maxint
-        get_blast_sends(blast_id, campaign_id, token_first, expected_status=(NOT_FOUND,))
+        get_blast_sends(blast_id, campaign_id, token_first,
+                        expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_sends_with_invalid_blast_id(self, token_first, campaign_in_db):
         """
@@ -58,7 +61,8 @@ class TestCampaignBlastSends(object):
         """
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
-        get_blast_sends(invalid_blast_id, campaign_id, token_first, expected_status=(NOT_FOUND,))
+        get_blast_sends(invalid_blast_id, campaign_id, token_first,
+                        expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_sends(self, token_first, campaign_blast):
         """
@@ -71,7 +75,8 @@ class TestCampaignBlastSends(object):
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        response = get_blast_sends(blast_id, campaign_id, token_first, expected_status=(200,))
+        response = get_blast_sends(blast_id, campaign_id, token_first,
+                                   expected_status=(HttpStatus.OK,))
         # Since each blast have one send, so total sends will be equal to number of blasts
         assert response['count'] == 1
         assert len(response['sends']) == 1
@@ -86,7 +91,8 @@ class TestCampaignBlastSends(object):
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        get_blast_sends(blast_id, campaign_id, token_same_domain, expected_status=(200,))
+        get_blast_sends(blast_id, campaign_id, token_same_domain,
+                        expected_status=(HttpStatus.OK,))
 
     def test_get_campaign_blast_sends_with_user_from_diff_domain(self, token_second, campaign_blast):
         """
@@ -99,4 +105,5 @@ class TestCampaignBlastSends(object):
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        get_blast_sends(blast_id, campaign_id, token_second, expected_status=(403,))
+        get_blast_sends(blast_id, campaign_id, token_second,
+                        expected_status=(HttpStatus.FORBIDDEN,))

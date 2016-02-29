@@ -1,4 +1,6 @@
-# TODO comment at the tope of the file
+"""
+This module contains custom exceptions and error codes for Push Campaign Service.
+"""
 import json
 import push_campaign_service.common.error_handling
 

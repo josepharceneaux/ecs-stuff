@@ -11,7 +11,9 @@ Rather, the properties are obtained from ECS environment variables and a private
 import os
 import tempfile
 import ConfigParser
+from boto.s3.connection import S3Connection
 from talent_config_manager import TalentConfigKeys, TalentEnvs
+
 
 CONFIG_FILE_NAME = "common_test.cfg"
 TEST_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
@@ -20,16 +22,13 @@ PROD_TEST_CONFIG_FILE_S3_BUCKET = "test-private"
 JENKINS_TEST_CONFIG_FILE_S3_BUCKET = "test-private-jenkins"
 
 
-# TODO ; Really great you created this file. Are we sure these above buckets are correct?
-
 class TestConfigParser(ConfigParser.ConfigParser):
 
-# TODO ; comment this class and the following method, also, rename 'k' to 'section'
     def to_dict(self):
         sections = dict(self._sections)
-        for k in sections:
-            sections[k] = dict(self._defaults, **sections[k])
-            sections[k].pop('__name__', None)
+        for section in sections:
+            sections[section] = dict(self._defaults, **sections[section])
+            sections[section].pop('__name__', None)
         return sections
 
 
@@ -50,9 +49,6 @@ def load_test_config():
     elif env in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and
         # AWS_SECRET_ACCESS_KEY env vars
-
-        # TODO ; commment why this import here
-        from boto.s3.connection import S3Connection
         s3_connection = S3Connection()
         if env == TalentEnvs.PROD:
             bucket_name = PROD_TEST_CONFIG_FILE_S3_BUCKET

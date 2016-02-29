@@ -1,4 +1,23 @@
-# TODO ; let's put a nice comment here at the top
+"""
+This module contains model classes that are related to push campaign service.
+
+    - PushCampaign
+        Used to handle campaign objects for Push Campaign Service
+
+    - PushCampaignBlast
+        Every time a campaign is sent, a blast is created which contains stats for that campaign.
+
+    - PushCampaignSend
+        When a campaign is sent to a candidate a send entry is created.
+
+    - PushCampaignSmartlist
+        Used to associate smartlist with a campaign
+
+    - PushCampaignSendUrlConversion
+        When a campaign is send to a candidate, a UrlConversion is created which is associated
+        to a campaign send via this table
+
+"""
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
@@ -8,12 +27,15 @@ __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
 
 class PushCampaign(db.Model):
-    # TODO comment at the start of the class
+    """
+    A push campaign has a title/name, body_text and information about campaign start,
+    end, frequency etc.
+    OneSignal is being used to actually send these campaigns to candidates.
+    """
     __tablename__ = 'push_campaign'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
-    # TODO ; Is the body text limited because of OneSignal limitation?
-    body_text = db.Column(db.String(255))
+    body_text = db.Column(db.String(500))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
     added_datetime = db.column(db.DateTime)
@@ -46,6 +68,10 @@ class PushCampaign(db.Model):
 
 
 class PushCampaignBlast(db.Model):
+    """
+    Every time a campaign is sent to some candidates, a blast entry is created which
+    contains campaign's stats.
+    """
     __tablename__ = 'push_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
     sends = db.Column(db.Integer, default=0)
@@ -62,6 +88,10 @@ class PushCampaignBlast(db.Model):
 
 
 class PushCampaignSend(db.Model):
+    """
+    When a campaign is sent to a candidate, a send entry is created which information like
+    candidate_id, send datetime and associated campaign.
+    """
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
@@ -76,42 +106,14 @@ class PushCampaignSend(db.Model):
                                                        backref='send')
 
     def __repr__(self):
-        return "<PushCampaignSend (one_signal_notification_id: %s, candidate_id: %s)>" % (self.one_signal_notification_id, self.candidate_id)
-
-    @classmethod
-    def get_by(cls, _id=0, campaign_id=0, candidate_id=0):
-        """
-        This class method returns push_campaign_send objects based on given conditions:
-            1. if `_id` (primary key) is given, return object with that id if found otherwise None
-            2. if `campaign_id` and `candidate_id` both are given then return one object based on these ids
-            3. if only `campaign_id` is given, return a list of objects that belong to a specific push campaign
-            4. if only `candidate_id` is given then return objects associated with that candidate
-            5. otherwise return None
-        :param _id: primary_key for push_campaign_send object
-        :param campaign_id: id of push campaign that is associated with this send
-        :param candidate_id: candidate id associated with this send
-        :return:
-        """
-
-        # TODO ; I see what are you doing here and nice try. But there is an issue, looking at the method's signature
-        # it gives me impression that I can get the obj even if I give all 3 which isn't the case. I think we need
-        # separate methods for claity. Or we can write a generic get_by() in the base model class that takes any parameter
-        # adn then see if the parameter matches with any of the class attributes and then return the value. Or may be
-        # SQLAlchemy already has a method like that built-in
-
-        if _id:
-            return cls.get_by_id(_id)
-        elif isinstance(campaign_id,
-                        (int, long)) and campaign_id and isinstance(candidate_id,
-                                                                             (int, long)) and candidate_id:
-            return cls.query.filter_by(campaign_id=campaign_id, candidate_id=candidate_id).first()
-        elif isinstance(campaign_id, (int, long)) and campaign_id:
-            return cls.query.filter_by(campaign_id=campaign_id).all()
-        elif isinstance(candidate_id, (int, long)) and candidate_id:
-            return cls.query.filter_by(candidate_id=candidate_id).all()
+        return "<PushCampaignSend (one_signal_notification_id: %s, candidate_id: %s)>" \
+               % (self.one_signal_notification_id, self.candidate_id)
 
 
 class PushCampaignSmartlist(db.Model):
+    """
+    PushCampaignSmartlist associates a smartlist to a push campaign.
+    """
     __tablename__ = 'push_campaign_smartlist'
     id = db.Column(db.Integer, primary_key=True)
     smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.Id", ondelete='CASCADE'),
@@ -132,15 +134,17 @@ class PushCampaignSmartlist(db.Model):
     def get_by_campaign_id_and_smartlist_id(cls, campaign_id, smartlist_id):
         assert isinstance(campaign_id, (int, long)) and campaign_id > 0, \
             'PushCampaign Id should be a valid positive number'
-        # TODO ; following message should mention smartlist_id
         assert isinstance(smartlist_id, (int, long)) and smartlist_id > 0, \
-            'PushCampaign Id should be a valid positive number'
+            'Smartlist Id should be a valid positive number'
         return cls.query.filter_by(
             campaign_id=campaign_id,
             smartlist_id=smartlist_id).first()
 
 
 class PushCampaignSendUrlConversion(db.Model):
+    """
+    PushCampaignSendUrlConversion associates push campaign send to UrlConversion object.
+    """
     __tablename__ = 'push_campaign_send_url_conversion'
     id = db.Column(db.Integer, primary_key=True)
     push_campaign_send_id = db.Column(db.Integer,

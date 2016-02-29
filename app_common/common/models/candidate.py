@@ -1018,9 +1018,14 @@ class CandidateDevice(db.Model):
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'candidate_id must be a positive number'
         return cls.query.filter_by(candidate_id=candidate_id).first()
 
     @classmethod
-    def get_by_candidate_id_and_device_id(cls, candidate_id, device_id):
-        return cls.query.filter_by(candidate_id=candidate_id, one_signal_device_id=device_id).first()
-
+    def get_by_candidate_id_and_one_signal_id(cls, candidate_id, one_signal_id_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'candidate_id must be a positive number'
+        assert isinstance(one_signal_id_id, basestring), 'one_signal_id_id must be a string'
+        return cls.query.filter_by(candidate_id=candidate_id,
+                                   one_signal_device_id=one_signal_id_id).first()

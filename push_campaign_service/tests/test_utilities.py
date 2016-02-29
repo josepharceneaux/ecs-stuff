@@ -15,11 +15,6 @@ fake = Faker()
 API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
 SLEEP_TIME = 20
-OK = 200
-INVALID_USAGE = 400
-NOT_FOUND = 404
-FORBIDDEN = 403
-INTERNAL_SERVER_ERROR = 500
 
 
 def missing_key_test(data, key, token):

@@ -33,8 +33,11 @@ import sys
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
+from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
+from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
+
 
 URL = PushCampaignApiUrl.CAMPAIGN
 
@@ -49,7 +52,7 @@ class TestCampaignById(object):
         :param campaign_in_db: campaign object
         :return:
         """
-        unauthorize_test('get', URL % campaign_in_db['id'], 'invalid_token')
+        unauthorize_test('get', URL % campaign_in_db['id'])
 
     def test_get_by_id(self, token_first, campaign_in_db):
         """
@@ -78,8 +81,7 @@ class TestUpdateCampaign(object):
         """
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        unauthorize_test('put', URL % campaign_in_db['id'],
-                         'invalid_token', data)
+        unauthorize_test('put', URL % campaign_in_db['id'], data)
 
     def test_put_by_id_without_ownership(self, token_second, campaign_in_db, smartlist_first):
         """
@@ -94,7 +96,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         campaign_id = campaign_in_db['id']
-        update_campaign(campaign_id, data, token_second, expected_status=(FORBIDDEN,))
+        update_campaign(campaign_id, data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
 
     def test_put_by_id_with_invalid_id(self, token_first, smartlist_first):
         """
@@ -109,7 +111,7 @@ class TestUpdateCampaign(object):
         data['smartlist_ids'] = [smartlist_first['id']]
         invalid_id = sys.maxint
         for _id in [0, invalid_id]:
-            update_campaign(_id, data, token_first, expected_status=(NOT_FOUND,))
+            update_campaign(_id, data, token_first, expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_put_by_id_with_invalid_field(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -124,7 +126,8 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
-        response = update_campaign(campaign_id, data, token_first, expected_status=(INVALID_USAGE,))
+        response = update_campaign(campaign_id, data, token_first,
+                                   expected_status=(HttpStatus.INVALID_USAGE,))
         error = response['error']
         assert error['invalid_field'] == 'invalid_field_name'
 
@@ -140,7 +143,7 @@ class TestUpdateCampaign(object):
         # Test valid fields with invalid/ empty values
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        for key in ['name', 'body_text', 'url', 'smartlist_ids']:
+        for key in CAMPAIGN_REQUIRED_FIELDS:
             invalid_value_test(data, key, token_first, campaign_in_db['id'])
 
     def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
@@ -156,7 +159,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         campaign_id = campaign_in_db['id']
-        update_campaign(campaign_id, data, token_first, expected_status=(OK,))
+        update_campaign(campaign_id, data, token_first, expected_status=(HttpStatus.OK,))
 
         # Now get campaign from API and compare data.
         json_response = get_campaign(campaign_id, token_first)
@@ -175,8 +178,7 @@ class TestCampaignDeleteById(object):
         :return:
         """
         # We are testing 401 here
-        unauthorize_test('delete',  URL % campaign_in_db['id'],
-                         'invalid_token')
+        unauthorize_test('delete',  URL % campaign_in_db['id'])
 
     def test_delete_non_existing_campaign(self, token_first):
         """
@@ -187,7 +189,8 @@ class TestCampaignDeleteById(object):
         """
         non_existing_campaign_id = sys.maxint
         # 404 Case, Campaign not found
-        delete_campaign(non_existing_campaign_id, token_first, expected_status=(NOT_FOUND,))
+        delete_campaign(non_existing_campaign_id, token_first,
+                        expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_delete_campaign_with_invalid_id(self, token_first):
         """
@@ -196,7 +199,7 @@ class TestCampaignDeleteById(object):
         :return:
         """
         invalid_id = 0
-        delete_campaign(invalid_id, token_first, expected_status=(INVALID_USAGE,))
+        delete_campaign(invalid_id, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
 
     def test_delete_campaign_with_user_from_diff_domain(self, token_same_domain, campaign_in_db):
         """
@@ -206,7 +209,7 @@ class TestCampaignDeleteById(object):
         :param campaign_in_db: campaign object
         :return:
         """
-        delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(OK,))
+        delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
 
     def test_delete_campaign_without_ownership(self, token_second, campaign_in_db):
         """
@@ -216,7 +219,7 @@ class TestCampaignDeleteById(object):
         :param campaign_in_db: campaign object
         :return:
         """
-        delete_campaign(campaign_in_db['id'], token_second, expected_status=(FORBIDDEN,))
+        delete_campaign(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
 
     def test_delete_unscheduled_campaign(self, token_first, campaign_in_db):
         """
@@ -227,7 +230,7 @@ class TestCampaignDeleteById(object):
         :return:
         """
         # 200 Case, Campaign not found
-        delete_campaign(campaign_in_db['id'], token_first, expected_status=(OK,))
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
 
     def test_delete_scheduled_campaign(self, token_first, campaign_in_db, schedule_a_campaign):
         """
@@ -237,4 +240,4 @@ class TestCampaignDeleteById(object):
         :param schedule_a_campaign:
         :return:
         """
-        delete_campaign(campaign_in_db['id'], token_first, expected_status=(OK,))
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))

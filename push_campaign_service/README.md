@@ -42,8 +42,9 @@ wants to send a campaign (push notification) to a candidate, it looks for associ
 If candidate has no device registered with getTalent,
 he will not get any push notifications and if device is associated with a candidate, we will send push notification to this device using
 device_id.
-
-# TODO Commnet  briefly how can a candidate get a device id
+A device will be associated to a candidate by sending a POST request to candidate service 
+`Associate Devices Endpoint [/v1/candiates/:id/devices] with one signal device id as request payload.
+OneSignal device id will be retrieved by OneSignal Javascript SDK for web (because we are dealing with web push notifications).
 
 ### Sends
 Every campaign has `sends` which is the information about campaign i.e. to whom (candidate) this campaign was sent.
@@ -849,18 +850,16 @@ each blast contains info about number of sends and how many responded to that ca
             }
 
 
-## Campaign Blasts by campaign Id [/v1/push-campaigns/{campaign_id}/blasts/:id]
+## Campaign Blast by campaign Id and Blast Id [/v1/push-campaigns/{campaign_id}/blasts/:id]
 
-### Campaign Blasts [GET]
+### Campaign Blast By Id [GET]
 
 Every time a campaign is sent to some candidates, a campaign blast is created which contains
 information about how many push notification were successfully sent and how many persons responded
 to those sent push notifications.
 
-This endpoint is used to get statistics of a campaign which includes multiple blasts where
-each blast contains info about number of sends and how many responded to that campaign for that blast.
+This endpoint is used to get statistics of a campaign from blast object which contains info about number of sends and how many responded to that campaign for that specific send.
 
-#TODO I cannot find a difference between this and the above one. I think this one needs to be updated
 
 + Parameters
     + id (required) - ID of the blast associated with campaign in getTalent database

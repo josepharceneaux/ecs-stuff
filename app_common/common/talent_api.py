@@ -33,12 +33,11 @@ class TalentApi(Api):
             # that was not handled by the API.
             # return jsonify(dict(message='Some Internal Server Error Occurred.')), 500
             response = super(TalentApi, self).handle_error(e)
-            # TODO ; We should catch ValueError in the following case as that's what json.loads() throw
             try:
                 # In case of internal server error other than, own custom exception,
                 # response.data looks like '{"message": "internal server error"}'
                 error = json.loads(response.data)
-            except Exception:
+            except ValueError:
                 # if error body was not json serializable, simply return as it is.
                 return response
 

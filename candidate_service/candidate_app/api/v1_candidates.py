@@ -6,11 +6,9 @@ Notes:
 """
 # Standard libraries
 import logging
+import datetime
 
 # Flask specific
-
-# TODO ; datetime is not flask specific so kindly move it under standard libraries
-import datetime
 from flask import request
 from flask_restful import Resource
 
@@ -18,13 +16,13 @@ from flask_restful import Resource
 from candidate_service.common.models.db import db
 
 # Validators
+from candidate_service.common.utils.models_utils import to_json
 from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
-from candidate_service.modules.talent_cloud_search import one_signal_client
 from candidate_service.modules.json_schema import (
 
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
@@ -71,6 +69,8 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
     create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
 )
+from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
+from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 
 class CandidatesResource(Resource):
@@ -1422,20 +1422,16 @@ class CandidateDeviceResource(Resource):
         Function will return requested candidate's associated devices
         """
         # Authenticated user & candidate ID
-        # TODO kindly rename authed_user to e.g. authenticated_user
-        authed_user, candidate_id = request.user, kwargs.get('id')
+        authenticated_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure Candidate exists & is not web-hidden
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate.id):
+        if not does_candidate_belong_to_users_domain(authenticated_user, candidate.id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         devices = candidate.devices.all()
-        devices = [dict(id=device.id,
-                        candidate_id=device.candidate_id,
-                        one_signal_device_id=device.one_signal_device_id,
-                        registered_at=str(device.registered_at)) for device in devices]
+        devices = [to_json(device) for device in devices]
         return {'devices': devices}
 
     def post(self, **kwargs):
@@ -1472,14 +1468,13 @@ class CandidateDeviceResource(Resource):
                     500 (Internal Server Error)
         """
         # Authenticated user & candidate ID
-        # TODO rename authed_user to something more meaningful
-        authed_user, candidate_id = request.user, kwargs.get('id')
+        authenticated_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
         # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+        if not does_candidate_belong_to_users_domain(authenticated_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         data = get_json_if_exist(_request=request)
@@ -1489,6 +1484,8 @@ class CandidateDeviceResource(Resource):
         if not device_id:
             raise InvalidUsage('device_id is not given in post data')
 
+        one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
+                                         user_auth_key=ONE_SIGNAL_REST_API_KEY)
         # Send a GET request to OneSignal API to confirm that this device id is valid
         response = one_signal_client.get_player(device_id)
         if response.ok:

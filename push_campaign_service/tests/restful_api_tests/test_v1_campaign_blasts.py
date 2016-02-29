@@ -15,6 +15,7 @@ import sys
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
+from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLASTS
@@ -31,7 +32,7 @@ class TestCampaignBlasts(object):
         :return:
         """
         campaign_id = campaign_in_db['id']
-        get_blasts(campaign_id, 'invalid_token', expected_status=(401,))
+        get_blasts(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
 
     def test_get_campaign_blasts_with_invalid_campaign_id(self, token_first):
         """
@@ -40,7 +41,7 @@ class TestCampaignBlasts(object):
         :return:
         """
         invalid_campaign_id = sys.maxint
-        get_blasts(invalid_campaign_id, token_first, expected_status=(NOT_FOUND,))
+        get_blasts(invalid_campaign_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blasts(self, token_first, campaign_in_db, campaign_blasts):
         """
@@ -52,7 +53,7 @@ class TestCampaignBlasts(object):
         """
         # 200 case: Campaign Blast successfully
         response = send_request('get', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == OK, 'Could not get campaign blasts info'
+        assert response.status_code == HttpStatus.OK, 'Could not get campaign blasts info'
         response = get_blasts(campaign_in_db['id'], token_first)
         assert response['count'] == len(campaign_blasts)
         assert len(response['blasts']) == len(campaign_blasts)

@@ -93,7 +93,6 @@ from flask import request
 from flask import redirect
 from flask import Blueprint
 from flask.ext.restful import Resource
-from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -111,9 +110,8 @@ from push_campaign_service.common.models.push_campaign import (PushCampaign,
                                                                PushCampaignBlast,
                                                                PushCampaignSendUrlConversion)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.modules.constants import (ONE_SIGNAL_REST_API_KEY,
-                                                     ONE_SIGNAL_APP_ID)
 from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
+from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.push_campaign_app import logger
 
 # creating blueprint
@@ -121,9 +119,6 @@ push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
 api.init_app(push_notification_blueprint)
 api.route = types.MethodType(api_route, api)
-
-one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
-                                 user_auth_key=ONE_SIGNAL_REST_API_KEY)
 
 
 @api.route(PushCampaignApi.CAMPAIGNS)
@@ -412,8 +407,7 @@ class CampaignByIdResource(Resource):
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         for key, value in data.items():
-            # TODO We are using this list in multiple places, may be we can declare it at the top and use it
-            if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
+            if key not in CAMPAIGN_REQUIRED_FIELDS:
                 raise InvalidUsage('Invalid field in campaign data',
                                    additional_error_info=dict(invalid_field=key))
             if not value:
@@ -534,8 +528,7 @@ class SchedulePushCampaignResource(Resource):
         # create object of class PushCampaignBase
         push_camp_obj = PushCampaignBase(user.id)
         # call method schedule() to schedule the campaign and get the task_id
-        # TODO; above says call method schedule but we are calling reschedule??
-        task_id = push_camp_obj.reschedule(request, campaign_id)
+        task_id = push_camp_obj.schedule(request, campaign_id)
         if task_id:
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
         else:
@@ -590,8 +583,7 @@ class SchedulePushCampaignResource(Resource):
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
-        # TODO here we are using schedule()? just double checking :)
-        task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
+        task_id = campaign_obj.reschedule(pre_processed_data['data_to_schedule'])
         return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
                     task_id=task_id), 200
 
@@ -918,7 +910,6 @@ class PushCampaignBlastById(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        # TODO; we should assert on params on all get methods defined in this file
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -1058,7 +1049,6 @@ class ResourceGetUrlConversion(Resource):
                 raise ForbiddenError('You can not get other domain url_conversion records')
 
     def delete(self, **kwargs):
-        # TODO in the example below it should be requests.delete()
         """
         This endpoint deletes a UrlConversion object given by id.
         To delete this resource, user must be in same domain as the owner of this send.
@@ -1072,7 +1062,7 @@ class ResourceGetUrlConversion(Resource):
             >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
             >>>         }
             >>> _id = 10
-            >>> response = requests.get(PushCampaignApiUrl.URL_CONVERSION % _id,
+            >>> response = requests.delete(PushCampaignApiUrl.URL_CONVERSION % _id,
             >>>                          headers=headers)
 
         .. Response::

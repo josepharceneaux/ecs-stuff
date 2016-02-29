@@ -182,34 +182,39 @@ def update(instance, **data):
 
 @classmethod
 def create_or_update(cls, conditions, **data):
-    # TODO kindly describe params in the comments and give examples if you can
     """
     This method allows a model instance to create or update itself in database
-    :return: same model instance
+    :param conditions: a dictionary where keys are column names and values are to match with
+     db records in respective table.
+     e.g. cls = Event and conditions=dict(social_network_event_id=12345, user_id=2)
+     We will search for a record with these conditions like this
+        query = cls.query.filter(cls.social_network_event_id == 12345).filter(cls.user_id == 2)
+
+    :param data: data to update model instance
+    :return: model instance
     """
     # update this instance by given data
-    assert isinstance(conditions, dict) and any(conditions), 'first argument should be a valid dictionary'
-    # TODO We should assert on cls
+    assert isinstance(conditions, dict) and any(conditions), \
+        'first argument should be a valid dictionary'
     query = cls.query
-    # TODO kindly comment what's going on in the following loop
+    # apply filter for all given conditions
     for key, value in conditions.iteritems():
         query.filter(getattr(cls, key) == value)
+
+    # get first instance if exists
     instance = query.first()
-    # TODO I think update or save should be done in the try / except and we should roll back depending on what happens
-    # e.g.something like following. We should follow the same method in other methods in this file as well basically so
-    # kindly change this.
-    # try:
-    #       cls.save(instance)
-    # except SQLAlchemyException:
-    #       db.rollback()
-    # else:
-    #       db.commit()
-    if instance:
-        instance.update(**data)
-    else:
-        instance = cls(**data)
-        cls.save(instance)
-    db.session.commit()
+
+    try:
+        # if there is already a record with given conditions, update it otherwise create a new
+        # record
+        if instance:
+            instance.update(**data)
+        else:
+            instance = cls(**data)
+            cls.save(instance)
+    except Exception:
+        db.session.rollback()
+        raise
     return instance
 
 
@@ -237,7 +242,6 @@ def get_by_id(cls, _id):
 
 @classmethod
 def delete(cls, ref, app=None):
-    # TODO Kindly provide an example in the comment
     """
     This method deletes a record from database given by id and the calling Model class.
     :param ref: id for instance | model instance
@@ -246,16 +250,29 @@ def delete(cls, ref, app=None):
     :type app: Flask obj
     :return: Boolean
     :rtype: bool
+
+        :Example:
+            You  can delete a record either by primary key or passing the whole model instance.
+
+            # Using primary key
+            >>> event_id = 123
+            >>> Event.delete(event_id)
+
+            # Using model instance
+            >>> event_id = 456
+            >>> event = Event.get(event_id)
+            >>> if event:
+            >>>     Event.delete(event)
     """
     try:
         if isinstance(ref, (int, long)):
             obj = cls.query.get(ref)
         else:
             obj = ref
-        # TODO this should also follow commit / rollback format within try / except
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
+        db.session.rollback()
         if isinstance(app, Flask):
             with app.app_context():
                 current_app.config[TalentConfigKeys.LOGGER].error(
