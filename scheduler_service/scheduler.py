@@ -11,6 +11,7 @@ import datetime
 
 # Third-party imports
 from dateutil.tz import tzutc
+from jsonschema import validate, FormatChecker, ValidationError
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -29,6 +30,9 @@ from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
+
+from scheduler_service.modules.json_schema import periodic_task_job_schema
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
 from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError, TaskAlreadyScheduledError
@@ -194,9 +198,23 @@ def schedule_job(data, user_id=None, access_token=None):
     :param access_token: CSRF access token for the sending post request to url with post_data
     :return:
     """
+    # Validate json data
+    try:
+        validate(instance=data, schema=base_job_schema,
+                 format_checker=FormatChecker())
+        if data.get('task_type') == SchedulerUtils.PERIODIC:
+            validate(instance=data, schema=periodic_task_job_schema,
+                     format_checker=FormatChecker())
+        elif data.get('task_type') == SchedulerUtils.ONE_TIME:
+            validate(instance=data, schema=one_time_task_job_schema,
+                     format_checker=FormatChecker())
+    except ValidationError as e:
+        raise InvalidUsage(error_message="Schema validation error: %s" % e.message)
+
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
     content_type = data.get('content_type', 'application/json')
+
     job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
     job_config['url'] = get_valid_url_from_dict(data, 'url')
 
