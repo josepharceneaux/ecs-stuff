@@ -95,7 +95,7 @@ class EmailCampaignBlast(db.Model):
 
     @classmethod
     def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+        return cls.query.get(_id)
 
     @classmethod
     def get_latest_blast_by_campaign_id(cls, campaign_id):

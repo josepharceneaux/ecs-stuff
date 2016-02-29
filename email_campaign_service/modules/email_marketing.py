@@ -536,9 +536,9 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
-            raise InvalidUsage('No email campaign blast found for campaign(id:%s).'
-                           % campaign.id,
-                           error_code = CampaignException.NO_EMAIL_CAMPAIGN_BLAST_FOUND)
+            raise InvalidUsage('No email campaign blast found for campaign(id:%s) , user (id%s).'
+                           % (campaign.id, campaign.user_id),
+                           error_code = CampaignException.NO_CAMPAIGN_BLAST_FOUND)
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sent_datetime
     if not blast_datetime:
