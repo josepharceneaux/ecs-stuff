@@ -15,7 +15,7 @@ GET_NOTIFICATION_URL = 'https://onesignal.com/api/v1/notifications/%s?app_id=%s'
 GET_PLAYERS_URL = 'https://onesignal.com/api/v1/players?app_id=%s&limit=%s&offset=%s'
 GET_PLAYER_URL = 'https://onesignal.com/api/v1/players/%s'
 
-
+# TODO ; I don't think we need this now so please remove it
 class OneSignalSdk(object):
 
     def __init__(self, app_id, rest_key):

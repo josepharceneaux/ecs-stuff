@@ -3,15 +3,17 @@ Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 
 This module contains fixtures to be used in tests.
 
-Some ixtures are created twice. First one with 'user_first' as owner and those that
+Some fixtures are created twice. First one with 'user_first' as owner and those that
 are postfix with  '_second' are owned by 'user_second'. 'user_first' belongs to domain 1 and
 'user_second' belongs to another domain say domain 2.
 
-A user can update or delete objects that  are owned by a user that is from same domain. so there
-are some fixture that are postfix with '_same_domain', actually belong to domain 1
+A user can update or delete objects that are owned by a user that is from same domain. so there
+are some fixture that are postfixed with '_same_domain', actually belong to domain 1
 but user is different.
 
 """
+
+# TODO great comment. Kinld just revise the last para in the comment above
 import pytest
 
 from ..test_config_manager import load_test_config
@@ -19,7 +21,11 @@ from ..utils.test_utils import get_token, get_user, add_roles, remove_roles
 
 
 CONFIG_FILE_NAME = "test.cfg"
+
+# TODO I think we shouldn't put the local path here
 LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
+
+# TODO ; can we somehow get below from DB?
 ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
          'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
          'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES',
@@ -45,6 +51,7 @@ def token_second(request):
     info = test_config['USER_SECOND']
     return get_token(info)
 
+# TODO ; may be we can rename them to first_user and second_user?
 
 @pytest.fixture()
 def user_first(request, token_first):
@@ -60,7 +67,7 @@ def user_first(request, token_first):
 
     def tear_down():
         remove_roles(user_id, ROLES, token_first)
-
+        # TODO; should we delete the user in tear_down?
     request.addfinalizer(tear_down)
     return user
 

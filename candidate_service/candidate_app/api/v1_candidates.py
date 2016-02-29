@@ -8,6 +8,8 @@ Notes:
 import logging
 
 # Flask specific
+
+# TODO ; datetime is not flask specific so kindly move it under standard libraries
 import datetime
 from flask import request
 from flask_restful import Resource
@@ -1420,6 +1422,7 @@ class CandidateDeviceResource(Resource):
         Function will return requested candidate's associated devices
         """
         # Authenticated user & candidate ID
+        # TODO kindly rename authed_user to e.g. authenticated_user
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure Candidate exists & is not web-hidden
@@ -1438,10 +1441,9 @@ class CandidateDeviceResource(Resource):
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/devices
-        Function will associate a  device to a candidate
-        This endpoint is used to register a candidate's device with getTalent.
-        Device id is a unique string given by OneSignal API.
-        for more information about device id see here
+        Function will associate a device to a candidate.
+        This endpoint is used to register a candidate's device with getTalent. Device id
+        is a unique string given by OneSignal API. For more information about device id see
         https://documentation.onesignal.com/docs/website-sdk-api#getIdsAvailable
 
         :Example:
@@ -1470,6 +1472,7 @@ class CandidateDeviceResource(Resource):
                     500 (Internal Server Error)
         """
         # Authenticated user & candidate ID
+        # TODO rename authed_user to something more meaningful
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden

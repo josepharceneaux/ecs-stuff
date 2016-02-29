@@ -56,6 +56,8 @@ class ActivityMessageIds(object):
     CAMPAIGN_SMS_REPLY = 26
     CAMPAIGN_SCHEDULE = 27
     CAMPAIGN_SMS_CREATE = 28
+
+    # Push campaign
     CAMPAIGN_PUSH_CREATE = 29
     CAMPAIGN_PUSH_SEND = 30
     CAMPAIGN_PUSH_CLICK = 31

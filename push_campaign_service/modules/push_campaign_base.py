@@ -12,9 +12,9 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
             This method schedules a campaign using Scheduler Service
 
         - pre_process_celery_task():
-            This method is to transform data required for celery tasks to run on.
+            This method is used to transform data required for celery tasks to run on.
             In this case, it is creating a list of candidate_ids from candidates,
-            as SqlAlchemy objects do not behave well across different sessions
+            as SQLAlchemy objects do not behave well across different sessions.
 
         - send_campaign_to_candidate():
             This method is core of the whole service. It receives a candidate id,
@@ -27,10 +27,10 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
 
         - celery_error_handler():
             This method is invoked if some error occurs during sending a campaign
-            in celery task. It then rollbacks that transaction.
-            (Celery task has it's own scoped session)
+            in celery task. It then rollbacks that transaction. (Celery task has it's own scoped session)
 """
 
+# TODO kindly try to update comment above for send_campaign_to_candidate(). I guess it contains typos.
 # Third Party
 from dateutil.relativedelta import relativedelta
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -65,6 +65,7 @@ class PushCampaignBase(CampaignBase):
         self.campaign_blast = None
         self.campaign_blast_id = None
         self.campaign_id = None
+        # TODO what if the queue_name is none in kwargs? Cater that please.
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
 
@@ -128,13 +129,13 @@ class PushCampaignBase(CampaignBase):
     def send_campaign_to_candidate(self, candidate_id):
         """
         This method sends campaign to a single candidate. It gets the devices associated with
-        the candidate and sends this campaign to all devices using OneSignal Restful Api.
+        the candidate and sends this campaign to all devices using OneSignal's RESTful API.
         Destination url is first converted to something like http://127.0.0.1:8012/redirect/1
         which is then signed
             http://127.0.0.1:8012/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
 
-        This url is sent to candidate in push notification and when user clicks on notification
+        This URL is sent to candidate in push notification and when user clicks on notification
         he is redirected to our url redirection endpoint, which after updating campaign stats,
         redirected to original url given for campaign owner.
         :param candidate_id: id of candidate in candidate table in getTalent database
@@ -146,7 +147,7 @@ class PushCampaignBase(CampaignBase):
             assert isinstance(candidate, Candidate), \
                 'candidate should be instance of Candidate Model'
             logger.info('Going to send campaign to candidate')
-            # A device is actually candidate's desktop, android or ios machine where
+            # A device is actually candidate's desktop, android or iOS machine where
             # candidate will receive push notifications. Device id is given by OneSignal.
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
             device_ids = [device.one_signal_device_id for device in devices]
@@ -162,6 +163,7 @@ class PushCampaignBase(CampaignBase):
                     # UrlConversion.save(url_conversion)
                     redirect_url = PushCampaignApiUrl.REDIRECT % url_conversion_id
                     # expiry duration is of one year
+                    # TODO kindly double check following as cautionary measure
                     expiry_time = datetime.datetime.now() + relativedelta(years=+1)
                     signed_url = CampaignUtils.sign_redirect_url(redirect_url, expiry_time)
                     if CampaignUtils.IS_DEV:
@@ -202,7 +204,7 @@ class PushCampaignBase(CampaignBase):
     @celery_app.task(name='callback_campaign_sent')
     def callback_campaign_sent(sends_result, user_id, campaign_type, blast_id, auth_header):
         """
-        Once Push campaign has been sent to all candidates, this function is hit. This is
+        Once a push campaign has been sent to all candidates, this function is hit. This is
         a Celery task. Here we
 
         1) Update number of sends in campaign blast
@@ -243,7 +245,7 @@ class PushCampaignBase(CampaignBase):
 
     def save(self, form_data):
         """
-        This overrides tha CampaignBase class method. This appends user_id in
+        This overrides the CampaignBase class method. This appends user_id in
         form_data and calls super constructor to save the campaign in database.
         :param form_data: data from UI
         :type form_data: dict

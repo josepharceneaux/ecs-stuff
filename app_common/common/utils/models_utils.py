@@ -182,19 +182,28 @@ def update(instance, **data):
 
 @classmethod
 def create_or_update(cls, conditions, **data):
+    # TODO kindly describe params in the comments and give examples if you can
     """
-    This method allows a model instance to update itself in database by calling update
-    e.g.
-    event = Event(**kwargs)
-    event.save()
+    This method allows a model instance to create or update itself in database
     :return: same model instance
     """
     # update this instance by given data
     assert isinstance(conditions, dict) and any(conditions), 'first argument should be a valid dictionary'
+    # TODO We should assert on cls
     query = cls.query
+    # TODO kindly comment what's going on in the following loop
     for key, value in conditions.iteritems():
         query.filter(getattr(cls, key) == value)
     instance = query.first()
+    # TODO I think update or save should be done in the try / except and we should roll back depending on what happens
+    # e.g.something like following. We should follow the same method in other methods in this file as well basically so
+    # kindly change this.
+    # try:
+    #       cls.save(instance)
+    # except SQLAlchemyException:
+    #       db.rollback()
+    # else:
+    #       db.commit()
     if instance:
         instance.update(**data)
     else:
@@ -228,6 +237,7 @@ def get_by_id(cls, _id):
 
 @classmethod
 def delete(cls, ref, app=None):
+    # TODO Kindly provide an example in the comment
     """
     This method deletes a record from database given by id and the calling Model class.
     :param ref: id for instance | model instance
@@ -242,6 +252,7 @@ def delete(cls, ref, app=None):
             obj = cls.query.get(ref)
         else:
             obj = ref
+        # TODO this should also follow commit / rollback format within try / except
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:

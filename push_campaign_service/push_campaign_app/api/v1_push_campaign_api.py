@@ -1,12 +1,12 @@
 """
-This module contains Restful API endpoints for Push Campaign Service.
+This module contains RESTful API endpoints for Push Campaign Service.
 
 A brief overview of all endpoints is as follows:
 
     1. Create a push campaign
         URL: /v1/push-campaigns [POST]
 
-        Send a POST request to this endpoint with required data to create a push campaign.
+        Sends a POST request to this endpoint with required data to create a push campaign.
         It actually creates a draft for campaign. To send a campaign, you need to schedule it.
 
     2. Get campaigns of a user
@@ -17,7 +17,7 @@ A brief overview of all endpoints is as follows:
     3. Delete multiple push campaigns of a user
         URL: /v1/push-campaigns [DELETE]
 
-        APi user can send a DELETE request to this endpoint with campaign ids as list
+        API user can send a DELETE request to this endpoint with campaign ids as list
         { ids: [1,2,3]}  to delete multiple campaigns.
 
     4. Get a single campaign of a user
@@ -73,7 +73,7 @@ A brief overview of all endpoints is as follows:
         URL: /v1/push-campaigns/:id/blasts [GET]
 
         To get a list of all blasts associated to a campaign, send a GET request
-        to this endpoint.A blast contains statistics of a campaign when a campaign
+        to this endpoint. A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
 
     15. Get a specific `Blast` of a campaign
@@ -412,6 +412,7 @@ class CampaignByIdResource(Resource):
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         for key, value in data.items():
+            # TODO We are using this list in multiple places, may be we can declare it at the top and use it
             if key not in ['name', 'body_text', 'url', 'smartlist_ids']:
                 raise InvalidUsage('Invalid field in campaign data',
                                    additional_error_info=dict(invalid_field=key))
@@ -533,6 +534,7 @@ class SchedulePushCampaignResource(Resource):
         # create object of class PushCampaignBase
         push_camp_obj = PushCampaignBase(user.id)
         # call method schedule() to schedule the campaign and get the task_id
+        # TODO; above says call method schedule but we are calling reschedule??
         task_id = push_camp_obj.reschedule(request, campaign_id)
         if task_id:
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
@@ -588,6 +590,7 @@ class SchedulePushCampaignResource(Resource):
         PushCampaignBase.pre_process_re_schedule(pre_processed_data)
         campaign_obj = PushCampaignBase(request.user.id)
         campaign_obj.campaign = pre_processed_data['campaign']
+        # TODO here we are using schedule()? just double checking :)
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
         return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
                     task_id=task_id), 200
@@ -625,7 +628,7 @@ class SchedulePushCampaignResource(Resource):
             raise InvalidUsage('campaign_id should be a positive number')
         task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignUtils.PUSH)
         if task_unscheduled:
-            return dict(message='Campaign(id:%s) has been unschedule.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
         else:
             return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
 
@@ -724,7 +727,7 @@ class PushCampaignBlastSends(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
 
-        :param campaign_id: integer, unique id representing campaign in GT database
+        :param campaign_id: integer, unique id representing campaign in getTalent database
         :return: 1- count of campaign sends and 2- Push campaign sends records as dict
         """
         user = request.user
@@ -754,9 +757,9 @@ class PushCampaignSends(Resource):
 
     def get(self, campaign_id):
         """
-        Returns Campaign sends for given push campaign id
+        Returns campaign sends for given push campaign id
 
-        :param campaign_id: integer, unique id representing puah campaign in getTalent database
+        :param campaign_id: integer, unique id representing push campaign in getTalent database
         :return: 1- count of campaign sends and 2- Push campaign sends
 
         :Example:
@@ -915,6 +918,7 @@ class PushCampaignBlastById(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        # TODO; we should assert on params on all get methods defined in this file
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -949,7 +953,7 @@ class PushCampaignUrlRedirection(Resource):
                 &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
         This is called signed_url.
 
-        When candidate clicks on above url, it is redirected to this flask endpoint, where we
+        When candidate clicks on above URL, it is redirected to this flask endpoint, where we
         keep track of number of clicks and hit_counts for a URL. We then create activity that
         'this' candidate has clicked on 'this' campaign. Finally we redirect the candidate to
         destination URL (Original URL provided by the recruiter)
@@ -985,17 +989,16 @@ class PushCampaignUrlRedirection(Resource):
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
 class ResourceGetUrlConversion(Resource):
     """
-    Resource is used to retrieve url conversion object.
+    Resource is used to retrieve URL conversion object.
     """
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
-    This endpoint returns a UrlConversion object given by id
-    To get this resource, user must be in same domain as the owner of this send.
+        This endpoint returns a UrlConversion object given by id.
+        To get this resource, user must be in same domain as the owner of this send.
 
         :Example:
-
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> data = {
@@ -1040,7 +1043,7 @@ class ResourceGetUrlConversion(Resource):
                 raise ResourceNotFound('Resource not found')
 
             if send_url_conversion.send.candidate.user.domain_id != user.domain_id:
-                raise ForbiddenError('You can not get other domain url_conversion records')
+                raise ForbiddenError("You can not get other domain's url_conversion records")
 
             return {'url_conversion': url_conversion.to_json()}
 
@@ -1055,9 +1058,10 @@ class ResourceGetUrlConversion(Resource):
                 raise ForbiddenError('You can not get other domain url_conversion records')
 
     def delete(self, **kwargs):
+        # TODO in the example below it should be requests.delete()
         """
-    This endpoint deletes a UrlConversion object given by id
-    To delete this resource, user must be in same domain as the owner of this send.
+        This endpoint deletes a UrlConversion object given by id.
+        To delete this resource, user must be in same domain as the owner of this send.
 
         :Example:
 

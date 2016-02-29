@@ -4,6 +4,8 @@ Author: Zohaib Ijaz, QC-Technologies,
 
     This file contains constants used in Push Notification Service.
 """
+
+# TODO please use same email which you are using for communication
 from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.push_campaign_app import app
 
@@ -14,6 +16,7 @@ GET_TALENT_ICON_URL = "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/
 ONE_SIGNAL_APP_ID = app.config[TalentConfigKeys.ONE_SIGNAL_APP_ID]
 ONE_SIGNAL_REST_API_KEY = app.config[TalentConfigKeys.ONE_SIGNAL_REST_API_KEY]
 PUSH_DEVICE_ID = app.config[TalentConfigKeys.PUSH_DEVICE_ID]
+#TODO kindly comment what these are
 DEFAULT_NOTIFICATION_OFFSET = 0
 DEFAULT_NOTIFICATION_LIMIT = 50
 

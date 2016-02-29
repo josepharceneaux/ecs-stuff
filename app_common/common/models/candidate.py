@@ -989,14 +989,7 @@ class CandidateSubscriptionPreference(db.Model):
 
 
 class CandidateDevice(db.Model):
-    """
-    candidate device is association for OneSignal Device Id to a candidate.
-    OneSignal is a service to send push notifications to candidate devices (Browsers, phones etc.)
-    Candidate device associated with OneSignal has a unique Id "one_signal_device_id".
-    We are associating that id with respective candidate in our database.
-    """
     __tablename__ = 'candidate_device'
-
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
@@ -1020,7 +1013,8 @@ class CandidateDevice(db.Model):
     @classmethod
     def get_candidate_id_from_one_signal_device_id(cls, device_id):
         assert device_id, 'device_id has invalid value'
-        return cls.query.filter_by(one_signal_device_id=device_id).first()
+        device = cls.query.filter_by(one_signal_device_id=device_id).first()
+        return None if device is None else device.candiadte_id
 
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
