@@ -117,10 +117,11 @@ class CampaignsTestsHelpers(object):
     def request_with_invalid_resource_id(cls, model, method, url, token, data):
         """
         This makes HTTP request (as specified by method) on given URL.
-        It creates two Invalid ids for requested resource, 0 and some large number(non-existing id)
-        that does not exist in database for given model. It then asserts that we get status code 400
+        It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
+        that does not exist in database for given model. It then asserts to check we get status code 400
         in case of id 0 and status code 404 in case of non-existing id.
         """
+        # TODO--w; assert on params
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
@@ -414,7 +415,7 @@ def _invalid_data_test(method, url, token):
 
 def get_invalid_ids(last_id_of_obj_in_db):
     """
-    Given a database model object, here we create a list of two Invalid ids. One of them
+    Given a database model object, here we create a list of two invalid ids. One of them
     is 0 and other one is 1000 plus the id of last record.
     """
     return 0, last_id_of_obj_in_db + 1000
@@ -426,5 +427,6 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     :param invalid_ids:
     :return:
     """
+    # TODO--w I am not sure if this can be "easily" reused so may be remove this
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]

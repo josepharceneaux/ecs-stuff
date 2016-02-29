@@ -98,8 +98,8 @@ class CampaignBase(object):
         If not it raises Forbidden error, otherwise it returns campaign object.
 
     * get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
-        Depending on campaign_type, This method
-            1) gets the campaign object from campaign_id by validating campaign
+        Depending on campaign_type, this method:
+            1) gets the campaign object from campaign_id by validating if campaign
                 belongs to current user's domain,
             2) gets the valid blast object from blast_id
         and returns blast object.
@@ -523,7 +523,7 @@ class CampaignBase(object):
         blast_model = get_model(campaign_type, campaign_type + '_blast')
         blast_obj = blast_model.get_by_id(blast_id)
         if not blast_obj:
-            raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exists in database."
+            raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exist in database."
                                    % (blast_id, campaign_type, campaign.id))
         if not blast_obj.campaign_id == requested_campaign_id:
             raise ForbiddenError("Blast(id:%s) is not associated with %s(id:%s)."

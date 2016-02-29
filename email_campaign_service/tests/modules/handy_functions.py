@@ -117,10 +117,12 @@ def send_campaign(campaign, access_token):
     :param access_token: Auth token to make HTTP request
     :return:
     """
+    # TODO--w: assert on params:
     # send campaign
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
+    # TODO--w: minor nit, we can make the sleep configurable in a param
     time.sleep(20)
     db.session.commit()

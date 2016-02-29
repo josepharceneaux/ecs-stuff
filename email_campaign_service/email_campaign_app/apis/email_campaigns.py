@@ -287,6 +287,7 @@ class EmailCampaignBlasts(Resource):
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
+#TODO--w: kindly update the comment at the top of this file with this endpoint and Apiary as well
 
 @api.route(EmailCampaignEndpoints.BLAST)
 class EmailCampaignBlastById(Resource):
@@ -298,7 +299,7 @@ class EmailCampaignBlastById(Resource):
 
     def get(self, campaign_id, blast_id):
         """
-        This endpoint returns a blast object for a given campaign_id and blast_id. From which
+        This endpoint returns a blast object for a given campaign_id and blast_id. From that blast object
         we can extract sends, clicks etc.
         :param campaign_id: int, unique id of a email campaign
         :param blast_id: id of blast object

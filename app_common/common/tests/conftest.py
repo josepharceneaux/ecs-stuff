@@ -269,6 +269,7 @@ def access_token_same(user_same_domain, sample_client):
 
 @pytest.fixture()
 def access_token_other(user_from_diff_domain, sample_client):
+    #TODO--w: kindly comment and assert params where possible
     return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
 
@@ -455,7 +456,7 @@ def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domai
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool

@@ -38,6 +38,7 @@ def email_campaign_in_other_domain(request,
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
+    # TODO--w: I wonder if we should create a smartlist in a separate fixture
     create_email_campaign_smartlist(access_token_other, talent_pool_other,
                                     campaign)
 
@@ -120,7 +121,7 @@ def assign_roles_to_user_first(user_first):
 @pytest.fixture()
 def assign_roles_to_user_of_other_domain(user_from_diff_domain):
     """
-    This assign required roles to user_from_diff_domain
+    This assigns required roles to user_from_diff_domain
     :param user_from_diff_domain:
     :return:
     """
@@ -149,7 +150,7 @@ def candidate_in_other_domain(request, user_from_diff_domain):
 def sent_campaign_with_client_id(campaign_with_valid_candidate, access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
-    email-campaign obj,
+    email-campaign obj.
     """
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first)

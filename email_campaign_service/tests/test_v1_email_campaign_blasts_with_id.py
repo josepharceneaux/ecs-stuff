@@ -42,6 +42,7 @@ class TestEmailCampaignBlastsWithId(object):
         access token. It should get OK response and number of sends should be 2.
         :return:
         """
+        # TODO--w: kindly add more info in comment above as in why should number of sends be 2?
         blast_id = sent_campaign_with_client_id.blasts[0].id
         response = requests.get(
             self.URL % (sent_campaign_with_client_id.id, blast_id),
