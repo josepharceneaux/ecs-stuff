@@ -396,7 +396,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         if len(search_result) == 1:
             filtered_email_rows.append((_id, email))
         else:
-            logger.error('%s candidates found for email address %s in user(id%s)`s domain(id:%s). '
+            logger.error('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
                          'Candidate ids are: %s'
                          % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
                             [candidate_email.candidate_id for candidate_email in search_result]))

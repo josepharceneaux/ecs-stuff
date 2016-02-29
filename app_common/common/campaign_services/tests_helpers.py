@@ -116,8 +116,10 @@ class CampaignsTestsHelpers(object):
     @classmethod
     def request_with_invalid_resource_id(cls, model, method, url, token, data):
         """
-        Requests a resource (as specified by model) which does not exists or id of
-        which is invalid
+        This makes HTTP request (as specified by method) on given URL.
+        It creates two Invalid ids for requested resource, 0 and some large number(non-existing id)
+        that does not exist in database for given model. It then asserts that we get status code 400
+        in case of id 0 and status code 404 in case of non-existing id.
         """
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)

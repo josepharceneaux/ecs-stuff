@@ -72,8 +72,6 @@ from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
-
-
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 api = TalentApi()
@@ -187,25 +185,34 @@ class EmailCampaignSendApi(Resource):
                             % campaign_id), 200
 
 
-@email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])
-def url_redirect(url_conversion_id):
-    # Verify the signature of URL
-    CampaignBase.pre_process_url_redirect(request.args, request.full_path)
-    url_conversion = UrlConversion.query.get(url_conversion_id)
-    if not url_conversion:
-        logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
-        return
-    # Update hitcount
-    update_hit_count(url_conversion)
-    # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
-    destination_url = url_conversion.destination_url
-    if destination_url.lower().startswith("www."):
-        destination_url = "http://" + destination_url
+@api.route(EmailCampaignEndpoints.URL_REDIRECT)
+class EmailCampaignUrlRedirect(Resource):
+    """
+    This endpoint looks like /v1/redirect/:id
+    This is hit when candidate open's an email or clicks on html content of email campaign
+    """
 
-    if destination_url == '#':
-        # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
-        destination_url = 'http://www.gettalent.com/'  # Todo
-    return redirect(destination_url)
+    def get(self, url_conversion_id):
+        """
+        Id of url_conversion record
+        """
+        # Verify the signature of URL
+        CampaignBase.pre_process_url_redirect(request.args, request.full_path)
+        url_conversion = UrlConversion.query.get(url_conversion_id)
+        if not url_conversion:
+            logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
+            return
+        # Update hitcount
+        update_hit_count(url_conversion)
+        # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
+        destination_url = url_conversion.destination_url
+        if destination_url.lower().startswith("www."):
+            destination_url = "http://" + destination_url
+
+        if destination_url == '#':
+            # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
+            destination_url = 'http://www.gettalent.com/'  # Todo
+        return redirect(destination_url)
 
 
 @api.route(EmailCampaignEndpoints.BLASTS)
@@ -285,7 +292,7 @@ class EmailCampaignBlasts(Resource):
 class EmailCampaignBlastById(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
-    This class returns all the blast objects associated with given campaign.
+    This class returns a blast object for given blast_id associated with given campaign.
     """
     decorators = [require_oauth()]
 

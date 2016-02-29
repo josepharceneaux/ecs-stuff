@@ -104,7 +104,7 @@ class CampaignBase(object):
             2) gets the valid blast object from blast_id
         and returns blast object.
 
-    * get_domain_id_of_campaign(campaign_obj, current_user_id): [abstract][static]
+    * get_domain_id_of_campaign(campaign_obj, current_user_id):[static]
         This returns id of user who created the given campaign obj
 
     * delete(self, campaign_id)
@@ -500,10 +500,10 @@ class CampaignBase(object):
         it raises ResourceNotFound.
         If campaign_id associated with blast_obj is not same as the requested campaign id,
         it raises forbidden error.
-        :param requested_campaign_id:
-        :param blast_id:
+        :param requested_campaign_id: Id of requested campaign object
+        :param blast_id: Id of blast object of a particular campaign
         :param current_user: logged-in user's object
-        :param campaign_type:
+        :param campaign_type: Type of campaign. e.g. sms_camapign | email_campaign etc
         :type requested_campaign_id: int | long
         :type blast_id: int | long
         :type current_user: User
@@ -526,8 +526,8 @@ class CampaignBase(object):
             raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exists in database."
                                    % (blast_id, campaign_type, campaign.id))
         if not blast_obj.campaign_id == requested_campaign_id:
-            raise ForbiddenError("%s's Blast(id:%s) is not associated with (id:%s)."
-                                 % (campaign_type, blast_id, requested_campaign_id))
+            raise ForbiddenError("Blast(id:%s) is not associated with %s(id:%s)."
+                                 % (blast_id, campaign_type, requested_campaign_id))
         return blast_obj
 
     @staticmethod
