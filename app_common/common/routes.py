@@ -295,6 +295,7 @@ class CandidateApiWords(object):
     VIEWS = "/views"
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
+    DEVICES = '/devices'
 
 
 class CandidateApi(object):
@@ -330,6 +331,9 @@ class CandidateApi(object):
 
     DEGREE_BULLETS = DEGREES + "/<int:degree_id>" + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
+
+    DEVICES = CANDIDATE_ID + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE_ID + CandidateApiWords.DEVICES + _INT_ID
 
     EXPERIENCES = _CANDIDATE_ID + CandidateApiWords.EXPERIENCES
     EXPERIENCE = EXPERIENCES + _INT_ID
@@ -400,6 +404,9 @@ class CandidateApiUrl(object):
 
     DEGREE_BULLETS = DEGREE + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + "/%s"
+
+    DEVICES = CANDIDATE + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE + CandidateApiWords.DEVICES + '/%s'
 
     EMAILS = CANDIDATE + CandidateApiWords.EMAILS
     EMAIL = EMAILS + "/%s"

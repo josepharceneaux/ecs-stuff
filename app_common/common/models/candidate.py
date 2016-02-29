@@ -989,7 +989,14 @@ class CandidateSubscriptionPreference(db.Model):
 
 
 class CandidateDevice(db.Model):
+    """
+    candidate device is association for OneSignal Device Id to a candidate.
+    OneSignal is a service to send push notifications to candidate devices (Browsers, phones etc.)
+    Candidate device associated with OneSignal has a unique Id "one_signal_device_id".
+    We are associating that id with respective candidate in our database.
+    """
     __tablename__ = 'candidate_device'
+
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
