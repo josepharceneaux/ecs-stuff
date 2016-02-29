@@ -209,7 +209,7 @@ class TestSchedulerMisc(object):
         assert response.status_code == 201
 
         user_id = sample_user.id
-        sample_user.delete()
+        sample_user.update(is_disabled=True)
 
         # Wait for the job to run and delete all jobs of the sample user
         time.sleep(18)
