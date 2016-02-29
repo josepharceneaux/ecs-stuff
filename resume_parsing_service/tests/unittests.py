@@ -27,12 +27,23 @@ WORK_EXPERIENCES_KEYS = ('bullets', 'city', 'country', 'end_month', 'end_year', 
                          'organization', 'position', 'start_month', 'start_year', 'state')
 ADDRESS_KEYS = ('address_line_1', 'city', 'country', 'state', 'zip_code')
 
+DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country': 'US', 'zip_code': '19446',
+                'address_line_1': u'466 Tailor Way'}
+GET_642_ADDRESS = {'city': u'Liberty Township', 'state': u'OH', 'country': 'US',
+                   'zip_code': '45011', 'address_line_1': u'6507 Hughes Ridge Lane'}
+GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country': 'US', 'zip_code': '92075',
+                  'address_line_1': u'930 Via Di Salerno Unit 119'}
+
 XML_MAPS = [
+    # The resume below has 6 experience but BG incorrectly returns 7.
+    # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1,
      'experience_len': 7, 'skills_len': 48, 'addresses_len': 2},
-    # The resume below has 12 experience but BG incorrectly returns 13
+    # The resume below has 12 experience but BG incorrectly returns 13.
+    # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2,
      'education_len': 1, 'experience_len': 13, 'skills_len': 80, 'addresses_len': 2},
+    # The resume below has 2 addresses but BG incorrectly returns 1.
     {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6,
      'education_len': 2, 'experience_len': 4, 'skills_len': 42, 'addresses_len': 1},
     {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1,
@@ -40,7 +51,7 @@ XML_MAPS = [
     {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1,
      'education_len': 1, 'experience_len': 3, 'skills_len': 24, 'addresses_len': 1},
     # This PDF currently does not get its email/phone parsed out of the footer.
-    # This PDF currently parses out the wrong education count
+    # This PDF currently parses out the wrong education count.
     {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2,
      'experience_len': 4, 'skills_len': 36, 'addresses_len': 1}
 ]
@@ -156,14 +167,192 @@ def test_address_parsing():
             assert all(k in address for k in ADDRESS_KEYS if address)
 
 
-# TODO: investigate 'offline' options in talent_s3 lib
-# This could be useful for debugging but requires an application context (keys in .cfg) to run.
-# def test_process_batch_item_without_saving():
-#     # Create a single file queue.
-#     user_id = random_word(6)
-#     queue_string = 'batch:{}:fp_keys'.format(user_id)
-#     unused_queue_status = add_fp_keys_to_queue(['0169173d35beaf1053e79fdf1b5db864.docx'], user_id)
-#     redis_client.expire(queue_string, 10)
-#     # Mock a call to process/<user_id> endpoint
-#     candidate_response = _process_batch_item(user_id, create_candidate=False)
-#     assert 'candidate' in candidate_response
+def test_docx_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(DOCX, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    assert DOCX_ADDRESS in addresses
+    assert contact_xml['first_name'] == 'Veena'
+    assert contact_xml['last_name'] == 'Nithoo'
+    assert {'value': u'(215) 412-0817'} in phones
+    # Experience parsing.
+    experience_xml_list = bs4(DOCX, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    exp1 = next((org for org in experiences if org["organization"] == u'Merck & Co, Inc'), None)
+    exp2 = next((org for org in experiences if org["organization"] == u'Infomc Inc'), None)
+    exp3 = next((org for org in experiences if org["organization"] == u'Datakinetics Inc'), None)
+    exp4 = next((org for org in experiences if org["organization"] == u'Harel Mallac, Mcs Development Ltd'), None)
+    exp5 = next((org for org in experiences if org["organization"] == u'Gt Management Ltd'), None)
+    assert None not in [exp1, exp2, exp3, exp4, exp5]
+    assert exp1['start_month'] == 10
+    assert exp1['start_year'] == 2000
+    assert exp1['position'] == u'Application Services Analyst'
+    assert exp2['start_month'] == 9
+    assert exp2['start_year'] == 1999
+    assert exp2['end_month'] == 6
+    assert exp2['end_year'] == 2000
+    assert exp2['position'] == u'Analyst Programmer'
+    assert exp3['start_month'] == 1
+    assert exp3['start_year'] == 1998
+    assert exp3['end_month'] == 8
+    assert exp3['end_year'] == 1999
+    assert exp3['position'] == u'Analyst Programmer'
+    assert exp4['start_month'] == 3
+    assert exp4['start_year'] == 1996
+    assert exp4['end_month'] == 5
+    assert exp4['end_year'] == 1997
+    assert exp4['position'] == u'Analyst Programmer'
+    assert exp5['start_month'] == 9
+    assert exp5['start_year'] == 1993
+    assert exp5['end_month'] == 9
+    assert exp5['end_year'] == 1994
+    assert exp5['position'] == u'Analyst Programmer'
+    # Education Parsing.
+    educations_xml_list = bs4(DOCX, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'South Bank University'), None)
+    assert edu1
+    assert edu1['city'] == u'London'
+    assert {'bullets': [], 'type': u'B.Sc', 'title': u'Computing Studies'} in edu1['degrees']
+
+
+def test_g642_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(GET_642, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    assert contact_xml['first_name'] == u'Bobby'
+    assert contact_xml['last_name'] == u'Breland'
+    assert {'value': u'513-759-5877'} in phones
+    assert {'value': u'513-477-3784'} in phones
+    assert GET_642_ADDRESS in addresses
+    # Experience parsing.
+    experience_xml_list = bs4(GET_642, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    exp1 = next((org for org in experiences if org["organization"] == u'Pivotalthought Llc'), None)
+    exp2 = next((org for org in experiences if org["organization"] == u'Gxs, Inc'), None)
+    exp3 = next((org for org in experiences if org["organization"] == u'Sun Microsystems'), None)
+    exp4 = next((org for org in experiences if org["organization"] == u'First Consulting Group'), None)
+    exp5 = next((org for org in experiences if org["organization"] == u'Computer Sciences Corporation Consulting Group'), None)
+    exp6 = next((org for org in experiences if org["organization"] == u'Seebeyond Technology Corporation'), None)
+    exp7 = next((org for org in experiences if org["organization"] == u'Collaborex, Inc'), None)
+    # TODO: Log issue in spreadsheet.
+    # exp8 = next((org for org in experiences if org["organization"] == u'Origin Technology in Business'), None)
+    exp8 = next((org for org in experiences if org["organization"] == u'Origin Technology'), None)
+    exp9 = next((org for org in experiences if org["organization"] == u'R.w. Johnson Pri'), None)
+    exp10 = next((org for org in experiences if org["organization"] == u'Taratec Development Corporation'), None)
+    exp11 = next((org for org in experiences if org["organization"] == u'H. B. Zachry'), None)
+    exp12 = next((org for org in experiences if org["organization"] == u'Triple I'), None)
+    assert None not in [exp1, exp2, exp3, exp4, exp5, exp6, exp7, exp8, exp9, exp10, exp11, exp12]
+    assert exp1['start_month'] == 1
+    assert exp1['start_year'] == 2010
+    # assert exp1['city'] == u'Liberty Township'
+    assert exp1['city'] == u'Liberty'
+    assert exp2['start_month'] == 8
+    assert exp2['start_year'] == 2008
+    assert exp2['end_month'] == 1
+    assert exp2['end_year'] == 2010
+    assert exp2['city'] == u'Gaithersburg'
+    assert exp3['start_month'] == 3
+    assert exp3['start_year'] == 2006
+    assert exp3['end_month'] == 7
+    assert exp3['end_year'] == 2008
+    assert exp3['city'] == u'Santa Clara'
+    assert exp4['start_month'] == 11
+    assert exp4['start_year'] == 2005
+    assert exp4['end_month'] == 3
+    assert exp4['end_year'] == 2006
+    assert exp4['city'] == u'Long Beach'
+    assert exp5['start_month'] == 2
+    assert exp5['start_year'] == 2003
+    assert exp5['end_month'] == 11
+    assert exp5['end_year'] == 2005
+    assert exp5['city'] == u'Waltham'
+    assert exp6['start_month'] == 3
+    assert exp6['start_year'] == 2001
+    assert exp6['end_month'] == 2
+    assert exp6['end_year'] == 2003
+    assert exp6['city'] == u'Monrovia'
+    assert exp7['start_month'] == 4
+    assert exp7['start_year'] == 2000
+    assert exp7['end_month'] == 3
+    assert exp7['end_year'] == 2001
+    assert exp7['city'] == u'Fairfax'
+    assert exp8['start_month'] == 2
+    assert exp8['start_year'] == 1998
+    assert exp8['end_month'] == 4
+    assert exp8['end_year'] == 2000
+    assert exp8['city'] == u'Cincinnati'
+    assert exp9['start_month'] == 5
+    assert exp9['start_year'] == 1995
+    assert exp9['end_month'] == 2
+    assert exp9['end_year'] == 1998
+    assert exp9['city'] == u'Raritan'
+    assert exp10['start_month'] == 12
+    assert exp10['start_year'] == 1991
+    assert exp10['end_month'] == 5
+    assert exp10['end_year'] == 1995
+    assert exp10['city'] == u'Bridgewater'
+    assert exp11['start_month'] == 4
+    assert exp11['start_year'] == 1991
+    assert exp11['end_month'] == 12
+    assert exp11['end_year'] == 1991
+    assert exp11['city'] == u'San Antonio'
+    assert exp12['start_month'] == 6
+    assert exp12['start_year'] == 1989
+    assert exp12['end_month'] == 4
+    assert exp12['end_year'] == 1991
+    assert exp12['city'] == u'Deepwater'
+    # Educations.
+    educations_xml_list = bs4(GET_642, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'Northeast Louisiana University'), None)
+    assert edu1
+    assert {'bullets': [], 'type': u'B.S', 'title': u'Computer Science'} in edu1['degrees']
+
+
+def test_g646_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(GET_646, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    assert contact_xml['first_name'] == 'Patrick'
+    assert contact_xml['last_name'] == 'Kaldawy'
+    assert GET_646_ADDRESS in addresses
+    assert {'value': u'(858) 353-1111'} in phones
+    assert {'value': u'(858) 353-2222'} in phones
+    assert {'value': u'(858) 353-5555'} in phones
+    assert {'value': u'(858) 353-3333'} in phones
+    assert {'value': u'(858) 353-4444'} in phones
+    assert {'value': u'+961 (70) 345-340'} in phones
+    # Experience parsing.
+    experience_xml_list = bs4(GET_646, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    # Name is currently not grabbed.
+    # exp1 = next((org for org in experiences if org["organization"] == u'Technical Difference'), None)
+    exp2 = next((org for org in experiences if org["organization"] == u'Convergence Inc. Llc'), None)
+    exp3 = next((org for org in experiences if org["organization"] == u'Avalon Digital Marketing Systems, Inc'), None)
+    # The following returns the org name without the division in parens.
+    # exp4 = next((org for org in experiences if org["organization"] == u'Avalon Digital Marketing Systems, Inc (European Division'), None)
+    # assert None not in [exp1, exp2, exp3, exp4]
+    assert None not in [exp2, exp3]
+    # assert exp1['start_month'] == 10
+    # assert exp1['start_year'] == 2004
+    assert exp2['start_month'] == 3
+    assert exp2['start_year'] == 2004
+    assert exp2['end_month'] == 9
+    assert exp2['end_year'] == 2004
+    assert exp3['start_year'] == 2002
+    assert exp3['end_year'] == 2003
+    # assert exp4['start_month'] == 5
+    # assert exp4['start_year'] == 2001
+    # assert exp4['end_month'] == 6
+    # assert exp4['end_year'] == 2001
+    # Educations.
+    educations_xml_list = bs4(GET_646, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    pass
