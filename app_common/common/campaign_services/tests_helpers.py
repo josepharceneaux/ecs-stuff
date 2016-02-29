@@ -118,10 +118,10 @@ class CampaignsTestsHelpers(object):
         """
         This makes HTTP request (as specified by method) on given URL.
         It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
-        that does not exist in database for given model. It then asserts to check we get status code 400
-        in case of id 0 and status code 404 in case of non-existing id.
+        that does not exist in database for given model. It then asserts to check we get status
+        code 400 in case of id 0 and status code 404 in case of non-existing id.
         """
-        raise_if_not_instance_of(model, db.Model)
+        assert db.Model in model.__mro__, '`model` should be instance of db.Model '
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(token, basestring)
