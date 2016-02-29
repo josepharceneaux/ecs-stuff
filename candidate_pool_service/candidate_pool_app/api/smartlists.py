@@ -55,8 +55,9 @@ class SmartlistResource(Resource):
     def get(self, **kwargs):
         """Retrieve list information
         List must belong to auth user's domain
-        Call this resource from url: /v1/smartlists?page=1 :: to retrieve all the smartlists in user's domain
-                                     /v1/smartlists/<int:id> :: to get single smartlist
+        Call this resource from url:
+            /v1/smartlists?page=1&page_size=10 :: to retrieve all the smartlists in user's domain
+            /v1/smartlists/<int:id> :: to get single smartlist
 
         example: http://localhost:8008/v1/smartlists/2
         Returns: List in following json format
