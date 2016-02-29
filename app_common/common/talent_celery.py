@@ -34,4 +34,5 @@ class SqlAlchemyTask(Task):
     abstract = True
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        db.session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=db.engine))
+        db.session.remove()
+        #db.session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=db.engine))
