@@ -10,9 +10,8 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from candidate_service.candidate_app import app, celery_app
-from candidate_service.common.talent_celery import SqlAlchemyTask
-from candidate_service.candidate_app import db, logger
+from flask_sqlalchemy import SQLAlchemy
+from candidate_service.candidate_app import app, celery_app, logger
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
@@ -339,11 +338,13 @@ def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
         SELECT GROUP_CONCAT(DISTINCT(email_campaign_send.CandidateId)) AS `candidate_engagement` FROM email_campaign_send WHERE email_campaign_send.CandidateId IN :candidate_ids_string;
     """
 
-    candidate_engagement = db.session.connection().execute(text(sql_query_for_candidate_engagement),
+    session = SQLAlchemy(app).session
+
+    candidate_engagement = session.connection().execute(text(sql_query_for_candidate_engagement),
                                                            candidate_ids_string=tuple(candidate_ids))
     candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
 
-    results = db.session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
+    results = session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
                                               sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
 
     # Go through results & build action dicts
@@ -380,17 +381,18 @@ def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
 
         # Add the required values we didn't get from DB
         if not domain_id:
-            field_name_to_sql_value_row = User.query.filter_by(
-                id=field_name_to_sql_value['user_id']).first()
+            field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
             domain_id = field_name_to_sql_value_row.domain_id
         field_name_to_sql_value['domain_id'] = domain_id
         action_dict['fields'] = field_name_to_sql_value
         action_dicts.append(action_dict)
 
+    session.remove()
+
     return action_dicts
 
 
-@celery_app.task(base=SqlAlchemyTask)
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
