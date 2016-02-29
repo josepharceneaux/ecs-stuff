@@ -38,10 +38,13 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
-from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist, \
-    does_education_degree_bullet_exist, get_education_if_exists, get_work_experience_if_exists, \
-    does_experience_bullet_exist, get_candidate_email_from_domain_if_exists, does_phone_exist, \
-    does_preferred_location_exist, does_skill_exist, does_social_network_exist
+from candidate_service.modules.validators import (
+    does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
+    get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
+    get_candidate_email_from_domain_if_exists, does_phone_exist,
+    does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    get_education_degree_if_exists, does_military_service_exist
+)
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -1275,18 +1278,18 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
 
                 else:   # Add CandidateEducationDegree
                     education_degree_dict.update(dict(candidate_education_id=education_id))
-                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-                    db.session.add(candidate_education_degree)
-                    db.session.flush()
-                    # TODO: prevent duplicate entires
-
-                    can_edu_degree_id = candidate_education_degree.id
+                    candidate_education_degree_id = get_education_degree_if_exists(candidate_educations, education_degree_dict)
+                    if not candidate_education_degree_id:
+                        candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                        db.session.add(candidate_education_degree)
+                        db.session.flush()
+                        candidate_education_degree_id = candidate_education_degree.id
 
                     # Add CandidateEducationDegreeBullets
                     education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
-                            candidate_education_degree_id=can_edu_degree_id,
+                            candidate_education_degree_id=candidate_education_degree_id,
                             concentration_type=education_degree_bullet.get('major'),
                             comments=education_degree_bullet.get('comments'),
                             added_time=added_time
@@ -1294,7 +1297,8 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
 
         else:  # Add
             # CandidateEducation
-            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: resume_id to be removed once all tables have been added & migrated
+            # TODO: resume_id to be removed once all tables have been added & migrated
+            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
             # Prevent duplicate entries
             education_degrees = education.get('degrees') or []
             education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
@@ -1307,8 +1311,7 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
             # CandidateEducationDegree
             for education_degree in education_degrees:
 
-                # Add CandidateEducationDegree
-                candidate_education_degree = CandidateEducationDegree(
+                education_degree_dict = dict(
                     candidate_education_id=education_id,
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree.get('type'),
@@ -1323,16 +1326,20 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
-                db.session.add(candidate_education_degree)
-                db.session.flush()
-
-                education_degree_id = candidate_education_degree.id
+                # Prevent duplicate entries
+                candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
+                                                                               education_degree_dict)
+                if not candidate_education_degree_id:
+                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                    db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
+                    db.session.flush()
+                    candidate_education_degree_id = candidate_education_degree.id
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
                     education_degree_bullet_dict = dict(
-                        candidate_education_degree_id=education_degree_id,
+                        candidate_education_degree_id=candidate_education_degree_id,
                         concentration_type=degree_bullet.get('major'),
                         comments=degree_bullet.get('comments'),
                         added_time=added_time
@@ -1676,8 +1683,8 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            # TODO: Prevent duplicate entries
-            db.session.add(CandidateMilitaryService(**military_service_dict))
+            if does_military_service_exist(candidate_military_services, military_service_dict):
+                db.session.add(CandidateMilitaryService(**military_service_dict))
 
 
 def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_time):
