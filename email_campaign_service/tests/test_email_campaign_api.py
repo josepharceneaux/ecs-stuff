@@ -1,3 +1,4 @@
+# Packages
 import re
 import json
 import time
@@ -5,21 +6,19 @@ import email
 import imaplib
 import requests
 
-from email_campaign_service.common.error_handling import InvalidUsage
-
+# Application Specific
 from email_campaign_service.common.models.db import db
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.email_campaign_app import app
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from email_campaign_service.common.models.email_campaign import (EmailCampaign,
-                                                                 EmailCampaignBlast)
 from email_campaign_service.common.routes import (EmailCampaignUrl, CandidatePoolApiUrl,
                                                   EmailCampaignEndpoints, HEALTH_CHECK)
-from email_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
                                                                   delete_campaign)
-
 
 __author__ = 'jitesh'
 
@@ -28,6 +27,7 @@ class TestGetCampaigns(object):
     """
     Here are the tests of /v1/email-campaigns
     """
+
     def test_get_all_campaigns(self, campaign_with_candidate_having_no_email, access_token_first,
                                talent_pipeline):
         """
@@ -43,8 +43,9 @@ class TestGetCampaigns(object):
         assert resp['email_campaigns']
         assert 'id' in email_campaigns[0]
         # Test GET api of talent-pipelines/:id/campaigns
-        response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
-                                headers={'Authorization': 'Bearer %s' % access_token_first})
+        response = requests.get(
+            url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
+            headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == 200
         resp = response.json()
         assert 'email_campaigns' in resp
@@ -125,16 +126,16 @@ class TestSendCampaign(object):
     """
     Here are the tests for sending a campaign from endpoint /v1/email-campaigns/send
     """
-    METHOD = 'post'
+    HTTP_METHOD = 'post'
     URL = EmailCampaignUrl.SEND
 
     def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
         """
         Here we try to send email campaign with invalid access token
         """
-        CampaignsCommonTests.request_with_invalid_token(self.METHOD,
-                                                        self.URL % email_campaign_of_user_first.id,
-                                                        None)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
+                                                         self.URL % email_campaign_of_user_first.id,
+                                                         None)
 
     def test_post_with_no_smartlist_associated(self, access_token_first,
                                                email_campaign_of_user_first):
@@ -146,7 +147,7 @@ class TestSendCampaign(object):
         Custom error should be NoSmartlistAssociatedWithCampaign.
         :return:
         """
-        CampaignsCommonTests.campaign_send_with_no_smartlist(
+        CampaignsTestsHelpers.campaign_send_with_no_smartlist(
             self.URL % email_campaign_of_user_first.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
@@ -159,7 +160,7 @@ class TestSendCampaign(object):
         :return:
         """
         with app.app_context():
-            CampaignsCommonTests.campaign_send_with_no_smartlist_candidate(
+            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
                 email_campaign_of_user_first)
 
@@ -170,9 +171,8 @@ class TestSendCampaign(object):
         of logged-in user. It should get Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % email_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(
+            self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -180,11 +180,11 @@ class TestSendCampaign(object):
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(EmailCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(EmailCampaign,
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)
 
     def test_post_with_one_smartlist_two_candidates_with_no_email(
             self, access_token_first, campaign_with_candidate_having_no_email):
@@ -193,7 +193,7 @@ class TestSendCampaign(object):
         candidate having no email associated. So, Custom error should be raised.
         :return:
         """
-        CampaignsCommonTests.campaign_test_with_no_valid_candidate(
+        CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
             self.URL % campaign_with_candidate_having_no_email.id,
             access_token_first, campaign_with_candidate_having_no_email.id)
 
@@ -382,20 +382,21 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
-            CampaignsCommonTests.assert_for_activity(user.id,
-                                                     ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
-                                                     campaign_send.id)
+            CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                      ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                                      campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
-        CampaignsCommonTests.assert_for_activity(user.id,
-                                                 ActivityMessageIds.CAMPAIGN_SEND,
-                                                 campaign.id)
+        CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                  ActivityMessageIds.CAMPAIGN_SEND,
+                                                  campaign.id)
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        assert str(
+            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 

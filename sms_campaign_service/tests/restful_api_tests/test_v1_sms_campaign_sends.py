@@ -11,10 +11,7 @@ import requests
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import UnauthorizedError
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
-
-# Service Specific
-from sms_campaign_service.tests.modules.common_functions import assert_ok_response_and_counts
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignSends(object):
@@ -22,12 +19,12 @@ class TestSmsCampaignSends(object):
     This class contains tests for endpoint /campaigns/:id/sends
     """
     URL = SmsCampaignApiUrl.SENDS
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     ENTITY = 'sends'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user):
         """
-         User auth token is invalid. It should get Unauthorized error.
+         User auth token is invalid. It should result in Unauthorized error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
@@ -47,7 +44,7 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response)
 
     def test_get_with_no_candidate_associated_to_campaign(self, access_token_first,
                                                           sms_campaign_of_current_user,
@@ -66,20 +63,20 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response)
 
     def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_current_user):
         """
         It first deletes a campaign from database and try to get its sends.
-        It should get ResourceNotFound error.
+        It should result in ResourceNotFound error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_after_deleting_campaign(sms_campaign_of_current_user,
-                                                             SmsCampaignApiUrl.CAMPAIGN,
-                                                             self.URL, self.METHOD,
-                                                             access_token_first)
+        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
+                                                              SmsCampaignApiUrl.CAMPAIGN,
+                                                              self.URL, self.HTTP_METHOD,
+                                                              access_token_first)
 
     def test_get_with_valid_token_and_two_sends(self, access_token_first, candidate_first,
                                                 sms_campaign_of_current_user,
@@ -96,7 +93,7 @@ class TestSmsCampaignSends(object):
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, count=2)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['blast_id'] == sms_campaign_of_current_user.blasts[0].id
         assert json_resp['candidate_id'] == candidate_first.id
@@ -104,21 +101,21 @@ class TestSmsCampaignSends(object):
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
         This is the case where we try to get sends of a campaign which was created by
-        some other user. It should get Forbidden error.
+        some other user. It should result in Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(self.METHOD,
-                                                         self.URL % sms_campaign_in_other_domain.id,
-                                                         access_token_first)
+        CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
+                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first):
         """
-        This is a test to get campaign sends of a campaign which does not exists in database.
+        This is a test to get campaign sends of a campaign which does not exist in database.
         :param access_token_first:
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(SmsCampaign,
-                                                              self.METHOD,
-                                                              self.URL,
-                                                              access_token_first,
-                                                              None)
+        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
+                                                               self.HTTP_METHOD,
+                                                               self.URL,
+                                                               access_token_first,
+                                                               None)

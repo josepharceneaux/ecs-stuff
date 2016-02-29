@@ -154,8 +154,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
@@ -267,8 +271,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
@@ -1184,7 +1192,7 @@ class CandidateClientEmailCampaignResource(Resource):
                 'email_body_html': '<html><body>Email Body</body></html>',
                 'email_body_text': 'Plaintext part of email goes here, if any',
                 'email_client_id': int,
-                'sent_time': datetime,
+                'sent_datetime': datetime,
              }
 
         Function will create a list, email_campaign, email_campaign_send, and a url_conversion
@@ -1203,7 +1211,6 @@ class CandidateClientEmailCampaignResource(Resource):
         email_body_html = body_dict.get('email_body_html')
         email_body_text = body_dict.get('email_body_text')
         email_client_id = body_dict.get('email_client_id')
-        send_time = body_dict.get('sent_time', 0)
 
         if not email_from or not email_reply_to or not email_client_id or not candidates_list:
             raise InvalidUsage(error_message="Fields are missing.")

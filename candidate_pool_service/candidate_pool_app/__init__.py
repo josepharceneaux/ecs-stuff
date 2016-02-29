@@ -1,5 +1,6 @@
 __author__ = 'ufarooqi'
 from flask.ext.cors import CORS
+from flask.ext.cache import Cache
 from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi, GTApis
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from candidate_pool_service.common.utils.talent_ec2 import get_ec2_instance_id
@@ -19,6 +20,9 @@ try:
     from candidate_pool_service.common.models.db import db
     db.init_app(app)
     db.app = app
+
+    # Instantiate Flask-Cache object
+    cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': app.config['REDIS_URL']})
 
     # Instantiate Celery
     celery_app = make_celery(app)
