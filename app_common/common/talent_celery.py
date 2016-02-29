@@ -1,7 +1,6 @@
 from flask import has_app_context
 from sqlalchemy.orm import scoped_session, sessionmaker
 from celery import Celery, Task
-from talent_config_manager import TalentConfigKeys
 from ..common.models.db import db
 
 accept_content = {
@@ -35,5 +34,4 @@ class SqlAlchemyTask(Task):
     abstract = True
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
-        environment = db.app.config[TalentConfigKeys.ENV_KEY]
         db.session = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=db.engine))
