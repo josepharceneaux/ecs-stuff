@@ -731,15 +731,37 @@ class PauseTaskById(Resource):
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
+    GET Method:
+        This resource is dummy endpoint which will be used to get all tasks of a particular user
+
+    POST Method:
         This resource is dummy endpoint which is used to call send_request method for testing
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
     """
-    decorators = [require_oauth()]
 
+    @require_oauth(allow_null_user=True)
+    def get(self):
+        env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
+        if not (env_key == 'dev' or env_key == 'jenkins'):
+            raise ForbiddenError("You are not authorized to access this endpoint.")
+
+        try:
+            data = request.get_json()
+        except BadRequest:
+            raise InvalidUsage('Given data is not JSON serializable')
+
+        try:
+            user_id = data['user_id']
+        except KeyError:
+            return dict(message="user_id not provided")
+        tasks = scheduler.get_jobs()
+        tasks = filter(lambda task: task.args[0] == user_id, tasks)
+        return dict(tasks=tasks)
+
+    @require_oauth()
     def post(self):
-
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
         if not (env_key == 'dev' or env_key == 'jenkins'):
             raise ForbiddenError("You are not authorized to access this endpoint.")

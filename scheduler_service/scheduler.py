@@ -28,6 +28,7 @@ from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
+from scheduler_service.common.utils.models_utils import get_by_id
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
@@ -157,6 +158,14 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         db.db.session.commit()
+        user = User.get_by_id(user_id)
+
+        # If user is deleted, then delete all its jobs too
+        if not user or user.is_disabled:
+            tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
+            [scheduler.remove_job(job_id=task.id) for task in tasks]
+            return
+
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
         past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)

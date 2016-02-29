@@ -14,8 +14,10 @@ import requests
 
 # Application imports
 from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token
+from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.conftest import sample_user
+from scheduler_service.common.utils.models_utils import get_by_id
 
 __author__ = 'saad'
 
@@ -189,6 +191,36 @@ class TestSchedulerMisc(object):
         response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
                                     headers=auth_header)
         assert response_get.status_code == 404
+
+    def test_delete_jobs_of_deleted_user(self, sample_user, auth_header_no_user, auth_header, post_ten_jobs, job_config):
+        """
+        Schedule 11 jobs. Then delete the user and wait for first job to run and check if all jobs of that user
+        deleted
+        :param auth_header: Fixture that contains token.
+        :param post_ten_jobs: (dict): Fixture that contains 10 job configs to be used
+        :param job_config: (dict): Fixture that contains jobs config to be used
+        :return:
+        """
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header.copy())
+        assert response.status_code == 201
+
+        user_id = sample_user.id
+        sample_user.delete()
+
+        # Wait for the job to run and delete all jobs of the sample user
+        time.sleep(18)
+
+        response_get = requests.get(SchedulerApiUrl.TEST_TASK,
+                                    data=json.dumps({'user_id': user_id}),
+                                    headers=auth_header_no_user)
+        assert response_get.status_code == 200
+
+        # There shouldn't be any jobs of sample user now
+        len(response_get.json()['tasks']) == 0
 
 
 def _update_token_expiry_(user_id, expiry):
