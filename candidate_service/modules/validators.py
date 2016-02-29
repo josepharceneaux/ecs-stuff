@@ -447,7 +447,7 @@ def get_education_degree_if_exists(educations, education_degree):
                 'title': education_degree.get('degree_title')
             }
 
-            if set(existing_degree_dicts.values()) == set(new_degree_dicts.values()):
+            if existing_degree_dicts.values() == new_degree_dicts.values():
                 return degree.id
 
     return None  # For readability
