@@ -104,31 +104,6 @@ def job_config(request, job_config_periodic):
     return temp_job_config
 
 
-@pytest.fixture(scope="session")
-def finalizer():
-    return Finalizer()
-
-
-class Finalizer(object):
-
-    def __init__(self):
-        self.cleanup_methods = []
-
-    def add_cleanup_method(self, method):
-        self.cleanup_methods.append(method)
-
-    def remove_cleanup_method(self, method):
-        try:
-            self.cleanup_methods.remove(method)
-        except:
-            pass
-
-    def execute(self):
-        for method in reversed(self.cleanup_methods):
-            method()
-        self.cleanup_methods = []
-
-
 @pytest.fixture(scope='function')
 def job_config_one_time_task(request, job_config_one_time):
     """
@@ -148,9 +123,8 @@ def job_config_one_time_task(request, job_config_one_time):
 @pytest.fixture(scope='function')
 def job_cleanup(request):
     """
-    Cleanup fixture to delete single or multiple jobs
+    Cleanup fixture to delete single or multiple jobs using delete request to scheduler service
     :param request:
-    :param job_ids:
     :return:
     """
     data = dict(job_ids=[], header={})
@@ -160,7 +134,7 @@ def job_cleanup(request):
         Finalizer method to delete jobs
         :return:
         """
-        # If more than 1 job then delete using id list
+        # If more than 1 job then delete using job id list
         if len(data.get('job_ids')) > 1:
             response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
                                                    data=json.dumps(dict(ids=data['job_ids'])),
@@ -176,3 +150,23 @@ def job_cleanup(request):
     request.addfinalizer(fin)
 
     return data
+
+
+@pytest.fixture(scope='function')
+def post_ten_jobs(request, job_config_one_time_task, auth_header):
+    """
+    Fixture post ten jobs to schedule ten jobs and return their job ids
+    :param request:
+    :param job_config_one_time_task: fixture for one time job
+    :return:
+    """
+    jobs_id = []
+
+    for idx in range(10):
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=auth_header.copy())
+        assert response.status_code == 201
+        jobs_id.append(response.json()['id'])
+
+    return jobs_id
+

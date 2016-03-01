@@ -613,7 +613,7 @@ class SchedulerApiUrl(object):
     TEST_TASK = HOST_NAME % 'tasks/test'
 
     # Use different port of scheduler service URL
-    FLOWER_MONITORING = '--port=5511'
+    FLOWER_MONITORING_PORT = '--port=5511'
 
 
 class SocialNetworkApi(object):
