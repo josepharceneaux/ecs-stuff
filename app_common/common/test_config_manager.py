@@ -17,9 +17,9 @@ from talent_config_manager import TalentConfigKeys, TalentEnvs
 
 CONFIG_FILE_NAME = "common_test.cfg"
 TEST_CONFIG_PATH = ".talent/%s" % CONFIG_FILE_NAME
-STAGING_TEST_CONFIG_FILE_S3_BUCKET = "test-private-staging"
-PROD_TEST_CONFIG_FILE_S3_BUCKET = "test-private"
-JENKINS_TEST_CONFIG_FILE_S3_BUCKET = "test-private-jenkins"
+STAGING_CONFIG_FILE_S3_BUCKET = "gettalent-private-staging"
+PROD_CONFIG_FILE_S3_BUCKET = "gettalent-private"
+JENKINS_CONFIG_FILE_S3_BUCKET = "gettalent-private-jenkins"
 
 
 class TestConfigParser(ConfigParser.ConfigParser):
@@ -119,11 +119,11 @@ def load_test_config():
         # AWS_SECRET_ACCESS_KEY env vars
         s3_connection = S3Connection()
         if env == TalentEnvs.PROD:
-            bucket_name = PROD_TEST_CONFIG_FILE_S3_BUCKET
+            bucket_name = PROD_CONFIG_FILE_S3_BUCKET
         elif env == TalentEnvs.QA:
-            bucket_name = STAGING_TEST_CONFIG_FILE_S3_BUCKET
+            bucket_name = STAGING_CONFIG_FILE_S3_BUCKET
         else:
-            bucket_name = JENKINS_TEST_CONFIG_FILE_S3_BUCKET
+            bucket_name = JENKINS_CONFIG_FILE_S3_BUCKET
         bucket_obj = s3_connection.get_bucket(bucket_name)
         # Download into temporary file & load it as a Python module into the app_config
         tmp_test_config_file = tempfile.NamedTemporaryFile()
