@@ -44,8 +44,6 @@ class Tasks(Resource):
     def get(self):
         """
         This action returns a list of user tasks and their count
-        :keyword user_id: user_id of tasks' owner
-        :type user_id: int
         :return tasks_data: a dictionary containing list of tasks and their count
         :rtype json
 
@@ -57,14 +55,14 @@ class Tasks(Resource):
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
 
-            # Returns 10 jobs ranging from 3-13
+            # Returns 10 jobs ranging from 30-40
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
 
-            # Returns 7 jobs ranging from 5-12
+            # Returns 12 jobs ranging from 50-62
 
         :Example:
         In case of authenticated user
@@ -110,8 +108,8 @@ class Tasks(Resource):
         # In case of higher number of scheduled task running for a particular user and user want to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
-        # Limit the jobs to 200 if user requests for more than 200
-        max_per_page = 200
+        # Limit the jobs to 50 if user requests for more than 50
+        max_per_page = 50
 
         # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
         page, per_page = request.args.get('page', 1), request.args.get('per_page', 10)
@@ -121,7 +119,7 @@ class Tasks(Resource):
 
         if not (str(per_page).isdigit() and int(per_page) >= 10):
             raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater than 10")
+                error_message="'per_page' arg should be a digit and its value should be greater or equal to 10")
 
         page, per_page = int(page), int(per_page)
 
@@ -136,14 +134,13 @@ class Tasks(Resource):
         tasks_count = len(tasks)
 
         tasks = [serialize_task(tasks[index])
-                 for index in range(page-1, (page-1) + per_page) if index < tasks_count and tasks[index]]
+                 for index in range((page-1) * per_page, page * per_page) if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
         header = {
             'X-Total': tasks_count,
             'X-Per-Page': per_page,
-            'X-Page': page,
-            'Content-Type': 'application/json'
+            'X-Page': page
         }
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
