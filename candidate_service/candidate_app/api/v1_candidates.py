@@ -214,7 +214,7 @@ class CandidatesResource(Resource):
             created_candidate_ids.append(resp_dict['candidate_id'])
 
         # Add candidates to cloud search
-        upload_candidate_documents(created_candidate_ids)
+        upload_candidate_documents.delay(created_candidate_ids)
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -337,7 +337,7 @@ class CandidatesResource(Resource):
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
         # Update candidates in cloud search
-        upload_candidate_documents(updated_candidate_ids)
+        upload_candidate_documents.delay(updated_candidate_ids)
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
 

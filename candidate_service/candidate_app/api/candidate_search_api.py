@@ -89,7 +89,7 @@ class CandidateDocuments(Resource):
         if not requested_data or 'candidate_ids' not in requested_data:
             raise InvalidUsage(error_message="Request body is empty or invalid")
 
-        upload_candidate_documents(candidate_ids=requested_data.get('candidate_ids'))
+        upload_candidate_documents.delay(requested_data.get('candidate_ids'))
 
         return '', 204
 
