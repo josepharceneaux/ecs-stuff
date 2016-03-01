@@ -43,13 +43,16 @@ def resume_post_reciever():
     :return: dict: {'candidate': {}}
     """
     oauth = request.oauth_token
-    talent_pools = get_users_talent_pools(oauth)
+    # talent_pools = get_users_talent_pools(oauth)
     content_type = request.headers.get('content-type')
     # Handle posted JSON data from web app/future clients. This block should consume filepicker
     # key and filename.
     if 'application/json' in content_type:
         request_json = request.get_json()
         create_candidate = request_json.get('create_candidate', False)
+        talent_pool_ids = request_json.get('talent_pool_ids')
+        if not isinstance(talent_pool_ids, (list, type(None))):
+            raise InvalidUsage('Invalid type for `talent_pool_ids`')
         filepicker_key = request_json.get('filepicker_key')
         resume_file = None
         resume_file_name = str(filepicker_key)
@@ -63,6 +66,7 @@ def resume_post_reciever():
         filepicker_key = None
         resume_file = request.files.get('resume_file')
         resume_file_name = request.form.get('resume_file_name')
+        talent_pool_ids = None
         if not (resume_file and resume_file_name):
             raise InvalidUsage('Invalid form data for resume parsing.')
     else:
@@ -70,6 +74,11 @@ def resume_post_reciever():
             request.form, request.files, request.json
         ))
         raise InvalidUsage("Invalid Request. Bad Headers set.")
+    # If the array is passed set it, else retrieve the first ID given by candidate_pool_service
+    if talent_pool_ids:
+        talent_pools = talent_pool_ids
+    else:
+        talent_pools = get_users_talent_pools(oauth)
     if not isinstance(create_candidate, bool):
         raise InvalidUsage('Invalid parameter for create_candidate.')
     if create_candidate and not talent_pools:
