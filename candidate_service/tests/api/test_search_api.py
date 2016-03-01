@@ -170,7 +170,7 @@ def test_search_candidate_experience(user_first, access_token_first):
         db.session.commit()
         candidate_ids.append(candidate_id)
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents.delay(candidate_ids)
     response = get_response_from_authorized_user(access_token_first,
                                                  '?minimum_years_experience=0&maximum_years_experience=2').json()
     for candidate in response['candidates']:
@@ -371,7 +371,7 @@ def _assert_results(candidate_ids, response):
 
 def get_response_from_authorized_user(access_token, arguments_to_url):
     # wait for cloudsearch to update the candidates.
-    time.sleep(25)
+    time.sleep(35)
     # auth_token = auth_user.get_auth_token(owner_user, get_bearer_token=True)
     response = requests.get(
         url=CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url,

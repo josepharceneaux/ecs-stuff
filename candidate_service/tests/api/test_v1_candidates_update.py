@@ -923,8 +923,8 @@ def test_add_military_service(access_token_first, user_first, talent_pool):
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    military_services_before_update = request_to_candidate_resource(access_token_first, 'get', candidate_id). \
-        json()['candidate']['military_services']
+    military_services_before_update = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['military_services']
     military_services_count_before_update = len(military_services_before_update)
 
     # Add CandidateMilitaryService
@@ -935,8 +935,8 @@ def test_add_military_service(access_token_first, user_first, talent_pool):
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']
     print "candidate_dict: {}".format(candidate_dict)
 
     military_services_after_update = candidate_dict['military_services']
