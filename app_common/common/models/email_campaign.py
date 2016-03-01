@@ -102,8 +102,8 @@ class EmailCampaignBlast(db.Model):
         """
         Method to get latest email campaign blast for campaign whose id is
         provided. Returns on the basis of most recent sent_datetime.
-        :param campaign_id:
-        :return:
+        :type campaign_id:  int | long
+        :rtype:  EmailCampaignBlast
         """
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
