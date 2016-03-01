@@ -237,13 +237,13 @@ def index_documents():
     conn.layer1.index_documents(_cloud_search_domain.name)
 
 
-def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
+def _build_candidate_documents(candidate_ids, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
     """
     if not candidate_ids:
-        talent_logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
+        logger.warn("Attempted to build candidate documents when candidate_ids=%s", candidate_ids)
         return []
     group_concat_separator = '~~~'
 
@@ -364,7 +364,7 @@ def _build_candidate_documents(candidate_ids, talent_logger, domain_id=None):
             index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
             if not index_field_options:
-                talent_logger.error("Unknown field name, could not build document: %s", field_name)
+                logger.error("Unknown field name, could not build document: %s", field_name)
                 continue
 
             sql_value = field_name_to_sql_value[field_name]
@@ -400,21 +400,20 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
     :param domain_id: Domain Id
     :return:
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
     for i in xrange(0, len(candidate_ids), 10):
-        talent_logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids[i:i+10]))
+        logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids[i:i+10]))
         start_time = time.time()
-        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], talent_logger, domain_id)
-        talent_logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
+        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], domain_id)
+        logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                            len(action_dicts))
         adds, deletes = _send_batch_request(action_dicts)
         if deletes:
-            talent_logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
+            logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
                                 "deletes.candidate_ids: %s", deletes, candidate_ids[i:i+10])
         if adds:
-            talent_logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i+10]))
+            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i+10]))
 
 
 def upload_candidate_documents_in_domain(domain_id):

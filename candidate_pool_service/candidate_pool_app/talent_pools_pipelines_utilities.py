@@ -132,7 +132,6 @@ def update_smartlists_stats_task():
     This method will update the statistics of all smartlists daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     successful_update_smartlist_ids = []
     smartlist_ids = map(lambda smartlist: smartlist[0], Smartlist.query.with_entities(Smartlist.id).all())
 
@@ -168,7 +167,7 @@ def update_smartlists_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
+        logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
 
     logger.info("Statistics for following %s SmartLists have been updated successfully: "
                 "%s" % (len(successful_update_smartlist_ids), ''.join(successful_update_smartlist_ids)))
@@ -180,7 +179,6 @@ def update_talent_pools_stats_task():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     successful_update_talent_pool_ids = []
     talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
 
@@ -215,7 +213,7 @@ def update_talent_pools_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
+        logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
 
     logger.info("Statistics for following %s TalentPools have been updated successfully: "
                 "%s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
@@ -227,7 +225,6 @@ def update_talent_pipelines_stats_task():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id, TalentPipeline.talent_pool_id).all()
     talent_pool_id_to_tuple = dict()
     successful_update_talent_pipeline_ids = []
@@ -295,7 +292,7 @@ def update_talent_pipelines_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+        logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
     logger.info("Statistics for all TalentPipelines in following %s TalentPools have been updated "
                 "successfully: %s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
