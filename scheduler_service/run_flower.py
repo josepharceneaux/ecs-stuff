@@ -13,4 +13,4 @@ from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service import celery_app as celery
 
 
-celery.start(argv=['celery', 'flower', SchedulerApiUrl.FLOWER_MONITORING, 'Q', SchedulerUtils.QUEUE, '-l', 'info'])
+celery.start(argv=['celery', 'flower', SchedulerApiUrl.FLOWER_MONITORING_PORT, 'Q', SchedulerUtils.QUEUE, '-l', 'info'])

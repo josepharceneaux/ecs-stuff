@@ -658,7 +658,7 @@ def update_hit_count(url_conversion):
         if new_hit_count == 1:
             email_campaign_blast = EmailCampaignBlast.query.filter_by(
                 sent_datetime=email_campaign_send.sent_datetime,
-                email_campaign_id=email_campaign_send.campaign_id).first()
+                campaign_id=email_campaign_send.email_campaign_id).first()
             if email_campaign_blast:
                 if is_open:
                     email_campaign_blast.opens += 1

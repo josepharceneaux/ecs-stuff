@@ -37,16 +37,34 @@ api.route = types.MethodType(api_route, api)
 @api.route(SchedulerApi.SCHEDULER_MULTIPLE_TASKS)
 class Tasks(Resource):
     """
-        This resource returns a list of tasks or it can be used to create or schedule a task using POST.
+        This resource returns a list of tasks particular to a user by using pagination concept
+         or it can be used to create or schedule a task using POST.
     """
     @require_oauth(allow_null_user=True)
-    def get(self, **kwargs):
+    def get(self):
         """
         This action returns a list of user tasks and their count
         :keyword user_id: user_id of tasks' owner
         :type user_id: int
         :return tasks_data: a dictionary containing list of tasks and their count
         :rtype json
+
+
+        :Example (in case of pagination):
+        By default, it will return 10 jobs (max)
+            Case 1:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
+
+            # Returns 10 jobs ranging from 3-13
+
+            Case 2:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
+
+            # Returns 7 jobs ranging from 5-12
 
         :Example:
         In case of authenticated user
@@ -85,19 +103,52 @@ class Tasks(Resource):
             }
 
         .. Status:: 200 (OK)
+                    400 (Invalid Usage)
                     500 (Internal Server Error)
 
         """
+        # In case of higher number of scheduled task running for a particular user and user want to get only
+        # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
+
+        # Limit the jobs to 200 if user requests for more than 200
+        max_per_page = 200
+
+        # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
+        page, per_page = request.args.get('page', 1), request.args.get('per_page', 10)
+
+        if not (str(page).isdigit() and int(page) > 0):
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+
+        if not (str(per_page).isdigit() and int(per_page) >= 10):
+            raise InvalidUsage(
+                error_message="'per_page' arg should be a digit and its value should be greater than 10")
+
+        page, per_page = int(page), int(per_page)
+
+        # Limit the jobs if user requests jobs greater than 200
+        if per_page > max_per_page:
+            per_page = max_per_page
+
         user_id = request.user.id if request.user else None
         check_if_scheduler_is_running()
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
-        tasks = [serialize_task(task) for task in tasks]
+        tasks_count = len(tasks)
+
+        tasks = [serialize_task(tasks[index])
+                 for index in range(page-1, (page-1) + per_page) if index < tasks_count and tasks[index]]
+
         tasks = [task for task in tasks if task]
-        return dict(tasks=tasks, count=len(tasks))
+        header = {
+            'X-Total': tasks_count,
+            'X-Per-Page': per_page,
+            'X-Page': page,
+            'Content-Type': 'application/json'
+        }
+        return ApiResponse(response=dict(tasks=tasks), headers=header)
 
     @require_oauth(allow_null_user=True)
-    def post(self, **kwargs):
+    def post(self):
         """
         This method takes data to create or schedule a task for scheduler.
 
@@ -178,7 +229,7 @@ class Tasks(Resource):
         return ApiResponse(response, status=201, headers=headers)
 
     @require_oauth()
-    def delete(self, **kwargs):
+    def delete(self):
         """
         Deletes multiple tasks whose ids are given in list in request data.
         :param kwargs:
@@ -247,7 +298,7 @@ class ResumeTasks(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):
+    def post(self):
         """
         Resume a previously paused tasks/jobs
         :param id: id of task
@@ -307,7 +358,7 @@ class PauseTasks(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):
+    def post(self):
         """
         Pause tasks which are currently running.
 
@@ -365,7 +416,7 @@ class TaskByName(Resource):
     """
 
     @require_oauth(allow_null_user=True)
-    def get(self, _name, **kwargs):
+    def get(self, _name):
         """
         This action returns a task owned by other service
         :param _name: name of task
@@ -437,7 +488,7 @@ class TaskByName(Resource):
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
     @require_oauth(allow_null_user=True)
-    def delete(self, _name, **kwargs):
+    def delete(self, _name):
         """
         Deletes/removes a tasks from scheduler jobstore
         :param kwargs:
@@ -480,7 +531,7 @@ class TaskById(Resource):
     """
 
     @require_oauth(allow_null_user=True)
-    def get(self, _id, **kwargs):
+    def get(self, _id):
         """
         This action returns a task owned by a this user
         :param _id: id of task
@@ -556,10 +607,11 @@ class TaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
     @require_oauth(allow_null_user=True)
-    def delete(self, _id, **kwargs):
+    def delete(self, _id):
         """
         Deletes/removes a tasks from scheduler store
         :param kwargs:
+        :param _id: job_id
         :return:
 
         :Example:
@@ -603,7 +655,7 @@ class ResumeTaskById(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, _id, **kwargs):
+    def post(self, _id):
         """
         Resume a previously paused task/job
         :param _id: id of task
@@ -645,7 +697,7 @@ class PauseTaskById(Resource):
     """
     decorators = [require_oauth()]
 
-    def post(self, _id, **kwargs):
+    def post(self, _id):
         """
         Pause a task which is currently running.
         :param id: id of task
@@ -683,15 +735,14 @@ class PauseTaskById(Resource):
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
+    POST Method:
         This resource is dummy endpoint which is used to call send_request method for testing
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
     """
-    decorators = [require_oauth()]
-
+    @require_oauth()
     def post(self):
-
         env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
         if not (env_key == 'dev' or env_key == 'jenkins'):
             raise ForbiddenError("You are not authorized to access this endpoint.")
@@ -718,12 +769,16 @@ class SendRequestTest(Resource):
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
             run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
-                task.get('post_data', dict()))
+                    task.get('post_data', dict()))
         else:
-            db.db.session.commit()
-            test_user_id = task['test_user_id']
-            test_user = User.query.filter_by(id=test_user_id).first()
-            test_user.delete()
+            try:
+                # Try deleting the user if exist
+                db.db.session.commit()
+                test_user_id = task['test_user_id']
+                test_user = User.query.filter_by(id=test_user_id).first()
+                test_user.delete()
+            except Exception:
+                pass
 
         return dict(message='Dummy Endpoint called')
 
