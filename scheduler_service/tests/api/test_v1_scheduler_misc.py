@@ -201,7 +201,7 @@ class TestSchedulerMisc(object):
         :param job_config: (dict): Fixture that contains jobs config to be used
         :return:
         """
-        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        start_date = datetime.datetime.utcnow() + datetime.timedelta(seconds=60)
         job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
@@ -212,7 +212,7 @@ class TestSchedulerMisc(object):
         sample_user.update(is_disabled=True)
 
         # Wait for the job to run and delete all jobs of the sample user
-        time.sleep(18)
+        time.sleep(80)
 
         response_get = requests.get(SchedulerApiUrl.TEST_TASK,
                                     data=json.dumps({'user_id': user_id}),
