@@ -524,16 +524,12 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-
-        # create object of class PushCampaignBase
-        push_camp_obj = PushCampaignBase(user.id)
-        # call method schedule() to schedule the campaign and get the task_id
-        task_id = push_camp_obj.schedule(request, campaign_id)
-        if task_id:
-            message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
-        else:
-            message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
-            task_id = push_camp_obj.campaign.scheduler_task_id
+        pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
+            request, campaign_id, CampaignUtils.PUSH)
+        campaign_obj = PushCampaignBase(user.id)
+        campaign_obj.campaign = pre_processed_data['campaign']
+        task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
+        message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
         return dict(message=message, task_id=task_id), 200
 
     def put(self, campaign_id):
@@ -578,14 +574,15 @@ class SchedulePushCampaignResource(Resource):
         get_valid_json_data(request)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
-        pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
-            request, campaign_id, CampaignUtils.PUSH)
-        PushCampaignBase.pre_process_re_schedule(pre_processed_data)
-        campaign_obj = PushCampaignBase(request.user.id)
-        campaign_obj.campaign = pre_processed_data['campaign']
-        task_id = campaign_obj.reschedule(pre_processed_data['data_to_schedule'])
-        return dict(message='Campaign(id:%s) has been re-scheduled.' % campaign_id,
-                    task_id=task_id), 200
+        # create object of class PushCampaignBase
+        push_camp_obj = PushCampaignBase(request.user.id)
+        task_id = push_camp_obj.reschedule(request, campaign_id)
+        if task_id:
+            message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        else:
+            message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
+            task_id = push_camp_obj.campaign.scheduler_task_id
+        return dict(message=message, task_id=task_id), 200
 
     def delete(self, campaign_id):
         """
@@ -699,14 +696,14 @@ class PushCampaignBlastSends(Resource):
                               "id": 9,
                               "sent_datetime": "2015-11-23 18:25:09",
                               "blast_id": 1,
-                              "updated_time": "2015-11-23 18:25:08"
+                              "updated_datetime": "2015-11-23 18:25:08"
                             },
                             {
                               "candidate_id": 2,
                               "id": 10,
                               "sent_datetime": "2015-11-23 18:25:13",
                               "blast_id": 1,
-                              "updated_time": "2015-11-23 18:25:13"
+                              "updated_datetime": "2015-11-23 18:25:13"
                            }
                         ],
                 "count": 2
@@ -836,14 +833,14 @@ class PushCampaignBlasts(Resource):
                               "clicks": 6,
                               "id": 1,
                               "sends": 10,
-                              "updated_time": "2015-12-30 14:33:44"
+                              "updated_datetime": "2015-12-30 14:33:44"
                             },
                             {
                               "campaign_id": 2,
                               "clicks": 11,
                               "id": 2,
                               "sends": 20,
-                              "updated_time": "2015-12-30 14:33:00"
+                              "updated_datetime": "2015-12-30 14:33:00"
                             }
                 ],
                 "count": 2
@@ -900,7 +897,7 @@ class PushCampaignBlastById(Resource):
                           "clicks": 6,
                           "id": 3,
                           "sends": 10,
-                          "updated_time": "2015-12-30 14:33:44"
+                          "updated_datetime": "2015-12-30 14:33:44"
                         }
             }
 

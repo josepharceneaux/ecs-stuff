@@ -89,8 +89,8 @@ class PushCampaignBlast(db.Model):
 
 class PushCampaignSend(db.Model):
     """
-    When a campaign is sent to a candidate, a send entry is created which information like
-    candidate_id, send datetime and associated campaign.
+    When a campaign is sent to a candidate, a send entry is created which contains
+    information like candidate_id, send datetime and associated campaign.
     """
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)

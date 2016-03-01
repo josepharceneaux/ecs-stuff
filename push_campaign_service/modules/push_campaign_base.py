@@ -45,7 +45,6 @@ from push_campaign_service.common.campaign_services.campaign_utils import Campai
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
 
-
 class PushCampaignBase(CampaignBase):
 
     def __init__(self, user_id, *args, **kwargs):
@@ -59,7 +58,7 @@ class PushCampaignBase(CampaignBase):
         # sets the user_id
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.campaign_blast = None
-        self.campaign_blast_id = None
+        self.blast_id = None
         self.campaign_id = None
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
@@ -174,7 +173,7 @@ class PushCampaignBase(CampaignBase):
                                                                      url=signed_url,
                                                                      player_ids=device_ids)
                     if response.ok:
-                        campaign_send = PushCampaignSend(campaign_blast_id=self.campaign_blast_id,
+                        campaign_send = PushCampaignSend(blast_id=self.blast_id,
                                                          candidate_id=candidate.id
                                                          )
                         PushCampaignSend.save(campaign_send)

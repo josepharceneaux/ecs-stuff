@@ -23,7 +23,10 @@ JENKINS_TEST_CONFIG_FILE_S3_BUCKET = "test-private-jenkins"
 
 
 class TestConfigParser(ConfigParser.ConfigParser):
-
+    """
+    It is a child class of ConfigParser and we are adding to_dict() method to convert the
+    configuration key values into a dictionary for all sections.
+    """
     def to_dict(self):
         """
         This converts config file contents to dictionary which contains other dictionaries

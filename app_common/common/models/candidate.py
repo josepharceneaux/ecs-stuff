@@ -996,23 +996,24 @@ class CandidateDevice(db.Model):
     registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
-        return "<CandidateDevice (Id: %s, OneSignalId: %s)>" % (self.id,
+        return "<CandidateDevice (Id: %s, OneSignalDeviceId: %s)>" % (self.id,
                                                                 self.one_signal_device_id)
 
     @classmethod
     def get_devices_by_candidate_id(cls, candidate_id):
         assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
-            'device_ids list should contain at least one id'
+            'candidate_id is not a valid positive number'
         return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
-    def get_candidate_ids_from_device_ids(cls, device_ids):
-        assert isinstance(device_ids, list) and len(device_ids), 'device_ids list should contain at least one id'
+    def get_candidate_ids_from_one_signal_device_ids(cls, device_ids):
+        assert isinstance(device_ids, list) and len(device_ids),\
+            'device_ids should be a list containing at least one id'
         return cls.query.filter_by(cls.one_signal_device_id.in_(device_ids)).all()
 
     @classmethod
     def get_candidate_id_from_one_signal_device_id(cls, device_id):
-        assert device_id, 'device_id has invalid value'
+        assert device_id, 'device_id has an invalid value'
         device = cls.query.filter_by(one_signal_device_id=device_id).first()
         return None if device is None else device.candiadte_id
 
@@ -1020,12 +1021,12 @@ class CandidateDevice(db.Model):
     def get_by_candidate_id(cls, candidate_id):
         assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
             'candidate_id must be a positive number'
-        return cls.query.filter_by(candidate_id=candidate_id).first()
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
     @classmethod
-    def get_by_candidate_id_and_one_signal_id(cls, candidate_id, one_signal_id_id):
+    def get_by_candidate_id_and_one_signal_device_id(cls, candidate_id, one_signal_device_id):
         assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
             'candidate_id must be a positive number'
-        assert isinstance(one_signal_id_id, basestring), 'one_signal_id_id must be a string'
+        assert isinstance(one_signal_device_id, basestring), 'one_signal_id_id must be a string'
         return cls.query.filter_by(candidate_id=candidate_id,
-                                   one_signal_device_id=one_signal_id_id).first()
+                                   one_signal_device_id=one_signal_device_id).first()

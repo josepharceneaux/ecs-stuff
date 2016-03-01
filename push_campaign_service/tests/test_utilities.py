@@ -6,7 +6,8 @@ from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaign
     CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
 from push_campaign_service.common.tests.conftest import randomword
 from push_campaign_service.common.utils.handy_functions import to_utc_str
-from push_campaign_service.common.utils.test_utils import send_request, get_fake_dict
+from push_campaign_service.common.utils.test_utils import (send_request,
+                                                           get_fake_dict, HttpStatus)
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 from push_campaign_service.push_campaign_app import logger
 
@@ -33,7 +34,7 @@ def missing_key_test(data, key, token):
     """
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     response = response.json()
     error = response['error']
     assert error['code'] == CampaignException.MISSING_REQUIRED_FIELD
@@ -57,7 +58,7 @@ def invalid_value_test(data, key, token, campaign_id):
     data.update(**generate_campaign_data())
     data[key] = ''
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    response.status_code == INVALID_USAGE
+    response.status_code == HttpStatus.INVALID_USAGE
     response = response.json()
     error = response['error']
     assert error['field'] == key
@@ -75,17 +76,17 @@ def invalid_data_test(method, url, token):
     """
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == INVALID_USAGE
+    assert response.status_code == HttpStatus.INVALID_USAGE
 
 
 def generate_campaign_data():
@@ -96,7 +97,7 @@ def generate_campaign_data():
     data = {
         "name": fake.domain_name(),
         "body_text": fake.paragraph(1),
-        "url": 'https://www.digitalocean.com/community/tutorials/how-to-install-and-use-docker-getting-started' #fake.url()
+        "url": 'https://www.google.com/'
     }
     return data
 

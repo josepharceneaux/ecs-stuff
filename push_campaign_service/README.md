@@ -809,7 +809,7 @@ each blast contains info about number of sends and how many responded to that ca
                     {
                       "sends": 4,
                       "campaign_id": 468,
-                      "updated_time": "2016-01-25 14:06:08",
+                      "updated_datetime": "2016-01-25 14:06:08",
                       "id": 631,
                       "clicks": 3
                     }
@@ -880,7 +880,7 @@ This endpoint is used to get statistics of a campaign from blast object which co
                 "blast": {
                     "sends": 4,
                     "campaign_id": 468,
-                    "updated_time": "2016-01-25 14:06:08",
+                    "updated_datetime": "2016-01-25 14:06:08",
                     "id": 631,
                     "clicks": 3
                 }
