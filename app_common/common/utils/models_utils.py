@@ -229,15 +229,8 @@ def get_by_id(cls, _id):
     :type _id: int
     :return: Model instance
     """
-
-    try:
-        # get Model instance given by id
-        obj = cls.query.get(_id)
-    except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].exception(
-            "Couldn't get record from db table %s. Error is: %s" % (cls.__name__, error.message))
-        return None
-    return obj
+    # get Model instance given by id (primary_key)
+    return cls.query.get(_id)
 
 
 @classmethod
@@ -275,7 +268,7 @@ def delete(cls, ref, app=None):
         db.session.rollback()
         if isinstance(app, Flask):
             with app.app_context():
-                current_app.config[TalentConfigKeys.LOGGER].error(
+                app.config[TalentConfigKeys.LOGGER].error(
                     "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True

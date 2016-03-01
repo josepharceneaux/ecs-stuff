@@ -219,8 +219,8 @@ class TalentActivityManager(object):
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_PUSH_CREATE: (
-            "%(user_name)s created a Push campaign: '%(campaign_name)s'",
-            "%(user_name)s created a Push campaign: '%(campaign_name)s'",
+            "%(username)s created a Push campaign: '%(campaign_name)s'",
+            "%(username)s created a Push campaign: '%(campaign_name)s'",
             "campaign.png"),
         ActivityMessageIds.CAMPAIGN_PUSH_SEND: (
             "Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",

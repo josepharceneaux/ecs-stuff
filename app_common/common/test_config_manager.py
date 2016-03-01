@@ -25,6 +25,10 @@ JENKINS_TEST_CONFIG_FILE_S3_BUCKET = "test-private-jenkins"
 class TestConfigParser(ConfigParser.ConfigParser):
 
     def to_dict(self):
+        """
+        This converts config file contents to dictionary which contains other dictionaries
+        for each section.
+        """
         sections = dict(self._sections)
         for section in sections:
             sections[section] = dict(self._defaults, **sections[section])
@@ -35,6 +39,67 @@ class TestConfigParser(ConfigParser.ConfigParser):
 def load_test_config():
     """
     Load test configuration variables from test config file, conf file, or S3 bucket (if QA/prod)
+    This method converts the config file values to a config dictionary.
+
+        :Example:
+            Here is our sample config file (common_test.cfg) contents.
+
+            [USER_FIRST]
+            USER_ID=3
+            CLIENT_ID=KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U11
+            CLIENT_SECRET=DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj11
+            USERNAME=test_email@test.com
+            PASSWORD=test_user
+            TOKEN=test_access_token
+
+            [USER_SAME_DOMAIN]
+            USER_ID=4
+            CLIENT_ID=KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U12
+            CLIENT_SECRET=DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj12
+            USERNAME=test_email_same_domain@test.com
+            PASSWORD=test_user
+            TOKEN=test_access_token_same_domain
+
+            [USER_SECOND]
+            USER_ID=5
+            CLIENT_ID=KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U13
+            CLIENT_SECRET=DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj13
+            USERNAME=test_email_second@test.com
+            PASSWORD=test_user
+            TOKEN=test_access_token_second
+
+        Now you can read this file by simply calling load_test_config(), but internally we
+            are doing something like:
+
+            config_parse = TestConfigParser()
+            config_parse.read(path)
+            test_config = config_parse.to_dict()
+
+        test_config dictionary will look like:
+            {
+                'USER_FIRST': {
+                    'client_id' : 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U12'
+                    'client_secret': 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj12',
+                    'username': 'test_email@test.com',
+                    'password': 'test_user',
+                    'token': 'test_access_token'
+                },
+                'USER_SAME_DOMAIN': {
+                    'client_id' : 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U12'
+                    'client_secret': 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj12',
+                    'username': 'test_email_same_domain@test.com',
+                    'password': 'test_user',
+                    'token': 'test_access_token_same_domain'
+                },
+                'USER_SECOND': {
+                    'client_id' : 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U12'
+                    'client_secret': 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj12',
+                    'username': 'test_email_second@test.com',
+                    'password': 'test_user',
+                    'token': 'test_access_token_second'
+                }
+            }
+
     :return: config dict
     :rtype: dict
     """
@@ -45,7 +110,7 @@ def load_test_config():
         config_parse.read(path)
         test_config = config_parse.to_dict()
 
-    # Load up config from private S3 bucket, if environment is qa or prod
+    # Load up config from private S3 bucket, if environment is qa , jenkins or prod
     elif env in (TalentEnvs.QA, TalentEnvs.PROD, TalentEnvs.JENKINS):
         # Open S3 connection to default region & use AWS_ACCESS_KEY_ID and
         # AWS_SECRET_ACCESS_KEY env vars

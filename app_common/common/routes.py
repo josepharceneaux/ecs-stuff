@@ -744,26 +744,24 @@ class PushCampaignApi(object):
     # endpoint /v1/push-campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
     CAMPAIGNS = '/%s/%s' % (VERSION, 'push-campaigns')
-    DEVICES = '/%s/%s' % (VERSION, 'devices')
     # endpoint /v1/push-campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = '/%s/%s' % (VERSION, 'push-campaigns/<int:campaign_id>')
     # endpoint /v1/campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
-    SENDS = CAMPAIGN + '/sends'
-    BLAST_SENDS = CAMPAIGN + '/blasts/<int:blast_id>/sends'
-    BLASTS = CAMPAIGN + '/blasts'
-    BLAST = CAMPAIGN + '/blasts/<int:blast_id>'
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/<int:blast_id>'
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
     # endpoint /v1/campaigns/:id/send
     # To send a campaign to candidates
-    SEND = CAMPAIGN + '/send'
+    SEND = CAMPAIGN + CampaignWords.SEND
     # /v1/campaigns/:id/schedule
     # To schedule a Push campaign
-    SCHEDULE = CAMPAIGN + '/schedule'
-    ####    Followings are not REST endpoints, but App endpoints ####
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in Push campaign's body text.
-    REDIRECT = API_URL % 'redirect/<int:url_conversion_id>'
+    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     URL_CONVERSION = '/%s/%s/<int:_id>' % (VERSION, 'url-conversions')
     URL_CONVERSION_BY_SEND_ID = '/%s/%s/<int:send_id>' % (VERSION, 'send-url-conversions')
 
@@ -778,13 +776,12 @@ class PushCampaignApiUrl(object):
                                GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
     CAMPAIGNS = HOST_NAME % PushCampaignApi.CAMPAIGNS
     CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'push-campaigns/%s')
-    SENDS = CAMPAIGN + '/sends'
-    BLASTS = CAMPAIGN + '/blasts'
-    BLAST = CAMPAIGN + '/blasts/%s'
-    BLAST_SENDS = CAMPAIGN + '/blasts/%s/sends'
-    SEND = CAMPAIGN + '/send'
-    SCHEDULE = CAMPAIGN + '/schedule'
-    DEVICES = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'devices')
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    SEND = CAMPAIGN + CampaignWords.SEND
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
     REDIRECT = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
     URL_CONVERSION = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
     URL_CONVERSION_BY_SEND_ID = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
@@ -816,5 +813,3 @@ class EmailCampaignUrl(object):
     URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
                                                        + '/' + CampaignWords.REDIRECT + '/%s')
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
-
-

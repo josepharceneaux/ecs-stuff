@@ -96,6 +96,9 @@ class EmailCampaignBlast(db.Model):
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
 
+    def __repr__(self):
+        return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
+
 
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'

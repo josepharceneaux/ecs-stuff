@@ -389,6 +389,7 @@ class CampaignUtils(object):
             raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
 
+
 def to_utc_str(dt):
     """
     This converts given datetime in '2015-10-08T06:16:55Z' format.

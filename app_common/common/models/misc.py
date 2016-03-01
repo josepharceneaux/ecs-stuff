@@ -344,6 +344,7 @@ class EmailTemplateFolder(db.Model):
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
 
+
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
@@ -393,6 +394,4 @@ class UrlConversion(db.Model):
                                                        backref='url_conversion',
                                                        lazy='dynamic')
 
-    def __repr__(self):
-        return "<UrlConversion (id=' %r')>" % self.id
 

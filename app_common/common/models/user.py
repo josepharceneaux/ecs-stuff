@@ -17,6 +17,7 @@ from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_campaign import EmailCampaign
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from ..error_codes import ErrorCodes
 
 
 class User(db.Model):
@@ -524,7 +525,8 @@ class UserScopedRoles(db.Model):
                         user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
                         db.session.add(user_scoped_role)
                     else:
-                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id), error_code=9000)
+                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id),
+                                           error_code=ErrorCodes.ROLE_ALREADY_EXISTS)
                 else:
                     raise InvalidUsage(error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()

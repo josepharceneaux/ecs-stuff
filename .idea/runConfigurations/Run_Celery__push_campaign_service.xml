@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Push Campaign Celery" type="PythonConfigurationType" factoryName="Python" folderName="push_campaign_service">
+  <configuration default="false" name="Run Celery: push_campaign_service" type="PythonConfigurationType" factoryName="Python" folderName="push_campaign_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
