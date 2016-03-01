@@ -1,6 +1,9 @@
 #!/bin/bash
 
+eval $(aws ecr get-login --region us-east-1)
+
 FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "email-campaign-service" "push-campaign-service")
+
 ecr_registry_url="528222547498.dkr.ecr.us-east-1.amazonaws.com"
 
 for app_index in ${!FLASK_APPS[@]}

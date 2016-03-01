@@ -17,7 +17,7 @@ from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
 from campaign_utils import (to_utc_str, get_model)
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 
@@ -114,8 +114,17 @@ class CampaignsTestsHelpers(object):
         _invalid_data_test('put', url, token)
 
     @classmethod
-    def request_with_invalid_campaign_id(cls, model, method, url, token, data):
-        # Request a campaign which does not exists or id is invalid
+    def request_with_invalid_resource_id(cls, model, method, url, token, data):
+        """
+        This makes HTTP request (as specified by method) on given URL.
+        It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
+        that does not exist in database for given model. It then asserts to check we get status
+        code 400 in case of id 0 and status code 404 in case of non-existing id.
+        """
+        assert db.Model in model.__mro__, '`model` should be instance of db.Model'
+        raise_if_not_instance_of(method, basestring)
+        raise_if_not_instance_of(url, basestring)
+        raise_if_not_instance_of(token, basestring)
         last_campaign_id_in_db = cls.get_last_id(model)
         invalid_ids = get_invalid_ids(last_campaign_id_in_db)
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
@@ -409,10 +418,10 @@ def _invalid_data_test(method, url, token):
 
 def get_invalid_ids(last_id_of_obj_in_db):
     """
-    Given a database model object, here we create a list of two Invalid ids. One of them
-    is 0 and other one is 100 plus the id of last record.
+    Given a database model object, here we create a list of two invalid ids. One of them
+    is 0 and other one is 1000 plus the id of last record.
     """
-    return 0, last_id_of_obj_in_db + 100
+    return 0, last_id_of_obj_in_db + 1000
 
 
 def _get_invalid_id_and_status_code_pair(invalid_ids):

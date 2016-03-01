@@ -14,8 +14,10 @@ import requests
 
 # Application imports
 from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token
+from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.conftest import sample_user
+from scheduler_service.common.utils.models_utils import get_by_id
 
 __author__ = 'saad'
 
@@ -64,7 +66,7 @@ class TestSchedulerMisc(object):
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
         assert token.expires > datetime.datetime.utcnow()
 
-        # Delete the created job
+        # Delete all jobs created in this test case using fixture finalizer
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
@@ -166,6 +168,29 @@ class TestSchedulerMisc(object):
                                  headers=auth_header)
 
         assert response.status_code == 400
+
+    def test_get_already_deleted_job(self, auth_header, job_config_one_time_task):
+        """
+        Schedule a one time job and then wait for its time to pass, then try to get that job.
+        Job should not be there.
+        :param auth_header: Fixture that contains token.
+        :param job_config_one_time_task: (dict): Fixture that contains job config to be used
+        :return:
+        """
+        run_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=10)
+        job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        time.sleep(15)
+
+        # Now get the job
+        response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                    headers=auth_header)
+        assert response_get.status_code == 404
 
 
 def _update_token_expiry_(user_id, expiry):

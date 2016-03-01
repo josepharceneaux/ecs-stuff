@@ -617,15 +617,15 @@ class SchedulerApi(object):
 
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
-    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test"
     SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
     SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
     SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
-    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
-    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
-    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
 
 
 class SchedulerApiUrl(object):
@@ -639,17 +639,17 @@ class SchedulerApiUrl(object):
 
     HOST_NAME %= _get_api_relative_version(VERSION)
     # URLs, in case of test cases
-    TASKS = HOST_NAME % "tasks/"
+    TASKS = HOST_NAME % "tasks"
     TASK = HOST_NAME % 'tasks/id/%s'
     TASK_NAME = HOST_NAME % 'tasks/name/%s'
-    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
-    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
-    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
-    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
-    TEST_TASK = HOST_NAME % 'tasks/test/'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume'
+    TEST_TASK = HOST_NAME % 'tasks/test'
 
     # Use different port of scheduler service URL
-    FLOWER_MONITORING = '--port=5511'
+    FLOWER_MONITORING_PORT = '--port=5511'
 
 
 class CampaignWords(object):
@@ -801,6 +801,9 @@ class EmailCampaignEndpoints(object):
     # endpoint /v1/email-campaigns/:id/blasts
     # Gives the blasts of a campaign
     BLASTS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS
+    # endpoint /v1/email-campaigns/:id/blasts/:id
+    # Gives the blast object of a campaign for a particular blast_id
+    BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
 
 
 class EmailCampaignUrl(object):
@@ -813,3 +816,5 @@ class EmailCampaignUrl(object):
     URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
                                                        + '/' + CampaignWords.REDIRECT + '/%s')
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
+

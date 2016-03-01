@@ -72,8 +72,6 @@ from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
-
-
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
 api = TalentApi()
@@ -187,25 +185,36 @@ class EmailCampaignSendApi(Resource):
                             % campaign_id), 200
 
 
-@email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])
-def url_redirect(url_conversion_id):
-    # Verify the signature of URL
-    CampaignBase.pre_process_url_redirect(request.args, request.full_path)
-    url_conversion = UrlConversion.query.get(url_conversion_id)
-    if not url_conversion:
-        logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
-        return
-    # Update hitcount
-    update_hit_count(url_conversion)
-    # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
-    destination_url = url_conversion.destination_url
-    if destination_url.lower().startswith("www."):
-        destination_url = "http://" + destination_url
+@api.route(EmailCampaignEndpoints.URL_REDIRECT)
+class EmailCampaignUrlRedirect(Resource):
+    """
+    This endpoint looks like /v1/redirect/:id
+    This is hit when candidate open's an email or clicks on html content of email campaign
+    """
 
-    if destination_url == '#':
-        # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
-        destination_url = 'http://www.gettalent.com/'  # Todo
-    return redirect(destination_url)
+    def get(self, url_conversion_id):
+        """
+        Id of url_conversion record
+        """
+        # Verify the signature of URL
+        CampaignBase.pre_process_url_redirect(request.args, request.full_path)
+        url_conversion = UrlConversion.query.get(url_conversion_id)
+        if not url_conversion:
+            logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
+            return
+        # Update hitcount
+        update_hit_count(url_conversion)
+        # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
+        destination_url = url_conversion.destination_url
+        # TODO: Destination URL shouldn't be empty. Need to raise custom exception
+        # TODO: EmptyDestinationUrl here
+        if (destination_url or '').lower().startswith('www.'):
+            destination_url = "http://" + destination_url
+
+        if destination_url == '#':
+            # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
+            destination_url = 'http://www.gettalent.com/'  # Todo
+        return redirect(destination_url)
 
 
 @api.route(EmailCampaignEndpoints.BLASTS)
@@ -243,7 +252,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "1",
@@ -255,7 +264,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "2",
@@ -264,7 +273,6 @@ class EmailCampaignBlasts(Resource):
                     }
                 ]
             }
-
 
         .. Status:: 200 (OK)
                     400 (Bad request)
@@ -277,7 +285,66 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        parsers = dict(sent_datetime=str, updated_datetime=str)
-        blasts = [blast.to_json(field_parsers=parsers) for blast in campaign.blasts]
+        blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
+
+
+@api.route(EmailCampaignEndpoints.BLAST)
+class EmailCampaignBlastById(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
+    This class returns a blast object for given blast_id associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, blast_id):
+        """
+        This endpoint returns a blast object for a given campaign_id and blast_id.
+        From that blast object we can extract sends, clicks etc.
+        :param campaign_id: int, unique id of a email campaign
+        :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
+        :return: JSON data containing blast object
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(EmailCampaignUrl.BLAST % (campaign_id, blast_id),
+        >>>                         headers=headers)
+
+        .. Response::
+
+               {
+                  "blast": {
+                                "updated_datetime": "2016-02-10 19:37:15",
+                                "sends": 1,
+                                "bounces": 0,
+                                "campaign_id": 1,
+                                "text_clicks": 0,
+                                "html_clicks": 0,
+                                "complaints": 0,
+                                "id": "1",
+                                "opens": 0,
+                                "sent_datetime": "2016-02-10 19:37:04"
+                              }
+               }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain)
+                    404 (Campaign not found)
+                    500 (Internal server error)
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      blast_id=blast_id))
+        # Get valid blast object
+        blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
+                                                     request.user,
+                                                     CampaignUtils.EMAIL)
+        return dict(blast=blast_obj.to_json()), 200
