@@ -4,13 +4,20 @@ from urllib import urlencode
 from urlparse import parse_qs, urlsplit, urlunsplit
 from BeautifulSoup import BeautifulSoup, Tag
 from dateutil.relativedelta import relativedelta
+from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import InvalidUsage
+from email_campaign_service.common.campaign_services.validators import \
+    raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound, \
+    ForbiddenError
+from email_campaign_service.common.models.user import User
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
-from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
+from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request, \
+    raise_if_not_instance_of
+from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion, \
+    EmailCampaignSend
 from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
@@ -229,3 +236,40 @@ def convert_html_tag_attributes(soup, conversion_function, tag="a",
             if convert_first_only:
                 break
     return replacements
+
+
+def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_type):
+    """
+    This gets the send object from EmailCampaignSend database table. If no object is found
+    corresponding to given campaign_id, it raises ResourceNotFound.
+    If campaign_id associated with send_obj is not same as the requested campaign id,
+    it raises forbidden error.
+    :param requested_campaign_id: Id of requested campaign object
+    :param send_id: Id of send object of a particular campaign
+    :param current_user: logged-in user's object
+    :param campaign_type: Type of campaign. e.g. email_campaign etc
+    :type requested_campaign_id: int | long
+    :type send_id: int | long
+    :type current_user: User
+    :type campaign_type: str
+    :exception: ResourceNotFound
+    :exception: ForbiddenError
+    :return: campaign blast object
+    :rtype: EmailCampaignSend
+    """
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
+                                                  send_id=send_id))
+    raise_if_not_instance_of(current_user, User)
+    raise_if_not_instance_of(campaign_type, basestring)
+    # Validate that campaign belongs to user's domain
+    campaign = CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
+                                                            current_user,
+                                                            campaign_type)
+    send_obj = EmailCampaignSend.get_by_id(send_id)
+    if not send_obj:
+        raise ResourceNotFound("Send object(id:%s) for %s(id:%s) does not exist in database."
+                               % (send_id, campaign_type, campaign.id))
+    if not send_obj.campaign_id == requested_campaign_id:
+        raise ForbiddenError("Send object(id:%s) is not associated with %s(id:%s)."
+                             % (send_id, campaign_type, requested_campaign_id))
+    return send_obj

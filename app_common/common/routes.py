@@ -733,6 +733,8 @@ class EmailCampaignEndpoints(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    # endpoint /v1/email-campaigns/:id/send
+    # Send the campaign as specified by the id
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/email-campaigns/:id/blasts
@@ -741,6 +743,12 @@ class EmailCampaignEndpoints(object):
     # endpoint /v1/email-campaigns/:id/blasts/:id
     # Gives the blast object of a campaign for a particular blast_id
     BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
+    # endpoint /v1/email-campaigns/:id/sends
+    # Gives the sends of a campaign
+    SENDS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS
+    # endpoint /v1/email-campaigns/:id/sends/:id
+    # Gives the send object of a campaign for a particular send_id
+    SEND_BY_ID = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS + '/<int:send_id>'
 
 
 class EmailCampaignUrl(object):
@@ -755,4 +763,5 @@ class EmailCampaignUrl(object):
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
 
-
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    SEND_BY_ID = SENDS + '/%s'

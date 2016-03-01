@@ -374,7 +374,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     # If only getting candidates that haven't been emailed before...
     if new_candidates_only:
         already_emailed_candidates = EmailCampaignSend.query.with_entities(
-            EmailCampaignSend.candidate_id).filter_by(email_campaign_id=campaign.id).all()
+            EmailCampaignSend.candidate_id).filter_by(campaign_id=campaign.id).all()
         emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
 
         # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
@@ -546,7 +546,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(
+            EmailCampaignBlast.campaign_id == campaign.id).order_by(
             desc(EmailCampaignBlast.sent_datetime)).first()
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
@@ -559,7 +559,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
-    email_campaign_send = EmailCampaignSend(email_campaign_id=campaign.id,
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate.id,
                                             sent_datetime=blast_datetime)
     EmailCampaignSend.save(email_campaign_send)
@@ -648,7 +648,7 @@ def update_hit_count(url_conversion):
             except Exception as error:
                 logger.error('Error occurred while creating activity for '
                              'email-campaign(id:%s) open/click. '
-                             'Error is %s' % (email_campaign_send.email_campaign_id,
+                             'Error is %s' % (email_campaign_send.campaign_id,
                                               error.message))
             logger.info("Activity has been added for URL redirect for candidate(id:%s). "
                         "email_campaign_send(id:%s)",
@@ -658,7 +658,7 @@ def update_hit_count(url_conversion):
         if new_hit_count == 1:
             email_campaign_blast = EmailCampaignBlast.query.filter_by(
                 sent_datetime=email_campaign_send.sent_datetime,
-                email_campaign_id=email_campaign_send.email_campaign_id).first()
+                email_campaign_id=email_campaign_send.campaign_id).first()
             if email_campaign_blast:
                 if is_open:
                     email_campaign_blast.opens += 1
@@ -667,10 +667,9 @@ def update_hit_count(url_conversion):
                 db.session.commit()
             else:
                 logger.error("Email campaign URL redirect: No email_campaign_blast found matching "
-                             "email_campaign_send.sentTime %s, campaign_id=%s" % (
-                             email_campaign_send.sent_datetime,
-                             email_campaign_send.email_campaign_id)
-                             )
+                             "email_campaign_send.sentTime %s, campaign_id=%s"
+                             % (email_campaign_send.sent_datetime,
+                                email_campaign_send.campaign_id))
     except Exception:
         logger.exception("Received exception doing url_redirect (url_conversion_id=%s)",
                          url_conversion.id)
