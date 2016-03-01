@@ -2,7 +2,6 @@ __author__ = 'basit'
 
 import re
 
-from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
@@ -157,9 +156,8 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     This fixture is used to get the response of sending campaign emails with client id
     for a particular campaign. It also ensures that response is in proper format. Used in
     multiple tests.
-    :param access_token_first:
-    :param campaign_with_valid_candidate:
-    :return:
+    :param access_token_first: Bearer token for authorization.
+    :param campaign_with_valid_candidate: Email campaign object with a valid candidate associated.
     """
     url = EmailCampaignUrl.SEND
     campaign = campaign_with_valid_candidate

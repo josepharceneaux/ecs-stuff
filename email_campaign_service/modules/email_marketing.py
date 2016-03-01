@@ -238,7 +238,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     else:
         raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
                            % campaign.id,
-                           error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+                           error_code = CampaignException.NO_VALID_CANDIDATE_FOUND)
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
