@@ -13,6 +13,8 @@ EXPOSE 80
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 
+ENV C_FORCE_ROOT true
+
 CMD\
     eval "$(pyenv init -)" && \
 

@@ -192,7 +192,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
 
     if update_now:
         # Update cloud_search
-        upload_candidate_documents(candidate_ids)
+        upload_candidate_documents.delay(candidate_ids)
     return candidate_ids
 
 
@@ -203,7 +203,7 @@ def _update_now(candidate_ids):
     :return:
     """
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents.delay(candidate_ids)
     return
 
 
@@ -220,8 +220,7 @@ def test_upload_candidate_documents_in_domain(sample_user):
     candidate_ids = populate_candidates(count=no_of_candidates, owner_user_id=sample_user.id, update_now=False)
     domain_id = sample_user.domain_id
     _assert_search_results(domain_id, {'query': ''}, [])  # Check no candidate is returned for this domain.
-    no_of_candidates_uploaded = upload_candidate_documents_in_domain(domain_id)
-    assert no_of_candidates == no_of_candidates_uploaded
+    upload_candidate_documents_in_domain(domain_id)
     _assert_search_results(domain_id, {'query': ''}, candidate_ids)
 
 
@@ -231,8 +230,7 @@ def test_upload_candidate_documents_of_user(sample_user, sample_user_2):
     # User 2 creates candidates
     user_2_candidate_ids = populate_candidates(count=5, owner_user_id=sample_user_2.id, update_now=False)
     # Only upload user 2 candidates
-    no_of_candidates_uploaded = upload_candidate_documents_of_user(sample_user_2.id)
-    assert no_of_candidates_uploaded == len(user_2_candidate_ids)
+    upload_candidate_documents_of_user(sample_user_2.id)
     # Assert only user 2's candidates appear in search results
     _assert_search_results(sample_user_2.domain_id, {'query': ''}, user_2_candidate_ids)
 

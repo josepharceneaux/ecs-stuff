@@ -114,7 +114,7 @@ class TestSmsCampaignSends(object):
         :param access_token_first:
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,

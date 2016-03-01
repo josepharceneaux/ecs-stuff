@@ -145,7 +145,6 @@ class TestSendCampaign(object):
         (using fixtures passed in as params).
         It should get Invalid usage error.
         Custom error should be NoSmartlistAssociatedWithCampaign.
-        :return:
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(
             self.URL % email_campaign_of_user_first.id, access_token_first)
@@ -157,7 +156,6 @@ class TestSendCampaign(object):
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get invalid usage error.
         Custom error should be NoCandidateAssociatedWithSmartlist .
-        :return:
         """
         with app.app_context():
             CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
@@ -169,7 +167,6 @@ class TestSendCampaign(object):
         """
         User auth token is valid but given campaign does not belong to domain
         of logged-in user. It should get Forbidden error.
-        :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
@@ -177,10 +174,8 @@ class TestSendCampaign(object):
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to update a campaign which does not exists in database.
-        :param access_token_first:
-        :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(EmailCampaign,
+        CampaignsTestsHelpers.request_with_invalid_resource_id(EmailCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,
@@ -191,7 +186,6 @@ class TestSendCampaign(object):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate having no email associated. So, Custom error should be raised.
-        :return:
         """
         CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
             self.URL % campaign_with_candidate_having_no_email.id,
@@ -203,13 +197,12 @@ class TestSendCampaign(object):
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with distinct email addresses). Email Campaign should be sent to
         both candidates.
-        :return:
         """
         campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_mail(campaign_with_valid_candidate.email_subject)
+        assert_mail(campaign.email_subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -217,7 +210,6 @@ class TestSendCampaign(object):
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should not be sent to
         any candidate. Response should get Invalid usage.
-        :return:
         """
         same_email = fake.email()
         for candidate in user_first.candidates:
@@ -234,7 +226,6 @@ class TestSendCampaign(object):
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated. One more candidate exists in some other domain with same email
         address. Email Campaign should be sent to 2 candidates only.
-        :return:
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(
@@ -357,10 +348,6 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
-    :param response:
-    :param campaign:
-    :param user:
-    :return:
     """
     assert response.status_code == 200
     assert response.json()
