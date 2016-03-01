@@ -402,18 +402,20 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
         candidate_ids = [candidate_ids]
 
     # We'll not upload all candidate documents at once rather 10 candidate documents at once
-    for i in xrange(0, len(candidate_ids), 10):
-        logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids[i:i+10]))
+    max_number_of_candidate = 10
+    for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+        logger.info("Uploading %s candidate documents. Generating action dicts...",
+                    len(candidate_ids[i:i + max_number_of_candidate]))
         start_time = time.time()
-        action_dicts = _build_candidate_documents(candidate_ids[i:i+10], domain_id)
+        action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
         logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
-                           len(action_dicts))
+                    len(action_dicts))
         adds, deletes = _send_batch_request(action_dicts)
         if deletes:
             logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
-                                "deletes.candidate_ids: %s", deletes, candidate_ids[i:i+10])
+                         "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
         if adds:
-            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i+10]))
+            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i + max_number_of_candidate]))
 
 
 def upload_candidate_documents_in_domain(domain_id):
