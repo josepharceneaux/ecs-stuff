@@ -206,7 +206,9 @@ class EmailCampaignUrlRedirect(Resource):
         update_hit_count(url_conversion)
         # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
         destination_url = url_conversion.destination_url
-        if destination_url.lower().startswith("www."):
+        # TODO: Destination URL shouldn't be empty. Need to raise custom exception
+        # TODO: EmptyDestinationUrl here
+        if (destination_url or '').lower().startswith('www.'):
             destination_url = "http://" + destination_url
 
         if destination_url == '#':

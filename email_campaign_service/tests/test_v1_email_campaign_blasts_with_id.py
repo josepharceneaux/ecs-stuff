@@ -28,7 +28,6 @@ class TestEmailCampaignBlastsWithId(object):
     def test_get_with_invalid_token(self, sent_campaign_with_client_id):
         """
          User auth token is invalid. It should result in Unauthorized error.
-        :return:
         """
         blast_id = sent_campaign_with_client_id.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_token(
@@ -41,7 +40,6 @@ class TestEmailCampaignBlastsWithId(object):
         Here we user `sent_campaign_with_client_id` fixture to send campaign via email-client-id
         to 2 candidates. This is the test where we get campaign's blast with valid
         access token. It should get OK response and number of sends should be 2.
-        :return:
         """
         blast_id = sent_campaign_with_client_id.blasts[0].id
         response = requests.get(
@@ -59,7 +57,6 @@ class TestEmailCampaignBlastsWithId(object):
         """
         This is the case where we try to get blast of a campaign which was created by
         user of some other domain. It should result in Forbidden error.
-        :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD, self.URL % (email_campaign_in_other_domain.id,
@@ -84,7 +81,6 @@ class TestEmailCampaignBlastsWithId(object):
                                           sent_campaign_with_client_id):
         """
         This is a test to get blasts of a campaign which does not exist in database.
-        :return:
         """
         blast_id = sent_campaign_with_client_id.blasts[0].id
         CampaignsTestsHelpers.request_with_invalid_resource_id(
@@ -96,7 +92,6 @@ class TestEmailCampaignBlastsWithId(object):
                                        sent_campaign_with_client_id):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             EmailCampaignBlast, self.HTTP_METHOD,

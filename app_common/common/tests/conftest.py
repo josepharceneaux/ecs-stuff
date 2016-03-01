@@ -272,9 +272,10 @@ def access_token_other(user_from_diff_domain, sample_client):
     """
     This returns the access token for user_from_diff_domain. We need this to create a resource
     e.g. email-campaign for some user in other domain and test the functionality of API.
-    :param user_from_diff_domain:
-    :param sample_client:
-    :return:
+    :param user_from_diff_domain: Fixture for user in some other domain
+    :param sample_client: Fixture of `client` used in tests
+    :return: access_token for given user
+    :rtype: str
     """
     return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
