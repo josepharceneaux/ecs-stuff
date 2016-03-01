@@ -384,19 +384,19 @@ def test_g626a_accuracy():
     assert exp1['city'] == u'Bothell'
     assert exp1['state'] == u'WA'
     assert exp1['position'] == u'Partnership Specialist'
-    exp2 = next((org for org in experiences if org["organization"] == u'Nw Facility Maintenance'), None)
+    exp2 = next((org for org in experiences if org['organization'] == u'Nw Facility Maintenance'), None)
     assert exp2
-    assert exp2['position'] == u'Network Admin/Project Coordinator'
+    assert exp2['position'] == u'Network Admin/Project Coordinator'
     assert exp2['start_month'] == 1
     assert exp2['start_year'] == 2007
     assert exp2['end_month'] == 9
     assert exp2['end_year'] == 2009
     assert exp2['city'] == u'Portland'
     assert exp2['state'] == u'OR'
-    # exp3 = next((org for org in experiences if org["organization"] == u'Via Training'), None)
-    exp4 = next((org for org in experiences if org["organization"] == u'Oregon Catholic Press'), None)
+    # exp3 = next((org for org in experiences if org['organization'] == u'Via Training'), None)
+    exp4 = next((org for org in experiences if org['organization'] == u'Oregon Catholic Press'), None)
     assert exp4
-    assert exp4['position'] == u'Project Manager/ Computer Support Specialist'
+    assert exp4['position'] == u'Project Manager/ Computer Support Specialist'
     assert exp4['start_month'] == 9
     assert exp4['start_year'] == 2001
     assert exp4['end_month'] == 12
@@ -405,7 +405,7 @@ def test_g626a_accuracy():
     assert exp4['state'] == u'OR'
     exp5 = next((org for org in experiences if org["organization"] == u'Teksystems'), None)
     assert exp5
-    assert exp5['position'] == u'Computer Support Specialist'
+    assert exp5['position'] == u'Computer Support Specialist'
     assert exp5['start_month'] == 7
     assert exp5['start_year'] == 2000
     assert exp5['end_month'] == 7
@@ -414,14 +414,14 @@ def test_g626a_accuracy():
     assert exp5['state'] == u'OR'
     exp6 = next((org for org in experiences if org["organization"] == u'Manpower'), None)
     assert exp6
-    assert exp6['position'] == u'Computer Support Specialist'
+    assert exp6['position'] == u'Computer Support Specialist'
     assert exp6['start_month'] == 9
     assert exp6['start_year'] == 1999
     assert exp6['end_month'] == 7
     assert exp6['end_year'] == 2000
     assert exp6['city'] == u'Portland'
     assert exp6['state'] == u'OR'
-    exp7 = next((org for org in experiences if org["organization"] == u'Portland Youth Builders'), None)
+    exp7 = next((org for org in experiences if org["organization"] == u'Portland Youth Builders'), None)
     assert exp7
     assert exp7['position'] == u'Computer Instructor/Support Specialist'
     assert exp7['start_month'] == 4
@@ -430,24 +430,24 @@ def test_g626a_accuracy():
     assert exp7['end_year'] == 1999
     assert exp7['city'] == u'Portland'
     assert exp7['state'] == u'OR'
-    exp8 = next((org for org in experiences if org["organization"] == u'University of Oregon'), None)
+    exp8 = next((org for org in experiences if org["organization"] == u'University Of Oregon'), None)
     assert exp8
-    # assert exp8['position'] == u'Instructor‐ Linguistics'
+    # assert exp8['position'] == u'Instructor- Linguistics'
     assert exp8['start_month'] == 12
     assert exp8['start_year'] == 1998
     assert exp8['end_month'] == 3
     assert exp8['end_year'] == 1999
-    exp9 = next((org for org in experiences if org["organization"] == u'Portland State University'), None)
+    exp9 = next((org for org in experiences if org["organization"] == u'Portland State University'), None)
     assert exp9
-    # assert exp9['position'] == u'Instructor – Language and Culture'
+    # assert exp9['position'] == u'Instructor - Language and Culture'
     assert exp9['start_month'] == 7
     assert exp9['start_year'] == 1998
     assert exp9['end_month'] == 8
     assert exp9['end_year'] == 1998
-    # exp10 = next((org for org in experiences if org["organization"] == u'Oregon Graduate Institute'), None)
+    # exp10 = next((org for org in experiences if org["organization"] == u'Oregon Graduate Institute'), None)
     exp11 = next((org for org in experiences if org["organization"] == u'University Of North Carolina'), None)
     assert exp11
-    # assert exp11['position'] == u'Research Associate ‐ Linguistics'
+    # assert exp11['position'] == u'Research Associcate - Linguistics'
     assert exp11['start_month'] == 1
     assert exp11['start_year'] == 1995
     assert exp11['end_month'] == 6
@@ -461,11 +461,23 @@ def test_g626a_accuracy():
     edu2 = next((edu for edu in educations if edu["school_name"] == u'Heald College'), None)
     assert edu2
     assert {'bullets': [], 'type': u'Diploma', 'title': u'Computer Technology'} in edu2['degrees']
-    # edu3 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
-    edu4 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
+    # edu3 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
+    edu4 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
     assert edu4
     assert {'bullets': [], 'type': u'Master of Arts Degree', 'title': u'Linguistics'} in edu4['degrees']
     edu5 = next((edu for edu in educations if edu["school_name"] == u'University of Ibadan'), None)
     assert edu5
     assert {'bullets': [], 'type': u'Bachelor of Arts Degree', 'title': u'Linguistics'} in edu5['degrees']
+
+
+def test_g626b_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(GET_626b, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    # assert contact_xml['first_name'] == 'Yetunde'
+    # assert contact_xml['last_name'] == 'Laniran'
+    # assert GET_626a_ADDRESS in addresses
+    # assert {'value': u'503.333.0350'} in phones
     pass
