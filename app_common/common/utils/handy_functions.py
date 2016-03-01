@@ -173,8 +173,7 @@ def log_exception(message, app=None):
         logger.exception(message)
         return
 
-    if app and not isinstance(app, Flask):
-        raise InvalidUsage(error_message="app instance should be flask")
+    assert isinstance(app, Flask), "app instance should be flask"
 
     logger = app.config[TalentConfigKeys.LOGGER]
     with app.app_context():
@@ -190,11 +189,10 @@ def log_error(message, app=None):
     """
     if not app:
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.exception(message)
+        logger.error(message)
         return
 
-    if app and not isinstance(app, Flask):
-        raise InvalidUsage(error_message="app instance should be flask")
+    assert isinstance(app, Flask), "app instance should be flask"
 
     logger = app.config[TalentConfigKeys.LOGGER]
     with app.app_context():

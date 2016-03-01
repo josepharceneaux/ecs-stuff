@@ -19,10 +19,10 @@ from social_network_service.modules.event.base import EventBase
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 from social_network_service.modules.utilities import milliseconds_since_epoch_local_time
-from social_network_service.modules.custom_exceptions import VenueNotFound
-from social_network_service.modules.custom_exceptions import EventNotCreated
-from social_network_service.modules.custom_exceptions import EventInputMissing
-from social_network_service.modules.custom_exceptions import EventLocationNotCreated
+from social_network_service.custom_exceptions import VenueNotFound
+from social_network_service.custom_exceptions import EventNotCreated
+from social_network_service.custom_exceptions import EventInputMissing
+from social_network_service.custom_exceptions import EventLocationNotCreated
 
 
 class Meetup(EventBase):

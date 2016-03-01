@@ -18,7 +18,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
-from social_network_service.modules.custom_exceptions import UserCredentialsNotFound, ProductNotFound
+from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
 
 

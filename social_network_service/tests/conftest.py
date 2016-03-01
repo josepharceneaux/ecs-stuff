@@ -12,7 +12,7 @@ import redis
 import requests
 
 from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.tests.conftest import user_auth, sample_user
+from social_network_service.common.tests.conftest import user_auth, sample_user, domain_first, first_group
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
 

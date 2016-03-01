@@ -16,12 +16,11 @@ import sys
 from social_network_service.common.models import db
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.utils.activity_utils import ActivityMessageIds
-from social_network_service.modules.custom_exceptions import VenueNotFound, \
+from social_network_service.custom_exceptions import VenueNotFound, \
     EventInputMissing, InvalidDatetime, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, send_post_request
-from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
 
 
 class TestResourceEvents:

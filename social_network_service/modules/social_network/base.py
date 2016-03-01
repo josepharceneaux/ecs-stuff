@@ -18,7 +18,7 @@ from social_network_service.common.models.user import User
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.social_network_app import logger
-from social_network_service.modules.custom_exceptions import *
+from social_network_service.custom_exceptions import *
 
 
 class SocialNetworkBase(object):

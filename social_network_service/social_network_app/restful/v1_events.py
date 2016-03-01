@@ -76,16 +76,26 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
+
         data = request.values
-        limit = data.get('limit', 30)
-        offset = data.get('offset', 0)
-        events = request.user.events.order_by(Event.start_datetime.desc())\
-            .limit(limit).offset(offset).all()
+        per_page = data.get('per_page', 10)
+        page = data.get('page', 1)
+
+        events = request.user.events.order_by(Event.start_datetime.desc())
+        events = events.paginate(per_page=per_page,
+                                 page=page).items
         events = map(add_organizer_venue_data, events)
+        headers = {
+            'X-Total': len(events),
+            'X-Per-Page': per_page,
+            'X-Page': page
+        }
         if events:
-            return dict(events=events, count=len(events))
+            return ApiResponse(response=dict(events=events),
+                               headers=headers)
         else:
-            return dict(events=[], count=0)
+            return ApiResponse(headers=headers,
+                               response=dict(events=[]))
 
     def post(self):
         """
@@ -248,7 +258,7 @@ class EventById(Resource):
         .. Status:: 200 (OK)
                     404 (Event not found)
                     500 (Internal Server Error)
-        :param id: integer, unique id representing event in GT database
+        :param event_id: integer, unique id representing event in GT database
         :return: json for required event
         """
         event = Event.get_by_user_and_event_id(request.user.id, event_id)

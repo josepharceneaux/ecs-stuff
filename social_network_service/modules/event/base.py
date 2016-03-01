@@ -113,11 +113,11 @@ from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
-from social_network_service.modules.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
-from social_network_service.modules.custom_exceptions import InvalidDatetime
-from social_network_service.modules.custom_exceptions import EventNotSaveInDb
-from social_network_service.modules.custom_exceptions import EventNotUnpublished
-from social_network_service.modules.custom_exceptions import UserCredentialsNotFound
+from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
+from social_network_service.custom_exceptions import InvalidDatetime
+from social_network_service.custom_exceptions import EventNotSaveInDb
+from social_network_service.custom_exceptions import EventNotUnpublished
+from social_network_service.custom_exceptions import UserCredentialsNotFound
 
 
 class EventBase(object):
