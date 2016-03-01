@@ -43,7 +43,6 @@ def resume_post_reciever():
     :return: dict: {'candidate': {}}
     """
     oauth = request.oauth_token
-    # talent_pools = get_users_talent_pools(oauth)
     content_type = request.headers.get('content-type')
     # Handle posted JSON data from web app/future clients. This block should consume filepicker
     # key and filename.
