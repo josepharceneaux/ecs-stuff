@@ -2,22 +2,31 @@
 
 __author__ = 'erikfarmer'
 
+# Standard Imports
 import re
 import json
-import pytz
 import random
 import string
+from datetime import datetime
+
+# Third Party
+import pytz
 import requests
 from pytz import timezone
-from datetime import datetime
 from itertools import izip_longest
-from ..models.db import db
-from flask import current_app, request, Flask
+
+from flask import Flask
+
 from requests import ConnectionError
+from flask import current_app, request
+
+# Application Specific
+from ..models.db import db
 from ..talent_config_manager import TalentConfigKeys
-from ..models.user import User, UserScopedRoles, DomainRole
-from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
 from werkzeug.exceptions import BadRequest
+from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..error_handling import (UnauthorizedError, ResourceNotFound,
+                              InvalidUsage, InternalServerError)
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 

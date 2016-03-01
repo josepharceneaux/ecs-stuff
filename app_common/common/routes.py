@@ -762,6 +762,9 @@ class EmailCampaignEndpoints(object):
     # endpoint /v1/email-campaigns/:id/blasts
     # Gives the blasts of a campaign
     BLASTS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS
+    # endpoint /v1/email-campaigns/:id/blasts/:id
+    # Gives the blast object of a campaign for a particular blast_id
+    BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
 
 
 class EmailCampaignUrl(object):
@@ -774,4 +777,6 @@ class EmailCampaignUrl(object):
     URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
                                                        + '/' + CampaignWords.REDIRECT + '/%s')
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
+
 
