@@ -158,13 +158,14 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         db.db.session.commit()
-        user = User.get_by_id(user_id)
+        if flask_app.config[TalentConfigKeys.ENV_KEY] in ['dev', 'jenkins']:
+            user = User.get_by_id(user_id)
 
-        # If user is deleted, then delete all its jobs too
-        if not user or user.is_disabled:
-            tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
-            [scheduler.remove_job(job_id=task.id) for task in tasks]
-            return
+            # If user is deleted, then delete all its jobs too
+            if not user:
+                tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
+                [scheduler.remove_job(job_id=task.id) for task in tasks]
+                return
 
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it

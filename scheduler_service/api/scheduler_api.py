@@ -51,13 +51,13 @@ class Tasks(Resource):
 
 
         :Example (in case of pagination):
-        By default, it will return 30 jobs (max)
+        By default, it will return 10 jobs (max)
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
 
-            # Returns 30 jobs ranging from 3-33
+            # Returns 10 jobs ranging from 3-13
 
             Case 2:
 
@@ -81,7 +81,6 @@ class Tasks(Resource):
         .. Response::
 
             {
-                "total_count": 1
                 "count": 1,
                 "tasks": [
                     {
@@ -114,15 +113,15 @@ class Tasks(Resource):
         # Limit the jobs to 200 if user requests for more than 200
         max_per_page = 200
 
-        # If user didn't specify page or per_page, then it should be set to default 0 and 30 respectively.
-        page, per_page = request.args.get('page', 0), request.args.get('per_page', 30)
+        # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
+        page, per_page = request.args.get('page', 1), request.args.get('per_page', 10)
 
-        if not (str(page).isdigit() and int(page) >= 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 0")
+        if not (str(page).isdigit() and int(page) > 0):
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
 
-        if not (str(per_page).isdigit() and int(per_page) > 0):
+        if not (str(per_page).isdigit() and int(per_page) >= 10):
             raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater than 0")
+                error_message="'per_page' arg should be a digit and its value should be greater than 10")
 
         page, per_page = int(page), int(per_page)
 
@@ -137,11 +136,16 @@ class Tasks(Resource):
         tasks_count = len(tasks)
 
         tasks = [serialize_task(tasks[index])
-                 for index in range(page, page + per_page) if index < tasks_count and tasks[index]]
+                 for index in range(page-1, (page-1) + per_page) if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
-        return dict(tasks=tasks, count=len(tasks),
-                    total_count=tasks_count)
+        header = {
+            'X-Total': tasks_count,
+            'X-Per-Page': per_page,
+            'X-Page': page,
+            'Content-Type': 'application/json'
+        }
+        return ApiResponse(response=dict(tasks=tasks), headers=header)
 
     @require_oauth(allow_null_user=True)
     def post(self):
@@ -755,7 +759,7 @@ class SendRequestTest(Resource):
         try:
             user_id = data['user_id']
         except KeyError:
-            return dict(message="user_id not provided")
+            return InvalidUsage("user_id not provided")
         tasks = scheduler.get_jobs()
         tasks = filter(lambda task: task.args[0] == user_id, tasks)
         return dict(tasks=tasks)

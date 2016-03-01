@@ -237,7 +237,7 @@ class TestSchedulerGet(object):
     def test_multiple_jobs_with_page_only(self, auth_header, post_ten_jobs, job_cleanup):
         """
         Create multiple jobs and save the ids in a list. Then get 5 tasks of the current user using 'start' arg.
-        Then check if there are 5 jobs returned. If yes, then show status code 200
+        Then check if there are 10 jobs returned. If yes, then show status code 200
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as POST data while hitting the endpoint.
@@ -245,16 +245,16 @@ class TestSchedulerGet(object):
         """
         jobs_id = post_ten_jobs
 
-        # Get only 5 jobs
-        limit = 5
-        # Should get 5 jobs in response instead of all 10
+        # Get only 10 jobs
+        limit = 10
+        # Should get 10 jobs in response
         response_get = requests.get('{0}?per_page={1}'.format(SchedulerApiUrl.TASKS, limit),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
         set_jobs_ids = set(jobs_id)
 
-        assert len(set_jobs_ids.difference(get_jobs_id)) == 5
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 0
 
         # Delete all 10 created jobs in a fixture
         job_cleanup['header'] = auth_header
@@ -275,7 +275,7 @@ class TestSchedulerGet(object):
         page = 5
 
         # Get only 2 jobs
-        per_page = 2
+        per_page = 10
         # Should get jobs from 5, 6, 7 in response instead of all 10
         response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, page, per_page),
                                     headers=auth_header)
@@ -283,33 +283,33 @@ class TestSchedulerGet(object):
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
         set_jobs_ids = set(jobs_id)
 
-        assert len(set_jobs_ids.difference(get_jobs_id)) == 8
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 4
 
         response_get = requests.get('{0}?per_page={1}'.format(SchedulerApiUrl.TASKS, per_page),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
 
-        assert len(set_jobs_ids.difference(get_jobs_id)) == 8
+        assert len(set_jobs_ids.difference(get_jobs_id)) == 0
 
-        # There are 10 jobs scheduled, try to get the jobs from 9 and onwards
-        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 9, 10),
+        # There are 10 jobs scheduled, try to get the jobs from 8 and onwards
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 9
 
-        # If we request job higher than 10, it will return 0 jobs instead
-        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
+        # If we request job higher than 11, it will return 0 jobs instead
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 11, 10),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 10
 
-        # If we request job higher than 10, it will return 0 jobs instead
-        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 10, 15),
+        # If we request job higher than 11, it will return 0 jobs instead
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 11, 15),
                                     headers=auth_header)
 
         get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
@@ -338,7 +338,7 @@ class TestSchedulerGet(object):
         assert response_get.status_code == 400
 
         # Try with invalid per_page 0
-        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 0, 0),
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 0),
                                     headers=auth_header)
 
         # Response should be 400 as start arg is invalid
