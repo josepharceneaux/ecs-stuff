@@ -355,4 +355,8 @@ def test_g646_accuracy():
     # Educations.
     educations_xml_list = bs4(GET_646, 'lxml').findAll('education')
     educations = parse_candidate_educations(educations_xml_list)
-    pass
+    # edu1 = next((edu for edu in educations if edu["school_name"] == u'California State University, Chico'), None)
+    # assert edu1
+    edu2 = next((edu for edu in educations if edu["school_name"] == u'Butte College'), None)
+    assert edu2
+    assert {'bullets': [], 'type': u'A.A', 'title': None} in edu2['degrees']
