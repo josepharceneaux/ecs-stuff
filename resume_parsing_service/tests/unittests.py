@@ -35,6 +35,8 @@ GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country': 'US', 'zi
                   'address_line_1': u'930 Via Di Salerno Unit 119'}
 GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country': 'US', 'zip_code': '97211',
                     'address_line_1': u'1602 NE Junior St.'}
+GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country': 'US', 'zip_code': '97212',
+                    'address_line_1': u'4014 NE Failing Street'}
 
 XML_MAPS = [
     # The resume below has 6 experience but BG incorrectly returns 7.
@@ -476,8 +478,40 @@ def test_g626b_accuracy():
     contact_xml = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
-    # assert contact_xml['first_name'] == 'Yetunde'
-    # assert contact_xml['last_name'] == 'Laniran'
-    # assert GET_626a_ADDRESS in addresses
-    # assert {'value': u'503.333.0350'} in phones
-    pass
+    assert contact_xml['first_name'] == 'Kate'
+    assert contact_xml['last_name'] == 'Begonia'
+    assert GET_626b_ADDRESS in addresses
+    # assert {'value': u'503.493.1548'} in phones
+    # Experience parsing.
+    experience_xml_list = bs4(GET_626b, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    # Below does not parse positions after , in Director
+    # exp1 = next((org for org in experiences if (
+    #     org["organization"] == u'Sage Software' and
+    #     org['position'] == u'Director, Digital Marketing Communications')), None)
+    # exp2 = next((org for org in experiences if (
+    #     org["organization"] == u'Sage Software' and
+    #     org['position'] == u'Director, Creative Services')), None)
+    # The below is for a self employed consulting job.
+    # exp3 = next((org for org in experiences if org["organization"] == u'None'), None)
+    # exp4 = next((org for org in experiences if (
+    #     org["organization"] == u'Oracle Corporation' and
+    #     org['position'] == u'Senior Director, Branding')), None)
+    # exp5 = next((org for org in experiences if (
+    #     org["organization"] == u'Oracle Corporation' and
+    #     org['position'] == u'Senior Director, Global Advertising')), None)
+    # exp6 = next((org for org in experiences if (
+    #     org["organization"] == u'Oracle Corporation' and
+    #     org['position'] == u'Director, Global Advertising and Direct Marketing Programs')), None)
+    # exp7 = next((org for org in experiences if (
+    #     org["organization"] == u'Oracle Corporation' and
+    #     org['position'] == u'Senior Advertising Manager, Domestic Advertising')), None)
+    # exp8 = next((org for org in experiences if (
+    #     org["organization"] == u'Oracle Corporation' and
+    #     org['position'] == u'Marketing Manager, Industry Solutions Marketing')), None)
+    # Educations.
+    educations_xml_list = bs4(GET_626b, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'San Francisco State University'), None)
+    assert edu1
+    assert {'bullets': [], 'type': u'Bachelor of Arts', 'title': u'Humanities'} in edu1['degrees']
