@@ -62,7 +62,7 @@ class Tasks(Resource):
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
 
-            # Returns 12 jobs ranging from 50-62
+            # Returns 12 jobs ranging from 40-52
 
         :Example:
         In case of authenticated user
