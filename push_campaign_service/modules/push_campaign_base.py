@@ -58,7 +58,7 @@ class PushCampaignBase(CampaignBase):
         # sets the user_id
         super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
         self.campaign_blast = None
-        self.blast_id = None
+        self.campaign_blast_id = None
         self.campaign_id = None
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
@@ -173,13 +173,13 @@ class PushCampaignBase(CampaignBase):
                                                                      url=signed_url,
                                                                      player_ids=device_ids)
                     if response.ok:
-                        campaign_send = PushCampaignSend(blast_id=self.blast_id,
+                        campaign_send = PushCampaignSend(blast_id=self.campaign_blast_id,
                                                          candidate_id=candidate.id
                                                          )
                         PushCampaignSend.save(campaign_send)
                         push_url_conversion = PushCampaignSendUrlConversion(
                             url_conversion_id=url_conversion_id,
-                            push_campaign_send_id=campaign_send.id
+                            send_id=campaign_send.id
                         )
                         PushCampaignSendUrlConversion.save(push_url_conversion)
                         return True

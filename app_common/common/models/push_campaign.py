@@ -157,17 +157,15 @@ class PushCampaignSendUrlConversion(db.Model):
         return '<PushCampaignSendUrlConversion (id = %s , send_id = %s)>' % (self.id, self.send_id)
 
     @classmethod
-    def get_by_campaign_send_id_and_url_conversion_id(cls,
-                                                      campaign_send_id,
-                                                      url_conversion_id):
-        assert campaign_send_id, 'No campaign_send_id given'
+    def get_by_send_id_and_url_conversion_id(cls, send_id, url_conversion_id):
+        assert send_id, 'No send_id given'
         assert url_conversion_id, 'No url_conversion_id given'
         return cls.query.filter(
-            push_campaign_send_id=campaign_send_id,
+            send_id=send_id,
             url_conversion_id=url_conversion_id
         ).first()
 
     @classmethod
-    def get_by_campaign_send_id(cls, campaign_send_id):
-        assert campaign_send_id, 'No campaign_send_id given'
-        return cls.query.filter_by(push_campaign_send_id=campaign_send_id).first()
+    def get_by_campaign_send_id(cls, send_id):
+        assert send_id, 'No send_id given'
+        return cls.query.filter_by(send_id=send_id).first()

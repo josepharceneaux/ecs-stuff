@@ -179,5 +179,5 @@ def remove_roles(user_id, roles, token):
     }
     response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
-    assert response.status_code == HttpStatus.OK
+    assert response.status_code in [HttpStatus.OK, HttpStatus.INVALID_USAGE]
 

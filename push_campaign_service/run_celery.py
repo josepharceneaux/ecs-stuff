@@ -16,10 +16,8 @@ from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 try:
-    celery_app.start(argv=['celery', 'worker', '-l', 'info', '-Q', CampaignUtils.PUSH])
+    celery_app.start(argv=['celery', 'worker', '--without-gossip', '-l', 'info', '-Q', CampaignUtils.PUSH])
     logger.info("Celery worker has been started successfully for %s" % app.import_name)
 except Exception as e:
     logger.exception("Couldn't start Celery app for push_campaign_service in "
                      "%s environment." % (app.config[TalentConfigKeys.ENV_KEY]))
-
-

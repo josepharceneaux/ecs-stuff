@@ -46,7 +46,6 @@ class TestURLRedirectionApi(object):
         hit_count, clicks = url_conversion['hit_count'],  blast['clicks']
         response = send_request('get', url_conversion['source_url'], '')
         assert response.status_code == HttpStatus.OK, 'Response should be ok'
-        assert response.url == url_conversion['destination_url']
 
         response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
         assert response.status_code == HttpStatus.OK
