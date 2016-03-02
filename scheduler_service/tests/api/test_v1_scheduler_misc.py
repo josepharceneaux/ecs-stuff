@@ -66,7 +66,7 @@ class TestSchedulerMisc(object):
         token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
         assert token.expires > datetime.datetime.utcnow()
 
-        # Delete all jobs created in this test case using fixture finalizer
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
@@ -158,7 +158,7 @@ class TestSchedulerMisc(object):
         data = response.json()
         assert data['id']
 
-        # Let's delete job now
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 

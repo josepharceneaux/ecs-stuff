@@ -170,3 +170,21 @@ def post_ten_jobs(request, job_config_one_time_task, auth_header):
 
     return jobs_id
 
+
+@pytest.fixture(scope='function')
+def post_hundred_jobs(request, job_config_one_time_task, auth_header):
+    """
+    Fixture post ten jobs to schedule ten jobs and return their job ids
+    :param request:
+    :param job_config_one_time_task: fixture for one time job
+    :return:
+    """
+    jobs_id = []
+
+    for idx in range(100):
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=auth_header.copy())
+        assert response.status_code == 201
+        jobs_id.append(response.json()['id'])
+
+    return jobs_id
