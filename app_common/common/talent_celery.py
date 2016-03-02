@@ -1,4 +1,5 @@
 from celery import Celery
+from kombu import Queue
 from sqlalchemy import create_engine, pool
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -8,10 +9,15 @@ accept_content = {
 
 
 def make_celery(app, default_queue):
-    celery = Celery(app.import_name, broker=app.config['REDIS_URL'], backend=app.config['CELERY_RESULT_BACKEND_URL'])
+    celery = Celery(app.import_name, broker=app.config['REDIS_URL'],
+                    backend=app.config['CELERY_RESULT_BACKEND_URL'])
+    app.config['CELERY_QUEUES'] = (
+        Queue(default_queue, routing_key=default_queue + '_key'),
+    )
+    app.config['CELERY_DEFAULT_QUEUE'] = default_queue
+    app.config['CELERY_DEFAULT_ROUTING_KEY'] = default_queue + '_key'
     celery.conf.update(app.config)
     celery.conf.update(accept_content)
-    celery.conf.update(default_queue)
     return celery
 
 
