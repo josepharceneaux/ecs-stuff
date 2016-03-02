@@ -44,8 +44,7 @@ from email_campaign_service.common.models.candidate import (Candidate, Candidate
                                                             CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
-from email_campaign_service.common.utils.candidate_service_calls import \
-    get_candidate_subscription_preference
+from email_campaign_service.common.utils.candidate_service_calls import get_candidate_subscription_preference
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -132,8 +131,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     else:  # It means its a one time Job
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
         schedule_task_params["run_datetime"] = send_datetime if send_datetime else \
-            (datetime.datetime.utcnow()
-             + datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
+            (datetime.datetime.utcnow() + datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
     schedule_task_params['is_jwt_request'] = True
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token}
@@ -163,11 +161,13 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
 
-    :param campaign:    email campaign object
-    :param list_ids: list associated with email campaign if given it will take the ids provided else extract out from email campaign object
-    :param new_candidates_only: If emails need to be sent to new candidates only i.e. to those candidates whom emails were not sent previously
-        If email is sent from client it will not send the actual emails and returns the new html (with url conversions and other replacements)
-    :return:            number of emails sent
+    :param campaign:            email campaign object
+    :param list_ids:            list associated with email campaign if given it will take the ids provided else extract
+                                out from email campaign object
+    :param new_candidates_only: If emails need to be sent to new candidates only i.e. to those candidates whom emails
+                                were not sent previously If email is sent from client it will not send the actual emails
+                                and returns the new html (with url conversions and other replacements)
+    :return:                    number of emails sent
     """
     user = campaign.user
     candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
@@ -368,7 +368,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
             logger.debug("subscription_preference: %s" % subscription_preference)
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
-        # Remove unsubscribed candidates
+        # Remove un-subscribed candidates
         subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
 
     # If only getting candidates that haven't been emailed before...
@@ -546,9 +546,6 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
-        email_campaign_blast = EmailCampaignBlast.query.filter(
-                EmailCampaignBlast.campaign_id == campaign.id).order_by(
-                desc(EmailCampaignBlast.sent_datetime)).first()
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
@@ -696,8 +693,8 @@ def get_subscription_preference(candidate_id):
                                 non_custom_frequencies]
     non_custom_pref = email_prefs.filter(
             CandidateSubscriptionPreference.frequency_id.in_(
-                    non_custom_frequency_ids)).first()  # Other freqs.
-    null_pref = email_prefs.filter(CandidateSubscriptionPreference.frequency_id == None).first()
+                    non_custom_frequency_ids)).first()  # Other frequencies.
+    null_pref = email_prefs.filter(CandidateSubscriptionPreference.frequency_id is None).first()
     custom_frequency = Frequency.get_seconds_from_id(Frequency.CUSTOM)
     custom_pref = email_prefs.filter(
             CandidateSubscriptionPreference.frequency_id == custom_frequency.id).first()  # Custom freq.

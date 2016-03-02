@@ -23,9 +23,8 @@
       <option name="myCustomValuesEnabled" value="true" />
     </inspection_tool>
     <inspection_tool class="PyPep8Inspection" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="ERROR" enabled_by_default="true" />
-    <inspection_tool class="PyUnreachableCodeInspection" enabled="true" level="SERVER PROBLEM" enabled_by_default="true" />
-    <inspection_tool class="PyUnusedLocalInspection" enabled="true" level="ERROR" enabled_by_default="true">
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="PyUnusedLocalInspection" enabled="true" level="WARNING" enabled_by_default="true">
       <option name="ignoreTupleUnpacking" value="true" />
       <option name="ignoreLambdaParameters" value="true" />
       <option name="ignoreLoopIterationVariables" value="true" />
