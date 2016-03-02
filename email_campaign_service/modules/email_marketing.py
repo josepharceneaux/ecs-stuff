@@ -546,7 +546,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.email_campaign_id == campaign.id).order_by(
+            EmailCampaignBlast.campaign_id == campaign.id).order_by(
             desc(EmailCampaignBlast.sent_datetime)).first()
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
@@ -658,7 +658,7 @@ def update_hit_count(url_conversion):
         if new_hit_count == 1:
             email_campaign_blast = EmailCampaignBlast.query.filter_by(
                 sent_datetime=email_campaign_send.sent_datetime,
-                email_campaign_id=email_campaign_send.email_campaign_id).first()
+                campaign_id=email_campaign_send.email_campaign_id).first()
             if email_campaign_blast:
                 if is_open:
                     email_campaign_blast.opens += 1
@@ -667,9 +667,9 @@ def update_hit_count(url_conversion):
                 db.session.commit()
             else:
                 logger.error("Email campaign URL redirect: No email_campaign_blast found matching "
-                             "email_campaign_send.sentTime %s, campaign_id=%s" % (
-                             email_campaign_send.sent_datetime,
-                             email_campaign_send.email_campaign_id)
+                             "email_campaign_send.sent_datetime %s, campaign_id=%s"
+                             % (email_campaign_send.sent_datetime,
+                                email_campaign_send.email_campaign_id)
                              )
     except Exception:
         logger.exception("Received exception doing url_redirect (url_conversion_id=%s)",

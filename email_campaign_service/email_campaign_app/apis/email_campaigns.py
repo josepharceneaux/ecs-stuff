@@ -252,7 +252,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "1",
@@ -264,7 +264,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "2",
@@ -300,13 +300,13 @@ class EmailCampaignBlastById(Resource):
 
     def get(self, campaign_id, blast_id):
         """
-        This endpoint returns a blast object for a given campaign_id and blast_id. From that blast object
-        we can extract sends, clicks etc.
+        This endpoint returns a blast object for a given campaign_id and blast_id.
+        From that blast object we can extract sends, clicks etc.
         :param campaign_id: int, unique id of a email campaign
         :param blast_id: id of blast object
         :type campaign_id: int | long
         :type blast_id: int | long
-        :return: JSON data containing list of blasts and their counts
+        :return: JSON data containing blast object
 
         :Example:
 
