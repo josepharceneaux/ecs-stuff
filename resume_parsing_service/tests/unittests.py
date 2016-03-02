@@ -37,6 +37,8 @@ GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country': 'US', 'z
                     'address_line_1': u'1602 NE Junior St.'}
 GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country': 'US', 'zip_code': '97212',
                     'address_line_1': u'4014 NE Failing Street'}
+PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country': 'US', 'zip_code': '33713 5855',
+               'address_line_1': u'2462 13 th Avenue North #6-101'}
 
 XML_MAPS = [
     # The resume below has 6 experience but BG incorrectly returns 7.
@@ -515,3 +517,77 @@ def test_g626b_accuracy():
     edu1 = next((edu for edu in educations if edu["school_name"] == u'San Francisco State University'), None)
     assert edu1
     assert {'bullets': [], 'type': u'Bachelor of Arts', 'title': u'Humanities'} in edu1['degrees']
+
+
+def test_pdf_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(PDF, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    assert contact_xml['first_name'] == 'Mark'
+    assert contact_xml['last_name'] == 'Greene'
+    assert PDF_ADDRESS in addresses
+    assert {'value': u'727.565.1234'} in phones
+    experience_xml_list = bs4(PDF, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    # exp1 = next((org for org in experiences if (
+    #     org["organization"] == u'SmartSource' and
+    #     org['position'] == u'Technical Support')), None)
+    # exp2 = next((org for org in experiences if (
+    #     org["organization"] == u'Bank of America' and
+    #     org['position'] == u'Mortgage Affiliate Services')), None)
+    # exp3 = next((org for org in experiences if (
+    #     org["organization"] == u'JCIII & Associates' and
+    #     org['position'] == u'Document Reviewer')), None)
+    # exp4 = next((org for org in experiences if (
+    #     org["organization"] == u'CHASE' and
+    #     org['position'] == u'Sr. Loan Processor')), None)
+    # exp5 = next((org for org in experiences if (
+    #     org["organization"] == u'CHASE' and
+    #     org['position'] == u'Business Analyst/Loss Mitigation Specialist')), None)
+    exp6 = next((org for org in experiences if (
+        org["organization"] == u'Computer Generated Solutions' and
+        org['position'] == u'Team Lead')), None)
+    assert exp6
+    assert exp6['start_month'] == 12
+    assert exp6['start_year'] == 2007
+    assert exp6['end_month'] == 12
+    assert exp6['end_year'] == 2008
+    assert exp6['city'] == u'Tampa'
+    assert exp6['state'] == u'FL'
+    exp7 = next((org for org in experiences if (
+        org["organization"] == u'Computer Generated Solutions' and
+        org['position'] == u'Desktop Support Agent')), None)
+    assert exp7
+    assert exp7['start_month'] == 9
+    assert exp7['start_year'] == 2006
+    assert exp7['end_month'] == 2
+    assert exp7['end_year'] == 2007
+    assert exp7['city'] == u'Tampa'
+    assert exp7['state'] == u'FL'
+    exp6 = next((org for org in experiences if (
+        org["organization"] == u'Advanced System Design' and
+        org['position'] == u'Software Analyst')), None)
+    assert exp6
+    assert exp6['start_month'] == 10
+    assert exp6['start_year'] == 2005
+    assert exp6['end_month'] == 5
+    assert exp6['end_year'] == 2006
+    assert exp6['city'] == u'Tallahassee'
+    assert exp6['state'] == u'FL'
+    exp6 = next((org for org in experiences if (
+        org["organization"] == u'Bmc Solutions' and
+        org['position'] == u'Desktop Deployment Technician')), None)
+    assert exp6
+    assert exp6['start_month'] == 7
+    assert exp6['start_year'] == 2005
+    assert exp6['end_month'] == 8
+    assert exp6['end_year'] == 2005
+    assert exp6['city'] == u'Tallahassee'
+    assert exp6['state'] == u'FL'
+    educations_xml_list = bs4(PDF, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'ITT Technical Institute'), None)
+    assert edu1
+    assert {'bullets': [], 'type': u'Bachelor of Science Degree', 'title': u'Information Systems/Cyber Securities'} in edu1['degrees']
