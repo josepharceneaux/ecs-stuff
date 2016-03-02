@@ -1,5 +1,6 @@
 import datetime
 
+from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 
 from db import db
@@ -37,14 +38,14 @@ class EmailCampaign(db.Model):
     frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
-    sends = relationship('EmailCampaignSend', cascade='all,delete-orphan',
-                         passive_deletes=True, backref='blast')
+    sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
+                         passive_deletes=True, backref='campaign')
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
-    def to_dict(self, api_version=1):
+    def to_dict(self):
         """
-        :param int api_version: The API version that return dict will correspond to
+        This returns required fields when an email-campaign object is requested.
         :rtype: dict[str, T]
         """
         return {"id": self.id,
@@ -81,7 +82,7 @@ class EmailCampaignSmartlist(db.Model):
 class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
+    campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
@@ -94,7 +95,19 @@ class EmailCampaignBlast(db.Model):
 
     @classmethod
     def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+        return cls.query.get(_id)
+
+    @classmethod
+    def get_latest_blast_by_campaign_id(cls, campaign_id):
+        """
+        Method to get latest email campaign blast for campaign whose id is
+        provided. Returns on the basis of most recent sent_datetime.
+        :type campaign_id:  int | long
+        :rtype:  EmailCampaignBlast
+        """
+        assert campaign_id, "campaign_id not provided"
+        return cls.query.filter(
+            cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
 
 class EmailCampaignSend(db.Model):

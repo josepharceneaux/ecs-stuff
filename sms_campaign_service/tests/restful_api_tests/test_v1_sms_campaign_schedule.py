@@ -184,7 +184,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         :param access_token_first:
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,
@@ -238,7 +238,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :param access_token_first:
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(SmsCampaign,
+        CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
                                                                access_token_first,
@@ -328,7 +328,7 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, access_token_first):
         # Test with invalid integer id
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaign, self.HTTP_METHOD, self.URL, access_token_first,
             generate_campaign_schedule_data())
 

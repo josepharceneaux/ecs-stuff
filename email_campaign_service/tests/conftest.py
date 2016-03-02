@@ -1,14 +1,15 @@
-
 __author__ = 'basit'
 
-from email_campaign_service.email_campaign_app import app
+import re
+
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.candidate import CandidateEmail
-from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign)
+                                                                  delete_campaign, send_campaign)
+from email_campaign_service.common.models.email_campaign import EmailClient
+from email_campaign_service.common.routes import EmailCampaignUrl
 
 
 @pytest.fixture()
@@ -28,17 +29,20 @@ def email_campaign_of_user_first(request, user_first):
 
 
 @pytest.fixture()
-def email_campaign_in_other_domain(request, user_from_diff_domain,
-                                   campaign_with_candidate_having_no_email):
+def email_campaign_in_other_domain(request,
+                                   access_token_other,
+                                   user_from_diff_domain,
+                                   assign_roles_to_user_of_other_domain,
+                                   talent_pool_other):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     for user in different domain
     :return:
     """
+
     campaign = create_email_campaign(user_from_diff_domain)
-    smartlist_id = campaign_with_candidate_having_no_email.smartlists[0].smartlist_id
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
-                                     email_campaign_id=campaign.id)
+    create_email_campaign_smartlist(access_token_other, talent_pool_other,
+                                    campaign)
 
     def fin():
         delete_campaign(campaign)
@@ -57,7 +61,8 @@ def campaign_with_candidate_having_no_email(request, email_campaign_of_user_firs
     :return:
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
-                                               email_campaign_of_user_first, emails_list=False)
+                                               email_campaign_of_user_first,
+                                               emails_list=False)
 
     def fin():
         delete_campaign(campaign)
@@ -101,6 +106,7 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
 
     def fin():
         delete_campaign(campaign_with_valid_candidate)
+
     request.addfinalizer(fin)
     return campaign_with_valid_candidate
 
@@ -113,6 +119,16 @@ def assign_roles_to_user_first(user_first):
     :return:
     """
     assign_roles(user_first)
+
+
+@pytest.fixture()
+def assign_roles_to_user_of_other_domain(user_from_diff_domain):
+    """
+    This assigns required roles to user_from_diff_domain
+    :param user_from_diff_domain:
+    :return:
+    """
+    assign_roles(user_from_diff_domain)
 
 
 @pytest.fixture()
@@ -129,5 +145,49 @@ def candidate_in_other_domain(request, user_from_diff_domain):
             Candidate.delete(candidate)
         except Exception:
             db.session.rollback()
+
     request.addfinalizer(tear_down)
     return candidate
+
+
+@pytest.fixture()
+def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
+    """
+    This fixture is used to get the response of sending campaign emails with client id
+    for a particular campaign. It also ensures that response is in proper format. Used in
+    multiple tests.
+    :param access_token_first: Bearer token for authorization.
+    :param campaign_with_valid_candidate: Email campaign object with a valid candidate associated.
+    """
+    url = EmailCampaignUrl.SEND
+    campaign = campaign_with_valid_candidate
+    campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+    response = requests.post(
+            url % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+    assert response.status_code == 200
+    json_response = response.json()
+    assert 'email_campaign_sends' in json_response
+    email_campaign_sends = json_response['email_campaign_sends'][0]
+    assert 'new_html' in email_campaign_sends
+    new_html = email_campaign_sends['new_html']
+    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
+    assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
+    assert 'new_text' in email_campaign_sends # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends # Check if there is email campaign id in response
+    assert campaign.id == email_campaign_sends['email_campaign_id'] # Check if both IDs are same
+    return_value = dict()
+    return_value['response'] = response
+    return_value['campaign'] = campaign
+    return return_value
+
+
+
+@pytest.fixture()
+def sent_campaign_with_client_id(campaign_with_valid_candidate, access_token_first):
+    """
+    This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
+    email-campaign obj.
+    """
+    # send campaign
+    send_campaign(campaign_with_valid_candidate, access_token_first)
+    return campaign_with_valid_candidate
