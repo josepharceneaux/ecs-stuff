@@ -172,14 +172,13 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     new_html = email_campaign_sends['new_html']
     matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
     assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
-    assert 'new_text' in email_campaign_sends # Check if there is email text which candidate would see in email
-    assert 'email_campaign_id' in email_campaign_sends # Check if there is email campaign id in response
-    assert campaign.id == email_campaign_sends['email_campaign_id'] # Check if both IDs are same
+    assert 'new_text' in email_campaign_sends  # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends  # Check if there is email campaign id in response
+    assert campaign.id == email_campaign_sends['email_campaign_id']  # Check if both IDs are same
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
-
 
 
 @pytest.fixture()
