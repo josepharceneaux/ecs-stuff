@@ -33,6 +33,9 @@ RUN sed -i '/$KLogPermitNonKernelFacility/s/^/#/g' /etc/rsyslog.conf
 # Disable xconsole in syslog
 RUN sed -i "65,68 s/^/#/" /etc/rsyslog.d/50-default.conf
 
+RUN touch /etc/rsyslog.d/23-uwsgi-loggly.conf
+ADD uwsgi_loggly.conf /etc/rsyslog.d/23-uwsgi-loggly.conf
+
 RUN touch /etc/rsyslog.d/22-loggly.conf
 ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
 
