@@ -20,25 +20,25 @@ This file contains API endpoints related to email_campaign_service.
 
         - EmailCampaignUrlRedirection: /v1/redirect/:id
 
-            GET    : Redirects the candidate to our app to keep track of number of clicks, hit_count
-                    and create activity.
+            GET    : Redirects the candidate to our app to keep track of number of clicks,
+                    hit_count and create activity.
 
         - EmailCampaignBlasts:  /v1/email-campaigns/:id/blasts
 
-            GET    : Gets the all the "blast" records for given email campaign id from db table
-                    "email_campaign_blast"
+            GET    : Gets the all the "blast" records for given email campaign id from
+                    db table "email_campaign_blast"
 
         - EmailCampaignBlastById:  /v1/email-campaigns/:id/blasts/:id
 
-            GET    : Gets the "blast" record for given email campaign id and blast_id from db table
-                    "email_campaign_blast"
+            GET    : Gets the "blast" record for given email campaign id and blast_id from
+                    db table "email_campaign_blast"
 
-        - EmailCampaignBlastSends:  /v1/email-campaigns/:id/sends
+        - EmailCampaignSends:  /v1/email-campaigns/:id/sends
 
-            GET    : Gets the "sends" records for given email campaign id and blast_id
-                        from db table "email_campaign_sends"
+            GET    : Gets the "sends" records for given email campaign id from db
+                    table "email_campaign_sends"
 
-        - EmailCampaignSends:  /v1/email-campaigns/:id/sends/:id
+        - EmailCampaignSendById:  /v1/email-campaigns/:id/sends/:id
 
             GET    : Gets all the "sends" records for given email campaign id
                         from db table "email_campaign_sends"
