@@ -1,24 +1,33 @@
-from datetime import datetime
+# Standard Imports
 import json
+import HTMLParser
 from urllib import urlencode
-from urlparse import parse_qs, urlsplit, urlunsplit
-from BeautifulSoup import BeautifulSoup, Tag
+from datetime import datetime
+from urlparse import (parse_qs, urlsplit, urlunsplit)
+
+# Third Party
+from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
+
+# Service Specific
+from email_campaign_service.email_campaign_app import logger
+
+# Common Utils
+from email_campaign_service.common.models.user import User
+from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
+                                                          ForbiddenError)
+from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
+from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
+from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
+                                                                 http_request)
+from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
+                                                  EmailCampaignUrl)
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
-from email_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound, \
-    ForbiddenError
-from email_campaign_service.common.models.user import User
-from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request, \
-    raise_if_not_instance_of
-from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion, \
-    EmailCampaignSend
-from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
@@ -159,7 +168,8 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
         soup = BeautifulSoup(new_html)
         num_conversions = convert_html_tag_attributes(
             soup,
-            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id, TRACKING_URL_TYPE),
+            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id,
+                                                             TRACKING_URL_TYPE),
             tag="img",
             attribute="src",
             convert_first_only=True
@@ -171,7 +181,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             new_image_url = create_email_campaign_url_conversion(image_url,
                                                                  email_campaign_send_id,
                                                                  TRACKING_URL_TYPE)
-            new_image_tag = Tag(soup, "img", [("src", new_image_url)])
+            new_image_tag = soup.new_tag("img", src=new_image_url)
             soup.insert(0, new_image_tag)
 
     # HTML click tracking
@@ -215,6 +225,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     # Convert soup object into new HTML
     if new_html and soup:
         new_html = soup.prettify()
+        new_html = HTMLParser.HTMLParser().unescape(new_html)
 
     return new_text, new_html
 

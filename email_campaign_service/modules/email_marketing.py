@@ -238,7 +238,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     else:
         raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
                            % campaign.id,
-                           error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+                           error_code = CampaignException.NO_VALID_CANDIDATE_FOUND)
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
@@ -545,13 +545,16 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     candidate = Candidate.get_by_id(candidate_id)
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
+        email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
         email_campaign_blast = EmailCampaignBlast.query.filter(
             EmailCampaignBlast.campaign_id == campaign.id).order_by(
             desc(EmailCampaignBlast.sent_datetime)).first()
         if not email_campaign_blast:
             logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
              that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
-            return False
+            raise InternalServerError('No email campaign blast found for campaign(id:%s) , user (id%s).'
+                           % (campaign.id, campaign.user_id),
+                           error_code = CampaignException.NO_CAMPAIGN_BLAST_FOUND)
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sent_datetime
     if not blast_datetime:
@@ -567,7 +570,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # candidate-specific and will be set here
     if campaign.is_subscription:
         pass
-    # from TalentJobAlerts import get_email_campaign_fields TODO: Job Alerts?
+    #             from TalentJobAlerts import get_email_campaign_fields TODO: Job Alerts?
     #             campaign_fields = get_email_campaign_fields(candidate.id,
     #             do_email_business=do_email_business)
     #             If candidate has no matching job openings, don't send the email

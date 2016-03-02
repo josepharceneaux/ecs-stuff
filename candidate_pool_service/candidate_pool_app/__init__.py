@@ -25,7 +25,7 @@ try:
     cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': app.config['REDIS_URL']})
 
     # Instantiate Celery
-    celery_app = make_celery(app, {'CELERY_DEFAULT_QUEUE': 'celery_stats_scheduler'})
+    celery_app = make_celery(app, 'celery_stats_scheduler')
 
     # Initialize Redis Cache
     from candidate_pool_service.common.redis_cache import redis_store

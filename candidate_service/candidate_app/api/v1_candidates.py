@@ -22,7 +22,6 @@ from candidate_service.modules.validators import (
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
-
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch
 )
@@ -209,7 +208,8 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -332,7 +332,8 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
