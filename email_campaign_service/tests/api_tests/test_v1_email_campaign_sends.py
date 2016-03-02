@@ -37,19 +37,18 @@ class TestEmailCampaignSends(object):
             headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
-    def test_get_by_sending_campaign(self, access_token_first, sent_campaign_with_client_id):
+    def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
         """
         Here we first send the campaign to 2 candidates (using email_client_id so that campaign
         is not actually sent). We then assert that sends has been created by making HTTP
         GET call on endpoint /v1/email-campaigns/:id/sends
         """
-        # send campaign
-        response = requests.get(self.URL % sent_campaign_with_client_id.id,
+        response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
-        assert json_resp['campaign_id'] == sent_campaign_with_client_id.id
-        assert json_resp['candidate_id'] == sent_campaign_with_client_id.sends[0].candidate_id
+        assert json_resp['campaign_id'] == sent_campaign.id
+        assert json_resp['candidate_id'] == sent_campaign.sends[0].candidate_id
 
     def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
         """

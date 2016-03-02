@@ -4,12 +4,11 @@ import re
 
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.candidate import CandidateEmail
+from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign)
-from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.routes import EmailCampaignUrl
 
 
 @pytest.fixture()
@@ -141,6 +140,22 @@ def candidate_in_other_domain(request, user_from_diff_domain):
     return candidate
 
 
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
+    """
+    This fixture sends the campaign 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    if request.param == 'with_client':
+        campaign_with_valid_candidate.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+        sleep_time = 5
+    else:
+        sleep_time = 15
+    # send campaign
+    send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
+    return campaign_with_valid_candidate
+
+
 @pytest.fixture()
 def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
@@ -150,12 +165,9 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     :param access_token_first: Bearer token for authorization.
     :param campaign_with_valid_candidate: Email campaign object with a valid candidate associated.
     """
-    url = EmailCampaignUrl.SEND
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-    response = requests.post(
-            url % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-    assert response.status_code == 200
+    response = send_campaign(campaign_with_valid_candidate, access_token_first)
     json_response = response.json()
     assert 'email_campaign_sends' in json_response
     email_campaign_sends = json_response['email_campaign_sends'][0]
@@ -170,15 +182,3 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
-
-
-
-@pytest.fixture()
-def sent_campaign_with_client_id(campaign_with_valid_candidate, access_token_first):
-    """
-    This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
-    email-campaign obj.
-    """
-    # send campaign
-    send_campaign(campaign_with_valid_candidate, access_token_first)
-    return campaign_with_valid_candidate

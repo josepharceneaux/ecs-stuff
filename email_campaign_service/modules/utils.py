@@ -165,7 +165,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     logger.info('create_email_campaign_url_conversions: email_campaign_send_id: %s'
                 % email_campaign_send_id)
     if new_html and is_email_open_tracking:
-        soup = BeautifulSoup(new_html)
+        soup = BeautifulSoup(new_html, "lxml")
         num_conversions = convert_html_tag_attributes(
             soup,
             lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id,
@@ -273,14 +273,6 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     raise_if_not_instance_of(current_user, User)
     raise_if_not_instance_of(campaign_type, basestring)
     # Validate that campaign belongs to user's domain
-    campaign = CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
-                                                            current_user,
-                                                            campaign_type)
-    send_obj = EmailCampaignSend.get_by_id(send_id)
-    if not send_obj:
-        raise ResourceNotFound("Send object(id:%s) for %s(id:%s) does not exist in database."
-                               % (send_id, campaign_type, campaign.id))
-    if not send_obj.campaign_id == requested_campaign_id:
-        raise ForbiddenError("Send object(id:%s) is not associated with %s(id:%s)."
-                             % (send_id, campaign_type, requested_campaign_id))
-    return send_obj
+    CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
+                                                 current_user, campaign_type)
+    return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
