@@ -140,6 +140,10 @@ def fetch_candidate_info(candidate, fields=None):
         talent_pool_ids = [talent_pool_candidate.talent_pool_id for talent_pool_candidate in
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
+    resume_url = None
+    if get_all_fields or 'resume_url' in fields:
+        resume_url = candidate.filename
+
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
@@ -159,7 +163,8 @@ def fetch_candidate_info(candidate, fields=None):
         'contact_history': history,
         'openweb_id': openweb_id,
         'dice_profile_id': dice_profile_id,
-        'talent_pool_ids': talent_pool_ids
+        'talent_pool_ids': talent_pool_ids,
+        'resume_url': resume_url
     }
 
     # Remove keys with None values
@@ -170,7 +175,7 @@ def fetch_candidate_info(candidate, fields=None):
 def format_candidate_full_name(candidate):
     """
     :type candidate:  Candidate
-    :return:
+    :rtype:  basestring
     """
     assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
@@ -681,7 +686,8 @@ def create_or_update_candidate_from_params(
         source_id=None,
         objective=None,
         summary=None,
-        talent_pool_ids=None
+        talent_pool_ids=None,
+        resume_url=None
 ):
     """
     Function will parse each parameter and:
@@ -729,6 +735,7 @@ def create_or_update_candidate_from_params(
     :type summary:                  basestring
     :type talent_pool_ids:          dict
     :type delete_talent_pools:      bool
+    :type resume_url                basestring
     :rtype                          dict
     """
     # Format inputs
@@ -767,12 +774,12 @@ def create_or_update_candidate_from_params(
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
                                          formatted_name, objective, summary,
-                                         candidate_id, user_id, edit_time)
+                                         candidate_id, user_id, edit_time, resume_url)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_time, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, objective, summary)
+                                      source_id, objective, summary, resume_url)
 
     candidate = Candidate.get_by_id(candidate_id=candidate_id)
     """
@@ -967,16 +974,15 @@ def social_network_name_from_url(url):
             return "Unknown"
 
 
-def _update_candidate(first_name, middle_name, last_name, formatted_name,
-                      objective, summary, candidate_id, user_id, edited_time):
+def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
+                      summary, candidate_id, user_id, edited_time, resume_url):
     """
     Function will update Candidate
     :return:    Candidate ID
     """
     update_dict = {'first_name': first_name, 'middle_name': middle_name,
                    'last_name': last_name, 'formatted_name': formatted_name,
-                   'objective': objective,
-                   'summary': summary}
+                   'objective': objective, 'summary': summary, 'filename': resume_url}
 
     # Remove keys with None values
     update_dict = dict((k, v) for k, v in update_dict.iteritems() if v is not None)
@@ -1003,18 +1009,16 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id,
                    dice_profile_id, dice_social_profile_id, source_id,
-                   objective, summary):
+                   objective, summary, resume_url):
     """
     Function will create Candidate
-    :return:    Candidate ID
+    :rtype:  Candidate.id
     """
     candidate = Candidate(
-        first_name=first_name, middle_name=middle_name, last_name=last_name,
-        formatted_name=formatted_name, added_time=added_time,
-        candidate_status_id=candidate_status_id, user_id=user_id,
-        dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary,
+        first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
+        added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
+        dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
+        source_id=source_id, objective=objective, summary=summary, filename=resume_url,
         is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
     )
     db.session.add(candidate)

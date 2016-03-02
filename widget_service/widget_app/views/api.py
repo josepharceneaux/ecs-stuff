@@ -33,7 +33,7 @@ from widget_service.common.utils.auth_utils import get_token_by_client_and_user
 from widget_service.common.utils.auth_utils import refresh_expired_token
 
 simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
-mod = Blueprint('widget_api', __name__)
+mod = Blueprint('widget_api', __name__, template_folder='templates')
 
 
 @mod.route(WidgetApi.DOMAIN_WIDGETS, methods=['GET'])
