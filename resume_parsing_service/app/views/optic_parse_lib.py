@@ -151,12 +151,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
     :param bs4.element.Tag bg_experience_xml_list:
     :return list output: List of dicts containing experience data.
     """
+    # TODO investigate is current not picking up current jobs.
     output = []
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employement in jobs:
             organization = _tag_text(employement, 'employer')
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
+            # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
             if organization and len(organization) > 5:
                 organization = string.capwords(organization)
             # Position title

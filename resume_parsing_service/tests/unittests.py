@@ -591,3 +591,47 @@ def test_pdf_accuracy():
     edu1 = next((edu for edu in educations if edu["school_name"] == u'ITT Technical Institute'), None)
     assert edu1
     assert {'bullets': [], 'type': u'Bachelor of Science Degree', 'title': u'Information Systems/Cyber Securities'} in edu1['degrees']
+
+
+def test_pdf13_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(PDF_13, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    assert contact_xml['first_name'] == 'Bruce'
+    assert contact_xml['last_name'] == 'Parkey'
+    assert {'value': u'630-930-2756'} in phones
+    experience_xml_list = bs4(PDF_13, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    exp1 = next((org for org in experiences if org["organization"] == u'Sagamore Apps, Inc'), None)
+    assert exp1
+    # assert exp1['position'] == u'Owner and Senior iOS Contract Developer'
+    assert exp1['start_month'] == 1
+    assert exp1['start_year'] == 2008
+    assert exp1['city'] == u'Darien'
+    assert exp1['state'] == u'IL'
+    exp2 = next((org for org in experiences if (
+        org["organization"] == u'Rapid Solutions Group' and
+        org['position'] == u'Vice President and Chief Information Officer')), None)
+    assert exp2
+    assert exp2['start_month'] == 1
+    assert exp2['start_year'] == 2003
+    assert exp2['end_month'] == 1
+    assert exp2['end_year'] == 2007
+    assert exp2['city'] == u'Mt. Prospect'
+    assert exp2['state'] == u'IL'
+    exp3 = next((org for org in experiences if org["organization"] == u'Ams Direct, Inc'), None)
+    assert exp3
+    # assert exp3['position'] == u'Vice President Information Technology'
+    assert exp3['start_month'] == 1
+    assert exp3['start_year'] == 1999
+    assert exp3['end_month'] == 1
+    assert exp3['end_year'] == 2003
+    assert exp3['city'] == u'Burr Ridge'
+    assert exp3['state'] == u'IL'
+    educations_xml_list = bs4(PDF_13, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'Purdue University'), None)
+    assert edu1
+    assert {'bullets': [], 'type': u'Bachelor of Science', 'title': u'Information Systems'} in edu1['degrees']
