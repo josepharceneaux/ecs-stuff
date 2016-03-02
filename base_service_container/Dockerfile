@@ -33,14 +33,11 @@ RUN sed -i '/$KLogPermitNonKernelFacility/s/^/#/g' /etc/rsyslog.conf
 # Disable xconsole in syslog
 RUN sed -i "65,68 s/^/#/" /etc/rsyslog.d/50-default.conf
 
-RUN touch /etc/rsyslog.d/23-uwsgi-loggly.conf
-ADD uwsgi_loggly.conf /etc/rsyslog.d/23-uwsgi-loggly.conf
-
 RUN touch /etc/rsyslog.d/22-loggly.conf
 ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
 
 RUN touch /etc/rsyslog.d/21-nginx-loggly.conf
-ADD nginx_loggly.conf /etc/rsyslog.d/21-nginx-loggly.conf
+ADD nginx_uwsgi_loggly.conf /etc/rsyslog.d/21-nginx-loggly.conf
 
 # Install python pyenv and 2.7.9
 RUN curl -L https://raw.github.com/yyuu/pyenv-installer/master/bin/pyenv-installer | bash
