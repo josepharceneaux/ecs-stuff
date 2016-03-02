@@ -22,7 +22,7 @@ class CandidateEdit(db.Model):
         return "<CandidateEdit (id = %r)" % self.id
 
     field_dict = {
-        'candidate': {
+        'candidate': {  #TODO: add filename
             'first_name': 1,
             'middle_name': 2,
             'last_name': 3,

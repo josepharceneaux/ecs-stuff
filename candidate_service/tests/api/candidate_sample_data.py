@@ -131,7 +131,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                                       for area_of_interest in aois],
                 'custom_fields': [{'custom_field_id': custom_field.id, 'value': custom_field.name}
                                   for custom_field in cfs],
-                'talent_pool_ids': {'add': talent_pool_ids}
+                'talent_pool_ids': {'add': talent_pool_ids},
+                'resume_url': fake.url()
             }
         ]
     }

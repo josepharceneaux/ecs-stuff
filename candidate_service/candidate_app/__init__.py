@@ -19,7 +19,7 @@ try:
     db.app = app
 
     # Instantiate Celery
-    celery_app = make_celery(app, {'CELERY_DEFAULT_QUEUE': 'celery_candidate_documents_scheduler'})
+    celery_app = make_celery(app, 'celery_candidate_documents_scheduler')
 
     from candidate_service.common.redis_cache import redis_store
     redis_store.init_app(app)
