@@ -49,20 +49,21 @@ class Tasks(Resource):
 
 
         :Example (in case of pagination):
-        By default, it will return 10 jobs (max)
+            By default, it will return 10 jobs (max)
+
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
 
-            # Returns 10 jobs ranging from 30-40
+            # Returns 10 jobs ranging from 30-39
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
 
-            # Returns 12 jobs ranging from 40-52
+            # Returns 12 jobs ranging from 48-59
 
         :Example:
         In case of authenticated user
@@ -111,30 +112,36 @@ class Tasks(Resource):
         # Limit the jobs to 50 if user requests for more than 50
         max_per_page = 50
 
+        # Default per_page size
+        default_per_page = 10
+
         # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
-        page, per_page = request.args.get('page', 1), request.args.get('per_page', 10)
+        page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
             raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
 
-        if not (str(per_page).isdigit() and int(per_page) >= 10):
+        if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
                 error_message="'per_page' arg should be a digit and its value should be greater or equal to 10")
 
         page, per_page = int(page), int(per_page)
 
-        # Limit the jobs if user requests jobs greater than 200
+        # Limit the jobs if user requests jobs greater than 50
         if per_page > max_per_page:
             per_page = max_per_page
 
         user_id = request.user.id if request.user else None
-        check_if_scheduler_is_running()
+
+        raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
-        tasks = filter(lambda task: task.args[0] == user_id, tasks)
+        tasks = filter(lambda _task: task.args[0] == user_id, tasks)
         tasks_count = len(tasks)
+        # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
+        task_indices = range((page-1) * per_page, page * per_page)
 
         tasks = [serialize_task(tasks[index])
-                 for index in range((page-1) * per_page, page * per_page) if index < tasks_count and tasks[index]]
+                 for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
         header = {
@@ -213,7 +220,7 @@ class Tasks(Resource):
         :return: id of created task
         """
         # get JSON post request data
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         try:
             task = request.get_json()
         except Exception:
@@ -260,7 +267,7 @@ class Tasks(Resource):
         """
 
         user_id = request.user.id
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         # get task_ids for tasks to be removed
         try:
             req_data = request.get_json()
@@ -323,7 +330,7 @@ class ResumeTasks(Resource):
 
         """
         user_id = request.user.id
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         try:
             req_data = request.get_json()
         except Exception:
@@ -382,7 +389,7 @@ class PauseTasks(Resource):
 
         """
         user_id = request.user.id
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         try:
             req_data = request.get_json()
         except Exception:
@@ -474,7 +481,7 @@ class TaskByName(Resource):
 
         """
         user_id = request.user.id if request.user else None
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Make sure task is valid and belongs to non-logged-in user
@@ -511,7 +518,7 @@ class TaskByName(Resource):
 
         """
         user_id = request.user.id if request.user else None
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Check if task is valid and belongs to the logged-in user
@@ -594,7 +601,7 @@ class TaskById(Resource):
 
         """
         user_id = request.user.id if request.user else None
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         task = scheduler.get_job(_id)
         # Make sure task is valid and belongs to logged-in user
         if task and task.args[0] == user_id:
@@ -635,7 +642,7 @@ class TaskById(Resource):
 
         """
         user_id = request.user.id if request.user else None
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
@@ -678,7 +685,7 @@ class ResumeTaskById(Resource):
 
         """
         user_id = request.user.id
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         # check and raise exception if job is already paused or not present
         task = check_job_state(job_id=_id, job_state_to_check='running')
         if task and task.args[0] == user_id:
@@ -721,7 +728,7 @@ class PauseTaskById(Resource):
         """
         # check and raise exception if job is already paused or not present
         user_id = request.user.id
-        check_if_scheduler_is_running()
+        raise_if_scheduler_not_running()
         task = check_job_state(job_id=_id, job_state_to_check='paused')
         if task and task.args[0] == user_id:
             scheduler.pause_job(job_id=_id)
@@ -780,7 +787,7 @@ class SendRequestTest(Resource):
         return dict(message='Dummy Endpoint called')
 
 
-def check_if_scheduler_is_running():
+def raise_if_scheduler_not_running():
     # if scheduler is not running
     if not scheduler.running:
         raise SchedulerNotRunningError("Scheduler is not running")

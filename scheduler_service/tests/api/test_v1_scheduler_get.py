@@ -91,7 +91,7 @@ class TestSchedulerGet(object):
                                     headers=auth_header_no_user)
         assert response_get.status_code == 200
 
-        # Delete all jobs created in this test case using fixture finalizer
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
@@ -128,7 +128,7 @@ class TestSchedulerGet(object):
 
         assert job_data['task_name'] == job_config['task_name']
 
-        # Let's delete jobs now
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
@@ -194,7 +194,7 @@ class TestSchedulerGet(object):
         for job in jobs_id:
             assert job in get_jobs_id
 
-        # Delete all jobs
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
@@ -256,7 +256,7 @@ class TestSchedulerGet(object):
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 85
 
-        # Delete all 10 created jobs in a fixture
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
@@ -285,13 +285,6 @@ class TestSchedulerGet(object):
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 90
 
-        response_get = requests.get('{0}?per_page={1}'.format(SchedulerApiUrl.TASKS, per_page),
-                                    headers=auth_header)
-
-        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
-
-        assert len(set_jobs_ids.difference(get_jobs_id)) == 90
-
         # There are 100 jobs scheduled, try to get the jobs higher than per_page limit.
         response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 105),
                                     headers=auth_header)
@@ -317,7 +310,7 @@ class TestSchedulerGet(object):
 
         assert len(set_jobs_ids.difference(get_jobs_id)) == 100
 
-        # Delete all 10 created jobs in a fixture
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
@@ -357,6 +350,6 @@ class TestSchedulerGet(object):
         # Response should be 400 as page and per_page arg is invalid
         assert response_get.status_code == 400
 
-        # Delete all created jobs
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
