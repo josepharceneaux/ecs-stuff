@@ -50,6 +50,9 @@ class ActivityMessageIds(object):
 
     # Social Network Service
     RSVP_EVENT = 23
+    EVENT_CREATE = 28
+    EVENT_DELETE = 29
+    EVENT_UPDATE = 30
 
     # SMS campaign
     CAMPAIGN_SMS_SEND = 24

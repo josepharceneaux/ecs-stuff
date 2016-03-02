@@ -19,6 +19,7 @@ class Activity(db.Model):
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
+    user = relationship('User', backref='activity')
     params = db.Column('Params', db.Text)
 
     def __repr__(self):

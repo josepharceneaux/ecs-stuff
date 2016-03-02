@@ -60,7 +60,7 @@ class TestEmailCampaignBlastsWithId(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD, self.URL % (email_campaign_in_other_domain.id,
-                                          fake.random_number()),
+                                          fake.random_int() + 1),
             access_token_first)
 
     def test_get_with_blast_id_associated_with_not_owned_campaign(

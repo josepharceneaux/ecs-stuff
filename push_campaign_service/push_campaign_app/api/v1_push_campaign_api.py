@@ -975,7 +975,7 @@ class PushCampaignUrlRedirection(Resource):
 
 
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
-class ResourceGetUrlConversion(Resource):
+class UrlConversionResource(Resource):
     """
     Resource is used to retrieve URL conversion object.
     """
@@ -989,19 +989,20 @@ class ResourceGetUrlConversion(Resource):
         :Example:
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
-            >>> data = {
-            >>>            "candidate_id": 268,
-            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
-            >>>         }
             >>> _id = 10
             >>> response = requests.get(PushCampaignApiUrl.URL_CONVERSION % _id,
+            >>>                          headers=headers)
+
+            Or you can get UrlConversion JSON object using campaign send id
+            >>> send_id = 10
+            >>> response = requests.get(PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % send_id,
             >>>                          headers=headers)
 
         .. Response::
 
                 {
                     "url_conversion": {
-                        "id": 1638,
+                        "id": 10,
                         "last_hit_time": "",
                         "hit_count": 0,
                         "added_time": "2016-02-12 12:46:09",
@@ -1047,20 +1048,22 @@ class ResourceGetUrlConversion(Resource):
 
     def delete(self, **kwargs):
         """
-        This endpoint deletes a UrlConversion object given by id.
+        This endpoint deletes a UrlConversion object given by url_conversion id or campaign send id.
         To delete this resource, user must be in same domain as the owner of this send.
 
         :Example:
 
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
-            >>> data = {
-            >>>            "candidate_id": 268,
-            >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
-            >>>         }
             >>> _id = 10
             >>> response = requests.delete(PushCampaignApiUrl.URL_CONVERSION % _id,
             >>>                          headers=headers)
+
+            Or you can delete a UrlConversion rescord by campaign send id.
+            >>> send_id = 10
+            >>> response = requests.delete(PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % send_id,
+            >>>                          headers=headers)
+
 
         .. Response::
 

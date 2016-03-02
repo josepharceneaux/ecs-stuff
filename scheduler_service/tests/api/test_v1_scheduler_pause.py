@@ -64,7 +64,7 @@ class TestSchedulerPause(object):
             assert response_get.json()['task']['id'] == job_id and \
                    response_get.json()['task']['next_run_datetime']
 
-        # Let's delete jobs now
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs
 
@@ -105,7 +105,7 @@ class TestSchedulerPause(object):
             next_run_datetime = res['next_run_datetime']
             assert next_run_datetime is None
 
-        # Delete all jobs
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
@@ -184,6 +184,6 @@ class TestSchedulerPause(object):
             next_run_datetime = res['task']['next_run_datetime']
             assert next_run_datetime != 'None'
 
-        # Delete all jobs
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id

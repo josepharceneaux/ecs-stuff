@@ -1,21 +1,23 @@
-import time
-import os
-import uuid
 import datetime
+import os
+import time
+import uuid
+
 from flask import request
-from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import TINYINT
+from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
-from db import db
-from ..utils.validators import is_number
-from ..error_handling import *
-from ..redis_cache import redis_store
+from ..models.event import Event
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_campaign import EmailCampaign
+from db import db
+from ..error_handling import *
+from ..redis_cache import redis_store
+from ..utils.validators import is_number
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 from ..error_codes import ErrorCodes
 
@@ -56,10 +58,12 @@ class User(db.Model):
     email_campaigns = relationship('EmailCampaign', backref='user')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
-    events = db.relationship('Event', backref='user', lazy='dynamic')
-    event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic')
-    venues = db.relationship('Venue', backref='user', lazy='dynamic')
-    activities = db.relationship('Activity', backref='user', lazy='dynamic')
+    events = db.relationship(Event, backref='user', lazy='dynamic',
+                             cascade='all, delete-orphan', passive_deletes=True)
+    event_organizers = db.relationship('EventOrganizer', backref='user', lazy='dynamic',
+                                       cascade='all, delete-orphan', passive_deletes=True)
+    venues = db.relationship('Venue', backref='user', lazy='dynamic',
+                             cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
     def generate_jw_token(expiration=600, user_id=None):
@@ -314,7 +318,12 @@ class Token(db.Model):
 
     @classmethod
     def get_by_user_id(cls, user_id):
-        assert user_id
+        """
+        Filter Token based on user_id and return token from db
+        :param user_id: User id whose token is required
+        :return: Token object matched with access_token
+        """
+        assert user_id, "user_id is None"
         return cls.query.filter(cls.user_id == user_id).first()
 
     @staticmethod
@@ -325,10 +334,7 @@ class Token(db.Model):
         :return: Token object matched with access_token
         """
         assert access_token, "access_token is empty"
-        token = Token.query.filter_by(access_token=access_token).first()
-        if not token:
-            raise ResourceNotFound("Token not found")
-        return token
+        return Token.query.filter_by(access_token=access_token).first()
 
 
 class DomainRole(db.Model):

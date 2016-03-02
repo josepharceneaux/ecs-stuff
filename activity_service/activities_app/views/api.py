@@ -114,7 +114,7 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
         db.session.add(activity)
         db.session.commit()
         return json.dumps({'activity': {'id': activity.id}}), 200
-    except:
+    except Exception:
         # TODO logging
         return json.dumps({'error': 'There was an error saving your log entry'}), 500
 
@@ -122,28 +122,38 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
 class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
-
     MESSAGES = {
-        ActivityMessageIds.RSVP_EVENT: (
-            "%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
-            "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
-            "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
-            " on event '%(eventTitle)s'", "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_WEB: (
-            "%(username)s uploaded resume of candidate %(formattedName)s",
-            "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_CSV: (
-            "%(username)s imported candidate %(formattedName)s via spreadsheet",
-            "%(username)s imported %(count)s candidates via spreadsheet", "candidate.png"),
+        ActivityMessageIds.RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
+                                        "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
+                                        "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
+                                        " on event '%(eventTitle)s'",
+                                        "candidate.png"),
+
+        ActivityMessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
+                                          "%(username)s created %(count)s events.</b>",
+                                          "event.png"),
+
+        ActivityMessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
+                                          "%(username)s deleted %(count)s events.</b>",
+                                          "event.png"),
+
+        ActivityMessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
+                                          "%(username)s updated %(count)s events.</b>",
+                                          "event.png"),
+
+        ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
+                                                  "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
+        ActivityMessageIds.CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
+                                                  "%(username)s imported %(count)s candidates via spreadsheet",
+                                                  "candidate.png"),
         ActivityMessageIds.CANDIDATE_CREATE_WIDGET: (
-            "Candidate %(formattedName)s joined via widget",
-            "%(count)s candidates joined via widget", "widget.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_MOBILE: (
-            "%(username)s added candidate %(formattedName)s via mobile",
-            "%(username)s added %(count)s candidates via mobile", "candidate.png"),
+            "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
+        ActivityMessageIds.CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
+                                                     "%(username)s added %(count)s candidates via mobile",
+                                                     "candidate.png"),
         ActivityMessageIds.CANDIDATE_UPDATE: (
-            "%(username)s updated candidate %(formattedName)s",
-            "%(username)s updated %(count)s candidates",
+            "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
+
             "candidate.png"),
         ActivityMessageIds.CANDIDATE_DELETE: (
             "%(username)s deleted candidate %(formattedName)s",
