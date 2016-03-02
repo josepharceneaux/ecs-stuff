@@ -39,9 +39,10 @@ class TestEmailCampaignSends(object):
 
     def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
         """
-        Here we first send the campaign to 2 candidates (using email_client_id so that campaign
-        is not actually sent). We then assert that sends has been created by making HTTP
-        GET call on endpoint /v1/email-campaigns/:id/sends
+
+        Here we first send the campaign to 2 candidates (with and without email-client-id).
+        We then assert that sends has been created by making HTTP GET call on
+        endpoint /v1/email-campaigns/:id/sends
         """
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))

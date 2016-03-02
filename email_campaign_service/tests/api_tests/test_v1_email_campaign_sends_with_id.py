@@ -37,7 +37,7 @@ class TestEmailCampaignSendsWithId(object):
 
     def test_get_with_valid_token(self, access_token_first, sent_campaign):
         """
-        Here we user `sent_campaign_with_client_id` fixture to send campaign via email-client-id
+        Here we use `sent_campaign` fixture to send campaign with and without email-client-id
         to 2 candidates. This is the test where we get campaign's sends with valid
         access token.
         """

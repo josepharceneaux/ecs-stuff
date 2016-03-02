@@ -33,15 +33,15 @@ This file contains API endpoints related to email_campaign_service.
             GET    : Gets the "blast" record for given email campaign id and blast_id from db table
                     "email_campaign_blast"
 
-        - EmailCampaignBlastSends:  /v1/email-campaigns/:id/blasts/:id/sends
+        - EmailCampaignBlastSends:  /v1/email-campaigns/:id/sends
 
             GET    : Gets the "sends" records for given email campaign id and blast_id
-                        from db table 'email_campaign_sends'.
+                        from db table "email_campaign_sends"
 
-        - EmailCampaignSends:  /v1/email-campaigns/:id/sends
+        - EmailCampaignSends:  /v1/email-campaigns/:id/sends/:id
 
             GET    : Gets all the "sends" records for given email campaign id
-                        from db table email_campaign_sends
+                        from db table "email_campaign_sends"
 """
 
 # Third Party
@@ -52,10 +52,10 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_emails_to_campaign,
                                                             update_hit_count)
-from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
@@ -222,7 +222,7 @@ class EmailCampaignUrlRedirect(Resource):
 class EmailCampaignBlasts(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts.
-    This class returns all the blast objects associated with given campaign.
+    This resource returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
 
@@ -294,7 +294,7 @@ class EmailCampaignBlasts(Resource):
 class EmailCampaignBlastById(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
-    This class returns a blast object for given blast_id associated with given campaign.
+    This resource returns a blast object for given blast_id associated with given campaign.
     """
     decorators = [require_oauth()]
 
@@ -355,7 +355,7 @@ class EmailCampaignBlastById(Resource):
 class EmailCampaignSends(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/sends
-    This class returns all the sends objects associated with given campaign.
+    This resource returns all the sends objects associated with given campaign.
     """
     decorators = [require_oauth()]
 
@@ -425,7 +425,7 @@ class EmailCampaignSends(Resource):
 class EmailCampaignSendById(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/sends/:id.
-    This class returns a send object for given send_id associated with given campaign.
+    This resource returns a send object for given send_id associated with given campaign.
     """
     decorators = [require_oauth()]
 

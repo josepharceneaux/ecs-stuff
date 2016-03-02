@@ -46,8 +46,8 @@ class TestEmailCampaignBlasts(object):
 
     def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
         """
-        Here we first send the campaign to 2 candidates (using email_client_id so that campaign
-        is not actually sent). We then assert that blast has been created by making HTTP
+        Here we first send the campaign to 2 candidates (with and without email-client-id).
+        We then assert that blast has been created by making HTTP
         GET call on endpoint /v1/email-campaigns/:id/blasts
         """
         response = requests.get(self.URL % sent_campaign.id,
