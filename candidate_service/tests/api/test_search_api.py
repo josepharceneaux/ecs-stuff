@@ -69,9 +69,9 @@ def test_search_location(user_first, access_token_first):
     """
     AddUserRoles.add_and_get(user=user_first)
     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-    time.sleep(10)
     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, city=city, state=state,
                                         zip_code=zip_code)
+    time.sleep(10)
     response = get_response_from_authorized_user(access_token_first, '?location=%s,%s' % (city, state))
     _assert_results(candidate_ids, response.json())
 
@@ -170,7 +170,7 @@ def test_search_candidate_experience(user_first, access_token_first):
         db.session.commit()
         candidate_ids.append(candidate_id)
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents.delay(candidate_ids)
     response = get_response_from_authorized_user(access_token_first,
                                                  '?minimum_years_experience=0&maximum_years_experience=2').json()
     for candidate in response['candidates']:
@@ -371,7 +371,7 @@ def _assert_results(candidate_ids, response):
 
 def get_response_from_authorized_user(access_token, arguments_to_url):
     # wait for cloudsearch to update the candidates.
-    time.sleep(25)
+    time.sleep(35)
     # auth_token = auth_user.get_auth_token(owner_user, get_bearer_token=True)
     response = requests.get(
         url=CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url,

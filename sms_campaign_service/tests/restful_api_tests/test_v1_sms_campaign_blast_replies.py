@@ -9,11 +9,8 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.campaign_services.common_tests import CampaignsCommonTests
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
-
-# Service Specific
-from sms_campaign_service.tests.modules.common_functions import assert_ok_response_and_counts
 
 
 class TestSmsCampaignBlastReplies(object):
@@ -21,17 +18,18 @@ class TestSmsCampaignBlastReplies(object):
     This class contains tests for endpoint /v1/campaigns/:id/blasts/:id/replies
     """
     URL = SmsCampaignApiUrl.BLAST_REPLIES
-    METHOD = 'get'
+    HTTP_METHOD = 'get'
     ENTITY = 'replies'
 
     def test_get_with_invalid_token(self, sms_campaign_of_current_user, create_sms_campaign_blast):
         """
-         User auth token is invalid. It should get Unauthorized error.
+         User auth token is invalid. It should result in Unauthorized error.
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_token(
-            self.METHOD, self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
+        CampaignsTestsHelpers.request_with_invalid_token(
+            self.HTTP_METHOD,
+            self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             None)
 
     def test_get_with_no_replies_on_campaign(self, access_token_first, sms_campaign_of_current_user,
@@ -46,21 +44,21 @@ class TestSmsCampaignBlastReplies(object):
         response = requests.get(
             self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
     def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_current_user,
                                        create_sms_campaign_blast):
         """
         It first deletes a campaign from database and try to get its replies for given blast_id.
-        It should get ResourceNotFound error.
+        It should result in ResourceNotFound error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
         blast_id = create_sms_campaign_blast.id
-        CampaignsCommonTests.request_after_deleting_campaign(
+        CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
-            self.URL % ('%s', blast_id), self.METHOD, access_token_first)
+            self.URL % ('%s', blast_id), self.HTTP_METHOD, access_token_first)
 
     def test_get_with_one_blast_reply(self, access_token_first, candidate_phone_1,
                                       sms_campaign_of_current_user, create_sms_campaign_blast,
@@ -78,7 +76,7 @@ class TestSmsCampaignBlastReplies(object):
         response = requests.get(
             self.URL % (sms_campaign_of_current_user.id, create_sms_campaign_blast.id),
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['blast_id'] == sms_campaign_of_current_user.blasts[0].id
         assert json_resp['candidate_phone_id'] == candidate_phone_1.id
@@ -87,11 +85,12 @@ class TestSmsCampaignBlastReplies(object):
                                          create_sms_campaign_blast):
         """
         This is the case where we try to get blast of a campaign which was created by
-        some other user. It should get Forbidden error.
+        some other user. It should result in Forbidden error.
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(
-            self.METHOD, self.URL % (sms_campaign_in_other_domain.id, create_sms_campaign_blast.id),
+        CampaignsTestsHelpers.request_for_forbidden_error(
+            self.HTTP_METHOD,
+            self.URL % (sms_campaign_in_other_domain.id, create_sms_campaign_blast.id),
             access_token_first)
 
     def test_get_with_blast_id_associated_with_not_owned_campaign(
@@ -99,23 +98,23 @@ class TestSmsCampaignBlastReplies(object):
             create_blast_for_not_owned_campaign):
         """
         Here we assume that requested blast_id is associated with such a campaign which does not
-        belong to domain of logged-in user. It should get Forbidden error.
+        belong to domain of logged-in user. It should result in Forbidden error.
         :param access_token_first: access token for sample user
         :param sms_campaign_of_current_user: fixture to create SMS campaign for current user
         :return:
         """
-        CampaignsCommonTests.request_for_forbidden_error(
-            self.METHOD,
+        CampaignsTestsHelpers.request_for_forbidden_error(
+            self.HTTP_METHOD,
             self.URL % (sms_campaign_of_current_user.id, create_blast_for_not_owned_campaign.id),
             access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first, create_sms_campaign_blast):
         """
-        This is a test to get blasts of a campaign which does not exists in database.
+        This is a test to get blasts of a campaign which does not exist in database.
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(
-            SmsCampaign, self.METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
+            SmsCampaign, self.HTTP_METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
             access_token_first,
             None)
 
@@ -124,6 +123,6 @@ class TestSmsCampaignBlastReplies(object):
         This is a test to get blasts of a campaign using non-existing blast_id
         :return:
         """
-        CampaignsCommonTests.request_with_invalid_campaign_id(
-            SmsCampaignBlast, self.METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
+            SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
             access_token_first, None)

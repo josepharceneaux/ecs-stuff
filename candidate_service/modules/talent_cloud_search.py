@@ -10,8 +10,8 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from candidate_service.candidate_app import app
-from candidate_service.candidate_app import db, logger
+from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
@@ -134,8 +134,6 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
                                                                                            'ReturnEnabled': False})
 }
 
-filter_queries_list = []
-search_queries_list = []
 coordinates = []
 geo_params = dict()
 
@@ -340,75 +338,84 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         SELECT GROUP_CONCAT(DISTINCT(email_campaign_send.CandidateId)) AS `candidate_engagement` FROM email_campaign_send WHERE email_campaign_send.CandidateId IN :candidate_ids_string;
     """
 
-    candidate_engagement = db.session.connection().execute(text(sql_query_for_candidate_engagement),
-                                                           candidate_ids_string=tuple(candidate_ids))
-    candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
-
-    results = db.session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
-                                              sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
-
-    # Go through results & build action dicts
     action_dicts = []
-    for field_name_to_sql_value in results:
-        candidate_id = field_name_to_sql_value['id']
-        action_dict = dict(type='add', id=str(candidate_id))
+    with OneTimeSQLConnection(app) as session:
 
-        # Remove keys with empty values
-        field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
+        candidate_engagement = session.connection().execute(text(sql_query_for_candidate_engagement),
+                                                            candidate_ids_string=tuple(candidate_ids))
+        candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
 
-        # Set candidate engagement score
-        field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
+        results = session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
+                                               sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
 
-        # Massage 'field_name_to_sql_value' values into the types they are supposed to be
-        for field_name in field_name_to_sql_value.keys():
-            index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
+        # Go through results & build action dicts
+        for field_name_to_sql_value in results:
+            candidate_id = field_name_to_sql_value['id']
+            action_dict = dict(type='add', id=str(candidate_id))
 
-            if not index_field_options:
-                logger.error("Unknown field name, could not build document: %s", field_name)
-                continue
+            # Remove keys with empty values
+            field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
 
-            sql_value = field_name_to_sql_value[field_name]
-            if not sql_value:
-                continue
+            # Set candidate engagement score
+            field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
 
-            index_field_type = index_field_options['IndexFieldType']
-            if 'array' in index_field_type:
-                sql_value_array = sql_value.split(group_concat_separator)
-                if index_field_type == 'int-array':
-                    # If int-array, turn all values to ints
-                    sql_value_array = [int(field_value) for field_value in sql_value_array]
-                field_name_to_sql_value[field_name] = sql_value_array
+            # Massage 'field_name_to_sql_value' values into the types they are supposed to be
+            for field_name in field_name_to_sql_value.keys():
+                index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
-        # Add the required values we didn't get from DB
-        if not domain_id:
-            field_name_to_sql_value_row = User.query.filter_by(
-                id=field_name_to_sql_value['user_id']).first()
-            domain_id = field_name_to_sql_value_row.domain_id
-        field_name_to_sql_value['domain_id'] = domain_id
-        action_dict['fields'] = field_name_to_sql_value
-        action_dicts.append(action_dict)
+                if not index_field_options:
+                    logger.error("Unknown field name, could not build document: %s", field_name)
+                    continue
+
+                sql_value = field_name_to_sql_value[field_name]
+                if not sql_value:
+                    continue
+
+                index_field_type = index_field_options['IndexFieldType']
+                if 'array' in index_field_type:
+                    sql_value_array = sql_value.split(group_concat_separator)
+                    if index_field_type == 'int-array':
+                        # If int-array, turn all values to ints
+                        sql_value_array = [int(field_value) for field_value in sql_value_array]
+                    field_name_to_sql_value[field_name] = sql_value_array
+
+            # Add the required values we didn't get from DB
+            if not domain_id:
+                field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
+                domain_id = field_name_to_sql_value_row.domain_id
+            field_name_to_sql_value['domain_id'] = domain_id
+            action_dict['fields'] = field_name_to_sql_value
+            action_dicts.append(action_dict)
 
     return action_dicts
 
 
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
+    :param domain_id: Domain Id
     :return:
     """
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
-    logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
-    start_time = time.time()
-    action_dicts = _build_candidate_documents(candidate_ids, domain_id)
-    logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
-                len(action_dicts))
-    adds, deletes = _send_batch_request(action_dicts)
-    if deletes:
-        logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s deletes.candidate_ids: %s",
-                     deletes, candidate_ids)
-    return adds
+
+    # We'll not upload all candidate documents at once rather 10 candidate documents at once
+    max_number_of_candidate = 10
+    for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+        logger.info("Uploading %s candidate documents. Generating action dicts...",
+                    len(candidate_ids[i:i + max_number_of_candidate]))
+        start_time = time.time()
+        action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+        logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
+                    len(action_dicts))
+        adds, deletes = _send_batch_request(action_dicts)
+        if deletes:
+            logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
+                         "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
+        if adds:
+            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i + max_number_of_candidate]))
 
 
 def upload_candidate_documents_in_domain(domain_id):
@@ -422,7 +429,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents(candidate_ids, domain_id)
+    return upload_candidate_documents.delay(candidate_ids, domain_id)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -434,7 +441,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents(candidate_ids=candidate_ids)
+    return upload_candidate_documents.delay(candidate_ids)
 
 
 def upload_all_candidate_documents():
@@ -446,8 +453,7 @@ def upload_all_candidate_documents():
     domains = Domain.query.with_entities(Domain.id).all()
     for domain in domains:
         logger.info("Uploading all candidates of domain %s", domain.id)
-        adds += upload_candidate_documents_in_domain(domain.id)
-    return adds
+        upload_candidate_documents_in_domain(domain.id)
 
 
 def delete_candidate_documents(candidate_ids):
@@ -564,27 +570,57 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-    # Clear all queries and filters list for fresh search
-    _clear_filter_queries_and_search_queries_list()
 
+    filter_queries_list = []
+    filter_query, search_query = '', ''
     if request_vars:
         for var_name in request_vars.keys():
             if "[]" == var_name[-2:]:
                 request_vars[var_name[:-2]] = request_vars[var_name]
-        get_filter_query_from_request_vars(request_vars)
+        filter_query_from_search_params = ''
+        search_query_from_search_params = ''
+        if 'search_params_list' in request_vars:
+            search_params_list = request_vars.get('search_params_list')
+            filter_queries_from_search_params = []
+            search_queries_from_search_params = []
+
+            for search_params in search_params_list:
+                filter_query, search_query = get_filter_query_from_request_vars(search_params, filter_queries_list)
+                if filter_query:
+                    filter_queries_from_search_params.append(filter_query)
+                if search_query:
+                    search_queries_from_search_params.append(search_query)
+
+            filter_query_from_search_params = "(or %s)" % " ".join(filter_queries_from_search_params) if \
+                len(filter_queries_from_search_params) > 1 else ' '.join(filter_queries_from_search_params)
+            search_query_from_search_params = " OR ".join(search_queries_from_search_params) if \
+                len(search_queries_from_search_params) > 1 else " ".join(search_queries_from_search_params)
+
+        filter_query_without_search_params, search_query_without_search_params = get_filter_query_from_request_vars(
+                request_vars, filter_queries_list)
+
+        filter_query = "(and %s %s)" % (filter_query_without_search_params, filter_query_from_search_params) if \
+            filter_query_from_search_params else filter_query_without_search_params
+
+        search_query = "(%s) AND (%s)" % (search_query_without_search_params, search_query_from_search_params) if \
+            search_query_from_search_params else search_query_without_search_params
 
     # Search all candidates under domain
-    filter_queries_list.append(["(term field=domain_id %s)" % domain_id])
+    domain_filter = "(term field=domain_id %s)" % domain_id
 
-    dumb_list_query_string, dumb_list_filter_query_string = '', ''
-    # This parameter is for internal Talent-Pipeline search only
-    if isinstance(request_vars.get('dumb_list_ids'), list):
-        dumb_list_query_string = " OR ".join("dumb_lists:%s" % dumb_list_id for dumb_list_id in
-                                             request_vars.get('dumb_list_ids'))
-        dumb_list_filter_query_string = "(or %s)" % ' '.join("dumb_lists:%s" % dumb_list_id for dumb_list_id in
-                                                             request_vars.get('dumb_list_ids'))
-    elif request_vars.get('dumb_list_ids'):
-        dumb_list_filter_query_string = dumb_list_query_string = "dumb_lists:%s" % request_vars.get('dumb_list_ids')
+    # Add talent_pool_id in filter_queries
+    talent_pool_id = request_vars.get('talent_pool_id', '')
+    talent_pool_filter = "(term field=talent_pools  %s)" % talent_pool_id if talent_pool_id else talent_pool_id
+
+    dumb_list_filter_query_string = ''
+    dumb_list_ids = request_vars.get('dumb_list_ids', '')
+    if dumb_list_ids:
+        # This parameter is for internal Talent-Pipeline search only
+        if isinstance(dumb_list_ids, list):
+            dumb_list_filter_query_string = "(or %s)" % ' '.join("dumb_lists:%s" % dumb_list_id for dumb_list_id in
+                                                                 request_vars.get('dumb_list_ids'))
+        else:
+            dumb_list_filter_query_string = "(term field=dumb_lists %s)" % dumb_list_ids
 
     # Sorting
     sort = '%s %s'
@@ -609,43 +645,25 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     elif search_limit == 0 or search_limit > CLOUD_SEARCH_MAX_LIMIT:
         search_limit = CLOUD_SEARCH_MAX_LIMIT
 
-    if not search_queries_list:
+    if not search_query:
         # If no search query is provided, (may be in case of landing talent page) then fetch all results
-        query_string = "id:%s" % request_vars['id'] if request_vars.get('id') else "*:*"
+        search_query = "id:%s" % request_vars['id'] if request_vars.get('id') else "*:*"
 
     else:
-        query_string = " AND ".join(search_queries_list) if len(search_queries_list) > 1 \
-            else " ".join(search_queries_list)
         if request_vars.get('id'):
             # If we want to check if a certain candidate ID is in a smartlist
-            query_string = "id:%s AND %s" % (request_vars['id'], query_string)
-        # For TalentPipeline candidate search we'll need to query candidates of given dumb_lists
-        if dumb_list_query_string:
-            query_string = "((%s) OR (%s))" % (dumb_list_query_string, query_string)
+            search_query = "(id:%s) AND (%s)" % (request_vars['id'], search_query)
 
-    params = dict(query=query_string, sort=sort, start=offset, size=search_limit)
+    # For TalentPipeline candidate search we'll need to query candidates of given dumb_lists
+    if dumb_list_filter_query_string:
+        filter_query = "(or %s %s)" % (dumb_list_filter_query_string, filter_query)
+
+    filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
+
+    params = dict(query=search_query, sort=sort, start=offset, size=search_limit)
     params['query_parser'] = 'lucene'
 
-    filter_query_strings = []
-    for filter_query in filter_queries_list:
-        if filter_query:
-            filter_query_strings.append("(and %s)" % ' '.join(filter_query) if len(filter_query) > 1
-                                        else ' '.join(filter_query))
-
-    params['filter_query'] = "(and %s)" % " ".join(filter_query_strings) if len(filter_query_strings) > 1 \
-        else ' '.join(filter_query_strings)
-
-    if dumb_list_query_string:
-        if len(filter_query_strings) > 1:
-            params['filter_query'] = "(or %s %s)" % (dumb_list_filter_query_string, params['filter_query'])
-        else:
-            # Length of filter_query_strings is 1 because there would be domain_id term at least
-            params['filter_query'] = dumb_list_filter_query_string
-
-    # Add talent_pool_id in filter_queries
-    if request_vars.get('talent_pool_id'):
-        params['filter_query'] = "(and %s (term field=talent_pools  %s))" % (params['filter_query'],
-                                                                             request_vars.get('talent_pool_id'))
+    params['filter_query'] = filter_query
 
     if sort_field == "distance":
         params['expr'] = "{'distance':'haversin(%s,%s,coordinates.latitude,coordinates.longitude)'}"\
@@ -710,8 +728,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     facets = get_faceting_information(results.get('facets'))
 
     # Update facets
-    queries_list = [query for filter_query_list in filter_queries_list for query in filter_query_list]
-    _update_facet_counts(queries_list, params['filter_query'], facets, query_string, domain_id)
+    _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
 
     # for facet_field_name, facet_dict in facets.iteritems():
     #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
@@ -854,7 +871,7 @@ def get_bucket_facet_value_count(facet):
     return facet_bucket
 
 
-def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string, domain_id):
+def _update_facet_counts(filter_queries, params_fq, existing_facets, query_string):
     """
     For multi-select facets, return facet count and values based on filter queries
     :param filter_queries:
@@ -988,23 +1005,6 @@ def _get_source_id(request_vars):
                 new_source_ids.append(source_or_product)
         request_vars['source_ids'] = new_source_ids
     return request_vars['source_ids']
-
-
-def _get_search_queries(request_vars):
-    """
-    Get the fiter query
-    :param request_vars:
-    :return:
-    """
-    # If query is array, separate values by spaces
-    query = request_vars.get('query')
-    if query and not isinstance(query, basestring):
-        q = ' '.join(query)
-        search_queries_list.append(q)
-    elif query:
-        search_queries_list.append(query)
-
-    return search_queries_list
 
 
 def _search_with_location(location, radius):
@@ -1205,7 +1205,7 @@ def _get_candidates_fields_with_given_filters(fields_data):
         return required_search_result
 
 
-def get_filter_query_from_request_vars(request_vars):
+def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     """
     Get the filter query from requested filters
     :param request_vars:
@@ -1218,8 +1218,8 @@ def get_filter_query_from_request_vars(request_vars):
     if not request_vars.get('product_id') and request_vars.get('source_ids'):
         _get_source_id(request_vars)
 
-    if request_vars.get('query'):
-        _get_search_queries(request_vars)
+    query = request_vars.get('query', '*')
+    query = ' '.join(query) if isinstance(query, list) else query
 
     if request_vars.get('location'):
         location = request_vars.get('location')
@@ -1341,18 +1341,6 @@ def get_filter_query_from_request_vars(request_vars):
         if 'cf-' in key:
             filter_queries = filter_queries + _search_custom_fields(request_vars)
 
-    filter_queries_list.append(filter_queries)
+    filter_queries_list += filter_queries
 
-    # Get filter_query for each of the search_params dictionary and push it to filter_queries_list
-    search_params_list = request_vars.get('search_params') or []
-    if isinstance(search_params_list, list):
-        for search_params in search_params_list:
-            get_filter_query_from_request_vars(search_params)
-
-    return filter_queries_list
-
-
-def _clear_filter_queries_and_search_queries_list():
-    if filter_queries_list or search_queries_list:
-        filter_queries_list[:] = []
-        search_queries_list[:] = []
+    return "(and %s)" % ' '.join(filter_queries) if len(filter_queries) > 1 else ' '.join(filter_queries), query

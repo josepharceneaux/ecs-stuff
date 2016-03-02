@@ -275,8 +275,17 @@ class CandidateEmail(db.Model):
 
     @classmethod
     def search_email_in_user_domain(cls, user_model, user, email):
+        """
+        This returns the count of how many candidates are there in user's domain for given
+        email-address.
+        :param user_model: Model class User
+        :param user: logged-in user's object
+        :param email: email-address to be searched in user's domain
+        :return:
+        """
         return cls.query.with_entities(cls.address, cls.candidate_id).group_by(cls.candidate_id).\
-            join(Candidate, cls.candidate_id == Candidate.id).join(user_model, Candidate.user_id == user_model.id).\
+            join(Candidate, cls.candidate_id == Candidate.id).join(user_model,
+                                                                   Candidate.user_id == user_model.id).\
             filter(and_(user_model.domain_id == user.domain_id,
                         cls.address == email)).all()
 
@@ -524,6 +533,13 @@ class CandidateWorkPreference(db.Model):
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).first()
 
 
 class CandidatePreferredLocation(db.Model):

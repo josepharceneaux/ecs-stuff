@@ -117,6 +117,7 @@ class TestSchedulerExceptions(object):
         data = response.json()
         assert data['id']
 
+        # Delete all jobs created in this test case using fixture finalizer
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 

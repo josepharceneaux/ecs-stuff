@@ -45,7 +45,7 @@ periodic_task_job_schema = {
             "type": "date-time",
         },
         "frequency": {
-            "type": "date-time",
+            "type": "number",
         }
     }
 }

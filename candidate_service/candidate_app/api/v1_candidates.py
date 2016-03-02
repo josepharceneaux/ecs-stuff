@@ -22,7 +22,6 @@ from candidate_service.modules.validators import (
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
-
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch
 )
@@ -154,8 +153,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
@@ -205,12 +208,13 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
         # Add candidates to cloud search
-        upload_candidate_documents(created_candidate_ids)
+        upload_candidate_documents.delay(created_candidate_ids)
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -267,8 +271,12 @@ class CandidatesResource(Resource):
             # to_date & from_date in military_service dict must be formatted properly
             for military_service in _candidate_dict.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date or to_date:
-                    if not is_date_valid(date=from_date) or not is_date_valid(date=to_date):
+                if from_date:
+                    if not is_date_valid(date=from_date):
+                        raise InvalidUsage("Military service's date must be in a date format",
+                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                elif to_date:
+                    if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
 
@@ -324,12 +332,13 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
         # Update candidates in cloud search
-        upload_candidate_documents(updated_candidate_ids)
+        upload_candidate_documents.delay(updated_candidate_ids)
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
 
@@ -1184,7 +1193,7 @@ class CandidateClientEmailCampaignResource(Resource):
                 'email_body_html': '<html><body>Email Body</body></html>',
                 'email_body_text': 'Plaintext part of email goes here, if any',
                 'email_client_id': int,
-                'sent_time': datetime,
+                'sent_datetime': datetime,
              }
 
         Function will create a list, email_campaign, email_campaign_send, and a url_conversion
@@ -1203,7 +1212,6 @@ class CandidateClientEmailCampaignResource(Resource):
         email_body_html = body_dict.get('email_body_html')
         email_body_text = body_dict.get('email_body_text')
         email_client_id = body_dict.get('email_client_id')
-        send_time = body_dict.get('sent_time', 0)
 
         if not email_from or not email_reply_to or not email_client_id or not candidates_list:
             raise InvalidUsage(error_message="Fields are missing.")

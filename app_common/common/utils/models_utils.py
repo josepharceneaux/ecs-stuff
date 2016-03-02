@@ -47,56 +47,109 @@ from types import MethodType
 
 # Third Party
 from flask import current_app
+from sqlalchemy import inspect
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 
 # Application Specific
+
+
 from ..models.db import db
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
 from ..error_handling import register_error_handlers, InvalidUsage
-from ..utils.handy_functions import camel_case_to_snake_case
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
-def to_json(instance):
+def to_json(self, allowed_keys=None, field_parsers=dict()):
     """
     Converts SqlAlchemy object to serializable dictionary
 
     Some data types are not json serializable e.g. DATETIME, TIMESTAMP
-    so we are making a dictionary where keys are types and values are types to which we want to
-    convert this data.
-    """
-    # add your conversions for things like datetime's
-    # and what-not that aren't serializable.
-    convert = dict(DATETIME=str, TIMESTAMP=str,
-                   DATE=str, TIME=str)
+    so we are making a dictionary where keys are types and values are functions which
+     will be used to convert these fields to specific type e.g. str
 
-    # data dictionary which will contain add data for this instance
+     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+     to json serializable dict but we want our datetime object to be converted in
+     ISO 8601 format, fo we can pass a parser functions like
+
+        >>> from app_common.common.utils.handy_functions import to_utc_str
+        >>> parsers = dict(start_datetime=to_utc_str,
+        >>>                end_datetime=to_utc_str)
+        >>> event.to_json(field_parsers=parsers)
+
+        >>> {
+        >>>     ...
+        >>>     ...
+        >>>     start_datetime: '2016-02-12T12:12:00Z',
+        >>>     end_datetime: '2016-03-20T10:10:00Z',
+        >>>     ...
+        >>> }
+
+     to_json() also handles any naming conventions for db column name and model attribute name.
+     e.g. if we have a column name "UserId" in database and "owner_user_id" in model,
+     it will handle nicely.
+
+     Serializable dictionary will contain model attribute name as key,
+     "owner_user_id" in this case not the db column name "UserId".
+
+     We can get get only required fields by passing names / keys of columns as list or tuple.
+
+        >>> fields = ('first_name', 'last_name', 'status_id', 'added_time')
+        >>> candidate = candidate.to_json(include=fields)
+
+    :param self: instance of respective model class
+    :type self: db.Model
+    :param allowed_keys: which columns we need to add in json data
+    :type allowed_keys: list | tuple
+    :param field_parsers: a dictionary with keys as model attributes and values as
+     function to parse or convert the field value to specific format
+    :type field_parsers: dict
+    """
+    # add your conversions for things like datetime
+    # and timestamp etc. that aren't serializable.
+    converters = dict(DATETIME=str, TIMESTAMP=str,
+                      DATE=str, TIME=str)
+
     data = dict()
-    # iterate through all columns key, values
-    for col in instance.__class__.__table__.columns:
-        # if name is in camel case convert it to snake case
-        name = camel_case_to_snake_case(col.name)
+    cls = self.__class__
+
+    # get column properties
+    columns = inspect(cls).column_attrs._data
+
+    if isinstance(allowed_keys, (list, tuple)):
+        allowed_columns = {name: column for name, column in columns.items() if name in allowed_keys}
+        if not allowed_columns:
+            raise InvalidUsage('All given column names are invalid: %s' % allowed_keys)
+    else:
+        allowed_columns = columns
+
+    # iterate through all columns names, values
+    for name, column in allowed_columns.items():
         # get value against this column name
-        value = getattr(instance, name)
-        # get column type and check if there as any conversion method given for that type.
-        # if it is, then use that method or type for data conversion
-        typ = str(col.type)
-        if typ in convert.keys() and value is not None:
-            try:
-                # try to convert column value by given converter method
-                data[name] = convert[typ](value)
-            except:
-                data[name] = "Error:  Failed to covert using ", str(convert[typ])
+        value = getattr(self, name)
+
+        # e.g. in case of datetime column, column_type will be "DATETIME"
+        column_type = str(column.columns[0].type)
+        if name in field_parsers and callable(field_parsers[name]):
+            # get column type and check if there is any parser or conversion method given
+            # for that type. If any, then use parser for conversion
+            data[name] = field_parsers[name](value)
+
+        elif column_type in converters and value is not None:
+            # try to convert column value by given converter method
+            data[name] = converters[column_type](value)
+
         elif value is None:
             # if value is None, make it empty string
             data[name] = str()
+            
         else:
             # it is a normal serializable column value so add to data dictionary as it is.
             data[name] = value
+
     return data
 
 

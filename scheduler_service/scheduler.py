@@ -29,6 +29,7 @@ from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
+from scheduler_service.common.utils.models_utils import get_by_id
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
 
@@ -119,11 +120,10 @@ def validate_periodic_job(data):
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
+    if frequency < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
         raise InvalidUsage('Invalid value of frequency. Value should be greater than or equal to '
                            '%s' % SchedulerUtils.MIN_ALLOWED_FREQUENCY)
 
-    frequency = int(frequency)
     valid_data.update({'frequency': frequency})
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
@@ -161,6 +161,15 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         db.db.session.commit()
+        if flask_app.config[TalentConfigKeys.ENV_KEY] in ['dev', 'jenkins']:
+            user = User.get_by_id(user_id)
+
+            # If user is deleted, then delete all its jobs too
+            if not user:
+                tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
+                [scheduler.remove_job(job_id=task.id) for task in tasks]
+                return
+
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
         past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)

@@ -18,7 +18,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 from candidate_service.modules.talent_cloud_search import (
     search_candidates, upload_candidate_documents, delete_candidate_documents
 )
-from candidate_service.modules.talent_candidates import fetch_candidate_info
+from candidate_service.modules.talent_candidates import fetch_candidate_info, get_search_params_of_smartlists
 # Models
 from candidate_service.common.models.user import DomainRole
 
@@ -58,12 +58,11 @@ class CandidateSearch(Resource):
         else:
             request_vars = validate_and_format_data(request.args)
 
-            # If user wants to provide two of more set of search_params then we'll validate each dictionary of
-            # search_params in search_params_list
-            if 'search_params' in request_vars:
-                search_params_list = request_vars.get('search_params')
-                for index, search_params in enumerate(search_params_list):
-                    request_vars['search_params'][index] = validate_and_format_data(search_params)
+            if 'smartlist_ids' in request_vars:
+                request_vars['search_params_list'] = []
+                smartlist_search_params_list = get_search_params_of_smartlists(request_vars.get('smartlist_ids'))
+                for search_params in smartlist_search_params_list:
+                    request_vars['search_params_list'].append(validate_and_format_data(search_params))
 
             # Get domain_id from auth_user
             domain_id = request.user.domain_id
@@ -90,7 +89,7 @@ class CandidateDocuments(Resource):
         if not requested_data or 'candidate_ids' not in requested_data:
             raise InvalidUsage(error_message="Request body is empty or invalid")
 
-        upload_candidate_documents(candidate_ids=requested_data.get('candidate_ids'))
+        upload_candidate_documents.delay(requested_data.get('candidate_ids'))
 
         return '', 204
 

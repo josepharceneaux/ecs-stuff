@@ -6,7 +6,10 @@ from flask import request
 import json
 import re
 from candidate_service.common.models.db import db
-from candidate_service.common.models.candidate import Candidate
+from candidate_service.common.models.candidate import (
+    Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService
+)
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
@@ -16,6 +19,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
+from candidate_service.common.utils.validators import format_phone_number
 from datetime import datetime
 
 
@@ -232,13 +236,14 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
-    "search_params": 'json_encoded',
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
     "talent_pool_id": 'digit',
     # List of ids of dumb_lists (For Internal TalentPipeline Search Only)
     "dumb_list_ids": 'id_list',
+    # List of ids of smart_lists (For Internal TalentPipeline Search Only)
+    "smartlist_ids": 'id_list',
     # candidate id : to check if candidate is present in smartlist.
     "id": 'digit'
 }
@@ -312,8 +317,6 @@ def validate_and_format_data(request_data):
                 request_vars[key] = validate_fields(key, value)
             if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
                 request_vars[key] = convert_date(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'json_encoded':
-                request_vars[key] = validate_encoded_json(value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
@@ -340,3 +343,230 @@ def is_date_valid(date):
         return True
     except ValueError:
         return False
+
+
+def does_address_exist(candidate, address_dict):
+    """
+    :type candidate:  Candidate
+    :type address_dict:  dict[str]
+    :rtype:  bool
+    """
+    for address in candidate.addresses:
+        address_line_1, address_line_2 = (address.address_line_1 or '').lower(), (address.address_line_2 or '').lower()
+        address_dict_address_line_1 = (address_dict.get('address_line_1') or '').lower()
+        address_dict_address_line_2 = (address_dict.get('address_line_2') or '').lower()
+        if address_line_1 and not address_line_2:
+            if address_line_1 == address_dict_address_line_1:
+                return True
+        elif address_line_1 and address_line_2:
+            if address_line_1 == address_dict_address_line_1 and address_line_2 == address_dict_address_line_2:
+                return True
+    return False
+
+
+def does_candidate_cf_exist(candidate, custom_field_dict):
+    """
+    :type candidate:  Candidate
+    :type custom_field_dict: dict[str]
+    :rtype:  bool
+    """
+    for custom_field in candidate.custom_fields:
+        custom_field_value = (custom_field.value or '').lower()
+        if custom_field_value == (custom_field_dict.get('value') or '').lower():
+            return True
+    return False
+
+
+def get_candidate_email_from_domain_if_exists(user_id, email_address):
+    """
+    Function will retrieve CandidateEmail belonging to the requested candidate
+    in the same domain if found.
+    :type user_id:       int|long
+    :type email_address: basestring
+    :rtype: CandidateEmail|None
+    """
+    user_domain_id = User.get_domain_id(_id=user_id)
+    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
+            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+    return candidate_email if candidate_email else None
+
+
+def get_education_if_exists(educations, education_dict, education_degrees):
+    """
+    Function will check to see if the requested education information already exists in the database
+    :type educations:  list[CandidateEducation]
+    :param educations:  candidate.educations
+    :param education_degrees:  education-degrees' info from the request
+    :type education_degrees:  list[dict[str]]
+    :type education_dict: dict[str]
+    """
+    for education in educations:
+        school_name = (education.school_name or '').lower()
+        if school_name == (education_dict.get('school_name') or '').lower():
+
+            existing_degree_dicts = [
+                {
+                    'start_year': existing_degree.start_year,
+                    'end_year': existing_degree.end_year,
+                    'title': existing_degree.degree_title
+                } for existing_degree in education.degrees
+            ]
+
+            new_degree_dicts = [
+                {
+                    'start_year': new_degree.get('start_year'),
+                    'end_year': new_degree.get('end_year'),
+                    'title': new_degree.get('title')
+                } for new_degree in education_degrees
+            ]
+
+            common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
+            if common_dicts:
+                return education.id
+
+    return None  # for readability
+
+
+def get_education_degree_if_exists(educations, education_degree):
+    """
+    :type educations:  list[CandidateEducation]
+    :type education_degree:  dict[str]
+    """
+    for education in educations:
+        for degree in education.degrees:
+
+            existing_degree_dicts = {
+                'start_year': degree.start_year,
+                'end_year': degree.end_year,
+                'title': degree.degree_title
+            }
+
+            new_degree_dicts = {
+                'start_year': education_degree.get('start_year'),
+                'end_year': education_degree.get('end_year'),
+                'title': education_degree.get('degree_title')
+            }
+
+            if existing_degree_dicts.values() == new_degree_dicts.values():
+                return degree.id
+
+    return None  # For readability
+
+
+def does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
+    """
+    :type candidate_educations:  list[CandidateEducation]
+    :param candidate_educations:  candidate.educations
+    :type education_degree_bullet_dict:  dict[str]
+    :rtype:  bool
+    """
+    for education in candidate_educations:
+        for degree in education.degrees:
+            for bullet in degree.bullets:
+                if bullet:
+                    concentration_type = (bullet.concentration_type or '').lower()
+                    if concentration_type == (education_degree_bullet_dict.get('concentration_type') or '').lower():
+                        return True
+    return False
+
+
+def get_work_experience_if_exists(experiences, experience_dict):
+    """
+    :type experiences:  list[CandidateExperience]
+    :type experience_dict: dict[str]
+    """
+    for experience in experiences:
+        organization = (experience_dict.get('organization') or '').lower()
+        if experience.organization and (experience.start_year or experience.end_year):
+            if experience.start_year == experience_dict.get('start_year') and \
+                            experience.organization.lower() == organization:
+                return experience.id
+
+            if experience.end_year == experience_dict.get('end_year') and \
+                            experience.organization.lower() == organization:
+                return experience.id
+        elif experience.organization and not (experience.start_year or experience.end_year):
+            if experience.organization.lower() == organization:
+                return experience.id
+    return None  # for readability
+
+
+def does_experience_bullet_exist(experiences, bullet_dict):
+    """
+    :type experiences:  list[CandidateExperience]
+    :type bullet_dict:  dict[str]
+    :rtype:  bool
+    """
+    for experience in experiences:
+        for bullet in experience.bullets:
+            description = (bullet.description or '').lower()
+            if description == (bullet_dict.get('description') or '').lower():
+                return True
+    return False
+
+
+def does_phone_exist(phones, phone_dict):
+    """
+    :type phones:  list[CandidatePhone]
+    :type phone_dict:  dict[str]
+    :rtype:  bool
+    """
+    for phone in phones:
+        value = phone_dict.get('value')
+        if value:
+            if phone.value == format_phone_number(value)['formatted_number']:
+                return True
+    return False
+
+
+def does_preferred_location_exist(preferred_locations, preferred_location_dict):
+    """
+    :type preferred_locations:  list[CandidatePreferredLocation]
+    :type preferred_location_dict:  dict[str]
+    :rtype:
+    """
+    for location in preferred_locations:
+        city, region = preferred_location_dict.get('city') or '', preferred_location_dict.get('region') or ''
+        if (location.city or '').lower() == city.lower() and (location.region or '').lower() == region.lower():
+            return True
+    return False
+
+
+def does_skill_exist(skills, skill_dict):
+    """
+    :type skills:  list[CandidateSkill]
+    :type skill_dict:  dict[str]
+    :rtype:  bool
+    """
+    for skill in skills:
+        description = (skill_dict.get('description') or '').lower()
+        if (skill.description or '').lower() == description:
+            return True
+    return False
+
+
+def does_social_network_exist(social_networks, social_network_dict):
+    """
+    :type social_networks:  list[CandidateSocialNetwork]
+    :type social_network_dict:  dict[str]
+    :rtype:  bool
+    """
+    for social_network in social_networks:
+        profile_url = (social_network_dict.get('social_profile_url') or '').lower()
+        if (social_network.social_profile_url or '').lower() == profile_url:
+            return True
+    return False
+
+
+def does_military_service_exist(military_services, military_service_dict):
+    """
+    :type military_services:  list[CandidateMilitaryService]
+    :type military_service_dict:  dict[str]
+    :rtype:  bool
+    """
+    for military_service in military_services:
+        from_date, to_date = military_service_dict.get('from_date'), military_service_dict.get('to_date')
+        if military_service.from_date == from_date or military_service.to_date == to_date:
+            return True
+    return False
+

@@ -1,7 +1,0 @@
-<div class="system-alerts" ng-show="vm.alerts.length > 0">
-    <div class="system-alert" ng-repeat="alert in vm.alerts" ng-show="!alert.read">
-        <div class="system-alert__message">
-            <span ng-bind-html="alert.message"></span> <a ng-show="alert.dismissable" href="" class="system-alert__close-button" ng-click="vm.dismissAlert(alert)">Dismiss</a>
-        </div>
-    </div>
-</div>

@@ -54,16 +54,15 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     # Get all smartlists and dumblists of a talent-pipeline
     smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline.id).all()
 
-    search_params, dumb_lists = [], []
+    smartlist_ids, dumblist_ids = [], []
 
     try:
-        if talent_pipeline.search_params and json.loads(talent_pipeline.search_params):
-            search_params.append(json.loads(talent_pipeline.search_params))
+        request_params = json.loads(talent_pipeline.search_params)
         for smartlist in smartlists:
             if smartlist.search_params and json.loads(smartlist.search_params):
-                search_params.append(json.loads(smartlist.search_params))
+                smartlist_ids.append(str(smartlist.id))
             else:
-                dumb_lists.append(str(smartlist.id))
+                dumblist_ids.append(str(smartlist.id))
 
     except Exception as e:
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
@@ -76,16 +75,14 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     else:
         headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
 
-    request_params = dict()
-
     if not is_celery_task:
         request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
         request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
-        request_params['dumb_list_ids'] = ','.join(dumb_lists) if dumb_lists else None
-        request_params['search_params'] = json.dumps(search_params) if search_params else None
+        request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
+        request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
     else:
         request_params['fields'] = fields
 
@@ -135,7 +132,6 @@ def update_smartlists_stats_task():
     This method will update the statistics of all smartlists daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     successful_update_smartlist_ids = []
     smartlist_ids = map(lambda smartlist: smartlist[0], Smartlist.query.with_entities(Smartlist.id).all())
 
@@ -171,10 +167,10 @@ def update_smartlists_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
+        logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
 
     logger.info("Statistics for following %s SmartLists have been updated successfully: "
-                "%s" % (len(successful_update_smartlist_ids), ''.join(successful_update_smartlist_ids)))
+                "%s" % (len(successful_update_smartlist_ids), ','.join(successful_update_smartlist_ids)))
 
 
 @celery_app.task()
@@ -183,7 +179,6 @@ def update_talent_pools_stats_task():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     successful_update_talent_pool_ids = []
     talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
 
@@ -218,10 +213,10 @@ def update_talent_pools_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
+        logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
 
     logger.info("Statistics for following %s TalentPools have been updated successfully: "
-                "%s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
+                "%s" % (len(successful_update_talent_pool_ids), ','.join(successful_update_talent_pool_ids)))
 
 
 @celery_app.task()
@@ -230,7 +225,6 @@ def update_talent_pipelines_stats_task():
     This method will update the statistics of all talent-pools daily.
     :return: None
     """
-    talent_logger = app.config[TalentConfigKeys.LOGGER]
     talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id, TalentPipeline.talent_pool_id).all()
     talent_pool_id_to_tuple = dict()
     successful_update_talent_pipeline_ids = []
@@ -298,12 +292,12 @@ def update_talent_pipelines_stats_task():
 
     except Exception as e:
         db.session.rollback()
-        talent_logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+        logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
     logger.info("Statistics for all TalentPipelines in following %s TalentPools have been updated "
-                "successfully: %s" % (len(successful_update_talent_pool_ids), ''.join(successful_update_talent_pool_ids)))
+                "successfully: %s" % (len(successful_update_talent_pool_ids), ','.join(successful_update_talent_pool_ids)))
     logger.info("Statistics for following %s TalentPipelines have been updated successfully: "
-                "%s" % (len(successful_update_talent_pipeline_ids), ''.join(successful_update_talent_pipeline_ids)))
+                "%s" % (len(successful_update_talent_pipeline_ids), ','.join(successful_update_talent_pipeline_ids)))
 
 
 def schedule_daily_task_unless_already_scheduled(task_name, url):

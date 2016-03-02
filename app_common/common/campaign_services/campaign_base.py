@@ -97,7 +97,14 @@ class CampaignBase(object):
         This method verifies if current campaign lies in user's domain.
         If not it raises Forbidden error, otherwise it returns campaign object.
 
-    * get_domain_id_of_campaign(campaign_obj, current_user_id): [abstract][static]
+    * get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
+        Depending on campaign_type, this method:
+            1) gets the campaign object from campaign_id by validating if campaign
+                belongs to current user's domain,
+            2) gets the valid blast object from blast_id
+        and returns blast object.
+
+    * get_domain_id_of_campaign(campaign_obj, current_user_id):[static]
         This returns id of user who created the given campaign obj
 
     * delete(self, campaign_id)
@@ -432,7 +439,7 @@ class CampaignBase(object):
     @classmethod
     def get_campaign_and_scheduled_task(cls, campaign_id, current_user, campaign_type):
         """
-        1) verifies that requested camapign belongs to logged-in user's domain
+        1) verifies that requested campaign belongs to logged-in user's domain
         2) If campaign has scheduler_task_id, it gets the scheduled task data
             from scheduler_service
         :param campaign_id: id of campaign
@@ -484,6 +491,44 @@ class CampaignBase(object):
             raise ForbiddenError('%s(id:%s) does not belong to user(id:%s)`s domain.'
                                  % (campaign_obj.__tablename__, campaign_obj.id,
                                     current_user.id))
+
+    @classmethod
+    def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
+        """
+        This gets the blast object from SmsCampaignBlast or EmailCampaignBlast database table
+        depending on campaign_type. If no object is found corresponding to given blast_id,
+        it raises ResourceNotFound.
+        If campaign_id associated with blast_obj is not same as the requested campaign id,
+        it raises forbidden error.
+        :param requested_campaign_id: Id of requested campaign object
+        :param blast_id: Id of blast object of a particular campaign
+        :param current_user: logged-in user's object
+        :param campaign_type: Type of campaign. e.g. sms_camapign | email_campaign etc
+        :type requested_campaign_id: int | long
+        :type blast_id: int | long
+        :type current_user: User
+        :type campaign_type: str
+        :exception: ResourceNotFound
+        :exception: ForbiddenError
+        :return: campaign blast object
+        :rtype: SmsCampaignBlast | EmailCampaignBlast
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
+                                                      blast_id=blast_id))
+        raise_if_not_instance_of(current_user, User)
+        raise_if_not_instance_of(campaign_type, basestring)
+        # Validate that campaign belongs to user's domain
+        campaign = cls.get_campaign_if_domain_is_valid(requested_campaign_id, current_user,
+                                                       campaign_type)
+        blast_model = get_model(campaign_type, campaign_type + '_blast')
+        blast_obj = blast_model.get_by_id(blast_id)
+        if not blast_obj:
+            raise ResourceNotFound("Blast(id:%s) for %s(id:%s) does not exist in database."
+                                   % (blast_id, campaign_type, campaign.id))
+        if not blast_obj.campaign_id == requested_campaign_id:
+            raise ForbiddenError("Blast(id:%s) is not associated with %s(id:%s)."
+                                 % (blast_id, campaign_type, requested_campaign_id))
+        return blast_obj
 
     @staticmethod
     def get_domain_id_of_campaign(campaign_obj, current_user_id):
@@ -1647,24 +1692,22 @@ class CampaignBase(object):
     def create_activity(user_id, _type, source, params):
         """
         - Once we have all the parameters to save the activity in database table "Activity",
-            we call "activity_service"'s endpoint /activities/ with HTTP POST call
+            we call "activity_service"'s endpoint /v1/activities/ with HTTP POST call
             to save the activity in db.
-        - This makes server-to-server trusted call usign JWT.
-
+        - This makes server-to-server trusted call using JWT as system should create the
+            activity, not the user.
         - This method is called from create_sms_send_activity() and
             create_campaign_send_activity() methods of class SmsCampaignBase inside
-            sms_campaign_service/sms_campaign_base.py.
+            sms_campaign_service/sms_campaign_base.py etc.
 
         :param user_id: id of user
         :param _type: type of activity (using underscore with type as "type" reflects built in name)
         :param source: source object. Basically it will be Model object.
         :param params: params to store for activity
-        :param auth_header: Authorization header to make HTTP POST call on activity_service
         :type user_id: int
         :type _type: int,
         :type source: SmsCampaign | SmsCampaignBlast etc.
         :type params: dict
-        :type auth_header: dict
         :exception: ForbiddenError
 
         **See Also**
@@ -1673,13 +1716,12 @@ class CampaignBase(object):
         if not isinstance(params, dict):
             raise InvalidUsage('params should be dictionary.')
         raise_if_dict_values_are_not_int_or_long(dict(source_id=source.id, type=_type))
-        auth_header = generate_jwt_headers(content_type=JSON_CONTENT_TYPE_HEADER['content-type'],
+        auth_header = generate_jwt_headers(content_type='application/json',
                                            user_id=user_id)
         json_data = json.dumps({'source_table': source.__tablename__,
                                 'source_id': source.id,
                                 'type': _type,
                                 'params': params})
-        auth_header.update(JSON_CONTENT_TYPE_HEADER)  # Add content-type in header
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header,
                      data=json_data, user_id=user_id)
