@@ -135,7 +135,7 @@ class Tasks(Resource):
 
         raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
-        tasks = filter(lambda _task: task.args[0] == user_id, tasks)
+        tasks = filter(lambda _task: _task.args[0] == user_id, tasks)
         tasks_count = len(tasks)
         # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
         task_indices = range((page-1) * per_page, page * per_page)
