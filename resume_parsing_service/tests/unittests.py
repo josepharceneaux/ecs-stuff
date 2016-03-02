@@ -635,3 +635,38 @@ def test_pdf13_accuracy():
     edu1 = next((edu for edu in educations if edu["school_name"] == u'Purdue University'), None)
     assert edu1
     assert {'bullets': [], 'type': u'Bachelor of Science', 'title': u'Information Systems'} in edu1['degrees']
+
+
+def test_pdf14_accuracy():
+    # Contact Parsing.
+    contact_xml_list = bs4(PDF_14, 'lxml').findAll('contact')
+    contact_xml = parse_candidate_name(contact_xml_list)
+    phones = parse_candidate_phones(contact_xml_list)
+    addresses = parse_candidate_addresses(contact_xml_list)
+    experience_xml_list = bs4(PDF_14, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    educations_xml_list = bs4(PDF_14, 'lxml').findAll('education')
+    educations = parse_candidate_educations(educations_xml_list)
+    assert contact_xml['first_name'] == 'Jose'
+    assert contact_xml['last_name'] == 'Chavez'
+    # assert {'value': u'604.609.0921'} in phones
+    # exp1 = next((org for org in experiences if (
+    #     org["organization"] == u'Organization Committee Commonwelath Games 2010' and
+    #     org['position'] == u'Games Management Systems Director')), None)
+    # exp2 = next((org for org in experiences if (
+    #     org["organization"] == u'Atos Origin Canada' and
+    #     org['position'] == u'Core Games Systems Application Manager')), None)
+    # exp3 = next((org for org in experiences if (
+    #     org["organization"] == u'Design Maintenance Systems Inc.' and
+    #     org['position'] == u'Software Testing Engineer/ Jr. Developer')), None)
+    # exp4 = next((org for org in experiences if (
+    #     org["organization"] == u'Orbital Technologies Inc.' and
+    #     org['position'] == u'Software Testing Engineer')), None)
+    edu1 = next((edu for edu in educations if edu["school_name"] == u'ITESO University'), None)
+    assert edu1
+    assert {'bullets': [], 'type': u'B. Sc', 'title': u'Computer Systems Engineer'} in edu1['degrees']
+    # edu2 = next((edu for edu in educations if edu["school_name"] == u'ITESM University'), None)
+    # edu3 = next((edu for edu in educations if edu["school_name"] == u'Software Productivity Center'), None)
+    # edu4 = next((edu for edu in educations if edu["school_name"] == u'Multi-Hat Training'), None)
+    edu5 = next((edu for edu in educations if edu["school_name"] == u'British Columbia Institute of Technology'), None)
+    assert edu5
