@@ -80,10 +80,11 @@ A brief overview of all endpoints is as follows:
         URL: /v1/push-campaigns/:id/blasts/:blast_id [GET]
 
         To get details of a specific blast associated to a campaign, send a GET request
-        to this endpoint.A blast contains statistics of a campaign when a campaign
+        to this endpoint. A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
-
 """
+# TODO --basit: Endpoints regarding URL redirection and url_conversion are missing here
+
 # Standard Library
 import json
 import types
@@ -118,6 +119,7 @@ from push_campaign_service.modules.utilities import associate_smart_list_with_ca
 from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.push_campaign_app import logger
 
+# TODO --basit: imports can be improved in terms of line length
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
@@ -131,6 +133,8 @@ class PushCampaignsResource(Resource):
     Resource to get, create and delete campaigns
     """
     decorators = [require_oauth()]
+    # TODO --basit: import PushCampaignApiUrl in this file for the example of code in docString
+    # TODO: json -> JSON in all comments
 
     def get(self):
         """
@@ -177,21 +181,9 @@ class PushCampaignsResource(Resource):
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
         """
-        user = request.user
         page, per_page = get_pagination_constraints(request)
-        query = PushCampaignBase.get_all_campaigns(user)
+        query = PushCampaignBase.get_all_campaigns(request.user)
         return get_paginated_response('campaigns', query, page, per_page)
-        # results = query.paginate(page, per_page)
-        # campaigns = results.items
-        # campaigns = [campaign.to_json() for campaign in campaigns]
-        # headers = {
-        #     'X-Total': results.total,
-        #     'X-Per-Page': per_page,
-        #     'X-Page': page
-        # }
-        #
-        # response = dict(campaigns=campaigns, count=len(campaigns))
-        # return ApiResponse(response, headers=headers, status=200)
 
     def post(self):
         """
@@ -249,6 +241,7 @@ class PushCampaignsResource(Resource):
         campaign_id, _ = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
+        # TODO --basit: remove hard coding location instead use ApiUrl as we discussed earlier
         headers = dict(Location='/%s/push-campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
         return ApiResponse(response, headers=headers, status=201)
 
@@ -294,6 +287,7 @@ class PushCampaignsResource(Resource):
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
         not_found = []
+        # TODO --basit: Following should be not_owned
         not_owner = []
         status_code = None
         for campaign_id in campaign_ids:
@@ -365,6 +359,7 @@ class CampaignByIdResource(Resource):
                     404 (ResourceNotFound)
                     500 (Internal Server Error)
         """
+        # TODO --basit: There will also be 403 status code in above
         user = request.user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -415,9 +410,12 @@ class CampaignByIdResource(Resource):
 
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
+        # TODO --basit: There will also be 403 status code in above. Kindly double check every where else
         user = request.user
         data = get_valid_json_data(request)
         if not campaign_id > 0:
+            # TODO --basit: I think Following error message is not correct, because there
+            # TODO is no database interaction yet
             raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -673,6 +671,7 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
+        # TODO --basit: `user` can be removed, knidly double check every where else
         campaign_obj = PushCampaignBase(user_id=user.id)
         campaign_obj.campaign_id = campaign_id
         campaign_obj.send(campaign_id)
@@ -923,6 +922,8 @@ class PushCampaignBlastById(Resource):
         """
         user = request.user
         # Get a campaign that was created by this user
+        # TODO --basit: There is a method in CampaignBase called get_valid_blast_obj(). We can
+        # TODO-- use that one here
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         # Serialize blasts of a campaign
@@ -940,6 +941,7 @@ class PushCampaignUrlRedirection(Resource):
     """
     This endpoint redirects the candidate to our app.
     """
+    # TODO --basit: We can improve this comment when candidate will be redirected?
     def get(self, url_conversion_id):
         """
         This endpoint is /v1/redirect/:id
@@ -1035,6 +1037,8 @@ class UrlConversionResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        # TODO --basit: Can we move this somehow under CampaignBase? Cause this will be used by all
+        # TODO campaigns. Same is for delete method below.
         _id = kwargs.get('_id')
         send_id = kwargs.get('send_id')
         if _id:
@@ -1059,6 +1063,7 @@ class UrlConversionResource(Resource):
                 url_conversion = send_url_conversion.url_conversion.to_json()
                 return {'url_conversion': url_conversion}
             else:
+                # TODO --basit: Error message can be improved
                 raise ForbiddenError('You can not get other domain url_conversion records')
 
     def delete(self, **kwargs):
