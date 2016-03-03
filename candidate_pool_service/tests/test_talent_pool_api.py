@@ -181,7 +181,17 @@ def test_talent_pool_api_put(access_token_first, user_first, talent_pool, talent
     assert talent_pool_second.name == data['talent_pool']['name']
 
 
-def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, talent_pool_second):
+def test_talent_pool_api_delete(access_token_first, user_first, talent_pool, talent_pool_second,
+                                candidate_first, candidate_second):
+
+    data = {
+        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
+    }
+
+    # Logged-in user trying to add candidates to talent_pool
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
+    assert status_code == 200
 
     # Logged-in user trying to delete a talent-pool
     response, status_code = talent_pool_api(access_token_first, talent_pool_id=talent_pool_second.id, action='DELETE')

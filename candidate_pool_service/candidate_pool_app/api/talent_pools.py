@@ -156,7 +156,24 @@ class TalentPoolApi(Resource):
         if request.user.domain_id != talent_pool.domain_id and not request.user_can_edit_other_domains:
             raise ForbiddenError(error_message="User %s is not authorized to delete a talent-pool" % request.user.id)
 
+        talent_pool_candidate_ids = map(lambda talent_pool_candidate: talent_pool_candidate[0],
+                                        TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id).
+                                        filter_by(talent_pool_id=talent_pool_id).all())
         talent_pool.delete()
+
+        if talent_pool_candidate_ids:
+            try:
+                # Update Candidate Documents in Amazon Cloud Search
+                headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
+                response = requests.post(CandidateApiUrl.CANDIDATES_DOCUMENTS_URI, headers=headers,
+                                         data=json.dumps({'candidate_ids': talent_pool_candidate_ids}))
+
+                if response.status_code != 204:
+                    raise Exception("Status Code: %s Response: %s" % (response.status_code, response.json()))
+
+            except Exception as e:
+                raise InvalidUsage(error_message="Couldn't update Candidate Documents in Amazon Cloud Search. "
+                                                 "Because: %s" % e.message)
 
         return {
             'talent_pool': {'id': talent_pool.id}
