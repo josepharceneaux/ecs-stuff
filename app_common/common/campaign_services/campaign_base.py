@@ -1369,6 +1369,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
+        # TODO --basit: Oauth_header is un-used in this method, kindly remove all its occurrances
+        # TODO and update docstrigns.
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(num_candidates, (int, long))
         params = {'name': source.name, 'num_candidates': num_candidates}
