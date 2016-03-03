@@ -158,7 +158,7 @@ def validate_id_list(key, values):
     else:
         if not values.strip().isdigit():
             raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
-        
+
         return values.strip()
 
 
