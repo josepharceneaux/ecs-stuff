@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -654,6 +654,25 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     photo_query.update(photo_update_dict)
     db.session.commit()
 
+
+######################################
+# Helper Functions For Candidate Notes
+######################################
+def add_notes(candidate_id, data):
+    """
+    Function will insert candidate notes into the db
+    :type candidate_id:  int|long
+    :type data:  list[dict]
+    """
+    # Format inputs
+    for note in data:
+        notes_dict = dict(
+            candidate_id=candidate_id,
+            comment=note.get('comment'),
+            added_time=datetime.datetime.utcnow()
+        )
+        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
+        db.session.add(CandidateTextComment(**notes_dict))
 
 ######################################################
 # Helper Functions For Creating and Updating Candidate

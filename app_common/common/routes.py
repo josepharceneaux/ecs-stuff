@@ -293,6 +293,7 @@ class CandidateApiWords(object):
     VIEWS = "/views"
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
+    NOTES = "/notes"
 
 
 class CandidateApi(object):
@@ -365,6 +366,7 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
+    CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
 
 
 class CandidateApiUrl(object):
@@ -430,6 +432,7 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
+    NOTES = CANDIDATE + CandidateApiWords.NOTES
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
