@@ -1562,3 +1562,15 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
         return '', 204
 
+
+class CandidateNotesResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:id/notes
+        Function will add candidate's note(s) to database
+        """
+        # Authenticated user & Candidate ID
+        authed_user, candidate_id = request.user, kwargs['id']
