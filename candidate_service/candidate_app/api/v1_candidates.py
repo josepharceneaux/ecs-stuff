@@ -6,10 +6,12 @@ Notes:
 """
 # Standard libraries
 import logging
+from time import time
 
 # Flask specific
 from flask import request
 from flask_restful import Resource
+from candidate_service.candidate_app import logger
 
 # Database connection
 from candidate_service.common.models.db import db
@@ -85,6 +87,7 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
+        start_time = time()
         # Authenticate user
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
@@ -215,6 +218,7 @@ class CandidatesResource(Resource):
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
+        logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -234,6 +238,7 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
+        start_time = time()
         # Authenticated user and request body
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
@@ -339,6 +344,7 @@ class CandidatesResource(Resource):
 
         # Update candidates in cloud search
         upload_candidate_documents.delay(updated_candidate_ids)
+        logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
 
@@ -358,6 +364,7 @@ class CandidateResource(Resource):
 
         :return:    A dict of candidate info
         """
+        start_time = time()
         # Authenticated user
         authed_user = request.user
 
@@ -383,6 +390,7 @@ class CandidateResource(Resource):
 
         # Add to CandidateView
         add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+        logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)

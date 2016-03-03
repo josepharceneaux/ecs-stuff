@@ -24,10 +24,9 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
 
 
 def save_meetup_token_and_flushredis(_redis):
-    _redis.flushall()
     if _redis.get('Meetup'):
         _token = _redis.get('Meetup')
-        _redis.flushdb()
+        _redis.flushall()
         _redis.set('Meetup', _token)
 
 # Flush redis-cache
