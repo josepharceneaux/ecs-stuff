@@ -1,3 +1,6 @@
+"""
+Below are modules/objects that must be imported in test files
+"""
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
@@ -5,10 +8,7 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import (
-    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource,
-    request_to_candidate_photos_resource
-)
+from helpers import *
 
 # Sample data
 from candidate_sample_data import (
