@@ -23,6 +23,7 @@ from db import db
 from sqlalchemy.orm import relationship
 from candidate import Candidate
 
+
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
 

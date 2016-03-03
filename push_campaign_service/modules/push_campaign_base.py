@@ -37,6 +37,7 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 # Import all model classes from push_campaign module
 from push_campaign_service.common.models.push_campaign import *
 from push_campaign_service.common.models.misc import UrlConversion
+from push_campaign_service.common.models.user import User
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.push_campaign_app import logger, celery_app, app
 from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
@@ -63,13 +64,17 @@ class PushCampaignBase(CampaignBase):
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
 
-    def get_all_campaigns(self):
+    @staticmethod
+    def get_all_campaigns(user):
         """
-        This gets all the campaigns created by current user
+        This gets all the campaigns from the domain of current user.
+        It actually does not return a list object but it returns a iterable query
+        which later can be further filter down or some one can apply pagination.
+        :param user: User object
         :return: all campaigns associated to a user
-        :rtype: list[dict]
+        :rtype: query object
         """
-        return PushCampaign.get_by_user_id(self.user_id)
+        return PushCampaign.query.join(User).filter(User.domain_id == user.domain_id)
 
     def get_campaign_type(self):
         """

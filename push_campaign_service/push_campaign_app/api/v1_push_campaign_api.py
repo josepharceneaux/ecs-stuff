@@ -105,10 +105,14 @@ from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi
 from push_campaign_service.common.utils.auth_utils import require_oauth
-from push_campaign_service.common.utils.api_utils import api_route, ApiResponse
+from push_campaign_service.common.utils.api_utils import (api_route,
+                                                          ApiResponse,
+                                                          get_pagination_constraints,
+                                                          get_paginated_response)
 from push_campaign_service.common.models.push_campaign import (PushCampaign,
                                                                PushCampaignBlast,
-                                                               PushCampaignSendUrlConversion)
+                                                               PushCampaignSendUrlConversion,
+                                                               PushCampaignSend)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
 from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
@@ -174,9 +178,20 @@ class PushCampaignsResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        campaigns = PushCampaign.get_by_user_id(user.id)
-        campaigns = [campaign.to_json() for campaign in campaigns]
-        return dict(campaigns=campaigns, count=len(campaigns)), 200
+        page, per_page = get_pagination_constraints(request)
+        query = PushCampaignBase.get_all_campaigns(user)
+        return get_paginated_response('campaigns', query, page, per_page)
+        # results = query.paginate(page, per_page)
+        # campaigns = results.items
+        # campaigns = [campaign.to_json() for campaign in campaigns]
+        # headers = {
+        #     'X-Total': results.total,
+        #     'X-Per-Page': per_page,
+        #     'X-Page': page
+        # }
+        #
+        # response = dict(campaigns=campaigns, count=len(campaigns))
+        # return ApiResponse(response, headers=headers, status=200)
 
     def post(self):
         """
@@ -675,16 +690,21 @@ class PushCampaignBlastSends(Resource):
 
     def get(self, campaign_id, blast_id):
         """
-        Returns Campaign sends for given campaign_id and blast_id
+        Returns Campaign sends for given campaign_id and blast_id.
+        We can pass query params like page number and page size like
+        /v1/campaigns/:id/blasts/:id/sends?page=2&per_page=20
+        :param blast_id: integer, blast unique id
+        :param campaign_id: integer, unique id representing campaign in getTalent database
+        :return: 1- count of campaign sends and 2- Push campaign sends records as dict
 
         :Example:
 
-        >>> import requests
-        >>> headers = {'Authorization': 'Bearer <access_token>'}
-        >>> campaign_id = 1
-        >>> blast_id = 1
-        >>> response = requests.get(PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
-        >>>                         headers=headers)
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> campaign_id = 1
+            >>> blast_id = 1
+            >>> response = requests.get(PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
+            >>>                         headers=headers)
 
         .. Response::
 
@@ -715,11 +735,9 @@ class PushCampaignBlastSends(Resource):
                     403 (Not owner of campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
-
-        :param campaign_id: integer, unique id representing campaign in getTalent database
-        :return: 1- count of campaign sends and 2- Push campaign sends records as dict
         """
         user = request.user
+        page, per_page = get_pagination_constraints(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -727,9 +745,8 @@ class PushCampaignBlastSends(Resource):
         if not blast:
             raise ResourceNotFound('Campaign Blast not found with id: %s' % blast_id)
         if blast.campaign_id == campaign.id:
-            sends = [send.to_json() for send in blast.blast_sends]
-            response = dict(sends=sends, count=len(sends))
-            return response, 200
+            query = PushCampaignSend.query.filter_by(blast_id=blast.id)
+            return get_paginated_response('sends', query, page, per_page)
         else:
             raise ForbiddenError('Campaign Blast (id: %s) is not associated with campaign (id: %s)'
                                  % (blast_id, campaign.id))
@@ -786,17 +803,15 @@ class PushCampaignSends(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        page, per_page = get_pagination_constraints(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
-        sends = []
         # Add sends for every blast to `sends` list to get all sends of a campaign.
         # A campaign can have multiple blasts
-        [sends.extend(blast.blast_sends.all()) for blast in campaign.blasts.all()]
-        # Get JSON serializable data
-        sends = [send.to_json() for send in sends]
-        response = dict(sends=sends, count=len(sends))
-        return response, 200
+        query = PushCampaignSend.query.join(PushCampaignBlast)
+        query = query.filter(PushCampaignBlast.campaign_id == campaign.id)
+        return get_paginated_response('sends', query, page, per_page)
 
 
 @api.route(PushCampaignApi.BLASTS)
@@ -853,13 +868,13 @@ class PushCampaignBlasts(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
+        page, per_page = get_pagination_constraints(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts.all()]
-        response = dict(blasts=blasts, count=len(blasts))
-        return response, 200
+        query = PushCampaignBlast.query.filter_by(campaign_id=campaign.id)
+        return get_paginated_response('sends', query, page, per_page)
 
 
 @api.route(PushCampaignApi.BLAST)
