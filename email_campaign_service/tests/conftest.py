@@ -3,13 +3,13 @@ __author__ = 'basit'
 import re
 
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign)
 from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.routes import EmailCampaignUrl
 
 
 @pytest.fixture()
@@ -20,6 +20,20 @@ def email_campaign_of_user_first(request, user_first):
     :return:
     """
     campaign = create_email_campaign(user_first)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+@pytest.fixture()
+def email_campaign_of_user_second(request, user_same_domain):
+    """
+    This fixture creates an email campaign in database table 'email_campaign'
+    """
+    campaign = create_email_campaign(user_same_domain)
 
     def fin():
         delete_campaign(campaign)
@@ -179,7 +193,6 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
-
 
 
 @pytest.fixture()

@@ -7,7 +7,8 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import (EmailCampaignUrl,
+                                                  CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient)
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
@@ -116,3 +117,49 @@ def send_campaign(campaign, access_token, sleep_time=20):
     assert response.ok
     time.sleep(sleep_time)
     db.session.commit()
+
+
+def assert_valid_campaign_get(campaign, referenced_campaign):
+    """
+    This assert that the campaign we get from GET call, has valid values as we have for
+    referenced email-campaign.
+    :param campaign: EmailCampaign object as got by GET call
+    :param referenced_campaign: EmailCampaign object by which we compare the campaign
+            we GET in response
+    """
+    assert 'id' in campaign
+    assert campaign['id'] == referenced_campaign.id
+    assert campaign['user_id'] == referenced_campaign.user_id
+
+
+def get_campaign_or_campaigns(access_token, campaign_id=None):
+    """
+    This makes HTTP GET call on /v1/email-campaigns with given access_token to get
+    1) all the campaigns of logged-in user if campaign_id is None
+    2) Get campaign object for given campaign_id
+    """
+    if campaign_id:
+        url = EmailCampaignUrl.CAMPAIGN % campaign_id
+        entity = 'email_campaign'
+    else:
+        url = EmailCampaignUrl.CAMPAIGNS
+        entity = 'email_campaigns'
+    response = requests.get(url=url,
+                            headers={'Authorization': 'Bearer %s' % access_token})
+    assert response.status_code == 200
+    resp = response.json()
+    assert entity in resp
+    return resp[entity]
+
+
+def assert_talent_pipeline_response(talent_pipeline, access_token):
+    """
+    This makes HTTP GET call on candidate_pool_service to get response for given
+    talent_pipeline and then asserts that we get OK response.
+    """
+    response = requests.get(
+        url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
+        headers={'Authorization': 'Bearer %s' % access_token})
+    assert response.status_code == 200
+    resp = response.json()
+    assert 'email_campaigns' in resp

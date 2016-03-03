@@ -1,3 +1,17 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+In this module, we have tests for following endpoints
+
+    1 - GET /v1/email-campaigns
+    2 - GET /v1/email-campaigns/:id
+    3 - POST /v1/email-campaigns
+    4- POST /v1/email-campaigns/:id/send
+    5- GET /v1/redirect
+
+"""
+
 # Packages
 import re
 import json
@@ -13,42 +27,67 @@ from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
-from email_campaign_service.common.routes import (EmailCampaignUrl, CandidatePoolApiUrl,
-                                                  EmailCampaignEndpoints, HEALTH_CHECK)
+from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
+                                                  HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  delete_campaign)
-
-__author__ = 'jitesh'
+                                                                  delete_campaign,
+                                                                  assert_valid_campaign_get,
+                                                                  get_campaign_or_campaigns,
+                                                                  assert_talent_pipeline_response)
 
 
 class TestGetCampaigns(object):
     """
     Here are the tests of /v1/email-campaigns
     """
-
-    def test_get_all_campaigns(self, campaign_with_candidate_having_no_email, access_token_first,
-                               talent_pipeline):
+    def test_get_with_invalid_token(self):
         """
-        Test GET API of email_campaigns for getting all campaigns
+         User auth token is invalid. It should get Unauthorized error.
+        """
+        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignUrl.CAMPAIGNS, None)
+
+    def test_get_campaign_of_other_domain(self, email_campaign_in_other_domain, access_token_first):
+        """
+        Here we try to GET a campaign which is in some other domain. It should result-in
+         ForbiddenError.
+        """
+        CampaignsTestsHelpers.request_for_forbidden_error(
+            'get', EmailCampaignUrl.CAMPAIGN % email_campaign_in_other_domain.id, access_token_first)
+
+    def test_get_by_camapign_id(self, campaign_with_candidate_having_no_email,
+                                access_token_first,
+                                talent_pipeline):
+        """
+        This is the test to GET the campaign by providing campaign_id. It should get OK response
+        """
+        email_campaign = get_campaign_or_campaigns(
+            access_token_first, campaign_id=campaign_with_candidate_having_no_email.id)
+        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email)
+
+        # Test GET api of talent-pipelines/:id/campaigns
+        assert_talent_pipeline_response(talent_pipeline, access_token_first)
+
+    def test_get_all_campaigns_in_user_domain(self, email_campaign_of_user_first,
+                                              email_campaign_of_user_second,
+                                              email_campaign_in_other_domain,
+                                              access_token_first,
+                                              talent_pipeline):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain.
+        Here two campaigns have been created by different users of same domain. Total count
+        should be 2. Here we also create another campaign in some other domain but it shouldn't
+        be there in GET response.
         """
         # Test GET api of email campaign
-        response = requests.get(url=EmailCampaignUrl.CAMPAIGNS,
-                                headers={'Authorization': 'Bearer %s' % access_token_first})
-        assert response.status_code == 200
-        resp = response.json()
-        assert 'email_campaigns' in resp
-        email_campaigns = resp['email_campaigns']
-        assert resp['email_campaigns']
-        assert 'id' in email_campaigns[0]
+        email_campaigns = get_campaign_or_campaigns(access_token_first)
+        assert len(email_campaigns) == 2
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+
         # Test GET api of talent-pipelines/:id/campaigns
-        response = requests.get(
-            url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
-            headers={'Authorization': 'Bearer %s' % access_token_first})
-        assert response.status_code == 200
-        resp = response.json()
-        assert 'email_campaigns' in resp
+        assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
 
 class TestCreateCampaign(object):
@@ -274,12 +313,12 @@ class TestSendCampaign(object):
         json_response = response.json()
         email_campaign_sends = json_response['email_campaign_sends'][0]
         new_html = email_campaign_sends['new_html']
-        redirect_url = re.findall('"([^"]*)"', new_html) # get the redirect URL from html
+        redirect_url = re.findall('"([^"]*)"', new_html)  # get the redirect URL from html
         assert len(redirect_url) > 0
         redirect_url = redirect_url[0]
 
         # get the url conversion id from the redirect url
-        url_conversion_id = re.findall( '[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
+        url_conversion_id = re.findall('[\n\r]*redirect\/\s*([^?\n\r]*)', redirect_url)
         assert len(url_conversion_id) > 0
         url_conversion_id = int(url_conversion_id[0])
         db.session.commit()
