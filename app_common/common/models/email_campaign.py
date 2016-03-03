@@ -58,6 +58,12 @@ class EmailCampaign(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    @classmethod
+    def get_by_domain_id(cls, domain_id):
+        assert domain_id, 'domain_id not given'
+        from user import User
+        return cls.query.join(User).filter(User.domain_id == domain_id)
+
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 

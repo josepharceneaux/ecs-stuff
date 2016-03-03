@@ -95,7 +95,7 @@ class EmailCampaignApi(Resource):
         user = request.user
         email_campaign_id = kwargs.get('id')
         if email_campaign_id:
-            email_campaign = EmailCampaign.query.get(email_campaign_id)
+            email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not email_campaign:
@@ -106,7 +106,7 @@ class EmailCampaignApi(Resource):
             return {"email_campaign": email_campaign.to_dict()}
         else:
             # Get all email campaigns from logged in user's domain
-            email_campaigns = EmailCampaign.query.join(User).filter(User.domain_id == user.domain_id)
+            email_campaigns = EmailCampaign.get_by_domain_id(user.domain_id)
             return {"email_campaigns": [email_campaign.to_dict()
                                         for email_campaign in email_campaigns]}
 
