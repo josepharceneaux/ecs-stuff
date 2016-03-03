@@ -152,10 +152,13 @@ def validate_id_list(key, values):
         values = values.split(',') if ',' in values else values
         for value in values:
             if not value.strip().isdigit():
-                raise InvalidUsage("`%s` must be comma separated ids" % key)
+                raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
         # if multiple values then return as list else single value.
         return values[0] if values.__len__() == 1 else values
     else:
+        if not values.strip().isdigit():
+            raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
+        
         return values.strip()
 
 
