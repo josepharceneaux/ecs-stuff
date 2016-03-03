@@ -1,9 +1,9 @@
 import datetime
 
+from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 
-from db import db
 
 __author__ = 'jitesh'
 
@@ -61,7 +61,7 @@ class EmailCampaign(db.Model):
     @classmethod
     def get_by_domain_id(cls, domain_id):
         assert domain_id, 'domain_id not given'
-        from user import User
+        from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id)
 
     def __repr__(self):

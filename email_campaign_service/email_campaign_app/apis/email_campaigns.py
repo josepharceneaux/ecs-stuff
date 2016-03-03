@@ -51,7 +51,6 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
-from email_campaign_service.common.models.user import User
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_emails_to_campaign,
