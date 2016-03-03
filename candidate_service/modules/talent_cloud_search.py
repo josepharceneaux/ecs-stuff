@@ -570,7 +570,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     Set search_limit = 0 for no limit, candidate_ids_only returns dict of candidate_ids.
     Parameters in 'request_vars' could be single values or arrays.
     """
-    start_time = time.time()
+
     filter_queries_list = []
     filter_query, search_query = '', ''
     if request_vars:
@@ -708,7 +708,9 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     # Make search request with error handling
+
     search_service = _cloud_search_domain_connection()
+
     try:
         results = search_service.search(**params)
     except Exception as ex:
@@ -747,7 +749,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     #     if 'email' in values:
     #         values['email'] = {"address": values['email']}
     # Returns a dictionary with all the candidates data
-    logger.info("BENCHMARK for search_candidates(): {}".format(time.time() - start_time))
     return search_results
 
 
@@ -1010,7 +1011,7 @@ def _search_with_location(location, radius):
     """
     :param request_vars:
     :param location:
-    :rtype:  list
+    :return:
     """
     filter_queries = []
 
@@ -1020,7 +1021,6 @@ def _search_with_location(location, radius):
     # if no radius is given set default distance to 80.47 (50 miles)
     distance_in_km = float(radius)/0.62137 if radius else 80.47
     coords_dict = get_geocoordinates_bounding(location, distance_in_km)
-
     if coords_dict and coords_dict.get('point', ''):
         # If coordinates found, then only perform location search
         filter_queries.append("coordinates:['%s,%s','%s,%s']" % (coords_dict['top_left'][0],
@@ -1034,6 +1034,7 @@ def _search_with_location(location, radius):
         then search based on zipcode"""
 
         filter_queries.append("(term field=zip_code '%s')" % location)
+
     return filter_queries
 
 
@@ -1210,7 +1211,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     :param request_vars:
     :return: filter_query
     """
-    start_time = time.time()
+
     filter_queries = []
 
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
@@ -1341,5 +1342,5 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
             filter_queries = filter_queries + _search_custom_fields(request_vars)
 
     filter_queries_list += filter_queries
-    logger.info("BENCHMARK for get_filter_query_from_request_vars(): {}".format(time.time() - start_time))
+
     return "(and %s)" % ' '.join(filter_queries) if len(filter_queries) > 1 else ' '.join(filter_queries), query
