@@ -110,9 +110,9 @@ def send_campaign(campaign, access_token, sleep_time=20):
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_instance_of(access_token, basestring)
     # send campaign
-    campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
     time.sleep(sleep_time)
     db.session.commit()
+    return response

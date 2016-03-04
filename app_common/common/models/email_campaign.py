@@ -4,6 +4,7 @@ from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 
 from db import db
+from ..error_handling import (ResourceNotFound, ForbiddenError)
 
 __author__ = 'jitesh'
 
@@ -113,7 +114,7 @@ class EmailCampaignBlast(db.Model):
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
+    campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
@@ -129,6 +130,31 @@ class EmailCampaignSend(db.Model):
                                    cascade='all,delete-orphan',
                                    passive_deletes=True,
                                    backref='send')
+
+    @classmethod
+    def get_valid_send_object(cls, send_id, requested_campaign_id):
+        """
+        This returns the send object for given id.
+        If record is not found, it raises ResourceNotFound error.
+        If send object is not associated with given campaign_id, it raises ForbiddenError
+        :param send_id: id of email_campaign_send object
+        :param requested_campaign_id: id of email-campaign object
+        :type send_id: int | long
+        :type requested_campaign_id: int | long
+        :return: email_campaign_send object
+        :rtype: EmailCampaignSend
+        """
+        assert send_id, 'id of email-campaign-send obj not given'
+        assert requested_campaign_id, 'id of email-campaign obj not given'
+        send_obj = EmailCampaignSend.get_by_id(send_id)
+        if not send_obj:
+            raise ResourceNotFound("Send object(id:%s) for email-campaign(id:%s) does not "
+                                   "exist in database."
+                                   % (send_id, requested_campaign_id))
+        if not send_obj.campaign_id == requested_campaign_id:
+            raise ForbiddenError("Send object(id:%s) is not associated with email-campaign(id:%s)."
+                                 % (send_id, requested_campaign_id))
+        return send_obj
 
 
 class EmailClient(db.Model):

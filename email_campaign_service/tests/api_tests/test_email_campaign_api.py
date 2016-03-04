@@ -95,8 +95,8 @@ class TestCreateCampaign(object):
     def test_create_email_campaign_whitespace_campaign_name(self, assign_roles_to_user_first,
                                                             access_token_first, talent_pool):
         email_campaign_name = '       '
-        email_subject = uuid.uuid4().__str__()[0:8] + \
-                        '-test_create_email_campaign_whitespace_campaign_name'
+        email_subject = \
+            uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
         email_from = 'no-reply@gettalent.com'
         email_reply_to = fake.safe_email()
         email_body_text = fake.sentence()
