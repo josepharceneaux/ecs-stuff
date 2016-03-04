@@ -389,8 +389,6 @@ class CandidateResource(Resource):
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
-        # Add to CandidateView
-        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
@@ -1275,16 +1273,34 @@ class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:candidate_id/views
+        Function will increment candidate's view counts
+        """
+        authed_user, candidate_id = request.user, kwargs['id']
+
+        # Check for candidate's existence & web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
-        Endpoint:  GET /v1/candidates/:id/views
+        Endpoint:  GET /v1/candidates/:candidate_id/views
         Function will retrieve all view information pertaining to the requested Candidate
         """
         # Authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
