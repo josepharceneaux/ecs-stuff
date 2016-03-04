@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import time
 from email_template_service.common.tests.conftest import *
 from email_template_service.email_template.api.common_functions import create_email_template, update_email_template
 from helpers import *
 from email_template_service.common.utils.common_functions import add_role_to_test_user
 from email_template_service.common.models.user import DomainRole
+from email_template_service.common.utils.app_rest_urls import EmailTemplateApiUrl
 
 
 # Add roles to the db
@@ -113,7 +113,7 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
 
     data = {'name': template_folder_name, 'id': template_folder_id}
     response = requests.delete(
-        url=EMAIL_TEMPLATE_FOLDER_URL, data=json.dumps(data),
+        url=EmailTemplateApiUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % token2,
                  'Content-type': 'application/json'}
     )
@@ -464,24 +464,3 @@ def add_email_template(user_auth, template_owner, email_template_body):
             "template_folder_name": template_folder_name,
             "template_name": template_name,
             "domain_id": domain_id}
-
-
-def get_template_folder(token):
-    """
-    Function will create and retrieve template folder
-    :param token:
-    :return: template_folder_id, template_folder_name
-    """
-    template_folder_name = 'test_template_folder_%i' % time.time()
-
-    data = {'name': template_folder_name}
-    response = requests.post(
-        url=EMAIL_TEMPLATE_FOLDER_URL, data=json.dumps(data),
-        headers={'Authorization': 'Bearer %s' % token,
-                 'Content-type': 'application/json'}
-    )
-    assert response.status_code == 201
-    response_obj = response.json()
-    template_folder_id = response_obj["template_folder_id"][0]
-    return template_folder_id['id'], template_folder_name
-

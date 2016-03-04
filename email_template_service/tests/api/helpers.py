@@ -1,10 +1,7 @@
 import requests
 import json
-
-BASE_URL = "http://127.0.0.1:8010"
-EMAIL_TEMPLATE_URL = BASE_URL + "/v1/email-templates"
-EMAIL_TEMPLATE_FOLDER_URL = BASE_URL + "/v1/email-template-folders"
-
+from email_template_service.common.utils.app_rest_urls import EmailTemplateApiUrl
+import time
 
 def post_to_email_template_resource(access_token, data, domain_id=None):
     """
@@ -15,7 +12,7 @@ def post_to_email_template_resource(access_token, data, domain_id=None):
     :param domain_id
     """
     response = requests.post(
-        url=EMAIL_TEMPLATE_URL, data=json.dumps(data),
+        url=EmailTemplateApiUrl.EMAIL_TEMPLATE, data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % access_token,
                  'Content-type': 'application/json'}
     )
@@ -59,6 +56,25 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id
     :param data
     """
-    url = EMAIL_TEMPLATE_URL
+    url = EmailTemplateApiUrl.EMAIL_TEMPLATE
     return define_and_send_request(request, url, access_token, email_template_id, data)
 
+
+def get_template_folder(token):
+    """
+    Function will create and retrieve template folder
+    :param token:
+    :return: template_folder_id, template_folder_name
+    """
+    template_folder_name = 'test_template_folder_%i' % time.time()
+
+    data = {'name': template_folder_name}
+    response = requests.post(
+        url=EmailTemplateApiUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
+        headers={'Authorization': 'Bearer %s' % token,
+                 'Content-type': 'application/json'}
+    )
+    assert response.status_code == 201
+    response_obj = response.json()
+    template_folder_id = response_obj["template_folder_id"][0]
+    return template_folder_id['id'], template_folder_name
