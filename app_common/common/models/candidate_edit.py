@@ -179,8 +179,25 @@ class CandidateView(db.Model):
 
     @classmethod
     def get_by_id(cls, _id):
+        """
+        :type _id:  int|long
+        :rtype:  CandidateView
+        """
         return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def get_all(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateView]
+        """
         return cls.query.filter_by(candidate_id=candidate_id).all()
+
+    @classmethod
+    def get_by_user_and_candidate(cls, user_id, candidate_id):
+        """
+        :type user_id:  int|long
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateView]
+        """
+        return cls.query.filter_by(user_id=user_id, candidate_id=candidate_id).all()

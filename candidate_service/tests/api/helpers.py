@@ -11,6 +11,35 @@ from candidate_service.common.routes import CandidateApiUrl
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
+__all__ = [
+    'AddUserRoles',
+    'define_and_send_request',
+    'response_info',
+    'request_to_candidate_resource',
+    'request_to_candidates_resource',
+    'request_to_candidate_photos_resource',
+    'request_to_candidate_preference_resource',
+    'request_to_candidate_search_resource',
+    'request_to_candidate_address_resource',
+    'request_to_candidate_aoi_resource',
+    'request_to_candidate_edit_resource',
+    'request_to_candidate_custom_field_resource',
+    'request_to_candidate_education_degree_bullet_resource',
+    'request_to_candidate_education_degree_resource',
+    'request_to_candidate_education_resource',
+    'request_to_candidate_phone_resource',
+    'request_to_candidate_email_resource',
+    'request_to_candidate_experience_bullet_resource',
+    'request_to_candidate_experience_resource',
+    'request_to_candidate_military_service',
+    'request_to_candidate_preferred_location_resource',
+    'request_to_candidate_skill_resource',
+    'request_to_candidate_social_network_resource',
+    'request_to_candidate_view_resource',
+    'request_to_candidate_work_preference_resource',
+    'req_to_notes_resource',
+]
+
 
 class AddUserRoles(object):
     """
@@ -379,6 +408,14 @@ def request_to_candidate_photos_resource(token, request, candidate_id=None, phot
     url = CandidateApiUrl.PHOTOS % candidate_id
     if photo_id:
         url = CandidateApiUrl.PHOTO % (candidate_id, photo_id)
+    return define_and_send_request(token, request, url, data)
+
+
+def req_to_notes_resource(token, request, candidate_id=None, data=None):
+    """ Sends request to CandidateNotesResource """
+    url = CandidateApiUrl.NOTES
+    if candidate_id:
+        url = CandidateApiUrl.NOTES % candidate_id
     return define_and_send_request(token, request, url, data)
 
 

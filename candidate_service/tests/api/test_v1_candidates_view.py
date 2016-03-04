@@ -1,20 +1,7 @@
 """
 Test cases for CandidateViewResource/get()
 """
-# Candidate Service app instance
-from candidate_service.candidate_app import app
-
-# Conftest
-from candidate_service.common.tests.conftest import *
-
-# Helper functions
-from helpers import (
-    response_info, request_to_candidate_resource, request_to_candidates_resource,
-    request_to_candidate_view_resource, AddUserRoles
-)
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
-# Custom erorrs
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from . import *
 
 
 def test_user_without_appropriate_permission_to_view_candidate_info(access_token_first,
@@ -88,3 +75,39 @@ def test_all_users_from_domain_get_candidate_view(access_token_first, user_first
     print response_info(view_resp_2)
     assert user_first.domain_id == user_same_domain.domain_id
     assert view_resp.status_code == 200 and view_resp_2.status_code == 200
+
+
+class TestViewAggregate(object):
+    def test_get_view_aggregate_of_candidate(self, access_token_first, user_first, talent_pool,
+                                             user_same_domain, access_token_same):
+        """
+        Test: Create a candidate and view it with two different users in the same domain
+        Expect: 200, multiple view objects must be returned
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.add_and_get(user_same_domain)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+
+        # View candidate with user_first
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        
+        # View candidate with user_same_domain
+        request_to_candidate_resource(access_token_same, 'get', candidate_id)
+        request_to_candidate_resource(access_token_same, 'get', candidate_id)
+
+        # Retrieve view information
+        get_views_resp = requests.get(
+            url=CandidateApiUrl.CANDIDATE_VIEW % candidate_id + "?aggregate_by='user_id'",
+            headers={'Authorization': 'Bearer %s' % access_token_first, 'content-type': 'application/json'}
+        )
+        print response_info(get_views_resp)
+        assert get_views_resp.status_code == 200
+        assert len(get_views_resp.json()['aggregated_views']) == 2, 'Four get requests have been made, ' \
+                                                'but only 2 are from unique domain users'
+        assert get_views_resp.json()['aggregated_views'][0]['user_id'] == user_first.id
+        assert get_views_resp.json()['aggregated_views'][-1]['user_id'] == user_same_domain.id

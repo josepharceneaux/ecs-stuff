@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -541,7 +541,35 @@ def fetch_candidate_views(candidate_id):
              } for view in candidate_views]
 
 
-def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
+def fetch_aggregated_candidate_views(domain_id, candidate_id):
+    """
+    Function will return a list of view objects displaying all the domain users
+     that viewed the candidate, last datetime of view, and the number of times each
+     user viewed the same candidate
+    :type domain_id:  int|long
+    :type candidate_id:  int|long
+    :rtype:  list[dict[str]]
+    """
+    team_members = User.all_users_of_domain(domain_id)
+    """
+    :type team_members:  list[User]
+    """
+    return_obj = []
+    for user in team_members:
+        views = CandidateView.get_by_user_and_candidate(user_id=user.id, candidate_id=candidate_id)
+        if views:
+            return_obj.append(
+                {
+                    'user_id': user.id,
+                    'last_view_datetime': str(views[-1].view_datetime),
+                    'view_count': len(views)
+                }
+            )
+
+    return return_obj
+
+
+def add_candidate_view(user_id, candidate_id):
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
@@ -551,8 +579,8 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.add(CandidateView(
         user_id=user_id,
         candidate_id=candidate_id,
-        view_type=view_type,
-        view_datetime=view_datetime
+        view_type=3,
+        view_datetime=datetime.datetime.utcnow()
     ))
     db.session.commit()
 
@@ -654,6 +682,25 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     photo_query.update(photo_update_dict)
     db.session.commit()
 
+
+######################################
+# Helper Functions For Candidate Notes
+######################################
+def add_notes(candidate_id, data):
+    """
+    Function will insert candidate notes into the db
+    :type candidate_id:  int|long
+    :type data:  list[dict]
+    """
+    # Format inputs
+    for note in data:
+        notes_dict = dict(
+            candidate_id=candidate_id,
+            comment=note.get('comment'),
+            added_time=datetime.datetime.utcnow()
+        )
+        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
+        db.session.add(CandidateTextComment(**notes_dict))
 
 ######################################################
 # Helper Functions For Creating and Updating Candidate
