@@ -4,13 +4,12 @@ Author: Zohaib Ijaz, QC-Technologies,
 
     This file contains constants used in Push Notification Service.
 """
-
-from push_campaign_service.common.talent_config_manager import TalentConfigKeys
 from push_campaign_service.push_campaign_app import app
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys
+from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
-# TODO --basit: Order of imports can be improved
 
-CELERY_QUEUE = 'push_campaign' # TODO --basit: This can be `push_campaign.__tablename__ or CampaignUtils.PUSH`
+CELERY_QUEUE = CampaignUtils.PUSH
 CAMPAIGN_REQUIRED_FIELDS = ('name', 'body_text', 'url', 'smartlist_ids')
 GET_TALENT_ICON_URL = "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/" \
                       "52-Startup-Logos-2012/SLR_0040_gettalent.jpg"

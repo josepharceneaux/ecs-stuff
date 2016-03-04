@@ -57,11 +57,9 @@ class PushCampaignBase(CampaignBase):
         :return:
         """
         # sets the user_id
-        # TODO --basit: Warning of unexpected arguments in __init__() below
-        super(PushCampaignBase, self).__init__(user_id, *args, **kwargs)
+        super(PushCampaignBase, self).__init__(user_id)
         self.campaign_blast = None
-        self.campaign_blast_id = None # TODO --basit: This is already in CampaignBase
-        self.campaign_id = None  # TODO --basit: self.camapgin is already in CampaignBase, maybe we can use that
+        self.campaign_id = None
         self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
         self.campaign_type = CampaignUtils.PUSH
 
@@ -105,7 +103,7 @@ class PushCampaignBase(CampaignBase):
         **See Also**
         .. see also:: SchedulePushCampaignResource  in v1_push_campaign_api.py.
         """
-        # TODO --basit: we should assert that self.campaign is not None here
+        assert isinstance(self.campaign, PushCampaign), 'self.campaign should be instance of PushCampaign'
         data_to_schedule.update(
             {'url_to_run_task': PushCampaignApiUrl.SEND % self.campaign.id}
         )
@@ -143,12 +141,8 @@ class PushCampaignBase(CampaignBase):
         :return:
         """
         with app.app_context():
-            # TODO --basit: There was an issue in candidate_service which was causing 504
-            # TODO --basit: Because we were querying candidate object for every candidate
-            # TODO --basit: May be we can improve this
             candidate = Candidate.get_by_id(candidate_id)
             self.campaign = PushCampaign.get_by_id(self.campaign_id)
-            # TODO --basit: same applies here
             assert isinstance(candidate, Candidate), \
                 'candidate should be instance of Candidate Model'
             logger.info('Going to send campaign to candidate')
@@ -157,8 +151,8 @@ class PushCampaignBase(CampaignBase):
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
             device_ids = [device.one_signal_device_id for device in devices]
             if not device_ids:
-                # TODO --basit: Log candidate's id, campaign_id, user-id as well (also at all other places)
-                logger.error('Candidate has not subscribed for push notification')
+                logger.error('Candidate has not subscribed for push notification. candidate_id: %s,'
+                             'campaign_id: %s' % (candidate_id, self.campaign_id))
             else:
                 try:
                     destination_url = self.campaign.url
@@ -198,7 +192,6 @@ class PushCampaignBase(CampaignBase):
                     else:
                         response = response.json()
                         errors = response['errors']
-                        # TODO --basit: Above can be in one line
                         logger.error('Error while sending push notification to candidate (id: %s),'
                                      'Errors: %s' % (candidate_id, errors))
                         UrlConversion.delete(url_conversion_id)
