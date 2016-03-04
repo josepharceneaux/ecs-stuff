@@ -129,17 +129,17 @@ class EmailCampaignApi(Resource):
 
         campaign = create_email_campaign(user_id=user_id,
                                          oauth_token=request.oauth_token,
-                                         email_campaign_name=data['name'],
-                                         email_subject=data['subject'],
-                                         email_from=data['from'],
-                                         email_reply_to=data['reply_to'],
-                                         email_body_html=data['body_html'],
-                                         email_body_text=data['body_text'],
+                                         name=data['name'],
+                                         subject=data['subject'],
+                                         _from=data['from'],
+                                         reply_to=data['reply_to'],
+                                         body_html=data['body_html'],
+                                         body_text=data['body_text'],
                                          list_ids=data['list_ids'],
                                          email_client_id=data['email_client_id'],
                                          template_id=data['template_id'],
-                                         send_datetime=data['start_datetime'],
-                                         stop_datetime=data['end_datetime'],
+                                         start_datetime=data['start_datetime'],
+                                         end_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, 201

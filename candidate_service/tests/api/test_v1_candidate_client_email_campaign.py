@@ -43,11 +43,11 @@ class TestClientEmailCampaign(object):
         candidate = get_candidate_response.json()['candidate']
         body = {
             'candidates': [candidate],
-            'email_subject': 'Email Subject',
-            'email_from': 'Samuel L. Jackson',
-            'email_reply_to': 'amir@gettalent.com',
-            'email_body_html': '<html><body>Email Body</body></html>',
-            'email_body_text': 'Plaintext part of email goes here, if any',
+            'subject': 'Email Subject',
+            'from': 'Samuel L. Jackson',
+            'reply_to': 'amir@gettalent.com',
+            'body_html': '<html><body>Email Body</body></html>',
+            'body_text': 'Plaintext part of email goes here, if any',
             'email_client_id': 101
          }
 

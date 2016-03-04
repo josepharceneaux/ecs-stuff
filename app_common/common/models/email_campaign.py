@@ -16,18 +16,18 @@ class EmailCampaign(db.Model):
     name = db.Column('Name', db.String(127), nullable=False)
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
-    email_subject = db.Column('emailSubject', db.String(127))
-    email_from = db.Column('emailFrom', db.String(127))
-    email_reply_to = db.Column('emailReplyTo', db.String(127))
+    subject = db.Column('emailSubject', db.String(127))
+    _from = db.Column('emailFrom', db.String(127))
+    reply_to = db.Column('emailReplyTo', db.String(127))
     is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=True)
     is_track_html_clicks = db.Column('isTrackHtmlClicks', db.Boolean, default=True)
     is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=True)
-    email_body_html = db.Column('EmailBodyHtml', db.Text(65535))
-    email_body_text = db.Column('EmailBodyText', db.Text(65535))
+    body_html = db.Column('EmailBodyHtml', db.Text(65535))
+    body_text = db.Column('EmailBodyText', db.Text(65535))
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
-    send_datetime = db.Column('SendTime', db.DateTime)
-    stop_datetime = db.Column('StopTime', db.DateTime)
+    start_datetime = db.Column('SendTime', db.DateTime)
+    end_datetime = db.Column('StopTime', db.DateTime)
     scheduler_task_id = db.Column('SchedulerTaskIds', db.String(255))
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
@@ -53,11 +53,11 @@ class EmailCampaign(db.Model):
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
-                "subject": self.email_subject,
-                "from": self.email_from,
-                "reply_to": self.email_reply_to,
+                "subject": self.subject,
+                "from": self._from,
+                "reply_to": self.reply_to,
                 "start_datetime": self.start_datetime.isoformat() if self.start_datetime else None,
-                "end_datetime": self.stop_datetime.isoformat() if self.stop_datetime else None,
+                "end_datetime": self.end_datetime.isoformat() if self.end_datetime else None,
                 "added_datetime": self.added_datetime.isoformat() if self.added_datetime else None,
                 "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
                                                                               smartlist_ids_only=True)}
