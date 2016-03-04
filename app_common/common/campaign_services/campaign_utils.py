@@ -330,8 +330,7 @@ class CampaignUtils(object):
                     'post_campaign_sent_processing: Error updating campaign(id:%s) blast(id:%s)'
                     % (campaign.id, blast_obj.id))
                 raise
-            base_class.create_campaign_send_activity(user_id, campaign,
-                                                     oauth_header, total_sends)
+            base_class.create_campaign_send_activity(user_id, campaign, total_sends)
         logger.debug('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
                      '(User(id:%s))' % (campaign_type, campaign.id, total_sends, user_id))
 

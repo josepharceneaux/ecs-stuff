@@ -7,7 +7,7 @@ import datetime
 import time
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
-from push_campaign import PushCampaign
+from push_campaign import PushCampaign, PushCampaignBlast, PushCampaignSend, PushCampaignSendUrlConversion
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -377,6 +377,22 @@ class UrlConversion(db.Model):
 
     def __repr__(self):
         return "<UrlConversion (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_id_and_domain_id_for_push_campaign_send(cls, _id, domain_id):
+        """
+        This method returns a UrlConversion object
+        :param _id:
+        :param domain_id:
+        :return:
+        """
+        # importing User and Domain here due to cyclic dependency
+        from user import User, Domain
+        # TODO: Find a better way to check the domain constraints.
+        return cls.query.join(PushCampaignSendUrlConversion).join(
+            PushCampaignSend).join(PushCampaignBlast).join(PushCampaign).join(User).join(Domain).filter(
+            PushCampaignSendUrlConversion.url_conversion_id == _id).filter(
+            PushCampaign.user_id == User.id).filter(User.domain_id == domain_id).first()
 
     # Relationships
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',

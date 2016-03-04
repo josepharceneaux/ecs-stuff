@@ -1346,31 +1346,27 @@ class CampaignBase(object):
             send_url_conversion_model.save(new_record)
 
     @classmethod
-    def create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
+    def create_campaign_send_activity(cls, user_id, source, num_candidates):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign sent.
 
         - Activity will appear as " 'Jobs at Oculus' has been sent to '50' candidates".
 
-        - This method is called from send_sms_campaign_to_candidates() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+        - Call this method when a campaign is created some subclass like SmsCampaignBase,
+        PushCampaignBase etc.
 
         :param user_id: id of user
-        :param source: sms_campaign obj
-        :param oauth_header: Authorization header
+        :param source: sms_campaign | push_campaign obj
         :param num_candidates: number of candidates to which campaign is sent
         :type user_id: int
-        :type source: SmsCampaign
-        :type oauth_header: dict
+        :type source: SmsCampaign | PushCampaign | EmailCampaign
         :type num_candidates: int
         :exception: InvalidUsage
 
         **See Also**
         .. see also:: send_sms_campaign_to_candidates() method in SmsCampaignBase class.
         """
-        # TODO --basit: Oauth_header is un-used in this method, kindly remove all its occurrances
-        # TODO and update docstrigns.
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(num_candidates, (int, long))
         params = {'name': source.name, 'num_candidates': num_candidates}
@@ -1729,3 +1725,19 @@ class CampaignBase(object):
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header,
                      data=json_data, user_id=user_id)
+
+    @staticmethod
+    def get_url_conversion_by_send_id(send_id, campaign_type, user):
+        model_name = campaign_type + '_send_url_conversion'
+        send_url_conversion_model = get_model(campaign_type, model_name)
+        send_url_conversion = send_url_conversion_model.query.filter_by(send_id=send_id).first()
+        if not send_url_conversion:
+            raise ResourceNotFound('Resource not found')
+        send = send_url_conversion.send
+        if not send:
+            raise ResourceNotFound('Resource not found')
+        if send.candidate.user.domain_id == user.domain_id:
+            url_conversion = send_url_conversion.url_conversion
+            return url_conversion
+        else:
+            raise ForbiddenError('You can not get other domain url_conversion records')

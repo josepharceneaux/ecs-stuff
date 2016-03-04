@@ -299,7 +299,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     def tear_down():
         response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion_obj['id'],
                                 token_first)
-        assert response.status_code in [HttpStatus.OK, HttpStatus.NOT_FOUND]
+        assert response.status_code in [HttpStatus.OK, HttpStatus.NOT_FOUND, HttpStatus.FORBIDDEN]
 
     request.addfinalizer(tear_down)
     return url_conversion_obj

@@ -82,8 +82,26 @@ A brief overview of all endpoints is as follows:
         To get details of a specific blast associated to a campaign, send a GET request
         to this endpoint. A blast contains statistics of a campaign when a campaign
         is sent once to associated candidates.
+
+    16. UrlRedirection
+        URL: /v1/redirect/:id [GET]
+
+        When recruiter(user) assigns a URL as a redirect for a specific push campaign,
+        we save the original URL as destination URL in "url_conversion" database table.
+        Then we create a new URL (which is
+        created during the process of sending campaign to candidate) to redirect the candidate
+        to our app. When someone hits this URL, campaign's stats are updated and he is redirected
+        to actual campaign URL.
+
+    17. Get UrlConversion Record
+        URL: /v1/send-url-conversions/:send_id [GET]
+        URL: /v1/url-conversions/:id [GET]
+
+        This is a helper resource. During tests, we need to get UrlConversion table data,
+        which we can get either by UrlConversion ID or by campaign send id because a send object
+        is associated to UrlConversion object.
+
 """
-# TODO --basit: Endpoints regarding URL redirection and url_conversion are missing here
 
 # Standard Library
 import json
@@ -96,6 +114,8 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 
 # Application Specific
+from push_campaign_service.push_campaign_app import logger
+from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
@@ -103,23 +123,20 @@ from push_campaign_service.common.campaign_services.validators import get_valid_
 from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
                                                          ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
+from push_campaign_service.common.models.user import User, Domain
 from push_campaign_service.common.talent_api import TalentApi
-from push_campaign_service.common.routes import PushCampaignApi
+from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 from push_campaign_service.common.utils.auth_utils import require_oauth
-from push_campaign_service.common.utils.api_utils import (api_route,
-                                                          ApiResponse,
-                                                          get_pagination_constraints,
-                                                          get_paginated_response)
+from push_campaign_service.common.utils.api_utils import (api_route, ApiResponse,
+                                                          get_paginated_response,
+                                                          get_pagination_constraints)
 from push_campaign_service.common.models.push_campaign import (PushCampaign,
+                                                               PushCampaignSend,
                                                                PushCampaignBlast,
-                                                               PushCampaignSendUrlConversion,
-                                                               PushCampaignSend)
+                                                               PushCampaignSendUrlConversion)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
-from push_campaign_service.push_campaign_app import logger
 
-# TODO --basit: imports can be improved in terms of line length
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
 api = TalentApi()
@@ -133,15 +150,13 @@ class PushCampaignsResource(Resource):
     Resource to get, create and delete campaigns
     """
     decorators = [require_oauth()]
-    # TODO --basit: import PushCampaignApiUrl in this file for the example of code in docString
-    # TODO: json -> JSON in all comments
 
     def get(self):
         """
         This action returns a list of all push campaigns for current user.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
-        :rtype json
+        :rtype JSON object
 
         :Example:
 
@@ -190,7 +205,7 @@ class PushCampaignsResource(Resource):
         This method takes data to create a Push campaign in database. This campaign is just a
         draft and we need to schedule or send it later.
         :return: id of created campaign and a success message
-        :type: json
+        :type: JSON object
 
         :Example:
 
@@ -241,8 +256,7 @@ class PushCampaignsResource(Resource):
         campaign_id, _ = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
-        # TODO --basit: remove hard coding location instead use ApiUrl as we discussed earlier
-        headers = dict(Location='/%s/push-campaigns/%s' % (PushCampaignApi.VERSION, campaign_id))
+        headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
         return ApiResponse(response, headers=headers, status=201)
 
     def delete(self):
@@ -287,8 +301,7 @@ class PushCampaignsResource(Resource):
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
         not_found = []
-        # TODO --basit: Following should be not_owned
-        not_owner = []
+        not_owned = []
         status_code = None
         for campaign_id in campaign_ids:
             campaign_obj = PushCampaignBase(request.user.id)
@@ -299,7 +312,7 @@ class PushCampaignsResource(Resource):
                     not_deleted.append(campaign_id)
             except ForbiddenError:
                 status_code = ForbiddenError.http_status_code()
-                not_owner.append(campaign_id)
+                not_owned.append(campaign_id)
             except ResourceNotFound:
                 status_code = ResourceNotFound.http_status_code()
                 not_found.append(campaign_id)
@@ -308,11 +321,11 @@ class PushCampaignsResource(Resource):
                 not_deleted.append(campaign_id)
         if status_code and len(campaign_ids) == 1:  # It means only one campaign_id was provided
             return dict(message='Unable to delete campaign.'), status_code
-        if not_deleted or not_owner or not_found:
+        if not_deleted or not_owned or not_found:
             return dict(message='Unable to delete %d campaign(s).'
-                                % (len(not_deleted) + len(not_found) + len(not_owner)),
+                                % (len(not_deleted) + len(not_found) + len(not_owned)),
                         not_deleted_ids=not_deleted, not_found_ids=not_found,
-                        not_owned_ids=not_owner), 207
+                        not_owned_ids=not_owned), 207
         else:
             return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), 200
 
@@ -329,8 +342,8 @@ class CampaignByIdResource(Resource):
         This action returns a single campaign created by current user.
         :param campaign_id: push campaign id
         :type campaign_id: int | long
-        :return campaign_data: a dictionary containing campaign json serializable data
-        :rtype json
+        :return campaign_data: a dictionary containing campaign JSON serializable data
+        :rtype JSON object
 
         :Example:
 
@@ -356,10 +369,10 @@ class CampaignByIdResource(Resource):
             }
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden, not authorized to access this campaign)
                     404 (ResourceNotFound)
                     500 (Internal Server Error)
         """
-        # TODO --basit: There will also be 403 status code in above
         user = request.user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -373,7 +386,7 @@ class CampaignByIdResource(Resource):
         :param campaign_id: unique id of push campaign
         :type campaign_id: int, long
         :return: success message
-        :type: json
+        :type: JSON object
 
         :Example:
 
@@ -405,18 +418,16 @@ class CampaignByIdResource(Resource):
 
         .. Status:: 201 (Resource Created)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden, not authorized to update this campaign)
                     400 (Invalid Usage)
                     500 (Internal Server Error)
 
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
-        # TODO --basit: There will also be 403 status code in above. Kindly double check every where else
         user = request.user
         data = get_valid_json_data(request)
         if not campaign_id > 0:
-            # TODO --basit: I think Following error message is not correct, because there
-            # TODO is no database interaction yet
-            raise ResourceNotFound('Campaign not found with id %s' % campaign_id)
+            raise ResourceNotFound('Campaign id must be a positive number. Given %s' % campaign_id)
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         for key, value in data.items():
@@ -671,7 +682,6 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        # TODO --basit: `user` can be removed, knidly double check every where else
         campaign_obj = PushCampaignBase(user_id=user.id)
         campaign_obj.campaign_id = campaign_id
         campaign_obj.send(campaign_id)
@@ -731,7 +741,7 @@ class PushCampaignBlastSends(Resource):
         .. Status:: 200 (OK)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
-                    403 (Not owner of campaign)
+                    403 (Forbidden, Not authorized to access this campaign)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
@@ -798,6 +808,7 @@ class PushCampaignSends(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden, Not authorized to access this campaign's sends)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
@@ -827,7 +838,7 @@ class PushCampaignBlasts(Resource):
         specific push campaign.
 
         :param campaign_id: int, unique id of a push campaign
-        :return: json data containing list of blasts and their counts
+        :return: JSON data containing list of blasts and their counts
 
 
         :Example:
@@ -863,6 +874,7 @@ class PushCampaignBlasts(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden, Not authorized to access this campaign's sends)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
@@ -873,7 +885,7 @@ class PushCampaignBlasts(Resource):
                                                                     CampaignUtils.PUSH)
         # Serialize blasts of a campaign
         query = PushCampaignBlast.query.filter_by(campaign_id=campaign.id)
-        return get_paginated_response('sends', query, page, per_page)
+        return get_paginated_response('blasts', query, page, per_page)
 
 
 @api.route(PushCampaignApi.BLAST)
@@ -890,7 +902,7 @@ class PushCampaignBlastById(Resource):
 
         :param campaign_id: int, unique id of a push campaign
         :param blast_id: int, unique id of a blast of campaign
-        :return: json data containing blast
+        :return: JSON data containing blast
 
 
         :Example:
@@ -917,31 +929,22 @@ class PushCampaignBlastById(Resource):
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
+                    403 (Forbidden, Not authorized to access this campaign's blast)
                     404 (Blast not found, Campaign not found)
                     500 (Internal Server Error)
         """
         user = request.user
         # Get a campaign that was created by this user
-        # TODO --basit: There is a method in CampaignBase called get_valid_blast_obj(). We can
-        # TODO-- use that one here
-        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
-                                                                    CampaignUtils.PUSH)
-        # Serialize blasts of a campaign
-        blast = campaign.blasts.filter_by(id=blast_id).first()
-        if blast:
-            response = dict(blast=blast.to_json())
-            return response, 200
-        else:
-            raise ResourceNotFound('Blast not found for campaign (id: %s) with id %s'
-                                   % (campaign_id, blast_id))
+        blast = CampaignBase.get_valid_blast_obj(campaign_id, blast_id, user, CampaignUtils.PUSH)
+
+        return dict(blast=blast.to_json()), 200
 
 
 @api.route(PushCampaignApi.REDIRECT)
 class PushCampaignUrlRedirection(Resource):
     """
-    This endpoint redirects the candidate to our app.
+    This endpoint redirects the candidate to our app when he hits a push notification.
     """
-    # TODO --basit: We can improve this comment when candidate will be redirected?
     def get(self, url_conversion_id):
         """
         This endpoint is /v1/redirect/:id
@@ -1037,8 +1040,6 @@ class UrlConversionResource(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        # TODO --basit: Can we move this somehow under CampaignBase? Cause this will be used by all
-        # TODO campaigns. Same is for delete method below.
         _id = kwargs.get('_id')
         send_id = kwargs.get('send_id')
         if _id:
@@ -1046,25 +1047,18 @@ class UrlConversionResource(Resource):
             if not url_conversion:
                 raise ResourceNotFound('Resource not found with id: %s' % _id)
 
-            send_url_conversion = url_conversion.push_campaign_sends_url_conversions.first()
-            if not(send_url_conversion and send_url_conversion.send):
-                raise ResourceNotFound('Resource not found')
-
-            if send_url_conversion.send.candidate.user.domain_id != user.domain_id:
+            url_conversion = UrlConversion.get_by_id_and_domain_id_for_push_campaign_send(_id, user.domain_id)
+            # send_url_conversion = url_conversion.push_campaign_sends_url_conversions.first()
+            if not url_conversion:
                 raise ForbiddenError("You can not get other domain's url_conversion records")
 
             return {'url_conversion': url_conversion.to_json()}
 
         elif send_id:
-            send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
-            if not send_url_conversion:
-                raise ResourceNotFound('Resource not found')
-            if send_url_conversion.send.candidate.user.domain_id == user.domain_id:
-                url_conversion = send_url_conversion.url_conversion.to_json()
-                return {'url_conversion': url_conversion}
-            else:
-                # TODO --basit: Error message can be improved
-                raise ForbiddenError('You can not get other domain url_conversion records')
+            url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
+                                                                            CampaignUtils.PUSH,
+                                                                            user)
+            return {'url_conversion': url_conversion.to_json()}
 
     def delete(self, **kwargs):
         """
@@ -1094,21 +1088,26 @@ class UrlConversionResource(Resource):
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
                     403 (Can't get send url conversion with different domain)
+                    404 (Resource Not found)
                     500 (Internal Server Error)
         """
+        user = request.user
         _id = kwargs.get('_id')
         send_id = kwargs.get('send_id')
         if _id:
             url_conversion = UrlConversion.get_by_id(_id)
             if not url_conversion:
                 raise ResourceNotFound('Resource not found with id: %s' % _id)
+            url_conversion = UrlConversion.get_by_id_and_domain_id_for_push_campaign_send(_id, user.domain_id)
+            if not url_conversion:
+                raise ForbiddenError("You can not delete other domain's url_conversion records")
             UrlConversion.delete(url_conversion)
             return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+
         elif send_id:
-            send_url_conversion = PushCampaignSendUrlConversion.get_by_campaign_send_id(send_id)
-            if not send_url_conversion:
-                raise ResourceNotFound('Resource not found')
-            url_conversion = send_url_conversion.url_conversion
+            url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
+                                                                            CampaignUtils.PUSH,
+                                                                            user)
             _id = url_conversion.id
             UrlConversion.delete(url_conversion)
             return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
