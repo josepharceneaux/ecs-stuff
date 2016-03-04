@@ -64,7 +64,7 @@ class TestSendCampaign(object):
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
-
+#TODO: rename this to test_send_campaign_with_other_user_in_same_domain() or more better
     def test_send_camapign_with_same_domain(self, token_same_domain, campaign_in_db):
         """
         User in same domain can send a campaign
@@ -106,3 +106,8 @@ class TestSendCampaign(object):
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 2
+# TODO: we can have more tests here.
+# TODO:e.g.
+# TODO: test_send_with_candidates_having_no_device_id()
+# TODO: test_send_with_candidates_having_same_device_ids_in_one_domain()
+# TODO: test_send_with_candidates_having_same_device_ids_in_diff_domains()

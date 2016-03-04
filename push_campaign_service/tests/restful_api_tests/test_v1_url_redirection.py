@@ -69,6 +69,7 @@ class TestURLRedirectionApi(object):
         url_without_signature = url_conversion['source_url'].split('?')[0]
         response = send_request('get', url_without_signature, '')
         assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+# TODO: We can have test like with invalid_signature etc
 
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):

@@ -21,6 +21,8 @@ from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST
 
+# TODO: FYI, there are common methods in campaign_utils/tests_helpers.py e.g request_with_invalid_token()
+# TODO: which can be used.
 
 class TestCampaignBlastById(object):
 
@@ -63,12 +65,15 @@ class TestCampaignBlastById(object):
         :param campaign_in_db: campaign object
         :return:
         """
+        # TODO: I think campaign_blast is not needed in this test
         # 404 Case, Blast not found
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
         get_blast(invalid_blast_id, campaign_id, token_first,
                   expected_status=(HttpStatus.NOT_FOUND,))
 
+# TODO: now that there is no ownership, rather we use `domain` so maybe rename such tests
+# TODO like test_get_blast_of_campaign_in_other_domain()
     def test_get_campaign_blast_without_ownership(self, token_second, campaign_blast,
                                                   campaign_in_db):
         """
@@ -78,6 +83,7 @@ class TestCampaignBlastById(object):
         :param campaign_in_db: campaign object
         :return:
         """
+        # TODO: Incomplete comment above
         # 403 Case, User is not owner of campaign
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
@@ -95,6 +101,7 @@ class TestCampaignBlastById(object):
         assert blast['clicks'] == campaign_blast['clicks']
         assert blast['id'] == campaign_blast['id']
 
+# TODO: typo doamin -> domain
     def test_get_campaign_blast_with_same_doamin_user(self, token_same_domain,
                                                       campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully

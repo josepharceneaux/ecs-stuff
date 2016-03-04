@@ -17,6 +17,9 @@ API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
 SLEEP_TIME = 20
 
+# TODO: name of the file tells me that here will be tests for utility methods. But here
+# TODO: we have helper methods. IMO, these should be in (e.g) tests/modules/handy_functions.py
+
 
 def missing_key_test(data, key, token):
     """

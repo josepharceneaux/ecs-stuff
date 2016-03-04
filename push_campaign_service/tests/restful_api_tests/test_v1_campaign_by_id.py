@@ -68,6 +68,9 @@ class TestCampaignById(object):
         assert campaign_in_db['name'] == campaign['name']
         assert campaign_in_db['url'] == campaign['url']
 
+# TODO: Tests of other domain is missing
+# TODO: Tests of deleted-campaign is missing
+
 
 class TestUpdateCampaign(object):
     # update campaign test
@@ -166,6 +169,8 @@ class TestUpdateCampaign(object):
         campaign = json_response['campaign']
         # Compare sent campaign dict and campaign dict returned by API.
         compare_campaign_data(data, campaign)
+
+# TODO: Tests of deleted-campaign is missing
 
 
 class TestCampaignDeleteById(object):

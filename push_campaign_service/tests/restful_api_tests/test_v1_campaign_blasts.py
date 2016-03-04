@@ -18,6 +18,9 @@ from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
+# TODO: IMO we should make this class variable of following class to avoid it globally
+# TODO: same applies to all such vars. IMO the purpose of routes was to avoid these global vars
+
 URL = PushCampaignApiUrl.BLASTS
 
 
@@ -57,3 +60,5 @@ class TestCampaignBlasts(object):
         response = get_blasts(campaign_in_db['id'], token_first)
         assert response['count'] == len(campaign_blasts)
         assert len(response['blasts']) == len(campaign_blasts)
+
+# TODO: Tests of other domain is missing

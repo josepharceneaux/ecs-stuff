@@ -256,9 +256,3 @@ class TestDeleteMultipleCampaigns(object):
             'ids': [campaign_in_db['id']]
         }
         delete_campaigns(data, token_first, expected_status=(HttpStatus.NOT_FOUND,))
-
-
-
-
-
-

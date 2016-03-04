@@ -48,6 +48,7 @@ class TestCampaignSends(object):
         invalid_id = sys.maxint
         get_campaign_sends(invalid_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
 
+#TODO: IMO campaign_blast is not needed here
     def test_get_campaign_sends_without_ownership(self, token_second, campaign_in_db, campaign_blasts):
         """
         Test that accessing campaign sends of a campaign created by other user will

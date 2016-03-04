@@ -55,6 +55,7 @@ class TestScheduleCampaignUsingPOST(object):
         # this resource test
         data = generate_campaign_schedule_data()
         campaign_id = campaign_in_db['id']
+        #TODO: IMO Replace 401 with HttpStatus class you use
         schedule_campaign(campaign_id, data, 'invalid_token', expected_status=(401,))
 
     def test_schedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
@@ -176,6 +177,8 @@ class TestRescheduleCampaignUsingPUT(object):
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
+        #TODO: Somewhere we have following for unauthorize test and somewehre there
+        # TODO: is some other method. I think we should be consistent through out.
         unauthorize_test('put',  URL % campaign_in_db['id'], data)
 
     def test_reschedule_campaign_with_other_user(self, token_second, campaign_in_db):
@@ -248,8 +251,12 @@ class TestRescheduleCampaignUsingPUT(object):
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
                                        expected_status=(HttpStatus.INVALID_USAGE,))
         error = response['error']
+        # TODO: I don't think this is a good idea to assert on message str
         assert 'Invalid DateTime' in error['message']
 
+#TODO: If we are usgng `campaign_in_db`, then why is there need to use `smartlist_first`?
+#TODO: Cause as per my assumption it is already in campaign_in_db. Kindly double check
+#TODO: all other places as well
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, smartlist_first,
                                                  schedule_a_campaign):
 

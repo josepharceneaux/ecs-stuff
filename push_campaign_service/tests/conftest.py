@@ -17,8 +17,10 @@ import pytest
 from faker import Faker
 
 from push_campaign_service.common.utils.test_utils import HttpStatus
+# TODO: IMO folloing should be removed
 from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.common.tests.conftest import randomword
+# TODO: IMO folloing should be removed
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
@@ -40,6 +42,8 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
 
 
 CONFIG_FILE_NAME = "test.cfg"
+# TODO: How we suppose this will work everywhere? I think I gave this feedback earlier as well.
+# TODO: Kindly enlighten.
 LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
 
 fake = Faker()
@@ -177,6 +181,7 @@ def smartlist_first(request, token_first, candidate_first, candidate_device_firs
 
 
 @pytest.fixture(scope='function')
+# TODO: user_second can be removed
 def smartlist_second(request, user_second, candidate_second, candidate_device_second, token_second):
     """
     This fixture associates a smartlist with push campaign object
@@ -198,7 +203,9 @@ def smartlist_second(request, user_second, candidate_second, candidate_device_se
     return smartlist
 
 
+
 @pytest.fixture(scope='function')
+# TODO: typo in name
 def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidate_same_domain, candidate_device_same_domain, campaign_in_db):
     """
     This fixture is similar to "test_smartlist".
@@ -343,6 +350,7 @@ def talent_pool_second(request, token_second):
 
 
 @pytest.fixture(scope='function')
+# TODO: This is awesome. can we move this (and similar coftests)to common conftest?
 def candidate_first(request, talent_pool, token_first):
     """
     This fixture created a test candidate in domain first and it will be deleted
