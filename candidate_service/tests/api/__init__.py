@@ -19,3 +19,5 @@ from candidate_service.common.models.candidate import CandidateEmail
 
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+
+from candidate_service.common.routes import CandidateApiUrl

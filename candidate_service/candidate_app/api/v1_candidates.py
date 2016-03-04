@@ -55,7 +55,8 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
-    add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes
+    add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
+    fetch_aggregated_candidate_views
 )
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
@@ -1280,7 +1281,7 @@ class CandidateViewResource(Resource):
         Function will retrieve all view information pertaining to the requested Candidate
         """
         # Authenticated user & candidate_id
-        authed_user, candidate_id = request.user, kwargs.get('id')
+        authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -1288,6 +1289,13 @@ class CandidateViewResource(Resource):
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        request_vars = request.args
+        aggregate_by = request_vars.get('aggregate_by')
+        if aggregate_by:
+            if 'user_id' in aggregate_by:
+                views = fetch_aggregated_candidate_views(authed_user.domain_id, candidate_id)
+                return {'aggregated_views': views}
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
