@@ -83,7 +83,7 @@ class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
     campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+                            db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
     text_clicks = db.Column('TextClicks', db.Integer, default=0)
@@ -107,7 +107,7 @@ class EmailCampaignBlast(db.Model):
         """
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
-            cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
+                cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
 
 class EmailCampaignSend(db.Model):
