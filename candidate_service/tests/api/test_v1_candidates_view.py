@@ -106,7 +106,7 @@ class TestViewAggregate(object):
         )
         print response_info(get_views_resp)
         assert get_views_resp.status_code == 200
-        assert len(get_views_resp.json()) == 2, 'Four get requests have been made, ' \
+        assert len(get_views_resp.json()['aggregated_views']) == 2, 'Four get requests have been made, ' \
                                                 'but only 2 are from unique domain users'
-        assert get_views_resp.json()[0]['user_id'] == user_first.id
-        assert get_views_resp.json()[-1]['user_id'] == user_same_domain.id
+        assert get_views_resp.json()['aggregated_views'][0]['user_id'] == user_first.id
+        assert get_views_resp.json()['aggregated_views'][-1]['user_id'] == user_same_domain.id

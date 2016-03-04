@@ -1294,7 +1294,8 @@ class CandidateViewResource(Resource):
         aggregate_by = request_vars.get('aggregate_by')
         if aggregate_by:
             if 'user_id' in aggregate_by:
-                return fetch_aggregated_candidate_views(authed_user.domain_id, candidate_id)
+                views = fetch_aggregated_candidate_views(authed_user.domain_id, candidate_id)
+                return {'aggregated_views': views}
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
