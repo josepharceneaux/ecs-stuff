@@ -1,17 +1,33 @@
-from datetime import datetime
+# Standard Imports
 import json
+import HTMLParser
 from urllib import urlencode
-from urlparse import parse_qs, urlsplit, urlunsplit
-from BeautifulSoup import BeautifulSoup, Tag
+from datetime import datetime
+from urlparse import (parse_qs, urlsplit, urlunsplit)
+
+# Third Party
+from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
-from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import InvalidUsage
+
+# Service Specific
 from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.common.models.db import db
+
+# Common Utils
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.handy_functions import create_oauth_headers, http_request
+from email_campaign_service.common.models.email_campaign import EmailCampaignSend
+from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
+                                                          ForbiddenError)
+from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl, EmailCampaignUrl
+from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
+                                                                 http_request)
+from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
+                                                  EmailCampaignUrl)
+from email_campaign_service.common.campaign_services.validators import \
+    raise_if_dict_values_are_not_int_or_long
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
@@ -149,10 +165,11 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     logger.info('create_email_campaign_url_conversions: email_campaign_send_id: %s'
                 % email_campaign_send_id)
     if new_html and is_email_open_tracking:
-        soup = BeautifulSoup(new_html)
+        soup = BeautifulSoup(new_html, "lxml")
         num_conversions = convert_html_tag_attributes(
             soup,
-            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id, TRACKING_URL_TYPE),
+            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id,
+                                                             TRACKING_URL_TYPE),
             tag="img",
             attribute="src",
             convert_first_only=True
@@ -164,7 +181,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
             new_image_url = create_email_campaign_url_conversion(image_url,
                                                                  email_campaign_send_id,
                                                                  TRACKING_URL_TYPE)
-            new_image_tag = Tag(soup, "img", [("src", new_image_url)])
+            new_image_tag = soup.new_tag("img", src=new_image_url)
             soup.insert(0, new_image_tag)
 
     # HTML click tracking
@@ -208,6 +225,7 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     # Convert soup object into new HTML
     if new_html and soup:
         new_html = soup.prettify()
+        new_html = HTMLParser.HTMLParser().unescape(new_html)
 
     return new_text, new_html
 
@@ -229,3 +247,32 @@ def convert_html_tag_attributes(soup, conversion_function, tag="a",
             if convert_first_only:
                 break
     return replacements
+
+
+def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_type):
+    """
+    This gets the send object from EmailCampaignSend database table. If no object is found
+    corresponding to given campaign_id, it raises ResourceNotFound.
+    If campaign_id associated with send_obj is not same as the requested campaign id,
+    it raises forbidden error.
+    :param requested_campaign_id: Id of requested campaign object
+    :param send_id: Id of send object of a particular campaign
+    :param current_user: logged-in user's object
+    :param campaign_type: Type of campaign. e.g. email_campaign etc
+    :type requested_campaign_id: int | long
+    :type send_id: int | long
+    :type current_user: User
+    :type campaign_type: str
+    :exception: ResourceNotFound
+    :exception: ForbiddenError
+    :return: campaign blast object
+    :rtype: EmailCampaignSend
+    """
+    raise_if_dict_values_are_not_int_or_long(dict(campaign_id=requested_campaign_id,
+                                                  send_id=send_id))
+    raise_if_not_instance_of(current_user, User)
+    raise_if_not_instance_of(campaign_type, basestring)
+    # Validate that campaign belongs to user's domain
+    CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
+                                                 current_user, campaign_type)
+    return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)

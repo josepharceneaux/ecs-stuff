@@ -1,0 +1,53 @@
+<div class="container">
+  <form class="card form-horizontal" ng-show="vm.state == 'form'">
+    <fieldset>
+      <legend>Join Our Talent Community!</legend>
+      <div class="form-group">
+        <label for="firstName" class="col-lg-2 control-label">Name</label>
+        <div class="col-lg-5">
+          <input type="text" class="form-control" id="firstName" placeholder="First Name" ng-model="vm.firstName">
+        </div>
+        <div class="col-lg-5">
+          <input type="text" class="form-control" id="lastName" placeholder="Last Name" ng-model="vm.lastName">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="inputEmail" class="col-lg-2 control-label">Email</label>
+        <div class="col-lg-10">
+          <input type="text" class="form-control" id="inputEmail" placeholder="Email" ng-model="vm.email">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="phone" class="col-lg-2 control-label">Phone</label>
+        <div class="col-lg-10">
+          <input type="text" class="form-control" id="phone" placeholder="Phone Number" ng-model="vm.phone">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="inputFile" class="col-lg-2 control-label">Upload Resume</label>
+        <div class="col-lg-10">
+          <input type="file" id="inputFile">
+          <p class="help-block">Resume uploads are optional but increase accuracy of job matches</p>
+        </div>
+      </div>
+      <div class="form-group">
+        <div class="col-lg-10 col-lg-offset-2">
+          <button type="submit" class="btn btn-primary" ng-click="vm.mockSubmit()">Join!</button>
+        </div>
+      </div>
+      <p>Recruiting Software by <a href="">getTalent</a></p>
+    </fieldset>
+  </form>
+  <div class="submitted" ng-show="vm.state == 'submit'">
+    <div class="panel panel-success form-panel">
+      <div class="panel-heading">
+        <h3 class="panel-title">Information submitted</h3>
+      </div>
+      <div class="panel-body">
+        <p>Thank you so much for contacting us!</p>
+        <p>What's next? We are going to analyze your profile and begin matching you up to job postings
+        with our company. We will contact you based on your contact frequency preferences with jobs matching your skillset and experience.</p>
+      </div>
+    </div>
+  </div>
+</div>

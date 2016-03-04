@@ -37,6 +37,7 @@ class TestSchedulerCreate(object):
         data = response.json()
         assert data['id']
 
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 
@@ -65,7 +66,7 @@ class TestSchedulerCreate(object):
         assert data['id']
 
         # Wait till job run
-        time.sleep(16)
+        time.sleep(60)
 
         # Scheduler endpoint should delete test user
         db.session.commit()
@@ -139,6 +140,7 @@ class TestSchedulerCreate(object):
                                  headers=auth_header_no_user)
         assert response.status_code == 400
 
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
@@ -160,6 +162,7 @@ class TestSchedulerCreate(object):
             assert response.status_code == 201
             jobs.append(json.loads(response.text)['id'])
 
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs
 

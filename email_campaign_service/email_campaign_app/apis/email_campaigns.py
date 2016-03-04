@@ -20,28 +20,28 @@ This file contains API endpoints related to email_campaign_service.
 
         - EmailCampaignUrlRedirection: /v1/redirect/:id
 
-            GET    : Redirects the candidate to our app to keep track of number of clicks, hit_count
-                    and create activity.
+            GET    : Redirects the candidate to our app to keep track of number of clicks,
+                    hit_count and create activity.
 
         - EmailCampaignBlasts:  /v1/email-campaigns/:id/blasts
 
-            GET    : Gets the all the "blast" records for given email campaign id from db table
-                    "email_campaign_blast"
+            GET    : Gets the all the "blast" records for given email campaign id from
+                    db table "email_campaign_blast"
 
         - EmailCampaignBlastById:  /v1/email-campaigns/:id/blasts/:id
 
-            GET    : Gets the "blast" record for given email campaign id and blast_id from db table
-                    "email_campaign_blast"
-
-        - EmailCampaignBlastSends:  /v1/email-campaigns/:id/blasts/:id/sends
-
-            GET    : Gets the "sends" records for given email campaign id and blast_id
-                        from db table 'email_campaign_sends'.
+            GET    : Gets the "blast" record for given email campaign id and blast_id from
+                    db table "email_campaign_blast"
 
         - EmailCampaignSends:  /v1/email-campaigns/:id/sends
 
+            GET    : Gets the "sends" records for given email campaign id from db
+                    table "email_campaign_sends"
+
+        - EmailCampaignSendById:  /v1/email-campaigns/:id/sends/:id
+
             GET    : Gets all the "sends" records for given email campaign id
-                        from db table email_campaign_sends
+                        from db table "email_campaign_sends"
 """
 
 # Third Party
@@ -52,6 +52,7 @@ from flask import request, Blueprint, jsonify
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_emails_to_campaign,
                                                             update_hit_count)
@@ -71,8 +72,6 @@ from email_campaign_service.common.error_handling import (InvalidUsage, NotFound
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-
-
 
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
@@ -116,9 +115,9 @@ class EmailCampaignApi(Resource):
         """
             POST /email-campaigns
             Required parameters:
-            email_campaign_name: Name of email campaign
-            email_subject: subject of email
-            email_body_html: email body
+            name: Name of email campaign
+            subject: subject of email
+            body_html: email body
             list_ids: smartlist ids to which emails will be sent
         """
         user_id = request.user.id
@@ -130,17 +129,17 @@ class EmailCampaignApi(Resource):
 
         campaign = create_email_campaign(user_id=user_id,
                                          oauth_token=request.oauth_token,
-                                         email_campaign_name=data['campaign_name'],
-                                         email_subject=data['email_subject'],
-                                         email_from=data['email_from'],
+                                         email_campaign_name=data['name'],
+                                         email_subject=data['subject'],
+                                         email_from=data['from'],
                                          email_reply_to=data['reply_to'],
-                                         email_body_html=data['email_body_html'],
-                                         email_body_text=data['email_body_text'],
+                                         email_body_html=data['body_html'],
+                                         email_body_text=data['body_text'],
                                          list_ids=data['list_ids'],
                                          email_client_id=data['email_client_id'],
                                          template_id=data['template_id'],
-                                         send_datetime=data['send_datetime'],
-                                         stop_datetime=data['stop_datetime'],
+                                         send_datetime=data['start_datetime'],
+                                         stop_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, 201
@@ -187,32 +186,43 @@ class EmailCampaignSendApi(Resource):
                             % campaign_id), 200
 
 
-@email_campaign_blueprint.route(EmailCampaignEndpoints.URL_REDIRECT, methods=['GET'])
-def url_redirect(url_conversion_id):
-    # Verify the signature of URL
-    CampaignBase.pre_process_url_redirect(request.args, request.full_path)
-    url_conversion = UrlConversion.query.get(url_conversion_id)
-    if not url_conversion:
-        logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
-        return
-    # Update hitcount
-    update_hit_count(url_conversion)
-    # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
-    destination_url = url_conversion.destination_url
-    if destination_url.lower().startswith("www."):
-        destination_url = "http://" + destination_url
+@api.route(EmailCampaignEndpoints.URL_REDIRECT)
+class EmailCampaignUrlRedirect(Resource):
+    """
+    This endpoint looks like /v1/redirect/:id
+    This is hit when candidate open's an email or clicks on html content of email campaign
+    """
 
-    if destination_url == '#':
-        # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
-        destination_url = 'http://www.gettalent.com/'  # Todo
-    return redirect(destination_url)
+    def get(self, url_conversion_id):
+        """
+        Id of url_conversion record
+        """
+        # Verify the signature of URL
+        CampaignBase.pre_process_url_redirect(request.args, request.full_path)
+        url_conversion = UrlConversion.query.get(url_conversion_id)
+        if not url_conversion:
+            logger.error('No record of url_conversion found for id: %s' % url_conversion_id)
+            return
+        # Update hitcount
+        update_hit_count(url_conversion)
+        # response.title = "getTalent.com: Redirecting to %s" % url_conversion.destinationUrl
+        destination_url = url_conversion.destination_url
+        # TODO: Destination URL shouldn't be empty. Need to raise custom exception
+        # TODO: EmptyDestinationUrl here
+        if (destination_url or '').lower().startswith('www.'):
+            destination_url = "http://" + destination_url
+
+        if destination_url == '#':
+            # redirect(HOST_NAME + str(URL(a='web', c='dashboard', f='index')))
+            destination_url = 'http://www.gettalent.com/'  # Todo
+        return redirect(destination_url)
 
 
 @api.route(EmailCampaignEndpoints.BLASTS)
 class EmailCampaignBlasts(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts.
-    This class returns all the blast objects associated with given campaign.
+    This resource returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
 
@@ -230,7 +240,6 @@ class EmailCampaignBlasts(Resource):
         >>> import requests
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
-        >>> blast_id = 1
         >>> response = requests.get(EmailCampaignUrl.BLASTS % campaign_id, headers=headers)
 
         .. Response::
@@ -243,7 +252,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "1",
@@ -255,7 +264,7 @@ class EmailCampaignBlasts(Resource):
                       "sends": 1,
                       "bounces": 0,
                       "text_clicks": 0,
-                      "email_campaign_id": 1,
+                      "campaign_id": 1,
                       "html_clicks": 0,
                       "complaints": 0,
                       "id": "2",
@@ -264,7 +273,6 @@ class EmailCampaignBlasts(Resource):
                     }
                 ]
             }
-
 
         .. Status:: 200 (OK)
                     400 (Bad request)
@@ -277,7 +285,194 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        parsers = dict(sent_datetime=str, updated_datetime=str)
-        blasts = [blast.to_json(field_parsers=parsers) for blast in campaign.blasts]
+        blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
         return response, 200
+
+
+@api.route(EmailCampaignEndpoints.BLAST)
+class EmailCampaignBlastById(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
+    This resource returns a blast object for given blast_id associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, blast_id):
+        """
+        This endpoint returns a blast object for a given campaign_id and blast_id.
+        From that blast object we can extract sends, clicks etc.
+        :param campaign_id: int, unique id of a email campaign
+        :param blast_id: id of blast object
+        :type campaign_id: int | long
+        :type blast_id: int | long
+        :return: JSON data containing dict of blast object
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> blast_id = 1
+        >>> response = requests.get(EmailCampaignUrl.BLAST % (campaign_id, blast_id),
+        >>>                         headers=headers)
+
+        .. Response::
+
+               {
+                  "blast": {
+                                "updated_datetime": "2016-02-10 19:37:15",
+                                "sends": 1,
+                                "bounces": 0,
+                                "campaign_id": 1,
+                                "text_clicks": 0,
+                                "html_clicks": 0,
+                                "complaints": 0,
+                                "id": "1",
+                                "opens": 0,
+                                "sent_datetime": "2016-02-10 19:37:04"
+                              }
+               }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain OR requested blast
+                        object is not associated with given campaign_id)
+                    404 (Campaign not found OR blast_obj with given id not found)
+                    500 (Internal server error)
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      blast_id=blast_id))
+        # Get valid blast object
+        blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
+                                                     request.user,
+                                                     CampaignUtils.EMAIL)
+        return dict(blast=blast_obj.to_json()), 200
+
+
+@api.route(EmailCampaignEndpoints.SENDS)
+class EmailCampaignSends(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/sends
+    This resource returns all the sends objects associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id):
+        """
+        This endpoint returns a list of send objects (dict) associated with a specific
+        email campaign.
+
+        :param campaign_id: int, unique id of a email campaign
+        :type campaign_id: int | long
+        :return: JSON data containing list of send objects and their count
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> response = requests.get(EmailCampaignUrl.SENDS % campaign_id, headers=headers)
+
+        .. Response::
+
+            {
+                "count": 2,
+                "sends": [
+                            {
+                              "ses_message_id": "",
+                              "is_ses_bounce": false,
+                              "updated_datetime": "2016-02-29 15:26:08",
+                              "ses_request_id": "",
+                              "campaign_id": 1,
+                              "candidate_id": 11,
+                              "is_ses_complaint": false,
+                              "id": 114,
+                              "sent_datetime": "2016-02-29 15:41:38"
+                            },
+                            {
+                              "ses_message_id": "",
+                              "is_ses_bounce": false,
+                              "updated_datetime": "2016-02-29 15:26:08",
+                              "ses_request_id": "",
+                              "campaign_id": 1,
+                              "candidate_id": 1,
+                              "is_ses_complaint": false,
+                              "id": 115,
+                              "sent_datetime": "2016-02-29 15:41:38"
+                            }
+                        ]
+            }
+
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain)
+                    404 (Campaign not found)
+                    500 (Internal Server Error)
+        """
+        # Get a campaign that was created by this user
+        campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
+                                                                CampaignUtils.EMAIL)
+        # Serialize send objects of a campaign
+        sends = [send.to_json() for send in campaign.sends]
+        response = dict(sends=sends, count=len(sends))
+        return response, 200
+
+
+@api.route(EmailCampaignEndpoints.SEND_BY_ID)
+class EmailCampaignSendById(Resource):
+    """
+    Endpoint looks like /v1/email-campaigns/:id/sends/:id.
+    This resource returns a send object for given send_id associated with given campaign.
+    """
+    decorators = [require_oauth()]
+
+    def get(self, campaign_id, send_id):
+        """
+        This endpoint returns a send object for a given campaign_id and send_id.
+        :param campaign_id: int, unique id of a email campaign
+        :param send_id: id of send object
+        :type campaign_id: int | long
+        :type send_id: int | long
+        :return: JSON data containing dict of send object
+
+        :Example:
+
+        >>> import requests
+        >>> headers = {'Authorization': 'Bearer <access_token>'}
+        >>> campaign_id = 1
+        >>> send_id = 1
+        >>> response = requests.get(EmailCampaignUrl.SEND_BY_ID % (campaign_id, send_id),
+        >>>                         headers=headers)
+
+        .. Response::
+
+               {
+                  "send": {
+                                "ses_message_id": "",
+                                "is_ses_bounce": false,
+                                "updated_datetime": "2016-02-29 15:26:08",
+                                "ses_request_id": "",
+                                "campaign_id": 1,
+                                "candidate_id": 11,
+                                "is_ses_complaint": false,
+                                "id": 114,
+                                "sent_datetime": "2016-02-29 15:41:38"
+                              }
+                }
+        .. Status:: 200 (OK)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    403 (Requested campaign does not belong to user's domain or requested send
+                        object is not associated with given campaign id)
+                    404 (Campaign not found or send object with given id not found)
+                    500 (Internal server error)
+        """
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      send_id=send_id))
+        # Get valid send object
+        send_obj = get_valid_send_obj(campaign_id, send_id, request.user,
+                                      CampaignUtils.EMAIL)
+        return dict(send=send_obj.to_json()), 200

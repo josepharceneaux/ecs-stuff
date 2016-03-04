@@ -1,21 +1,32 @@
 """Misc functions that have no logical grouping to a module."""
+
 __author__ = 'erikfarmer'
 
+# Standard Imports
 import re
 import json
-import pytz
 import random
 import string
+from datetime import datetime
+
+# Third Party
+import pytz
 import requests
 from pytz import timezone
-from datetime import datetime
 from itertools import izip_longest
-from ..models.db import db
-from flask import current_app, request
+
+from flask import Flask
+
 from requests import ConnectionError
+from flask import current_app, request
+
+# Application Specific
+from ..models.db import db
 from ..talent_config_manager import TalentConfigKeys
-from ..models.user import User, UserScopedRoles, DomainRole
-from ..error_handling import UnauthorizedError, ResourceNotFound, InvalidUsage, InternalServerError
+from werkzeug.exceptions import BadRequest
+from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..error_handling import (UnauthorizedError, ResourceNotFound,
+                              InvalidUsage, InternalServerError)
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -159,7 +170,45 @@ def grouper(iterable, group_size, fillvalue=None):
     return izip_longest(*args, fillvalue=fillvalue)
 
 
-def http_request(method_type, url, params=None, headers=None, data=None, user_id=None):
+def log_exception(message, app=None):
+    """
+    Log exception using logger with or without app_context
+    :param message:
+    :param app:
+    :return:
+    """
+    if not app:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        logger.exception(message)
+        return
+
+    assert isinstance(app, Flask), "app instance should be flask"
+
+    logger = app.config[TalentConfigKeys.LOGGER]
+    with app.app_context():
+        logger.exception(message)
+
+
+def log_error(message, app=None):
+    """
+    Log error using logger with or without app_context
+    :param message:
+    :param app:
+    :return:
+    """
+    if not app:
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        logger.error(message)
+        return
+
+    assert isinstance(app, Flask), "app instance should be flask"
+
+    logger = app.config[TalentConfigKeys.LOGGER]
+    with app.app_context():
+        logger.error(message)
+
+
+def http_request(method_type, url, params=None, headers=None, data=None, user_id=None, app=None):
     """
     This is common function to make HTTP Requests. It takes method_type (GET or POST)
     and makes call on given URL. It also handles/logs exception.
@@ -169,6 +218,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param headers: headers for Authorization.
     :param data: data to be sent.
     :param user_id: Id of logged in user.
+    :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
     :type params: dict
@@ -180,13 +230,16 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         If we are requesting scheduler_service to GET a task, we will use this method as
             http_request('GET', SchedulerApiUrl.TASK % scheduler_task_id, headers=oauth_header)
     """
-    logger = current_app.config[TalentConfigKeys.LOGGER]
+
+    if app and not isinstance(app, Flask):
+        raise InvalidUsage(error_message="app instance should be flask")
+
     if not isinstance(method_type, basestring):
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
-        logger.error('http_request: Error: %s, user_id: %s'
-                     % (error_message, user_id))
+        log_error('http_request: Error: %s, user_id: %s'
+                  % (error_message, user_id), app=app)
         raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
@@ -224,26 +277,26 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                logger.exception("http_request: Server error from %s on %s call. "
+                log_exception("http_request: Server error from %s on %s call. "
                                  "Make sure requested server is running." % (url, method_type))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
-            logger.exception(
-                "http_request: Couldn't make %s call on %s. "
-                "Make sure requested server is running." % (method_type, url))
+            log_exception(
+                            "http_request: Couldn't make %s call on %s. "
+                            "Make sure requested server is running." % (method_type, url), app=app)
             raise
         except requests.RequestException as e:
-            logger.exception('http_request: HTTP request failed, %s' % e.message)
+            log_exception('http_request: HTTP request failed, %s' % e.message)
             raise
 
         if error_message:
-            logger.exception('http_request: HTTP request failed, %s, '
-                             'user_id: %s', error_message, user_id)
+            log_exception('http_request: HTTP request failed, %s, '
+                                                   'user_id: %s' % (error_message, user_id), app=app)
         return response
     else:
-        logger.error('http_request: Unknown Method type %s ' % method_type)
+        log_error('http_request: Unknown Method type %s ' % method_type, app=app)
         raise InvalidUsage('Unknown method type(%s) provided' % method_type)
 
 
@@ -367,5 +420,39 @@ def create_oauth_headers():
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
-        return {'Authorization': authorization_header_value,
-                'Content-Type': JSON_CONTENT_TYPE_HEADER['content-type']}
+        return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
+
+
+def validate_json_header(request):
+    """
+    Proper header should be {'content-type': 'application/json'} for POSTing
+    some data on SMS campaign API.
+    If header of request is not proper, it raises InvalidUsage exception
+    :return:
+    """
+    if not request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
+        raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
+                           'and application/json content-type header')
+
+
+def get_valid_json_data(req):
+    """
+    This first verifies that request has proper JSON content-type header
+    and raise invalid usage error in case it doesn't has. From given request,
+    we try to get data. We raise invalid usage exception if data is
+    1) not JSON serializable
+    2) not in dict format
+    3) empty
+    :param req:
+    :return:
+    """
+    validate_json_header(req)
+    try:
+        data = req.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable.')
+    if not isinstance(data, dict):
+        raise InvalidUsage('Invalid POST data. Kindly send valid JSON data.')
+    if not data:
+        raise InvalidUsage('No data provided.')
+    return data

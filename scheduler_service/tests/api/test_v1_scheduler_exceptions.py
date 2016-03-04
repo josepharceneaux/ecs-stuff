@@ -119,6 +119,7 @@ class TestSchedulerExceptions(object):
         data = response.json()
         assert data['id']
 
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 
@@ -176,7 +177,7 @@ class TestSchedulerExceptions(object):
         data = response.json()
         assert data['id']
 
-        # Let's delete job now using name
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 

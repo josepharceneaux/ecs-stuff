@@ -293,6 +293,7 @@ class CandidateApiWords(object):
     VIEWS = "/views"
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
+    NOTES = "/notes"
 
 
 class CandidateApi(object):
@@ -365,6 +366,7 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
+    CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
 
 
 class CandidateApiUrl(object):
@@ -430,6 +432,7 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
+    NOTES = CANDIDATE + CandidateApiWords.NOTES
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
@@ -462,32 +465,6 @@ class WidgetApiUrl(object):
     DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
     DOMAINS = API_URL % WidgetApi.DOMAINS
     UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
-
-
-class SocialNetworkApi(object):
-    """
-    API relative URLs for social_network_service
-    """
-    VERSION = 'v1'
-    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EVENTS = RELATIVE_VERSION % 'events/'
-    EVENT = RELATIVE_VERSION % '/events/<int:event_id>'
-
-
-class SocialNetworkApiUrl(object):
-    """
-    API absolute URLs for social_network_service
-    """
-    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
-    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-
-    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
-    EVENTS = API_URL % 'events'
 
 
 class CandidatePoolApiWords(object):
@@ -607,15 +584,15 @@ class SchedulerApi(object):
 
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks/"
-    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test/"
+    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks"
+    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test"
     SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
     SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
     SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume/"
-    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause/"
-    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume/"
-    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause/"
+    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume"
+    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
+    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
+    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
 
 
 class SchedulerApiUrl(object):
@@ -629,17 +606,67 @@ class SchedulerApiUrl(object):
 
     HOST_NAME %= _get_api_relative_version(VERSION)
     # URLs, in case of test cases
-    TASKS = HOST_NAME % "tasks/"
+    TASKS = HOST_NAME % "tasks"
     TASK = HOST_NAME % 'tasks/id/%s'
     TASK_NAME = HOST_NAME % 'tasks/name/%s'
-    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause/'
-    RESUME_TASK = HOST_NAME % 'tasks/%s/resume/'
-    PAUSE_TASKS = HOST_NAME % 'tasks/pause/'
-    RESUME_TASKS = HOST_NAME % 'tasks/resume/'
-    TEST_TASK = HOST_NAME % 'tasks/test/'
+    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause'
+    RESUME_TASK = HOST_NAME % 'tasks/%s/resume'
+    PAUSE_TASKS = HOST_NAME % 'tasks/pause'
+    RESUME_TASKS = HOST_NAME % 'tasks/resume'
+    TEST_TASK = HOST_NAME % 'tasks/test'
 
     # Use different port of scheduler service URL
-    FLOWER_MONITORING = '--port=5511'
+    FLOWER_MONITORING_PORT = '--port=5511'
+
+
+class SocialNetworkApi(object):
+    """
+    Rest URLs for social_network_service
+    """
+    VERSION = 'v1'
+    # URLs, in case of API
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    EVENTS = RELATIVE_VERSION % 'events'
+    EVENT = RELATIVE_VERSION % 'events/<int:event_id>'
+    SOCIAL_NETWORKS = RELATIVE_VERSION % 'social-networks'
+    MEETUP_GROUPS = RELATIVE_VERSION % 'social-networks/meetup-groups'
+    TOKEN_VALIDITY = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/validity'
+    TOKEN_REFRESH = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/refresh'
+    USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/user/credentials'
+    VENUES = RELATIVE_VERSION % 'venues'
+    VENUE = RELATIVE_VERSION % 'venues/<int:venue_id>'
+    EVENT_ORGANIZERS = RELATIVE_VERSION % 'event-organizers'
+    EVENT_ORGANIZER = RELATIVE_VERSION % 'event-organizers/<int:organizer_id>'
+    TIMEZONES = RELATIVE_VERSION % 'data/timezones'
+    RSVP = RELATIVE_VERSION % 'rsvp'
+    CODE = RELATIVE_VERSION % 'code'
+
+
+class SocialNetworkApiUrl(object):
+    """
+    API relative URLs for social_network_service
+    """
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
+                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+
+    # TODO: Make this URL dynamic i.e different for staging, dev or prod
+    UI_APP_URL = 'http://localhost:3000'
+    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
+    EVENTS = API_URL % 'events'
+    EVENT = API_URL % 'events/%s'
+    SOCIAL_NETWORKS = API_URL % 'social-networks'
+    VENUES = API_URL % 'venues'
+    VENUE = API_URL % 'venues/%s'
+    EVENT_ORGANIZERS = API_URL % 'event-organizers'
+    EVENT_ORGANIZER = API_URL % 'event-organizers/%s'
+    TIMEZONES = API_URL % 'data/timezones'
+    MEETUP_GROUPS = API_URL % 'social-networks/meetup-groups'
+    TOKEN_VALIDITY = API_URL % 'social-networks/%s/token/validity'
+    TOKEN_REFRESH = API_URL % 'social-networks/%s/token/refresh'
+    USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % 'social-networks/%s/user/credentials'
+    RSVP = API_URL % 'rsvp'
+    CODE = API_URL % 'code'
 
 
 class CampaignWords(object):
@@ -733,11 +760,22 @@ class EmailCampaignEndpoints(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    # endpoint /v1/email-campaigns/:id/send
+    # Send the campaign as specified by the id
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/email-campaigns/:id/blasts
     # Gives the blasts of a campaign
     BLASTS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS
+    # endpoint /v1/email-campaigns/:id/blasts/:id
+    # Gives the blast object of a campaign for a particular blast_id
+    BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
+    # endpoint /v1/email-campaigns/:id/sends
+    # Gives the sends of a campaign
+    SENDS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS
+    # endpoint /v1/email-campaigns/:id/sends/:id
+    # Gives the send object of a campaign for a particular send_id
+    SEND_BY_ID = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS + '/<int:send_id>'
 
 
 class EmailCampaignUrl(object):
@@ -750,4 +788,7 @@ class EmailCampaignUrl(object):
     URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
                                                        + '/' + CampaignWords.REDIRECT + '/%s')
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
 
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    SEND_BY_ID = SENDS + '/%s'

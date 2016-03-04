@@ -1,8 +1,10 @@
 import datetime
 
+from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 
 from db import db
+from ..error_handling import (ResourceNotFound, ForbiddenError)
 
 __author__ = 'jitesh'
 
@@ -37,20 +39,26 @@ class EmailCampaign(db.Model):
     frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
-    sends = relationship('EmailCampaignSend', cascade='all,delete-orphan',
-                         passive_deletes=True, backref='blast')
+    sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
+                         passive_deletes=True, backref='campaign')
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
-    def to_dict(self, api_version=1):
+    def to_dict(self):
         """
-        :param int api_version: The API version that return dict will correspond to
+        This returns required fields when an email-campaign object is requested.
         :rtype: dict[str, T]
         """
         return {"id": self.id,
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
+                "subject": self.email_subject,
+                "from": self.email_from,
+                "reply_to": self.email_reply_to,
+                "start_datetime": self.start_datetime.isoformat() if self.start_datetime else None,
+                "end_datetime": self.stop_datetime.isoformat() if self.stop_datetime else None,
+                "added_datetime": self.added_datetime.isoformat() if self.added_datetime else None,
                 "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
                                                                               smartlist_ids_only=True)}
 
@@ -81,7 +89,7 @@ class EmailCampaignSmartlist(db.Model):
 class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
+    campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
@@ -94,13 +102,25 @@ class EmailCampaignBlast(db.Model):
 
     @classmethod
     def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+        return cls.query.get(_id)
+
+    @classmethod
+    def get_latest_blast_by_campaign_id(cls, campaign_id):
+        """
+        Method to get latest email campaign blast for campaign whose id is
+        provided. Returns on the basis of most recent sent_datetime.
+        :type campaign_id:  int | long
+        :rtype:  EmailCampaignBlast
+        """
+        assert campaign_id, "campaign_id not provided"
+        return cls.query.filter(
+            cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
 
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
+    campaign_id = db.Column('EmailCampaignId', db.Integer,
                                   db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
@@ -116,6 +136,31 @@ class EmailCampaignSend(db.Model):
                                    cascade='all,delete-orphan',
                                    passive_deletes=True,
                                    backref='send')
+
+    @classmethod
+    def get_valid_send_object(cls, send_id, requested_campaign_id):
+        """
+        This returns the send object for given id.
+        If record is not found, it raises ResourceNotFound error.
+        If send object is not associated with given campaign_id, it raises ForbiddenError
+        :param send_id: id of email_campaign_send object
+        :param requested_campaign_id: id of email-campaign object
+        :type send_id: int | long
+        :type requested_campaign_id: int | long
+        :return: email_campaign_send object
+        :rtype: EmailCampaignSend
+        """
+        assert send_id, 'id of email-campaign-send obj not given'
+        assert requested_campaign_id, 'id of email-campaign obj not given'
+        send_obj = EmailCampaignSend.get_by_id(send_id)
+        if not send_obj:
+            raise ResourceNotFound("Send object(id:%s) for email-campaign(id:%s) does not "
+                                   "exist in database."
+                                   % (send_id, requested_campaign_id))
+        if not send_obj.campaign_id == requested_campaign_id:
+            raise ForbiddenError("Send object(id:%s) is not associated with email-campaign(id:%s)."
+                                 % (send_id, requested_campaign_id))
+        return send_obj
 
 
 class EmailClient(db.Model):
