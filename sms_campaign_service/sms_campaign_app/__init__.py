@@ -7,6 +7,7 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 
 app, logger = init_talent_app(__name__)
 
+
 # Celery app
 celery_app = init_celery_app(app, CampaignUtils.SMS,
                              ['sms_campaign_service.modules.sms_campaign_base'])

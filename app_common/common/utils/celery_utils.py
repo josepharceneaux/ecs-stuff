@@ -37,11 +37,22 @@ def init_celery_app(flask_app, queue_name, modules_to_include):
     accept_content = {
         'CELERY_ACCEPT_CONTENT': ['pickle', 'json', 'msgpack', 'yaml']
     }
+
+    routes = {
+        'CELERY_ROUTES': {
+            "scheduler.tasks.send_request": {
+                "queue": queue_name,
+                "routing_key": queue_name + ".import",
+                },
+            }
+    }
+
     # Initialize Celery app
     celery_app = Celery(flask_app.import_name,
                         broker=flask_app.config[TalentConfigKeys.REDIS_URL_KEY],
                         backend=flask_app.config[TalentConfigKeys.CELERY_RESULT_BACKEND_URL],
                         include=modules_to_include)
+    celery_app.conf.update(routes)
     celery_app.conf.update(default_queue)
     celery_app.conf.update(resultant_db_tables)
     celery_app.conf.update(accept_content)

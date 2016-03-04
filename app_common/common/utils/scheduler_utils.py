@@ -12,6 +12,7 @@ class SchedulerUtils(object):
     ONE_TIME = 'one_time'
     PERIODIC = 'periodic'
     QUEUE = 'celery_scheduler'
+    CELERY_ROUTING_KEY = 'scheduler_service.import'
     # Set the minimum frequency in seconds
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     # For qa and production minimum frequency would be one hour

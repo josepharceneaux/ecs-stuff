@@ -172,8 +172,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
-        past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
-        if token and past_datetime < datetime.datetime.utcnow():
+        if token and (token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < datetime.datetime.utcnow():
             data = {
                 'client_id': token.client_id,
                 'client_secret': token.client.client_secret,
@@ -187,6 +186,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
                                     data=urlencode(data))
                 logger.info('Token refreshed %s' % resp.json()['expires_at'])
                 access_token = "Bearer " + resp.json()['access_token']
+
     # If is_jwt_request parameter is true then send jwt token request
     elif is_jwt_request:
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
@@ -195,7 +195,8 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     # Call celery task to send post_data to URL
     send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
                              serializer='json',
-                             queue=SchedulerUtils.QUEUE)
+                             queue=SchedulerUtils.QUEUE,
+                             routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
 
 
 def schedule_job(data, user_id=None, access_token=None):
@@ -332,13 +333,13 @@ def serialize_task(task):
                 task_type=SchedulerUtils.PERIODIC
         )
         if task_dict['start_datetime']:
-            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         if task_dict['end_datetime']:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
         if task_dict['next_run_datetime']:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
@@ -353,7 +354,7 @@ def serialize_task(task):
         )
 
         if task_dict['run_datetime']:
-            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
