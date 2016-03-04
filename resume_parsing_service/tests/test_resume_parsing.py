@@ -346,7 +346,6 @@ def test_integration_add_single_item(user_fixture, token_fixture):
         'Improperly Formatted redis post response for single item')
     assert response_dict['quantity'] == 1, (
         'Improperly count in redis post response for single item')
-    # import time;time.sleep(3)
     unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
                                             headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
 
