@@ -30,12 +30,12 @@ def validate_and_format_request_data(data, user_id):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    campaign_name = data.get('email_campaign_name')  # required
-    email_subject = data.get('email_subject')        # required
-    email_from = data.get('email_from')
-    reply_to = data.get('email_reply_to')
-    email_body_html = data.get('email_body_html')    # required
-    email_body_text = data.get('email_body_text')
+    campaign_name = data.get('name')  # required
+    email_subject = data.get('subject')        # required
+    email_from = data.get('from')
+    reply_to = data.get('reply_to')
+    email_body_html = data.get('body_html')    # required
+    email_body_text = data.get('body_text')
     list_ids = data.get('list_ids')                  # required
     email_client_id = data.get('email_client_id')
     send_datetime = data.get('send_datetime')
@@ -45,11 +45,11 @@ def validate_and_format_request_data(data, user_id):
 
     # Raise errors if invalid input
     if campaign_name is None or campaign_name.strip() == '':
-        raise InvalidUsage('email_campaign_name is required')  # 400 Bad request
+        raise InvalidUsage('name is required')  # 400 Bad request
     if email_subject is None or email_subject.strip() == '':
-        raise InvalidUsage('email_subject is required')
+        raise InvalidUsage('subject is required')
     if email_body_html is None or email_body_html.strip() == '':
-        raise InvalidUsage('email_body_html is required')
+        raise InvalidUsage('body_html is required')
     if not list_ids:
         raise InvalidUsage('`list_ids` are required to send email campaign')
     if not isinstance(list_ids, list):
@@ -82,12 +82,12 @@ def validate_and_format_request_data(data, user_id):
 
     # strip whitespaces and return data
     return {
-        'campaign_name': campaign_name.strip(),
-        'email_subject': email_subject.strip(),
-        'email_from': get_or_set_valid_value(email_from, basestring, '').strip(),
+        'name': campaign_name.strip(),
+        'subject': email_subject.strip(),
+        'from': get_or_set_valid_value(email_from, basestring, '').strip(),
         'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
-        'email_body_html': email_body_html.strip(),
-        'email_body_text': get_or_set_valid_value(email_body_text, basestring, '').strip(),
+        'body_html': email_body_html.strip(),
+        'body_text': get_or_set_valid_value(email_body_text, basestring, '').strip(),
         'list_ids': list_ids,
         'email_client_id': email_client_id,
         'send_datetime': send_datetime,
