@@ -159,7 +159,7 @@ def validate_id_list(key, values):
         if not values.strip().isdigit():
             raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
 
-        return values.strip()
+        return [values.strip()]
 
 
 def validate_string_list(key, values):
@@ -167,7 +167,7 @@ def validate_string_list(key, values):
         values = [value.strip() for value in values.split(',') if value.strip()]
         return values[0] if values.__len__() == 1 else values
     else:
-        return values.strip()
+        return [values.strip()]
 
 
 def validate_sort_by(key, value):

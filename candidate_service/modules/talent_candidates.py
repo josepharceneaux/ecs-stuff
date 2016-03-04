@@ -2311,7 +2311,7 @@ def get_search_params_of_smartlists(smartlist_ids):
     :param smartlist_ids: IDs of smartlists
     :return:
     """
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 
