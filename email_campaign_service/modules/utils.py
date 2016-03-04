@@ -127,7 +127,7 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
     # args=url_conversion_id, hmac_key=current.HMAC_KEY))
     logger.info('create_email_campaign_url_conversion: url_conversion_id:%s' % url_conversion.id)
     signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignUrl.URL_REDIRECT % url_conversion.id,
-                                           datetime.now() + relativedelta(years=+1))
+                                                        datetime.now() + relativedelta(years=+1))
 
     # In case of prod, do not save source URL
     if CampaignUtils.IS_DEV:
@@ -152,11 +152,11 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
     if new_html and is_email_open_tracking:
         soup = BeautifulSoup(new_html)
         num_conversions = convert_html_tag_attributes(
-            soup,
-            lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id, TRACKING_URL_TYPE),
-            tag="img",
-            attribute="src",
-            convert_first_only=True
+                soup,
+                lambda url: create_email_campaign_url_conversion(url, email_campaign_send_id, TRACKING_URL_TYPE),
+                tag="img",
+                attribute="src",
+                convert_first_only=True
         )
 
         # If no images found, add a tracking pixel
@@ -182,16 +182,17 @@ def create_email_campaign_url_conversions(new_html, new_text, is_track_text_clic
         # Convert all of soup's <a href=> attributes
 
         convert_html_tag_attributes(
-            soup,
-            lambda url: create_email_campaign_url_conversion(url,
-                                                             email_campaign_send_id,
-                                                             HTML_CLICK_URL_TYPE,
-                                                             destination_url_custom_params),
-            tag="a",
-            attribute="href"
+                soup,
+                lambda url: create_email_campaign_url_conversion(url,
+                                                                 email_campaign_send_id,
+                                                                 HTML_CLICK_URL_TYPE,
+                                                                 destination_url_custom_params),
+                tag="a",
+                attribute="href"
         )
 
-    # Add custom HTML. Doesn't technically belong in this function, but since we have access to the BeautifulSoup object, let's do it here.
+    """ Add custom HTML. Doesn't technically belong in this function,
+        but since we have access to the BeautifulSoup object, let's do it here."""
     if new_html and custom_html:
         soup = soup or BeautifulSoup(new_html)
         body_tag = soup.find(name="body") or soup.find(name="html")
