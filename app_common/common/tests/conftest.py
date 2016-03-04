@@ -1,6 +1,9 @@
 # Standard Library
+import random
+import requests
+import string
+import uuid
 from datetime import datetime
-import random, string, uuid, requests
 
 # Third Party
 import json
@@ -90,34 +93,6 @@ def revoke_token(user_logout_credentials):
     resp = requests.post('http://localhost:8001/v1/oauth2/revoke', data=revoke_data)
     assert resp.status_code == 200
     return
-
-
-@pytest.fixture()
-def sample_user(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def sample_user_2(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
 
 
 @pytest.fixture()
@@ -306,7 +281,7 @@ def user_same_domain(request, domain_first, first_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -320,7 +295,7 @@ def user_second(request, domain_second, second_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -334,7 +309,7 @@ def domain_first(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -353,7 +328,7 @@ def domain_second(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -371,7 +346,7 @@ def domain_roles(request):
             db.session.delete(DomainRole.query.get(test_role_first_id))
             db.session.delete(DomainRole.query.get(test_role_second_id))
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
@@ -387,7 +362,7 @@ def first_group(request, domain_first):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
@@ -403,10 +378,39 @@ def second_group(request, domain_second):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
+
+
+@pytest.fixture()
+def sample_user(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def sample_user_2(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
 
 
 @pytest.fixture()
@@ -422,7 +426,7 @@ def talent_pool(request, domain_first, first_group, user_first):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -442,7 +446,7 @@ def talent_pool_second(request, domain_second, second_group, user_second):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -486,7 +490,7 @@ def talent_pipeline(request, user_first, talent_pool):
         try:
             db.session.delete(talent_pipeline)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pipeline
@@ -502,7 +506,7 @@ def candidate_first(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate
@@ -518,7 +522,7 @@ def candidate_second(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate

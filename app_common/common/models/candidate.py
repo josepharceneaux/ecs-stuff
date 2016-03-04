@@ -382,6 +382,17 @@ class CandidateTextComment(db.Model):
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    def __repr__(self):
+        return "<CandidateTextComment (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateTextComment]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
 
 class VoiceComment(db.Model):
     __tablename__ = 'voice_comment'

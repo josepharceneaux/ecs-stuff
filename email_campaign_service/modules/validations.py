@@ -84,10 +84,10 @@ def validate_and_format_request_data(data, user_id):
     return {
         'campaign_name': campaign_name.strip(),
         'email_subject': email_subject.strip(),
-        'email_from': email_from.strip() if email_from else email_from,
-        'reply_to': reply_to.strip() if reply_to else reply_to,
+        'email_from': get_or_set_valid_value(email_from, basestring, '').strip(),
+        'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
         'email_body_html': email_body_html.strip(),
-        'email_body_text': email_body_text.strip() if email_body_text else email_body_text,
+        'email_body_text': get_or_set_valid_value(email_body_text, basestring, '').strip(),
         'list_ids': list_ids,
         'email_client_id': email_client_id,
         'send_datetime': send_datetime,
@@ -112,3 +112,16 @@ def validate_lists_belongs_to_domain(list_ids, user_id):
     list_ids_not_in_domain = set(list_ids) - set(smartlist_ids)
     if not len(list_ids_not_in_domain) == 0:
         raise ForbiddenError("list ids: %s does not belong to user's domain" % list_ids_not_in_domain)
+
+
+def get_or_set_valid_value(required_value, required_instance, default):
+    """
+    This checks if `required_value` is an instance of `required_instance`. If it is, it returns the
+    `required_value`, otherwise it sets the `default` value and returns it.
+    :param required_value: value to be validated
+    :param required_instance: expected instance of `required_value`
+    :param default: default value to be set
+    """
+    if not isinstance(required_value, required_instance):
+        required_value = default
+    return required_value

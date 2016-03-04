@@ -46,6 +46,7 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Internal
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.candidate_service_calls import \
     get_candidate_subscription_preference
+from email_campaign_service.modules.validations import get_or_set_valid_value
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -82,8 +83,8 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                                    user_id=user_id,
                                    is_hidden=0,
                                    email_subject=email_subject,
-                                   email_from=email_from.strip(),
-                                   email_reply_to=email_reply_to.strip(),
+                                   email_from=get_or_set_valid_value(email_from, basestring, '').strip(),
+                                   email_reply_to=get_or_set_valid_value(email_reply_to, basestring, '').strip(),
                                    email_body_html=email_body_html,
                                    email_body_text=email_body_text,
                                    send_datetime=send_datetime,
