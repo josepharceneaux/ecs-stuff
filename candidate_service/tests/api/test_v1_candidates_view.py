@@ -95,6 +95,7 @@ class TestViewAggregate(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
         request_to_candidate_resource(access_token_first, 'get', candidate_id)
         request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        
         # View candidate with user_same_domain
         request_to_candidate_resource(access_token_same, 'get', candidate_id)
         request_to_candidate_resource(access_token_same, 'get', candidate_id)
