@@ -115,9 +115,9 @@ class EmailCampaignApi(Resource):
         """
             POST /email-campaigns
             Required parameters:
-            email_campaign_name: Name of email campaign
-            email_subject: subject of email
-            email_body_html: email body
+            name: Name of email campaign
+            subject: subject of email
+            body_html: email body
             list_ids: smartlist ids to which emails will be sent
         """
         user_id = request.user.id
@@ -129,17 +129,17 @@ class EmailCampaignApi(Resource):
 
         campaign = create_email_campaign(user_id=user_id,
                                          oauth_token=request.oauth_token,
-                                         email_campaign_name=data['campaign_name'],
-                                         email_subject=data['email_subject'],
-                                         email_from=data['email_from'],
+                                         email_campaign_name=data['name'],
+                                         email_subject=data['subject'],
+                                         email_from=data['from'],
                                          email_reply_to=data['reply_to'],
-                                         email_body_html=data['email_body_html'],
-                                         email_body_text=data['email_body_text'],
+                                         email_body_html=data['body_html'],
+                                         email_body_text=data['body_text'],
                                          list_ids=data['list_ids'],
                                          email_client_id=data['email_client_id'],
                                          template_id=data['template_id'],
-                                         send_datetime=data['send_datetime'],
-                                         stop_datetime=data['stop_datetime'],
+                                         send_datetime=data['start_datetime'],
+                                         stop_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, 201

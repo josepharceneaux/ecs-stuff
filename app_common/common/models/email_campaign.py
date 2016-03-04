@@ -53,6 +53,12 @@ class EmailCampaign(db.Model):
                 "user_id": self.user_id,
                 "name": self.name,
                 "frequency": self.frequency.name if self.frequency else None,
+                "subject": self.email_subject,
+                "from": self.email_from,
+                "reply_to": self.email_reply_to,
+                "start_datetime": self.start_datetime.isoformat() if self.start_datetime else None,
+                "end_datetime": self.stop_datetime.isoformat() if self.stop_datetime else None,
+                "added_datetime": self.added_datetime.isoformat() if self.added_datetime else None,
                 "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
                                                                               smartlist_ids_only=True)}
 
