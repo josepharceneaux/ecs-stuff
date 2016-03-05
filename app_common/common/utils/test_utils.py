@@ -5,7 +5,9 @@ import json
 import requests
 from faker import Faker
 
-from ..routes import UserServiceApiUrl, AuthApiUrl
+from app_common.common.tests.conftest import randomword
+from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePoolApiUrl, \
+    SchedulerApiUrl
 
 fake = Faker()
 
@@ -181,3 +183,90 @@ def remove_roles(user_id, roles, token):
                             token, data=data)
     assert response.status_code in [HttpStatus.OK, HttpStatus.INVALID_USAGE]
 
+
+def delete_scheduler_task(task_id, token, expected_status=(200,)):
+    response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def create_candidate(talent_pool_id, token, expected_status=(201,)):
+    data = {
+        "candidates": [
+            {
+                "first_name": fake.first_name(),
+                "middle_name": fake.user_name(),
+                "last_name": fake.last_name(),
+                "talent_pool_ids": {
+                    "add": [talent_pool_id]
+                },
+                "emails": [
+                    {
+                        "label": "Primary",
+                        "address": fake.email(),
+                        "is_default": True
+                    }
+                ]
+            }
+
+        ]
+    }
+    response = send_request('post', CandidateApiUrl.CANDIDATES, token, data=data)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def get_candidate(candidate_id, token, expected_status=(200,)):
+    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def delete_candidate(candidate_id, token, expected_status=(200,)):
+    response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, token)
+    assert response.status_code in expected_status
+
+
+def create_smartlist(candidate_ids, token, expected_status=(201,)):
+    assert isinstance(candidate_ids, (list, tuple)), 'candidate_ids must be list or tuple'
+    data = {
+        'candidate_ids': candidate_ids,
+        'name': fake.word()
+    }
+    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token, data=data)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def delete_smartlist(smartlist_id, token, expected_status=(200,)):
+    response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def create_talent_pools(token, count=1, expected_status=(200,)):
+    data = {
+        "talent_pools": []
+    }
+    for index in xrange(count):
+        talent_pool = {
+                "name": randomword(20),
+                "description": fake.paragraph()
+            }
+        data["talent_pools"].append(talent_pool)
+    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token, data=data)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
+    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, token)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
+    response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
+                            token)
+    assert response.status_code in expected_status
+    return response.json()
