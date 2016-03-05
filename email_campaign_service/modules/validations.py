@@ -1,4 +1,3 @@
-from dateutil.parser import parse
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient
@@ -15,11 +14,11 @@ def validate_datetime(datetime_text, field_name=None):
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = parse(datetime_text)
-    except Exception:
-        raise InvalidUsage("%s should be in valid ISO format" % field_name if field_name else 'Datetime')
+        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except ValueError:
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
-        raise InvalidUsage("The %s cannot be before today." % field_name)
+        raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
 
 
