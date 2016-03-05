@@ -1466,6 +1466,7 @@ class CandidateDeviceResource(Resource):
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
                     403 (Can't add device for non existing candidate)
+                    404 (ResourceNotFound)
                     500 (Internal Server Error)
         """
         # Authenticated user & candidate ID
@@ -1476,23 +1477,27 @@ class CandidateDeviceResource(Resource):
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authenticated_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+            raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
 
         data = get_json_if_exist(_request=request)
         if not candidate_id:
-            raise InvalidUsage('candidate_id is not given in post data')
-        device_id = data.get('one_signal_device_id')
-        if not device_id:
+            raise InvalidUsage('candidate_id is not given in POST data')
+        one_signal_device_id = data.get('one_signal_device_id')
+        if not one_signal_device_id:
             raise InvalidUsage('device_id is not given in post data')
-
+        device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
+                                                                                 authenticated_user.domain_id)
+        if device:
+            raise InvalidUsage('Given OneSignal Device id (%s) is already associated to a '
+                               'candidate in your doamin')
         one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                          user_auth_key=ONE_SIGNAL_REST_API_KEY)
         # Send a GET request to OneSignal API to confirm that this device id is valid
-        response = one_signal_client.get_player(device_id)
+        response = one_signal_client.get_player(one_signal_device_id)
         if response.ok:
             # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate.id,
-                                               one_signal_device_id=device_id,
+                                               one_signal_device_id=one_signal_device_id,
                                                registered_at=datetime.datetime.utcnow())
             db.session.add(candidate_device)
             db.session.commit()
@@ -1500,7 +1505,7 @@ class CandidateDeviceResource(Resource):
                                 % (candidate_device.id, candidate.id)), 201
         else:
             # No device was found on OneSignal database.
-            raise ResourceNotFound('Device is not registered with OneSignal with id %s' % device_id)
+            raise ResourceNotFound('Device is not registered with OneSignal with id %s' % one_signal_device_id)
 
 
 class CandidatePhotosResource(Resource):

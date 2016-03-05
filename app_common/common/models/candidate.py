@@ -1027,6 +1027,19 @@ class CandidateDevice(db.Model):
         return None if device is None else device.candiadte_id
 
     @classmethod
+    def get_device_by_one_signal_id_and_domain_id(cls, one_signal_id, domain_id):
+        assert one_signal_id, 'one_signal_id must be a valid string'
+        assert domain_id and isinstance(domain_id, (int, long)),\
+            'domain_id must be a positive number'
+        from user import User, Domain
+        query = cls.query.join(Candidate).join(User).join(Domain)
+        query = query.filter(cls.one_signal_device_id == one_signal_id)
+        query = query.filter(cls.candidate_id == Candidate.id)
+        query = query.filter(Candidate.user_id == User.id)
+        query = query.filter(User.domain_id == domain_id)
+        return query.first()
+
+    @classmethod
     def get_by_candidate_id(cls, candidate_id):
         assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
             'candidate_id must be a positive number'
