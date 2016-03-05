@@ -152,14 +152,13 @@ def validate_id_list(key, values):
         values = values.split(',') if ',' in values else values
         for value in values:
             if not value.strip().isdigit():
-                raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
+                raise InvalidUsage("`%s` must be comma separated ids" % key)
         # if multiple values then return as list else single value.
         return values[0] if values.__len__() == 1 else values
     else:
         if not values.strip().isdigit():
-            raise InvalidUsage("`%s` must be comma separated ids(integers)" % key)
-
-        return [values.strip()]
+            raise InvalidUsage("`%s` must be comma separated ids()" % key)
+        return values.strip()
 
 
 def validate_string_list(key, values):
@@ -167,7 +166,7 @@ def validate_string_list(key, values):
         values = [value.strip() for value in values.split(',') if value.strip()]
         return values[0] if values.__len__() == 1 else values
     else:
-        return [values.strip()]
+        return values.strip()
 
 
 def validate_sort_by(key, value):
@@ -301,8 +300,11 @@ def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
         key = is_backward_compatible(key)
-        if key == -1:
+        if key == -1 or not value or (isinstance(value, basestring) and not value.strip()):
             continue
+        if is_number(value):
+            value = str(value)
+
         if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
             request_vars[key] = value
         if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
@@ -322,8 +324,7 @@ def validate_and_format_data(request_data):
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
-
-    return dict((k, v) for k, v in request_vars.iteritems() if v)
+    return request_vars
 
 
 def is_valid_email_client(client_id):
