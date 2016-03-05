@@ -303,27 +303,27 @@ def validate_and_format_data(request_data):
         key = is_backward_compatible(key)
         if key == -1:
             continue
-        if value.strip():
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
-                request_vars[key] = value
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
-                request_vars[key] = validate_is_digit(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
-                request_vars[key] = validate_is_number(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
-                request_vars[key] = validate_id_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
-                request_vars[key] = validate_sort_by(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = validate_string_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
-                request_vars[key] = validate_fields(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
-                request_vars[key] = convert_date(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
+            request_vars[key] = value
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
+            request_vars[key] = validate_is_digit(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
+            request_vars[key] = validate_is_number(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
+            request_vars[key] = validate_id_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
+            request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
+            request_vars[key] = validate_string_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
+            request_vars[key] = validate_fields(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
+            request_vars[key] = convert_date(key, value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
-    return request_vars
+
+    return dict((k, v) for k, v in request_vars.iteritems() if v)
 
 
 def is_valid_email_client(client_id):
