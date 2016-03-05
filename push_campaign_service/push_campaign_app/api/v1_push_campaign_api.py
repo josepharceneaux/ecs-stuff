@@ -197,7 +197,7 @@ class PushCampaignsResource(Resource):
                     500 (Internal Server Error)
         """
         page, per_page = get_pagination_constraints(request)
-        query = PushCampaignBase.get_all_campaigns(request.user)
+        query = PushCampaignBase.get_all_campaigns(request.user.domain_id)
         return get_paginated_response('campaigns', query, page, per_page)
 
     def post(self):

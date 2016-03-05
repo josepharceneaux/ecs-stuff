@@ -16,12 +16,6 @@ import sys
 # Application specific imports
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.utils.test_utils import HttpStatus
-from push_campaign_service.common.routes import PushCampaignApiUrl
-
-# TODO: IMO we should make this class variable of following class to avoid it globally
-# TODO: same applies to all such vars. IMO the purpose of routes was to avoid these global vars
-
-URL = PushCampaignApiUrl.BLASTS
 
 
 class TestCampaignBlasts(object):
@@ -55,10 +49,35 @@ class TestCampaignBlasts(object):
         :return:
         """
         # 200 case: Campaign Blast successfully
-        response = send_request('get', URL % campaign_in_db['id'], token_first)
-        assert response.status_code == HttpStatus.OK, 'Could not get campaign blasts info'
-        response = get_blasts(campaign_in_db['id'], token_first)
+        campaign_id = campaign_in_db['id']
+        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
         assert response['count'] == len(campaign_blasts)
         assert len(response['blasts']) == len(campaign_blasts)
 
-# TODO: Tests of other domain is missing
+    def test_get_campaign_blasts_from_same_domain(self, token_same_domain, campaign_in_db,
+                                                  campaign_blasts):
+        """
+        Try to get blasts of a valid campaign where user is not owner of campaign but he is from
+        same domain as the owner of campaign so we are expecting 200 status code.
+        :param token_same_domain: auth token
+        :param campaign_in_db: campaign object
+        :param campaign_blasts: campaign blast list
+        :return:
+        """
+        campaign_id = campaign_in_db['id']
+        response = get_blasts(campaign_id, token_same_domain, expected_status=(HttpStatus.OK,))
+        assert response['count'] == len(campaign_blasts)
+        assert len(response['blasts']) == len(campaign_blasts)
+
+    def test_get_campaign_blasts_from_diff_domain(self, token_second, campaign_in_db,
+                                                  campaign_blast):
+        """
+        Try to get blasts of a valid campaign where user is not owner of campaign and also he is from
+        different domain so we are expecting 403 status code.
+        :param token_second: auth token
+        :param campaign_in_db: campaign object
+        :param campaign_blast: campaign blast JSON object
+        :return:
+        """
+        campaign_id = campaign_in_db['id']
+        get_blasts(campaign_id, token_second, expected_status=(HttpStatus.FORBIDDEN,))

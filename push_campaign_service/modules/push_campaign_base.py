@@ -64,16 +64,16 @@ class PushCampaignBase(CampaignBase):
         self.campaign_type = CampaignUtils.PUSH
 
     @staticmethod
-    def get_all_campaigns(user):
+    def get_all_campaigns(domain_id):
         """
         This gets all the campaigns from the domain of current user.
         It actually does not return a list object but it returns a iterable query
         which later can be further filter down or some one can apply pagination.
-        :param user: User object
+        :param domain_id: domain unique id
         :return: all campaigns associated to a user
         :rtype: query object
         """
-        return PushCampaign.query.join(User).filter(User.domain_id == user.domain_id)
+        return PushCampaign.query.join(User).filter(User.domain_id == domain_id)
 
     def get_campaign_type(self):
         """

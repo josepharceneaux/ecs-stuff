@@ -47,7 +47,8 @@ class TestSendCampaign(object):
         invalid_id = sys.maxint
         send_campaign(invalid_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
 
-    def test_send_a_camapign(self, token_first, campaign_in_db, smartlist_first):
+    def test_send_a_camapign_with_valid_data(self, token_first, campaign_in_db,
+                                             smartlist_first, candidate_device_first):
         """
         We will try to send a campaign and we are expecting 200 response
         :param token_first: auth token
@@ -64,8 +65,9 @@ class TestSendCampaign(object):
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
-#TODO: rename this to test_send_campaign_with_other_user_in_same_domain() or more better
-    def test_send_camapign_with_same_domain(self, token_same_domain, campaign_in_db):
+
+    def test_send_campaign_with_other_user_in_same_domain(self, token_same_domain, campaign_in_db,
+                                                          smartlist_first, candidate_device_first):
         """
         User in same domain can send a campaign
         We are expecting 200 status here.
@@ -106,8 +108,20 @@ class TestSendCampaign(object):
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 2
-# TODO: we can have more tests here.
-# TODO:e.g.
-# TODO: test_send_with_candidates_having_no_device_id()
-# TODO: test_send_with_candidates_having_same_device_ids_in_one_domain()
-# TODO: test_send_with_candidates_having_same_device_ids_in_diff_domains()
+
+    def test_campaign_send_to_candidate_with_no_device(self, token_first, campaign_in_db):
+        """
+        In this test, we will send a campaign to a valid candidate (in same domain), but candidate
+        has no device associated with him. So no campaign will be sent which will result in
+        zero blasts or sends.
+        :return:
+        """
+        campaign_id = campaign_in_db['id']
+        send_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK,))
+        time.sleep(SLEEP_TIME)
+        # There should be only one blast for this campaign
+        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
+        blasts = response['blasts']
+        assert len(blasts) == 0
+        assert blasts[0]['sends'] == 0
+

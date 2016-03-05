@@ -2,10 +2,9 @@ from datetime import datetime, timedelta
 from faker import Faker
 
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
-from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, \
-    CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
-from push_campaign_service.common.tests.conftest import randomword
+from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.handy_functions import to_utc_str
+from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
                                                            get_fake_dict, HttpStatus)
 from push_campaign_service.modules.constants import PUSH_DEVICE_ID
@@ -133,8 +132,9 @@ def compare_campaign_data(campaign_first, campaign_second):
     assert campaign_first['url'] == campaign_second['url']
 
 
-def get_campaigns(token, expected_status=(200,)):
-    response = send_request('get', PushCampaignApiUrl.CAMPAIGNS, token)
+def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+    query = '?page=%s&per_page=%s' % (page, per_page)
+    response = send_request('get', PushCampaignApiUrl.CAMPAIGNS + query, token)
     logger.info(response.content)
     assert response.status_code in expected_status
     return response.json()
@@ -184,8 +184,9 @@ def send_campaign(campaign_id, token, expected_status=(200,)):
     return response.json()
 
 
-def get_blasts(campaign_id, token, expected_status=(200,)):
-    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id, token)
+def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+    query = '?page=%s&per_page=%s' % (page, per_page)
+    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
     logger.info(response.content)
     assert response.status_code in expected_status
     return response.json()
@@ -198,57 +199,17 @@ def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
     return response.json()
 
 
-def get_blast_sends(blast_id, campaign_id, token,  expected_status=(200,)):
-    response = send_request('get', PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id),
+def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+    query = '?page=%s&per_page=%s' % (page, per_page)
+    response = send_request('get', PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id) + query,
                             token)
     assert response.status_code in expected_status
     return response.json()
 
 
-def get_campaign_sends(campaign_id, token, expected_status=(200,)):
-    response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id, token)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def create_smartlist(candidate_ids, token, expected_status=(201,)):
-    assert isinstance(candidate_ids, (list, tuple)), 'candidate_ids must be list or tuple'
-    data = {
-        'candidate_ids': candidate_ids,
-        'name': fake.word()
-    }
-    response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token, data=data)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def delete_smartlist(smartlist_id, token, expected_status=(200,)):
-    response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def create_talent_pools(token, count=1, expected_status=(200,)):
-    data = {
-        "talent_pools": []
-    }
-    for index in xrange(count):
-        talent_pool = {
-                "name": randomword(20),
-                "description": fake.paragraph()
-            }
-        data["talent_pools"].append(talent_pool)
-    response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token, data=data)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
-    response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, token)
-    logger.info(response.content)
+def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+    query = '?page=%s&per_page=%s' % (page, per_page)
+    response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id + query, token)
     assert response.status_code in expected_status
     return response.json()
 
@@ -272,60 +233,6 @@ def unschedule_campaign(campaign_id, token, expected_status=(200,)):
     logger.info(response.content)
     assert response.status_code in expected_status
     return response.json()
-
-
-def delete_scheduler_task(task_id, token, expected_status=(200,)):
-    response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
-    response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
-                            token)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def create_candidate(talent_pool_id, token, expected_status=(201,)):
-    data = {
-        "candidates": [
-            {
-                "first_name": fake.first_name(),
-                "middle_name": fake.user_name(),
-                "last_name": fake.last_name(),
-                "talent_pool_ids": {
-                    "add": [talent_pool_id]
-                },
-                "emails": [
-                    {
-                        "label": "Primary",
-                        "address": fake.email(),
-                        "is_default": True
-                    }
-                ]
-            }
-
-        ]
-    }
-    response = send_request('post', CandidateApiUrl.CANDIDATES, token, data=data)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def get_candidate(candidate_id, token, expected_status=(200,)):
-    response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
-    logger.info(response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-def delete_candidate(candidate_id, token, expected_status=(200,)):
-    response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, token)
-    logger.info(response.content)
-    assert response.status_code in expected_status
 
 
 def associate_device_to_candidate(candidate_id, token, expected_status=(201,)):

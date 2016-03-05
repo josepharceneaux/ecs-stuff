@@ -16,35 +16,25 @@ import time
 import pytest
 from faker import Faker
 
+from app_common.common.utils.test_utils import delete_scheduler_task
 from push_campaign_service.common.utils.test_utils import HttpStatus
-# TODO: IMO folloing should be removed
-from push_campaign_service.push_campaign_app import logger
-from push_campaign_service.common.tests.conftest import randomword
-# TODO: IMO folloing should be removed
-from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
-                                                             user_same_domain, user_second)
+                                                             user_same_domain, user_second,
+                                                             candidate_first, candidate_same_domain,
+                                                             candidate_second, smartlist_first,
+                                                             smartlist_same_domain, smartlist_second,
+                                                             talent_pool, talent_pool_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
-                                                        generate_campaign_schedule_data, SLEEP_TIME,
-                                                        get_campaigns,
-                                                        create_campaign, delete_campaign,
-                                                        send_campaign, get_blasts, create_smartlist,
-                                                        delete_smartlist, schedule_campaign,
-                                                        delete_scheduler_task, create_talent_pools,
-                                                        get_talent_pool, delete_talent_pool,
-                                                        create_candidate, get_candidate,
-                                                        delete_candidate,
+                                                        generate_campaign_schedule_data,
+                                                        get_campaigns, create_campaign,
+                                                        delete_campaign, send_campaign,
+                                                        get_blasts, schedule_campaign,
                                                         associate_device_to_candidate,
-                                                        get_candidate_devices)
-
-
-CONFIG_FILE_NAME = "test.cfg"
-# TODO: How we suppose this will work everywhere? I think I gave this feedback earlier as well.
-# TODO: Kindly enlighten.
-LOCAL_CONFIG_PATH = "/home/zohaib/.talent/%s" % CONFIG_FILE_NAME
+                                                        get_candidate_devices, delete_campaigns,
+                                                        SLEEP_TIME)
 
 fake = Faker()
 test_config = load_test_config()
@@ -94,7 +84,7 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
 
 @pytest.fixture()
 def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, campaign_data,
-                                       smartlist_same_doamin):
+                                       smartlist_same_domain, candidate_device_first, candidate_device_same_domain):
     """
     This fixtures creates a campaign which is associated with multiple two smartlist,
     one th
@@ -102,12 +92,12 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     :param token_first: at belongs to same users, and one created by other
     user from same domain
     :param smartlist_first: smartlist dict object owned by user_first
-    :param smartlist_same_doamin: smartlist dict object owned by user_same_domain
+    :param smartlist_same_domain: smartlist dict object owned by user_same_domain
     :param campaign_data: dict data to create campaign
     :return:
     """
     data = campaign_data.copy()
-    data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_doamin['id']]
+    data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_domain['id']]
     id = create_campaign(data, token_first)['id']
     data['id'] = id
 
@@ -119,9 +109,10 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
 
 
 @pytest.fixture()
-def campaign_in_db_second(request, token_second, smartlist_second, campaign_data):
+def campaign_in_db_second(request, token_second, user_second, smartlist_second, campaign_data):
     """
     This fixture creates a push campaign in database for sample_user
+    user_second fixture is required here to add ROLLS for user.
     :param request:
     :param token_second: token for user_second
     :param smartlist_second: test smartlist associated to user_second
@@ -138,6 +129,34 @@ def campaign_in_db_second(request, token_second, smartlist_second, campaign_data
 
     request.addfinalizer(tear_down)
     return data
+
+
+@pytest.fixture()
+def campaigns_for_pagination_test(request, token_first, smartlist_first, campaign_data):
+    """
+    This fixture creates a multiple campaigns to test pagination functionality.
+    :param request: request object
+    :param token_first: authentication token for user_first
+    :param smartlist_first: smartlist dict object
+    :param campaign_data: data to create campaign
+    :return:
+    """
+    campaigns_count = 15
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [smartlist_first['id']]
+    ids = []
+    for _ in xrange(campaigns_count):
+        id_ = create_campaign(data, token_first)['id']
+        ids.append(id_)
+
+    def tear_down():
+        data = {
+            'ids': ids
+        }
+        delete_campaigns(data, token_first, expected_status=(HttpStatus.OK, HttpStatus.MULTI_STATUS))
+
+    request.addfinalizer(tear_down)
+    return campaigns_count
 
 
 @pytest.fixture()
@@ -158,79 +177,6 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
     return blast
 
 
-@pytest.fixture(scope='function')
-def smartlist_first(request, token_first, candidate_first, candidate_device_first):
-    """
-    This fixture associates a smartlist with push campaign object
-    :param request: request object
-    :param candidate_first: candidate object
-    :param token_first: access token for user_first
-    :param candidate_device_first: candidate device object
-    :return: smartlist objects (dict)
-    """
-    candidate_ids = [candidate_first['id']]
-    smartlist = create_smartlist(candidate_ids, token_first)['smartlist']
-    smartlist_id = smartlist['id']
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return smartlist
-
-
-@pytest.fixture(scope='function')
-# TODO: user_second can be removed
-def smartlist_second(request, user_second, candidate_second, candidate_device_second, token_second):
-    """
-    This fixture associates a smartlist with push campaign object
-    :param request: request object
-    :param user_second: user from a different domain
-    :param candidate_second: candidate object
-    :param candidate_device_second: device associated with candidate
-    :param token_second: access token for user_second
-    :return: smartlist object
-    """
-    candidate_ids = [candidate_second['id']]
-    smartlist = create_smartlist(candidate_ids, token_second)['smartlist']
-    smartlist_id = smartlist['id']
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_second,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-    request.addfinalizer(tear_down)
-    return smartlist
-
-
-
-@pytest.fixture(scope='function')
-# TODO: typo in name
-def smartlist_same_doamin(request, user_same_domain, token_same_domain, candidate_same_domain, candidate_device_same_domain, campaign_in_db):
-    """
-    This fixture is similar to "test_smartlist".
-    it just associates another smartlist with given campaign
-    :param request:
-    :param user_same_domain: user from same domain as of user_first, to test
-     same domain functionality
-    :param token_same_domain: auth token for user_same_domain
-    :param candidate_same_domain: candidate from domain as of user_same_domain
-    :param campaign_in_db:
-    :param candidate_device_same_domain: device associated to candidate_same_domain
-    :return: smaertlist object
-    """
-    candidate_ids = [candidate_same_domain['id']]
-    smartlist = create_smartlist(candidate_ids, token_same_domain)['smartlist']
-    smartlist_id = smartlist['id']
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return smartlist
-
-
 @pytest.fixture()
 def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     """
@@ -246,6 +192,23 @@ def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     time.sleep(SLEEP_TIME)
     blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     return blasts
+
+
+@pytest.fixture()
+def campaign_blasts_pagination(campaign_in_db, token_first, candidate_device_first):
+    """
+    This fixture hits Push campaign api to send campaign which in turn creates blast.
+    But this time we will create 15 blasts to test pagination results
+    At the end just return blasts count.
+    :param candidate_device_first: device associated to first candidate
+    :param campaign_in_db: push campaign object
+    :param token_first: auth token
+    """
+    blasts_counts = 15
+    for num in range(blasts_counts):
+        send_campaign(campaign_in_db['id'], token_first)
+    time.sleep(2 * SLEEP_TIME)
+    return blasts_counts
 
 
 @pytest.fixture()
@@ -310,106 +273,6 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
 
     request.addfinalizer(tear_down)
     return url_conversion_obj
-
-
-@pytest.fixture(scope='function')
-def talent_pool(request, token_first):
-    """
-    This fixture created a talent pool that is associated to user_first
-    :param request: request object
-    :param token_first: authentication token for user_first
-    """
-    talent_pools = create_talent_pools(token_first)
-    talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return talent_pool_obj
-
-
-@pytest.fixture(scope='function')
-def talent_pool_second(request, token_second):
-    """
-    This fixture created a talent pool that is associated to user_second of domain_second
-    :param token_second: authentication token for user_second
-    """
-    talent_pools = create_talent_pools(token_second)
-    talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return talent_pool_obj
-
-
-@pytest.fixture(scope='function')
-# TODO: This is awesome. can we move this (and similar coftests)to common conftest?
-def candidate_first(request, talent_pool, token_first):
-    """
-    This fixture created a test candidate in domain first and it will be deleted
-    after test has run.
-    :param request: request object
-    :param talent_pool: talent pool dict object associated to user_first
-    """
-    response = create_candidate(talent_pool['id'], token_first)
-    candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_first)['candidate']
-
-    def tear_down():
-        delete_candidate(candidate_id, token_first,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return candidate
-
-
-@pytest.fixture(scope='function')
-def candidate_same_domain(request, talent_pool, token_same_domain):
-    """
-    This fixture created a candidate in domain first  and it will be deleted
-    after test has run.
-    :param request: request object
-    :param talent_pool: talent pool dict object
-    :param token_same_domain: authentication token
-    """
-    response = create_candidate(talent_pool['id'], token_same_domain)
-    candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_same_domain)['candidate']
-
-    def tear_down():
-        delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return candidate
-
-
-@pytest.fixture(scope='function')
-def candidate_second(request, token_second, talent_pool_second):
-    """
-    This fixture created a test candidate using for domain second and it will be deleted
-    after test has run.
-    :param request: request object
-    :param token_second: authentication token for user_second
-    :param talent_pool_second: talent pool dict object from domain second
-    """
-    response = create_candidate(talent_pool_second['id'], token_second)
-    candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_second)['candidate']
-
-    def tear_down():
-        delete_candidate(candidate_id, token_second,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return candidate
 
 
 @pytest.fixture(scope='function')

@@ -39,6 +39,7 @@ from push_campaign_service.tests.test_utilities import (invalid_data_test,
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
 URL = PushCampaignApiUrl.CAMPAIGNS
@@ -112,23 +113,26 @@ class TestGetListOfCampaigns(object):
         get_campaigns('invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
 
     # URL: /v1/push-campaigns [GET]
-    def test_get_list_of_one_campaign(self, token_first, campaign_in_db):
+    def test_get_campaigns_pagination(self, token_first, campaigns_for_pagination_test):
         """
-        This method tests get list of push campaign created by this user.
-        This time we will get one campaign in list that is created by `campaign_in_db` fixture
+        In this test, we will test that pagination is working as expected for campaigns endpoint.
         :param token_first: auth token
-        :param campaign_in_db: push campaign dict object
+        :param campaigns_for_pagination_test: campaigns count
         :return:
         """
-        previous_count = campaign_in_db['previous_count']
-        response = get_campaigns(token_first)
+        total_count = campaigns_for_pagination_test
+        per_page = total_count - 5
+        response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
+        assert response['count'] == per_page
+        assert len(response['campaigns']) == per_page
 
-        assert response['count'] == (1 + previous_count)
-        assert len(response['campaigns']) == (1 + previous_count)
-        campaign = response['campaigns'][previous_count]
+        per_page = total_count
+        response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
+        assert response['count'] == per_page
+        assert len(response['campaigns']) == per_page
 
-        assert campaign['name'] == campaign_in_db['name']
-        assert campaign['body_text'] == campaign_in_db['body_text']
+        per_page = MAX_PAGE_SIZE + 1
+        get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.INVALID_USAGE,))
 
 
 class TestDeleteMultipleCampaigns(object):

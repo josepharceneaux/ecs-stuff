@@ -18,7 +18,7 @@ Hit endpoint:
     - but url conversion object has been deleted from database
 """
 from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.common.utils.test_utils import HttpStatus, delete_candidate
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import get_blasts
 
