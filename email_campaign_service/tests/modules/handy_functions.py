@@ -121,9 +121,9 @@ def send_campaign(campaign, access_token, sleep_time=20):
 
 def assert_valid_campaign_get(campaign, referenced_campaign):
     """
-    This assert that the campaign we get from GET call, has valid values as we have for
+    This assert that the campaign we get from GET call has valid values as we have for
     referenced email-campaign.
-    :param campaign: EmailCampaign object as got by GET call
+    :param campaign: EmailCampaign object as received by GET call
     :param referenced_campaign: EmailCampaign object by which we compare the campaign
             we GET in response
     """
@@ -155,7 +155,7 @@ def get_campaign_or_campaigns(access_token, campaign_id=None):
 def assert_talent_pipeline_response(talent_pipeline, access_token):
     """
     This makes HTTP GET call on candidate_pool_service to get response for given
-    talent_pipeline and then asserts that we get OK response.
+    talent_pipeline and then asserts if we get an OK response.
     """
     response = requests.get(
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
