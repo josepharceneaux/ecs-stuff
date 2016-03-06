@@ -12,4 +12,4 @@ from scheduler_service import celery_app as celery
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 
-celery.start(argv=['celery', 'worker', '-l', 'info', '-Q', SchedulerUtils.QUEUE])
+celery.start(argv=['celery', 'worker', '-Ofair', '--without-gossip', '-l', 'info', '-Q', SchedulerUtils.QUEUE])

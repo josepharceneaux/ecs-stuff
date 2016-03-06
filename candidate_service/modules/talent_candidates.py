@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -463,10 +463,10 @@ def candidate_contact_history(candidate):
 
     # Campaign sends & campaigns
     for email_campaign_send in candidate.email_campaign_sends:
-        if not email_campaign_send.email_campaign_id:
-            logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
+        if not email_campaign_send.campaign_id:
+            logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
         timeline.insert(0, dict(event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
@@ -541,7 +541,35 @@ def fetch_candidate_views(candidate_id):
              } for view in candidate_views]
 
 
-def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
+def fetch_aggregated_candidate_views(domain_id, candidate_id):
+    """
+    Function will return a list of view objects displaying all the domain users
+     that viewed the candidate, last datetime of view, and the number of times each
+     user viewed the same candidate
+    :type domain_id:  int|long
+    :type candidate_id:  int|long
+    :rtype:  list[dict[str]]
+    """
+    team_members = User.all_users_of_domain(domain_id)
+    """
+    :type team_members:  list[User]
+    """
+    return_obj = []
+    for user in team_members:
+        views = CandidateView.get_by_user_and_candidate(user_id=user.id, candidate_id=candidate_id)
+        if views:
+            return_obj.append(
+                {
+                    'user_id': user.id,
+                    'last_view_datetime': str(views[-1].view_datetime),
+                    'view_count': len(views)
+                }
+            )
+
+    return return_obj
+
+
+def add_candidate_view(user_id, candidate_id):
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
@@ -551,8 +579,8 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.add(CandidateView(
         user_id=user_id,
         candidate_id=candidate_id,
-        view_type=view_type,
-        view_datetime=view_datetime
+        view_type=3,
+        view_datetime=datetime.datetime.utcnow()
     ))
     db.session.commit()
 
@@ -654,6 +682,25 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     photo_query.update(photo_update_dict)
     db.session.commit()
 
+
+######################################
+# Helper Functions For Candidate Notes
+######################################
+def add_notes(candidate_id, data):
+    """
+    Function will insert candidate notes into the db
+    :type candidate_id:  int|long
+    :type data:  list[dict]
+    """
+    # Format inputs
+    for note in data:
+        notes_dict = dict(
+            candidate_id=candidate_id,
+            comment=note.get('comment'),
+            added_time=datetime.datetime.utcnow()
+        )
+        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
+        db.session.add(CandidateTextComment(**notes_dict))
 
 ######################################################
 # Helper Functions For Creating and Updating Candidate
@@ -2261,15 +2308,13 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
 def get_search_params_of_smartlists(smartlist_ids):
     """
     This method will return list of search_params of smartlists
-    :param smartlist_ids: IDs of smartlist_ids
+    :param smartlist_ids: IDs of smartlists
     :return:
     """
-    try:
-        smartlist_ids = map(int, smartlist_ids.split(','))
-    except Exception as e:
-        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+    if not isinstance(smartlist_ids, list):
+        smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 

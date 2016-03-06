@@ -1,5 +1,6 @@
 # Third Party imports
 from celery import Celery
+from kombu import Queue
 
 # Service specific imports
 from flask.ext.cors import CORS
@@ -37,7 +38,14 @@ logger.info("Starting scheduler service in %s environment",
             flask_app.config[TalentConfigKeys.ENV_KEY])
 
 # Celery settings
-default_queue = {'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE}
+
+celery_queue = {
+    'CELERY_QUEUES': (
+        Queue(SchedulerUtils.QUEUE, routing_key=SchedulerUtils.QUEUE + '_key'),
+    ),
+    'CELERY_DEFAULT_QUEUE': SchedulerUtils.QUEUE,
+    'CELERY_DEFAULT_ROUTING_KEY': SchedulerUtils.QUEUE + '_key'
+}
 resultant_db_tables = {
     'CELERY_RESULT_DB_TABLENAMES': {
         'task': 'scheduler_taskmeta',
@@ -47,10 +55,12 @@ resultant_db_tables = {
 accept_content = {
     'CELERY_ACCEPT_CONTENT': ['json', 'msgpack', 'yaml']
 }
+
 celery_app = Celery(flask_app, broker=flask_app.config[TalentConfigKeys.REDIS_URL_KEY],
                     backend=flask_app.config[TalentConfigKeys.CELERY_RESULT_BACKEND_URL],
                     include=['scheduler_service.tasks'])
-celery_app.conf.update(default_queue)
+
+celery_app.conf.update(celery_queue)
 celery_app.conf.update(resultant_db_tables)
 celery_app.conf.update(accept_content)
 
