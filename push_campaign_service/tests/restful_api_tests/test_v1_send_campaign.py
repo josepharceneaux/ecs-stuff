@@ -122,6 +122,6 @@ class TestSendCampaign(object):
         # There should be only one blast for this campaign
         response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
         blasts = response['blasts']
-        assert len(blasts) == 0
+        assert len(blasts) == 1
         assert blasts[0]['sends'] == 0
 

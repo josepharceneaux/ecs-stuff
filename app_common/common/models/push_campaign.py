@@ -36,7 +36,7 @@ class PushCampaign(db.Model):
     __tablename__ = 'push_campaign'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50))
-    body_text = db.Column(db.String(500))
+    body_text = db.Column(db.String(1000))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
     added_datetime = db.column(db.DateTime)

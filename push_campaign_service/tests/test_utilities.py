@@ -7,7 +7,6 @@ from push_campaign_service.common.utils.handy_functions import to_utc_str
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
                                                            get_fake_dict, HttpStatus)
-from push_campaign_service.modules.constants import PUSH_DEVICE_ID
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
@@ -235,9 +234,9 @@ def unschedule_campaign(campaign_id, token, expected_status=(200,)):
     return response.json()
 
 
-def associate_device_to_candidate(candidate_id, token, expected_status=(201,)):
+def associate_device_to_candidate(candidate_id, device_id, token, expected_status=(201,)):
     data = {
-        'one_signal_device_id': PUSH_DEVICE_ID
+        'one_signal_device_id': device_id
     }
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
     logger.info(response.content)

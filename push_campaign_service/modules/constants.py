@@ -16,4 +16,3 @@ GET_TALENT_ICON_URL = "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/
 
 ONE_SIGNAL_APP_ID = app.config[TalentConfigKeys.ONE_SIGNAL_APP_ID]
 ONE_SIGNAL_REST_API_KEY = app.config[TalentConfigKeys.ONE_SIGNAL_REST_API_KEY]
-PUSH_DEVICE_ID = app.config[TalentConfigKeys.PUSH_DEVICE_ID]

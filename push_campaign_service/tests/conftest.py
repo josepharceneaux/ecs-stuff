@@ -284,7 +284,8 @@ def candidate_device_first(token_first, candidate_first):
     :param candidate_first: candidate dict object
     """
     candidate_id = candidate_first['id']
-    associate_device_to_candidate(candidate_id, token_first)
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
+    associate_device_to_candidate(candidate_id, device_id, token_first)
     devices = get_candidate_devices(candidate_id, token_first)['devices']
     assert len(devices) == 1
     return devices[0]
@@ -299,7 +300,8 @@ def candidate_device_same_domain(token_same_domain, candidate_same_domain):
     :param candidate_same_domain: candidate dict object
     """
     candidate_id = candidate_same_domain['id']
-    associate_device_to_candidate(candidate_id, token_same_domain)
+    device_id = test_config['PUSH_CONFIG']['device_id_2']
+    associate_device_to_candidate(candidate_id, device_id, token_same_domain)
     devices = get_candidate_devices(candidate_id, token_same_domain)['devices']
     assert len(devices) == 1
     return devices[0]
@@ -314,7 +316,8 @@ def candidate_device_second(token_second, candidate_second):
     :param candidate_second: candidate dict object
     """
     candidate_id = candidate_second['id']
-    associate_device_to_candidate(candidate_id, token_second)
+    device_id = test_config['PUSH_CONFIG']['device_id_2']
+    associate_device_to_candidate(candidate_id, device_id, token_second)
     devices = get_candidate_devices(candidate_id, token_second)['devices']
     assert len(devices) == 1
     return devices[0]

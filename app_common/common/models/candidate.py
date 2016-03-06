@@ -1035,7 +1035,7 @@ class CandidateDevice(db.Model):
         query = cls.query.join(Candidate).join(User).join(Domain)
         query = query.filter(cls.one_signal_device_id == one_signal_id)
         query = query.filter(cls.candidate_id == Candidate.id)
-        query = query.filter(Candidate.user_id == User.id)
+        query = query.filter(Candidate.user_id == User.id, Candidate.is_web_hidden == 0)
         query = query.filter(User.domain_id == domain_id)
         return query.first()
 

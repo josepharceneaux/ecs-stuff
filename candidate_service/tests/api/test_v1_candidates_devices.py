@@ -15,11 +15,13 @@ import sys
 # this import is not used per se but without it, the test throws an app context error
 # Candidate Service app instance
 from candidate_service.candidate_app import app, logger
-
+from candidate_service.common.test_config_manager import load_test_config
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.modules.contsants import PUSH_DEVICE_ID
 from candidate_service.tests.api.helpers import define_and_send_request, AddUserRoles
+
+test_config = load_test_config()
+PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']
 
 
 def test_associate_device_with_invalid_token(candidate_first):
