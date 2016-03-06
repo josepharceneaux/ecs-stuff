@@ -9,16 +9,16 @@ __author__ = 'jitesh'
 
 def validate_datetime(datetime_text, field_name=None):
     """
-    Validates given datetime string for desired format YYYY-MM-DD hh:mm:ss
+    Validates given datetime string in ISO format
     :param datetime_text: date time
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = datetime.datetime.strptime(datetime_text, '%Y-%m-%d %H:%M:%S')
+        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
     except ValueError:
-        raise InvalidUsage("%s should be in valid format `YYYY-MM-DD hh:mm:ss`" % field_name if field_name else 'Datetime')
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
-        raise InvalidUsage("The %s cannot be before today." % field_name)
+        raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
 
 
@@ -30,26 +30,26 @@ def validate_and_format_request_data(data, user_id):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    campaign_name = data.get('email_campaign_name')  # required
-    email_subject = data.get('email_subject')        # required
-    email_from = data.get('email_from')
-    reply_to = data.get('email_reply_to')
-    email_body_html = data.get('email_body_html')    # required
-    email_body_text = data.get('email_body_text')
+    name = data.get('name')  # required
+    subject = data.get('subject')        # required
+    _from = data.get('from')
+    reply_to = data.get('reply_to')
+    body_html = data.get('body_html')    # required
+    body_text = data.get('body_text')
     list_ids = data.get('list_ids')                  # required
     email_client_id = data.get('email_client_id')
-    send_datetime = data.get('send_datetime')
-    stop_datetime = data.get('stop_datetime')
+    start_datetime = data.get('start_datetime')
+    end_datetime = data.get('end_datetime')
     frequency_id = data.get('frequency_id')
     template_id = data.get('template_id')
 
     # Raise errors if invalid input
-    if campaign_name is None or campaign_name.strip() == '':
-        raise InvalidUsage('email_campaign_name is required')  # 400 Bad request
-    if email_subject is None or email_subject.strip() == '':
-        raise InvalidUsage('email_subject is required')
-    if email_body_html is None or email_body_html.strip() == '':
-        raise InvalidUsage('email_body_html is required')
+    if name is None or name.strip() == '':
+        raise InvalidUsage('name is required')  # 400 Bad request
+    if subject is None or subject.strip() == '':
+        raise InvalidUsage('subject is required')
+    if body_html is None or body_html.strip() == '':
+        raise InvalidUsage('body_html is required')
     if not list_ids:
         raise InvalidUsage('`list_ids` are required to send email campaign')
     if not isinstance(list_ids, list):
@@ -59,12 +59,12 @@ def validate_and_format_request_data(data, user_id):
 
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
-    if frequency and not send_datetime:
+    if frequency and not start_datetime:
         raise UnprocessableEntity("Frequency requires send time.")
 
-    if send_datetime and stop_datetime:
-        job_send_datetime = validate_datetime(send_datetime, '`send_datetime`')
-        job_stop_datetime = validate_datetime(stop_datetime, '`stop_datetime`')
+    if start_datetime and end_datetime:
+        job_send_datetime = validate_datetime(start_datetime, '`send_datetime`')
+        job_stop_datetime = validate_datetime(end_datetime, '`stop_datetime`')
         if job_send_datetime > job_stop_datetime:
             raise UnprocessableEntity("`stop_datetime` cannot be before `send_datetime`")
 
@@ -82,16 +82,16 @@ def validate_and_format_request_data(data, user_id):
 
     # strip whitespaces and return data
     return {
-        'campaign_name': campaign_name.strip(),
-        'email_subject': email_subject.strip(),
-        'email_from': get_or_set_valid_value(email_from, basestring, '').strip(),
+        'name': name.strip(),
+        'subject': subject.strip(),
+        'from': get_or_set_valid_value(_from, basestring, '').strip(),
         'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
-        'email_body_html': email_body_html.strip(),
-        'email_body_text': get_or_set_valid_value(email_body_text, basestring, '').strip(),
+        'body_html': body_html.strip(),
+        'body_text': get_or_set_valid_value(body_text, basestring, '').strip(),
         'list_ids': list_ids,
         'email_client_id': email_client_id,
-        'send_datetime': send_datetime,
-        'stop_datetime': stop_datetime,
+        'start_datetime': start_datetime,
+        'end_datetime': end_datetime,
         'frequency_id': frequency_id,
         'template_id': template_id
     }

@@ -389,8 +389,6 @@ class CandidateResource(Resource):
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
-        # Add to CandidateView
-        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
@@ -1215,14 +1213,14 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        email_subject = body_dict.get('email_subject', 'No Subject')
-        email_from = body_dict.get('email_from')
-        email_reply_to = body_dict.get('email_reply_to')
-        email_body_html = body_dict.get('email_body_html')
-        email_body_text = body_dict.get('email_body_text')
+        subject = body_dict.get('subject', 'No Subject')
+        _from = body_dict.get('email_from')
+        reply_to = body_dict.get('email_reply_to')
+        body_html = body_dict.get('email_body_html')
+        body_text = body_dict.get('email_body_text')
         email_client_id = body_dict.get('email_client_id')
 
-        if not email_from or not email_reply_to or not email_client_id or not candidates_list:
+        if not _from or not reply_to or not email_client_id or not candidates_list:
             raise InvalidUsage(error_message="Fields are missing.")
 
         if not isinstance(candidates_list, list):
@@ -1236,7 +1234,7 @@ class CandidateClientEmailCampaignResource(Resource):
         if not email_client_name:
             raise InvalidUsage(error_message="Email client is not supported.")
 
-        campaign_name = 'Campaign %s %s' % (email_subject, email_client_name[0])
+        campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
 
         smartlist_object = {
@@ -1253,12 +1251,12 @@ class CandidateClientEmailCampaignResource(Resource):
 
         # create campaign
         email_campaign_object = {
-            "email_campaign_name": campaign_name,
-            "email_subject": email_subject,
-            "email_from": email_from,
-            "email_reply_to": email_reply_to,
-            "email_body_html": email_body_html,
-            "email_body_text": email_body_text,
+            "name": campaign_name,
+            "subject": subject,
+            "from": _from,
+            "reply_to": reply_to,
+            "body_html": body_html,
+            "body_text": body_text,
             "email_client_id": email_client_id,
             "list_ids": [int(created_smartlist_id)]
         }
@@ -1275,16 +1273,34 @@ class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:candidate_id/views
+        Function will increment candidate's view counts
+        """
+        authed_user, candidate_id = request.user, kwargs['id']
+
+        # Check for candidate's existence & web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
-        Endpoint:  GET /v1/candidates/:id/views
+        Endpoint:  GET /v1/candidates/:candidate_id/views
         Function will retrieve all view information pertaining to the requested Candidate
         """
         # Authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):

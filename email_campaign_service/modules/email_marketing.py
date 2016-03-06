@@ -65,12 +65,12 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     db.session.commit()
 
 
-def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subject,
-                          email_from, email_reply_to, email_body_html,
-                          email_body_text, list_ids, email_client_id=None,
+def create_email_campaign(user_id, oauth_token, name, subject,
+                          _from, reply_to, body_html,
+                          body_text, list_ids, email_client_id=None,
                           frequency_id=None,
-                          send_datetime=None,
-                          stop_datetime=None,
+                          start_datetime=None,
+                          end_datetime=None,
                           template_id=None):
     """
     Creates a new email campaign.
@@ -79,16 +79,16 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     :return: newly created email_campaign's id
     """
     frequency = Frequency.get_seconds_from_id(frequency_id)
-    email_campaign = EmailCampaign(name=email_campaign_name,
+    email_campaign = EmailCampaign(name=name,
                                    user_id=user_id,
                                    is_hidden=0,
-                                   email_subject=email_subject,
-                                   email_from=get_or_set_valid_value(email_from, basestring, '').strip(),
-                                   email_reply_to=get_or_set_valid_value(email_reply_to, basestring, '').strip(),
-                                   email_body_html=email_body_html,
-                                   email_body_text=email_body_text,
-                                   send_datetime=send_datetime,
-                                   stop_datetime=stop_datetime,
+                                   subject=subject,
+                                   _from=get_or_set_valid_value(_from, basestring, '').strip(),
+                                   reply_to=get_or_set_valid_value(reply_to, basestring, '').strip(),
+                                   body_html=body_html,
+                                   body_text=body_text,
+                                   start_datetime=start_datetime,
+                                   end_datetime=end_datetime,
                                    frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id
                                    )
@@ -102,7 +102,7 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
                                      ActivityMessageIds.CAMPAIGN_CREATE,
                                      email_campaign,
                                      dict(id=email_campaign.id,
-                                          name=email_campaign_name))
+                                          name=name))
     except Exception:
         logger.exception('Error occurred while creating activity for'
                          'email-campaign creation. User(id:%s)' % user_id)
@@ -128,11 +128,11 @@ def create_email_campaign(user_id, oauth_token, email_campaign_name, email_subje
     if frequency:  # It means its a periodic job, because frequency is 0 in case of one time job.
         schedule_task_params["frequency"] = frequency
         schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
-        schedule_task_params["start_datetime"] = send_datetime
-        schedule_task_params["end_datetime"] = stop_datetime
+        schedule_task_params["start_datetime"] = start_datetime
+        schedule_task_params["end_datetime"] = end_datetime
     else:  # It means its a one time Job
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["run_datetime"] = send_datetime if send_datetime else \
+        schedule_task_params["run_datetime"] = start_datetime if start_datetime else \
             (datetime.datetime.utcnow()
              + datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
     schedule_task_params['is_jwt_request'] = True
@@ -375,7 +375,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     # If only getting candidates that haven't been emailed before...
     if new_candidates_only:
         already_emailed_candidates = EmailCampaignSend.query.with_entities(
-            EmailCampaignSend.candidate_id).filter_by(email_campaign_id=campaign.id).all()
+            EmailCampaignSend.candidate_id).filter_by(campaign_id=campaign.id).all()
         emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
 
         # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
@@ -448,17 +448,17 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         else:
             to_addresses = ['gettalentmailtest@gmail.com']
     try:
-        email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign.email_from,
+        email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
                                     # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
                                     subject=subject,
                                     html_body=new_html or None,
                                     # Can't be '', otherwise, text_body will not show in email
                                     text_body=new_text,
                                     to_addresses=to_addresses,
-                                    reply_address=campaign.email_reply_to.strip(),
+                                    reply_address=campaign.reply_to.strip(),
                                     # BOTO doesn't seem to work with an array as to_addresses
                                     body=None,
-                                    email_format='html' if campaign.email_body_html else 'text')
+                                    email_format='html' if campaign.body_html else 'text')
     except Exception as e:
         # Mark email as bounced
         _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
@@ -547,15 +547,13 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
-        email_campaign_blast = EmailCampaignBlast.query.filter(
-            EmailCampaignBlast.campaign_id == campaign.id).order_by(
-            desc(EmailCampaignBlast.sent_datetime)).first()
         if not email_campaign_blast:
-            logger.error("""send_campaign_emails_to_candidate: Must have a previous email_campaign_blast
-             that belongs to this campaign if you don't pass in the email_campaign_blast_id param""")
-            raise InternalServerError('No email campaign blast found for campaign(id:%s) , user (id%s).'
-                           % (campaign.id, campaign.user_id),
-                           error_code = CampaignException.NO_CAMPAIGN_BLAST_FOUND)
+            logger.error("""send_campaign_emails_to_candidate:
+            Must have a previous email_campaign_blast that belongs to this campaign
+            if you don't pass in the email_campaign_blast_id param""")
+            raise InternalServerError('No email campaign blast found for campaign(id:%s). '
+                                      'User(id:%s).' % (campaign.id, campaign.user_id),
+                                      error_code=CampaignException.NO_CAMPAIGN_BLAST_FOUND)
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sent_datetime
     if not blast_datetime:
@@ -563,7 +561,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
-    email_campaign_send = EmailCampaignSend(email_campaign_id=campaign.id,
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate.id,
                                             sent_datetime=blast_datetime)
     EmailCampaignSend.save(email_campaign_send)
@@ -579,24 +577,26 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     #                 return 0
     #             for campaign_field_name, campaign_field_value in campaign_fields.items():
     #                 campaign[campaign_field_name] = campaign_field_value
-    new_html, new_text = campaign.email_body_html or "", campaign.email_body_text or ""
+    new_html, new_text = campaign.body_html or "", campaign.body_text or ""
     logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s'
                 % candidate.id)
 
     # Perform MERGETAG replacements
     [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text,
-                                                              campaign.email_subject], candidate)
+                                                              campaign.subject], candidate)
     # Perform URL conversions and add in the custom HTML
     logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s'
                 % email_campaign_send.id)
-    new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,
-                                                               new_text=new_text,
-                                                               is_track_text_clicks=campaign.is_track_text_clicks,
-                                                               is_track_html_clicks=campaign.is_track_html_clicks,
-                                                               custom_url_params_json=campaign.custom_url_params_json,
-                                                               is_email_open_tracking=campaign.is_email_open_tracking,
-                                                               custom_html=campaign.custom_html,
-                                                               email_campaign_send_id=email_campaign_send.id)
+    new_text, new_html = \
+        create_email_campaign_url_conversions(
+            new_html=new_html,
+            new_text=new_text,
+            is_track_text_clicks=campaign.is_track_text_clicks,
+            is_track_html_clicks=campaign.is_track_html_clicks,
+            custom_url_params_json=campaign.custom_url_params_json,
+            is_email_open_tracking=campaign.is_email_open_tracking,
+            custom_html=campaign.custom_html,
+            email_campaign_send_id=email_campaign_send.id)
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
@@ -652,7 +652,7 @@ def update_hit_count(url_conversion):
             except Exception as error:
                 logger.error('Error occurred while creating activity for '
                              'email-campaign(id:%s) open/click. '
-                             'Error is %s' % (email_campaign_send.email_campaign_id,
+                             'Error is %s' % (email_campaign_send.campaign_id,
                                               error.message))
             logger.info("Activity has been added for URL redirect for candidate(id:%s). "
                         "email_campaign_send(id:%s)",
@@ -662,7 +662,7 @@ def update_hit_count(url_conversion):
         if new_hit_count == 1:
             email_campaign_blast = EmailCampaignBlast.query.filter_by(
                 sent_datetime=email_campaign_send.sent_datetime,
-                campaign_id=email_campaign_send.email_campaign_id).first()
+                campaign_id=email_campaign_send.campaign_id).first()
             if email_campaign_blast:
                 if is_open:
                     email_campaign_blast.opens += 1
@@ -673,8 +673,7 @@ def update_hit_count(url_conversion):
                 logger.error("Email campaign URL redirect: No email_campaign_blast found matching "
                              "email_campaign_send.sent_datetime %s, campaign_id=%s"
                              % (email_campaign_send.sent_datetime,
-                                email_campaign_send.email_campaign_id)
-                             )
+                                email_campaign_send.campaign_id))
     except Exception:
         logger.exception("Received exception doing url_redirect (url_conversion_id=%s)",
                          url_conversion.id)

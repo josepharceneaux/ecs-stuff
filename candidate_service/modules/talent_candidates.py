@@ -463,10 +463,10 @@ def candidate_contact_history(candidate):
 
     # Campaign sends & campaigns
     for email_campaign_send in candidate.email_campaign_sends:
-        if not email_campaign_send.email_campaign_id:
-            logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
+        if not email_campaign_send.campaign_id:
+            logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
         timeline.insert(0, dict(event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
@@ -2308,15 +2308,13 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
 def get_search_params_of_smartlists(smartlist_ids):
     """
     This method will return list of search_params of smartlists
-    :param smartlist_ids: IDs of smartlist_ids
+    :param smartlist_ids: IDs of smartlists
     :return:
     """
-    try:
-        smartlist_ids = map(int, smartlist_ids.split(','))
-    except Exception as e:
-        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+    if not isinstance(smartlist_ids, list):
+        smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 

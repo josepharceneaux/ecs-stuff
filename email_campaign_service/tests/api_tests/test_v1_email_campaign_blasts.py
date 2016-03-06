@@ -13,7 +13,7 @@ import requests
 # Common Utils
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.models.email_campaign import EmailClient, EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -35,7 +35,7 @@ class TestEmailCampaignBlasts(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
                                                          % campaign_with_valid_candidate.id, None)
 
-    def test_get_with_no_blasts_saved(self, access_token_first, campaign_with_valid_candidate):
+    def test_get_with_no_campaign_sent(self, access_token_first, campaign_with_valid_candidate):
         """
         Here we assume that there is no blast saved for given campaign. We should get OK
         response and count should be 0.
@@ -44,20 +44,19 @@ class TestEmailCampaignBlasts(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
-    def test_get_by_sending_campaign(self, access_token_first, sent_campaign_with_client_id):
+    def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
         """
-        Here we first send the campaign to 2 candidates (using email_client_id so that campaign
-        is not actually sent). We then assert that blast has been created by making HTTP
+        Here we first send the campaign to 2 candidates (with and without email-client-id).
+        We then assert that blast has been created by making HTTP
         GET call on endpoint /v1/email-campaigns/:id/blasts
         """
-        # send campaign
-        response = requests.get(self.URL % sent_campaign_with_client_id.id,
+        response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         db.session.commit()
-        assert json_resp['id'] == sent_campaign_with_client_id.blasts[0].id
-        assert json_resp['campaign_id'] == sent_campaign_with_client_id.id
+        assert json_resp['id'] == sent_campaign.blasts[0].id
+        assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == 2
 
     def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
