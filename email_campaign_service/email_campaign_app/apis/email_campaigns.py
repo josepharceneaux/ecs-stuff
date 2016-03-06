@@ -88,14 +88,14 @@ class EmailCampaignApi(Resource):
 
     def get(self, **kwargs):
         """
-        GET /email-campaigns/<id>    Fetch email campaign object
-        GET /email-campaigns         Fetches all email campaign objects from auth user's domain
+        GET /v1/email-campaigns/<id>    Fetch email campaign object
+        GET /v1/email-campaigns         Fetches all email campaign objects from auth user's domain
 
         """
         user = request.user
         email_campaign_id = kwargs.get('id')
         if email_campaign_id:
-            email_campaign = EmailCampaign.query.get(email_campaign_id)
+            email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not email_campaign:
@@ -103,17 +103,16 @@ class EmailCampaignApi(Resource):
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-            email_campaign_object = email_campaign.to_dict()
-            return {"email_campaign": email_campaign_object}
+            return {"email_campaign": email_campaign.to_dict()}
         else:
             # Get all email campaigns from logged in user's domain
-            email_campaigns = EmailCampaign.query.filter(EmailCampaign.user_id == user.id)
+            email_campaigns = EmailCampaign.get_by_domain_id(user.domain_id)
             return {"email_campaigns": [email_campaign.to_dict()
                                         for email_campaign in email_campaigns]}
 
     def post(self):
         """
-            POST /email-campaigns
+            POST /v1/email-campaigns
             Required parameters:
             name: Name of email campaign
             subject: subject of email

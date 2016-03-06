@@ -1,9 +1,8 @@
 import datetime
 
+from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
-
-from db import db
 from ..error_handling import (ResourceNotFound, ForbiddenError)
 
 __author__ = 'jitesh'
@@ -64,6 +63,12 @@ class EmailCampaign(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    def get_by_domain_id(cls, domain_id):
+        assert domain_id, 'domain_id not given'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id)
 
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
