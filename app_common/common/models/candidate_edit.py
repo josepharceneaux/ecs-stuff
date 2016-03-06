@@ -22,7 +22,7 @@ class CandidateEdit(db.Model):
         return "<CandidateEdit (id = %r)" % self.id
 
     field_dict = {
-        'candidate': {  #TODO: add filename
+        'candidate': {
             'first_name': 1,
             'middle_name': 2,
             'last_name': 3,
@@ -30,119 +30,120 @@ class CandidateEdit(db.Model):
             'objective': 5,
             'summary': 6,
             'total_months_experience': 7,
-            'culture_id': 8
+            'culture_id': 8,
+            'filename': 9,
         },
         'candidate_address': {
-            'address_line_1': 9,
-            'address_line_2': 10,
-            'city': 11,
-            'state': 12,
-            'country_id': 13,
-            'zip_code': 14,
-            'po_box': 15,
-            'is_default': 16
+            'address_line_1': 101,
+            'address_line_2': 102,
+            'city': 103,
+            'state': 104,
+            'country_id': 105,
+            'zip_code': 106,
+            'po_box': 107,
+            'is_default': 108
         },
         'candidate_area_of_interest': {
-            'area_of_interest_id': 17,
-            'additional_notes': 18
+            'area_of_interest_id': 201,
+            'additional_notes': 202
         },
         'candidate_custom_field': {
-            'value': 19,
-            'custom_field_id': 20
+            'value': 301,
+            'custom_field_id': 302
         },
         'candidate_education': {
-            'school_name': 21,
-            'school_type': 22,
-            'city': 23,
-            'state': 24,
-            'country_id': 25,
-            'is_current': 26
+            'school_name': 401,
+            'school_type': 402,
+            'city': 403,
+            'state': 404,
+            'country_id': 405,
+            'is_current': 406
         },
         'candidate_education_degree': {
-            'degree_type': 27,
-            'degree_title': 28,
-            'start_year': 29,
-            'start_month': 30,
-            'end_year': 31,
-            'end_month': 32,
-            'gpa_num': 33,
-            'gpa_denom': 34,
-            'classification_type_id': 35,
-            'start_time': 36,
-            'end_time': 37
+            'degree_type': 501,
+            'degree_title': 502,
+            'start_year': 503,
+            'start_month': 504,
+            'end_year': 505,
+            'end_month': 506,
+            'gpa_num': 507,
+            'gpa_denom': 508,
+            'classification_type_id': 509,
+            'start_time': 510,
+            'end_time': 511
         },
         'candidate_education_degree_bullet': {
-            'concentration_type': 38,
-            'comments': 39
+            'concentration_type': 601,
+            'comments': 602
         },
         'candidate_experience': {
-            'organization': 40,
-            'position': 41,
-            'city': 42,
-            'state': 43,
-            'end_month': 44,
-            'end_year': 45,
-            'start_month': 46,
-            'start_year': 47,
-            'country_id': 48,
-            'is_current': 49
+            'organization': 701,
+            'position': 702,
+            'city': 703,
+            'state': 704,
+            'end_month': 705,
+            'end_year': 706,
+            'start_month': 707,
+            'start_year': 708,
+            'country_id': 709,
+            'is_current': 710
         },
         'candidate_experience_bullet': {
-            'description': 50
+            'description': 801
         },
         'candidate_work_preference': {
-            'relocate': 51,
-            'authorization': 52,
-            'telecommute': 53,
-            'travel_percentage': 54,
-            'hourly_rate': 55,
-            'salary': 56,
-            'tax_terms': 57,
-            'security_clearance': 58,
-            'third_party': 59
+            'relocate': 901,
+            'authorization': 902,
+            'telecommute': 903,
+            'travel_percentage': 904,
+            'hourly_rate': 905,
+            'salary': 906,
+            'tax_terms': 907,
+            'security_clearance': 908,
+            'third_party': 909
         },
         'candidate_email': {
-            'email_label_id': 60,
-            'address': 61,
-            'is_default': 62
+            'email_label_id': 1001,
+            'address': 1002,
+            'is_default': 1003
         },
         'candidate_phone': {
-            'phone_label_id': 63,
-            'value': 64,
-            'extension': 65,
-            'is_default': 66
+            'phone_label_id': 1101,
+            'value': 1102,
+            'extension': 1103,
+            'is_default': 1104
         },
         'candidate_military_service': {
-            'country_id': 67,
-            'service_status': 68,
-            'highest_rank': 69,
-            'highest_grade': 70,
-            'branch': 71,
-            'comments': 72,
-            'from_date': 73,
-            'to_date': 74
+            'country_id': 1201,
+            'service_status': 1202,
+            'highest_rank': 1203,
+            'highest_grade': 1204,
+            'branch': 1205,
+            'comments': 1206,
+            'from_date': 1207,
+            'to_date': 1208
         },
         'candidate_preferred_location': {
-            'address': 75,
-            'city': 76,
-            'state': 77,
-            'region': 78,
-            'zip_code': 79,
-            'country_id': 80
+            'address': 1301,
+            'city': 1302,
+            'state': 1303,
+            'region': 1304,
+            'zip_code': 1305,
+            'country_id': 1306
         },
         'candidate_skill': {
-            'description': 81,
-            'total_months': 82,
-            'last_used': 83
+            'description': 1401,
+            'total_months': 1402,
+            'last_used': 1403
         },
         'candidate_social_network': {
-            'social_network_id': 84,
-            'social_profile_url': 85,
-            'updated_time': 86
+            'social_network_id': 1501,
+            'social_profile_url': 1502,
+            'updated_time': 1503
         },
         'candidate_photo': {
-            'image_url': 87,
-            'is_default': 88
+            'image_url': 1601,
+            'is_default': 1602
         }
     }
 
