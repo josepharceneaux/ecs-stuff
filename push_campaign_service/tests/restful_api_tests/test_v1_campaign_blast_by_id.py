@@ -69,8 +69,7 @@ class TestCampaignBlastById(object):
         get_blast(invalid_blast_id, campaign_id, token_first,
                   expected_status=(HttpStatus.NOT_FOUND,))
 
-    def test_get_campaign_blast_from_diff_domain(self, token_second, campaign_blast,
-                                                  campaign_in_db):
+    def test_get_campaign_blast_from_diff_domain(self, token_second, campaign_blast, campaign_in_db):
         """
         We are trying to get a valid campaign blast but user is from different domain,
         so we are expecting 403 status code.

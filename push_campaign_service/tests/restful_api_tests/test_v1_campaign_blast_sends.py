@@ -16,6 +16,7 @@ Get Blast Sends: /v1/push-campaigns/:id/blasts/:id/sends [GET]
 import sys
 
 # Application specific imports
+from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 from push_campaign_service.tests.test_utilities import *
 from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.routes import PushCampaignApiUrl
@@ -81,6 +82,11 @@ class TestCampaignBlastSends(object):
         assert response['count'] == 1
         assert len(response['sends']) == 1
 
+        # if page size is greater than maximum allowed page size, it will raise InvalidUsage exception
+        per_page = MAX_PAGE_SIZE + 1
+        get_blast_sends(blast_id, campaign_id, token_first, per_page=per_page,
+                        expected_status=(HttpStatus.INVALID_USAGE,))
+
     def test_get_campaign_blast_sends_with_user_from_same_domain(self, token_same_domain, campaign_blast):
         """
         Test if a user from same domain can access sends of a campaign blast or not.
@@ -99,7 +105,6 @@ class TestCampaignBlastSends(object):
         Test if a user from same domain can not access sends of a campaign blast or not.
         API should not allow this user
         :param token_second:
-        :param campaign_in_db:
         :param campaign_blast:
         :return:
         """
