@@ -157,6 +157,8 @@ def validate_id_list(key, values):
         # if multiple values then return as list else single value.
         return values[0] if values.__len__() == 1 else values
     else:
+        if not values.strip().isdigit():
+            raise InvalidUsage("`%s` must be comma separated ids()" % key)
         return values.strip()
 
 
@@ -299,25 +301,27 @@ def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
         key = is_backward_compatible(key)
-        if key == -1:
+        if key == -1 or not value or (isinstance(value, basestring) and not value.strip()):
             continue
-        if value.strip():
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
-                request_vars[key] = value
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
-                request_vars[key] = validate_is_digit(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
-                request_vars[key] = validate_is_number(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
-                request_vars[key] = validate_id_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
-                request_vars[key] = validate_sort_by(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = validate_string_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
-                request_vars[key] = validate_fields(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
-                request_vars[key] = convert_date(key, value)
+        if is_number(value):
+            value = str(value)
+
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
+            request_vars[key] = value
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
+            request_vars[key] = validate_is_digit(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
+            request_vars[key] = validate_is_number(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
+            request_vars[key] = validate_id_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
+            request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
+            request_vars[key] = validate_string_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
+            request_vars[key] = validate_fields(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
+            request_vars[key] = convert_date(key, value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value

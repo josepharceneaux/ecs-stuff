@@ -58,21 +58,21 @@ class TestCreateCampaign(object):
 
     def test_create_email_campaign(self, access_token_first, talent_pool,
                                    assign_roles_to_user_first):
-        email_campaign_name = fake.name()
-        email_subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        name = fake.name()
+        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
         email_from = fake.name()
-        email_reply_to = fake.safe_email()
-        email_body_text = fake.sentence()
-        email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
+        reply_to = fake.safe_email()
+        body_text = fake.sentence()
+        body_html = "<html><body><h1>%s</h1></body></html>" % body_text
         smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
                                                                       talent_pool)
         data = {
-            "email_campaign_name": email_campaign_name,
-            "email_subject": email_subject,
-            "email_from": email_from,
-            "email_reply_to": email_reply_to,
-            "email_body_html": email_body_html,
-            "email_body_text": email_body_text,
+            "name": name,
+            "subject": subject,
+            "from": email_from,
+            "reply_to": reply_to,
+            "body_html": body_html,
+            "body_text": body_text,
             "list_ids": [smartlist_id],
             # "email_client_id": 1
         }
@@ -89,26 +89,26 @@ class TestCreateCampaign(object):
         # Wait for 10 seconds for scheduler to execute it and then assert mail.
         time.sleep(10)
         # Check for email received.
-        assert_mail(email_subject)
+        assert_mail(subject)
         delete_campaign(resp_object['campaign'])
 
     def test_create_email_campaign_whitespace_campaign_name(self, assign_roles_to_user_first,
                                                             access_token_first, talent_pool):
-        email_campaign_name = '       '
-        email_subject = uuid.uuid4().__str__()[0:8] + \
-                        '-test_create_email_campaign_whitespace_campaign_name'
+        name = '       '
+        subject = \
+            uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
         email_from = 'no-reply@gettalent.com'
-        email_reply_to = fake.safe_email()
-        email_body_text = fake.sentence()
-        email_body_html = "<html><body><h1>%s</h1></body></html>" % email_body_text
+        reply_to = fake.safe_email()
+        body_text = fake.sentence()
+        body_html = "<html><body><h1>%s</h1></body></html>" % body_text
         smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
                                                                       talent_pool)
-        data = {'email_campaign_name': email_campaign_name,
-                'email_subject': email_subject,
-                'email_from': email_from,
-                'email_reply_to': email_reply_to,
-                'email_body_html': email_body_html,
-                'email_body_text': email_body_text,
+        data = {'name': name,
+                'subject': subject,
+                'from': email_from,
+                'reply_to': reply_to,
+                'body_html': body_html,
+                'body_text': body_text,
                 'list_ids': [smartlist_id]
                 }
         r = requests.post(
@@ -119,7 +119,7 @@ class TestCreateCampaign(object):
         )
         resp_object = r.json()
         assert 'error' in resp_object
-        assert resp_object['error']['message'] == 'email_campaign_name is required'
+        assert resp_object['error']['message'] == 'name is required'
 
 
 class TestSendCampaign(object):
@@ -202,7 +202,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_mail(campaign.email_subject)
+        assert_mail(campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -231,7 +231,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_mail(campaign.email_subject)
+        assert_mail(campaign.subject)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -299,12 +299,12 @@ class TestSendCampaign(object):
         UrlConversion.delete(url_conversion)
 
 
-def assert_mail(email_subject):
+def assert_mail(subject):
     """
-    Asserts that the user received the email in his inbox which has the email_subject as subject,
+    Asserts that the user received the email in his inbox which has the subject as subject,
 
 
-    :param email_subject:       Email subject
+    :param subject:       Email subject
     :return:
     """
     abort_after = 60
@@ -313,8 +313,8 @@ def assert_mail(email_subject):
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
     mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     # mail.list()  # Out: list of "folders" aka labels in gmail.
-    print "Check for mail with subject: %s" % email_subject
-    header_subject = '(HEADER Subject "%s")' % email_subject
+    print "Check for mail with subject: %s" % subject
+    header_subject = '(HEADER Subject "%s")' % subject
     # Wait for 10 seconds then start the loop for 60 seconds
     time.sleep(10)
     while True:
@@ -329,8 +329,8 @@ def assert_mail(email_subject):
             email_message = email.message_from_string(raw_email)
 
             raw_mail_subject_ = ''.join(email_message['Subject'].split())
-            test_email_subject = ''.join(email_subject.split())
-            if raw_mail_subject_ == test_email_subject:
+            test_subject = ''.join(subject.split())
+            if raw_mail_subject_ == test_subject:
                 mail_found = True
                 break
 
@@ -340,7 +340,7 @@ def assert_mail(email_subject):
         if delta >= abort_after:
             break
 
-    assert mail_found, "Mail with subject %s was not found." % email_subject
+    assert mail_found, "Mail with subject %s was not found." % subject
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):

@@ -98,6 +98,7 @@ def create_smartlist_dict(smartlist, oauth_token):
         "total_found": candidate_count,
         "user_id": smartlist.user_id,
         "id": smartlist.id,
+        "talent_pipeline_id": smartlist.talent_pipeline_id,
         "name": smartlist.name,
         "search_params": smartlist.search_params
     }
@@ -113,7 +114,7 @@ def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     """
     if page and page_size:
         smartlists = Smartlist.query.join(Smartlist.user).filter(
-                User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).paginate(page, page_size, False)
+                User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).paginate(page, page_size, False)
         smartlists = smartlists.items
     else:
         smartlists = Smartlist.query.join(Smartlist.user).filter(

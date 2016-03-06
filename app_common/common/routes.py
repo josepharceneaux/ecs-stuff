@@ -296,6 +296,7 @@ class CandidateApiWords(object):
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
     DEVICES = '/devices'
+    NOTES = "/notes"
 
 
 class CandidateApi(object):
@@ -371,6 +372,7 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
     CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
+    CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
 
 
 class CandidateApiUrl(object):
@@ -439,6 +441,7 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
+    NOTES = CANDIDATE + CandidateApiWords.NOTES
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
@@ -820,6 +823,8 @@ class EmailCampaignEndpoints(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    # endpoint /v1/email-campaigns/:id/send
+    # Send the campaign as specified by the id
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/email-campaigns/:id/blasts
@@ -828,6 +833,12 @@ class EmailCampaignEndpoints(object):
     # endpoint /v1/email-campaigns/:id/blasts/:id
     # Gives the blast object of a campaign for a particular blast_id
     BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
+    # endpoint /v1/email-campaigns/:id/sends
+    # Gives the sends of a campaign
+    SENDS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS
+    # endpoint /v1/email-campaigns/:id/sends/:id
+    # Gives the send object of a campaign for a particular send_id
+    SEND_BY_ID = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS + '/<int:send_id>'
 
 
 class EmailCampaignUrl(object):
@@ -842,3 +853,5 @@ class EmailCampaignUrl(object):
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
 
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    SEND_BY_ID = SENDS + '/%s'

@@ -6,6 +6,7 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger
+from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
@@ -84,8 +85,13 @@ class SmartlistResource(Resource):
         else:
             # Return all smartlists from user's domain
             page = request.args.get('page', 1)
-            page_size = request.args.get('page_size', 10)
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(page_size))}
+            per_page = request.args.get('per_page', 10)
+            total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
+                    User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
+
+            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                    'page_number': page, 'smartlists_per_page': per_page,
+                    'total_number_of_smartlists': total_number_of_smartlists}
 
     def post(self):
         """
