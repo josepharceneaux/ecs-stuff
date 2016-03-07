@@ -1,12 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-This module contains utility method and class to load test configurations like test user_id, domain etc.
+This module contains utility method and class to load test configurations like test
+user_first, user_same_domain etc.
 
 In a developer's local environment, the file given by the below LOCAL_CONFIG_PATH contains
-the property keys and values.
+sections for each test entity like
+    [USER_FIRST]
+    USER_ID=3
+    CLIENT_ID=KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U11
+    CLIENT_SECRET=DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj11
+    USERNAME=test_email@test.com
+    PASSWORD=test_user
+    TOKEN=test_access_token
 
-﻿In prod and staging environments, the above config file does not exist.
-Rather, the properties are obtained from ECS environment variables and a private S3 bucket.
+Someone can add more sections if he has any requirement for tests.
+
+﻿In prod and staging environments, the above config file is not on filesystem but downloaded
+from S3.
 """
 import os
 import tempfile

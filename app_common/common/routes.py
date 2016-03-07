@@ -774,21 +774,23 @@ class PushCampaignApi(object):
     # endpoint /v1/push-campaigns/:id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = '/%s/%s' % (VERSION, 'push-campaigns/<int:campaign_id>')
-    # endpoint /v1/campaigns/:id/sends
+    # endpoint /v1/push-campaigns/:id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + CampaignWords.SENDS
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/<int:blast_id>'
     BLAST_SENDS = BLAST + CampaignWords.SENDS
-    # endpoint /v1/campaigns/:id/send
+    # endpoint /v1/push-campaigns/:id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + CampaignWords.SEND
-    # /v1/campaigns/:id/schedule
+    # /v1/push-campaigns/:id/schedule
     # To schedule a Push campaign
     SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
     # endpoint /v1/redirect/:id
     # This endpoint is hit when candidate clicks on any URL present in Push campaign's body text.
     REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
+
+    # helper endpoints, need to get url_conversion records in some cases
     URL_CONVERSION = '/%s/%s/<int:_id>' % (VERSION, 'url-conversions')
     URL_CONVERSION_BY_SEND_ID = '/%s/%s/<int:send_id>' % (VERSION, 'send-url-conversions')
 
