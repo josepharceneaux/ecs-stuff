@@ -2326,4 +2326,6 @@ def get_search_params_of_smartlists(smartlist_ids):
             raise InvalidUsage(error_message="Search params of smartlist %s are in bad format "
                                              "because: %s" % (smartlist.id, e.message))
 
+    logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
+
     return search_params
