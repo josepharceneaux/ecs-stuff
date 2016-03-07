@@ -245,7 +245,7 @@ try:
 
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
-    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO ,endpoint='candidate_photo')
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO, endpoint='candidate_photo')
 
     # ****** Candidate Search *******
     api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)
