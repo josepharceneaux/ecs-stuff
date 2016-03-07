@@ -134,7 +134,10 @@ def get_campaigns_of_talent_pipeline(talent_pipeline):
 
         WHERE email_campaign.Id=email_campaign_smart_list.emailCampaignId AND
               email_campaign_smart_list.smartListId=smart_list.id AND
-              smart_list.talentPipelineId=%s"""
+              smart_list.talentPipelineId=%s
+
+        LIMIT 20;
+              """
 
     email_campaigns = db.session.connection().execute(sql_query % talent_pipeline.id)
     return json.dumps([dict(email_campaign) for email_campaign in email_campaigns], default=campaign_json_encoder_helper)
