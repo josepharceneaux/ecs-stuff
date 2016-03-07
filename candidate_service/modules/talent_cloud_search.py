@@ -256,9 +256,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
                 candidate.totalMonthsExperience AS `total_months_experience`,
 
-                DATE_FORMAT(DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.StartYear then candidate_experience.StartYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH) -
-                DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.EndYear then candidate_experience.EndYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH), :date_format)
-
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
                 candidate_address.coordinates AS `coordinates`,
