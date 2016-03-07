@@ -109,7 +109,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Experience
     'total_months_experience':       dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
-    'organization':                  dict(IndexFieldType='text-array'),
+    'organization':                  dict(IndexFieldType='literal-array', LiteralArrayOptions={'FacetEnabled': True}),
     'position':                      dict(IndexFieldType='literal-array'),
     'experience_description':        dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'skill_description':             dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
@@ -255,6 +255,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
                 candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
                 candidate.totalMonthsExperience AS `total_months_experience`,
+
+                DATE_FORMAT(DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.StartYear then candidate_experience.StartYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH) -
+                DATE_ADD(MAKEDATE((CASE WHEN candidate_experience.EndYear then candidate_experience.EndYear ELSE YEAR(CURDATE()) END) , 1), INTERVAL (CASE WHEN candidate_experience.StartMonth then candidate_experience.StartMonth ELSE MONTH(CURDATE()) END)-1 MONTH), :date_format)
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
@@ -675,7 +678,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if not count_only:
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
-                          "position:{size:50},school_name:{size:500},degree_type:{size:50}," \
+                          "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
                           "custom_field_id_and_value:{size:1000}},candidate_engagement_score:{size:50}"
