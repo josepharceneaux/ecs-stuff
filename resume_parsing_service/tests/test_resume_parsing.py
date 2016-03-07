@@ -325,8 +325,8 @@ def test_add_single_queue_item(token_fixture):
     response = add_fp_keys_to_queue(['file1'], user_id, 'bearer {}'.format(
         token_fixture.access_token))
     redis_store.expire(queue_string, 20)
-    assert response == {'redis_key': queue_string, 'quantity': 1}, ('Improperly Formatted redis '
-                                                                    'post response for single item')
+    assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
+    assert response['quantity'] == 1, "Single queue-add count is not 1"
 
 
 # Integration test of the above.
