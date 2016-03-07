@@ -116,9 +116,14 @@ def get_campaigns_of_talent_pipeline(talent_pipeline):
         """
 
     sql_query = """
-        SELECT email_campaign.*
+        SELECT email_campaign.Id, email_campaign.UserId, email_campaign.Name, email_campaign.IsHidden,
+        email_campaign.Type, email_campaign.emailSubject, email_campaign.emailFrom, email_campaign.emailReplyTo,
+        email_campaign.frequencyId, email_campaign.SendTime, email_campaign.StopTime, email_campaign.AddedTime,
+        email_campaign.UpdatedTime, email_campaign.EmailClientId
+
         FROM email_campaign, email_campaign_smart_list, smart_list
-        WHERE email_campaign.id=email_campaign_smart_list.emailCampaignId AND
+
+        WHERE email_campaign.Id=email_campaign_smart_list.emailCampaignId AND
               email_campaign_smart_list.smartListId=smart_list.id AND
               smart_list.talentPipelineId=%s"""
 

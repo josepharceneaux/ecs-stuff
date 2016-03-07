@@ -2308,15 +2308,13 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
 def get_search_params_of_smartlists(smartlist_ids):
     """
     This method will return list of search_params of smartlists
-    :param smartlist_ids: IDs of smartlist_ids
+    :param smartlist_ids: IDs of smartlists
     :return:
     """
-    try:
-        smartlist_ids = map(int, smartlist_ids.split(','))
-    except Exception as e:
-        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+    if not isinstance(smartlist_ids, list):
+        smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 

@@ -26,6 +26,20 @@ def email_campaign_of_user_first(request, user_first):
 
 
 @pytest.fixture()
+def email_campaign_of_user_second(request, user_same_domain):
+    """
+    This fixture creates an email campaign in database table 'email_campaign'
+    """
+    campaign = create_email_campaign(user_same_domain)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+@pytest.fixture()
 def email_campaign_in_other_domain(request,
                                    access_token_other,
                                    user_from_diff_domain,
