@@ -4,6 +4,7 @@ from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
 from ..error_handling import (ResourceNotFound, ForbiddenError)
+from ..datetime_utils import utc_isoformat
 
 __author__ = 'jitesh'
 
@@ -55,9 +56,9 @@ class EmailCampaign(db.Model):
                 "subject": self.subject,
                 "from": self._from,
                 "reply_to": self.reply_to,
-                "start_datetime": self.start_datetime.isoformat() if self.start_datetime else None,
-                "end_datetime": self.end_datetime.isoformat() if self.end_datetime else None,
-                "added_datetime": self.added_datetime.isoformat() if self.added_datetime else None,
+                "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
                 "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
                                                                               smartlist_ids_only=True)}
 
@@ -94,8 +95,7 @@ class EmailCampaignSmartlist(db.Model):
 class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
     text_clicks = db.Column('TextClicks', db.Integer, default=0)
@@ -125,8 +125,7 @@ class EmailCampaignBlast(db.Model):
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
-    campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
