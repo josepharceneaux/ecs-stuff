@@ -5,7 +5,7 @@ from candidate_pool_service.common.routes import HEALTH_CHECK, CandidatePoolApi,
 from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from candidate_pool_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_pool_service.common.talent_flask import TalentFlask
-from candidate_pool_service.talent_celery import make_celery
+from candidate_pool_service.common.talent_celery import make_celery
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
@@ -25,7 +25,7 @@ try:
     cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': app.config['REDIS_URL']})
 
     # Instantiate Celery
-    celery_app = make_celery(app)
+    celery_app = make_celery(app, 'celery_stats_scheduler')
 
     # Initialize Redis Cache
     from candidate_pool_service.common.redis_cache import redis_store

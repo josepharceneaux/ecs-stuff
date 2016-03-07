@@ -8,7 +8,7 @@ import re
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateMilitaryService
 )
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
@@ -156,6 +156,8 @@ def validate_id_list(key, values):
         # if multiple values then return as list else single value.
         return values[0] if values.__len__() == 1 else values
     else:
+        if not values.strip().isdigit():
+            raise InvalidUsage("`%s` must be comma separated ids()" % key)
         return values.strip()
 
 
@@ -298,25 +300,27 @@ def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
         key = is_backward_compatible(key)
-        if key == -1:
+        if key == -1 or not value or (isinstance(value, basestring) and not value.strip()):
             continue
-        if value.strip():
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
-                request_vars[key] = value
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
-                request_vars[key] = validate_is_digit(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
-                request_vars[key] = validate_is_number(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
-                request_vars[key] = validate_id_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
-                request_vars[key] = validate_sort_by(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = validate_string_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
-                request_vars[key] = validate_fields(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
-                request_vars[key] = convert_date(key, value)
+        if is_number(value):
+            value = str(value)
+
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
+            request_vars[key] = value
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
+            request_vars[key] = validate_is_digit(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
+            request_vars[key] = validate_is_number(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
+            request_vars[key] = validate_id_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
+            request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
+            request_vars[key] = validate_string_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
+            request_vars[key] = validate_fields(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
+            request_vars[key] = convert_date(key, value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
@@ -393,24 +397,70 @@ def get_candidate_email_from_domain_if_exists(user_id, email_address):
 
 def get_education_if_exists(educations, education_dict, education_degrees):
     """
+    Function will check to see if the requested education information already exists in the database
     :type educations:  list[CandidateEducation]
+    :param educations:  candidate.educations
+    :param education_degrees:  education-degrees' info from the request
+    :type education_degrees:  list[dict[str]]
     :type education_dict: dict[str]
     """
     for education in educations:
         school_name = (education.school_name or '').lower()
         if school_name == (education_dict.get('school_name') or '').lower():
-            for degree in education.degrees:
-                if any([ed.get('end_year') for ed in education_degrees
-                        if ed.get('end_year') == degree.end_year]) or \
-                        any([ed.get('start_year') for ed in education_degrees
-                             if ed.get('start_year') == degree.start_year]):
-                    return education.id
+
+            existing_degree_dicts = [
+                {
+                    'start_year': existing_degree.start_year,
+                    'end_year': existing_degree.end_year,
+                    'title': existing_degree.degree_title
+                } for existing_degree in education.degrees
+            ]
+
+            new_degree_dicts = [
+                {
+                    'start_year': new_degree.get('start_year'),
+                    'end_year': new_degree.get('end_year'),
+                    'title': new_degree.get('title')
+                } for new_degree in education_degrees
+            ]
+
+            common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
+            if common_dicts:
+                return education.id
+
     return None  # for readability
+
+
+def get_education_degree_if_exists(educations, education_degree):
+    """
+    :type educations:  list[CandidateEducation]
+    :type education_degree:  dict[str]
+    """
+    for education in educations:
+        for degree in education.degrees:
+
+            existing_degree_dicts = {
+                'start_year': degree.start_year,
+                'end_year': degree.end_year,
+                'title': degree.degree_title
+            }
+
+            new_degree_dicts = {
+                'start_year': education_degree.get('start_year'),
+                'end_year': education_degree.get('end_year'),
+                'title': education_degree.get('degree_title')
+            }
+
+            if existing_degree_dicts.values() == new_degree_dicts.values():
+                return degree.id
+
+    return None  # For readability
 
 
 def does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
     """
     :type candidate_educations:  list[CandidateEducation]
+    :param candidate_educations:  candidate.educations
     :type education_degree_bullet_dict:  dict[str]
     :rtype:  bool
     """
@@ -510,3 +560,17 @@ def does_social_network_exist(social_networks, social_network_dict):
         if (social_network.social_profile_url or '').lower() == profile_url:
             return True
     return False
+
+
+def does_military_service_exist(military_services, military_service_dict):
+    """
+    :type military_services:  list[CandidateMilitaryService]
+    :type military_service_dict:  dict[str]
+    :rtype:  bool
+    """
+    for military_service in military_services:
+        from_date, to_date = military_service_dict.get('from_date'), military_service_dict.get('to_date')
+        if military_service.from_date == from_date or military_service.to_date == to_date:
+            return True
+    return False
+

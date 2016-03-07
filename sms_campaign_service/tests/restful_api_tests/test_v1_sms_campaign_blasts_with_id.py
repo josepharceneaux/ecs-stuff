@@ -103,7 +103,7 @@ class TestSmsCampaignBlastsWithId(object):
         This is a test to get blasts of a campaign which does not exist in database.
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaign, self.HTTP_METHOD, self.URL % ('%s', create_sms_campaign_blast.id),
             access_token_first,
             None)
@@ -113,6 +113,6 @@ class TestSmsCampaignBlastsWithId(object):
         This is a test to get blasts of a campaign using non-existing blast_id
         :return:
         """
-        CampaignsTestsHelpers.request_with_invalid_campaign_id(
+        CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user.id, '%s'),
             access_token_first, None)

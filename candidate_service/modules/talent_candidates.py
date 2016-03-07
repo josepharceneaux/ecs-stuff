@@ -21,7 +21,7 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
@@ -38,10 +38,13 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 # Validations
 from candidate_service.common.utils.validators import (sanitize_zip_code, is_number, format_phone_number)
-from candidate_service.modules.validators import does_address_exist, does_candidate_cf_exist, \
-    does_education_degree_bullet_exist, get_education_if_exists, get_work_experience_if_exists, \
-    does_experience_bullet_exist, get_candidate_email_from_domain_if_exists, does_phone_exist, \
-    does_preferred_location_exist, does_skill_exist, does_social_network_exist
+from candidate_service.modules.validators import (
+    does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
+    get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
+    get_candidate_email_from_domain_if_exists, does_phone_exist,
+    does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    get_education_degree_if_exists, does_military_service_exist
+)
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -137,6 +140,10 @@ def fetch_candidate_info(candidate, fields=None):
         talent_pool_ids = [talent_pool_candidate.talent_pool_id for talent_pool_candidate in
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
+    resume_url = None
+    if get_all_fields or 'resume_url' in fields:
+        resume_url = candidate.filename
+
     return_dict = {
         'id': candidate_id,
         'full_name': full_name,
@@ -156,7 +163,8 @@ def fetch_candidate_info(candidate, fields=None):
         'contact_history': history,
         'openweb_id': openweb_id,
         'dice_profile_id': dice_profile_id,
-        'talent_pool_ids': talent_pool_ids
+        'talent_pool_ids': talent_pool_ids,
+        'resume_url': resume_url
     }
 
     # Remove keys with None values
@@ -167,7 +175,7 @@ def fetch_candidate_info(candidate, fields=None):
 def format_candidate_full_name(candidate):
     """
     :type candidate:  Candidate
-    :return:
+    :rtype:  basestring
     """
     assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
@@ -455,10 +463,10 @@ def candidate_contact_history(candidate):
 
     # Campaign sends & campaigns
     for email_campaign_send in candidate.email_campaign_sends:
-        if not email_campaign_send.email_campaign_id:
-            logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
+        if not email_campaign_send.campaign_id:
+            logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
         timeline.insert(0, dict(event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
@@ -533,7 +541,35 @@ def fetch_candidate_views(candidate_id):
              } for view in candidate_views]
 
 
-def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.now(), view_type=3):
+def fetch_aggregated_candidate_views(domain_id, candidate_id):
+    """
+    Function will return a list of view objects displaying all the domain users
+     that viewed the candidate, last datetime of view, and the number of times each
+     user viewed the same candidate
+    :type domain_id:  int|long
+    :type candidate_id:  int|long
+    :rtype:  list[dict[str]]
+    """
+    team_members = User.all_users_of_domain(domain_id)
+    """
+    :type team_members:  list[User]
+    """
+    return_obj = []
+    for user in team_members:
+        views = CandidateView.get_by_user_and_candidate(user_id=user.id, candidate_id=candidate_id)
+        if views:
+            return_obj.append(
+                {
+                    'user_id': user.id,
+                    'last_view_datetime': str(views[-1].view_datetime),
+                    'view_count': len(views)
+                }
+            )
+
+    return return_obj
+
+
+def add_candidate_view(user_id, candidate_id):
     """
     Once a Candidate has been viewed, this function should be invoked
     and add a record to CandidateView
@@ -543,8 +579,8 @@ def add_candidate_view(user_id, candidate_id, view_datetime=datetime.datetime.no
     db.session.add(CandidateView(
         user_id=user_id,
         candidate_id=candidate_id,
-        view_type=view_type,
-        view_datetime=view_datetime
+        view_type=3,
+        view_datetime=datetime.datetime.utcnow()
     ))
     db.session.commit()
 
@@ -647,6 +683,25 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     db.session.commit()
 
 
+######################################
+# Helper Functions For Candidate Notes
+######################################
+def add_notes(candidate_id, data):
+    """
+    Function will insert candidate notes into the db
+    :type candidate_id:  int|long
+    :type data:  list[dict]
+    """
+    # Format inputs
+    for note in data:
+        notes_dict = dict(
+            candidate_id=candidate_id,
+            comment=note.get('comment'),
+            added_time=datetime.datetime.utcnow()
+        )
+        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
+        db.session.add(CandidateTextComment(**notes_dict))
+
 ######################################################
 # Helper Functions For Creating and Updating Candidate
 ######################################################
@@ -678,7 +733,8 @@ def create_or_update_candidate_from_params(
         source_id=None,
         objective=None,
         summary=None,
-        talent_pool_ids=None
+        talent_pool_ids=None,
+        resume_url=None
 ):
     """
     Function will parse each parameter and:
@@ -726,6 +782,7 @@ def create_or_update_candidate_from_params(
     :type summary:                  basestring
     :type talent_pool_ids:          dict
     :type delete_talent_pools:      bool
+    :type resume_url                basestring
     :rtype                          dict
     """
     # Format inputs
@@ -764,12 +821,12 @@ def create_or_update_candidate_from_params(
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
                                          formatted_name, objective, summary,
-                                         candidate_id, user_id, edit_time)
+                                         candidate_id, user_id, edit_time, resume_url)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_time, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, objective, summary)
+                                      source_id, objective, summary, resume_url)
 
     candidate = Candidate.get_by_id(candidate_id=candidate_id)
     """
@@ -964,16 +1021,15 @@ def social_network_name_from_url(url):
             return "Unknown"
 
 
-def _update_candidate(first_name, middle_name, last_name, formatted_name,
-                      objective, summary, candidate_id, user_id, edited_time):
+def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
+                      summary, candidate_id, user_id, edited_time, resume_url):
     """
     Function will update Candidate
     :return:    Candidate ID
     """
     update_dict = {'first_name': first_name, 'middle_name': middle_name,
                    'last_name': last_name, 'formatted_name': formatted_name,
-                   'objective': objective,
-                   'summary': summary}
+                   'objective': objective, 'summary': summary, 'filename': resume_url}
 
     # Remove keys with None values
     update_dict = dict((k, v) for k, v in update_dict.iteritems() if v is not None)
@@ -1000,18 +1056,16 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name,
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id,
                    dice_profile_id, dice_social_profile_id, source_id,
-                   objective, summary):
+                   objective, summary, resume_url):
     """
     Function will create Candidate
-    :return:    Candidate ID
+    :rtype:  Candidate.id
     """
     candidate = Candidate(
-        first_name=first_name, middle_name=middle_name, last_name=last_name,
-        formatted_name=formatted_name, added_time=added_time,
-        candidate_status_id=candidate_status_id, user_id=user_id,
-        dice_profile_id=dice_profile_id,
-        dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary,
+        first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
+        added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
+        dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
+        source_id=source_id, objective=objective, summary=summary, filename=resume_url,
         is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
     )
     db.session.add(candidate)
@@ -1275,18 +1329,18 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
 
                 else:   # Add CandidateEducationDegree
                     education_degree_dict.update(dict(candidate_education_id=education_id))
-                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
-                    db.session.add(candidate_education_degree)
-                    db.session.flush()
-                    # TODO: prevent duplicate entires
-
-                    can_edu_degree_id = candidate_education_degree.id
+                    candidate_education_degree_id = get_education_degree_if_exists(candidate_educations, education_degree_dict)
+                    if not candidate_education_degree_id:
+                        candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                        db.session.add(candidate_education_degree)
+                        db.session.flush()
+                        candidate_education_degree_id = candidate_education_degree.id
 
                     # Add CandidateEducationDegreeBullets
                     education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         db.session.add(CandidateEducationDegreeBullet(
-                            candidate_education_degree_id=can_edu_degree_id,
+                            candidate_education_degree_id=candidate_education_degree_id,
                             concentration_type=education_degree_bullet.get('major'),
                             comments=education_degree_bullet.get('comments'),
                             added_time=added_time
@@ -1294,7 +1348,8 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
 
         else:  # Add
             # CandidateEducation
-            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))  # TODO: resume_id to be removed once all tables have been added & migrated
+            # TODO: resume_id to be removed once all tables have been added & migrated
+            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
             # Prevent duplicate entries
             education_degrees = education.get('degrees') or []
             education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
@@ -1307,8 +1362,7 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
             # CandidateEducationDegree
             for education_degree in education_degrees:
 
-                # Add CandidateEducationDegree
-                candidate_education_degree = CandidateEducationDegree(
+                education_degree_dict = dict(
                     candidate_education_id=education_id,
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree.get('type'),
@@ -1323,16 +1377,20 @@ def _add_or_update_educations(candidate, educations, added_time, user_id, edit_t
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
-                db.session.add(candidate_education_degree)
-                db.session.flush()
-
-                education_degree_id = candidate_education_degree.id
+                # Prevent duplicate entries
+                candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
+                                                                               education_degree_dict)
+                if not candidate_education_degree_id:
+                    candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
+                    db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
+                    db.session.flush()
+                    candidate_education_degree_id = candidate_education_degree.id
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
                     education_degree_bullet_dict = dict(
-                        candidate_education_degree_id=education_degree_id,
+                        candidate_education_degree_id=candidate_education_degree_id,
                         concentration_type=degree_bullet.get('major'),
                         comments=degree_bullet.get('comments'),
                         added_time=added_time
@@ -1676,8 +1734,8 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
-            # TODO: Prevent duplicate entries
-            db.session.add(CandidateMilitaryService(**military_service_dict))
+            if not does_military_service_exist(candidate_military_services, military_service_dict):
+                db.session.add(CandidateMilitaryService(**military_service_dict))
 
 
 def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_time):
@@ -2250,15 +2308,13 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
 def get_search_params_of_smartlists(smartlist_ids):
     """
     This method will return list of search_params of smartlists
-    :param smartlist_ids: IDs of smartlist_ids
+    :param smartlist_ids: IDs of smartlists
     :return:
     """
-    try:
-        smartlist_ids = map(int, smartlist_ids.split(','))
-    except Exception as e:
-        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+    if not isinstance(smartlist_ids, list):
+        smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 

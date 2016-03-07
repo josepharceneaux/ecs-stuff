@@ -6,10 +6,12 @@ Notes:
 """
 # Standard libraries
 import logging
+from time import time
 
 # Flask specific
 from flask import request
 from flask_restful import Resource
+from candidate_service.candidate_app import logger
 
 # Database connection
 from candidate_service.common.models.db import db
@@ -22,9 +24,8 @@ from candidate_service.modules.validators import (
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
 )
 from candidate_service.modules.json_schema import (
-
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 
@@ -43,7 +44,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateSubscriptionPreference, CandidatePhoto
+    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -54,7 +55,8 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
-    add_or_update_candidate_subs_preference, add_photos, update_photo
+    add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
+    fetch_aggregated_candidate_views
 )
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
@@ -86,6 +88,7 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
+        start_time = time()
         # Authenticate user
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
@@ -209,12 +212,14 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             created_candidate_ids.append(resp_dict['candidate_id'])
 
         # Add candidates to cloud search
-        upload_candidate_documents(created_candidate_ids)
+        upload_candidate_documents.delay(created_candidate_ids)
+        logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -234,6 +239,7 @@ class CandidatesResource(Resource):
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
+        start_time = time()
         # Authenticated user and request body
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
@@ -332,12 +338,14 @@ class CandidatesResource(Resource):
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
-                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []})
+                talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
+                resume_url=candidate_dict.get('resume_url')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
         # Update candidates in cloud search
-        upload_candidate_documents(updated_candidate_ids)
+        upload_candidate_documents.delay(updated_candidate_ids)
+        logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
 
@@ -357,6 +365,7 @@ class CandidateResource(Resource):
 
         :return:    A dict of candidate info
         """
+        start_time = time()
         # Authenticated user
         authed_user = request.user
 
@@ -380,8 +389,7 @@ class CandidateResource(Resource):
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
 
-        # Add to CandidateView
-        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+        logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1205,14 +1213,14 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        email_subject = body_dict.get('email_subject', 'No Subject')
-        email_from = body_dict.get('email_from')
-        email_reply_to = body_dict.get('email_reply_to')
-        email_body_html = body_dict.get('email_body_html')
-        email_body_text = body_dict.get('email_body_text')
+        subject = body_dict.get('subject', 'No Subject')
+        _from = body_dict.get('email_from')
+        reply_to = body_dict.get('email_reply_to')
+        body_html = body_dict.get('email_body_html')
+        body_text = body_dict.get('email_body_text')
         email_client_id = body_dict.get('email_client_id')
 
-        if not email_from or not email_reply_to or not email_client_id or not candidates_list:
+        if not _from or not reply_to or not email_client_id or not candidates_list:
             raise InvalidUsage(error_message="Fields are missing.")
 
         if not isinstance(candidates_list, list):
@@ -1226,7 +1234,7 @@ class CandidateClientEmailCampaignResource(Resource):
         if not email_client_name:
             raise InvalidUsage(error_message="Email client is not supported.")
 
-        campaign_name = 'Campaign %s %s' % (email_subject, email_client_name[0])
+        campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
 
         smartlist_object = {
@@ -1243,12 +1251,12 @@ class CandidateClientEmailCampaignResource(Resource):
 
         # create campaign
         email_campaign_object = {
-            "email_campaign_name": campaign_name,
-            "email_subject": email_subject,
-            "email_from": email_from,
-            "email_reply_to": email_reply_to,
-            "email_body_html": email_body_html,
-            "email_body_text": email_body_text,
+            "name": campaign_name,
+            "subject": subject,
+            "from": _from,
+            "reply_to": reply_to,
+            "body_html": body_html,
+            "body_text": body_text,
             "email_client_id": email_client_id,
             "list_ids": [int(created_smartlist_id)]
         }
@@ -1265,20 +1273,45 @@ class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
+    def post(self, **kwargs):
         """
-        Endpoint:  GET /v1/candidates/:id/views
-        Function will retrieve all view information pertaining to the requested Candidate
+        Endpoint:  POST /v1/candidates/:candidate_id/views
+        Function will increment candidate's view counts
         """
-        # Authenticated user & candidate_id
-        authed_user, candidate_id = request.user, kwargs.get('id')
+        authed_user, candidate_id = request.user, kwargs['id']
 
-        # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        # Check for candidate's existence & web-hidden status
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoint:  GET /v1/candidates/:candidate_id/views
+        Function will retrieve all view information pertaining to the requested Candidate
+        """
+        # Authenticated user & candidate_id
+        authed_user, candidate_id = request.user, kwargs['id']
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        request_vars = request.args
+        aggregate_by = request_vars.get('aggregate_by')
+        if aggregate_by:
+            if 'user_id' in aggregate_by:
+                views = fetch_aggregated_candidate_views(authed_user.domain_id, candidate_id)
+                return {'aggregated_views': views}
 
         candidate_views = fetch_candidate_views(candidate_id=candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
@@ -1478,7 +1511,7 @@ class CandidatePhotosResource(Resource):
             photos = CandidatePhoto.get_by_candidate_id(candidate_id=candidate_id)
             return {'candidate_photos': [
                 {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
-                                         for photo in photos]}
+                for photo in photos]}
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
@@ -1525,7 +1558,7 @@ class CandidatePhotosResource(Resource):
         photo_id = kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -1553,3 +1586,53 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
         return '', 204
 
+
+class CandidateNotesResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:candidate_id/notes
+        Function will add candidate's note(s) to database
+        """
+        # Authenticated user & Candidate ID
+        authed_user, candidate_id = request.user, kwargs['id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = get_json_if_exist(request)
+        try:
+            validate(instance=body_dict, schema=notes_schema)
+        except Exception as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+
+        add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
+        db.session.commit()
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:  GET /v1/candidates/:candidate_id/notes
+        Function will retrieve all of candidate's notes
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        return {'candidate_notes': [
+            {'id': note.id, 'candidate_id': note.candidate_id,
+             'comment': note.comment, 'added_time': str(note.added_time)
+        } for note in CandidateTextComment.get_by_candidate_id(candidate_id)]}

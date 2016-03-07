@@ -22,10 +22,17 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     print "You can reset your database and CloudSearch domain only in 'dev' or 'jenkins' environment"
     raise SystemExit(0)
 
+
+def save_meetup_token_and_flushredis(_redis):
+    if _redis.get('Meetup'):
+        _token = _redis.get('Meetup')
+        _redis.flushall()
+        _redis.set('Meetup', _token)
+
 # Flush redis-cache
 from common.redis_cache import redis_store
 redis_store.init_app(app)
-redis_store.flushall()
+save_meetup_token_and_flushredis(redis_store)
 
 from common.models.db import db
 db.init_app(app)

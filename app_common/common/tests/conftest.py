@@ -1,6 +1,9 @@
 # Standard Library
+import random
+import requests
+import string
+import uuid
 from datetime import datetime
-import random, string, uuid, requests
 
 # Third Party
 import json
@@ -90,34 +93,6 @@ def revoke_token(user_logout_credentials):
     resp = requests.post('http://localhost:8001/v1/oauth2/revoke', data=revoke_data)
     assert resp.status_code == 200
     return
-
-
-@pytest.fixture()
-def sample_user(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
-
-
-@pytest.fixture()
-def sample_user_2(test_domain, first_group, request):
-    user = User.add_test_user(db.session, USER_PASSWORD, test_domain.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return user
 
 
 @pytest.fixture()
@@ -268,6 +243,20 @@ def access_token_same(user_same_domain, sample_client):
 
 
 @pytest.fixture()
+def access_token_other(user_from_diff_domain, sample_client):
+    """
+    This returns the access token for user_from_diff_domain. We need this to create a resource
+    e.g. email-campaign for some user in other domain and test the functionality of API.
+    :param user_from_diff_domain: Fixture for user in some other domain
+    :param sample_client: Fixture of `client` used in tests
+    :return: access_token for given user
+    :rtype: str
+    """
+    return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
+                            sample_client.client_secret)
+
+
+@pytest.fixture()
 def user_first(request, domain_first, first_group):
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
     db.session.commit()
@@ -292,7 +281,7 @@ def user_same_domain(request, domain_first, first_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -306,7 +295,7 @@ def user_second(request, domain_second, second_group):
         try:
             db.session.delete(user)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user
@@ -320,7 +309,7 @@ def domain_first(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -339,7 +328,7 @@ def domain_second(request):
         try:
             db.session.delete(test_domain)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
@@ -357,7 +346,7 @@ def domain_roles(request):
             db.session.delete(DomainRole.query.get(test_role_first_id))
             db.session.delete(DomainRole.query.get(test_role_second_id))
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
@@ -373,7 +362,7 @@ def first_group(request, domain_first):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
@@ -389,10 +378,39 @@ def second_group(request, domain_second):
         try:
             db.session.delete(user_group)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return user_group
+
+
+@pytest.fixture()
+def sample_user(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
+
+@pytest.fixture()
+def sample_user_2(domain_first, first_group, request):
+    user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
+
+    def tear_down():
+        try:
+            db.session.delete(user)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return user
+
 
 
 @pytest.fixture()
@@ -408,7 +426,7 @@ def talent_pool(request, domain_first, first_group, user_first):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -428,7 +446,28 @@ def talent_pool_second(request, domain_second, second_group, user_second):
         try:
             db.session.delete(talent_pool)
             db.session.commit()
-        except:
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pool
+
+
+@pytest.fixture()
+def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domain):
+    talent_pool = TalentPool(name=gen_salt(20),
+                             description='', domain_id=test_domain_2.id,
+                             user_id=user_from_diff_domain.id)
+    db.session.add(talent_pool)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pool)
+            db.session.commit()
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pool
@@ -451,7 +490,7 @@ def talent_pipeline(request, user_first, talent_pool):
         try:
             db.session.delete(talent_pipeline)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return talent_pipeline
@@ -467,7 +506,7 @@ def candidate_first(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate
@@ -483,7 +522,7 @@ def candidate_second(request, user_first):
         try:
             db.session.delete(candidate)
             db.session.commit()
-        except:
+        except Exception:
             db.session.rollback()
     request.addfinalizer(tear_down)
     return candidate

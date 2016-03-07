@@ -275,8 +275,17 @@ class CandidateEmail(db.Model):
 
     @classmethod
     def search_email_in_user_domain(cls, user_model, user, email):
+        """
+        This returns the count of how many candidates are there in user's domain for given
+        email-address.
+        :param user_model: Model class User
+        :param user: logged-in user's object
+        :param email: email-address to be searched in user's domain
+        :return:
+        """
         return cls.query.with_entities(cls.address, cls.candidate_id).group_by(cls.candidate_id).\
-            join(Candidate, cls.candidate_id == Candidate.id).join(user_model, Candidate.user_id == user_model.id).\
+            join(Candidate, cls.candidate_id == Candidate.id).join(user_model,
+                                                                   Candidate.user_id == user_model.id).\
             filter(and_(user_model.domain_id == user.domain_id,
                         cls.address == email)).all()
 
@@ -372,6 +381,17 @@ class CandidateTextComment(db.Model):
     comment = db.Column('Comment', db.String(5000))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return "<CandidateTextComment (id = {})>".format(self.id)
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateTextComment]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class VoiceComment(db.Model):

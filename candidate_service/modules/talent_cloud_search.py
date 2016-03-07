@@ -10,8 +10,8 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
-from candidate_service.candidate_app import app
-from candidate_service.candidate_app import db, logger
+from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
@@ -338,75 +338,84 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
         SELECT GROUP_CONCAT(DISTINCT(email_campaign_send.CandidateId)) AS `candidate_engagement` FROM email_campaign_send WHERE email_campaign_send.CandidateId IN :candidate_ids_string;
     """
 
-    candidate_engagement = db.session.connection().execute(text(sql_query_for_candidate_engagement),
-                                                           candidate_ids_string=tuple(candidate_ids))
-    candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
-
-    results = db.session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
-                                              sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
-
-    # Go through results & build action dicts
     action_dicts = []
-    for field_name_to_sql_value in results:
-        candidate_id = field_name_to_sql_value['id']
-        action_dict = dict(type='add', id=str(candidate_id))
+    with OneTimeSQLConnection(app) as session:
 
-        # Remove keys with empty values
-        field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
+        candidate_engagement = session.connection().execute(text(sql_query_for_candidate_engagement),
+                                                            candidate_ids_string=tuple(candidate_ids))
+        candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
 
-        # Set candidate engagement score
-        field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
+        results = session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
+                                               sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
 
-        # Massage 'field_name_to_sql_value' values into the types they are supposed to be
-        for field_name in field_name_to_sql_value.keys():
-            index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
+        # Go through results & build action dicts
+        for field_name_to_sql_value in results:
+            candidate_id = field_name_to_sql_value['id']
+            action_dict = dict(type='add', id=str(candidate_id))
 
-            if not index_field_options:
-                logger.error("Unknown field name, could not build document: %s", field_name)
-                continue
+            # Remove keys with empty values
+            field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
 
-            sql_value = field_name_to_sql_value[field_name]
-            if not sql_value:
-                continue
+            # Set candidate engagement score
+            field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
 
-            index_field_type = index_field_options['IndexFieldType']
-            if 'array' in index_field_type:
-                sql_value_array = sql_value.split(group_concat_separator)
-                if index_field_type == 'int-array':
-                    # If int-array, turn all values to ints
-                    sql_value_array = [int(field_value) for field_value in sql_value_array]
-                field_name_to_sql_value[field_name] = sql_value_array
+            # Massage 'field_name_to_sql_value' values into the types they are supposed to be
+            for field_name in field_name_to_sql_value.keys():
+                index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
-        # Add the required values we didn't get from DB
-        if not domain_id:
-            field_name_to_sql_value_row = User.query.filter_by(
-                id=field_name_to_sql_value['user_id']).first()
-            domain_id = field_name_to_sql_value_row.domain_id
-        field_name_to_sql_value['domain_id'] = domain_id
-        action_dict['fields'] = field_name_to_sql_value
-        action_dicts.append(action_dict)
+                if not index_field_options:
+                    logger.error("Unknown field name, could not build document: %s", field_name)
+                    continue
+
+                sql_value = field_name_to_sql_value[field_name]
+                if not sql_value:
+                    continue
+
+                index_field_type = index_field_options['IndexFieldType']
+                if 'array' in index_field_type:
+                    sql_value_array = sql_value.split(group_concat_separator)
+                    if index_field_type == 'int-array':
+                        # If int-array, turn all values to ints
+                        sql_value_array = [int(field_value) for field_value in sql_value_array]
+                    field_name_to_sql_value[field_name] = sql_value_array
+
+            # Add the required values we didn't get from DB
+            if not domain_id:
+                field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
+                domain_id = field_name_to_sql_value_row.domain_id
+            field_name_to_sql_value['domain_id'] = domain_id
+            action_dict['fields'] = field_name_to_sql_value
+            action_dicts.append(action_dict)
 
     return action_dicts
 
 
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
+    :param domain_id: Domain Id
     :return:
     """
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
-    logger.info("Uploading %s candidate documents. Generating action dicts...", len(candidate_ids))
-    start_time = time.time()
-    action_dicts = _build_candidate_documents(candidate_ids, domain_id)
-    logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
-                len(action_dicts))
-    adds, deletes = _send_batch_request(action_dicts)
-    if deletes:
-        logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s deletes.candidate_ids: %s",
-                     deletes, candidate_ids)
-    return adds
+
+    # We'll not upload all candidate documents at once rather 10 candidate documents at once
+    max_number_of_candidate = 10
+    for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+        logger.info("Uploading %s candidate documents. Generating action dicts...",
+                    len(candidate_ids[i:i + max_number_of_candidate]))
+        start_time = time.time()
+        action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+        logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
+                    len(action_dicts))
+        adds, deletes = _send_batch_request(action_dicts)
+        if deletes:
+            logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
+                         "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
+        if adds:
+            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i + max_number_of_candidate]))
 
 
 def upload_candidate_documents_in_domain(domain_id):
@@ -420,7 +429,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents(candidate_ids, domain_id)
+    return upload_candidate_documents.delay(candidate_ids, domain_id)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -432,7 +441,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents(candidate_ids=candidate_ids)
+    return upload_candidate_documents.delay(candidate_ids)
 
 
 def upload_all_candidate_documents():
@@ -444,8 +453,7 @@ def upload_all_candidate_documents():
     domains = Domain.query.with_entities(Domain.id).all()
     for domain in domains:
         logger.info("Uploading all candidates of domain %s", domain.id)
-        adds += upload_candidate_documents_in_domain(domain.id)
-    return adds
+        upload_candidate_documents_in_domain(domain.id)
 
 
 def delete_candidate_documents(candidate_ids):
