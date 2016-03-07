@@ -648,20 +648,14 @@ def add_photos(candidate_id, photos, added_time=None):
     db.session.commit()
 
 
-def update_photo(candidate_id, photo_id, user_id, update_dict):
+def update_photo(candidate_id, user_id, update_dict):
     """
     Function will update CandidatePhoto data
     :type candidate_id:  int|long
     :type photo_id:  int|long
     :type user_id:   int|long
     """
-    # Format inputs
-    photo_update_dict = dict(candidate_id=candidate_id,
-                             image_url=update_dict.get('image_url'),
-                             is_default=update_dict.get('is_default'),
-                             updated_datetime=datetime.datetime.utcnow())
-    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
-
+    photo_id = update_dict['id']
     photo_query = CandidatePhoto.query.filter_by(id=photo_id)
     photo_object = photo_query.first()
 
@@ -674,14 +668,20 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     if photo_object.candidate_id != candidate_id:
         raise ForbiddenError('Unauthorized candidate photo', error_code=custom_error.PHOTO_FORBIDDEN)
 
+    # Format inputs
+    photo_update_dict = dict(candidate_id=candidate_id,
+                             image_url=update_dict.get('image_url'),
+                             is_default=update_dict.get('is_default'),
+                             updated_datetime=datetime.datetime.utcnow())
+    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
+
     # Track all changes
     _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
                                  datetime.datetime.utcnow())
 
     # Update candidate's photo
     photo_query.update(photo_update_dict)
-    db.session.commit()
-
+    return
 
 ######################################
 # Helper Functions For Candidate Notes

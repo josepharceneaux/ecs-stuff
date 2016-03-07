@@ -86,9 +86,8 @@ class TestCandidatePhotoEdit(object):
 
         # Update candidate's photo
         last_photo_id = candidate_photos[-1]['id']
-        update_resp = request_to_candidate_photos_resource(access_token_first, 'patch', candidate_id,
-                                                           photo_id=last_photo_id,
-                                                           data={'is_default': True})
+        data = {'photos': [{'id': last_photo_id, 'is_default': True}]}
+        update_resp = request_to_candidate_photos_resource(access_token_first, 'patch', candidate_id, data=data)
         print response_info(response=update_resp)
 
         # Retrieve candidate photo again and check new is_default value
