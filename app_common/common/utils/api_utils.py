@@ -59,7 +59,15 @@ def api_route(self, *args, **kwargs):
     return wrapper
 
 
-def get_pagination_constraints(request):
+def get_pagination_params(request):
+    """
+    This function helps to extract pagination query parameters "page" and "per_page" values.
+    It validates the values for these params and raises InvalidUsage if given values or not
+     valid number or returns default values (page=1, per_page=10) if no values are given.
+    :param request: request object to get query params
+    :return: page, per_page
+    :rtype: tuple
+    """
     page = request.args.get('page', DEFAULT_PAGE)
     per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
@@ -73,8 +81,52 @@ def get_pagination_constraints(request):
     return int(page), int(per_page)
 
 
-def get_paginated_response(key, query, page, per_page):
+def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+    """
+    This function takes query object and then returns ApiResponse object containing
+    JSON serializable list of objects by applying pagination on query using given
+    constraints (page, per_page) as response body.
+    Response object has extra pagination headers like
+        X-Total    :  Total number of results found
+        X-Per_page :  Number of items in one page
+        X-Page     :  Page Number that is being sent
+
+    List of object is packed in a dictionary where key is specified by user/developer.
+    :param key: final dictionary will contain this key where value will be list if items.
+    :param query: A query object on which pagination will be applied.
+    :param page: page number
+    :param per_page: page size
+    :return: dictionary containing list of items
+
+    :Example:
+        >>> query = PushCampaign.query
+        >>> page, per_page = 1, 10
+        >>> response = get_paginated_response('campaigns', query, 1, 10)
+        >>> response
+        {
+            "count": 10,
+            "campaigns": [
+                {
+                    "name": "getTalent",
+                    "body_text": "Abc.....xyz",
+                    "url": "https://www.google.com"
+                },
+                .....
+                .....
+                .....
+                {
+                    "name": "Hiring New Talent",
+                    "body_text": "Abc.....xyz",
+                    "url": "https://www.gettalent.com/career"
+                }
+            ]
+        }
+    """
+    assert key and isinstance(key, basestring), "key must be a valid string"
+    # error_out=false, do nor raise error if these is nop object to return but return an empty list
     results = query.paginate(page, per_page, error_out=False)
+
+    # convert model objects to serializable dictionaries
     items = [to_json(item) for item in results.items]
     headers = {
         'X-Total': results.total,
