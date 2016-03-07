@@ -98,7 +98,7 @@ def test_associate_device_to_deleted_candidate(access_token_first, user_first, c
     assert response.status_code == 404
 
 
-def test_associate_device_with_valid_data(access_token_first, candidate_first):
+def test_associate_device_with_valid_data(access_token_first, candidate_first, delete_device):
     """
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
@@ -124,9 +124,13 @@ def test_associate_device_with_valid_data(access_token_first, candidate_first):
     assert 'devices' in response
     assert len(response['devices']) == 1
 
+    # Set data to be used in finalizer to delete device association
+    delete_device['candidate_id'] = candidate_first.id
+    delete_device['device_id'] = PUSH_DEVICE_ID
+
 
 def test_associate_device_to_two_candidate_in_same_domain(access_token_first, candidate_first,
-                                                          candidate_second):
+                                                          candidate_second, delete_device):
     """
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
@@ -149,8 +153,12 @@ def test_associate_device_to_two_candidate_in_same_domain(access_token_first, ca
     logger.info(response.content)
     assert response.status_code == 400
 
+    # Set data to be used in finalizer to delete device association
+    delete_device['candidate_id'] = candidate_first.id
+    delete_device['device_id'] = PUSH_DEVICE_ID
 
-def test_associate_device_using_diff_user_token_same_domain(access_token_same, candidate_first):
+
+def test_associate_device_using_diff_user_token_same_domain(access_token_same, candidate_first, delete_device):
     """
     Try to associate  a device to a candidate but authentication token belongs to a different
     user that is not owner of candidate but he is from same domain as owner user.
@@ -176,6 +184,10 @@ def test_associate_device_using_diff_user_token_same_domain(access_token_same, c
     assert 'devices' in response
     assert len(response['devices']) == 1
 
+    # Set data to be used in finalizer to delete device association
+    delete_device['candidate_id'] = candidate_first.id
+    delete_device['device_id'] = PUSH_DEVICE_ID
+
 
 def test_associate_device_using_diff_user_token_diff_domain(access_token_second, candidate_first):
     """
@@ -194,3 +206,58 @@ def test_associate_device_using_diff_user_token_diff_domain(access_token_second,
                                        CandidateApiUrl.DEVICES % candidate_first.id, data)
     logger.info(response.content)
     assert response.status_code == 403
+
+
+def test_delete_candidate_device(access_token_first, candidate_first, associate_device):
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+
+    response = define_and_send_request(access_token_first, 'delete',
+                                       CandidateApiUrl.DEVICES % candidate_first.id, data)
+    logger.info(response.content)
+    assert response.status_code == 200
+
+
+def test_delete_candidate_device_in_same_domain(access_token_same, candidate_first, associate_device):
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+
+    response = define_and_send_request(access_token_same, 'delete',
+                                       CandidateApiUrl.DEVICES % candidate_first.id, data)
+    logger.info(response.content)
+    assert response.status_code == 200
+
+
+def test_delete_candidate_device_in_diff_domain(access_token_second, candidate_first, associate_device):
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+
+    response = define_and_send_request(access_token_second, 'delete',
+                                       CandidateApiUrl.DEVICES % candidate_first.id, data)
+    logger.info(response.content)
+    assert response.status_code == 403
+
+
+def test_delete_candidate_device_with_invalid_one_signal_id(access_token_first, candidate_first, associate_device):
+    data = {
+        'one_signal_device_id': 'Invalid Id'
+    }
+
+    response = define_and_send_request(access_token_first, 'delete',
+                                       CandidateApiUrl.DEVICES % candidate_first.id, data)
+    logger.info(response.content)
+    assert response.status_code == 404
+
+
+def test_delete_candidate_device_with_invalid_candidate_id(access_token_first, associate_device):
+    data = {
+        'one_signal_device_id': PUSH_DEVICE_ID
+    }
+    candidate_id = sys.maxint
+    response = define_and_send_request(access_token_first, 'delete',
+                                       CandidateApiUrl.DEVICES % candidate_id, data)
+    logger.info(response.content)
+    assert response.status_code == 404

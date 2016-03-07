@@ -1453,6 +1453,13 @@ class CandidateDeviceResource(Resource):
         """
         Endpoint: GET /v1/candidates/:id/devices
         Function will return requested candidate's associated devices
+        :Example:
+
+            >>> import requests
+            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> candidate_id = 1
+            >>> response = requests.get(CandidateAPiUrl.DEVICES % candidate_id,
+            >>>                          headers=headers)
         """
         # Authenticated user & candidate ID
         authenticated_user, candidate_id = request.user, kwargs.get('id')
@@ -1479,14 +1486,16 @@ class CandidateDeviceResource(Resource):
 
             >>> import json
             >>> import requests
-            >>> headers = {'Authorization': 'Bearer <access_token>'}
+            >>> headers = {
+            >>>              'Authorization': 'Bearer <token>',
+            >>>               'Content-Type': 'application/json'
+            >>>           }
             >>> data = {
-            >>>            "candidate_id": 268,
             >>>            "device_id": "56c1d574-237e-4a41-992e-c0094b6f2ded"
             >>>         }
             >>> data = json.dumps(data)
-            >>> campaign_id = 1
-            >>> response = requests.post(CandidateAPiUrl.DEVICES, data=data,
+            >>> candidate_id = 268
+            >>> response = requests.post(CandidateAPiUrl.DEVICES % candidate_id, data=data,
             >>>                          headers=headers)
 
         .. Response::
@@ -1538,6 +1547,60 @@ class CandidateDeviceResource(Resource):
         else:
             # No device was found on OneSignal database.
             raise ResourceNotFound('Device is not registered with OneSignal with id %s' % one_signal_device_id)
+
+    def delete(self, **kwargs):
+        """
+        Endpoint: DELETE /v1/candidates/:id/devices
+        Function will delete requested candidate's associated device
+
+        You have to pass device one_signal_id in request payload.
+        :Example:
+            >>> import json
+            >>> import requests
+            >>> candidate_id = 10
+            >>> device_id = 'sad3232fedsagfewrq32323423dasdasd'
+            >>> data = {
+            >>>            'one_signal_device_id': device_id
+            >>> }
+            >>> data = json.dumps(data)
+            >>> headers = {
+            >>>             'Authorization': 'Bearer <token>',
+            >>>             'Content-Type': 'application/json'
+            >>> }
+            >>> response = requests.delete(CandidateApiUrl.DEVICES % candidate_id, data=data,
+            >>>                            headers=headers)
+
+        .. Response::
+
+                {
+                    "message": "device (id: sad3232fedsagfewrq32323423dasdasd) has been deleted for candidate (id: 10)"
+                }
+        """
+        # Authenticated user & candidate ID
+        authenticated_user, candidate_id = request.user, kwargs.get('id')
+
+        # Ensure candidate exists & is not web-hidden
+        get_candidate_if_exists(candidate_id=candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authenticated_user, candidate_id):
+            raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
+
+        data = get_json_if_exist(_request=request)
+        if not candidate_id:
+            raise InvalidUsage('candidate_id is not given in POST data')
+        one_signal_device_id = data.get('one_signal_device_id')
+        if not one_signal_device_id:
+            raise InvalidUsage('device_id is not given in post data')
+        device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
+                                                                                 authenticated_user.domain_id)
+        if not device:
+            raise ResourceNotFound('Device not found with given OneSignalId (%s) and candidate_id (%s)'
+                                   % (one_signal_device_id, candidate_id))
+        db.session.delete(device)
+        db.session.commit()
+
+        return {'message': 'device (id: %s) has been deleted for candidate (id: %s)' % (device.id, candidate_id)}
 
 
 class CandidatePhotosResource(Resource):
