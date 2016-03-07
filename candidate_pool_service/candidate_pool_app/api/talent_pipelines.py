@@ -6,9 +6,9 @@ import json
 from flask import request, Blueprint
 from dateutil import parser
 from sqlalchemy import and_
-from dateutil.parser import parse
 from datetime import datetime
 from flask_restful import Resource
+from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.talent_api import TalentApi
@@ -16,6 +16,7 @@ from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_campaigns_of_talent_pipeline,
@@ -522,7 +523,7 @@ class TalentPipelineCampaigns(Resource):
         return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
 
 
-@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS, methods=['POST'])
+@talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS, methods=['GET', 'POST'])
 @require_oauth(allow_null_user=True)
 def update_talent_pipelines_stats():
     """
@@ -530,7 +531,25 @@ def update_talent_pipelines_stats():
     :return: None
     """
     logger.info("TalentPipeline statistics update process has been started")
+
+    if request.method == 'GET':
+        from_date_string = request.args.get('from_date', '')
+        to_date_string = request.args.get('to_date', '')
+
+        if from_date_string or to_date_string:
+
+            try:
+                from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
+                to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+                update_talent_pipelines_stats_task.delay(from_date.date(), to_date.date())
+
+                return '', 204
+
+            except Exception as e:
+                raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
     update_talent_pipelines_stats_task.delay()
+
     return '', 204
 
 
@@ -555,8 +574,8 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     interval = request.args.get('interval', '1')
 
     try:
-        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
-        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+        from_date = parse(from_date_string).date() if from_date_string else datetime.fromtimestamp(0).date()
+        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
@@ -567,25 +586,26 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     if interval < 1:
         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
-    talent_pipeline_stats = TalentPipelineStats.query.filter(
-            TalentPipelineStats.talent_pipeline_id == talent_pipeline_id,
-            TalentPipelineStats.added_datetime >= from_date,
-            TalentPipelineStats.added_datetime <= to_date).all()
+    pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline_id)
 
-    talent_pipeline_stats.reverse()
+    talent_pipeline_stats_keys = filter(lambda added_date: from_date <= datetime.strptime(
+            added_date, '%m/%d/%Y').date() <= to_date, pipelines_growth_stats_dict)
 
-    talent_pipeline_stats = talent_pipeline_stats[::interval]
+    talent_pipeline_stats_keys = sorted(talent_pipeline_stats_keys,
+                                        key=lambda added_date: datetime.strptime(added_date, '%m/%d/%Y').date(),
+                                        reverse=True)
+
+    talent_pipeline_stats_keys = talent_pipeline_stats_keys[::interval]
 
     # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
     # count of current_day
-    talent_pipeline_stats = map(lambda (i, talent_pipeline_stat): {
-        'total_number_of_candidates': talent_pipeline_stat.total_number_of_candidates,
-        'number_of_candidates_added': (talent_pipeline_stat.total_number_of_candidates - (
-            talent_pipeline_stats[i + 1].total_number_of_candidates if i + 1 < len(talent_pipeline_stats)
-            else talent_pipeline_stat.total_number_of_candidates)),
-        'added_datetime': talent_pipeline_stat.added_datetime.isoformat(),
-        'candidates_engagement': talent_pipeline_stat.candidates_engagement
-    }, enumerate(talent_pipeline_stats))
+    talent_pipeline_stats = map(lambda (i, talent_pipeline_stats_added_date): {
+        'total_number_of_candidates': pipelines_growth_stats_dict[talent_pipeline_stats_added_date],
+        'number_of_candidates_added': (pipelines_growth_stats_dict[talent_pipeline_stats_added_date] - (
+            pipelines_growth_stats_dict[talent_pipeline_stats_keys[i + 1]] if i + 1 < len(talent_pipeline_stats_keys)
+            else pipelines_growth_stats_dict[talent_pipeline_stats_added_date])),
+        'added_datetime': datetime.strptime(talent_pipeline_stats_added_date, '%m/%d/%Y').date().isoformat()
+    }, enumerate(talent_pipeline_stats_keys))
 
     return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
