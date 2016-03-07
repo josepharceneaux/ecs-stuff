@@ -1,18 +1,22 @@
-from flask import Blueprint
-from email_template_service.common.utils.auth_utils import require_oauth, require_all_roles
-from email_template_service.common.models.db import db
-from email_template_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
-from email_template_service.common.models.user import User, UserScopedRoles, DomainRole
-from flask import request
-from email_template_service.common.error_handling import *
-import json
+import types
 
+from flask import Blueprint
+from email_campaign_service.common.utils.auth_utils import require_oauth, require_all_roles
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.talent_api import TalentApi
+from email_campaign_service.common.utils.api_utils import api_route
+from email_campaign_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
+from email_campaign_service.common.models.user import User, UserScopedRoles, DomainRole
+from flask import request
+from email_campaign_service.common.error_handling import *
+import json
 
 mod = Blueprint('email_template_service', __name__)
 
 
+
 @mod.route('/v1/email-templates', methods=['POST'])
-@require_oauth
+@require_oauth()
 def post_email_template():
     """
     This function creates a new email_template
@@ -78,7 +82,7 @@ def post_email_template():
 
 
 @mod.route('/v1/email-templates', methods=['DELETE'])
-@require_oauth
+@require_oauth()
 def delete_email_template():
     """
     Function will delete email template from db
@@ -87,6 +91,8 @@ def delete_email_template():
     :rtype:  dict
     """
     data = json.loads(request.data)
+    if(data is None):
+        raise InvalidUsage(error_message="Missing parameter email_template_id")
     email_template_id = data.get("id")
     # Validate email template id
     validate_template_id(email_template_id)
@@ -117,7 +123,7 @@ def delete_email_template():
 
 
 @mod.route('/v1/email-templates', methods=['PUT'])
-@require_oauth
+@require_oauth()
 def update_email_template():
     """
     Function can update email template(s).
@@ -160,17 +166,17 @@ def update_email_template():
     return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
 
-@mod.route('/v1/email-templates', methods=['GET'])
-@require_oauth
-def get_email_template():
+@mod.route('/v1/email-templates/', methods=['GET'])
+@mod.route('/v1/email-templates/<id>', methods=['GET'])
+@require_oauth()
+def get_email_template(**kwargs):
     """
     Function can retrieve email template(s).
     input: {'id': "template_id"}
     :return:  A dictionary containing array of template html body and template id
     :rtype: dict
     """
-    data = json.loads(request.data)
-    email_template_id = data.get("id")
+    email_template_id = kwargs.get("id")
     # Validate email template id
     validate_template_id(email_template_id)
     if isinstance(email_template_id, basestring):
@@ -195,7 +201,7 @@ def get_email_template():
 
 @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
 @mod.route('/v1/email-template-folders', methods=['POST'])
-@require_oauth
+@require_oauth()
 def create_email_template_folder():
     """
     This function will create email template folder
@@ -242,7 +248,7 @@ def create_email_template_folder():
 
 @require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER')
 @mod.route('/v1/email-template-folders', methods=['DELETE'])
-@require_oauth
+@require_oauth()
 def delete_email_template_folder():
     """
     This function will delete email template folder from the domain

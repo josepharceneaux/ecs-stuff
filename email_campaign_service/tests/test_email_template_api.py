@@ -1,11 +1,12 @@
-# -*- coding: utf-8 -*-
+import time
+import requests
 
-from email_template_service.common.tests.conftest import *
-from email_template_service.email_template.api.common_functions import create_email_template, update_email_template
-from helpers import *
-from email_template_service.common.utils.common_functions import add_role_to_test_user
-from email_template_service.common.models.user import DomainRole
-from email_template_service.common.utils.app_rest_urls import EmailTemplateApiUrl
+from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
+from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource, \
+                                                                  get_template_folder, create_email_template, \
+                                                                  update_email_template)
 
 
 # Add roles to the db
@@ -113,7 +114,7 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
 
     data = {'name': template_folder_name, 'id': template_folder_id}
     response = requests.delete(
-        url=EmailTemplateApiUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
+        url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % token2,
                  'Content-type': 'application/json'}
     )
@@ -279,11 +280,11 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     del_domain_roles(role_id)
 
 
-def test_delete_template_from_different_domain(sample_user, sample_user_from_domain_first, email_template_body, user_auth):
+def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, email_template_body, user_auth):
     """
     Tests deleting user's email template from different domain
     :param sample_user:         user1
-    :param sample_user_from_domain_first:         user2
+    :param user_from_diff_domain:         user2
     :param email_template_body:     email template html body
     result : The response should be Forbidden error - 403
     """
@@ -291,14 +292,14 @@ def test_delete_template_from_different_domain(sample_user, sample_user_from_dom
     email_template = add_email_template(user_auth, sample_user, email_template_body)
     email_template_id = email_template["email_template_id"]
 
-    token2 = user_auth.get_auth_token(sample_user_from_domain_first, get_bearer_token=True)['access_token']
+    token2 = user_auth.get_auth_token(user_from_diff_domain, get_bearer_token=True)['access_token']
 
     # Add or get Role
     role = "CAN_DELETE_EMAIL_TEMPLATE"
-    role_id = add_domain_role(role, sample_user_from_domain_first.domain_id)
+    role_id = add_domain_role(role, user_from_diff_domain.domain_id)
 
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user_from_domain_first, [role])
+    add_role_to_test_user(user_from_diff_domain, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', email_template_id)
     assert resp.status_code == 403
@@ -325,11 +326,14 @@ def test_get_email_template_via_id(sample_user, sample_user_2, email_template_bo
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
-
+    url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id)
     # Get email_template via template ID
-    resp = request_to_email_template_resource(token2, 'get', email_template_id)
-    assert resp.status_code == 200
-    resp_dict = resp.json()['email_template']
+    response = requests.get(
+        url=url, headers={
+            'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
+    )
+    assert response.status_code == 200
+    resp_dict = response.json()['email_template']
     assert isinstance(resp_dict, dict)
     assert resp_dict['id'] == email_template_id
     del_domain_roles(role_id2)
@@ -355,9 +359,13 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, ema
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
+    url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id) + '1'
     # Get email_template via template ID
-    resp = request_to_email_template_resource(token2, 'get', email_template_id+1)
-    assert resp.status_code == 404
+    response = requests.get(
+        url=url, headers={
+            'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
+    )
+    assert response.status_code == 404
     del_domain_roles(role_id2)
 
 
