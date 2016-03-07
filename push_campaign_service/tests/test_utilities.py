@@ -249,3 +249,13 @@ def get_candidate_devices(candidate_id, token, expected_status=(200,)):
     logger.info(response.content)
     assert response.status_code in expected_status
     return response.json()
+
+
+def delete_candidate_device(candidate_id, device_id,  token, expected_status=(200,)):
+    data = {
+        'one_signal_device_id': device_id
+    }
+    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
+    logger.info(response.content)
+    assert response.status_code in expected_status
+    return response.json()

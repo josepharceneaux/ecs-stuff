@@ -3,7 +3,7 @@
 
 Push Campaign Service API allows users (recruiters) to send push notification campaigns to their
 candidates. To send a push notification to a candidate, candidate must be registered with our app
-using OneSignal API and we must have his device id (player_id in onesignal terminology).
+using OneSignal API and we must have his device id (player_id in OneSignal terminology).
 
 Users will be able to see the activities on the
 campaign from activity history. In this API, we will implement functionality for
@@ -43,7 +43,7 @@ If candidate has no device registered with getTalent,
 he will not get any push notifications and if device is associated with a candidate, we will send push notification to this device using
 device_id.
 A device will be associated to a candidate by sending a POST request to candidate service 
-`Associate Devices Endpoint [/v1/candiates/:id/devices] with one signal device id as request payload.
+`Associate Devices Endpoint [/v1/candidates/:id/devices] with one signal device id as request payload.
 OneSignal device id will be retrieved by OneSignal Javascript SDK for web (because we are dealing with web push notifications).
 
 ### Sends
@@ -78,7 +78,7 @@ To create a push notification campaign, You need to send a POST request to '/v1/
 ```
 payload = {
     'name': 'getTalent',
-    'body_text': 'Contents of a campiagn goes here',
+    'body_text': 'Contents of a campaign goes here',
     'url': 'https://www.google.com',
     'smartlist_ids': [1,2,3]
 }

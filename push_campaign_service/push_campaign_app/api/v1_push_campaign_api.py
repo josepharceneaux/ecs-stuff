@@ -123,17 +123,14 @@ from push_campaign_service.common.campaign_services.validators import get_valid_
 from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
                                                          ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
-from push_campaign_service.common.models.user import User, Domain
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
 from push_campaign_service.common.utils.auth_utils import require_oauth
 from push_campaign_service.common.utils.api_utils import (api_route, ApiResponse,
                                                           get_paginated_response,
-                                                          get_pagination_constraints)
-from push_campaign_service.common.models.push_campaign import (PushCampaign,
-                                                               PushCampaignSend,
-                                                               PushCampaignBlast,
-                                                               PushCampaignSendUrlConversion)
+                                                          get_pagination_params)
+from push_campaign_service.common.models.push_campaign import (PushCampaignSend,
+                                                               PushCampaignBlast)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
 
@@ -196,7 +193,7 @@ class PushCampaignsResource(Resource):
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
         """
-        page, per_page = get_pagination_constraints(request)
+        page, per_page = get_pagination_params(request)
         query = PushCampaignBase.get_all_campaigns(request.user.domain_id)
         return get_paginated_response('campaigns', query, page, per_page)
 
@@ -746,7 +743,7 @@ class PushCampaignBlastSends(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        page, per_page = get_pagination_constraints(request)
+        page, per_page = get_pagination_params(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -813,7 +810,7 @@ class PushCampaignSends(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        page, per_page = get_pagination_constraints(request)
+        page, per_page = get_pagination_params(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
@@ -879,7 +876,7 @@ class PushCampaignBlasts(Resource):
                     500 (Internal Server Error)
         """
         user = request.user
-        page, per_page = get_pagination_constraints(request)
+        page, per_page = get_pagination_params(request)
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)

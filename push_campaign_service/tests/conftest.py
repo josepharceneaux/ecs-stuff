@@ -34,7 +34,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         get_blasts, schedule_campaign,
                                                         associate_device_to_candidate,
                                                         get_candidate_devices, delete_campaigns,
-                                                        SLEEP_TIME)
+                                                        SLEEP_TIME, delete_candidate_device)
 
 fake = Faker()
 test_config = load_test_config()
@@ -276,7 +276,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
 
 
 @pytest.fixture(scope='function')
-def candidate_device_first(token_first, candidate_first):
+def candidate_device_first(request, token_first, candidate_first):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
@@ -288,11 +288,17 @@ def candidate_device_first(token_first, candidate_first):
     associate_device_to_candidate(candidate_id, device_id, token_first)
     devices = get_candidate_devices(candidate_id, token_first)['devices']
     assert len(devices) == 1
+
+    def tear_down():
+        delete_candidate_device(candidate_id, device_id, token_first, expected_status=(HttpStatus.OK,
+                                                                                       HttpStatus.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
     return devices[0]
 
 
 @pytest.fixture(scope='function')
-def candidate_device_same_domain(token_same_domain, candidate_same_domain):
+def candidate_device_same_domain(request, token_same_domain, candidate_same_domain):
     """
     This fixture associates a device with  candidate from domain first which is required to
     send push campaign to candidate.
@@ -304,11 +310,17 @@ def candidate_device_same_domain(token_same_domain, candidate_same_domain):
     associate_device_to_candidate(candidate_id, device_id, token_same_domain)
     devices = get_candidate_devices(candidate_id, token_same_domain)['devices']
     assert len(devices) == 1
+
+    def tear_down():
+        delete_candidate_device(candidate_id, device_id, token_same_domain,
+                                expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
     return devices[0]
 
 
 @pytest.fixture(scope='function')
-def candidate_device_second(token_second, candidate_second):
+def candidate_device_second(request, token_second, candidate_second):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
@@ -320,4 +332,10 @@ def candidate_device_second(token_second, candidate_second):
     associate_device_to_candidate(candidate_id, device_id, token_second)
     devices = get_candidate_devices(candidate_id, token_second)['devices']
     assert len(devices) == 1
+
+    def tear_down():
+        delete_candidate_device(candidate_id, device_id, token_second, expected_status=(HttpStatus.OK,
+                                                                                        HttpStatus.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
     return devices[0]
