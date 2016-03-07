@@ -279,7 +279,7 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
                     pipelines_growth_stats_dict[last_added_stat_date_string] = response.get('total_found')
 
             logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
-            
+
             successful_update_talent_pipeline_ids.append(talent_pipeline_id)
 
     except Exception as e:
