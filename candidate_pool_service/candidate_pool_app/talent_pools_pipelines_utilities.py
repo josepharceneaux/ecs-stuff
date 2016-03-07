@@ -84,15 +84,16 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
         headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
 
     if not is_celery_task:
-        request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
         request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
-        request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
-        request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
     else:
         request_params['fields'] = fields
+
+    request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
+    request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
+    request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
 
     request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
@@ -277,6 +278,8 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
 
                     pipelines_growth_stats_dict[last_added_stat_date_string] = response.get('total_found')
 
+            logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
+            
             successful_update_talent_pipeline_ids.append(talent_pipeline_id)
 
     except Exception as e:
