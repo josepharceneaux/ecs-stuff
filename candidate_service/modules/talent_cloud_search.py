@@ -670,6 +670,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                          % (coordinates[0], coordinates[1])
         params['sort'] = "distance %s" % sort_order
 
+    logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
+
     # Adding facet fields parameters
 
     if not count_only:
