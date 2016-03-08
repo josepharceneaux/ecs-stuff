@@ -118,6 +118,7 @@ def send_campaign(campaign, access_token, sleep_time=20):
     time.sleep(sleep_time)
     db.session.commit()
 
+
 def post_to_email_template_resource(access_token, data, domain_id=None):
     """
     Function sends a post request to email-templates,
@@ -193,6 +194,7 @@ def get_template_folder(token):
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
     return template_folder_id['id'], template_folder_name
+
 
 def post_to_email_template_resource(access_token, data, domain_id=None):
     """
@@ -286,6 +288,7 @@ def request_to_group_email_template_resource(access_token, request, group_id, da
     url = EmailCampaignUrl.GROUP_EMAIL_TEMPLATE % group_id
     return define_and_send_request(request, url, access_token, data, group_id=group_id)
 
+
 def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1",
                           folder_id=None, domain_id=None, role_id=None):
     """
@@ -350,3 +353,42 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     create_resp = request_to_email_template_resource(token, request, email_template_id, data)
     return create_resp
 
+
+# Add roles to the db
+def add_domain_role(role_name, domain_id):
+    """
+    Function to create user roles for test purpose only
+    :param role_name: Name of user role
+    :param domain_id: user's domain ID
+    :return:
+    """
+    domain_role = db.session.query(DomainRole).filter_by(role_name=role_name).first()
+    if domain_role and domain_id == domain_role.domain_id:
+        return domain_role.id
+    elif domain_role:
+        role_id = domain_role.id
+        del_domain_roles(role_id)
+        add_role = DomainRole(role_name=role_name, domain_id=domain_id)
+        db.session.add(add_role)
+        db.session.commit()
+        role_id = add_role.id
+        return role_id
+
+    add_role = DomainRole(role_name=role_name, domain_id=domain_id)
+    db.session.add(add_role)
+    db.session.commit()
+    role_id = add_role.id
+    return role_id
+
+
+def del_domain_roles(role_ids):
+    """
+    Function to delete all created user domain roles for tests
+    :param role_ids:
+    """
+    if isinstance(role_ids, list):
+        for role_id in role_ids:
+            db.session.query(DomainRole).filter_by(id=role_id).delete()
+            db.session.commit()
+    else:
+        db.session.query(DomainRole).filter_by(id=role_ids).delete()

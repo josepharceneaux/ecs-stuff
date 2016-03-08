@@ -1,12 +1,17 @@
+"""Email Templates API: Provide the endpoints to create, retrieve, update and delete
+Email Templates. Also contains endpoints for creating and deleting Email Template Folders
+"""
 import json
 
 from flask import request
 from flask import Blueprint
+
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import *
-from email_campaign_service.common.utils.auth_utils import require_oauth, require_all_roles
-from email_campaign_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
+from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
+from email_campaign_service.common.models.misc import (UserEmailTemplate, EmailTemplateFolder)
+from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError, NotFoundError,
+                                                          ResourceNotFound, UnauthorizedError)
 
 mod = Blueprint('email_template_service', __name__)
 
@@ -15,27 +20,26 @@ mod = Blueprint('email_template_service', __name__)
 @require_oauth()
 def post_email_template():
     """
-    This function creates a new email_template
-    input: {'name': "template_name", "email_body_html": "html_body"}
-    :return:  A dictionary containing array of template id
-    :rtype: dict
+        POST /email-templates
+        Function will create an email template
+        Required parameters:
+        name:                     Name of email template
+        email_body_html:          Body of email template
+        email_template_folder_id: ID of email template folder
+        is_immutable:             Parameter to determine is the email template is  mutable or not
     """
     user_id = request.user.id
-    # Check roles assigned to user
-    # role_id = UserScopedRoles.query.filter_by(user_id=user_id)
-    # # Check the user has role to create template
-    # role = DomainRole.query.get(role_id)
-    # domain_role_name = role.role_name
-    # assert domain_role_name == "CAN_CREATE_EMAIL_TEMPLATE"
-    data = json.loads(request.data)
-
     domain_id = request.user.domain_id
+
+    data = json.loads(request.data)
+    if data is None:
+        raise InvalidUsage(error_message="Missing parameters for creating email template.")
+
     template_name = data.get('name')
     if not template_name:
         raise InvalidUsage(error_message="Template name is empty")
 
     email_template_html_body = data.get("email_body_html")
-
     if not email_template_html_body:
         raise InvalidUsage(error_message="Email HTML body is empty")
 
@@ -77,58 +81,55 @@ def post_email_template():
     return jsonify({'template_id': [{'id': user_email_template_id}]}), 201
 
 
-@mod.route('/v1/email-templates', methods=['DELETE'])
+@mod.route('/v1/email-templates/', methods=['GET'])
+@mod.route('/v1/email-templates/<id>', methods=['GET'])
 @require_oauth()
-def delete_email_template():
+def get_email_template(**kwargs):
     """
-    Function will delete email template from db
-    input: {'id': "template_id"}
-    :return: success=1 or 0
-    :rtype:  dict
+        GET /email-templates
+        Function will return email template based on specified id
+        Required parameters:
+        id:     ID of of email template
     """
-    data = json.loads(request.data)
-    if data is None:
-        raise InvalidUsage(error_message="Missing parameter email_template_id")
-    email_template_id = data.get("id")
+    email_template_id = kwargs.get("id")
+
     # Validate email template id
     validate_template_id(email_template_id)
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
-
-    user_id = request.user.id
     domain_id = request.user.domain_id
 
     template = UserEmailTemplate.query.get(email_template_id)
     if not template:
-        raise NotFoundError(error_message="Template not found")
+        raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
     # Verify owned by same domain
     template_owner_user = User.query.get(template.user_id)
-
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
-    if template.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
-        raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
+    # Verify is_immutable
+    if template.is_immutable == 1 and not require_all_roles('CAN_GET_EMAIL_TEMPLATE'):
+        raise ForbiddenError(error_message="User %d not allowed to update the template" % template_owner_user.id)
 
-    # Delete the template
-    template_to_delete = UserEmailTemplate.query.get(email_template_id)
-    db.session.delete(template_to_delete)
-    db.session.commit()
-    return '', 204
+    return jsonify({'email_template': {'email_body_html': template.email_body_html, 'id': email_template_id}})
 
 
 @mod.route('/v1/email-templates', methods=['PUT'])
 @require_oauth()
 def update_email_template():
     """
-    Function can update email template(s).
-    input: {'id': "template_id"}
-    :return: success=1 or 0
-    :rtype:  dict
+        PUT /email-templates
+        Function would update existing email template
+        Required parameters:
+        id:     ID of email template
     """
     data = json.loads(request.data)
+    if data is None:
+        raise InvalidUsage(error_message="Missing parameter email_template_id.")
+
     email_template_id = data.get("id")
+
     # Validate email template id
     validate_template_id(email_template_id)
     if isinstance(email_template_id, basestring):
@@ -162,37 +163,47 @@ def update_email_template():
     return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
 
-@mod.route('/v1/email-templates/', methods=['GET'])
-@mod.route('/v1/email-templates/<id>', methods=['GET'])
+@mod.route('/v1/email-templates', methods=['DELETE'])
 @require_oauth()
-def get_email_template(**kwargs):
+def delete_email_template():
     """
-    Function can retrieve email template(s).
-    input: {'id': "template_id"}
-    :return:  A dictionary containing array of template html body and template id
-    :rtype: dict
+        DELETE /email-templates
+        Function will delete email template
+        Required parameters:
+        id:     ID of email template
     """
-    email_template_id = kwargs.get("id")
+    data = json.loads(request.data)
+    if data is None:
+        raise InvalidUsage(error_message="Missing parameter email_template_id.")
+
+    email_template_id = data.get("id")
+
     # Validate email template id
     validate_template_id(email_template_id)
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
+
+    user_id = request.user.id
     domain_id = request.user.domain_id
 
     template = UserEmailTemplate.query.get(email_template_id)
     if not template:
-        raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
+        raise NotFoundError(error_message="Template not found")
 
     # Verify owned by same domain
     template_owner_user = User.query.get(template.user_id)
+
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
-    # Verify is_immutable
-    if template.is_immutable == 1 and not require_all_roles('CAN_GET_EMAIL_TEMPLATE'):
-        raise ForbiddenError(error_message="User %d not allowed to update the template" % template_owner_user.id)
+    if template.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
+        raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
 
-    return jsonify({'email_template': {'email_body_html': template.email_body_html, 'id': email_template_id}})
+    # Delete the template
+    template_to_delete = UserEmailTemplate.query.get(email_template_id)
+    db.session.delete(template_to_delete)
+    db.session.commit()
+    return '', 204
 
 
 @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
@@ -200,11 +211,19 @@ def get_email_template(**kwargs):
 @require_oauth()
 def create_email_template_folder():
     """
-    This function will create email template folder
-    input: {'name': "template_folder_name", 'parent_id': "parent_id", "is_immutable": 0 or 1}
-    :return: Template folder id
+        POST /email-template-folders
+        Create email template folder
+        Required parameters:
+        name:          Name of email template folder
+        parent_id:     Parent ID of email template folder
+        is_immutable:  Parameter to determine is the email template folder is mutable or not
+        :return:       Template folder id
     """
+
     data = json.loads(request.data)
+    if data is None:
+        raise InvalidUsage(error_message="Missing parameters for creating email template folder.")
+
     folder_name = data.get('name')
     if not folder_name:
         raise InvalidUsage(error_message="Folder name must be provided")
@@ -247,11 +266,14 @@ def create_email_template_folder():
 @require_oauth()
 def delete_email_template_folder():
     """
-    This function will delete email template folder from the domain
-    input: {'name': "template_folder_name", 'parent_id': "parent_id", "is_immutable": 0 or 1}
-    :return: Template folder id
+        DELETE /email-template-folders
+        Required parameters:
+        id:     ID of email template
     """
     data = json.loads(request.data)
+    if data is None:
+        raise InvalidUsage(error_message="Missing parameter email template folder id.")
+
     folder_id = data.get('id')
     if not folder_id:
         raise InvalidUsage("Folder ID must be provided")
@@ -279,9 +301,7 @@ def delete_email_template_folder():
 
 def validate_template_id(email_template_id):
     """
-    Function will validate template ID
-    :param email_template_id:
-    :return:
+    Function will validate email template ID
     """
     if not email_template_id:
         raise InvalidUsage(error_message="Template ID must be provided")

@@ -1,3 +1,5 @@
+"""Test Email Template API: Contains tests for Email Templates and Email Template Folders endpoints
+"""
 import time
 
 from email_campaign_service.common.tests.conftest import *
@@ -5,55 +7,14 @@ from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
                                                                   get_template_folder, create_email_template,
-                                                                  update_email_template)
-
-
-# Add roles to the db
-def add_domain_role(role_name, domain_id):
-    """
-    Function to create user roles for test purpose only
-    :param role_name: Name of user role
-    :param domain_id: user's domain ID
-    :return:
-    """
-    domain_role = db.session.query(DomainRole).filter_by(role_name=role_name).first()
-    if domain_role and domain_id == domain_role.domain_id:
-        return domain_role.id
-    elif domain_role:
-        role_id = domain_role.id
-        del_domain_roles(role_id)
-        add_role = DomainRole(role_name=role_name, domain_id=domain_id)
-        db.session.add(add_role)
-        db.session.commit()
-        role_id = add_role.id
-        return role_id
-
-    add_role = DomainRole(role_name=role_name, domain_id=domain_id)
-    db.session.add(add_role)
-    db.session.commit()
-    role_id = add_role.id
-    return role_id
-
-
-def del_domain_roles(role_ids):
-    """
-    Function to delete all created user domain roles for tests
-    :param role_ids:
-    """
-    if isinstance(role_ids, list):
-        for role_id in role_ids:
-            db.session.query(DomainRole).filter_by(id=role_id).delete()
-            db.session.commit()
-    else:
-        db.session.query(DomainRole).filter_by(id=role_ids).delete()
+                                                                  update_email_template, add_domain_role,
+                                                                  del_domain_roles)
 
 
 def test_create_email_template_folder(sample_user, user_auth):
     """
     Test for creating new email template folder
     It creates a test folder and asserts that it is created with correct name
-    :param sample_user
-    :param user_auth:
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token = auth_token['access_token']
@@ -80,9 +41,6 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     """
     Test for deleting email template folder
     It creates a test folder by sample_user and deletes that by the sample_user_2 of same domain
-    :param user_auth:
-    :param sample_user
-    :param sample_user_2
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token1 = auth_token['access_token']
@@ -121,7 +79,6 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     del_domain_roles([role_id1, role_id2])
 
 
-# Tests for creating email templates
 def test_create_email_template(sample_user, user_auth, email_template_body):
     """
     Test for creating email template
@@ -176,7 +133,6 @@ def test_create_template_without_email_body(sample_user, user_auth):
     """
     Test for creating email template without passing email body
     :param sample_user:         sample user
-    :param user_auth:
     result : The response should be Bad Request - 400
     """
     domain_id = sample_user.domain_id
@@ -199,14 +155,12 @@ def test_create_template_without_email_body(sample_user, user_auth):
     del_domain_roles(role_id)
 
 
-# Test for deleting email templates
 def test_delete_email_template(sample_user, sample_user_2, email_template_body, user_auth):
     """
     Tests deleting user's email template
     :param sample_user:         user1
-    :param sample_user_2:         user2
-    :param email_template_body:     email template html body
-    :return:
+    :param sample_user_2:       user2
+    :param email_template_body: email template html body
     """
     # Add Email template
     email_template = add_email_template(user_auth, sample_user, email_template_body)
@@ -232,8 +186,8 @@ def test_delete_email_template_with_no_id(sample_user, sample_user_2, email_temp
     """
     Tests deleting user's email template
     :param sample_user:         user1
-    :param sample_user_2:         user2
-    :param email_template_body:     email template html body
+    :param sample_user_2:       user2
+    :param email_template_body: email template html body
     :return:
     """
     # Add Email template
@@ -257,8 +211,8 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     """
     Tests deleting user's email template with non existing template_id
     :param sample_user:         user1
-    :param sample_user_2:         user2
-    :param email_template_body:     email template html body
+    :param sample_user_2:       user2
+    :param email_template_body: email template html body
     result : The response should be Not Found - 404
     """
     # Add Email template
@@ -282,8 +236,8 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
 def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, email_template_body, user_auth):
     """
     Tests deleting user's email template from different domain
-    :param sample_user:         user1
-    :param user_from_diff_domain:         user2
+    :param sample_user:             user1
+    :param user_from_diff_domain:   user2
     :param email_template_body:     email template html body
     result : The response should be Forbidden error - 403
     """
@@ -305,7 +259,6 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
     del_domain_roles(role_id)
 
 
-# Tests to retrieve email templates
 def test_get_email_template_via_id(sample_user, sample_user_2, email_template_body, user_auth):
     """
     Test:   Retrieve email_template via template's ID
@@ -368,15 +321,10 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, ema
     del_domain_roles(role_id2)
 
 
-# Tests to update email templates
 def test_update_email_template(sample_user, sample_user_2, email_template_body, user_auth):
     """
     Test :To update email template by other user in the same domain
     Expect: 200
-    :param sample_user:
-    :param sample_user_2:
-    :param email_template_body:
-    :param user_auth:
     """
     # Add Email template
     email_template = add_email_template(user_auth, sample_user, email_template_body)
@@ -410,10 +358,6 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
     """
     Test : To update email template by other user in the same domain
     Expect: 404 - NOT FOUND
-    :param sample_user:
-    :param sample_user_2:
-    :param email_template_body:
-    :param user_auth:
     """
     # Add Email template
     email_template = add_email_template(user_auth, sample_user, email_template_body)
@@ -445,10 +389,6 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
 def add_email_template(user_auth, template_owner, email_template_body):
     """
     This function will create email template
-    :user_auth
-    :param template_owner:
-    :param template_owner:
-    :return:
     """
     # Get access token
     auth_token = user_auth.get_auth_token(template_owner, get_bearer_token=True)
