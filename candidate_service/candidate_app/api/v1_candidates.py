@@ -1098,25 +1098,22 @@ class CandidateWorkPreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
+        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference
         Function will delete Candidate's work_preference
         """
         # Authenticated user
-        authed_user = request.user
-
-        # Get candidate_id and work_preference_id
-        candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
+        work_preference = CandidateWorkPreference.get_by_candidate_id(candidate_id)
         if not work_preference:
-            raise NotFoundError('Candidate work preference not found', custom_error.WORK_PREF_NOT_FOUND)
+            raise NotFoundError('Candidate does not have a work preference', custom_error.WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if work_preference.candidate_id != candidate_id:
