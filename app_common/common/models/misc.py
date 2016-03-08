@@ -65,6 +65,7 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_domain_areas_of_interest(cls, domain_id):
         """
+        :type domain_id: int|long
         :rtype: list[AreaOfInterest]
         """
         return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()

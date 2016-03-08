@@ -492,10 +492,10 @@ class CandidateAreaOfInterestResource(Resource):
         authed_user = request.user
 
         # Get candidate_id and area_of_interest_id
-        candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
+        candidate_id, area_of_interest_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -516,14 +516,11 @@ class CandidateAreaOfInterestResource(Resource):
 
         else:  # Delete all of Candidate's areas of interest
             domain_aois = AreaOfInterest.get_domain_areas_of_interest(authed_user.domain_id)
-            areas_of_interest_id = [aoi.id for aoi in domain_aois]
-            for aoi_id in areas_of_interest_id:
+            areas_of_interest_ids = [aoi.id for aoi in domain_aois]
+            for aoi_id in areas_of_interest_ids:
                 candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, aoi_id)
-                if not candidate_aoi:
-                    raise NotFoundError(error_message='Candidate area of interest not found',
-                                        error_code=custom_error.AOI_NOT_FOUND)
-
-                db.session.delete(candidate_aoi)
+                if candidate_aoi:
+                    db.session.delete(candidate_aoi)
 
         db.session.commit()
         return '', 204
