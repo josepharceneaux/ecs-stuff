@@ -619,6 +619,18 @@ class SchedulerApiUrl(object):
     FLOWER_MONITORING_PORT = '--port=5511'
 
 
+class SocialNetworkWords(object):
+    IMPORTER = 'importer'
+    RSVP = 'rsvp'
+    CODE = 'code'
+    TIMEZONE = 'data/timezones'
+    VENUES = 'venues'
+    EVENTS = 'events'
+    SOCIAL_NETWORKS = 'social-networks'
+    EVENT_ORGANIZER = 'event-organizers'
+    MEETUP_GROUPS = '{0}/{1}'.format(SOCIAL_NETWORKS, 'meetup-groups')
+
+
 class SocialNetworkApi(object):
     """
     Rest URLs for social_network_service
@@ -626,20 +638,24 @@ class SocialNetworkApi(object):
     VERSION = 'v1'
     # URLs, in case of API
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EVENTS = RELATIVE_VERSION % 'events'
-    EVENT = RELATIVE_VERSION % 'events/<int:event_id>'
-    SOCIAL_NETWORKS = RELATIVE_VERSION % 'social-networks'
-    MEETUP_GROUPS = RELATIVE_VERSION % 'social-networks/meetup-groups'
-    TOKEN_VALIDITY = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/validity'
-    TOKEN_REFRESH = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/refresh'
-    USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/user/credentials'
-    VENUES = RELATIVE_VERSION % 'venues'
-    VENUE = RELATIVE_VERSION % 'venues/<int:venue_id>'
-    EVENT_ORGANIZERS = RELATIVE_VERSION % 'event-organizers'
-    EVENT_ORGANIZER = RELATIVE_VERSION % 'event-organizers/<int:organizer_id>'
-    TIMEZONES = RELATIVE_VERSION % 'data/timezones'
-    RSVP = RELATIVE_VERSION % 'rsvp'
-    CODE = RELATIVE_VERSION % 'code'
+    EVENTS = RELATIVE_VERSION % SocialNetworkWords.EVENTS
+    EVENT = RELATIVE_VERSION % '{0}/<int:event_id>'.format(SocialNetworkWords.EVENTS)
+    SOCIAL_NETWORKS = RELATIVE_VERSION % SocialNetworkWords.SOCIAL_NETWORKS
+    MEETUP_GROUPS = RELATIVE_VERSION % SocialNetworkWords.MEETUP_GROUPS
+    TOKEN_VALIDITY = RELATIVE_VERSION % '{0}/<int:social_network_id>/token/validity'\
+        .format(SocialNetworkWords.SOCIAL_NETWORKS)
+    TOKEN_REFRESH = RELATIVE_VERSION % '{0}/<int:social_network_id>/token/refresh'\
+        .format(SocialNetworkWords.SOCIAL_NETWORKS)
+    USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % '{0}/<int:social_network_id>/user/credentials'\
+        .format(SocialNetworkWords.SOCIAL_NETWORKS)
+    VENUES = RELATIVE_VERSION % SocialNetworkWords.VENUES
+    VENUE = RELATIVE_VERSION % '{0}/<int:venue_id>'.format(SocialNetworkWords.VENUES)
+    EVENT_ORGANIZERS = RELATIVE_VERSION % SocialNetworkWords.EVENT_ORGANIZER
+    EVENT_ORGANIZER = RELATIVE_VERSION % '{0}/<int:organizer_id>'.format(SocialNetworkWords.EVENT_ORGANIZER)
+    TIMEZONES = RELATIVE_VERSION % SocialNetworkWords.TIMEZONE
+    RSVP = RELATIVE_VERSION % SocialNetworkWords.RSVP
+    IMPORTER = RELATIVE_VERSION % '{0}/<string:mode>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
+    CODE = RELATIVE_VERSION % SocialNetworkWords.CODE
 
 
 class SocialNetworkApiUrl(object):
@@ -653,20 +669,21 @@ class SocialNetworkApiUrl(object):
     # TODO: Make this URL dynamic i.e different for staging, dev or prod
     UI_APP_URL = 'http://localhost:3000'
     API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
-    EVENTS = API_URL % 'events'
-    EVENT = API_URL % 'events/%s'
-    SOCIAL_NETWORKS = API_URL % 'social-networks'
-    VENUES = API_URL % 'venues'
-    VENUE = API_URL % 'venues/%s'
-    EVENT_ORGANIZERS = API_URL % 'event-organizers'
-    EVENT_ORGANIZER = API_URL % 'event-organizers/%s'
-    TIMEZONES = API_URL % 'data/timezones'
-    MEETUP_GROUPS = API_URL % 'social-networks/meetup-groups'
-    TOKEN_VALIDITY = API_URL % 'social-networks/%s/token/validity'
-    TOKEN_REFRESH = API_URL % 'social-networks/%s/token/refresh'
-    USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % 'social-networks/%s/user/credentials'
-    RSVP = API_URL % 'rsvp'
-    CODE = API_URL % 'code'
+    EVENTS = API_URL % SocialNetworkWords.EVENTS
+    EVENT = API_URL % '{0}/%s'.format(SocialNetworkWords.EVENTS)
+    SOCIAL_NETWORKS = API_URL % SocialNetworkWords.SOCIAL_NETWORKS
+    VENUES = API_URL % SocialNetworkWords.VENUES
+    VENUE = API_URL % '{0}/%s'.format(SocialNetworkWords.VENUES)
+    EVENT_ORGANIZERS = API_URL % SocialNetworkWords.EVENT_ORGANIZER
+    EVENT_ORGANIZER = API_URL % '{0}/%s'.format(SocialNetworkWords.EVENT_ORGANIZER)
+    TIMEZONES = API_URL % SocialNetworkWords.TIMEZONE
+    MEETUP_GROUPS = API_URL % SocialNetworkWords.MEETUP_GROUPS
+    TOKEN_VALIDITY = API_URL % '{0}/%s/token/validity'.format(SocialNetworkWords.SOCIAL_NETWORKS)
+    TOKEN_REFRESH = API_URL % '{0}/%s/token/refresh'.format(SocialNetworkWords.SOCIAL_NETWORKS)
+    USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % '{0}/%s/user/credentials'.format(SocialNetworkWords.SOCIAL_NETWORKS)
+    RSVP = API_URL % SocialNetworkWords.RSVP
+    IMPORTER = API_URL % '{0}/<string:mode>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
+    CODE = API_URL % SocialNetworkWords.CODE
 
 
 class CampaignWords(object):

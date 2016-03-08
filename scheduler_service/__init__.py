@@ -15,9 +15,6 @@ __author__ = 'saad'
 
 flask_app, logger = init_talent_app(__name__)
 
-# Initialize Redis Cache
-redis_store.init_app(flask_app)
-
 celery_app = init_celery_app(flask_app=flask_app, queue_name=SchedulerUtils.QUEUE,
                              modules_to_include=['scheduler_service.tasks'])
 

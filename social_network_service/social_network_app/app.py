@@ -24,9 +24,12 @@ from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
 # Register Blueprints for different APIs
+from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint
+
 app.register_blueprint(data_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(social_network_blueprint)
+app.register_blueprint(rsvp_blueprint)
 
 api = TalentApi(app)
 
@@ -34,7 +37,7 @@ api = TalentApi(app)
 redis_store.init_app(app)
 
 # TODO: remove this in final code
-WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
+WEBHOOK_REDIRECT_URL = 'http://gettalent.ngrok.io'
 
 
 @app.route('/')

@@ -712,7 +712,8 @@ class UserSocialNetworkCredential(db.Model):
     member_id = db.Column('MemberId', db.String(100))
     access_token = db.Column('AccessToken', db.String(1000))
     social_network = db.relationship("SocialNetwork", backref=db.backref(
-            'user_social_network_credential', cascade="all, delete-orphan"))
+            'user_social_network_credential', cascade="all, delete-orphan",
+            lazy="dynamic"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
