@@ -497,10 +497,10 @@ class CandidateAreaOfInterestResource(Resource):
         authed_user = request.user
 
         # Get candidate_id and area_of_interest_id
-        candidate_id, area_of_interest_id = kwargs.get('candidate_id'), kwargs.get('id')
+        candidate_id, area_of_interest_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -521,14 +521,11 @@ class CandidateAreaOfInterestResource(Resource):
 
         else:  # Delete all of Candidate's areas of interest
             domain_aois = AreaOfInterest.get_domain_areas_of_interest(authed_user.domain_id)
-            areas_of_interest_id = [aoi.id for aoi in domain_aois]
-            for aoi_id in areas_of_interest_id:
+            areas_of_interest_ids = [aoi.id for aoi in domain_aois]
+            for aoi_id in areas_of_interest_ids:
                 candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, aoi_id)
-                if not candidate_aoi:
-                    raise NotFoundError(error_message='Candidate area of interest not found',
-                                        error_code=custom_error.AOI_NOT_FOUND)
-
-                db.session.delete(candidate_aoi)
+                if candidate_aoi:
+                    db.session.delete(candidate_aoi)
 
         db.session.commit()
         return '', 204
@@ -547,7 +544,7 @@ class CandidateCustomFieldResource(Resource):
         custom fields or just a single one.
         """
         # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
-        authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
+        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -557,7 +554,7 @@ class CandidateCustomFieldResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
-            candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
+            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
             if not candidate_custom_field:
                 raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
@@ -1106,25 +1103,22 @@ class CandidateWorkPreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference/:id
+        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference
         Function will delete Candidate's work_preference
         """
         # Authenticated user
-        authed_user = request.user
-
-        # Get candidate_id and work_preference_id
-        candidate_id, work_preference_id = kwargs.get('candidate_id'), kwargs.get('id')
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        work_preference = CandidateWorkPreference.get_by_id(_id=work_preference_id)
+        work_preference = CandidateWorkPreference.get_by_candidate_id(candidate_id)
         if not work_preference:
-            raise NotFoundError('Candidate work preference not found', custom_error.WORK_PREF_NOT_FOUND)
+            raise NotFoundError('Candidate does not have a work preference', custom_error.WORK_PREF_NOT_FOUND)
 
         # CandidateWorkPreference must belong to Candidate
         if work_preference.candidate_id != candidate_id:
