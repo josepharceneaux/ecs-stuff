@@ -253,38 +253,52 @@ class CandidatesResource(Resource):
         candidates = body_dict.get('candidates')
 
         # Input validations
+        skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
         all_cf_ids, all_aoi_ids = [], []
+        hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
             # Check for candidate's existence and web-hidden status
             candidate_id = _candidate_dict.get('id')
 
             # Check if candidate exists and is not web-hidden
-            get_candidate_if_exists(candidate_id=candidate_id)
+            candidate = get_candidate_if_exists(candidate_id)
 
-            # Emails' addresses must be properly formatted
-            for emails in _candidate_dict.get('emails') or []:
-                if emails.get('address'):
-                    if not is_valid_email(emails.get('address')):
-                        raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
+            # Hide candidate if requested
+            if _candidate_dict.get('hide') is True:
+                candidate.is_web_hidden = 1
+                db.session.commit()
+                hidden_candidate_ids.append(candidate_id)
+                skip = True
 
-            for custom_field in _candidate_dict.get('custom_fields') or []:
-                all_cf_ids.append(custom_field.get('custom_field_id'))
+            # No need to validate anything since candidate is set to hidden
+            if not skip:
+                # Emails' addresses must be properly formatted
+                for emails in _candidate_dict.get('emails') or []:
+                    if emails.get('address'):
+                        if not is_valid_email(emails.get('address')):
+                            raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            for aoi in _candidate_dict.get('areas_of_interest') or []:
-                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+                for custom_field in _candidate_dict.get('custom_fields') or []:
+                    all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            # to_date & from_date in military_service dict must be formatted properly
-            for military_service in _candidate_dict.get('military_services') or []:
-                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date:
-                    if not is_date_valid(date=from_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
-                elif to_date:
-                    if not is_date_valid(date=to_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                for aoi in _candidate_dict.get('areas_of_interest') or []:
+                    all_aoi_ids.append(aoi.get('area_of_interest_id'))
+
+                # to_date & from_date in military_service dict must be formatted properly
+                for military_service in _candidate_dict.get('military_services') or []:
+                    from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                    if from_date:
+                        if not is_date_valid(date=from_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+                    elif to_date:
+                        if not is_date_valid(date=to_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+
+        if skip:
+            return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -400,11 +414,6 @@ class CandidateResource(Resource):
                 I.  DELETE /v1/candidates/:id
                 OR
                 II. DELETE /v1/candidates/:email
-
-        Caveats:
-              i. Candidate will not be removed from db. It is set to "web_hidden".
-             ii. Only candidate's owner can hide the Candidate
-            iii. Candidate must be in the same domain as the authenticated-user
         """
         # Authenticate user
         authed_user = request.user
@@ -419,17 +428,19 @@ class CandidateResource(Resource):
             candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        # Hide Candidate
-        Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
+        # Delete Candidate
+        db.session.delete(candidate)
+        db.session.commit()
 
         # Delete candidate from cloud search
         delete_candidate_documents([candidate_id])
+
         return '', 204
 
 
