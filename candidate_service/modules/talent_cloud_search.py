@@ -593,7 +593,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
             search_queries_from_search_params = list(set(search_queries_from_search_params))
             filter_queries_from_search_params = list(set(filter_queries_from_search_params))
-
+            
             filter_query_from_search_params = "(or %s)" % " ".join(filter_queries_from_search_params) if \
                 len(filter_queries_from_search_params) > 1 else ' '.join(filter_queries_from_search_params)
             search_query_from_search_params = " OR ".join(search_queries_from_search_params) if \

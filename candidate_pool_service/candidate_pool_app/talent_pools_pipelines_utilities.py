@@ -4,13 +4,13 @@ import decimal
 import requests
 from flask import request
 from datetime import datetime, timedelta, date
-from candidate_pool_service.candidate_pool_app import logger, app, celery_app
+from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.models.smartlist import SmartlistStats
 from candidate_pool_service.modules.smartlists import get_candidates
-from candidate_pool_service.common.error_handling import InvalidUsage
+from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError
 from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPipeline, TalentPool, User
 from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
 from candidate_pool_service.common.models.email_campaign import EmailCampaignSend
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
@@ -40,6 +40,39 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 ]
 
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
+
+
+def generate_jwt_header(oauth_token=None, user_id=None):
+    """
+    This methid will generate JWT based Auth Header
+    :param oauth_token: OAuth2.0 based token i.e. Bearer sdhdfvjsdfbjfgksfbjsdfgjsdhf
+    :param user_id: ID of a user
+    :return:
+    """
+
+    if not oauth_token:
+        secret_key, oauth_token = User.generate_jw_token(user_id=user_id)
+        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
+                   'Content-Type': 'application/json'}
+    else:
+        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
+
+    return headers
+
+
+def get_candidates_from_search_api(query_string, headers):
+    """
+    This function will get candidates information based on query_string from Search API
+    :param query_string: Query String
+    :param headers: Header dictionary
+    :return:
+    """
+
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=query_string)
+    if response.ok:
+        return True, response.json()
+    else:
+        return False, response
 
 
 def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_celery_task=False,
@@ -76,13 +109,6 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
                                          "because: %s" % e.message)
 
-    if not oauth_token:
-        secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.user_id)
-        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
-                   'Content-Type': 'application/json'}
-    else:
-        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
-
     if not is_celery_task:
         request_params['fields'] = request.args.get('fields', '') or fields
         request_params['sort_by'] = request.args.get('sort_by', '')
@@ -98,15 +124,17 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
     # Query Candidate Search API to get all candidates of a given talent-pipeline
-    try:
-        response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
-        if response.ok:
-            return response.json()
+    is_successful, response = get_candidates_from_search_api(request_params,
+                                                             generate_jwt_header(oauth_token, talent_pipeline.user_id))
+
+    if not is_successful:
+        if is_celery_task:
+            logger.exception("Couldn't get candidates from candidates search service because: %s" % response)
+            return False
         else:
-            raise Exception("Status Code: %s" % response.status_code)
-    except Exception as e:
-        raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
-                                         "%s" % e.message)
+            raise NotFoundError("Couldn't get candidates from candidates search service because: %s" % response)
+    else:
+        return response
 
 
 def campaign_json_encoder_helper(obj):
@@ -197,49 +225,64 @@ def update_smartlists_stats_task():
 
 
 @celery_app.task()
-def update_talent_pools_stats_task():
+def update_talent_pools_stats_task(from_date=None, to_date=None):
     """
     This method will update the statistics of all talent-pools daily.
+    :param from_date: DateTime Object
+    :param to_date: DateTime Object
     :return: None
     """
+    epoch_time = datetime.fromtimestamp(0).date()
     successful_update_talent_pool_ids = []
-    talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
-
+    talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
+    today_date = datetime.utcnow().date()
     try:
-        for talent_pool_id in talent_pool_ids:
-            is_already_existing_stat_for_today = TalentPoolStats.query.filter(
-                    TalentPoolStats.talent_pool_id == talent_pool_id,
-                    TalentPoolStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
-                    TalentPoolStats.added_datetime <= datetime.utcnow()).all()
+        for talent_pool_tuple in talent_pools:
 
-            if is_already_existing_stat_for_today:
-                continue
+            talent_pool_id = talent_pool_tuple[0]
 
-            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
-                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
-            total_candidates = len(talent_pool_candidate_ids)
+            # TalentPool Object
+            talent_pool = TalentPool.query.get(talent_pool_id)
 
-            number_of_engaged_candidates = 0
-            if talent_pool_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).count()
+            pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_%s' % talent_pool_id)
 
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
-                int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
+            if from_date and to_date:
+                last_added_stat_date = from_date
+                current_date = to_date
+            else:
+                if len(pools_growth_stats_dict):
+                    last_added_stat_date = max(map(lambda added_date: datetime.strptime(added_date, '%m/%d/%Y').date(),
+                                                   pools_growth_stats_dict.keys()))
+                else:
+                    last_added_stat_date = talent_pool.added_time.date()
 
-            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool_id, total_number_of_candidates=total_candidates,
-                                               candidates_engagement=percentage_candidates_engagement)
-            db.session.add(talent_pool_stat)
-            db.session.commit()
-            successful_update_talent_pool_ids.append(str(talent_pool_id))
+                current_date = today_date
+
+            if last_added_stat_date < current_date:
+                while last_added_stat_date != current_date:
+                    last_added_stat_date += timedelta(days=1)
+                    last_added_stat_date_string = last_added_stat_date.strftime('%m/%d/%Y')
+
+                    if last_added_stat_date_string in pools_growth_stats_dict:
+                        continue
+
+                    # Get TalentPool Candidates
+                    total_number_of_candidates = TalentPoolCandidate.query.filter(
+                            TalentPoolCandidate.talent_pool_id == talent_pool_id,
+                            epoch_time <= TalentPoolCandidate.added_time.date() <= last_added_stat_date).count()
+
+                    pools_growth_stats_dict[last_added_stat_date_string] = total_number_of_candidates
+
+            logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_id)
+
+            successful_update_talent_pool_ids.append(talent_pool_id)
 
     except Exception as e:
         db.session.rollback()
         logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
 
-    logger.info("Statistics for following %s TalentPools have been updated successfully: "
-                "%s" % (len(successful_update_talent_pool_ids), ','.join(map(str, successful_update_talent_pool_ids))))
+    logger.info("Statistics for following %s TalentPools have been updated successfully: %s" % (
+        len(successful_update_talent_pool_ids), ','.join(map(str, successful_update_talent_pool_ids))))
 
 
 @celery_app.task()
@@ -290,7 +333,11 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
                                                                  request_params={'date_from': epoch_time_string,
                                                                                  'date_to': last_added_stat_date_string})
 
-                    pipelines_growth_stats_dict[last_added_stat_date_string] = response.get('total_found')
+                    if not response:
+                        logger.exception("Couldn't update statistics of TalentPipeline %s for date "
+                                         "%s" % (talent_pipeline_id, last_added_stat_date_string))
+                    else:
+                        pipelines_growth_stats_dict[last_added_stat_date_string] = response.get('total_found')
 
             logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
 
@@ -300,8 +347,8 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
         db.session.rollback()
         logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
 
-    logger.info("Statistics for following %s TalentPipelines have been updated successfully: "
-                "%s" % (len(successful_update_talent_pipeline_ids), ','.join(map(str, successful_update_talent_pipeline_ids))))
+    logger.info("Statistics for following %s TalentPipelines have been updated successfully: %s" % (
+        len(successful_update_talent_pipeline_ids), ','.join(map(str, successful_update_talent_pipeline_ids))))
 
 
 def schedule_daily_task_unless_already_scheduled(task_name, url):

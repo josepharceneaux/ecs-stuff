@@ -141,7 +141,25 @@ def update_smartlists_stats():
     :return: None
     """
     logger.info("SmartLists statistics update process has been started")
+
+    if request.method == 'GET':
+        from_date_string = request.args.get('from_date', '')
+        to_date_string = request.args.get('to_date', '')
+
+        if from_date_string or to_date_string:
+
+            try:
+                from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
+                to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+                update_smartlists_stats_task.delay(from_date.date(), to_date.date())
+
+                return '', 204
+
+            except Exception as e:
+                raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
     update_smartlists_stats_task.delay()
+
     return '', 204
 
 

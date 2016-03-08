@@ -622,7 +622,7 @@ class TalentPipelinesOfTalentPools(Resource):
         }
 
 
-@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_UPDATE_STATS, methods=['POST'])
+@talent_pool_blueprint.route(CandidatePoolApi.TALENT_POOL_UPDATE_STATS, methods=['POST', 'GET'])
 @require_oauth(allow_null_user=True)
 def update_talent_pools_stats():
     """
@@ -630,7 +630,25 @@ def update_talent_pools_stats():
     :return: None
     """
     logger.info("TalentPool statistics update process has been started")
+
+    if request.method == 'GET':
+        from_date_string = request.args.get('from_date', '')
+        to_date_string = request.args.get('to_date', '')
+
+        if from_date_string or to_date_string:
+
+            try:
+                from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
+                to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
+                update_talent_pools_stats_task.delay(from_date.date(), to_date.date())
+
+                return '', 204
+
+            except Exception as e:
+                raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
     update_talent_pools_stats_task.delay()
+
     return '', 204
 
 
