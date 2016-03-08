@@ -274,14 +274,12 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
                                                    pipelines_growth_stats_dict.keys()))
                 else:
                     last_added_stat_date = talent_pipeline.added_time.date() - timedelta(days=1)
-                    logger.info(last_added_stat_date)
 
                 current_date = today_date
 
             if last_added_stat_date < current_date:
                 while last_added_stat_date != current_date:
                     last_added_stat_date += timedelta(days=1)
-                    logger.info(last_added_stat_date)
                     last_added_stat_date_string = last_added_stat_date.strftime('%m/%d/%Y')
 
                     if last_added_stat_date_string in pipelines_growth_stats_dict:
