@@ -46,10 +46,13 @@ other model classes inherit. But this changes will only effect this app or the a
 from types import MethodType
 
 # Third Party
-from sqlalchemy import inspect
+from flask import Flask
 from flask.ext.cors import CORS
+from flask.ext.restful import abort
+from flask.ext.sqlalchemy import BaseQuery, Pagination
+from sqlalchemy import inspect
+from sqlalchemy.orm.dynamic import AppenderQuery
 from healthcheck import HealthCheck
-from flask import current_app, Flask
 # Application Specific
 
 
@@ -158,6 +161,7 @@ def save(self):
     e.g.
     event = Event(**kwargs)
     Event.save(event)
+    :param self: model instance
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
@@ -166,18 +170,20 @@ def save(self):
     return self
 
 
-def update(instance, **data):
+def update(self, **data):
     """
     This method allows a model instance to update itself in database by calling update
     e.g.
     event = Event.get(event_id)
     event.update(**data)
+
+    :param self: model instance to be updated
     :return: same model instance
     """
     # update this instance by given data
-    instance.query.filter_by(id=instance.id).update(data)
+    self.query.filter_by(id=self.id).update(data)
     db.session.commit()
-    return instance
+    return self
 
 
 @classmethod
@@ -190,6 +196,7 @@ def create_or_update(cls, conditions, **data):
      We will search for a record with these conditions like this
         query = cls.query.filter(cls.social_network_event_id == 12345).filter(cls.user_id == 2)
 
+    :param cls: model class, some child class of db.Model
     :param data: data to update model instance
     :return: model instance
     """
@@ -225,8 +232,9 @@ def get_by_id(cls, _id):
     that class on which this is invoked.
     e.g. event = Event.get_by_id(2)
     It will return Event class model instance with given id or it will return None if no event found.
+    :param cls: model class, some child class of db.Model
     :param _id: id for given instance
-    :type _id: int
+    :type _id: int | long
     :return: Model instance
     """
     # get Model instance given by id (primary_key)
@@ -237,6 +245,7 @@ def get_by_id(cls, _id):
 def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
+    :param cls: model class, some child class of db.Model
     :param ref: id for instance | model instance
     :type ref: int | model object
     :param app: flask app, if someone wants to run this method using app_context
@@ -287,8 +296,7 @@ def add_model_helpers(cls):
              add_model_helpers(db.Model)
 
              This will add all these method on db.Model and all its child classes.
-    :param cls:
-    :return:
+    :param cls: model class, some child class of db.Model
     """
     cls.session = db.session
     # this method converts model instance to json serializable dictionary
@@ -302,6 +310,14 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
+
+    # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
+    # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
+    # method from BaseQuery class to AppenderQuery class to get pagination functionality
+    # we can now do something like,
+    # blasts = campaigns.blasts.paginate(1, 15, False).items
+    # or we can call `get_paginated_response` and pass `campaign.blasts` as query.
+    AppenderQuery.paginate = BaseQuery.__dict__['paginate']
 
 
 def init_talent_app(app_name):

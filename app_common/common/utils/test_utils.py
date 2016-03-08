@@ -5,7 +5,8 @@ import json
 import requests
 from faker import Faker
 
-from app_common.common.tests.conftest import randomword
+from ..tests.conftest import randomword
+from ..error_codes import ErrorCodes
 from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePoolApiUrl, \
     SchedulerApiUrl
 
@@ -158,12 +159,10 @@ def add_roles(user_id, roles, token):
     :param token: auth token
     :return: True | False
     """
-    data = {
-        "roles": roles
-    }
+    data = {"roles": roles}
     response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
-    if response.status_code == 400 and response.json()['error']['code'] == 9000:
+    if response.status_code == 400 and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
         return None
     assert response.status_code == 200
 
@@ -203,7 +202,7 @@ def create_candidate(talent_pool_id, token, expected_status=(201,)):
                 "emails": [
                     {
                         "label": "Primary",
-                        "address": fake.email(),
+                        "address": fake.safe_email(),
                         "is_default": True
                     }
                 ]

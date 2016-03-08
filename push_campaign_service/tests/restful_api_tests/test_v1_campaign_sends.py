@@ -85,18 +85,15 @@ class TestCampaignSends(object):
         per_page = blasts_count - 5
         response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
                                       expected_status=(HttpStatus.OK,))
-        assert response['count'] == per_page
         assert len(response['sends']) == per_page
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=per_page,
                                       expected_status=(HttpStatus.OK,))
-        assert response['count'] == (blasts_count - per_page)
         assert len(response['sends']) == (blasts_count - per_page)
 
         per_page = blasts_count
         response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
                                       expected_status=(HttpStatus.OK,))
-        assert response['count'] == blasts_count
         assert len(response['sends']) == blasts_count
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=20,

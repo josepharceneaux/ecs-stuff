@@ -164,7 +164,6 @@ class PushCampaignsResource(Resource):
         .. Response::
 
             {
-                "count": 2,
                 "campaigns": [
                             {
                               "added_datetime": "2015-11-19 18:54:04",
@@ -731,8 +730,7 @@ class PushCampaignBlastSends(Resource):
                               "blast_id": 1,
                               "updated_datetime": "2015-11-23 18:25:13"
                            }
-                        ],
-                "count": 2
+                        ]
             }
 
         .. Status:: 200 (OK)
@@ -798,8 +796,7 @@ class PushCampaignSends(Resource):
                               "id": 7,
                               "sent_datetime": "2015-12-30 17:07:39"
                             }
-                ],
-                "count": 2
+                ]
 
             }
 
@@ -864,8 +861,7 @@ class PushCampaignBlasts(Resource):
                               "sends": 20,
                               "updated_datetime": "2015-12-30 14:33:00"
                             }
-                ],
-                "count": 2
+                ]
 
             }
 
@@ -880,9 +876,8 @@ class PushCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
-        # Serialize blasts of a campaign
-        query = PushCampaignBlast.query.filter_by(campaign_id=campaign.id)
-        return get_paginated_response('blasts', query, page, per_page)
+        # query = PushCampaignBlast.query.filter_by(campaign_id=campaign.id)
+        return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
 @api.route(PushCampaignApi.BLAST)

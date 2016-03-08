@@ -1740,4 +1740,4 @@ class CampaignBase(object):
             url_conversion = send_url_conversion.url_conversion
             return url_conversion
         else:
-            raise ForbiddenError('You can not get other domain url_conversion records')
+            raise ForbiddenError("You can not get other domain's url_conversion records")

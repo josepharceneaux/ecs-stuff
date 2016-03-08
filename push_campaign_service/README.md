@@ -139,7 +139,6 @@ Returns a list of all push campaigns created by a specific user/recruiter.
     + Body
 
             {
-                "count": 2,
                 "campaigns": [
                             {
                               "frequency_id": 1,
@@ -804,7 +803,6 @@ each blast contains info about number of sends and how many responded to that ca
     + Body
 
             {
-                "count": 1,
                 "blasts": [
                     {
                       "sends": 4,
@@ -960,8 +958,7 @@ a campaign `send` to a candidate is associated with that blast.
                                   "id": 10,
                                   "sent_datetime": "2015-11-23 18:25:13"
                                 }
-                              ],
-                "count": 2
+                              ]
             }
 
 + Response 401 (application/json)
@@ -1031,8 +1028,7 @@ different number of sends. `sends` are associated to a campaign through a campai
                                   "id": 10,
                                   "sent_datetime": "2015-11-23 18:25:13"
                                 }
-                              ],
-                "count": 2
+                              ]
             }
 
 + Response 401 (application/json)

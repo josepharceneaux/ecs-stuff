@@ -79,7 +79,6 @@ class TestCampaignBlastSends(object):
         response = get_blast_sends(blast_id, campaign_id, token_first,
                                    expected_status=(HttpStatus.OK,))
         # Since each blast have one send, so total sends will be equal to number of blasts
-        assert response['count'] == 1
         assert len(response['sends']) == 1
 
         # if page size is greater than maximum allowed page size, it will raise InvalidUsage exception

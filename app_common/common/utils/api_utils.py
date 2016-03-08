@@ -4,8 +4,10 @@ This modules contains helper methods and classes which we are using in e.g. Soci
         * ApiResponse:
             This class is used to create API response object to return json response.
 
+:Authors:
+    - Muhammad Basit <basit.getTalent@gmail.com>
+    - Zohaib Ijaz    <mzohaib.qc@gmail.com>
 """
-__author__ = 'basit'
 
 # Standard Library
 import json
@@ -70,15 +72,19 @@ def get_pagination_params(request):
     """
     page = request.args.get('page', DEFAULT_PAGE)
     per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
-
-    if not(str(page).isdigit() and int(page) > 0):
+    try:
+        page = int(page)
+        assert page > 0
+    except:
         raise InvalidUsage('page value should a positive number. Given %s' % page)
-
-    if not(str(per_page).isdigit() and int(per_page) <= MAX_PAGE_SIZE):
+    try:
+        per_page = int(per_page)
+        assert 0 < per_page <= MAX_PAGE_SIZE
+    except ValueError:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
                            % (MAX_PAGE_SIZE, per_page))
 
-    return int(page), int(per_page)
+    return page, per_page
 
 
 def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
@@ -88,23 +94,21 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     constraints (page, per_page) as response body.
     Response object has extra pagination headers like
         X-Total    :  Total number of results found
-        X-Per_page :  Number of items in one page
-        X-Page     :  Page Number that is being sent
+        X-Page-Count :  Number of total pages for given page size
 
     List of object is packed in a dictionary where key is specified by user/developer.
     :param key: final dictionary will contain this key where value will be list if items.
     :param query: A query object on which pagination will be applied.
     :param page: page number
     :param per_page: page size
-    :return: dictionary containing list of items
-
+    :return: api response object containing list of items
+    :rtype ApiResponse
     :Example:
         >>> query = PushCampaign.query
         >>> page, per_page = 1, 10
         >>> response = get_paginated_response('campaigns', query, 1, 10)
         >>> response
         {
-            "count": 10,
             "campaigns": [
                 {
                     "name": "getTalent",
@@ -130,11 +134,9 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     items = [to_json(item) for item in results.items]
     headers = {
         'X-Total': results.total,
-        'X-Per-Page': per_page,
-        'X-Page': page
+        'X-Page-Count': results.pages
     }
     response = {
-        key: items,
-        'count': len(items)
+        key: items
     }
     return ApiResponse(response, headers=headers, status=200)

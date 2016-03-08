@@ -381,14 +381,17 @@ class UrlConversion(db.Model):
     @classmethod
     def get_by_id_and_domain_id_for_push_campaign_send(cls, _id, domain_id):
         """
-        This method returns a UrlConversion object
-        :param _id:
-        :param domain_id:
-        :return:
+        This method returns a UrlConversion object that is associated to a campaign send object
+        given by `send_id` and it belongs to domain with id `domain_id`.
+        :param _id: UrlConversion id
+        :type _id: int | long
+        :param domain_id: Domain id of user
+        :type domain_id: int | long
+        :return: UrlConversion object | None
+        :rtype: UrlConversion | None
         """
         # importing User and Domain here due to cyclic dependency
         from user import User, Domain
-        # TODO: Find a better way to check the domain constraints.
         return cls.query.join(PushCampaignSendUrlConversion).join(
             PushCampaignSend).join(PushCampaignBlast).join(PushCampaign).join(User).join(Domain).filter(
             PushCampaignSendUrlConversion.url_conversion_id == _id).filter(

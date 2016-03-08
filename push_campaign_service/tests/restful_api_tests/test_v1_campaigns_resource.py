@@ -123,7 +123,6 @@ class TestGetListOfCampaigns(object):
         total_count = campaigns_for_pagination_test
         per_page = total_count - 5
         response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
-        assert response['count'] == per_page
         assert len(response['campaigns']) == per_page
 
         per_page = total_count

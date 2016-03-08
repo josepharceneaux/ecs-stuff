@@ -51,7 +51,6 @@ class TestCampaignBlasts(object):
         # 200 case: Campaign Blast successfully
         campaign_id = campaign_in_db['id']
         response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
-        assert response['count'] == len(campaign_blasts)
         assert len(response['blasts']) == len(campaign_blasts)
 
     def test_get_campaign_blasts_from_same_domain(self, token_same_domain, campaign_in_db,
@@ -66,7 +65,6 @@ class TestCampaignBlasts(object):
         """
         campaign_id = campaign_in_db['id']
         response = get_blasts(campaign_id, token_same_domain, expected_status=(HttpStatus.OK,))
-        assert response['count'] == len(campaign_blasts)
         assert len(response['blasts']) == len(campaign_blasts)
 
     def test_get_campaign_blasts_from_diff_domain(self, token_second, campaign_in_db,

@@ -39,9 +39,9 @@ class PushCampaign(db.Model):
     body_text = db.Column(db.String(1000))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
-    added_datetime = db.column(db.DateTime)
-    start_datetime = db.column(db.DateTime)
-    end_datetime = db.column(db.DateTime)
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow())
+    start_datetime = db.Column(db.DateTime)
+    end_datetime = db.Column(db.DateTime)
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('user.Id', ondelete='CASCADE'))
 
@@ -58,11 +58,26 @@ class PushCampaign(db.Model):
 
     @classmethod
     def get_by_user_id(cls, user_id):
+        """
+        This method returns all PushCampaign objects that are owned by a user.
+        :param user_id: User id
+        :return: list of PushCampaign objects
+        :rtype:  list[PushCampaign]
+        """
         assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(user_id=user_id).all()
 
     @classmethod
     def get_by_id_and_user_id(cls, _id, user_id):
+        """
+        Get a campaign object where unique id is `_id` and it is owned by user given by `user_id`.
+        :param _id: campaign unique id
+        :type _id: int | long
+        :param user_id: user unique id
+        :type user_id: int | long
+        :return: instance of PushCampaign
+        :rtype PushCampaign
+        """
         assert isinstance(_id, (int, long)) and _id > 0, 'PushCampaign id is not valid integer'
         assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(id=_id, user_id=user_id).first()
@@ -78,7 +93,7 @@ class PushCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     campaign_id = db.Column(db.Integer, db.ForeignKey('push_campaign.id', ondelete='CASCADE'))
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow())
 
     # Relationships
     blast_sends = relationship('PushCampaignSend', cascade='all, delete-orphan',
@@ -95,7 +110,7 @@ class PushCampaignSend(db.Model):
     """
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
     blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
                          nullable=False)
@@ -127,6 +142,12 @@ class PushCampaignSmartlist(db.Model):
 
     @classmethod
     def get_by_campaign_id(cls, campaign_id):
+        """
+        Get all records that are associated with a specific campaign.
+        :param campaign_id: push campaign unique id
+        :type campaign_id: int | long
+        :rtype:  list[PushCampaignSmartlist]
+        """
         assert isinstance(campaign_id, (int, long)) and campaign_id > 0, \
             'PushCampaign Id should be a valid positive number'
         return cls.query.filter_by(campaign_id=campaign_id).all()

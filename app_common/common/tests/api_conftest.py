@@ -31,7 +31,6 @@ test_config = load_test_config()
 def token_first():
     """
     Au Authentication token for user_first.
-    :return:
     """
     info = test_config['USER_FIRST']
     return get_token(info)
@@ -41,8 +40,6 @@ def token_first():
 def token_same_domain(request):
     """
     Authentication token for user that belongs to same domain as user_first.
-    :param request:
-    :return:
     """
     info = test_config['USER_SAME_DOMAIN']
     return get_token(info)
@@ -52,8 +49,6 @@ def token_same_domain(request):
 def token_second(request):
     """
      Authentication token for user_second.
-    :param request:
-    :return:
     """
     info = test_config['USER_SECOND']
     return get_token(info)

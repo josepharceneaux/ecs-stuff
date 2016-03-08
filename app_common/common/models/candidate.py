@@ -1013,7 +1013,7 @@ class CandidateDevice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    registered_at = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
         return "<CandidateDevice (Id: %s, OneSignalDeviceId: %s)>" % (self.id,

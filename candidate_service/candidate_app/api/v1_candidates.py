@@ -1458,11 +1458,11 @@ class CandidateDeviceResource(Resource):
             >>> import requests
             >>> headers = {'Authorization': 'Bearer <access_token>'}
             >>> candidate_id = 1
-            >>> response = requests.get(CandidateAPiUrl.DEVICES % candidate_id,
+            >>> response = requests.get(CandidateApiUrl.DEVICES % candidate_id,
             >>>                          headers=headers)
         """
         # Authenticated user & candidate ID
-        authenticated_user, candidate_id = request.user, kwargs.get('id')
+        authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure Candidate exists & is not web-hidden
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -1511,7 +1511,7 @@ class CandidateDeviceResource(Resource):
                     500 (Internal Server Error)
         """
         # Authenticated user & candidate ID
-        authenticated_user, candidate_id = request.user, kwargs.get('id')
+        authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
@@ -1521,8 +1521,6 @@ class CandidateDeviceResource(Resource):
             raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
 
         data = get_json_if_exist(_request=request)
-        if not candidate_id:
-            raise InvalidUsage('candidate_id is not given in POST data')
         one_signal_device_id = data.get('one_signal_device_id')
         if not one_signal_device_id:
             raise InvalidUsage('device_id is not given in post data')
@@ -1539,7 +1537,7 @@ class CandidateDeviceResource(Resource):
             # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
-                                               registered_at=datetime.datetime.utcnow())
+                                               registered_at_datetime=datetime.datetime.utcnow())
             db.session.add(candidate_device)
             db.session.commit()
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
@@ -1577,7 +1575,7 @@ class CandidateDeviceResource(Resource):
                 }
         """
         # Authenticated user & candidate ID
-        authenticated_user, candidate_id = request.user, kwargs.get('id')
+        authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -1587,8 +1585,6 @@ class CandidateDeviceResource(Resource):
             raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
 
         data = get_json_if_exist(_request=request)
-        if not candidate_id:
-            raise InvalidUsage('candidate_id is not given in POST data')
         one_signal_device_id = data.get('one_signal_device_id')
         if not one_signal_device_id:
             raise InvalidUsage('device_id is not given in post data')
