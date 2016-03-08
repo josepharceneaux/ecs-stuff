@@ -114,7 +114,7 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     """
     Function checks if area_of_interest_ids belong to the logged-in-user's domain
     :type   user_domain_id:       int|long
-    :type   area_of_interest_ids: [int]
+    :type   area_of_interest_ids: list[int]
     :rtype: bool
     """
     assert isinstance(area_of_interest_ids, list)
