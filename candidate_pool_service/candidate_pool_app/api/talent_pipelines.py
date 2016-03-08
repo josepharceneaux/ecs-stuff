@@ -19,8 +19,7 @@ from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
-    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_campaigns_of_talent_pipeline,
-    update_talent_pipelines_stats_task)
+    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, update_talent_pipelines_stats_task)
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -504,23 +503,26 @@ class TalentPipelineCampaigns(Resource):
     # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
-        GET /talent-pipeline/<id>/campaigns  Fetch all campaigns of a talent-pipeline
+        GET /talent-pipelines/<id>/campaigns?fields=id,subject&page=1&per_page=20
+
+        Fetch all campaigns of a talent-pipeline.
 
         :return A dictionary containing list of campaigns belonging to a talent-pipeline
         :rtype: dict
         """
 
+        # Valid talent pipeline
         talent_pipeline_id = kwargs.get('id')
-
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-
         if not talent_pipeline:
             raise NotFoundError("Talent pipeline with id %s doesn't exist in database" % talent_pipeline_id)
-
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
-        return {'email_campaigns': json.loads(get_campaigns_of_talent_pipeline(talent_pipeline))}
+        # Get the email campaigns
+        include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
+        email_campaigns = talent_pipeline.get_email_campaigns()
+        return {'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]}
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS, methods=['GET', 'POST'])

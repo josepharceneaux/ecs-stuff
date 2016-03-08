@@ -117,38 +117,6 @@ def campaign_json_encoder_helper(obj):
         return float(obj)
 
 
-def get_campaigns_of_talent_pipeline(talent_pipeline):
-    """
-        Fetch all campaigns belonging to any smartlist of the talent-pipeline
-        :param candidate_pool_service.common.models.talent_pools_pipelines.TalentPipeline talent_pipeline: Pipeline obj
-        :return: A list of EmailCampaign dicts conforming to v1 of Email Campaigns API
-        """
-
-    sql_query = """
-        SELECT email_campaign.Id, email_campaign.UserId, email_campaign.Name, email_campaign.IsHidden,
-        email_campaign.Type, email_campaign.emailSubject, email_campaign.emailFrom, email_campaign.emailReplyTo,
-        email_campaign.frequencyId, email_campaign.SendTime, email_campaign.StopTime, email_campaign.AddedTime,
-        email_campaign.UpdatedTime, email_campaign.EmailClientId
-
-        FROM email_campaign, email_campaign_smart_list, smart_list
-
-        WHERE email_campaign.Id=email_campaign_smart_list.emailCampaignId AND
-              email_campaign_smart_list.smartListId=smart_list.id AND
-              smart_list.talentPipelineId=%s
-
-        LIMIT 20;
-              """
-
-    email_campaigns_response = []
-    email_campaigns = db.session.connection().execute(sql_query % talent_pipeline.id)
-    from candidate_pool_service.common.models.email_campaign import EmailCampaignSmartlist
-    for email_campaign in email_campaigns:
-        email_campaign = dict(email_campaign.items())
-        email_campaign['list_ids'] = [email_campaign_smartlist.smartlist_id for email_campaign_smartlist in db.session.query(EmailCampaignSmartlist).filter(EmailCampaignSmartlist.campaign_id == email_campaign['Id']).all()]
-        email_campaigns_response.append(email_campaign)
-    return json.dumps(email_campaigns_response, default=campaign_json_encoder_helper)
-
-
 @celery_app.task()
 def update_smartlists_stats_task():
     """

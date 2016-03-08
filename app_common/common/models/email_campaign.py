@@ -22,8 +22,9 @@ class EmailCampaign(db.Model):
     is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=True)
     is_track_html_clicks = db.Column('isTrackHtmlClicks', db.Boolean, default=True)
     is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=True)
-    body_html = db.Column('EmailBodyHtml', db.Text(65535))
-    body_text = db.Column('EmailBodyText', db.Text(65535))
+    # body_html and body_text are deferred fields because they could be huge.  Should really be stored in S3.
+    body_html = db.deferred(db.Column('EmailBodyHtml', db.Text(65535)), group='email_body')
+    body_text = db.deferred(db.Column('EmailBodyText', db.Text(65535)), group='email_body')
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
     start_datetime = db.Column('SendTime', db.DateTime)
@@ -44,23 +45,36 @@ class EmailCampaign(db.Model):
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
-    def to_dict(self):
+    def to_dict(self, include_fields=None):
         """
         This returns required fields when an email-campaign object is requested.
+        :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
-        return {"id": self.id,
-                "user_id": self.user_id,
-                "name": self.name,
-                "frequency": self.frequency.name if self.frequency else None,
-                "subject": self.subject,
-                "from": self._from,
-                "reply_to": self.reply_to,
-                "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
-                "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
-                "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
-                "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
-                                                                              smartlist_ids_only=True)}
+        return_dict = {"id": self.id,
+                       "user_id": self.user_id,
+                       "name": self.name,
+                       "frequency": self.frequency.name if self.frequency else None,
+                       "subject": self.subject,
+                       "from": self._from,
+                       "reply_to": self.reply_to,
+                       "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                       "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                       "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
+                       # Conditionally include body_text and body_html because they are deferred fields
+                       "body_html": self.body_html if (include_fields and 'body_html' in include_fields) else None,
+                       "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
+                       "is_hidden": self.is_hidden,
+                       "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
+                                                                                     smartlist_ids_only=True)}
+
+        # Remove all fields that are supposed to be included
+        if include_fields:
+            for return_field in return_dict.keys():
+                if return_field not in include_fields:
+                    del return_dict[return_field]
+
+        return return_dict
 
     def get_id(self):
         return unicode(self.id)
