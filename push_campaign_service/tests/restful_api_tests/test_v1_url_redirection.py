@@ -36,7 +36,6 @@ class TestURLRedirectionApi(object):
         GET method should give OK response. We check the "hit_count" and "clicks" before
         hitting the endpoint and after hitting the endpoint. Then we assert that both
         "hit_count" and "clicks" have been successfully updated by '1' in database.
-        :return:
         """
         # stats before making HTTP GET request to source URL
         response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
@@ -64,12 +63,16 @@ class TestURLRedirectionApi(object):
     def test_get_with_no_signature(self, url_conversion):
         """
         Removing signature of signed redirect URL. It should get internal server error.
-        :return:
         """
         url_without_signature = url_conversion['source_url'].split('?')[0]
         response = send_request('get', url_without_signature, '')
         assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
-# TODO: We can have test like with invalid_signature etc
+
+    def test_get_with_invalid_signature(self, url_conversion):
+        source_url = url_conversion['source_url']
+        url_wit_invalid_signature = source_url.split('signature=')[0] + 'signature=invalid_signature'
+        response = send_request('get', url_wit_invalid_signature, '')
+        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):

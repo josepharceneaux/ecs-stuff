@@ -66,17 +66,17 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
     :param token_first: authentication token for user_first
     :param smartlist_first: smartlist dict object
     :param campaign_data: data to create campaign
-    :return:
+    :return: campaign dict object
     """
     previous_count = len(get_campaigns(token_first)['campaigns'])
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id']]
-    id = create_campaign(data, token_first)['id']
-    data['id'] = id
+    campaign_id = create_campaign(data, token_first)['id']
+    data['id'] = campaign_id
     data['previous_count'] = previous_count
 
     def tear_down():
-        delete_campaign(id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+        delete_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -94,15 +94,15 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     :param smartlist_first: smartlist dict object owned by user_first
     :param smartlist_same_domain: smartlist dict object owned by user_same_domain
     :param campaign_data: dict data to create campaign
-    :return:
+    :return: campaign data
     """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_domain['id']]
-    id = create_campaign(data, token_first)['id']
-    data['id'] = id
+    campaign_id = create_campaign(data, token_first)['id']
+    data['id'] = campaign_id
 
     def tear_down():
-        delete_campaign(id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+        delete_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -117,15 +117,15 @@ def campaign_in_db_second(request, token_second, user_second, smartlist_second, 
     :param token_second: token for user_second
     :param smartlist_second: test smartlist associated to user_second
     :param campaign_data: dictionary containing campaign data
-    :return:
+    :return: campaign data
     """
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_second['id']]
-    id = create_campaign(data, token_second)['id']
-    data['id'] = id
+    campaign_id = create_campaign(data, token_second)['id']
+    data['id'] = campaign_id
 
     def tear_down():
-        delete_campaign(id, token_second, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+        delete_campaign(campaign_id, token_second, expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return data
@@ -139,7 +139,7 @@ def campaigns_for_pagination_test(request, token_first, smartlist_first, campaig
     :param token_first: authentication token for user_first
     :param smartlist_first: smartlist dict object
     :param campaign_data: data to create campaign
-    :return:
+    :return: campaigns count
     """
     campaigns_count = 15
     data = campaign_data.copy()
@@ -166,7 +166,7 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
     :param token_first: authentication token
     :param campaign_in_db: campaign dict object
     :param candidate_device_first: candidate device dict object
-    :return:
+    :return: campaign's blast dict object
     """
     send_campaign(campaign_in_db['id'], token_first)
     time.sleep(SLEEP_TIME)
@@ -243,7 +243,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :param campaign_in_db: campaign dict object
     :param smartlist_first: smarlist dict object associated with campaign
     :param candidate_device_first: candidate device dict object
-    :return:
+    :return: url_conversion dict object
     """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == HttpStatus.OK

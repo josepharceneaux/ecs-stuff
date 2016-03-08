@@ -162,8 +162,7 @@ class TestScheduleCampaignUsingPOST(object):
         and we want to schedule this campaign with other user with token_first "token_second"
         :param token_second: auth token for user from different domain
         :param token_first: auth token for first user
-        :param campaign_in_db:
-        :return:
+        :param campaign_in_db: campaign dict object
         """
         data = generate_campaign_schedule_data()
         schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
@@ -318,8 +317,7 @@ class TestUnscheduleCamapignUsingDELETE(object):
         Try to unschedule a scheduled campaign and it should be unscheduled successfully
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :param smartlist_first:
-        :param schedule_a_campaign:
-        :return:
+        :param smartlist_first: smartlist for user_first
+        :param schedule_a_campaign: a fixture to schedule a campaign
         """
         unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))

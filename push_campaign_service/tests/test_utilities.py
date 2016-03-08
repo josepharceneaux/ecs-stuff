@@ -31,7 +31,6 @@ def missing_key_test(data, key, token):
     :rtype token: str
     :param campaign_id: push campaign id
     :type campaign_id: int | long
-    :return:
     """
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
@@ -54,7 +53,6 @@ def invalid_value_test(data, key, token, campaign_id):
     :rtype token: str
     :param campaign_id: push campaign id
     :type campaign_id: int | long
-    :return:
     """
     data.update(**generate_campaign_data())
     data[key] = ''
@@ -73,7 +71,6 @@ def invalid_data_test(method, url, token):
     :param method: http method e.g. POST, PUT
     :param url: api url
     :param token: auth token
-    :return:
     """
     data = None
     response = send_request(method, url, token, data, is_json=True)
@@ -124,7 +121,6 @@ def compare_campaign_data(campaign_first, campaign_second):
     """
     This function compares two push campaign dictionaries
     It raises assertion error if respective keys' values do not match.
-    :return:
     """
     assert campaign_first['body_text'] == campaign_second['body_text']
     assert campaign_first['name'] == campaign_second['name']

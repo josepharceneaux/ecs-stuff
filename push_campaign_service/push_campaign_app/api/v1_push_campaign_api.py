@@ -150,7 +150,9 @@ class PushCampaignsResource(Resource):
 
     def get(self):
         """
-        This action returns a list of all push campaigns for current user.
+        This action returns a list of push campaigns that are associated with current user's domain.
+        It accepts `page` and `per_page` query parameters for pagination, defaault values are 1 and
+        10 respectively.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
         :rtype JSON object
@@ -201,7 +203,7 @@ class PushCampaignsResource(Resource):
         This method takes data to create a Push campaign in database. This campaign is just a
         draft and we need to schedule or send it later.
         :return: id of created campaign and a success message
-        :type: JSON object
+        :type: dict
 
         :Example:
 
@@ -240,10 +242,8 @@ class PushCampaignsResource(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
-        missing_fields = [key for key in ['name',
-                                          'body_text',
-                                          'url',
-                                          'smartlist_ids'] if key not in data or not data[key]]
+        missing_fields = [field for field in ['name', 'body_text', 'url',
+                                              'smartlist_ids'] if field not in data or not data[field]]
         if missing_fields:
             raise InvalidUsage('Some required fields are missing',
                                additional_error_info=dict(missing_fields=missing_fields),
@@ -258,7 +258,6 @@ class PushCampaignsResource(Resource):
     def delete(self):
         """
         Deletes multiple campaigns using ids given in list in request data.
-        :return:
 
         :Example:
 
@@ -339,7 +338,7 @@ class CampaignByIdResource(Resource):
         :param campaign_id: push campaign id
         :type campaign_id: int | long
         :return campaign_data: a dictionary containing campaign JSON serializable data
-        :rtype JSON object
+        :rtype dict
 
         :Example:
 
@@ -382,7 +381,7 @@ class CampaignByIdResource(Resource):
         :param campaign_id: unique id of push campaign
         :type campaign_id: int, long
         :return: success message
-        :type: JSON object
+        :type: dict
 
         :Example:
 
@@ -538,7 +537,7 @@ class SchedulePushCampaignResource(Resource):
                     7006 (CampaignAlreadyScheduled)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: JSON containing message and task_id.
+        :return: dict containing message and task_id.
         """
         user = request.user
         get_valid_json_data(request)
@@ -589,7 +588,7 @@ class SchedulePushCampaignResource(Resource):
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: JSON containing message and task_id.
+        :return: dict containing message and task_id.
         """
         get_valid_json_data(request)
         if not campaign_id:
@@ -697,7 +696,7 @@ class PushCampaignBlastSends(Resource):
         """
         Returns Campaign sends for given campaign_id and blast_id.
         We can pass query params like page number and page size like
-        /v1/campaigns/:id/blasts/:id/sends?page=2&per_page=20
+        /v1/campaigns/:campaign_id/blasts/:id/sends?page=2&per_page=20
         :param blast_id: integer, blast unique id
         :param campaign_id: integer, unique id representing campaign in getTalent database
         :return: 1- count of campaign sends and 2- Push campaign sends records as dict
@@ -770,7 +769,7 @@ class PushCampaignSends(Resource):
         Returns campaign sends for given push campaign id
 
         :param campaign_id: integer, unique id representing push campaign in getTalent database
-        :return: 1- count of campaign sends and 2- Push campaign sends
+        :return: list of Push campaign's sends
 
         :Example:
 
@@ -832,7 +831,7 @@ class PushCampaignBlasts(Resource):
         specific push campaign.
 
         :param campaign_id: int, unique id of a push campaign
-        :return: JSON data containing list of blasts and their counts
+        :return: dict containing list of blasts
 
 
         :Example:
@@ -894,7 +893,7 @@ class PushCampaignBlastById(Resource):
 
         :param campaign_id: int, unique id of a push campaign
         :param blast_id: int, unique id of a blast of campaign
-        :return: JSON data containing blast
+        :return: dict containing blast data
 
 
         :Example:

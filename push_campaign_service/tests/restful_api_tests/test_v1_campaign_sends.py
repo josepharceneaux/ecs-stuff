@@ -33,7 +33,6 @@ class TestCampaignSends(object):
         Try to get a campaign send with invalid token, we are expecting that we will get
         Unauthorized (401) error
         :param campaign_in_db: campaign object
-        :return:
         """
         campaign_id = campaign_in_db['id']
         get_campaign_sends(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
@@ -43,7 +42,6 @@ class TestCampaignSends(object):
         Test that accessing campaign sends of a non existing campaign
         raises ResourceNotFound 404 error
         :param token_first: auth token
-        :return:
         """
         # 404 Case, Campaign not found
         invalid_id = sys.maxint
@@ -55,7 +53,6 @@ class TestCampaignSends(object):
         raise Forbidden 403 error
         :param token_second: auth token of another valid user from different domain
         :param campaign_in_db: campaign object
-        :return:
         """
         # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
@@ -66,7 +63,6 @@ class TestCampaignSends(object):
         Test that accessing campaign sends of a campaign created by other user but domain is
         same , so current user can access campaign sends
         :param token_same_domain: auth token of another valid user from different domain
-        :return:
         """
         # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
@@ -78,7 +74,6 @@ class TestCampaignSends(object):
         :param token_first: auth token
         :param campaign_in_db: push campaign created by fixture
         :param campaign_blasts_pagination: blasts count
-        :return:
         """
         campaign_id = campaign_in_db['id']
         blasts_count = campaign_blasts_pagination
@@ -98,7 +93,6 @@ class TestCampaignSends(object):
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=20,
                                       expected_status=(HttpStatus.OK,))
-        assert response['count'] == 0
         assert len(response['sends']) == 0
 
         # set page size greater than max allowed page size, 400 is expected

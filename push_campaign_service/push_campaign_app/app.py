@@ -10,6 +10,5 @@ def index():
     """
     This endpoint is not requirement of service but it helps to do some stuff like
     subscribe , un-subscribe, send a test push notification though our app to a test device.
-    :return:
     """
     return render_template('index.html')

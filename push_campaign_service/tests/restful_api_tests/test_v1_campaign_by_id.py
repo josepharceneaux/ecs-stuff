@@ -50,7 +50,6 @@ class TestCampaignById(object):
         We will try to get a valid campaign with invalid token and api will raise
         Unauthorized 401 error
         :param campaign_in_db: campaign object
-        :return:
         """
         get_campaign(campaign_in_db['id'], 'invalid_token', expected_status=(401,))
 
@@ -59,7 +58,6 @@ class TestCampaignById(object):
         We will try to get campaign with a valid token and we are expecting OK (200) response
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         json_response = get_campaign(campaign_in_db['id'], token_first)
         campaign = json_response['campaign']
@@ -73,7 +71,6 @@ class TestCampaignById(object):
         In this test, we will try to get a campaign that does not exists.
         We are expecting 404 here.
         :param token_first: auth token
-        :return:
         """
         campaign_id = sys.maxint
         get_campaign(campaign_id, token_first, expected_status=(404,))
@@ -83,7 +80,6 @@ class TestCampaignById(object):
         In this test, we will try to get a campaign that does not exists.
         We are expecting 404 here.
         :param token_first: auth token
-        :return:
         """
         campaign_id = campaign_in_db['id']
         delete_campaign(campaign_id, token_first)
@@ -95,7 +91,6 @@ class TestCampaignById(object):
          and he is from same domain as the owner of the campaign. We are expecting OK (200) response.
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         campaign_id = campaign_in_db['id']
         json_response = get_campaign(campaign_id, token_same_domain, expected_status=(200,))
@@ -111,7 +106,6 @@ class TestCampaignById(object):
          and he is from same domain as the owner of the campaign. We are expecting OK (200) response.
         :param token_second: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         campaign_id = campaign_in_db['id']
         get_campaign(campaign_id, token_second, expected_status=(403,))
@@ -125,7 +119,6 @@ class TestUpdateCampaign(object):
         Try to update a campaign with invalid token and API will raise Unauthorized (401) error
         :param campaign_in_db: campaign object
         :param smartlist_first: smartlist object
-        :return:
         """
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
@@ -138,7 +131,6 @@ class TestUpdateCampaign(object):
         :param token_second: auth token
         :param campaign_in_db: campaign object
         :param smartlist_first: smartlist object
-        :return:
         """
         # Test `raise ForbiddenError`
         data = generate_campaign_data()
@@ -151,7 +143,6 @@ class TestUpdateCampaign(object):
         Try to update a campaign that does not exist, API will raise ResourceNotFound (404) error
         :param token_first: auth token
         :param smartlist_first: smartlist object
-        :return:
         """
         # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
         data = generate_campaign_data()
@@ -166,7 +157,6 @@ class TestUpdateCampaign(object):
         :param token_first: auth token
         :param smartlist_first: smartlist object
         :param campaign_in_db: campaign object
-        :return:
         """
         # Test `raise ResourceNotFound('Campaign not found with id %s' % campaign_id)`
         campaign_id = campaign_in_db['id']
@@ -182,7 +172,6 @@ class TestUpdateCampaign(object):
         :param token_first: auth token
         :param campaign_in_db: campaign object
         :param smartlist_first: smartlist object
-        :return:
         """
         # Test invalid field
         data = generate_campaign_data()
@@ -200,7 +189,6 @@ class TestUpdateCampaign(object):
         :param token_first: auth token
         :param smartlist_first: smartlist object
         :param campaign_in_db: campaign object
-        :return:
         """
         # Test valid fields with invalid/ empty values
         data = generate_campaign_data()
@@ -215,7 +203,6 @@ class TestUpdateCampaign(object):
         :param token_first: auth token
         :param campaign_in_db: campaign object
         :param smartlist_first: smartlist object
-        :return:
         """
         # Test positive case with valid data
         data = generate_campaign_data()
@@ -237,7 +224,6 @@ class TestCampaignDeleteById(object):
         Hit the url with invalid authentication token_first and it should
         raise Unauthorized Error 401
         :param campaign_in_db: push campaign object created by fixture
-        :return:
         """
         # We are testing 401 here
         unauthorize_test('delete',  URL % campaign_in_db['id'])
@@ -247,7 +233,6 @@ class TestCampaignDeleteById(object):
         Test that if someone wants to delete a campaign that does not exists,
         it should raise ResourceNotFound 404
         :param token_first: auth token_first
-        :return:
         """
         non_existing_campaign_id = sys.maxint
         # 404 Case, Campaign not found
@@ -258,7 +243,6 @@ class TestCampaignDeleteById(object):
         """
         Test if someone passes an invalid value like 0, it should raise InvalidUsage
         :param token_first: auth token_first
-        :return:
         """
         invalid_id = 0
         delete_campaign(invalid_id, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
@@ -269,7 +253,6 @@ class TestCampaignDeleteById(object):
          same domain So API should allow him to do so (200)
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
 
@@ -279,7 +262,6 @@ class TestCampaignDeleteById(object):
         he is from different domain. So API should not allow (403)
         :param token_second: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         delete_campaign(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
 
@@ -289,7 +271,6 @@ class TestCampaignDeleteById(object):
         successfully delete
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         # 200 Case, Campaign not found
         delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
@@ -299,7 +280,6 @@ class TestCampaignDeleteById(object):
         Try to delete a scheduled campaign , API should successfully delete that campaign
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :param schedule_a_campaign:
-        :return:
+        :param schedule_a_campaign: fixture to schedule a campaign
         """
         delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))

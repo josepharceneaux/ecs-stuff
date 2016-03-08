@@ -30,7 +30,6 @@ class TestCampaignBlastById(object):
         We are getting campaign blast with invalid token and it will raise Unauthorized error 401
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
@@ -45,7 +44,6 @@ class TestCampaignBlastById(object):
         :param token_first: auth token
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
-        :return:
         """
         # 404 Case, Campaign not found
         blast_id = campaign_blast['id']
@@ -61,7 +59,6 @@ class TestCampaignBlastById(object):
         :param token_first: auth token
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
-        :return:
         """
         # 404 Case, Blast not found
         invalid_blast_id = sys.maxint
@@ -76,7 +73,6 @@ class TestCampaignBlastById(object):
         :param token_second: auth token
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']

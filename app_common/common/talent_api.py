@@ -39,6 +39,7 @@ class TalentApi(Api):
                 error = json.loads(response.data)
             except ValueError:
                 # if error body was not json serializable, simply return as it is.
+                logger.warn('Unable to parse response data. \n data: %s' % response.data)
                 return response
 
             status_code = response.status_code

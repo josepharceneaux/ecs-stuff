@@ -79,8 +79,8 @@ def get_pagination_params(request):
         raise InvalidUsage('page value should a positive number. Given %s' % page)
     try:
         per_page = int(per_page)
-        assert 0 < per_page <= MAX_PAGE_SIZE
-    except ValueError:
+        assert 0 < per_page <= MAX_PAGE_SIZE, 'Give per_page value %s' % per_page
+    except:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
                            % (MAX_PAGE_SIZE, per_page))
 

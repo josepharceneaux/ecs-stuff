@@ -52,7 +52,6 @@ class TestCreateCampaign(object):
         """
         Send request with invalid token and 401 status code is expected
         :param campaign_data: dictionary data for campaign
-        :return:
         """
         create_campaign(campaign_data, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
 
@@ -61,7 +60,6 @@ class TestCreateCampaign(object):
         We will try to create campaign with invalid data (empty, invalid json, without json dump)
         and expect 400 status code
         :param token_first: auth token
-        :return:
         """
         invalid_data_test('post', URL, token_first)
 
@@ -73,7 +71,6 @@ class TestCreateCampaign(object):
         :param token_first: auth token
         :param campaign_data: campaign dictionary data
         :param smartlist_first: smartlist dict object
-        :return:
         """
         # First test with missing keys
         for key in CAMPAIGN_REQUIRED_FIELDS:
@@ -87,7 +84,6 @@ class TestCreateCampaign(object):
         :param token_first: auth token
         :param campaign_data: dict data for campaigns
         :param smartlist_first: Smartlist dict object
-        :return:
         """
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()
@@ -118,7 +114,6 @@ class TestGetListOfCampaigns(object):
         In this test, we will test that pagination is working as expected for campaigns endpoint.
         :param token_first: auth token
         :param campaigns_for_pagination_test: campaigns count
-        :return:
         """
         total_count = campaigns_for_pagination_test
         per_page = total_count - 5
@@ -127,7 +122,6 @@ class TestGetListOfCampaigns(object):
 
         per_page = total_count
         response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
-        assert response['count'] == per_page
         assert len(response['campaigns']) == per_page
 
         per_page = MAX_PAGE_SIZE + 1
@@ -143,7 +137,6 @@ class TestDeleteMultipleCampaigns(object):
     def test_campaigns_delete_with_invalid_token(self, campaign_in_db):
         """
         User auth token is invalid, it should get Unauthorized.
-        :return:
         """
         data = {
             'ids': [campaign_in_db['id']]
@@ -154,14 +147,12 @@ class TestDeleteMultipleCampaigns(object):
         """
         Try to delete multiple campaigns using invalid data in body and we will get 400 status code
         :param token_first: auth token
-        :return:
         """
         invalid_data_test('delete', URL, token_first)
 
     def test_campaigns_delete_with_non_json_data(self, token_first):
         """
         User auth token is valid, but non JSON data provided. It should get bad request error.
-        :return:
         """
         response = send_request('delete', URL, token_first, data={'ids': [1, 2, 3]}, is_json=False)
         assert response.status_code == HttpStatus.INVALID_USAGE
@@ -171,7 +162,6 @@ class TestDeleteMultipleCampaigns(object):
         User auth token is valid, but invalid data provided(other than list).
         ids must be in list format
         It should get bad request error.
-        :return:
         """
         data = {'ids': campaign_in_db['id']}
         delete_campaigns(data, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
@@ -180,7 +170,6 @@ class TestDeleteMultipleCampaigns(object):
         """
         User auth token is valid, data is in valid format but ids are not valid
         We are expecting 400 from this request
-        :return:
         """
         data = {'ids': [0, 'a', 'b']}
         delete_campaigns(data, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
@@ -191,7 +180,6 @@ class TestDeleteMultipleCampaigns(object):
         (campaign corresponds to user). Response should be OK.
         :param token_first: auth token
         :param campaign_in_db: campaign created in fixture
-        :return:
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_first, expected_status=(HttpStatus.OK,))
@@ -202,7 +190,6 @@ class TestDeleteMultipleCampaigns(object):
         belong to some other user. It should get unauthorized error.
         :param token_same_domain: auth token
         :param campaign_in_db: campaign created by user_first
-        :return:
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_same_domain, expected_status=(HttpStatus.OK,))
@@ -213,7 +200,6 @@ class TestDeleteMultipleCampaigns(object):
         belong to some other user. It should get unauthorized error.
         :param token_second: auth token for user_second
         :param campaign_in_db: campaign created in fixture
-        :return:
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
@@ -226,7 +212,6 @@ class TestDeleteMultipleCampaigns(object):
         :param token_first: auth token
         :param campaign_in_db: campaign created by user_first
         :param campaign_in_db_second: campaign created by user_second
-        :return:
         """
         response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db['id'],
                                                                     campaign_in_db_second['id']]})
@@ -251,7 +236,6 @@ class TestDeleteMultipleCampaigns(object):
         ResourceNotFound error.
         :param token_first: auth token
         :param campaign_in_db: campaign created by user_first
-        :return:
         """
         campaign_id = campaign_in_db['id']
         delete_campaign(campaign_id, token_first)

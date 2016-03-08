@@ -34,7 +34,6 @@ class TestCampaignBlastSends(object):
         raise Unauthorized error 401
         :param campaign_in_db: campaign object
         :param campaign_blast: campaign blast object
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
@@ -46,7 +45,6 @@ class TestCampaignBlastSends(object):
         Try to get send of a blast but campaign id is invalid, we are expecting 404
         :param token_first: auth token
         :param campaign_blast: campaign blast object
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = sys.maxint
@@ -58,7 +56,6 @@ class TestCampaignBlastSends(object):
         Try to get send of a blast but campaign id is invalid, we are expecting 404
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :return:
         """
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
@@ -71,7 +68,6 @@ class TestCampaignBlastSends(object):
         200 (OK) response.
         :param token_first: auth token
         :param campaign_blast: campaign blast object
-        :return:
         """
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
@@ -91,8 +87,6 @@ class TestCampaignBlastSends(object):
         Test if a user from same domain can access sends of a campaign blast or not.
         API should allow this user
         :param token_same_domain:
-        :param campaign_blast:
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
@@ -105,7 +99,6 @@ class TestCampaignBlastSends(object):
         API should not allow this user
         :param token_second:
         :param campaign_blast:
-        :return:
         """
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']

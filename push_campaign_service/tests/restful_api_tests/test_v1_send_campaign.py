@@ -32,7 +32,6 @@ class TestSendCampaign(object):
         """
         Try to send a campaign with an invalid token, API should raise Unauthorized error
         :param campaign_in_db: campaign object
-        :return:
         """
         send_campaign(campaign_in_db['id'], 'invalid_token',
                       expected_status=(HttpStatus.UNAUTHORIZED,))
@@ -41,7 +40,6 @@ class TestSendCampaign(object):
         """
         Try to send a campaign that does not exist, API should raise ResourceNotFound (404) error
         :param token_first: auth token
-        :return:
         """
         # 404 case. Send a non existing campaign id
         invalid_id = sys.maxint
@@ -54,7 +52,6 @@ class TestSendCampaign(object):
         :param token_first: auth token
         :param campaign_in_db: campaign object
         :param smartlist_first: smartlist object
-        :return:
         """
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
@@ -73,7 +70,6 @@ class TestSendCampaign(object):
         We are expecting 200 status here.
         :param token_same_domain: token for a user that is not owner but in same domain
         :param campaign_in_db: campaign in same domain but created by different user in same domain
-        :return:
         """
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
@@ -98,7 +94,6 @@ class TestSendCampaign(object):
 
         User auth token_first is valid, campaign has one smart list associated. Smartlist has one
         candidate.
-        :return:
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
         send_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK,))
@@ -114,7 +109,6 @@ class TestSendCampaign(object):
         In this test, we will send a campaign to a valid candidate (in same domain), but candidate
         has no device associated with him. So no campaign will be sent which will result in
         zero blasts or sends.
-        :return:
         """
         campaign_id = campaign_in_db['id']
         send_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK,))

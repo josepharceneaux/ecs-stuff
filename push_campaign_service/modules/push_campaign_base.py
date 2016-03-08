@@ -30,12 +30,13 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
             in celery task. It then rollbacks that transaction. (Celery task has it's own scoped session)
 """
 # Third Party
+import datetime
 from dateutil.relativedelta import relativedelta
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
-from push_campaign_service.common.models.push_campaign import *
+from push_campaign_service.common.models import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
 from push_campaign_service.common.routes import PushCampaignApiUrl
@@ -43,6 +44,8 @@ from push_campaign_service.push_campaign_app import logger, celery_app, app
 from push_campaign_service.common.models.candidate import CandidateDevice, Candidate
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
+                                                               PushCampaignSendUrlConversion)
 from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
 
@@ -54,7 +57,6 @@ class PushCampaignBase(CampaignBase):
         In this method, initialize all instance attributes.
         :param args:
         :param kwargs:
-        :return:
         """
         # sets the user_id
         super(PushCampaignBase, self).__init__(user_id)
@@ -138,14 +140,14 @@ class PushCampaignBase(CampaignBase):
         he is redirected to our url redirection endpoint, which after updating campaign stats,
         redirected to original url given for campaign owner.
         :param candidate_id: id of candidate in candidate table in getTalent database
-        :return:
+        :return: True | None
         """
         with app.app_context():
             candidate = Candidate.get_by_id(candidate_id)
             self.campaign = PushCampaign.get_by_id(self.campaign_id)
             assert isinstance(candidate, Candidate), \
                 'candidate should be instance of Candidate Model'
-            logger.info('Going to send campaign to candidate')
+            logger.info('Going to send campaign to candidate (id = %s)' % candidate.id)
             # A device is actually candidate's desktop, android or iOS machine where
             # candidate will receive push notifications. Device id is given by OneSignal.
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
@@ -239,7 +241,6 @@ class PushCampaignBase(CampaignBase):
         This method is invoked whenever some error occurs.
         It rollbacks the transaction otherwise it will cause other transactions (if any) to fail.
         :param uuid:
-        :return:
         """
         db.session.rollback()
 

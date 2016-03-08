@@ -5,9 +5,6 @@ from push_campaign_service.common.error_handling import ResourceNotFound
 from push_campaign_service.common.models.push_campaign import PushCampaignSmartlist
 from push_campaign_service.common.models.smartlist import Smartlist
 
-# TODO: There is CampaignBase method which IMO does the same
-# TODO: create_campaign_smartlist()
-
 
 def associate_smart_list_with_campaign(_id, campaign_id):
     """
@@ -17,7 +14,6 @@ def associate_smart_list_with_campaign(_id, campaign_id):
     :type _id: int | long
     :param campaign_id: push campaign id
     :type campaign_id: int | long
-    :return:
     """
     assert isinstance(campaign_id, (int, long)) and campaign_id > 0, \
         'campaign_id must be a positive number'

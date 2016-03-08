@@ -26,7 +26,6 @@ class TestCampaignBlasts(object):
         We are getting campaign blasts with invalid token and it will
         raise Unauthorized error 401
         :param campaign_in_db: campaign object
-        :return:
         """
         campaign_id = campaign_in_db['id']
         get_blasts(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
@@ -35,7 +34,6 @@ class TestCampaignBlasts(object):
         """
         Try to get send of a blast but campaign id is invalid, we are expecting 404
         :param token_first: auth token
-        :return:
         """
         invalid_campaign_id = sys.maxint
         get_blasts(invalid_campaign_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
@@ -46,7 +44,6 @@ class TestCampaignBlasts(object):
         :param token_first: auth token
         :param campaign_in_db: campaign object
         :param campaign_blasts: campaign blast list
-        :return:
         """
         # 200 case: Campaign Blast successfully
         campaign_id = campaign_in_db['id']
@@ -61,7 +58,6 @@ class TestCampaignBlasts(object):
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
         :param campaign_blasts: campaign blast list
-        :return:
         """
         campaign_id = campaign_in_db['id']
         response = get_blasts(campaign_id, token_same_domain, expected_status=(HttpStatus.OK,))
@@ -75,7 +71,6 @@ class TestCampaignBlasts(object):
         :param token_second: auth token
         :param campaign_in_db: campaign object
         :param campaign_blast: campaign blast JSON object
-        :return:
         """
         campaign_id = campaign_in_db['id']
         get_blasts(campaign_id, token_second, expected_status=(HttpStatus.FORBIDDEN,))

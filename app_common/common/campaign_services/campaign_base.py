@@ -1179,7 +1179,6 @@ class CampaignBase(object):
          **See Also**
         .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
         :param candidates:
-        :return:
         """
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
@@ -1243,7 +1242,6 @@ class CampaignBase(object):
         This will be called by Celery worker to send campaigns asynchronously.
         :param data_to_send_campaign: This is the data used by celery task to send campaign
         :type data_to_send_campaign: tuple
-        :return:
         """
         pass
 
@@ -1251,8 +1249,7 @@ class CampaignBase(object):
     @abstractmethod
     def celery_error_handler(uuid):
         """
-        This function logs any error occurred for tasks running on celery,
-        :return:
+        This function logs any error occurred for tasks running on celery.
         """
         pass
 
@@ -1272,7 +1269,6 @@ class CampaignBase(object):
         :type campaign_type: str
         :type blast_id: int
         :type oauth_header: dict
-        :return:
         """
         pass
 
