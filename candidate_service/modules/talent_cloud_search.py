@@ -733,7 +733,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     facets = get_faceting_information(results.get('facets'))
 
     # Update facets
-    _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
+    if total_found > 0:
+        _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
 
     # for facet_field_name, facet_dict in facets.iteritems():
     #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
