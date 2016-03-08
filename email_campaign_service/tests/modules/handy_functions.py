@@ -384,7 +384,7 @@ def add_domain_role(role_name, domain_id):
 def del_domain_roles(role_ids):
     """
     Function to delete all created user domain roles for tests
-    :param role_ids:
+    :param role_ids: ids for roles to be deleted
     """
     if isinstance(role_ids, list):
         for role_id in role_ids:
