@@ -233,7 +233,7 @@ try:
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(
         CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference/<int:id>',
+        '/v1/candidates/<int:candidate_id>/work_preference',
         endpoint='candidate_work_preference'
     )
 
