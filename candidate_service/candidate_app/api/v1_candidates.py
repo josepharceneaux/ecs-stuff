@@ -1674,14 +1674,11 @@ class CandidatePhotosResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
-        Endpoint:
-            i.  PATCH /v1/candidates/:candidate_id/photos/:id
-        Function will update candidate's photo information
-        :param kwargs:
-        :return:
+        Endpoint: PATCH /v1/candidates/:candidate_id/photos
+        Function will update candidate's photos' information
         """
         # Authenticated user, candidate ID, and photo ID
-        authed_user, candidate_id, photo_id = request.user, kwargs['candidate_id'], kwargs['id']
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -1699,8 +1696,11 @@ class CandidatePhotosResource(Resource):
                                error_code=custom_error.INVALID_INPUT)
 
         # Update candidate's photo
-        update_photo(candidate_id, photo_id, authed_user.id, body_dict)
+        photos = body_dict.get('photos')
+        for photo_dict in photos:
+            update_photo(candidate_id, authed_user.id, photo_dict)
 
+        db.session.commit()
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)

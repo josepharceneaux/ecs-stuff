@@ -1,5 +1,6 @@
 """Candidate Search Service APIs"""
 # Flask specific
+from time import time
 from flask import request
 from flask_restful import Resource
 # Decorators
@@ -15,6 +16,7 @@ from candidate_service.modules.validators import (
 from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 # Modules
+from candidate_service.candidate_app import logger
 from candidate_service.modules.talent_cloud_search import (
     search_candidates, upload_candidate_documents, delete_candidate_documents
 )
@@ -32,6 +34,7 @@ class CandidateSearch(Resource):
         Search candidates based on the given filter criteria
         """
         # Authenticated user
+        start_time = time()
         authed_user = request.user
 
         body_dict = request.get_json(silent=True)
@@ -71,6 +74,8 @@ class CandidateSearch(Resource):
 
             # If limit is not requested then the Search limit would be taken as 15, the default value
             candidate_search_results = search_candidates(domain_id, request_vars, search_limit)
+
+            logger.info('BENCHMARK - candidate Search: {}'.format(time() - start_time))
 
             return candidate_search_results
 
