@@ -139,11 +139,14 @@ def get_campaigns_of_talent_pipeline(talent_pipeline):
         LIMIT 20;
               """
 
+    email_campaigns_response = []
     email_campaigns = db.session.connection().execute(sql_query % talent_pipeline.id)
     from candidate_pool_service.common.models.email_campaign import EmailCampaignSmartlist
     for email_campaign in email_campaigns:
-        email_campaign['list_ids'] = [email_campaign_smartlist.smartlist_id for email_campaign_smartlist in db.session.query(EmailCampaignSmartlist).filter_by(EmailCampaignSmartlist.campaign_id == email_campaign['id']).all()]
-    return json.dumps([dict(email_campaign) for email_campaign in email_campaigns], default=campaign_json_encoder_helper)
+        email_campaign = dict(email_campaign.items())
+        email_campaign['list_ids'] = [email_campaign_smartlist.smartlist_id for email_campaign_smartlist in db.session.query(EmailCampaignSmartlist).filter(EmailCampaignSmartlist.campaign_id == email_campaign['Id']).all()]
+        email_campaigns_response.append(email_campaign)
+    return json.dumps(email_campaigns_response, default=campaign_json_encoder_helper)
 
 
 @celery_app.task()
