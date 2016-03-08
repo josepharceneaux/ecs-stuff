@@ -64,19 +64,6 @@ class TalentPoolStats(db.Model):
         return "<TalentPoolStats (id = {})>".format(self.id)
 
 
-class TalentPipelinesInTalentPoolStats(db.Model):
-
-    __tablename__ = 'talent_pipelines_in_talent_pool_stats'
-
-    id = db.Column(db.Integer, primary_key=True)
-    talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
-    average_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
-    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-
-    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipelines_in_talent_pool_stats',
-                                                                   cascade="all, delete-orphan"))
-
-
 class TalentPoolGroup(db.Model):
     __tablename__ = 'talent_pool_group'
     id = db.Column(db.Integer, primary_key=True)
@@ -120,21 +107,14 @@ class TalentPipeline(db.Model):
     def get_id(self):
         return unicode(self.id)
 
+    def get_email_campaigns(self, page=1, per_page=20):
+        from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
+        from candidate_pool_service.common.models.smartlist import Smartlist
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+            filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
-
-class TalentPipelineStats(db.Model):
-    __tablename__ = 'talent_pipeline_stats'
-    id = db.Column(db.Integer, primary_key=True)
-    talent_pipeline_id = db.Column(db.Integer, db.ForeignKey('talent_pipeline.id', ondelete='CASCADE'),
-                                   nullable=False)
-    total_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
-    candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
-    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-
-    # Relationships
-    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('talent_pipeline_stats',
-                                                                           cascade="all, delete-orphan"))
 

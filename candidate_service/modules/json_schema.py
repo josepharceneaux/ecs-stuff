@@ -1102,11 +1102,29 @@ resource_schema_photos_patch = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "image_url": {"type": "string"},
-        "is_default": {"type": ["boolean", "null"]},
-        "added_datetime": {
-            "type": ["string", "null"]
-            # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+        "photos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["id"],
+                # "additionalProperties": False,
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "image_url": {
+                        "type": "string"
+                    },
+                    "is_default": {
+                        "type": ["boolean", "null"]
+                    },
+                    "added_datetime": {
+                        "type": ["string", "null"]
+                        # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+                    }
+                }
+            }
         }
     }
 }

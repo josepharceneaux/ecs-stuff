@@ -109,7 +109,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Experience
     'total_months_experience':       dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
-    'organization':                  dict(IndexFieldType='text-array'),
+    'organization':                  dict(IndexFieldType='literal-array', LiteralArrayOptions={'FacetEnabled': True}),
     'position':                      dict(IndexFieldType='literal-array'),
     'experience_description':        dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'skill_description':             dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
@@ -591,6 +591,9 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                 if search_query:
                     search_queries_from_search_params.append(search_query)
 
+            search_queries_from_search_params = list(set(search_queries_from_search_params))
+            filter_queries_from_search_params = list(set(filter_queries_from_search_params))
+
             filter_query_from_search_params = "(or %s)" % " ".join(filter_queries_from_search_params) if \
                 len(filter_queries_from_search_params) > 1 else ' '.join(filter_queries_from_search_params)
             search_query_from_search_params = " OR ".join(search_queries_from_search_params) if \
@@ -670,12 +673,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                          % (coordinates[0], coordinates[1])
         params['sort'] = "distance %s" % sort_order
 
+    logger.info("Filter Query: %s, Search Query: %s" % (filter_query, search_query))
+
     # Adding facet fields parameters
 
     if not count_only:
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
-                          "position:{size:50},school_name:{size:500},degree_type:{size:50}," \
+                          "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
                           "custom_field_id_and_value:{size:1000}},candidate_engagement_score:{size:50}"
