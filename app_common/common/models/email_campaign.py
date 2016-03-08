@@ -68,11 +68,9 @@ class EmailCampaign(db.Model):
                        "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
                                                                                      smartlist_ids_only=True)}
 
-        # Remove all fields that are supposed to be included
+        # Only include the fields that are supposed to be included
         if include_fields:
-            for return_field in return_dict.keys():
-                if return_field not in include_fields:
-                    del return_dict[return_field]
+            return {key: return_dict[key] for key in include_fields if key in return_dict}
 
         return return_dict
 

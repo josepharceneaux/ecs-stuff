@@ -521,7 +521,8 @@ class TalentPipelineCampaigns(Resource):
 
         # Get the email campaigns
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        email_campaigns = talent_pipeline.get_email_campaigns()
+        email_campaigns = talent_pipeline.get_email_campaigns(page=request.values.get('page', 1),
+                                                              per_page=request.values.get('per_page', 20))
         return {'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]}
 
 
