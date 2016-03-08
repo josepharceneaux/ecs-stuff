@@ -56,7 +56,7 @@ class TestGetCampaigns(object):
         CampaignsTestsHelpers.request_for_forbidden_error(
             'get', EmailCampaignUrl.CAMPAIGN % email_campaign_in_other_domain.id, access_token_first)
 
-    def test_get_by_camapign_id(self, campaign_with_candidate_having_no_email,
+    def test_get_by_campaign_id(self, campaign_with_candidate_having_no_email,
                                 access_token_first,
                                 talent_pipeline):
         """
@@ -68,6 +68,23 @@ class TestGetCampaigns(object):
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
+
+    def test_get_by_campaign_id_with_fields(self, campaign_with_candidate_having_no_email,
+                                access_token_first,
+                                talent_pipeline):
+        """
+        This is the test to GET the campaign by providing campaign_id & filters. It should get OK response
+        """
+        fields = ['id', 'subject', 'body_html', 'is_hidden']
+
+        email_campaign = get_campaign_or_campaigns(
+            access_token_first,
+            campaign_id=campaign_with_candidate_having_no_email.id,
+            fields=fields)
+        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email, fields=fields)
+
+        # Test GET api of talent-pipelines/:id/campaigns
+        assert_talent_pipeline_response(talent_pipeline, access_token_first, fields=fields)
 
     def test_get_all_campaigns_in_user_domain(self, email_campaign_of_user_first,
                                               email_campaign_of_user_second,
