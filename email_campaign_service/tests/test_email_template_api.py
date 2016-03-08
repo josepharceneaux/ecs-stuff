@@ -1,11 +1,10 @@
 import time
-import requests
 
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
-from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource, \
-                                                                  get_template_folder, create_email_template, \
+from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
+                                                                  get_template_folder, create_email_template,
                                                                   update_email_template)
 
 
@@ -389,7 +388,10 @@ def test_update_email_template(sample_user, sample_user_2, email_template_body, 
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail testing through script</p>\r\n</body>\r\n</html>\r\n'
+    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+                                  '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+                                  '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail' \
+                                  ' testing through script</p>\r\n</body>\r\n</html>\r\n'
 
     # Get email_template via template ID
     resp = update_email_template(email_template["email_template_id"], 'put', token2, sample_user_2.id,
@@ -424,7 +426,11 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail testing through script</p>\r\n</body>\r\n</html>\r\n'
+    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+                                  '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' \
+                                  '\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>' \
+                                  '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
+                                  '/body>\r\n</html>\r\n'
 
     # Get email_template via template ID
     resp = update_email_template(email_template_id+1, 'put', token2, sample_user_2.id,

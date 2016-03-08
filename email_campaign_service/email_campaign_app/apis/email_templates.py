@@ -1,18 +1,14 @@
-import types
-
-from flask import Blueprint
-from email_campaign_service.common.utils.auth_utils import require_oauth, require_all_roles
-from email_campaign_service.common.models.db import db
-from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.utils.api_utils import api_route
-from email_campaign_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
-from email_campaign_service.common.models.user import User, UserScopedRoles, DomainRole
-from flask import request
-from email_campaign_service.common.error_handling import *
 import json
 
-mod = Blueprint('email_template_service', __name__)
+from flask import request
+from flask import Blueprint
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.user import User
+from email_campaign_service.common.error_handling import *
+from email_campaign_service.common.utils.auth_utils import require_oauth, require_all_roles
+from email_campaign_service.common.models.misc import UserEmailTemplate, EmailTemplateFolder
 
+mod = Blueprint('email_template_service', __name__)
 
 
 @mod.route('/v1/email-templates', methods=['POST'])
@@ -49,8 +45,8 @@ def post_email_template():
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
     email_template_folder_id = data.get("email_template_folder_id")
-    if email_template_folder_id and not (isinstance(email_template_folder_id, int)
-                                         or email_template_folder_id.isdigit()):
+    if email_template_folder_id and not (isinstance(email_template_folder_id, int) or
+                                         email_template_folder_id.isdigit()):
         raise InvalidUsage(error_message="Invalid input")
 
     email_template_folder = EmailTemplateFolder.query.get(email_template_folder_id)
@@ -91,7 +87,7 @@ def delete_email_template():
     :rtype:  dict
     """
     data = json.loads(request.data)
-    if(data is None):
+    if data is None:
         raise InvalidUsage(error_message="Missing parameter email_template_id")
     email_template_id = data.get("id")
     # Validate email template id
