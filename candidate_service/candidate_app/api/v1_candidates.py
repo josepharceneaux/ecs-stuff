@@ -542,7 +542,7 @@ class CandidateCustomFieldResource(Resource):
         custom fields or just a single one.
         """
         # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
-        authed_user, candidate_id, can_cf_id = request.user, kwargs.get('candidate_id'), kwargs.get('id')
+        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
         get_candidate_if_exists(candidate_id=candidate_id)
@@ -552,7 +552,7 @@ class CandidateCustomFieldResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if can_cf_id:  # Delete specified custom field
-            candidate_custom_field = CandidateCustomField.get_by_id(_id=can_cf_id)
+            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
             if not candidate_custom_field:
                 raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
