@@ -13,11 +13,11 @@ class ActivityMessageIds(object):
     without initializing activity_service.
     """
     CANDIDATE_CREATE_WEB = 1
+    CANDIDATE_UPDATE = 2
+    CANDIDATE_DELETE = 3
     CANDIDATE_CREATE_CSV = 18
     CANDIDATE_CREATE_WIDGET = 19
     CANDIDATE_CREATE_MOBILE = 20  # TODO add in
-    CANDIDATE_UPDATE = 2
-    CANDIDATE_DELETE = 3
 
     # params=dict(id, name)
     # All Campaigns
@@ -58,3 +58,14 @@ class ActivityMessageIds(object):
     CAMPAIGN_SMS_SEND = 24
     CAMPAIGN_SMS_CLICK = 25
     CAMPAIGN_SMS_REPLY = 26
+
+    # Talent Pipelines
+    PIPELINE_CREATE = 31
+    PIPELINE_DELETE = 32
+
+    # Talent Pools
+    TALENT_POOL_CREATE = 33
+    TALENT_POOL_DELETE = 34
+
+    # Dumblists
+    # TODO

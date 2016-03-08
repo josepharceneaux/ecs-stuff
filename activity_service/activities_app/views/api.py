@@ -228,6 +228,22 @@ class TalentActivityManager(object):
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
+        ActivityMessageIds.PIPELINE_CREATE: (
+            "%(username)s created a pipeline: <b>%(name)s</b>.",
+            "%(username)s created a pipeline: <b>%(name)s</b>.",
+            "pipeline.png"),
+        ActivityMessageIds.PIPELINE_DELETE: (
+            "%(username)s deleted pipeline: <b>%(name)s</b>.",
+            "%(username)s deleted pipeline: <b>%(name)s</b>.",
+            "pipeline.png"),
+        ActivityMessageIds.TALENT_POOL_CREATE: (
+            "%(username)s created a Talent Pool: <b>%(name)s</b>.",
+            "%(username)s created a Talent Pool: <b>%(name)s</b>.",
+            "talent_pool.png"),
+        ActivityMessageIds.TALENT_POOL_DELETE: (
+            "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
+            "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
+            "talent_pool.png"),
     }
 
     def __init__(self):

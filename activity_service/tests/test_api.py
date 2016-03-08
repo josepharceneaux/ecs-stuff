@@ -72,6 +72,53 @@ def test_recent_readable(token_fixture):
     assert json.loads(response.content)['activities'][0]['readable_text'] == '4 users have joined'
 
 
+def test_pipeline_create_and_read(user_fixture, token_fixture):
+    # Create a pipeline activity.
+    create_url = ActivityApiUrl.ACTIVITIES
+    post_response = requests.post(create_url,
+                             headers={
+                                 'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                 'content-type': 'application/json'},
+                             data=json.dumps(dict(
+                                 user_id=user_fixture.id,
+                                 type=31,
+                                 source_table='talent_pipeline',
+                                 source_id='1337',
+                                 params={'username': user_fixture.first_name, 'name': 'test_PL1'}
+                             )))
+    assert post_response.status_code == 200
+    # Fetch the recent readable data
+    aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
+    aggregate_response = requests.get(aggregate_url,
+                            headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
+    assert aggregate_response.status_code == 200
+    activities = json.loads(aggregate_response.content)
+    assert {u'count': 1, u'image': u'pipeline.png', u'readable_text': u'You created a pipeline: <b>test_PL1</b>.'} in activities['activities']
+
+def test_talentPool_create_and_read(user_fixture, token_fixture):
+    # Create a talent pool activity.
+    create_url = ActivityApiUrl.ACTIVITIES
+    post_response = requests.post(create_url,
+                             headers={
+                                 'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                 'content-type': 'application/json'},
+                             data=json.dumps(dict(
+                                 user_id=user_fixture.id,
+                                 type=33,
+                                 source_table='talent_pool',
+                                 source_id='1337',
+                                 params={'username': user_fixture.first_name, 'name': 'test_pool1'}
+                             )))
+    assert post_response.status_code == 200
+    # Fetch the recent readable data
+    aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
+    aggregate_response = requests.get(aggregate_url,
+                            headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
+    assert aggregate_response.status_code == 200
+    activities = json.loads(aggregate_response.content)
+    assert {u'count': 1, u'image': u'talent_pool.png', u'readable_text': u'You created a Talent Pool: <b>test_pool1</b>.'} in activities['activities']
+
+
 def test_health_check():
     response = requests.get(ActivityApiUrl.HEALTH_CHECK)
     assert response.status_code == 200
