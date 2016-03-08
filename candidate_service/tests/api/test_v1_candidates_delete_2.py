@@ -1122,7 +1122,6 @@ class TestDeleteWorkPreference(object):
         print response_info(resp)
         assert resp.status_code == 401
 
-
     def test_delete_candidate_work_preference_with_bad_input(self):
         """
         Test:   Attempt to delete candidate work preference with non integer values
@@ -1133,7 +1132,6 @@ class TestDeleteWorkPreference(object):
         resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id='x')
         print response_info(resp)
         assert resp.status_code == 404
-
 
     def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(
             self, user_first, access_token_first, talent_pool, user_second, access_token_second):
@@ -1156,21 +1154,6 @@ class TestDeleteWorkPreference(object):
         print response_info(updated_resp)
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
-
-
-    def test_delete_candidate_work_preference_with_no_id(self, user_first, access_token_first):
-        """
-        Test:   Attempt to delete Candidate's work preference without providing work_preference_id
-        Expect: 404
-        """
-        # Remove one of Candidate's work preference without work preference ID
-        AddUserRoles.delete(user_first)
-        candidate_id = 5 # This is arbitrary since a 404 is expected
-        updated_resp = request_to_candidate_work_preference_resource(access_token_first, 'delete',
-                                                                     candidate_id)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 404
-
 
     def test_delete_candidate_work_preference(self, user_first, access_token_first, talent_pool):
         """
