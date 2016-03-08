@@ -352,7 +352,7 @@ def test_integration_add_single_item(user_fixture, token_fixture):
 def test_add_multiple_queue_items(token_fixture):
     """Tests adding n-100 items to a users queue stored in Redis"""
     user_id = random_word(6)
-    file_count = random.randrange(1, 100)
+    file_count = random.randrange(1, 15)
     filenames = ['file{}'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     queue_status = add_fp_keys_to_queue(filenames, user_id,
