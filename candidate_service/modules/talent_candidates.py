@@ -2314,17 +2314,18 @@ def get_search_params_of_smartlists(smartlist_ids):
     if not isinstance(smartlist_ids, list):
         smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
+    smartlists = Smartlist.query.with_entities(Smartlist.id, Smartlist.search_params).filter(
+            Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 
-    for smartlist in smartlists:
+    for smartlist_id, smartlist_search_params in smartlists:
         try:
-            if smartlist.search_params and json.loads(smartlist.search_params):
-                search_params.append(json.loads(smartlist.search_params))
+            if smartlist_search_params and json.loads(smartlist_search_params):
+                search_params.append(json.loads(smartlist_search_params))
         except Exception as e:
             raise InvalidUsage(error_message="Search params of smartlist %s are in bad format "
-                                             "because: %s" % (smartlist.id, e.message))
+                                             "because: %s" % (smartlist_id, e.message))
 
     logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
 
