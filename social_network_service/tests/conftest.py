@@ -13,6 +13,7 @@ import requests
 
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.tests.conftest import user_auth, sample_user, domain_first, first_group
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
 
@@ -520,6 +521,34 @@ def meetup_missing_data(request, meetup_event_data):
     return request.param, meetup_event_data.copy()
 
 
+@pytest.fixture(scope="session")
+def delete_all_eventbrite_webhooks(request):
+    """
+    This method gets all webhooks from eventbrite and delete them
+    :param request:
+    :return:
+    """
+
+    def fin():
+        social_network = SocialNetwork.get_by_name('eventbrite')
+        user_social_network_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id=social_network.id)
+        for credentials in user_social_network_credentials:
+            header = {'Authorization': 'Bearer %s' % credentials.access_token}
+            response = http_request('GET', url=social_network.api_url + '/webhooks/',
+                                    headers=header)
+            web_hooks = response.json()['webhooks']
+            for web_hook in web_hooks:
+                try:
+                    # Send delete request to delete web_hook
+                    response = http_request('DELETE', url=social_network.api_url + '/webhooks/%s' % web_hook['id'],
+                                            headers=header)
+                    assert response.status_code == 200
+                except Exception:
+                    pass
+
+    request.addfinalizer(fin)
+
+
 @pytest.fixture()
 def is_subscribed_test_data(request, sample_user):
     """
@@ -565,4 +594,5 @@ def teardown_fixtures(user, client_credentials, domain, organization):
     User.delete(user.id)
     Domain.delete(domain.id)
     Organization.delete(organization.id)
+
 

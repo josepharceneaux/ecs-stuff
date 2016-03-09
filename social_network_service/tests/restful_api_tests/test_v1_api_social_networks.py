@@ -13,7 +13,7 @@ from social_network_service.common.tests.conftest import first_group, domain_fir
 from social_network_service.social_network_app import logger
 
 
-def test_subscribed_social_network(token, sample_user, is_subscribed_test_data):
+def test_subscribed_social_network(delete_all_eventbrite_webhooks, token, sample_user, is_subscribed_test_data):
     """
     Input: We created two test social networks with name SN1 and SN2 and added credentials for SN1
     in UserSocialNetworkCredential Table in is_subscribed_test_data fixture.

@@ -15,7 +15,7 @@ from flask import request, redirect
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi, get_webhook_app_url
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
@@ -36,8 +36,8 @@ api = TalentApi(app)
 # Initialize Redis Cache
 redis_store.init_app(app)
 
-# TODO: remove this in final code
-WEBHOOK_REDIRECT_URL = 'http://gettalent.ngrok.io'
+
+WEBHOOK_REDIRECT_URL = get_webhook_app_url()
 
 
 @app.route('/')
