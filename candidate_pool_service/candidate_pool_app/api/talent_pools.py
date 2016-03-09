@@ -19,6 +19,7 @@ from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import update_talent_pools_stats_task
 from candidate_pool_service.common.models.user import DomainRole
+from candidate_pool_service.common.utils.candidate_service_calls import search_candidates_from_params
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
@@ -419,13 +420,14 @@ class TalentPoolCandidateApi(Resource):
 
         total_candidate = TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()
 
-        return {
-            'talent_pool_candidates':
-                {
-                    'name': talent_pool.name,
-                    'total_found': len(total_candidate)
-                }
-        }
+        search_candidates_response = search_candidates_from_params(
+            search_params={'talent_pool_id': talent_pool_id},
+            access_token=request.oauth_token
+        )
+        #  To be backwards-compatible, for now, we add talent_pool_candidates to top level dict
+        search_candidates_response['talent_pool_candidates'] = {'name': talent_pool.name,
+                                                                'total_found': len(total_candidate)}
+        return search_candidates_response
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', DomainRole.Roles.CAN_ADD_CANDIDATES_TO_TALENT_POOL)
