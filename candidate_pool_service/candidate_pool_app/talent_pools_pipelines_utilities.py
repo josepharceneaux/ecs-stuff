@@ -51,7 +51,7 @@ def get_pipeline_growth(talent_pipeline, interval):
     """
     from_date = datetime.utcnow() - timedelta(days=interval)
     from_date = from_date if from_date.date() >= talent_pipeline.added_time.date() else talent_pipeline.added_time.date()
-    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().strftime('%m/%d/%Y')) + \
+    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().strftime('%m/%d/%Y')) - \
            get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date.strftime('%m/%d/%Y'))
 
 
