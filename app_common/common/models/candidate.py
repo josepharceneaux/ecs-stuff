@@ -205,7 +205,7 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extension= ' %r')>" % (self.value, self.extension)
 
     # Relationships
-    candidate = relationship('Candidate', backref='candidate_phone')
+    # candidate = relationship('Candidate', backref='candidate_phone')
     sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
                                         passive_deletes=True, backref="candidate_phone")
 
