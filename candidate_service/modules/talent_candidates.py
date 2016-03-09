@@ -786,7 +786,7 @@ def create_or_update_candidate_from_params(
     :rtype                          dict
     """
     # Format inputs
-    added_time = added_time or datetime.datetime.now()
+    added_time = added_time or datetime.datetime.utcnow()
     status_id = status_id or 1
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 

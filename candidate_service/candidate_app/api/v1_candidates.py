@@ -258,38 +258,54 @@ class CandidatesResource(Resource):
         candidates = body_dict.get('candidates')
 
         # Input validations
+        skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
         all_cf_ids, all_aoi_ids = [], []
+        hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
             # Check for candidate's existence and web-hidden status
             candidate_id = _candidate_dict.get('id')
 
             # Check if candidate exists and is not web-hidden
-            get_candidate_if_exists(candidate_id=candidate_id)
+            candidate = get_candidate_if_exists(candidate_id)
 
-            # Emails' addresses must be properly formatted
-            for emails in _candidate_dict.get('emails') or []:
-                if emails.get('address'):
-                    if not is_valid_email(emails.get('address')):
-                        raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
+            # Hide candidate if requested
+            if _candidate_dict.get('hide') is True:
+                candidate.is_web_hidden = 1
+                hidden_candidate_ids.append(candidate_id)
+                skip = True
 
-            for custom_field in _candidate_dict.get('custom_fields') or []:
-                all_cf_ids.append(custom_field.get('custom_field_id'))
+            # No need to validate anything since candidate is set to hidden
+            if not skip:
+                # Emails' addresses must be properly formatted
+                for emails in _candidate_dict.get('emails') or []:
+                    if emails.get('address'):
+                        if not is_valid_email(emails.get('address')):
+                            raise InvalidUsage("Invalid email address/format", custom_error.INVALID_EMAIL)
 
-            for aoi in _candidate_dict.get('areas_of_interest') or []:
-                all_aoi_ids.append(aoi.get('area_of_interest_id'))
+                for custom_field in _candidate_dict.get('custom_fields') or []:
+                    all_cf_ids.append(custom_field.get('custom_field_id'))
 
-            # to_date & from_date in military_service dict must be formatted properly
-            for military_service in _candidate_dict.get('military_services') or []:
-                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date:
-                    if not is_date_valid(date=from_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
-                elif to_date:
-                    if not is_date_valid(date=to_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
+                for aoi in _candidate_dict.get('areas_of_interest') or []:
+                    all_aoi_ids.append(aoi.get('area_of_interest_id'))
+
+                # to_date & from_date in military_service dict must be formatted properly
+                for military_service in _candidate_dict.get('military_services') or []:
+                    from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                    if from_date:
+                        if not is_date_valid(date=from_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+                    elif to_date:
+                        if not is_date_valid(date=to_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+
+        if skip:
+            db.session.commit()
+            # Update candidates in cloud search
+            upload_candidate_documents.delay(hidden_candidate_ids)
+            return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -405,11 +421,6 @@ class CandidateResource(Resource):
                 I.  DELETE /v1/candidates/:id
                 OR
                 II. DELETE /v1/candidates/:email
-
-        Caveats:
-              i. Candidate will not be removed from db. It is set to "web_hidden".
-             ii. Only candidate's owner can hide the Candidate
-            iii. Candidate must be in the same domain as the authenticated-user
         """
         # Authenticate user
         authed_user = request.user
@@ -424,14 +435,15 @@ class CandidateResource(Resource):
             candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        # Hide Candidate
-        Candidate.set_is_web_hidden_to_true(candidate_id=candidate_id)
+        # Delete Candidate
+        db.session.delete(candidate)
+        db.session.commit()
 
         # Delete candidate from cloud search
         delete_candidate_documents([candidate_id])
@@ -478,6 +490,9 @@ class CandidateAddressResource(Resource):
             map(db.session.delete, candidate.addresses)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -528,6 +543,9 @@ class CandidateAreaOfInterestResource(Resource):
                     db.session.delete(candidate_aoi)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -571,6 +589,9 @@ class CandidateCustomFieldResource(Resource):
                 db.session.delete(ccf)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -614,6 +635,9 @@ class CandidateEducationResource(Resource):
             map(db.session.delete, candidate.educations)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -665,6 +689,9 @@ class CandidateEducationDegreeResource(Resource):
             map(db.session.delete, education.degrees)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -730,6 +757,9 @@ class CandidateEducationDegreeBulletResource(Resource):
             map(db.session.delete, degree_bullets)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -773,6 +803,9 @@ class CandidateExperienceResource(Resource):
             map(db.session.delete, candidate.experiences)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -831,6 +864,9 @@ class CandidateExperienceBulletResource(Resource):
             map(db.session.delete, bullets)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -874,6 +910,9 @@ class CandidateEmailResource(Resource):
             map(db.session.delete, candidate.emails)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -917,6 +956,9 @@ class CandidateMilitaryServiceResource(Resource):
             map(db.session.delete, candidate.military_services)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -960,6 +1002,9 @@ class CandidatePhoneResource(Resource):
             map(db.session.delete, candidate.phones)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1004,6 +1049,9 @@ class CandidatePreferredLocationResource(Resource):
             map(db.session.delete, candidate.preferred_locations)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1048,6 +1096,9 @@ class CandidateSkillResource(Resource):
             map(db.session.delete, candidate.skills)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1094,6 +1145,9 @@ class CandidateSocialNetworkResource(Resource):
             map(db.session.delete, candidate.social_networks)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1126,6 +1180,9 @@ class CandidateWorkPreferenceResource(Resource):
 
         db.session.delete(work_preference)
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1373,6 +1430,9 @@ class CandidatePreferenceResource(Resource):
 
         # Add candidate subscription preference
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -1412,6 +1472,8 @@ class CandidatePreferenceResource(Resource):
         # Update candidate's subscription preference
         add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
 
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1437,6 +1499,9 @@ class CandidatePreferenceResource(Resource):
 
         db.session.delete(candidate_subs_pref)
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1621,6 +1686,9 @@ class CandidatePhotosResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         add_photos(candidate_id, body_dict['photos'])
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
@@ -1695,6 +1763,9 @@ class CandidatePhotosResource(Resource):
             update_photo(candidate_id, authed_user.id, photo_dict)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1735,6 +1806,9 @@ class CandidatePhotosResource(Resource):
             map(db.session.delete, candidate.photos)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1765,6 +1839,9 @@ class CandidateNotesResource(Resource):
 
         add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)

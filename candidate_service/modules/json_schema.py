@@ -569,6 +569,9 @@ candidates_resource_schema_patch = {
                     "resume_url": {
                         "type": ["string", "null"]
                     },
+                    "hide": {
+                        "type": "boolean"
+                    },
                     "talent_pool_ids": {
                         "type": ["object", "null"],
                         "additionalProperties": False,
