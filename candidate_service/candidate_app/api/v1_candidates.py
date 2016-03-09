@@ -303,6 +303,8 @@ class CandidatesResource(Resource):
 
         if skip:
             db.session.commit()
+            # Update candidates in cloud search
+            upload_candidate_documents.delay(hidden_candidate_ids)
             return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
@@ -445,7 +447,6 @@ class CandidateResource(Resource):
 
         # Delete candidate from cloud search
         delete_candidate_documents([candidate_id])
-
         return '', 204
 
 
@@ -489,6 +490,9 @@ class CandidateAddressResource(Resource):
             map(db.session.delete, candidate.addresses)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -539,6 +543,9 @@ class CandidateAreaOfInterestResource(Resource):
                     db.session.delete(candidate_aoi)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -582,6 +589,9 @@ class CandidateCustomFieldResource(Resource):
                 db.session.delete(ccf)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -625,6 +635,9 @@ class CandidateEducationResource(Resource):
             map(db.session.delete, candidate.educations)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -676,6 +689,9 @@ class CandidateEducationDegreeResource(Resource):
             map(db.session.delete, education.degrees)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -741,6 +757,9 @@ class CandidateEducationDegreeBulletResource(Resource):
             map(db.session.delete, degree_bullets)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -784,6 +803,9 @@ class CandidateExperienceResource(Resource):
             map(db.session.delete, candidate.experiences)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -842,6 +864,9 @@ class CandidateExperienceBulletResource(Resource):
             map(db.session.delete, bullets)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -885,6 +910,9 @@ class CandidateEmailResource(Resource):
             map(db.session.delete, candidate.emails)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -928,6 +956,9 @@ class CandidateMilitaryServiceResource(Resource):
             map(db.session.delete, candidate.military_services)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -971,6 +1002,9 @@ class CandidatePhoneResource(Resource):
             map(db.session.delete, candidate.phones)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1015,6 +1049,9 @@ class CandidatePreferredLocationResource(Resource):
             map(db.session.delete, candidate.preferred_locations)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1059,6 +1096,9 @@ class CandidateSkillResource(Resource):
             map(db.session.delete, candidate.skills)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1105,6 +1145,9 @@ class CandidateSocialNetworkResource(Resource):
             map(db.session.delete, candidate.social_networks)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1137,6 +1180,9 @@ class CandidateWorkPreferenceResource(Resource):
 
         db.session.delete(work_preference)
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1384,6 +1430,9 @@ class CandidatePreferenceResource(Resource):
 
         # Add candidate subscription preference
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -1423,6 +1472,8 @@ class CandidatePreferenceResource(Resource):
         # Update candidate's subscription preference
         add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
 
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1448,6 +1499,9 @@ class CandidatePreferenceResource(Resource):
 
         db.session.delete(candidate_subs_pref)
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1632,6 +1686,9 @@ class CandidatePhotosResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         add_photos(candidate_id, body_dict['photos'])
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
@@ -1706,6 +1763,9 @@ class CandidatePhotosResource(Resource):
             update_photo(candidate_id, authed_user.id, photo_dict)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1746,6 +1806,9 @@ class CandidatePhotosResource(Resource):
             map(db.session.delete, candidate.photos)
 
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
 
@@ -1776,6 +1839,9 @@ class CandidateNotesResource(Resource):
 
         add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
         db.session.commit()
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
         return '', 204
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
