@@ -25,7 +25,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 class TestUpdateCandidate(object):
     def test_hide_candidates(self, access_token_first, user_first, talent_pool):
         """
-        Test:  Create candidates and hide it
+        Test:  Create a candidate and hide it
         Expect: 200; candidate should not be retrievable
         """
         # Create candidate
@@ -47,6 +47,45 @@ class TestUpdateCandidate(object):
         print response_info(get_resp)
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+
+    def test_hide_and_unhide_candidates(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidates, hide them, and unhide them again via Patch call
+        """
+        # Create candidates
+        AddUserRoles.all_roles(user_first)
+        create_resp_1 = request_to_candidates_resource(
+            access_token_first, 'post', generate_single_candidate_data([talent_pool.id]))
+        create_resp_2 = request_to_candidates_resource(
+            access_token_first, 'post', generate_single_candidate_data([talent_pool.id]))
+        candidate_id_1 = create_resp_1.json()['candidates'][0]['id']
+        candidate_id_2 = create_resp_2.json()['candidates'][0]['id']
+
+        # Hide both candidates
+        hide_data = {'candidates': [
+            {'id': candidate_id_1, 'hide': True}, {'id': candidate_id_2, 'hide': True}
+        ]}
+        update_resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == 200
+        assert len(update_resp.json()['hidden_candidate_ids']) == len(hide_data['candidates'])
+
+        # Retrieve candidates
+        data = {'candidate_ids': [candidate_id_1, candidate_id_2]}
+        get_resp = request_to_candidate_search_resource(access_token_first, 'get', data)
+        print response_info(get_resp)
+
+        # Un-hide candidates
+        unhide_data = {'candidates': [
+            {'id': candidate_id_1, 'hide': False}, {'id': candidate_id_2, 'hide': False}
+        ]}
+        update_resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
+        print response_info(update_resp)
+
+        # Retrieve candidates
+        data = {'candidate_ids': [candidate_id_1, candidate_id_2]}
+        get_resp = request_to_candidate_search_resource(access_token_first, 'get', data)
+        print response_info(get_resp)
 
 
 def test_update_candidate_outside_of_domain(access_token_first, user_first, talent_pool,

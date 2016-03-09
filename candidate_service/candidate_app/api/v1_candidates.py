@@ -270,11 +270,14 @@ class CandidatesResource(Resource):
             # Check if candidate exists and is not web-hidden
             candidate = get_candidate_if_exists(candidate_id)
 
-            # Hide candidate if requested
-            if _candidate_dict.get('hide') is True:
+            # Hide or un-hide candidate if requested
+            hide_candidate = _candidate_dict.get('hide')
+            if hide_candidate is True:
                 candidate.is_web_hidden = 1
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
+            else:  # json-schema will only allow True or False
+                candidate.is_web_hidden = 0
 
             # No need to validate anything since candidate is set to hidden
             if not skip:
