@@ -1110,130 +1110,70 @@ def test_delete_can_social_network(user_first, access_token_first, talent_pool):
     assert len(can_sn_after_delete) == sn_count_before_delete - 1
 
 
-######################## CandidateWorkPreference ########################
-def test_non_logged_in_user_delete_can_work_preference():
-    """
-    Test:   Delete candidate's work preference without logging in
-    Expect: 401
-    """
-    # Delete Candidate's work preference
-    candidate_id, work_preference_id = 5, 5 # These are arbitrary since a 401 is expected
-    resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id,
-                                                         work_preference_id)
-    print response_info(resp)
-    assert resp.status_code == 401
+class TestDeleteWorkPreference(object):
+    def test_non_logged_in_user_delete_can_work_preference(self):
+        """
+        Test:   Delete candidate's work preference without logging in
+        Expect: 401
+        """
+        # Delete Candidate's work preference
+        candidate_id = 5 # This is arbitrary since a 401 is expected
+        resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id)
+        print response_info(resp)
+        assert resp.status_code == 401
 
+    def test_delete_candidate_work_preference_with_bad_input(self):
+        """
+        Test:   Attempt to delete candidate work preference with non integer values
+                for candidate_id & work_preference_id
+        Expect: 404
+        """
+        # Delete Candidate's work preference
+        resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id='x')
+        print response_info(resp)
+        assert resp.status_code == 404
 
-def test_delete_candidate_work_preference_with_bad_input():
-    """
-    Test:   Attempt to delete candidate work preference with non integer values
-            for candidate_id & work_preference_id
-    Expect: 404
-    """
-    # Delete Candidate's work preference
-    resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id='x',
-                                                         work_preference_id=5)
-    print response_info(resp)
-    assert resp.status_code == 404
+    def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(
+            self, user_first, access_token_first, talent_pool, user_second, access_token_second):
+        """
+        Test:   Attempt to delete the work preference of a Candidate that belongs
+                to a user from a different domain
+        Expect: 403
+        """
+        # Get access token_1 & access_token_second for sample_user & sample_user_2, respectively
+        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.delete(user_second)
 
-    # Delete Candidate's work preference
-    resp = request_to_candidate_work_preference_resource(None, 'delete', candidate_id=5,
-                                                         work_preference_id='x')
-    print response_info(resp)
-    assert resp.status_code == 404
+        # Create candidate_1 & candidate_2 with sample_user & sample_user_2
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data)
+        candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
+        # Delete candidate_1's work preference with sample_user_2 logged in
+        updated_resp = request_to_candidate_work_preference_resource(access_token_second, 'delete', candidate_1_id)
+        print response_info(updated_resp)
+        assert updated_resp.status_code == 403
+        assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-def test_delete_work_preference_of_a_candidate_belonging_to_a_diff_user(user_first, access_token_first, talent_pool,
-                                                                        user_second, access_token_second):
-    """
-    Test:   Attempt to delete the work preference of a Candidate that belongs
-            to a user from a different domain
-    Expect: 403
-    """
-    # Get access token_1 & access_token_second for sample_user & sample_user_2, respectively
-    AddUserRoles.add_and_get(user=user_first)
-    AddUserRoles.delete(user=user_second)
+    def test_delete_candidate_work_preference(self, user_first, access_token_first, talent_pool):
+        """
+        Test:   Remove Candidate's work-preference from db
+        Expect: 204, Candidate must not have any work-preference left
+        """
+        # Create Candidate
+        AddUserRoles.all_roles(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
-    # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data)
-    candidate_1_id = create_resp_1.json()['candidates'][0]['id']
+        # Retrieve Candidate's work preference
+        candidate_id = create_resp.json()['candidates'][0]['id']
 
-    # Retrieve candidate_1's work preference
-    can_1_work_preference = request_to_candidate_resource(access_token_first, 'get', candidate_1_id).\
-        json()['candidate']['work_preference']
+        # Delete Candidate's work preference
+        updated_resp = request_to_candidate_work_preference_resource(access_token_first, 'delete', candidate_id)
+        print response_info(updated_resp)
 
-    # Delete candidate_1's work preference with sample_user_2 logged in
-    updated_resp = request_to_candidate_work_preference_resource(
-            access_token_second, 'delete', candidate_1_id, can_1_work_preference['id'])
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
-
-
-def test_delete_work_preference_of_a_different_candidate(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete the work preference of a different Candidate
-    Expect: 403
-    """
-    # Create candidate_1 and candidate_2
-    AddUserRoles.all_roles(user=user_first)
-    data_1 = generate_single_candidate_data([talent_pool.id])
-    data_2 = generate_single_candidate_data([talent_pool.id])
-    candidate_1_id = request_to_candidates_resource(access_token_first, 'post', data_1)\
-        .json()['candidates'][0]['id']
-    candidate_2_id = request_to_candidates_resource(access_token_first, 'post', data_2)\
-        .json()['candidates'][0]['id']
-
-    # Retrieve candidate_2's work preference
-    can_2_work_preference = request_to_candidate_resource(access_token_first, 'get', candidate_2_id).\
-        json()['candidate']['work_preference']
-
-    # Delete candidate_2's id using candidate_1_id
-    updated_resp = request_to_candidate_work_preference_resource(
-            access_token_first, 'delete', candidate_1_id,
-            work_preference_id=can_2_work_preference['id'])
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == custom_error.WORK_PREF_FORBIDDEN
-
-
-def test_delete_candidate_work_preference_with_no_id(user_first, access_token_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's work preference without providing work_preference_id
-    Expect: 404
-    """
-    # Remove one of Candidate's work preference without work preference ID
-    AddUserRoles.delete(user=user_first)
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_work_preference_resource(access_token_first, 'delete',
-                                                                 candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
-
-
-def test_delete_candidate_work_preference(user_first, access_token_first, talent_pool):
-    """
-    Test:   Remove Candidate's work-preference from db
-    Expect: 204, Candidate must not have any work-preference left
-    """
-    # Create Candidate
-    AddUserRoles.all_roles(user=user_first)
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-
-    # Retrieve Candidate's work preference
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    work_pref_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
-        json()['candidate']['work_preference']
-
-    # Delete Candidate's work preference
-    updated_resp = request_to_candidate_work_preference_resource(access_token_first, 'delete', candidate_id,
-                                                                 work_pref_dict['id'])
-    print response_info(updated_resp)
-
-    # Retrieve Candidate after update
-    can_dict_after_update = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
-    assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['work_preference']) == 0
+        # Retrieve Candidate after update
+        can_dict_after_update = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
+        assert updated_resp.status_code == 204
+        assert len(can_dict_after_update['work_preference']) == 0

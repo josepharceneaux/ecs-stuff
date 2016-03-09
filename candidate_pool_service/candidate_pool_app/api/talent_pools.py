@@ -64,7 +64,9 @@ class TalentPoolApi(Resource):
                     'name': talent_pool.name,
                     'description': talent_pool.description,
                     'domain_id': talent_pool.domain_id,
-                    'user_id': talent_pool.user_id
+                    'user_id': talent_pool.user_id,
+                    'added_time': talent_pool.added_time.isoformat(),
+                    'updated_time': talent_pool.updated_time.isoformat()
                 }
             }
         # Getting all talent-pools of logged-in user's domain
@@ -77,6 +79,8 @@ class TalentPoolApi(Resource):
                         'name': talent_pool.name,
                         'description': talent_pool.description,
                         'user_id': talent_pool.user_id,
+                        'added_time': talent_pool.added_time.isoformat(),
+                        'updated_time': talent_pool.updated_time.isoformat(),
                         'accessible_to_user_group_ids': [talent_pool_group.user_group_id for talent_pool_group in
                                                          TalentPoolGroup.query.filter_by(
                                                                  talent_pool_id=talent_pool.id

@@ -1,7 +1,6 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
-from activity_service.common.error_handling import InvalidUsage
 
 __author__ = 'erikfarmer'
 # stdlib
@@ -14,6 +13,7 @@ from dateutil import parser
 from flask import Blueprint
 from flask import jsonify
 from flask import request
+
 # application specific
 from activity_service.activities_app import db, logger
 from activity_service.common.models.user import User
@@ -228,6 +228,18 @@ class TalentActivityManager(object):
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_CREATE: (
+            "%(username)s created a Push campaign: '%(campaign_name)s'",
+            "%(username)s created a Push campaign: '%(campaign_name)s'",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_SEND: (
+            "Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
+            "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
+            "campaign.png"),
+        ActivityMessageIds.CAMPAIGN_PUSH_CLICK: (
+            "%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
+            "%(candidate_name)s clicked on %(campaign_name)s.",
+            "campaign.png")
     }
 
     def __init__(self):

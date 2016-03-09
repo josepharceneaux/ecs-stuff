@@ -36,7 +36,7 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
         CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidatePhotosResource, CandidateNotesResource
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -233,7 +233,7 @@ try:
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(
         CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference/<int:id>',
+        '/v1/candidates/<int:candidate_id>/work_preference',
         endpoint='candidate_work_preference'
     )
 
@@ -242,6 +242,12 @@ try:
 
     # ****** CandidateViewResource ******
     api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
+
+    # ****** CandidateDeviceResource ******
+    api.add_resource(
+        CandidateDeviceResource, CandidateApi.DEVICES,
+        endpoint='candidate_devices'
+    )
 
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')

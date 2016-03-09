@@ -1,4 +1,5 @@
 # Standard Imports
+import json
 import time
 import requests
 
@@ -18,6 +19,7 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
     create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
+from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 
 __author__ = 'basit'
 
@@ -118,24 +120,35 @@ def send_campaign(campaign, access_token, sleep_time=20):
     return response
 
 
-def assert_valid_campaign_get(campaign, referenced_campaign):
+def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=None):
     """
-    This assert that the campaign we get from GET call has valid values as we have for
+    This asserts that the campaign we get from GET call has valid values as we have for
     referenced email-campaign.
-    :param campaign: EmailCampaign object as received by GET call
+    :param dict email_campaign_dict: EmailCampaign object as received by GET call
     :param referenced_campaign: EmailCampaign object by which we compare the campaign
             we GET in response
+    :param list[str] fields: List of fields that the campaign should have, or all of them if None
     """
-    assert 'id' in campaign
-    assert campaign['id'] == referenced_campaign.id
-    assert campaign['user_id'] == referenced_campaign.user_id
+
+    # Assert the fields are correct
+    expected_email_campaign_fields_set = set(fields or ALL_EMAIL_CAMPAIGN_FIELDS)
+    actual_email_campaign_fields_set = set(email_campaign_dict.keys())
+    assert expected_email_campaign_fields_set == actual_email_campaign_fields_set, \
+        "Response's email campaign fields (%s) should match the expected email campaign fields (%s)" % (
+            actual_email_campaign_fields_set, expected_email_campaign_fields_set
+        )
+
+    # Assert id is correct, if returned by API
+    if 'id' in expected_email_campaign_fields_set:
+        assert email_campaign_dict['id'] == referenced_campaign.id
 
 
-def get_campaign_or_campaigns(access_token, campaign_id=None):
+def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None):
     """
     This makes HTTP GET call on /v1/email-campaigns with given access_token to get
     1) all the campaigns of logged-in user if campaign_id is None
     2) Get campaign object for given campaign_id
+    :param list[str] fields: List of EmailCampaign fields to retrieve
     """
     if campaign_id:
         url = EmailCampaignUrl.CAMPAIGN % campaign_id
@@ -143,7 +156,9 @@ def get_campaign_or_campaigns(access_token, campaign_id=None):
     else:
         url = EmailCampaignUrl.CAMPAIGNS
         entity = 'email_campaigns'
+    params = {'fields': ','.join(fields)} if fields else {}
     response = requests.get(url=url,
+                            params=params,
                             headers={'Authorization': 'Bearer %s' % access_token})
     assert response.status_code == 200
     resp = response.json()
@@ -151,14 +166,23 @@ def get_campaign_or_campaigns(access_token, campaign_id=None):
     return resp[entity]
 
 
-def assert_talent_pipeline_response(talent_pipeline, access_token):
+def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
     """
     This makes HTTP GET call on candidate_pool_service to get response for given
     talent_pipeline and then asserts if we get an OK response.
+    :param list[str] fields:  List of fields each EmailCampaign should have.  If None, will assert on all fields.
     """
     response = requests.get(
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
         headers={'Authorization': 'Bearer %s' % access_token})
     assert response.status_code == 200
     resp = response.json()
-    assert 'email_campaigns' in resp
+    print "Response JSON: %s" % json.dumps(resp)
+    assert 'email_campaigns' in resp, "Response dict should have email_campaigns key"
+
+    # Assert on the existence of email campaign fields
+    for email_campaign_dict in resp['email_campaigns']:
+        expected_email_campaign_fields_set = set(fields or ALL_EMAIL_CAMPAIGN_FIELDS)
+        actual_email_campaign_fields_set = set(email_campaign_dict.keys())
+        assert expected_email_campaign_fields_set == actual_email_campaign_fields_set, \
+            "Response's email campaign fields should match the expected email campaign fields"

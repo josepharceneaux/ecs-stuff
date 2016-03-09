@@ -95,6 +95,7 @@ class EmailCampaignApi(Resource):
         """
         user = request.user
         email_campaign_id = kwargs.get('id')
+        include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
         if email_campaign_id:
             email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
@@ -104,7 +105,7 @@ class EmailCampaignApi(Resource):
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-            return {"email_campaign": email_campaign.to_dict()}
+            return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
         else:
             page, per_page = get_pagination_params(request)
             # Get all email campaigns from logged in user's domain
