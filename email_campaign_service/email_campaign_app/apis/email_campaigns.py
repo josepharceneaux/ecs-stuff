@@ -62,10 +62,11 @@ from email_campaign_service.modules.validations import validate_and_format_reque
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.api_utils import api_route
+from email_campaign_service.common.utils.api_utils import api_route, get_paginated_response
 from email_campaign_service.common.routes import EmailCampaignEndpoints
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.utils.api_utils import get_pagination_params
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
                                                           ForbiddenError)
@@ -105,10 +106,10 @@ class EmailCampaignApi(Resource):
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
             return {"email_campaign": email_campaign.to_dict()}
         else:
+            page, per_page = get_pagination_params(request)
             # Get all email campaigns from logged in user's domain
-            email_campaigns = EmailCampaign.get_by_domain_id(user.domain_id)
-            return {"email_campaigns": [email_campaign.to_dict()
-                                        for email_campaign in email_campaigns]}
+            query = EmailCampaign.get_by_domain_id(user.domain_id)
+            return get_paginated_response('email_campaigns', query, page, per_page)
 
     def post(self):
         """
@@ -284,8 +285,12 @@ class EmailCampaignBlasts(Resource):
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
         # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts]
-        response = dict(blasts=blasts, count=len(blasts))
+        page, per_page = get_pagination_params(request)
+        # blasts = [blast.to_json() for blast in campaign.blasts]
+        return get_paginated_response('blasts', campaign.blasts, page, per_page)
+
+
+        # response = dict(blasts=blasts, count=len(blasts))
         return response, 200
 
 
