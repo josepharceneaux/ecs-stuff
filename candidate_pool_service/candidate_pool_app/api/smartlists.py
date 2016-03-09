@@ -89,6 +89,12 @@ class SmartlistResource(Resource):
             total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
                     User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
 
+            if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+                raise InvalidUsage("page and per_page should be positive integers")
+
+            page = int(page)
+            per_page = int(per_page)
+
             return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
                     'page_number': page, 'smartlists_per_page': per_page,
                     'total_number_of_smartlists': total_number_of_smartlists}

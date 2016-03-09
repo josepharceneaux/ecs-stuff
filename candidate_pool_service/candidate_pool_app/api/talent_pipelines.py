@@ -74,26 +74,43 @@ class TalentPipelineApi(Resource):
             }
         else:
             talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(User.domain_id ==
-                                                                                     request.user.domain_id).all()
-            return {
-                'talent_pipelines': [
-                    {
-                        'id': talent_pipeline.id,
-                        'name': talent_pipeline.name,
-                        'description': talent_pipeline.description,
-                        'user_id': talent_pipeline.user_id,
-                        'positions': talent_pipeline.positions,
-                        'search_params': json.loads(
-                            talent_pipeline.search_params) if talent_pipeline.search_params else None,
-                        'talent_pool_id': talent_pipeline.talent_pool_id,
-                        'date_needed': talent_pipeline.date_needed.isoformat(),
-                        'growth': get_pipeline_growth(talent_pipeline, int(interval_in_days)),
-                        'added_time': talent_pipeline.added_time.isoformat(),
-                        'updated_time': talent_pipeline.updated_time.isoformat()
+                                                                              request.user.domain_id).all()
+            sort_by = request.args.get('sort_by', 'added_time')
+            page = request.args.get('page', 1)
+            per_page = request.args.get('per_page', 10)
 
-                    } for talent_pipeline in talent_pipelines
-                    ]
-            }
+            if talent_pipelines and sort_by not in ('growth', 'added_time'):
+                raise InvalidUsage('Value of sort parameter is not valid')
+
+            if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+                raise InvalidUsage("page and per_page should be positive integers")
+
+            page = int(page)
+            per_page = int(per_page)
+
+            talent_pipelines_data = [
+                {
+                    'id': talent_pipeline.id,
+                    'name': talent_pipeline.name,
+                    'description': talent_pipeline.description,
+                    'user_id': talent_pipeline.user_id,
+                    'positions': talent_pipeline.positions,
+                    'search_params': json.loads(
+                        talent_pipeline.search_params) if talent_pipeline.search_params else None,
+                    'talent_pool_id': talent_pipeline.talent_pool_id,
+                    'date_needed': talent_pipeline.date_needed.isoformat(),
+                    'growth': get_pipeline_growth(talent_pipeline, int(interval_in_days)),
+                    'added_time': talent_pipeline.added_time.isoformat(),
+                    'updated_time': talent_pipeline.updated_time.isoformat()
+
+                } for talent_pipeline in talent_pipelines
+            ]
+            talent_pipelines_data = sorted(talent_pipelines_data,
+                                           key=lambda talent_pipeline_data: talent_pipeline_data[sort_by] ,reverse=True)
+            return dict(talent_pipelines=talent_pipelines_data[(page - 1) * 10:page * 10], page_number=page,
+                        talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
+
+
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
