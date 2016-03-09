@@ -133,6 +133,9 @@ class EmailCampaignBlast(db.Model):
         return cls.query.filter(
             cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
+    def __repr__(self):
+        return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
+
 
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'

@@ -1,5 +1,6 @@
 """
     Run Celery Worker
+
 For Celery to run from command line, script runs as separate process with celery command
  Usage: open terminal cd to talent-flask-services directory
  Run the following command to start celery worker:

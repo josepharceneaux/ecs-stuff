@@ -22,6 +22,33 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 ######################## Candidate ########################
+class TestUpdateCandidate(object):
+    def test_hide_candidates(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidates and hide it
+        Expect: 200; candidate should not be retrievable
+        """
+        # Create candidate
+        AddUserRoles.all_roles(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+
+        # Hide candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+        update_resp = request_to_candidates_resource(access_token_first, 'patch', data)
+        print response_info(update_resp)
+        assert update_resp.status_code == 200
+        assert update_resp.json()['hidden_candidate_ids'][0] == candidate_id
+
+        # Retrieve candidate
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
+
+
 def test_update_candidate_outside_of_domain(access_token_first, user_first, talent_pool,
                                             access_token_second, user_second):
     """

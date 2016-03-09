@@ -64,9 +64,12 @@ class Candidate(db.Model):
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan',
-                                      passive_deletes=True, backref='candidate')
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
+    push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
+
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
+    devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
+                           backref='candidate', lazy='dynamic')
 
     def __repr__(self):
         return "<Candidate: (id = {})>".format(self.id)
@@ -202,7 +205,7 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extension= ' %r')>" % (self.value, self.extension)
 
     # Relationships
-    candidate = relationship('Candidate', backref='candidate_phone')
+    # candidate = relationship('Candidate', backref='candidate_phone')
     sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
                                         passive_deletes=True, backref="candidate_phone")
 
@@ -1003,3 +1006,60 @@ class CandidateSubscriptionPreference(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).first()
+
+
+class CandidateDevice(db.Model):
+    __tablename__ = 'candidate_device'
+    id = db.Column(db.Integer, primary_key=True)
+    one_signal_device_id = db.Column(db.String(100))
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+
+    def __repr__(self):
+        return "<CandidateDevice (Id: %s, OneSignalDeviceId: %s)>" % (self.id,
+                                                                self.one_signal_device_id)
+
+    @classmethod
+    def get_devices_by_candidate_id(cls, candidate_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'candidate_id is not a valid positive number'
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
+    @classmethod
+    def get_candidate_ids_from_one_signal_device_ids(cls, device_ids):
+        assert isinstance(device_ids, list) and len(device_ids),\
+            'device_ids should be a list containing at least one id'
+        return cls.query.filter_by(cls.one_signal_device_id.in_(device_ids)).all()
+
+    @classmethod
+    def get_candidate_id_from_one_signal_device_id(cls, device_id):
+        assert device_id, 'device_id has an invalid value'
+        device = cls.query.filter_by(one_signal_device_id=device_id).first()
+        return None if device is None else device.candiadte_id
+
+    @classmethod
+    def get_device_by_one_signal_id_and_domain_id(cls, one_signal_id, domain_id):
+        assert one_signal_id, 'one_signal_id must be a valid string'
+        assert domain_id and isinstance(domain_id, (int, long)),\
+            'domain_id must be a positive number'
+        from user import User, Domain
+        query = cls.query.join(Candidate).join(User).join(Domain)
+        query = query.filter(cls.one_signal_device_id == one_signal_id)
+        query = query.filter(cls.candidate_id == Candidate.id)
+        query = query.filter(Candidate.user_id == User.id, Candidate.is_web_hidden == 0)
+        query = query.filter(User.domain_id == domain_id)
+        return query.first()
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'candidate_id must be a positive number'
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
+    @classmethod
+    def get_by_candidate_id_and_one_signal_device_id(cls, candidate_id, one_signal_device_id):
+        assert isinstance(candidate_id, (int, long)) and candidate_id > 0, \
+            'candidate_id must be a positive number'
+        assert isinstance(one_signal_device_id, basestring), 'one_signal_id_id must be a string'
+        return cls.query.filter_by(candidate_id=candidate_id,
+                                   one_signal_device_id=one_signal_device_id).first()
