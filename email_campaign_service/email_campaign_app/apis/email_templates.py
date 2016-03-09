@@ -20,6 +20,7 @@ mod = Blueprint('email_template_service', __name__)
 @require_oauth()
 def post_email_template():
     """
+
         POST /email-templates
         Function will create an email template
         Required parameters:
@@ -31,6 +32,7 @@ def post_email_template():
     user_id = request.user.id
     domain_id = request.user.domain_id
 
+    #Todo: use getvalidjsondata from handy functions
     data = json.loads(request.data)
     if data is None:
         raise InvalidUsage(error_message="Missing parameters for creating email template.")
@@ -80,9 +82,9 @@ def post_email_template():
     user_email_template_id = user_email_template.id
     return jsonify({'template_id': [{'id': user_email_template_id}]}), 201
 
-
+#todo: use in one line
 @mod.route('/v1/email-templates/', methods=['GET'])
-@mod.route('/v1/email-templates/<id>', methods=['GET'])
+@mod.route('/v1/email-templates/<int:id>', methods=['GET'])
 @require_oauth()
 def get_email_template(**kwargs):
     """
@@ -98,8 +100,8 @@ def get_email_template(**kwargs):
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
     domain_id = request.user.domain_id
-
-    template = UserEmailTemplate.query.get(email_template_id)
+    #todo: remove .query everywhere
+    template = UserEmailTemplate.get(email_template_id)
     if not template:
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
@@ -124,6 +126,7 @@ def update_email_template():
         Required parameters:
         id:     ID of email template
     """
+    #todo: same as get, use template id from url
     data = json.loads(request.data)
     if data is None:
         raise InvalidUsage(error_message="Missing parameter email_template_id.")
@@ -139,20 +142,20 @@ def update_email_template():
 
     template = UserEmailTemplate.query.get(email_template_id)
     if not template:
-        raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
+        raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id) #todo add user id
 
     # Verify is_immutable
     if template.is_immutable == 1 and not require_all_roles('CAN_UPDATE_EMAIL_TEMPLATE'):
-        raise ForbiddenError(error_message="User %d not allowed to update the template" % user_id)
+        raise ForbiddenError(error_message="User %d not allowed to update the template" % user_id) #todo add template id
 
-    email_body_html = data.get("email_body_html") or template.email_body_html
+    email_body_html = data.get("email_body_html") or template.email_body_html # todo: remove prefixes from column names in model
     email_body_text = data.get("email_body_text") or template.email_body_text
 
     # Verify owned by same domain
     template_owner_user = User.query.get(template.user_id)
 
     if template_owner_user.domain_id != domain_id:
-        raise ForbiddenError(error_message="Template is not owned by same domain")
+        raise ForbiddenError(error_message="Template is not owned by same domain") #todo add user, template and domains's id
 
     # Update email template
     db.session.query(UserEmailTemplate).filter_by(id=email_template_id).update(
@@ -163,7 +166,7 @@ def update_email_template():
     return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
 
-@mod.route('/v1/email-templates', methods=['DELETE'])
+@mod.route('/v1/email-templates', methods=['DELETE']) #todo: get id from url
 @require_oauth()
 def delete_email_template():
     """
@@ -196,14 +199,14 @@ def delete_email_template():
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
+    #todo: remove magic constant
     if template.is_immutable == 1 and not require_all_roles('CAN_DELETE_EMAIL_TEMPLATE'):
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
 
     # Delete the template
-    template_to_delete = UserEmailTemplate.query.get(email_template_id)
-    db.session.delete(template_to_delete)
+    db.session.delete(template)
     db.session.commit()
-    return '', 204
+    return '', 204  # todo: use requests.code
 
 
 @require_all_roles('CAN_CREATE_EMAIL_TEMPLATE_FOLDER')
@@ -222,16 +225,17 @@ def create_email_template_folder():
 
     data = json.loads(request.data)
     if data is None:
-        raise InvalidUsage(error_message="Missing parameters for creating email template folder.")
+        raise InvalidUsage(error_message="No data provided.")
 
     folder_name = data.get('name')
     if not folder_name:
-        raise InvalidUsage(error_message="Folder name must be provided")
+        raise InvalidUsage(error_message="Folder name must be provided.")
     if not isinstance(folder_name, basestring):
         raise InvalidUsage(error_message="Invalid input")
     domain_id = request.user.domain_id
 
     # Check if the name is already exists under same domain
+    #TODO: move to models and restructure the query using filterby
     existing_row = EmailTemplateFolder.query.filter(EmailTemplateFolder.name == folder_name,
                                                     EmailTemplateFolder.domain_id == domain_id).first()
 
@@ -240,14 +244,14 @@ def create_email_template_folder():
 
     parent_id = data.get('parent_id')
     if parent_id and not parent_id.isdigit():
-        raise InvalidUsage(error_message="Invalid input")
+        raise InvalidUsage(error_message="Invalid input") #todo: add proper message which input is invalid add parent id
     template_folder_parent_id = EmailTemplateFolder.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
     if template_folder_parent_id:
         raise ForbiddenError(error_message="Parent ID does not belong to domain %s" % domain_id)
 
     # If is_immutable value is not passed, make it as 0
     is_immutable = data.get("is_immutable")
-    if is_immutable and not is_immutable.isdigit():
+    if is_immutable and not is_immutable.isdigit():  # TODO: cater all cases
         raise InvalidUsage(error_message="Invalid input")
     else:
         is_immutable = 0
@@ -261,7 +265,7 @@ def create_email_template_folder():
     return jsonify({"template_folder_id": [{"id": email_template_folder_id}]}), 201
 
 
-@require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER')
+@require_all_roles('CAN_DELETE_EMAIL_TEMPLATE_FOLDER')  # TODO: use roles as used in candidate service
 @mod.route('/v1/email-template-folders', methods=['DELETE'])
 @require_oauth()
 def delete_email_template_folder():
