@@ -43,7 +43,7 @@ class PushCampaign(db.Model):
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
-    user_id = db.Column(db.Integer, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
 
     # Relationships
 
