@@ -51,6 +51,49 @@ class TestEmailCampaignSends(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['candidate_id'] == sent_campaign.sends[0].candidate_id
 
+    def test_get_sends_with_paginated_response(self, access_token_first, sent_campaign):
+        """
+        Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/sends
+        """
+        # Test GET sends of email campaign with 1 result per_page
+        url = self.URL % sent_campaign.id
+        response = requests.get(url + '?per_page=1',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 1
+        received_send_obj = json_resp[0]
+        assert received_send_obj['campaign_id'] == sent_campaign.id
+        assert received_send_obj['candidate_id'] == sent_campaign.sends[0].candidate_id
+
+        #  Test GET sends of email campaign with 2 results per_page. It should get 2 sends objects
+        response = requests.get(url + '?per_page=2',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 2
+        # pick second send object and assert valid response
+        received_send_obj = json_resp[1]
+        assert received_send_obj['campaign_id'] == sent_campaign.id
+        assert received_send_obj['candidate_id'] == sent_campaign.sends[1].candidate_id
+
+        response = requests.get(url + '?per_page=1',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 1
+        received_send_obj = json_resp[0]
+        assert received_send_obj['campaign_id'] == sent_campaign.id
+        assert received_send_obj['candidate_id'] == sent_campaign.sends[0].candidate_id
+
+        # Test GET blasts of email campaign with page = 2. No blast object should be received
+        # in response as we have sent campaign only two times so far and default per_page is 10.
+        response = requests.get(url + '?page=2',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=0, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 0
+
     def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
         """
         This is the case where we try to get sends of a campaign which was created by

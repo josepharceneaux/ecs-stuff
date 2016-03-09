@@ -4,6 +4,8 @@ This modules contains helper methods and classes which we are using in e.g. Soci
         * ApiResponse:
             This class is used to create API response object to return json response.
 
+Here we also have functions which are useful for APIs to implement pagination.
+
 :Authors:
     - Muhammad Basit <basit.getTalent@gmail.com>
     - Zohaib Ijaz    <mzohaib.qc@gmail.com>
@@ -87,7 +89,8 @@ def get_pagination_params(request):
     return page, per_page
 
 
-def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,
+                           object_method=to_json, include_fields=None):
     """
     This function takes query object and then returns ApiResponse object containing
     JSON serializable list of objects by applying pagination on query using given
@@ -101,8 +104,12 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     :param query: A query object on which pagination will be applied.
     :param page: page number
     :param per_page: page size
+    :param object_method: Method to be applied on object. e.g. email_campaign_obj.to_dict().
+                          Default value is to_json()
+    :param include_fields: List of fields we want to be returned from to_json()
     :return: api response object containing list of items
     :rtype ApiResponse
+
     :Example:
         >>> query = PushCampaign.query
         >>> page, per_page = 1, 10
@@ -131,7 +138,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     results = query.paginate(page, per_page, error_out=False)
 
     # convert model objects to serializable dictionaries
-    items = [to_json(item) for item in results.items]
+    items = [object_method(item, include_fields) for item in results.items]
     headers = {
         'X-Total': results.total,
         'X-Page-Count': results.pages

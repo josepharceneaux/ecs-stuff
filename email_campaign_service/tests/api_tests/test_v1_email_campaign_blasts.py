@@ -15,6 +15,7 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules.handy_functions import send_campaign
 
 
 class TestEmailCampaignBlasts(object):
@@ -58,6 +59,61 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['id'] == sent_campaign.blasts[0].id
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == 2
+
+    def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign,
+                                                campaign_with_valid_candidate):
+        """
+        Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/blasts
+        """
+        # Test GET blasts of email campaign with 1 result per_page
+        url = self.URL % sent_campaign.id
+        response = requests.get(url + '?per_page=1',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 1
+        received_blast_obj = json_resp[0]
+        db.session.commit()
+        assert received_blast_obj['id'] == sent_campaign.blasts[0].id
+        assert received_blast_obj['campaign_id'] == sent_campaign.id
+        assert received_blast_obj['sends'] == 2
+
+        # sending campaign again to create another blast
+        send_campaign(campaign_with_valid_candidate, access_token_first)
+
+        #  Test GET blasts of email campaign with 2 results per_page. It should get 2 blast objects
+        response = requests.get(url + '?per_page=2',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 2
+        # pick second blast object and assert valid response
+        received_blast_obj = json_resp[1]
+        db.session.commit()
+        assert received_blast_obj['id'] == sent_campaign.blasts[1].id
+        assert received_blast_obj['campaign_id'] == sent_campaign.id
+        assert received_blast_obj['sends'] == 2
+
+        #  Test GET blasts of email campaign with 1 result per_page using page = 1
+        response = requests.get(url + '?per_page=2&page=1',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 2
+        # pick second blast object and assert valid response
+        received_blast_obj = json_resp[0]
+        db.session.commit()
+        assert received_blast_obj['id'] == sent_campaign.blasts[0].id
+        assert received_blast_obj['campaign_id'] == sent_campaign.id
+        assert received_blast_obj['sends'] == 2
+
+        # Test GET blasts of email campaign with page = 2. No blast object should be received
+        # in response as we have sent campaign only two times so far and default per_page is 10.
+        response = requests.get(url + '?page=2',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=0, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        assert len(json_resp) == 0
 
     def test_get_not_owned_campaign(self, access_token_first, email_campaign_in_other_domain):
         """
