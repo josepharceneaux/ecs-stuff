@@ -15,7 +15,7 @@ class Smartlist(db.Model):
 
     # Relationships
     user = db.relationship('User', backref=db.backref('smart_list', cascade="all, delete-orphan"))
-    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list'))
+    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list', cascade="all, delete-orphan"))
 
     def delete(self):
         """Hide smartlist"""
