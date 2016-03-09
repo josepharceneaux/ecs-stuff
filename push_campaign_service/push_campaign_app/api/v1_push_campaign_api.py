@@ -441,7 +441,7 @@ class CampaignByIdResource(Resource):
         associated_smartlist_ids = [smartlist.id for smartlist in campaign.smartlists]
         if isinstance(smartlist_ids, list):
             smartlist_ids = list(set(smartlist_ids) - set(associated_smartlist_ids))
-            PushCampaignBase.create_campaign_smartlist(smartlist_ids, campaign)
+            PushCampaignBase.create_campaign_smartlist(campaign, smartlist_ids)
         response = dict(message='Push campaign was updated successfully')
         return response, 200
 
