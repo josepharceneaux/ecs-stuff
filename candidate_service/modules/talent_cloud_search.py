@@ -683,7 +683,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
-                          "custom_field_id_and_value:{size:1000}},candidate_engagement_score:{size:50}"
+                          "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())
@@ -733,7 +733,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     facets = get_faceting_information(results.get('facets'))
 
     # Update facets
-    _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
+    if total_found > 0:
+        _update_facet_counts(filter_queries_list, params['filter_query'], facets, search_query)
 
     # for facet_field_name, facet_dict in facets.iteritems():
     #     facets[facet_field_name] = sorted(facet_dict.iteritems(), key=operator.itemgetter(1), reverse=True)
@@ -767,6 +768,7 @@ def get_faceting_information(facets):
     facet_status = facets.get('status_id').get('buckets')  # db candidate_status
     facet_skills = facets.get('skill_description').get('buckets')  # skills
     facet_position = facets.get('position').get('buckets')  # position = job_title
+    facet_organization = facets.get('organization').get('buckets')
     facet_university = facets.get('school_name').get('buckets')  # university = school_name
     facet_degree_type = facets.get('degree_type').get('buckets')  # degree = degree_type
     facet_major = facets.get('concentration_type').get('buckets')  # major = concentration_type
@@ -774,6 +776,7 @@ def get_faceting_information(facets):
     facet_military_branch = facets.get('military_branch').get('buckets')
     facet_military_highest_grade = facets.get('military_highest_grade').get('buckets')
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
+    facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
@@ -795,6 +798,12 @@ def get_faceting_information(facets):
 
     if facet_position:
         search_facets_values['position'] = get_bucket_facet_value_count(facet_position)
+
+    if facet_organization:
+        search_facets_values['organization'] = get_bucket_facet_value_count(facet_organization)
+
+    if facet_candidate_engagement_score:
+        search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(facet_candidate_engagement_score)
 
     if facet_university:
         search_facets_values['school_name'] = get_bucket_facet_value_count(facet_university)

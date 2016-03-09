@@ -46,11 +46,13 @@ other model classes inherit. But this changes will only effect this app or the a
 from types import MethodType
 
 # Third Party
-from flask import current_app
-from sqlalchemy import inspect
+from flask import Flask
 from flask.ext.cors import CORS
+from flask.ext.restful import abort
+from flask.ext.sqlalchemy import BaseQuery, Pagination
+from sqlalchemy import inspect
+from sqlalchemy.orm.dynamic import AppenderQuery
 from healthcheck import HealthCheck
-
 # Application Specific
 
 
@@ -153,31 +155,73 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
     return data
 
 
-def save(instance):
+def save(self):
     """
     This method allows a model instance to save itself in database by calling save
     e.g.
     event = Event(**kwargs)
     Event.save(event)
+    :param self: model instance
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
-    db.session.add(instance)
+    db.session.add(self)
     db.session.commit()
-    return instance
+    return self
 
 
-def update(instance, **data):
+def update(self, **data):
     """
     This method allows a model instance to update itself in database by calling update
     e.g.
     event = Event.get(event_id)
     event.update(**data)
+
+    :param self: model instance to be updated
     :return: same model instance
     """
     # update this instance by given data
-    instance.query.filter_by(id=instance.id).update(data)
+    self.query.filter_by(id=self.id).update(data)
     db.session.commit()
+    return self
+
+
+@classmethod
+def create_or_update(cls, conditions, **data):
+    """
+    This method allows a model instance to create or update itself in database
+    :param conditions: a dictionary where keys are column names and values are to match with
+     db records in respective table.
+     e.g. cls = Event and conditions=dict(social_network_event_id=12345, user_id=2)
+     We will search for a record with these conditions like this
+        query = cls.query.filter(cls.social_network_event_id == 12345).filter(cls.user_id == 2)
+
+    :param cls: model class, some child class of db.Model
+    :param data: data to update model instance
+    :return: model instance
+    """
+    # update this instance by given data
+    assert isinstance(conditions, dict) and any(conditions), \
+        'first argument should be a valid dictionary'
+    query = cls.query
+    # apply filter for all given conditions
+    for key, value in conditions.iteritems():
+        query.filter(getattr(cls, key) == value)
+
+    # get first instance if exists
+    instance = query.first()
+
+    try:
+        # if there is already a record with given conditions, update it otherwise create a new
+        # record
+        if instance:
+            instance.update(**data)
+        else:
+            instance = cls(**data)
+            cls.save(instance)
+    except Exception:
+        db.session.rollback()
+        raise
     return instance
 
 
@@ -188,29 +232,39 @@ def get_by_id(cls, _id):
     that class on which this is invoked.
     e.g. event = Event.get_by_id(2)
     It will return Event class model instance with given id or it will return None if no event found.
+    :param cls: model class, some child class of db.Model
     :param _id: id for given instance
-    :type _id: int
+    :type _id: int | long
     :return: Model instance
     """
-
-    try:
-        # get Model instance given by id
-        obj = cls.query.get(_id)
-    except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].exception(
-            "Couldn't get record from db table %s. Error is: %s" % (cls.__name__, error.message))
-        return None
-    return obj
+    # get Model instance given by id (primary_key)
+    return cls.query.get(_id)
 
 
 @classmethod
-def delete(cls, ref):
+def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
+    :param cls: model class, some child class of db.Model
     :param ref: id for instance | model instance
     :type ref: int | model object
+    :param app: flask app, if someone wants to run this method using app_context
+    :type app: Flask obj
     :return: Boolean
     :rtype: bool
+
+        :Example:
+            You  can delete a record either by primary key or passing the whole model instance.
+
+            # Using primary key
+            >>> event_id = 123
+            >>> Event.delete(event_id)
+
+            # Using model instance
+            >>> event_id = 456
+            >>> event = Event.get(event_id)
+            >>> if event:
+            >>>     Event.delete(event)
     """
     try:
         if isinstance(ref, (int, long)):
@@ -220,8 +274,11 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].error(
-            "Couldn't delete record from db. Error is: %s" % error.message)
+        db.session.rollback()
+        if isinstance(app, Flask):
+            with app.app_context():
+                app.config[TalentConfigKeys.LOGGER].error(
+                    "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 
@@ -239,8 +296,7 @@ def add_model_helpers(cls):
              add_model_helpers(db.Model)
 
              This will add all these method on db.Model and all its child classes.
-    :param cls:
-    :return:
+    :param cls: model class, some child class of db.Model
     """
     cls.session = db.session
     # this method converts model instance to json serializable dictionary
@@ -254,6 +310,14 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
+
+    # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
+    # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
+    # method from BaseQuery class to AppenderQuery class to get pagination functionality
+    # we can now do something like,
+    # blasts = campaigns.blasts.paginate(1, 15, False).items
+    # or we can call `get_paginated_response` and pass `campaign.blasts` as query.
+    AppenderQuery.paginate = BaseQuery.__dict__['paginate']
 
 
 def init_talent_app(app_name):

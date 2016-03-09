@@ -1,3 +1,5 @@
+import json
+
 from flask.ext.restful import Api
 from flask import current_app, jsonify
 from talent_config_manager import TalentConfigKeys
@@ -30,6 +32,20 @@ class TalentApi(Api):
             # Api user should not see this error because it is an unexpected error
             # that was not handled by the API.
             # return jsonify(dict(message='Some Internal Server Error Occurred.')), 500
-            return super(TalentApi, self).handle_error(e)
+            response = super(TalentApi, self).handle_error(e)
+            try:
+                # In case of internal server error other than, own custom exception,
+                # response.data looks like '{"message": "internal server error"}'
+                error = json.loads(response.data)
+            except ValueError:
+                # if error body was not json serializable, simply return as it is.
+                logger.warn('Unable to parse response data. \n data: %s' % response.data)
+                return response
+
+            status_code = response.status_code
+            response = {
+                "error": error
+            }
+            return jsonify(response), status_code
 
 

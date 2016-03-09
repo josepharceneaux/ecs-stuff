@@ -7,6 +7,7 @@ import json
 import requests
 # Application Specific
 from activity_service.common.utils.handy_functions import random_word
+from activity_service.common.utils.activity_utils import ActivityMessageIds
 from activity_service.common.routes import ActivityApiUrl
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
@@ -81,7 +82,7 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=31,
+                                 type=ActivityMessageIds.PIPELINE_CREATE,
                                  source_table='talent_pipeline',
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_PL1'}
@@ -104,7 +105,7 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=33,
+                                 type=ActivityMessageIds.TALENT_POOL_CREATE,
                                  source_table='talent_pool',
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_pool1'}
@@ -117,6 +118,30 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
     assert aggregate_response.status_code == 200
     activities = json.loads(aggregate_response.content)
     assert {u'count': 1, u'image': u'talent_pool.png', u'readable_text': u'You created a Talent Pool: <b>test_pool1</b>.'} in activities['activities']
+
+
+def test_dumblist_create_and_read(user_fixture, token_fixture):
+    # Create a talent pool activity.
+    create_url = ActivityApiUrl.ACTIVITIES
+    post_response = requests.post(create_url,
+                             headers={
+                                 'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                 'content-type': 'application/json'},
+                             data=json.dumps(dict(
+                                 user_id=user_fixture.id,
+                                 type=ActivityMessageIds.DUMBLIST_CREATE,
+                                 source_table='smart_list',
+                                 source_id='1337',
+                                 params={'name': 'dumblist1'}
+                             )))
+    assert post_response.status_code == 200
+    # Fetch the recent readable data
+    aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
+    aggregate_response = requests.get(aggregate_url,
+                            headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
+    assert aggregate_response.status_code == 200
+    activities = json.loads(aggregate_response.content)
+    assert {u'count': 1, u'image': u'dumblist.png', u'readable_text': u'You created a list: <b>dumblist1</b>.'} in activities['activities']
 
 
 def test_health_check():

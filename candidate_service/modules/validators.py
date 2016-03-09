@@ -13,6 +13,7 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
+
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
@@ -38,7 +39,7 @@ def get_candidate_if_exists(candidate_id):
     """
     Function checks to see if candidate exists in the database and is not web-hidden.
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
-    otherwise the Candidate-query-object will be returned
+    otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
     """
     assert isinstance(candidate_id, (int, long))
@@ -114,7 +115,7 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     """
     Function checks if area_of_interest_ids belong to the logged-in-user's domain
     :type   user_domain_id:       int|long
-    :type   area_of_interest_ids: [int]
+    :type   area_of_interest_ids: list[int]
     :rtype: bool
     """
     assert isinstance(area_of_interest_ids, list)
