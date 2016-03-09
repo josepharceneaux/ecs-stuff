@@ -42,6 +42,37 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
 
 
+def get_pipeline_growth(talent_pipeline, interval):
+    """
+    This endpoint will return growth in talent-pipeline for given interval size
+    :param talent_pipeline: TalentPipeline object
+    :param interval: Interval in days
+    :return:
+    """
+    from_date = datetime.utcnow() - timedelta(days=interval)
+    from_date = from_date if from_date.date() >= talent_pipeline.added_time.date() else talent_pipeline.added_time.date()
+    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().strftime('%m/%d/%Y')) - \
+           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date.strftime('%m/%d/%Y'))
+
+
+def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_string):
+    """
+    This method will get and update talent-pipeline stats for a given day
+    :param talent_pipeline: TalentPipeline Object
+    :param date_string: DateTime String
+    :return:
+    """
+    epoch_time_string = '12/31/1969'
+    pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline.id)
+    if date_string not in pipelines_growth_stats_dict:
+        # Get Talent Pipeline Candidates Using Search API
+        response = get_candidates_of_talent_pipeline(talent_pipeline, fields='count_only', request_params={
+            'date_from': epoch_time_string, 'date_to': date_string})
+        pipelines_growth_stats_dict[date_string] = response.get('total_found')
+
+    return pipelines_growth_stats_dict[date_string]
+
+
 def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_celery_task=False,
                                       request_params=None):
     """
@@ -233,14 +264,16 @@ def update_talent_pipelines_stats_task(from_date=None, to_date=None):
             pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline_id)
 
             if from_date and to_date:
-                last_added_stat_date = from_date
+                last_added_stat_date = from_date if from_date >= talent_pipeline.added_time.date() \
+                    else talent_pipeline.added_time.date()
+                last_added_stat_date -= timedelta(days=1)
                 current_date = to_date
             else:
                 if len(pipelines_growth_stats_dict):
                     last_added_stat_date = max(map(lambda added_date: datetime.strptime(added_date, '%m/%d/%Y').date(),
                                                    pipelines_growth_stats_dict.keys()))
                 else:
-                    last_added_stat_date = talent_pipeline.added_time.date()
+                    last_added_stat_date = talent_pipeline.added_time.date() - timedelta(days=1)
 
                 current_date = today_date
 
