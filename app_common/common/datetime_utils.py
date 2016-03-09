@@ -1,4 +1,5 @@
 import pytz
+import datetime
 
 
 def utc_isoformat(datetime_obj):
@@ -9,3 +10,12 @@ def utc_isoformat(datetime_obj):
     :rtype: str
     """
     return datetime_obj.replace(tzinfo=pytz.utc).isoformat()
+
+
+def isoformat_to_datetime(iso8601_datetime_string):
+    """
+
+    :param str iso8601_datetime_string: ISO8601 formatted datetime string
+    :rtype: datetime.datetime
+    """
+    return datetime.datetime.strptime(iso8601_datetime_string, "%Y-%m-%dT%H:%M:%S.%fZ")

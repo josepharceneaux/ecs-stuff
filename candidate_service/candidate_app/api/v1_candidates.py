@@ -29,6 +29,7 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
+from candidate_service.common.datetime_utils import isoformat_to_datetime
 from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
@@ -213,7 +214,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=candidate_dict.get('added_time'),
+                added_time=isoformat_to_datetime(candidate_dict['added_datetime']) if candidate_dict.get('added_datetime') else None,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
