@@ -30,6 +30,9 @@ Delete Multiple Campaigns: /v1/push-campaigns [DELETE]
 # Builtin imports
 import sys
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
 from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.tests.test_utilities import (invalid_data_test,
@@ -38,7 +41,6 @@ from push_campaign_service.tests.test_utilities import (invalid_data_test,
                                                         delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import send_request
-from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
@@ -125,7 +127,7 @@ class TestGetListOfCampaigns(object):
         assert len(response['campaigns']) == per_page
 
         per_page = MAX_PAGE_SIZE + 1
-        get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.INVALID_USAGE,))
+        get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.BAD_REQUEST,))
 
 
 class TestDeleteMultipleCampaigns(object):
@@ -155,7 +157,7 @@ class TestDeleteMultipleCampaigns(object):
         User auth token is valid, but non JSON data provided. It should get bad request error.
         """
         response = send_request('delete', URL, token_first, data={'ids': [1, 2, 3]}, is_json=False)
-        assert response.status_code == HttpStatus.INVALID_USAGE
+        assert response.status_code == HttpStatus.BAD_REQUEST
 
     def test_campaigns_delete_with_campaign_ids_in_non_list_form(self, token_first, campaign_in_db):
         """
@@ -164,7 +166,7 @@ class TestDeleteMultipleCampaigns(object):
         It should get bad request error.
         """
         data = {'ids': campaign_in_db['id']}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
+        delete_campaigns(data, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_campaigns_delete_with_invalid_ids(self, token_first):
         """
@@ -172,7 +174,7 @@ class TestDeleteMultipleCampaigns(object):
         We are expecting 400 from this request
         """
         data = {'ids': [0, 'a', 'b']}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
+        delete_campaigns(data, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_campaigns_delete_with_authorized_ids(self, token_first, campaign_in_db):
         """

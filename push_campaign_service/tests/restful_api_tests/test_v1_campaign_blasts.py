@@ -13,9 +13,11 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts [GET]
 # Standard imports
 import sys
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.tests.test_utilities import get_blasts
 
 
 class TestCampaignBlasts(object):

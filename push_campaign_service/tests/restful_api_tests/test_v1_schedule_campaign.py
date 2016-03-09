@@ -37,10 +37,16 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 # Builtin imports
 import sys
 import time
+from datetime import datetime
+# 3rd party imports
+from requests import codes as HttpStatus
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus, delete_scheduler_task
+from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
+                                                        schedule_campaign, invalid_data_test,
+                                                        reschedule_campaign, get_blasts, SLEEP_TIME,
+                                                        unschedule_campaign)
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 
@@ -64,7 +70,7 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         # Test with invalid or non-existing id
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.INVALID_USAGE),
+        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
                        (non_existing_id, HttpStatus.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             schedule_campaign(_id, data, token_first, expected_status=(status_code,))
@@ -84,12 +90,12 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         del data['start_datetime']
         schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(HttpStatus.INVALID_USAGE,))
+                          expected_status=(HttpStatus.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data()
         del data['end_datetime']
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.INVALID_USAGE,))
+                                     expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'end_datetime' in error['message']
 
@@ -99,7 +105,7 @@ class TestScheduleCampaignUsingPOST(object):
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.INVALID_USAGE,))
+                                     expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'Invalid DateTime' in error['message']
 
@@ -107,7 +113,7 @@ class TestScheduleCampaignUsingPOST(object):
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.INVALID_USAGE,))
+                                     expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'Invalid DateTime' in error['message']
 
@@ -199,7 +205,7 @@ class TestRescheduleCampaignUsingPUT(object):
         # Test with invalid integer id
         # Test for 404, Schedule a campaign which does not exists or id is invalid
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.INVALID_USAGE),
+        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
                        (non_existing_id, HttpStatus.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             reschedule_campaign(_id, data, token_first, expected_status=(status_code,))
@@ -221,14 +227,14 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data()
         del data['start_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.INVALID_USAGE,))
+                                       expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'start_datetime' in error['message']
 
         data = generate_campaign_schedule_data()
         del data['end_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.INVALID_USAGE,))
+                                       expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'end_datetime' in error['message']
 
@@ -238,7 +244,7 @@ class TestRescheduleCampaignUsingPUT(object):
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.INVALID_USAGE,))
+                                       expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'Invalid DateTime' in error['message']
 
@@ -246,7 +252,7 @@ class TestRescheduleCampaignUsingPUT(object):
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.INVALID_USAGE,))
+                                       expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'Invalid DateTime' in error['message']
 
@@ -306,7 +312,7 @@ class TestUnscheduleCamapignUsingDELETE(object):
     def test_unschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db):
         # Test with invalid integer id
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.INVALID_USAGE),
+        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
                        (non_existing_id, HttpStatus.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             unschedule_campaign(_id, token_first, expected_status=(status_code,))

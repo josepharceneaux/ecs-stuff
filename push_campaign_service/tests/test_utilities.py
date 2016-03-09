@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 from faker import Faker
-
+from requests import codes as HttpStatus
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.handy_functions import to_utc_str
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
-                                                           get_fake_dict, HttpStatus)
+                                                           get_fake_dict)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
@@ -14,9 +14,6 @@ fake = Faker()
 API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
 SLEEP_TIME = 20
-
-# TODO: name of the file tells me that here will be tests for utility methods. But here
-# TODO: we have helper methods. IMO, these should be in (e.g) tests/modules/handy_functions.py
 
 
 def missing_key_test(data, key, token):
@@ -34,7 +31,7 @@ def missing_key_test(data, key, token):
     """
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     response = response.json()
     error = response['error']
     assert error['code'] == CampaignException.MISSING_REQUIRED_FIELD
@@ -57,7 +54,7 @@ def invalid_value_test(data, key, token, campaign_id):
     data.update(**generate_campaign_data())
     data[key] = ''
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    response.status_code == HttpStatus.INVALID_USAGE
+    response.status_code == HttpStatus.BAD_REQUEST
     response = response.json()
     error = response['error']
     assert error['field'] == key
@@ -74,17 +71,17 @@ def invalid_data_test(method, url, token):
     """
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
 
 
 def generate_campaign_data():

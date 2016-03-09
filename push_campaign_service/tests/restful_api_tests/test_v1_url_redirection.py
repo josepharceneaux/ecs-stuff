@@ -17,8 +17,12 @@ Hit endpoint:
     - but associated candidate has been delete
     - but url conversion object has been deleted from database
 """
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus, delete_candidate
+# 3rd party imports
+from requests import codes as HttpStatus
+
+# Application specific
+from push_campaign_service.tests.test_utilities import send_request,delete_campaign
+from push_campaign_service.common.utils.test_utils import delete_candidate
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import get_blasts
 

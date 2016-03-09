@@ -15,10 +15,12 @@ Get Blast Sends: /v1/push-campaigns/:id/blasts/:id/sends [GET]
 # Builtin imports
 import sys
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.tests.test_utilities import get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST_SENDS
@@ -80,7 +82,7 @@ class TestCampaignBlastSends(object):
         # if page size is greater than maximum allowed page size, it will raise InvalidUsage exception
         per_page = MAX_PAGE_SIZE + 1
         get_blast_sends(blast_id, campaign_id, token_first, per_page=per_page,
-                        expected_status=(HttpStatus.INVALID_USAGE,))
+                        expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_get_campaign_blast_sends_with_user_from_same_domain(self, token_same_domain, campaign_blast):
         """

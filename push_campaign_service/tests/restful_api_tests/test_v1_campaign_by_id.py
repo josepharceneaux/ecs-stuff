@@ -31,9 +31,12 @@ Delete a Campaign: /v1/push-campaigns/:id [DELETE]
 # Builtin imports
 import sys
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.tests.test_utilities import (get_campaign,delete_campaign,
+                                                        generate_campaign_data, update_campaign)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
@@ -178,7 +181,7 @@ class TestUpdateCampaign(object):
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
         response = update_campaign(campaign_id, data, token_first,
-                                   expected_status=(HttpStatus.INVALID_USAGE,))
+                                   expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert error['invalid_field'] == 'invalid_field_name'
 
@@ -245,7 +248,7 @@ class TestCampaignDeleteById(object):
         :param token_first: auth token_first
         """
         invalid_id = 0
-        delete_campaign(invalid_id, token_first, expected_status=(HttpStatus.INVALID_USAGE,))
+        delete_campaign(invalid_id, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_delete_campaign_with_user_from_same_domain(self, token_same_domain, campaign_in_db):
         """

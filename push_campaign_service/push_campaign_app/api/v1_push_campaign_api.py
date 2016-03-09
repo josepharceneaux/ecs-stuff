@@ -132,7 +132,6 @@ from push_campaign_service.common.utils.api_utils import (api_route, ApiResponse
 from push_campaign_service.common.models.push_campaign import (PushCampaignSend,
                                                                PushCampaignBlast)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.modules.utilities import associate_smart_list_with_campaign
 
 # creating blueprint
 push_notification_blueprint = Blueprint('push_notification_api', __name__)
@@ -441,15 +440,8 @@ class CampaignByIdResource(Resource):
         campaign.update(**data)
         associated_smartlist_ids = [smartlist.id for smartlist in campaign.smartlists]
         if isinstance(smartlist_ids, list):
-            for smartlist_id in smartlist_ids:
-                if smartlist_id not in associated_smartlist_ids:
-                    associate_smart_list_with_campaign(smartlist_id, campaign.id)
-                else:
-                    logger.info('Smartlist (id: %s) already associated with campaign'
-                                % smartlist_id)
-        elif isinstance(smartlist_ids, (int, long)):
-            associate_smart_list_with_campaign(smartlist_ids, campaign.id)
-
+            smartlist_ids = list(set(smartlist_ids) - set(associated_smartlist_ids))
+            PushCampaignBase.create_campaign_smartlist(smartlist_ids, campaign)
         response = dict(message='Push campaign was updated successfully')
         return response, 200
 

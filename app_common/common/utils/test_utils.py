@@ -3,6 +3,7 @@ This module contains utility methods will be used in API based tests.
 """
 import json
 import requests
+from requests import codes as HttpStatus
 from faker import Faker
 
 from ..tests.conftest import randomword
@@ -11,21 +12,6 @@ from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePo
     SchedulerApiUrl
 
 fake = Faker()
-
-
-class HttpStatus(object):
-    """
-    This class contains standard HTTP status codes.
-    """
-    OK = 200
-    CREATED = 201
-    UPDATED = 204
-    MULTI_STATUS = 207
-    INVALID_USAGE = 400
-    UNAUTHORIZED = 401
-    FORBIDDEN = 403
-    NOT_FOUND = 404
-    INTERNAL_SERVER_ERROR = 500
 
 
 def send_request(method, url, access_token, data=None, is_json=True):
@@ -117,17 +103,17 @@ def invalid_data_test(method, url, token):
     assert token and isinstance(token, basestring), 'token must have a valid string value'
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.INVALID_USAGE
+    assert response.status_code == HttpStatus.BAD_REQUEST
 
 
 def get_fake_dict(key_count=3):
@@ -180,7 +166,7 @@ def remove_roles(user_id, roles, token):
     }
     response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
-    assert response.status_code in [HttpStatus.OK, HttpStatus.INVALID_USAGE]
+    assert response.status_code in [HttpStatus.OK, HttpStatus.BAD_REQUEST]
 
 
 def delete_scheduler_task(task_id, token, expected_status=(200,)):

@@ -12,11 +12,13 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts/:id [GET]
     - where campaign is created by user from different domain (403)
     - where campaign is created by different user from same domain (200)
 """
-# Application specific imports
+# Standard imports
 import sys
 
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from requests import codes as HttpStatus
+
+# Application specific imports
+from push_campaign_service.tests.test_utilities import get_blast
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST

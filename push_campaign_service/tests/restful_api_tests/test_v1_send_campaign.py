@@ -17,9 +17,11 @@ Send a Campaign: /v1/push-campaigns/:id/send [POST]
 import sys
 import time
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, SLEEP_TIME
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.SEND

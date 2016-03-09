@@ -13,9 +13,10 @@ but user is different.
 
 """
 import pytest
+from requests import codes as HttpStatus
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import get_token, get_user, add_roles, remove_roles, HttpStatus, \
+from ..utils.test_utils import get_token, get_user, add_roles, remove_roles, \
     create_candidate, get_candidate, delete_candidate, create_smartlist, delete_smartlist, \
     delete_talent_pool, create_talent_pools, get_talent_pool
 
@@ -124,7 +125,7 @@ def candidate_first(request, talent_pool, token_first):
 
     def tear_down():
         delete_candidate(candidate_id, token_first,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
+                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -145,7 +146,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
 
     def tear_down():
         delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
+                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -166,7 +167,7 @@ def candidate_second(request, token_second, talent_pool_second):
 
     def tear_down():
         delete_candidate(candidate_id, token_second,
-                         expected_status=(HttpStatus.UPDATED, HttpStatus.NOT_FOUND))
+                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate

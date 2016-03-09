@@ -16,9 +16,11 @@ Get Campaign's Sends: /v1/push-campaigns/:id/sends [GET]
 # Builtin imports
 import sys
 
+# 3rd party imports
+from requests import codes as HttpStatus
+
 # Application specific imports
-from push_campaign_service.tests.test_utilities import *
-from push_campaign_service.common.utils.test_utils import HttpStatus
+from push_campaign_service.tests.test_utilities import get_campaign_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
@@ -98,6 +100,6 @@ class TestCampaignSends(object):
         # set page size greater than max allowed page size, 400 is expected
         per_page = MAX_PAGE_SIZE + 1
         get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                           expected_status=(HttpStatus.INVALID_USAGE,))
+                           expected_status=(HttpStatus.BAD_REQUEST,))
 
 
