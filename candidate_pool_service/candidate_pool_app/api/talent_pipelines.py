@@ -67,7 +67,7 @@ class TalentPipelineApi(Resource):
                         talent_pipeline.search_params) if talent_pipeline.search_params else None,
                     'talent_pool_id': talent_pipeline.talent_pool_id,
                     'date_needed': talent_pipeline.date_needed.isoformat(),
-                    'growth': get_pipeline_growth(talent_pipeline, interval_in_days),
+                    'growth': get_pipeline_growth(talent_pipeline, int(interval_in_days)),
                     'added_time': talent_pipeline.added_time.isoformat(),
                     'updated_time': talent_pipeline.updated_time.isoformat()
                 }
@@ -87,7 +87,7 @@ class TalentPipelineApi(Resource):
                             talent_pipeline.search_params) if talent_pipeline.search_params else None,
                         'talent_pool_id': talent_pipeline.talent_pool_id,
                         'date_needed': talent_pipeline.date_needed.isoformat(),
-                        'growth': get_pipeline_growth(talent_pipeline, interval_in_days),
+                        'growth': get_pipeline_growth(talent_pipeline, int(interval_in_days)),
                         'added_time': talent_pipeline.added_time.isoformat(),
                         'updated_time': talent_pipeline.updated_time.isoformat()
 
