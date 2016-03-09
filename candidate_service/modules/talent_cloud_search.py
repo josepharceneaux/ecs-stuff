@@ -683,7 +683,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
-                          "custom_field_id_and_value:{size:1000}},candidate_engagement_score:{size:50}"
+                          "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())
