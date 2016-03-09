@@ -264,11 +264,11 @@ class CandidatesResource(Resource):
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
-            # Check for candidate's existence and web-hidden status
+            # Check for candidate's existence
             candidate_id = _candidate_dict.get('id')
-
-            # Check if candidate exists and is not web-hidden
-            candidate = get_candidate_if_exists(candidate_id)
+            candidate = Candidate.get_by_id(candidate_id)
+            if not candidate:
+                raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
 
             # Hide or un-hide candidate if requested
             hide_candidate = _candidate_dict.get('hide')
@@ -278,6 +278,10 @@ class CandidatesResource(Resource):
                 skip = True
             else:  # json-schema will only allow True or False
                 candidate.is_web_hidden = 0
+
+            # Check if candidate is web-hidden
+            if candidate.is_web_hidden:
+                raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_IS_HIDDEN)
 
             # No need to validate anything since candidate is set to hidden
             if not skip:
