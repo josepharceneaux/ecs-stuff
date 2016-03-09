@@ -279,12 +279,13 @@ class CandidatesResource(Resource):
             else:  # json-schema will only allow True or False
                 candidate.is_web_hidden = 0
 
-            # Check if candidate is web-hidden
-            if candidate.is_web_hidden:
-                raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_IS_HIDDEN)
-
             # No need to validate anything since candidate is set to hidden
             if not skip:
+                # Check if candidate is web-hidden
+                if candidate.is_web_hidden:
+                    raise NotFoundError('Candidate not found: {}'.format(candidate_id),
+                                        custom_error.CANDIDATE_IS_HIDDEN)
+
                 # Emails' addresses must be properly formatted
                 for emails in _candidate_dict.get('emails') or []:
                     if emails.get('address'):

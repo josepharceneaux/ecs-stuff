@@ -74,18 +74,22 @@ class TestUpdateCandidate(object):
         data = {'candidate_ids': [candidate_id_1, candidate_id_2]}
         get_resp = request_to_candidate_search_resource(access_token_first, 'get', data)
         print response_info(get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
 
         # Un-hide candidates
         unhide_data = {'candidates': [
             {'id': candidate_id_1, 'hide': False}, {'id': candidate_id_2, 'hide': False}
         ]}
-        update_resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
+        update_resp = request_to_candidates_resource(access_token_first, 'patch', unhide_data)
         print response_info(update_resp)
+        assert update_resp.status_code == 200
 
         # Retrieve candidates
         data = {'candidate_ids': [candidate_id_1, candidate_id_2]}
         get_resp = request_to_candidate_search_resource(access_token_first, 'get', data)
         print response_info(get_resp)
+        assert get_resp.status_code == 200
 
 
 def test_update_candidate_outside_of_domain(access_token_first, user_first, talent_pool,
