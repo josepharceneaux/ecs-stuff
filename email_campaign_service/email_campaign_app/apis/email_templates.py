@@ -8,6 +8,7 @@ from flask import Blueprint
 
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import User
+from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
 from email_campaign_service.common.models.misc import (UserEmailTemplate, EmailTemplateFolder)
 from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError, NotFoundError,
@@ -33,7 +34,7 @@ def post_email_template():
     domain_id = request.user.domain_id
 
     #Todo: use getvalidjsondata from handy functions
-    data = json.loads(request.data)
+    data = get_valid_json_data(request)
     if data is None:
         raise InvalidUsage(error_message="Missing parameters for creating email template.")
 
@@ -46,7 +47,7 @@ def post_email_template():
         raise InvalidUsage(error_message="Email HTML body is empty")
 
     # Check if the name is already exists in the domain
-    existing_template_name = UserEmailTemplate.query.get(template_name)
+    existing_template_name = UserEmailTemplate.get(template_name)
     if existing_template_name:
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
 
@@ -55,7 +56,7 @@ def post_email_template():
                                          email_template_folder_id.isdigit()):
         raise InvalidUsage(error_message="Invalid input")
 
-    email_template_folder = EmailTemplateFolder.query.get(email_template_folder_id)
+    email_template_folder = EmailTemplateFolder.get(email_template_folder_id)
 
     # Check if the email template folder belongs to current domain
     if email_template_folder and email_template_folder.domain_id != domain_id:
@@ -82,7 +83,7 @@ def post_email_template():
     user_email_template_id = user_email_template.id
     return jsonify({'template_id': [{'id': user_email_template_id}]}), 201
 
-#todo: use in one line
+
 @mod.route('/v1/email-templates/', methods=['GET'])
 @mod.route('/v1/email-templates/<int:id>', methods=['GET'])
 @require_oauth()
@@ -106,7 +107,7 @@ def get_email_template(**kwargs):
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
     # Verify owned by same domain
-    template_owner_user = User.query.get(template.user_id)
+    template_owner_user = User.get(template.user_id)
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
@@ -140,7 +141,7 @@ def update_email_template():
     domain_id = request.user.domain_id
     user_id = request.user.id
 
-    template = UserEmailTemplate.query.get(email_template_id)
+    template = UserEmailTemplate.get(email_template_id)
     if not template:
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id) #todo add user id
 
@@ -152,16 +153,13 @@ def update_email_template():
     email_body_text = data.get("email_body_text") or template.email_body_text
 
     # Verify owned by same domain
-    template_owner_user = User.query.get(template.user_id)
+    template_owner_user = User.get(template.user_id)
 
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain") #todo add user, template and domains's id
 
     # Update email template
-    db.session.query(UserEmailTemplate).filter_by(id=email_template_id).update(
-        {"email_body_html": email_body_html, "email_body_text": email_body_text})
-
-    db.session.commit()
+    template.update({"email_body_html": email_body_html, "email_body_text": email_body_text})
 
     return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
 
@@ -189,12 +187,12 @@ def delete_email_template():
     user_id = request.user.id
     domain_id = request.user.domain_id
 
-    template = UserEmailTemplate.query.get(email_template_id)
+    template = UserEmailTemplate.get(email_template_id)
     if not template:
         raise NotFoundError(error_message="Template not found")
 
     # Verify owned by same domain
-    template_owner_user = User.query.get(template.user_id)
+    template_owner_user = User.get(template.user_id)
 
     if template_owner_user.domain_id != domain_id:
         raise ForbiddenError(error_message="Template is not owned by same domain")
@@ -223,10 +221,7 @@ def create_email_template_folder():
         :return:       Template folder id
     """
 
-    data = json.loads(request.data)
-    if data is None:
-        raise InvalidUsage(error_message="No data provided.")
-
+    data = get_valid_json_data(request)
     folder_name = data.get('name')
     if not folder_name:
         raise InvalidUsage(error_message="Folder name must be provided.")
@@ -236,16 +231,15 @@ def create_email_template_folder():
 
     # Check if the name is already exists under same domain
     #TODO: move to models and restructure the query using filterby
-    existing_row = EmailTemplateFolder.query.filter(EmailTemplateFolder.name == folder_name,
-                                                    EmailTemplateFolder.domain_id == domain_id).first()
+    existing_row = EmailTemplateFolder.get_by_name_and_domain_id(folder_name, domain_id)
 
     if existing_row:
         raise InvalidUsage(error_message="Template folder with name=%s already exists" % folder_name)
 
     parent_id = data.get('parent_id')
     if parent_id and not parent_id.isdigit():
-        raise InvalidUsage(error_message="Invalid input") #todo: add proper message which input is invalid add parent id
-    template_folder_parent_id = EmailTemplateFolder.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
+        raise InvalidUsage(error_message="Invalid input: parent_id must be a valid digit")
+    template_folder_parent_id = EmailTemplateFolder.filter_by(parent_id=parent_id, domain_id=domain_id).first()
     if template_folder_parent_id:
         raise ForbiddenError(error_message="Parent ID does not belong to domain %s" % domain_id)
 
@@ -274,6 +268,7 @@ def delete_email_template_folder():
         Required parameters:
         id:     ID of email template
     """
+    domain_id = request.user.domain_id
     data = json.loads(request.data)
     if data is None:
         raise InvalidUsage(error_message="Missing parameter email template folder id.")
@@ -286,19 +281,15 @@ def delete_email_template_folder():
             raise InvalidUsage(error_message="Invalid input")
     if isinstance(folder_id, basestring):
         folder_id = int(folder_id)
-    template_folder = EmailTemplateFolder.query.get(folder_id)
+    template_folder = EmailTemplateFolder.get(folder_id)
 
     if not template_folder:
         raise NotFoundError(error_message='Template folder not found')
     # Verify owned by same domain
-    template_folder_owner_user = db.session.query(User).filter(template_folder.domain_id == User.domain_id).first()
-    if not template_folder_owner_user:
+    if not template_folder.domain_id == domain_id:
         raise ForbiddenError(error_message="Template folder is not owned by same domain")
-
-    # Delete the template
-    template_folder_to_delete = EmailTemplateFolder.query.get(folder_id)
-    db.session.delete(template_folder_to_delete)
-    db.session.commit()
+    else:
+        EmailTemplateFolder.delete(template_folder)
 
     return '', 204
 

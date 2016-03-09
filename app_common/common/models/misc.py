@@ -1,12 +1,10 @@
-from sqlalchemy import and_
+import datetime
+
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
 from ..error_handling import InvalidUsage
-import datetime
-import time
-from candidate import CandidateMilitaryService
-from sms_campaign import SmsCampaign
+from ..models.user import User
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -341,6 +339,19 @@ class EmailTemplateFolder(db.Model):
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_name_and_domain_id(cls, folder_name, domain_id):
+        """
+        Method to get email template folder based on folder name and domain id.
+        :type folder_name:  string
+        :type domain_id:  int | long
+        :rtype:  EmailTemplateFolder
+        """
+        assert folder_name, "folder_name not provided"
+        assert domain_id, "domain_id not provided"
+        return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
+
 
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
