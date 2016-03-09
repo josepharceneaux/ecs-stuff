@@ -267,7 +267,6 @@ class CandidatesResource(Resource):
             # Hide candidate if requested
             if _candidate_dict.get('hide') is True:
                 candidate.is_web_hidden = 1
-                db.session.commit()
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
 
@@ -298,6 +297,7 @@ class CandidatesResource(Resource):
                                                error_code=custom_error.MILITARY_INVALID_DATE)
 
         if skip:
+            db.session.commit()
             return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
