@@ -12,7 +12,6 @@ import datetime
 # Third Party
 from celery import chord
 from sqlalchemy import and_
-from sqlalchemy import desc
 
 # Service Specific
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
