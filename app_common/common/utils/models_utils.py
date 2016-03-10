@@ -65,15 +65,15 @@ from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 def to_json(self, include_fields=None, field_parsers=dict()):
     """
-    Converts SqlAlchemy object to serializable dictionary
+    Converts SqlAlchemy object to serializable dictionary.
 
-    Some data types are not json serializable e.g. DATETIME, TIMESTAMP
+    Some data types are not JSON serializable e.g. DATETIME, TIMESTAMP
     so we are making a dictionary where keys are types and values are functions which
-     will be used to convert these fields to specific type e.g. str
+    will be used to convert these fields to specific type e.g. str
 
-     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
-     to json serializable dict but we want our datetime object to be converted in
-     ISO 8601 format, fo we can pass a parser functions like
+    field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+    to JSON serializable dict but we want our datetime object to be converted in
+    ISO 8601 format, so we can pass a parser functions like
 
         >>> from app_common.common.utils.handy_functions import to_utc_str
         >>> parsers = dict(start_datetime=to_utc_str,
@@ -102,7 +102,7 @@ def to_json(self, include_fields=None, field_parsers=dict()):
 
     :param self: instance of respective model class
     :type self: db.Model
-    :param include_fields: which columns we need to add in json data
+    :param include_fields: which columns we need to add in JSON data
     :type include_fields: list | tuple
     :param field_parsers: a dictionary with keys as model attributes and values as
      function to parse or convert the field value to specific format

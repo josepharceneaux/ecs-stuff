@@ -1,8 +1,8 @@
 """
-This modules contains helper methods and classes which we are using in e.g. Social Network API app.
+This module contains helper methods and classes which we are using in e.g. Social Network API app.
 
         * ApiResponse:
-            This class is used to create API response object to return json response.
+            This class is used to create API response object to return JSON response.
 
 Here we also have functions which are useful for APIs to implement pagination.
 
@@ -135,7 +135,9 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
         }
     """
     assert key and isinstance(key, basestring), "key must be a valid string"
+    # TODO we must assert on 'query' and other important params
     # error_out=false, do nor raise error if these is nop object to return but return an empty list
+    # TODO; should we do the below statement within a try / except
     results = query.paginate(page, per_page, error_out=False)
 
     # convert model objects to serializable dictionaries
