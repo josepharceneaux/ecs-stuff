@@ -58,9 +58,9 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
-q = '''INSERT INTO domain (NAME,organizationId) VALUES ("test_domain_first",1);
-INSERT INTO domain (NAME,organizationId) VALUES ("test_domain_second",1);
-INSERT INTO USER (email, PASSWORD, domainId)
+q = '''INSERT INTO domain (name,organizationId) VALUES ("test_domain_first",1);
+INSERT INTO domain (name,organizationId) VALUES ("test_domain_second",1);
+INSERT INTO user (email, password, domainId)
 VALUES ("test_email@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1);
 '''
 try:
