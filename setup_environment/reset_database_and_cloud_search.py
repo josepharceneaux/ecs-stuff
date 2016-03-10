@@ -57,24 +57,17 @@ print 'DB reset is successful'
 
 print 'Generating initial test data'
 
-# Create domain
-from common.models.user import Domain, User
 
-domain_first = Domain(name='test_domain_first', organization_id=1)
-domain_second = Domain(name='test_domain_first', organization_id=1)
-
-db.session.add(domain_first)
-db.session.add(domain_second)
-db.session.commit()
-
-user_first = User(email='test_email_first@gmail.com', default_culture_id=1, domain_id=domain_first.id)
-user_same_domain = User(email='test_email_same_domain@gmail.com', default_culture_id=1, domain_id=domain_first.id)
-user_second = User(email='test_email_second@gmail.com', default_culture_id=1, domain_id=domain_second.id)
-
-db.session.add(user_first)
-db.session.add(user_same_domain)
-db.session.add(user_second)
-db.session.commit()
+q = '''INSERT INTO domain (NAME,organizationId) VALUES ("test_domain_first",1);
+INSERT INTO domain (NAME,organizationId) VALUES ("test_domain_second",1);
+INSERT INTO USER (email, PASSWORD, domainId)
+VALUES ("test_email@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1);
+'''
+try:
+    db.session.connection().execute(q)
+except Exception as e:
+    print e.message
+    raise SystemExit(0)
 
 from candidate_service.candidate_app import app
 with app.app_context():
