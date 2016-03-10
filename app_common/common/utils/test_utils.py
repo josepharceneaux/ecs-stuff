@@ -150,9 +150,9 @@ def add_roles(user_id, roles, token):
                             token, data=data)
 
     print response.content
-    # if response.status_code == 400 and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
-    #     return None
-    assert response.status_code in [200, 400]
+    if response.status_code == HttpStatus.BAD_REQUEST and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
+        return None
+    assert response.status_code == HttpStatus.OK
 
 
 def remove_roles(user_id, roles, token):
