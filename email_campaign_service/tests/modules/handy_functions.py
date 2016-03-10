@@ -147,7 +147,7 @@ def response_info(resp_request, resp_json, resp_status):
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
 
-def define_and_send_request(request_method, url, access_token, template_id=None, data=None):
+def define_and_send_request(request_method, url, access_token, data=None):
     """
     Function will define request based on params and make the appropriate call.
     :param  request_method:  can only be get, post, put, patch, or delete
@@ -159,9 +159,8 @@ def define_and_send_request(request_method, url, access_token, template_id=None,
     request_method = request_method.lower()
     assert request_method in ['get', 'put', 'patch', 'delete']
     method = getattr(requests, request_method)
-    if not data:
-        data = dict(id=template_id)
-    return method(url=url, data=json.dumps(data), headers={'Authorization': 'Bearer %s' % access_token})
+    return method(url=url, data=json.dumps(data), headers={'Authorization': 'Bearer %s' % access_token,
+                                                           'Content-type': 'application/json'})
 
 
 def request_to_email_template_resource(access_token, request, email_template_id, data=None):
@@ -172,8 +171,8 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id
     :param data
     """
-    url = EmailCampaignUrl.EMAIL_TEMPLATE
-    return define_and_send_request(request, url, access_token, email_template_id, data)
+    url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id)
+    return define_and_send_request(request, url, access_token, data)
 
 
 def get_template_folder(token):
@@ -231,7 +230,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
 
 
 def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
-                          is_immutable="1", folder_id=None, domain_id=None):
+                          folder_id=None, is_immutable="1", domain_id=None):
     """
 
     :param email_template_id
@@ -247,7 +246,6 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     :return:
     """
     data = dict(
-            id=email_template_id,
             name=template_name,
             email_template_folder_id=folder_id,
             user_id=user_id,

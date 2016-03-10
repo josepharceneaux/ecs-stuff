@@ -4,7 +4,6 @@ from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
 from ..error_handling import InvalidUsage
-from ..models.user import User
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -25,12 +24,12 @@ class Activity(db.Model):
     @classmethod
     def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
         return cls.query.filter(
-            db.and_(
-                Activity.user_id == user_id,
-                Activity.params == params,
-                Activity.type == type,
-                Activity.source_id == source_id,
-            )).first()
+                db.and_(
+                        Activity.user_id == user_id,
+                        Activity.params == params,
+                        Activity.type == type,
+                        Activity.source_id == source_id,
+                )).first()
 
     @classmethod
     def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
@@ -56,8 +55,8 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_area_of_interest(cls, domain_id, name):
         return cls.query.filter(db.and_(
-            AreaOfInterest.domain_id == domain_id,
-            AreaOfInterest.name == name
+                AreaOfInterest.domain_id == domain_id,
+                AreaOfInterest.name == name
         )).first()
 
     @classmethod
@@ -142,7 +141,6 @@ class Country(db.Model):
         country_row = cls.query.filter(db.or_(Country.name == name_or_code,
                                               Country.code == name_or_code)).first()
         return country_row.id if country_row else None
-
 
     @classmethod
     def country_name_from_country_id(cls, country_id):
@@ -304,7 +302,7 @@ class CustomField(db.Model):
         :type domain_id:  int|long
         :rtype:  list[CustomField]
         """
-        return cls.query.filter(CustomField.domain_id==domain_id).all()
+        return cls.query.filter_by(domain_id=domain_id).all()
 
 
 class UserEmailTemplate(db.Model):
@@ -313,15 +311,17 @@ class UserEmailTemplate(db.Model):
     user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
     type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
     name = db.Column('Name', db.String(255), nullable=False)
-    email_body_html = db.Column('EmailBodyHtml', db.Text)
-    email_body_text = db.Column('EmailBodyText', db.Text)
-    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
+    body_html = db.Column('EmailBodyHtml', db.Text)
+    body_text = db.Column('EmailBodyText', db.Text)
+    template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id',
+                                                                          ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     # Relationships
-    email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
-                                                                                    cascade="all, delete-orphan"))
+    template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
+                                                                              cascade="all, delete-orphan"))
     user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
 
 
@@ -338,7 +338,7 @@ class EmailTemplateFolder(db.Model):
 
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
-                                                                                       cascade="all, delete-orphan"))
+                                                                                      cascade="all, delete-orphan"))
 
     @classmethod
     def get_by_name_and_domain_id(cls, folder_name, domain_id):
@@ -351,6 +351,18 @@ class EmailTemplateFolder(db.Model):
         assert folder_name, "folder_name not provided"
         assert domain_id, "domain_id not provided"
         return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
+
+    @classmethod
+    def get_by_parent_and_domain_id(cls, parent_id, domain_id):
+        """
+        Method to get email template folder based on folder name and domain id.
+        :type parent_id:  int | long
+        :type domain_id:  int | long
+        :rtype:  EmailTemplateFolder
+        """
+        assert parent_id, "parent_id not provided"
+        assert domain_id, "domain_id not provided"
+        return cls.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
 
 
 class CustomFieldCategory(db.Model):

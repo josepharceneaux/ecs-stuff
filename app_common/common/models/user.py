@@ -435,6 +435,16 @@ class DomainRole(db.Model):
         # Admin Roles
         CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
 
+        # Email Template Roles
+        CAN_CREATE_EMAIL_TEMPLATE = "CAN_CREATE_EMAIL_TEMPLATE"
+        CAN_GET_EMAIL_TEMPLATE = "CAN_GET_EMAIL_TEMPLATE"
+        CAN_UPDATE_EMAIL_TEMPLATE = "CAN_UPDATE_EMAIL_TEMPLATE"
+        CAN_DELETE_EMAIL_TEMPLATE = "CAN_DELETE_EMAIL_TEMPLATE"
+
+        # Email Template Folder Roles
+        CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+        CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()

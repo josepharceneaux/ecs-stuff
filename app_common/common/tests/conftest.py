@@ -550,7 +550,7 @@ def template_id(sample_user, domain_id):
     email_template_folder = db.session.query(EmailTemplateFolder).filter(EmailTemplateFolder.name == 'Sample Templates',
                                                                          EmailTemplateFolder.domain_id == domain_id).first()
     email_template_folder_id = email_template_folder.id
-    template = db.session.query(UserEmailTemplate).filter_by(email_template_folder_id=email_template_folder_id)
+    template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=email_template_folder_id)
 
     return template['id']
 
@@ -577,4 +577,3 @@ def sample_user_from_domain_first(domain_first, request):
 
     request.addfinalizer(fin)
     return user
-

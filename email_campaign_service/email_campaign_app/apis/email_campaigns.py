@@ -46,6 +46,7 @@ This file contains API endpoints related to email_campaign_service.
 
 # Third Party
 import types
+import requests
 from flask_restful import Resource
 from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
@@ -141,7 +142,7 @@ class EmailCampaignApi(Resource):
                                          stop_datetime=data['stop_datetime'],
                                          frequency_id=data['frequency_id'])
 
-        return {'campaign': campaign}, 201
+        return {'campaign': campaign}, requests.codes.created
 
 
 @api.route(EmailCampaignEndpoints.SEND)
@@ -182,7 +183,7 @@ class EmailCampaignSendApi(Resource):
             return jsonify(data)
 
         return dict(message='email_campaign(id:%s) is being sent to candidates.'
-                            % campaign_id), 200
+                            % campaign_id), requests.codes.ok
 
 
 @api.route(EmailCampaignEndpoints.URL_REDIRECT)
@@ -287,7 +288,7 @@ class EmailCampaignBlasts(Resource):
         # Serialize blasts of a campaign
         blasts = [blast.to_json() for blast in campaign.blasts]
         response = dict(blasts=blasts, count=len(blasts))
-        return response, 200
+        return response, requests.codes.ok
 
 
 @api.route(EmailCampaignEndpoints.BLAST)
@@ -347,4 +348,4 @@ class EmailCampaignBlastById(Resource):
         blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
                                                      request.user,
                                                      CampaignUtils.EMAIL)
-        return dict(blast=blast_obj.to_json()), 200
+        return dict(blast=blast_obj.to_json()), requests.codes.OK

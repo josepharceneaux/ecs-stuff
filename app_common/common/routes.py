@@ -786,5 +786,3 @@ class EmailCampaignUrl(object):
     BLAST = BLASTS + '/%s'
     EMAIL_TEMPLATE = EmailCampaignEndpoints.HOST_NAME % ('/' + "v1/email-templates")
     EMAIL_TEMPLATE_FOLDER = EmailCampaignEndpoints.HOST_NAME % ('/' +"v1/email-template-folders")
-    GROUP_EMAIL_TEMPLATE = EmailCampaignEndpoints.HOST_NAME % ('/' +'groups/%s/email-templates')
-

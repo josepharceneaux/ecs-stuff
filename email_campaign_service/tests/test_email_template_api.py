@@ -69,9 +69,9 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    data = {'name': template_folder_name, 'id': template_folder_id}
+    data = {'name': template_folder_name}
     response = requests.delete(
-        url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
+        url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
         headers={'Authorization': 'Bearer %s' % token2,
                  'Content-type': 'application/json'}
     )
@@ -203,7 +203,7 @@ def test_delete_email_template_with_no_id(sample_user, sample_user_2, email_temp
     add_role_to_test_user(sample_user_2, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', '')
-    assert resp.status_code == 400
+    assert resp.status_code == 405
     del_domain_roles(role_id)
 
 
@@ -377,9 +377,12 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
                                   '/body>\r\n</html>\r\n'
 
     # Get email_template via template ID
+    """def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
+                          folder_id=None, is_immutable="1", domain_id=None):"""
     resp = update_email_template(email_template_id+1, 'put', token2, sample_user_2.id,
                                  email_template["template_name"],
-                                 updated_email_template_body, email_template["template_folder_id"],
+                                 updated_email_template_body, '', email_template["template_folder_id"],
+                                 email_template["is_immutable"],
                                  email_template["domain_id"])
     db.session.commit()
     assert resp.status_code == 404
@@ -405,8 +408,8 @@ def add_email_template(user_auth, template_owner, email_template_body):
     template_folder_id, template_folder_name = get_template_folder(token)
 
     template_name = 'test_email_template%i' % time.time()
-
-    resp = create_email_template(token, template_owner.id, template_name, email_template_body, '', is_immutable="1",
+    is_immutable = "1"
+    resp = create_email_template(token, template_owner.id, template_name, email_template_body, '', is_immutable,
                                  folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
     db.session.commit()
     resp_obj = resp.json()
@@ -417,4 +420,5 @@ def add_email_template(user_auth, template_owner, email_template_body):
             "template_folder_id": template_folder_id,
             "template_folder_name": template_folder_name,
             "template_name": template_name,
+            "is_immutable": is_immutable,
             "domain_id": domain_id}
