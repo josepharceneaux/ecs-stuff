@@ -11,11 +11,12 @@ from candidate_pool_service.common.utils.candidate_service_calls import (search_
 __author__ = 'jitesh'
 
 
-def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_candidates=0, oauth_token=None):
+def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=1):
     """
     Get the candidates of a smart or dumb list.
     :param smartlist: Smartlist row object
-    :param max_candidates: If set to 0, will have no limit.
+    :param oauth_token: Authorization Token String
+    :param page: Page Number
     :return:  candidates and total_found
     what TalentSearch.search_candidates returns
     """
@@ -27,6 +28,8 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
             raise InvalidUsage('search_params(%s) are not JSON serializable for '
                                'smartlist(id:%s). User(id:%s)'
                                % (smartlist.search_params, smartlist.id, smartlist.user_id))
+        # Page Number to be fetched from Amazon CloudSearch
+        search_params['page'] = page
         if candidate_ids_only:
             search_params['fields'] = 'id'
         if count_only:
@@ -41,12 +44,12 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
         count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
             smartlist_id=smartlist.id).count()
         return dict(candidates=[], total_found=count)
-    # If a dumblist and not doing count only, simply return all smartlist_candidates
     else:
-        smartlist_candidate_rows = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id)\
-            .filter_by(smartlist_id=smartlist.id)
-        if max_candidates:
-            smartlist_candidate_rows = smartlist_candidate_rows.limit(max_candidates)
+        total_candidates_in_smartlist = SmartlistCandidate.query.with_entities(
+                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).count()
+        smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
+                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page, 15, False)
+        smartlist_candidate_rows = smartlist_candidate_rows.items
 
         candidates = []
         candidate_ids = []
@@ -54,7 +57,7 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, max_ca
             candidates.append({'id': smartlist_candidate_row.candidate_id})
             candidate_ids.append(smartlist_candidate_row.candidate_id)
         if candidate_ids_only:
-            return {'candidates': candidates, 'total_found': len(candidate_ids)}
+            return {'candidates': candidates, 'total_found': total_candidates_in_smartlist}
         search_results = create_candidates_dict(candidate_ids)
 
     return search_results

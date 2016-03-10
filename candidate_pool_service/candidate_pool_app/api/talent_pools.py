@@ -418,15 +418,21 @@ class TalentPoolCandidateApi(Resource):
             raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get candidates"
                                                   % request.user.id)
 
-        total_candidate = TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()
+        request_params = dict()
+        request_params['fields'] = request.args.get('fields', '')
+        request_params['sort_by'] = request.args.get('sort_by', '')
+        request_params['limit'] = request.args.get('limit', '')
+        request_params['page'] = request.args.get('page', '')
+        request_params['talent_pool_id'] = talent_pool_id
 
-        search_candidates_response = search_candidates_from_params(
-            search_params={'talent_pool_id': talent_pool_id},
-            access_token=request.oauth_token
-        )
+        request_params = dict((k, v) for k, v in request_params.iteritems() if v)
+
+        search_candidates_response = search_candidates_from_params(request_params, access_token=request.oauth_token)
+
         #  To be backwards-compatible, for now, we add talent_pool_candidates to top level dict
-        search_candidates_response['talent_pool_candidates'] = {'name': talent_pool.name,
-                                                                'total_found': len(total_candidate)}
+        search_candidates_response['talent_pool_candidates'] = {'name': talent_pool.name, 'total_found':
+            search_candidates_response.get('total_found')}
+
         return search_candidates_response
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
