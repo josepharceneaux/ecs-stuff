@@ -25,7 +25,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 ######################## Candidate ########################
-def test_delete_non_existing_candidate(access_token_first, user_first, talent_pool):
+def test_delete_non_existing_candidate(access_token_first, user_first):
     """
     Test: Attempt to delete a candidate that isn't recognized via ID or Email
     Expect: 404
@@ -53,18 +53,18 @@ def test_delete_non_existing_candidate(access_token_first, user_first, talent_po
 
 def test_delete_candidate_and_retrieve_it(access_token_first, user_first, talent_pool):
     """
-    Test:   "Delete" a Candidate by setting is_web_hidden to True, and then retrieve Candidate
+    Test:   Delete a Candidate and then retrieve Candidate
     Expect: 404, Not Found error
     """
-    AddUserRoles.all_roles(user=user_first)
-
     # Create Candidate
+    AddUserRoles.all_roles(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
-    # Delete (hide) Candidate
+    # Hide Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    resp = request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+    hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+    resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
     print response_info(resp)
 
     # Retrieve Candidate
@@ -76,34 +76,34 @@ def test_delete_candidate_and_retrieve_it(access_token_first, user_first, talent
 
 def test_delete_candidate_via_email(access_token_first, user_first, talent_pool):
     """
-    Test:   "Delete" a Candidate via candidate's email
+    Test:   Delete a Candidate via candidate's email
     Expect: 200
     """
-    AddUserRoles.all_roles(user=user_first)
-
     # Create Candidate
+    AddUserRoles.all_roles(user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    can_emails = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['emails']
+    can_emails = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['emails']
 
-    # Delete (hide) Candidate
-    resp = request_to_candidate_resource(access_token_first, 'delete',
-                                         candidate_email=can_emails[0]['address'])
+    # Hide Candidate
+    hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+    resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
     print response_info(resp)
-    assert resp.status_code == 204
+    assert resp.status_code == 200
+    assert resp.json()['hidden_candidate_ids'][0] == candidate_id
 
 
-def test_delete_candidate_via_unrecognized_email(access_token_first, user_first, talent_pool):
+def test_delete_candidate_via_unrecognized_email(access_token_first, user_first):
     """
     Test:   "Delete" a Candidate via an email that does not exist in db
     Expect: 404
     """
-    AddUserRoles.delete(user=user_first)
-    # Delete (hide) Candidate
+    # Delete Candidate
+    AddUserRoles.delete(user_first)
     resp = request_to_candidate_resource(access_token_first, 'delete',
                                          candidate_email='email_not_found_45623@simple.com')
     print response_info(resp)
@@ -114,22 +114,22 @@ def test_delete_candidate_via_unrecognized_email(access_token_first, user_first,
 def test_delete_candidate_from_a_diff_domain(access_token_first, user_first, talent_pool,
                                              access_token_second, user_second):
     """
-    Test:   "Delete" a Candidate via candidate's email
+    Test:   Delete a Candidate via candidate's email
     Expect: 200
     """
-    AddUserRoles.all_roles(user=user_first)
-    AddUserRoles.all_roles(user=user_second)
+    AddUserRoles.all_roles(user_first)
+    AddUserRoles.all_roles(user_second)
 
     # Create Candidate with user_first
     data = generate_single_candidate_data([talent_pool.id])
-    candidate_1_id = request_to_candidates_resource(access_token_first, 'post', data)\
-            .json()['candidates'][0]['id']
+    candidate_1_id = request_to_candidates_resource(
+        access_token_first, 'post', data).json()['candidates'][0]['id']
 
     # Retrieve Candidate
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_1_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_1_id).json()['candidate']
 
-    # Delete (hide) Candidate with user_second
+    # Delete Candidate with user_second
     resp = request_to_candidate_resource(access_token_second, 'delete', candidate_dict['id'])
     print response_info(resp)
     assert resp.status_code == 403

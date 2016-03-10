@@ -205,7 +205,7 @@ class CandidatePhone(db.Model):
         return "<CandidatePhone (value=' %r', extension= ' %r')>" % (self.value, self.extension)
 
     # Relationships
-    candidate = relationship('Candidate', backref='candidate_phone')
+    # candidate = relationship('Candidate', backref='candidate_phone')
     sms_campaign_replies = relationship('SmsCampaignReply', cascade='all, delete-orphan',
                                         passive_deletes=True, backref="candidate_phone")
 
@@ -1012,7 +1012,7 @@ class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
-    candidate_id = db.Column(db.Integer, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):

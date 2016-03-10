@@ -102,7 +102,7 @@ class TalentPipeline(db.Model):
 
     # Relationships
     user = db.relationship('User', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
-    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipeline'))
+    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
 
     def get_id(self):
         return unicode(self.id)

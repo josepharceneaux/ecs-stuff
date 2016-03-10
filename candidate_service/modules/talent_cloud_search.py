@@ -515,7 +515,12 @@ def _send_batch_request(action_dicts):
 
     # If the batch request size > 5MB, split it up
     for i, action_dict in enumerate(action_dicts):
-        action_dict_json = simplejson.dumps(action_dict)
+        try:
+            action_dict_json = simplejson.dumps(action_dict)
+        except UnicodeDecodeError:
+            logger.exception("talent_cloud_search._send_batch_request(): Couldn't encode action_dict to JSON: %s",
+                             action_dict)
+            continue
         if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
             # Individual doc size shouldn't exceed 1MB
             logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)

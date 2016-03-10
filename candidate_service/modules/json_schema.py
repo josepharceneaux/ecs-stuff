@@ -54,6 +54,10 @@ candidates_resource_schema_post = {
                     "resume_url": {
                         "type": ["string", "null"]
                     },
+                    "added_datetime": {
+                        "type": ["string", "null"],
+                        "format": "date-time"
+                    },
                     "talent_pool_ids": {
                         "type": "object",
                         "required": ["add"],
@@ -568,6 +572,9 @@ candidates_resource_schema_patch = {
                     },
                     "resume_url": {
                         "type": ["string", "null"]
+                    },
+                    "hide": {
+                        "type": "boolean"
                     },
                     "talent_pool_ids": {
                         "type": ["object", "null"],
