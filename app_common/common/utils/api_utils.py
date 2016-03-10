@@ -105,7 +105,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     :param query: A query object on which pagination will be applied.
     :param page: page number
     :param per_page: page size
-    :param object_method: Method to be applied on object. e.g. email_campaign_obj.to_dict().
+    :param parser: Parser to be applied on object. e.g. email_campaign_obj.to_dict().
                           Default value is to_json()
     :param include_fields: List of fields we want to be returned from to_json()
     :return: api response object containing list of items

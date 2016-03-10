@@ -12,5 +12,4 @@ from candidate_service.common.talent_celery import CELERY_WORKER_ARGS
 from candidate_service.candidate_app import logger, celery_app as celery
 
 logger.info("Celery worker has been started successfully")
-CELERY_WORKER_ARGS.append('celery_candidate_documents_scheduler')
-celery.start(argv=CELERY_WORKER_ARGS)
+celery.start(argv=CELERY_WORKER_ARGS + ['celery_candidate_documents_scheduler'])
