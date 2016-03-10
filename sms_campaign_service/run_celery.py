@@ -11,14 +11,15 @@ For Celery to run from command line, script runs as separate process with celery
 """
 
 # Service Specific
+from sms_campaign_service.common.talent_celery import CELERY_WORKER_ARGS
 from sms_campaign_service.sms_campaign_app import celery_app, logger, app
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 try:
-    celery_app.start(argv=['celery', 'worker', '-l', 'info', '-Q', CampaignUtils.SMS])
-    logger.info("Celery worker has been started successfully for %s" % app.import_name)
+    CELERY_WORKER_ARGS.append(CampaignUtils.SMS)
+    celery_app.start(argv=CELERY_WORKER_ARGS)
 except Exception as e:
-    logger.exception("Couldn't start Celery app for sms_campaign_service in "
+    logger.exception("Couldn't start Celery worker for sms_campaign_service in "
                      "%s environment." % (app.config[TalentConfigKeys.ENV_KEY]))
 
