@@ -515,39 +515,42 @@ def _send_batch_request(action_dicts):
 
     # If the batch request size > 5MB, split it up
     for i, action_dict in enumerate(action_dicts):
-        action_dict_json = simplejson.dumps(action_dict)
-        if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
-            # Individual doc size shouldn't exceed 1MB
-            logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
-            continue
-        elif max_possible_request_size_bytes < BATCH_REQUEST_LIMIT_BYTES:
-            # Add doc to aggregated string if it fits
-            if action_dict['type'] == 'delete':
-                document_service_connection.delete(action_dict['id'])
-                max_possible_request_size_bytes += 30  # approx. delete dict size
-            else:
-                document_service_connection.add(action_dict['id'], fields=action_dict['fields'])
-                max_possible_request_size_bytes += 40 + len(action_dict_json)  # approx. add dict size
+        try:
+            action_dict_json = simplejson.dumps(action_dict)
+            if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
+                # Individual doc size shouldn't exceed 1MB
+                logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
+                continue
+            elif max_possible_request_size_bytes < BATCH_REQUEST_LIMIT_BYTES:
+                # Add doc to aggregated string if it fits
+                if action_dict['type'] == 'delete':
+                    document_service_connection.delete(action_dict['id'])
+                    max_possible_request_size_bytes += 30  # approx. delete dict size
+                else:
+                    document_service_connection.add(action_dict['id'], fields=action_dict['fields'])
+                    max_possible_request_size_bytes += 40 + len(action_dict_json)  # approx. add dict size
 
-        if (len(action_dicts) == i + 1) or \
-                (max_possible_request_size_bytes + DOCUMENT_SIZE_LIMIT_BYTES > BATCH_REQUEST_LIMIT_BYTES):
-            """
-            If we're at the end of the loop, or once 4MB is reached, send out the request.
-            We sent it out at 4MB (not 5MB) because the last
-            document in the batch could be 1MB.
-            """
-            try:
-                result = document_service_connection.commit()
-            except Exception:
-                logger.exception("_send_batch_request: Exception when sending batch request")
-                result = None
-            document_service_connection.clear_sdf()
-            max_possible_request_size_bytes = 2
-            if result:
-                if result.errors:
-                    logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
-                adds += result.adds
-                deletes += result.deletes
+            if (len(action_dicts) == i + 1) or \
+                    (max_possible_request_size_bytes + DOCUMENT_SIZE_LIMIT_BYTES > BATCH_REQUEST_LIMIT_BYTES):
+                """
+                If we're at the end of the loop, or once 4MB is reached, send out the request.
+                We sent it out at 4MB (not 5MB) because the last
+                document in the batch could be 1MB.
+                """
+                try:
+                    result = document_service_connection.commit()
+                except Exception:
+                    logger.exception("_send_batch_request: Exception when sending batch request")
+                    result = None
+                document_service_connection.clear_sdf()
+                max_possible_request_size_bytes = 2
+                if result:
+                    if result.errors:
+                        logger.error("Received errors committing action_dicts to CloudSearch: %s", result.errors)
+                    adds += result.adds
+                    deletes += result.deletes
+        except Exception as e:
+            logger.error("Couldn't upload candidate Document because: %s" % e.message)
 
     return adds, deletes
 
