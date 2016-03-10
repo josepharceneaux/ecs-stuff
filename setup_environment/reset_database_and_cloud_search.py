@@ -59,12 +59,19 @@ print 'Generating initial test data'
 
 
 q = '''INSERT INTO domain (name,organizationId) VALUES ("test_domain_first",1);
-INSERT INTO domain (name,organizationId) VALUES ("test_domain_second",1);'''
+INSERT INTO domain (name,organizationId) VALUES ("test_domain_second",1);
+INSERT INTO user (email, password, domainId)
+VALUES ("test_email@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1);
+INSERT INTO user (email, password, domainId)
+VALUES ("test_email_same_domain@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1);
+INSERT INTO user (email, password, domainId)
+VALUES ("test_email_second@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 2);
+'''
+
 from sqlalchemy import text
 
 sql = text(q)
 result = db.engine.execute(sql)
-print result
 
 from candidate_service.candidate_app import app
 with app.app_context():
