@@ -240,6 +240,7 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
             }
         data["talent_pools"].append(talent_pool)
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token, data=data)
+    print response.content
     assert response.status_code in expected_status
     return response.json()
 

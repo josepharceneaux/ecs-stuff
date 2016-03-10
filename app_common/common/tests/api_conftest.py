@@ -237,7 +237,7 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain):
 
 
 @pytest.fixture(scope='function')
-def talent_pool(request, token_first):
+def talent_pool(request, token_first, user_first):
     """
     This fixture created a talent pool that is associated to user_first
     :param request: request object
@@ -256,7 +256,7 @@ def talent_pool(request, token_first):
 
 
 @pytest.fixture(scope='function')
-def talent_pool_second(request, token_second):
+def talent_pool_second(request, token_second, user_second):
     """
     This fixture created a talent pool that is associated to user_second of domain_second
     :param token_second: authentication token for user_second
