@@ -332,7 +332,6 @@ class TestCreateHiddenCandidate(object):
         # Hide candidate
         hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
         hide_resp = request_to_candidates_resource(access_token_first, 'patch', hide_data)
-        db.session.commit()
         print response_info(hide_resp)
         candidate = Candidate.get_by_id(candidate_id)
         assert hide_resp.status_code == 200 and candidate.is_web_hidden == 1
@@ -342,13 +341,13 @@ class TestCreateHiddenCandidate(object):
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = request_to_candidates_resource(access_token_first, 'post', data)
         db.session.commit()
-        print response_info(response=create_resp)
+        print response_info(create_resp)
         assert create_resp.status_code == 201
         assert candidate.is_web_hidden == 0
 
         # Retrieve candidate
         get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-        print response_info(response=get_resp)
+        print response_info(get_resp)
         assert get_resp.status_code == 200
         assert get_resp.json()['candidate']['full_name'] != full_name
 

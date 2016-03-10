@@ -264,20 +264,28 @@ class CandidatesResource(Resource):
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
-            # Check for candidate's existence and web-hidden status
+            # Check for candidate's existence
             candidate_id = _candidate_dict.get('id')
+            candidate = Candidate.get_by_id(candidate_id)
+            if not candidate:
+                raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
 
-            # Check if candidate exists and is not web-hidden
-            candidate = get_candidate_if_exists(candidate_id)
-
-            # Hide candidate if requested
-            if _candidate_dict.get('hide') is True:
+            # Hide or un-hide candidate if requested
+            hide_candidate = _candidate_dict.get('hide')
+            if hide_candidate is True:
                 candidate.is_web_hidden = 1
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
+            else:  # json-schema will only allow True or False
+                candidate.is_web_hidden = 0
 
             # No need to validate anything since candidate is set to hidden
             if not skip:
+                # Check if candidate is web-hidden
+                if candidate.is_web_hidden:
+                    raise NotFoundError('Candidate not found: {}'.format(candidate_id),
+                                        custom_error.CANDIDATE_IS_HIDDEN)
+
                 # Emails' addresses must be properly formatted
                 for emails in _candidate_dict.get('emails') or []:
                     if emails.get('address'):
