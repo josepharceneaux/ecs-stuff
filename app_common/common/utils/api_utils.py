@@ -90,7 +90,7 @@ def get_pagination_params(request):
 
 
 def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,
-                           object_method=to_json, include_fields=None):
+                           parser=to_json, include_fields=None):
     """
     This function takes query object and then returns ApiResponse object containing
     JSON serializable list of objects by applying pagination on query using given
@@ -111,6 +111,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     :rtype ApiResponse
 
     :Example:
+        >>> from app_common.common.models.push_campaign import PushCampaign
         >>> query = PushCampaign.query
         >>> page, per_page = 1, 10
         >>> response = get_paginated_response('campaigns', query, 1, 10)
@@ -138,7 +139,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     results = query.paginate(page, per_page, error_out=False)
 
     # convert model objects to serializable dictionaries
-    items = [object_method(item, include_fields) for item in results.items]
+    items = [parser(item, include_fields) for item in results.items]
     headers = {
         'X-Total': results.total,
         'X-Page-Count': results.pages
