@@ -36,7 +36,7 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
-from push_campaign_service.common.models import db
+from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
 from push_campaign_service.common.routes import PushCampaignApiUrl
