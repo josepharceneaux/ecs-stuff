@@ -1,7 +1,6 @@
 """Email Templates API: Provide the endpoints to create, retrieve, update and delete
 Email Templates. Also contains endpoints for creating and deleting Email Template Folders
 """
-import json
 import requests
 
 from flask import request
@@ -60,8 +59,6 @@ def post_email_template():
     if email_template_folder and email_template_folder.domain_id != domain_id:
         raise ForbiddenError(error_message="Email template's folder is not in the user's domain %d" %
                                            email_template_folder.domain_id)
-
-    is_immutable = data.get("is_immutable")
 
     # If is_immutable value is not passed, make it as 0
     is_immutable = data.get("is_immutable")
@@ -242,8 +239,8 @@ def create_email_template_folder():
     is_immutable = data.get("is_immutable")
     if not is_immutable:
         is_immutable = 0
-    elif is_immutable not in (0, 1):
-            raise InvalidUsage(error_message="Invalid input:  should be integer with value 0 or 1")
+    elif int(is_immutable) not in (0, 1):
+            raise InvalidUsage(error_message="Invalid input: should be integer with value 0 or 1")
 
     email_template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                                 is_immutable=is_immutable)
