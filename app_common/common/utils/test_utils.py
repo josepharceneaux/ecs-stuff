@@ -148,9 +148,11 @@ def add_roles(user_id, roles, token):
     data = {"roles": roles}
     response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
-    if response.status_code == 400 and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
-        return None
-    assert response.status_code == 200
+
+    print response.content
+    # if response.status_code == 400 and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
+    #     return None
+    assert response.status_code in [200, 400]
 
 
 def remove_roles(user_id, roles, token):
