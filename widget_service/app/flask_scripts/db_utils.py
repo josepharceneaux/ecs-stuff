@@ -99,3 +99,5 @@ def destroy_db():
     db.session.commit()
     db.session.query(Culture).delete()
     db.session.commit()
+    db.session.query(WidgetPage).delete()
+    db.session.commit()
