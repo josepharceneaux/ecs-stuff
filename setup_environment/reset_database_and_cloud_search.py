@@ -66,9 +66,10 @@ INSERT INTO user (email, password, domainId)
 VALUES ("test_email_same_domain@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1);
 INSERT INTO user (email, password, domainId)
 VALUES ("test_email_second@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 2);
-INSERT INTO CLIENT (client_id, client_secret, client_name)
+INSERT INTO client (client_id, client_secret, client_name)
 VALUES ("KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z", "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z", "test_client");
-
+INSERT INTO domain_role (name) VALUES ("CAN_ADD_USER_ROLES"),("CAN_DELETE_USER_ROLES");
+INSERT INTO user_scoped_roles (UserId, RoleId) VALUES (1, 1), (1,2),(2,1),(2,2),(3,1),(3,2);
 '''
 
 from sqlalchemy import text
