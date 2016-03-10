@@ -58,13 +58,13 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
-q = 'INSERT INTO domain (name,organizationId) VALUES ("test_domain_first",1);'
+q = '''INSERT INTO domain (name,organizationId) VALUES ("test_domain_first",1);
+INSERT INTO domain (name,organizationId) VALUES ("test_domain_second",1);'''
 from sqlalchemy import text
 
 sql = text(q)
 result = db.engine.execute(sql)
-for row in result:
-    print row
+print result
 
 from candidate_service.candidate_app import app
 with app.app_context():
