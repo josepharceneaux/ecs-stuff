@@ -55,6 +55,27 @@ db.session.connection().execute('SET FOREIGN_KEY_CHECKS = 1;')
 
 print 'DB reset is successful'
 
+print 'Generating initial test data'
+
+# Create domain
+from common.models.user import Domain, User
+
+domain_first = Domain(name='test_domain_first', organization_id=1)
+domain_second = Domain(name='test_domain_first', organization_id=1)
+
+db.session.add(domain_first)
+db.session.add(domain_second)
+db.session.commit()
+
+user_first = User(email='test_email_first@gmail.com', default_culture_id=1, domain_id=domain_first.id)
+user_same_domain = User(email='test_email_same_domain@gmail.com', default_culture_id=1, domain_id=domain_first.id)
+user_second = User(email='test_email_second@gmail.com', default_culture_id=1, domain_id=domain_second.id)
+
+db.session.add(user_first)
+db.session.add(user_same_domain)
+db.session.add(user_second)
+db.session.commit()
+
 from candidate_service.candidate_app import app
 with app.app_context():
     from candidate_service.modules.talent_cloud_search import delete_all_candidate_documents
