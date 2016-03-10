@@ -9,10 +9,10 @@ import json
 from flask import jsonify
 import requests
 # Module Specific
-from resume_parsing_service.app import redis_store
+from resume_parsing_service.app import redis_store, logger
 from resume_parsing_service.app.views.parse_lib import process_resume
 from resume_parsing_service.app.views.utils import get_users_talent_pools
-from resume_parsing_service.common.error_handling import TalentError
+from resume_parsing_service.common.error_handling import TalentError, InternalServerError
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_parsing_service.common.utils.handy_functions import grouper
@@ -28,6 +28,7 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
     :return str:
     """
     # Dirty hack for the time being. Need to go over API consistency after crunch period (1/28/16)
+    job_ids = []
     if 'bearer' not in token_str:
         token_str = 'bearer {}'.format(token_str)
     queue_string = 'batch:{}:fp_keys'.format(user_id)
@@ -43,17 +44,23 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
                 "run_datetime": scheduled.strftime(DATE_FORMAT),
                 "url": "{}/{}".format(ResumeApiUrl.BATCH_URL, user_id),
             })
-            scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
-                                              headers={
-                                                  'Authorization': token_str,
-                                                  'Content-Type': 'application/json'
-                                              })
+            try:
+                scheduler_request = requests.post(SchedulerApiUrl.TASKS, data=payload,
+                                                  headers={
+                                                      'Authorization': token_str,
+                                                      'Content-Type': 'application/json'
+                                                  })
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+                logger.exception("add_fp_keys_to_queue. Could not reach Scheduler")
+                raise InternalServerError("Unable to reach Scheduler")
             if scheduler_request.status_code != 201:
                 raise TalentError("Issue scheduling resume parsing {}".format(
                     scheduler_request.content))
+            id = json.loads(scheduler_request.content)['id']
+            job_ids.append(id)
         scheduled += timedelta(seconds=20)
 
-    return {'redis_key': queue_string, 'quantity': list_length}
+    return {'redis_key': queue_string, 'quantity': list_length, 'ids': job_ids}
 
 
 def _process_batch_item(user_id, create_candidate=True):

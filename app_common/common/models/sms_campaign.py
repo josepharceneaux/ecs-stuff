@@ -52,7 +52,7 @@ class SmsCampaignBlast(db.Model):
                                  passive_deletes=True, backref='blast')
 
     def __repr__(self):
-        return "<SmsCampaignBlast (id = %r)>" % self.id
+        return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
 
 class SmsCampaignSend(db.Model):

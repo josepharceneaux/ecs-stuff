@@ -40,14 +40,14 @@ class SmartlistCandidates(Resource):
         :rtype: json
         """
         smartlist_id = kwargs['smartlist_id']
-        data = validate_and_parse_request_data(request.args)
+        candidate_ids_only, count_only, page = validate_and_parse_request_data(request.args)
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists.")
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smartlist, data['candidate_ids_only'], data['count_only'], oauth_token=request.oauth_token)
+        return get_candidates(smartlist, candidate_ids_only, count_only, request.oauth_token, page)
 
 
 class SmartlistResource(Resource):
@@ -88,6 +88,12 @@ class SmartlistResource(Resource):
             per_page = request.args.get('per_page', 10)
             total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
                     User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
+
+            if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+                raise InvalidUsage("page and per_page should be positive integers")
+
+            page = int(page)
+            per_page = int(per_page)
 
             return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
                     'page_number': page, 'smartlists_per_page': per_page,

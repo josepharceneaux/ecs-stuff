@@ -10,6 +10,7 @@ from app_common.common.models import (
     event_organizer,
     language,
     misc,
+    push_campaign,
     rsvp,
     smartlist,
     sms_campaign,

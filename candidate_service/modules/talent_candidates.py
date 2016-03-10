@@ -648,20 +648,14 @@ def add_photos(candidate_id, photos, added_time=None):
     db.session.commit()
 
 
-def update_photo(candidate_id, photo_id, user_id, update_dict):
+def update_photo(candidate_id, user_id, update_dict):
     """
     Function will update CandidatePhoto data
     :type candidate_id:  int|long
     :type photo_id:  int|long
     :type user_id:   int|long
     """
-    # Format inputs
-    photo_update_dict = dict(candidate_id=candidate_id,
-                             image_url=update_dict.get('image_url'),
-                             is_default=update_dict.get('is_default'),
-                             updated_datetime=datetime.datetime.utcnow())
-    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
-
+    photo_id = update_dict['id']
     photo_query = CandidatePhoto.query.filter_by(id=photo_id)
     photo_object = photo_query.first()
 
@@ -674,14 +668,20 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     if photo_object.candidate_id != candidate_id:
         raise ForbiddenError('Unauthorized candidate photo', error_code=custom_error.PHOTO_FORBIDDEN)
 
+    # Format inputs
+    photo_update_dict = dict(candidate_id=candidate_id,
+                             image_url=update_dict.get('image_url'),
+                             is_default=update_dict.get('is_default'),
+                             updated_datetime=datetime.datetime.utcnow())
+    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
+
     # Track all changes
     _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
                                  datetime.datetime.utcnow())
 
     # Update candidate's photo
     photo_query.update(photo_update_dict)
-    db.session.commit()
-
+    return
 
 ######################################
 # Helper Functions For Candidate Notes
@@ -786,7 +786,7 @@ def create_or_update_candidate_from_params(
     :rtype                          dict
     """
     # Format inputs
-    added_time = added_time or datetime.datetime.now()
+    added_time = added_time or datetime.datetime.utcnow()
     status_id = status_id or 1
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 
@@ -2314,16 +2314,19 @@ def get_search_params_of_smartlists(smartlist_ids):
     if not isinstance(smartlist_ids, list):
         smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids)).all()
+    smartlists = Smartlist.query.with_entities(Smartlist.id, Smartlist.search_params).filter(
+            Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 
-    for smartlist in smartlists:
+    for smartlist_id, smartlist_search_params in smartlists:
         try:
-            if smartlist.search_params and json.loads(smartlist.search_params):
-                search_params.append(json.loads(smartlist.search_params))
+            if smartlist_search_params and json.loads(smartlist_search_params):
+                search_params.append(json.loads(smartlist_search_params))
         except Exception as e:
             raise InvalidUsage(error_message="Search params of smartlist %s are in bad format "
-                                             "because: %s" % (smartlist.id, e.message))
+                                             "because: %s" % (smartlist_id, e.message))
+
+    logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
 
     return search_params

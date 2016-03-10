@@ -245,7 +245,6 @@ def test_g642_accuracy():
     exp5 = next((org for org in experiences if org["organization"] == u'Computer Sciences Corporation Consulting Group'), None)
     exp6 = next((org for org in experiences if org["organization"] == u'Seebeyond Technology Corporation'), None)
     exp7 = next((org for org in experiences if org["organization"] == u'Collaborex, Inc'), None)
-    # TODO: Log issue in spreadsheet.
     # exp8 = next((org for org in experiences if org["organization"] == u'Origin Technology in Business'), None)
     exp8 = next((org for org in experiences if org["organization"] == u'Origin Technology'), None)
     exp9 = next((org for org in experiences if org["organization"] == u'R.w. Johnson Pri'), None)
@@ -346,18 +345,12 @@ def test_g646_accuracy():
     # exp4 = next((org for org in experiences if org["organization"] == u'Avalon Digital Marketing Systems, Inc (European Division'), None)
     # assert None not in [exp1, exp2, exp3, exp4]
     assert None not in [exp2, exp3]
-    # assert exp1['start_month'] == 10
-    # assert exp1['start_year'] == 2004
     assert exp2['start_month'] == 3
     assert exp2['start_year'] == 2004
     assert exp2['end_month'] == 9
     assert exp2['end_year'] == 2004
     assert exp3['start_year'] == 2002
     assert exp3['end_year'] == 2003
-    # assert exp4['start_month'] == 5
-    # assert exp4['start_year'] == 2001
-    # assert exp4['end_month'] == 6
-    # assert exp4['end_year'] == 2001
     # Educations.
     educations_xml_list = bs4(GET_646, 'lxml').findAll('education')
     educations = parse_candidate_educations(educations_xml_list)
@@ -535,17 +528,32 @@ def test_pdf_accuracy():
     #     org["organization"] == u'SmartSource' and
     #     org['position'] == u'Technical Support')), None)
     # exp2 = next((org for org in experiences if (
-    #     org["organization"] == u'Bank of America' and
+    #     org["organization"] == u'Aerotek, Bank of America' and
     #     org['position'] == u'Mortgage Affiliate Services')), None)
+    # TODO: look into raw (JCIII &amp; Associates)
     # exp3 = next((org for org in experiences if (
     #     org["organization"] == u'JCIII & Associates' and
     #     org['position'] == u'Document Reviewer')), None)
-    # exp4 = next((org for org in experiences if (
-    #     org["organization"] == u'CHASE' and
-    #     org['position'] == u'Sr. Loan Processor')), None)
-    # exp5 = next((org for org in experiences if (
-    #     org["organization"] == u'CHASE' and
-    #     org['position'] == u'Business Analyst/Loss Mitigation Specialist')), None)
+    exp4 = next((org for org in experiences if (
+        org["organization"] == u'CHASE' and
+        org['position'] == u'Sr. Loan Processor')), None)
+    assert exp4
+    assert exp4['start_month'] == 5
+    assert exp4['start_year'] == 2012
+    assert exp4['end_month'] == 10
+    assert exp4['end_year'] == 2012
+    assert exp4['city'] == u'Tampa'
+    assert exp4['state'] == u'FL'
+    exp5 = next((org for org in experiences if (
+        org["organization"] == u'CHASE' and
+        org['position'] == u'Business Analyst/Loss Mitigation Specialist')), None)
+    assert exp5
+    assert exp5['start_month'] == 7
+    assert exp5['start_year'] == 2010
+    assert exp5['end_month'] == 5
+    assert exp5['end_year'] == 2012
+    assert exp5['city'] == u'Tampa'
+    assert exp5['state'] == u'FL'
     exp6 = next((org for org in experiences if (
         org["organization"] == u'Computer Generated Solutions' and
         org['position'] == u'Team Lead')), None)
@@ -598,7 +606,6 @@ def test_pdf13_accuracy():
     contact_xml_list = bs4(PDF_13, 'lxml').findAll('contact')
     contact_xml = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
-    addresses = parse_candidate_addresses(contact_xml_list)
     assert contact_xml['first_name'] == 'Bruce'
     assert contact_xml['last_name'] == 'Parkey'
     assert {'value': u'630-930-2756'} in phones
@@ -666,7 +673,5 @@ def test_pdf14_accuracy():
     assert edu1
     assert {'bullets': [], 'type': u'B. Sc', 'title': u'Computer Systems Engineer'} in edu1['degrees']
     # edu2 = next((edu for edu in educations if edu["school_name"] == u'ITESM University'), None)
-    # edu3 = next((edu for edu in educations if edu["school_name"] == u'Software Productivity Center'), None)
-    # edu4 = next((edu for edu in educations if edu["school_name"] == u'Multi-Hat Training'), None)
-    edu5 = next((edu for edu in educations if edu["school_name"] == u'British Columbia Institute of Technology'), None)
-    assert edu5
+    edu3 = next((edu for edu in educations if edu["school_name"] == u'British Columbia Institute of Technology'), None)
+    assert edu3
