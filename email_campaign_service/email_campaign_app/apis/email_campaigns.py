@@ -112,7 +112,7 @@ class EmailCampaignApi(Resource):
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id(user.domain_id)
             return get_paginated_response('email_campaigns', query, page, per_page,
-                                          object_method=EmailCampaign.to_dict)
+                                          parser=EmailCampaign.to_dict)
 
     def post(self):
         """

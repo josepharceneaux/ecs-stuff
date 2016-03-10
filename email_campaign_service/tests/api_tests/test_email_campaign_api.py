@@ -115,29 +115,35 @@ class TestGetCampaigns(object):
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
         paginated response. Here two campaigns have been created by different users of same domain.
         """
-        # Test GET api of email campaign with 1 result per_page
+        # Test GET api of email campaign using per_page=1 and default page=1.
+        # It should return first campaign in response.
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1')
         assert len(email_campaigns) == 1
         assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
-        # Test GET api of email campaign with 2 results per_page
+        # Test GET api of email campaign using per_page=1 for page=2. It should
+        # return second campaign in response.
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?per_page=1&page=2')
+        assert len(email_campaigns) == 1
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_second)
 
+        # Test GET api of email campaign with 2 results per_page
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=2')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
         assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
-
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
-        # Test GET api of email campaign with 1 result per_page using page = 1
+        # Test GET api of email campaign with default per_page=10 and page =1.
+        # It should get both campaigns in response.
         email_campaigns = get_campaign_or_campaigns(access_token_first,
-                                                    pagination_query='?per_page=2&page=1')
+                                                    pagination_query='?&page=1')
         assert len(email_campaigns) == 2
         assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
         assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)

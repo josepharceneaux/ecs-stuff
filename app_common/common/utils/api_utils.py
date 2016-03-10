@@ -18,9 +18,10 @@ import json
 from flask import Response
 
 # Application Specific
+from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
-from .handy_functions import JSON_CONTENT_TYPE_HEADER
+from .handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
@@ -134,12 +135,10 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
             ]
         }
     """
-    assert key and isinstance(key, basestring), "key must be a valid string"
-    # TODO we must assert on 'query' and other important params
-    # error_out=false, do nor raise error if these is nop object to return but return an empty list
-    # TODO; should we do the below statement within a try / except
+    raise_if_not_instance_of(key, basestring)
+    raise_if_not_instance_of(query, Query)
+    # error_out=false, do nor raise error if these is no object to return but return an empty list
     results = query.paginate(page, per_page, error_out=False)
-
     # convert model objects to serializable dictionaries
     items = [parser(item, include_fields) for item in results.items]
     headers = {
