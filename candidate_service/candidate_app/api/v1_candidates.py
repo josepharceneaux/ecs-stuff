@@ -29,6 +29,7 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
+from candidate_service.common.datetime_utils import isoformat_to_datetime
 from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
@@ -213,7 +214,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=candidate_dict.get('added_time'),
+                added_time=isoformat_to_datetime(candidate_dict['added_datetime']) if candidate_dict.get('added_datetime') else None,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
@@ -263,20 +264,28 @@ class CandidatesResource(Resource):
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
-            # Check for candidate's existence and web-hidden status
+            # Check for candidate's existence
             candidate_id = _candidate_dict.get('id')
+            candidate = Candidate.get_by_id(candidate_id)
+            if not candidate:
+                raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
 
-            # Check if candidate exists and is not web-hidden
-            candidate = get_candidate_if_exists(candidate_id)
-
-            # Hide candidate if requested
-            if _candidate_dict.get('hide') is True:
+            # Hide or un-hide candidate if requested
+            hide_candidate = _candidate_dict.get('hide')
+            if hide_candidate is True:
                 candidate.is_web_hidden = 1
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
+            else:  # json-schema will only allow True or False
+                candidate.is_web_hidden = 0
 
             # No need to validate anything since candidate is set to hidden
             if not skip:
+                # Check if candidate is web-hidden
+                if candidate.is_web_hidden:
+                    raise NotFoundError('Candidate not found: {}'.format(candidate_id),
+                                        custom_error.CANDIDATE_IS_HIDDEN)
+
                 # Emails' addresses must be properly formatted
                 for emails in _candidate_dict.get('emails') or []:
                     if emails.get('address'):

@@ -16,8 +16,7 @@ def validate_and_parse_request_data(data):
     if 'count_only' in return_fields:
         count_only = True
 
-    return {'candidate_ids_only': candidate_ids_only,
-            'count_only': count_only}
+    return candidate_ids_only, count_only, data.get('page', 1)
 
 
 def validate_and_format_smartlist_post_data(data, user):

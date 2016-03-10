@@ -63,17 +63,17 @@ def test_search_all_candidates_in_domain(user_first, access_token_first):
     _assert_results(candidate_ids, response.json())
 
 
-# def test_search_location(user_first, access_token_first):
-#     """
-#     Test to search candidates using location
-#     """
-#     AddUserRoles.add_and_get(user=user_first)
-#     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-#     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, city=city, state=state,
-#                                         zip_code=zip_code)
-#     time.sleep(10)
-#     response = get_response_from_authorized_user(access_token_first, '?location=%s,%s' % (city, state))
-#     _assert_results(candidate_ids, response.json())
+def test_search_location(user_first, access_token_first):
+    """
+    Test to search candidates using location
+    """
+    AddUserRoles.add_and_get(user=user_first)
+    city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
+    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, city=city, state=state,
+                                        zip_code=zip_code)
+    time.sleep(30)
+    response = get_response_from_authorized_user(access_token_first, '?location=%s,%s' % (city, state))
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_user_ids(user_first, access_token_first):

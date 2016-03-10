@@ -19,6 +19,7 @@ from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import update_talent_pools_stats_task
 from candidate_pool_service.common.models.user import DomainRole
+from candidate_pool_service.common.utils.candidate_service_calls import search_candidates_from_params
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
@@ -417,15 +418,22 @@ class TalentPoolCandidateApi(Resource):
             raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get candidates"
                                                   % request.user.id)
 
-        total_candidate = TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()
+        request_params = dict()
+        request_params['fields'] = request.args.get('fields', '')
+        request_params['sort_by'] = request.args.get('sort_by', '')
+        request_params['limit'] = request.args.get('limit', '')
+        request_params['page'] = request.args.get('page', '')
+        request_params['talent_pool_id'] = talent_pool_id
 
-        return {
-            'talent_pool_candidates':
-                {
-                    'name': talent_pool.name,
-                    'total_found': len(total_candidate)
-                }
-        }
+        request_params = dict((k, v) for k, v in request_params.iteritems() if v)
+
+        search_candidates_response = search_candidates_from_params(request_params, access_token=request.oauth_token)
+
+        #  To be backwards-compatible, for now, we add talent_pool_candidates to top level dict
+        search_candidates_response['talent_pool_candidates'] = {'name': talent_pool.name, 'total_found':
+            search_candidates_response.get('total_found')}
+
+        return search_candidates_response
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
     @require_any_role('SELF', DomainRole.Roles.CAN_ADD_CANDIDATES_TO_TALENT_POOL)

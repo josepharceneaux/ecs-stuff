@@ -1,3 +1,4 @@
+from time import sleep
 from datetime import timedelta
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
@@ -452,9 +453,11 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     }
 
     # Logged-in user trying to add candidates to talent_pool
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
+
+    sleep(40)
 
     # Logged-in user trying to get candidates from non-existing talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id + 1000)
