@@ -16,7 +16,7 @@ accept_content = {
 
 def init_celery_app(flask_app, default_queue, modules_to_include=None):
     """
-    This initializes Celery app for given flask app.
+    This initializes Celery app for given Flask app.
     :param flask_app: Flask app
     :param default_queue: Name of queue for particular flask app
     :param modules_to_include: list of modules' names containing Celery tasks

@@ -93,7 +93,7 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['id'] == sent_campaign.blasts[1].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == 2
-
+        # TODO kindly double check if comment and code match
         #  Test GET blasts of email campaign with 1 result per_page using page = 1
         response = requests.get(url + '?per_page=2&page=1',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
