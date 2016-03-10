@@ -59,11 +59,12 @@ print 'Generating initial test data'
 
 
 q = 'INSERT INTO domain (name,organizationId) VALUES ("test_domain_first",1);'
-try:
-    db.session.connection().execute(q)
-except Exception as e:
-    print e.message
-    raise SystemExit(0)
+from sqlalchemy import text
+
+sql = text(q)
+result = db.engine.execute(sql)
+for row in result:
+    print row
 
 from candidate_service.candidate_app import app
 with app.app_context():
