@@ -11,7 +11,7 @@ from widget_service.common.models.misc import Organization
 from widget_service.common.models.user import Domain
 from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.handy_functions import random_word
-from widget_service.widget_app import db
+from widget_service.app import db
 
 
 # TODO add primary email label, phone label , custom fields (sub pref, nuid).
@@ -62,12 +62,12 @@ def fill_db():
     db.session.bulk_save_objects(MAJORS)
     for d in DOMAINS:
         for i in xrange(10):
-            aoi = AreaOfInterest(domain_id=d.id, description=random_word(4),
+            aoi = AreaOfInterest(domain_id=d.id, name=random_word(4),
                                  parent_id=None)
             db.session.add(aoi)
             db.session.commit()
             for ii in xrange(4):
-                sub_aoi = AreaOfInterest(domain_id=d.id, description='{}: {}'.format(aoi.description, random_word(6)),
+                sub_aoi = AreaOfInterest(domain_id=d.id, name='{}: {}'.format(aoi.name, random_word(6)),
                                  parent_id=aoi.id)
                 db.session.add(sub_aoi)
                 db.session.commit()
