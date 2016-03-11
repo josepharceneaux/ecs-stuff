@@ -32,7 +32,7 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
-from candidate_service.common.datetime_utils import isoformat_to_datetime
+from candidate_service.common.datetime_utils import isoformat_to_mysql_datetime
 from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
@@ -193,6 +193,9 @@ class CandidatesResource(Resource):
             emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
+            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+                if candidate_dict.get('added_datetime') else None
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
                 is_creating=is_creating,
@@ -217,7 +220,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=isoformat_to_datetime(candidate_dict['added_datetime']) if candidate_dict.get('added_datetime') else None,
+                added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
@@ -256,7 +259,7 @@ class CandidatesResource(Resource):
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_patch,
                      format_checker=FormatChecker())
-        except Exception as e:
+        except ValidationError as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
         candidates = body_dict.get('candidates')
@@ -344,6 +347,9 @@ class CandidatesResource(Resource):
                            'address': email.get('address'), 'is_default': email.get('is_default')}
                           for email in candidate_dict.get('emails')]
 
+            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+            if candidate_dict.get('added_datetime') else None
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -367,7 +373,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=candidate_dict.get('added_time'),
+                added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),

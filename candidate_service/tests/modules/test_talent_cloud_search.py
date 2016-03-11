@@ -174,7 +174,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             first_name=data['first_name'],
             middle_name=data['middle_name'],
             last_name=data['last_name'],
-            added_time=data['added_time'],
+            added_datetime=data['added_time'],
             objective=data['objective'],
             emails=[email_address],
             work_experiences=work_experiences,
