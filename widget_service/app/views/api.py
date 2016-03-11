@@ -22,12 +22,12 @@ from widget_service.common.models.misc import AreaOfInterest
 from widget_service.common.models.misc import Major
 from widget_service.common.models.user import Domain
 from widget_service.common.models.widget import WidgetPage
-from widget_service.widget_app import db
+from widget_service.app import db
 from widget_service.common.routes import WidgetApi
-from widget_service.widget_app.views.utils import create_candidate_educations_dict
-from widget_service.widget_app.views.utils import parse_interest_ids_from_form
-from widget_service.widget_app.views.utils import parse_city_and_state_ids_from_form
-from widget_service.widget_app.views.utils import process_city_and_state_from_fields
+from widget_service.app.views.utils import create_candidate_educations_dict
+from widget_service.app.views.utils import parse_interest_ids_from_form
+from widget_service.app.views.utils import parse_city_and_state_ids_from_form
+from widget_service.app.views.utils import process_city_and_state_from_fields
 from widget_service.common.utils.db_utils import serialize_queried_sa_obj
 from widget_service.common.utils.auth_utils import get_token_by_client_and_user
 from widget_service.common.utils.auth_utils import refresh_expired_token
