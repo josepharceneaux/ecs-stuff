@@ -6,6 +6,7 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger
+from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
@@ -39,14 +40,14 @@ class SmartlistCandidates(Resource):
         :rtype: json
         """
         smartlist_id = kwargs['smartlist_id']
-        data = validate_and_parse_request_data(request.args)
+        candidate_ids_only, count_only, page = validate_and_parse_request_data(request.args)
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists.")
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smartlist, data['candidate_ids_only'], data['count_only'], oauth_token=request.oauth_token)
+        return get_candidates(smartlist, candidate_ids_only, count_only, request.oauth_token, page)
 
 
 class SmartlistResource(Resource):
@@ -84,8 +85,19 @@ class SmartlistResource(Resource):
         else:
             # Return all smartlists from user's domain
             page = request.args.get('page', 1)
-            page_size = request.args.get('page_size', 10)
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(page_size))}
+            per_page = request.args.get('per_page', 10)
+            total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
+                    User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
+
+            if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+                raise InvalidUsage("page and per_page should be positive integers")
+
+            page = int(page)
+            per_page = int(per_page)
+
+            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                    'page_number': page, 'smartlists_per_page': per_page,
+                    'total_number_of_smartlists': total_number_of_smartlists}
 
     def post(self):
         """

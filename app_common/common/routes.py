@@ -114,6 +114,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_PORT = 8010
     SCHEDULER_SERVICE_PORT = 8011
     SMS_CAMPAIGN_SERVICE_PORT = 8012
+    PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
 
     # Names of flask micro services
@@ -129,6 +130,7 @@ class GTApis(object):
     DASHBOARD_SERVICE_NAME = 'frontend-service'
     SCHEDULER_SERVICE_NAME = 'scheduler-service'
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
+    PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
 
     # CORS headers
@@ -293,6 +295,7 @@ class CandidateApiWords(object):
     VIEWS = "/views"
     PREFERENCE = "/preferences"
     PHOTOS = "/photos"
+    DEVICES = '/devices'
     NOTES = "/notes"
 
 
@@ -329,6 +332,9 @@ class CandidateApi(object):
 
     DEGREE_BULLETS = DEGREES + "/<int:degree_id>" + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
+
+    DEVICES = CANDIDATE_ID + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE_ID + CandidateApiWords.DEVICES + _INT_ID
 
     EXPERIENCES = _CANDIDATE_ID + CandidateApiWords.EXPERIENCES
     EXPERIENCE = EXPERIENCES + _INT_ID
@@ -401,6 +407,9 @@ class CandidateApiUrl(object):
     DEGREE_BULLETS = DEGREE + CandidateApiWords.BULLETS
     DEGREE_BULLET = DEGREE_BULLETS + "/%s"
 
+    DEVICES = CANDIDATE + CandidateApiWords.DEVICES
+    DEVICE = CANDIDATE + CandidateApiWords.DEVICES + '/%s'
+
     EMAILS = CANDIDATE + CandidateApiWords.EMAILS
     EMAIL = EMAILS + "/%s"
 
@@ -428,7 +437,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE_ID = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
@@ -531,8 +541,8 @@ class CandidatePoolApiUrl(object):
     TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
     TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
                                                 + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s' + CandidatePoolApiWords.CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS + '/%s/' + CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
     TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
                                                   CandidatePoolApiWords.TALENT_PIPELINES)
 
@@ -549,6 +559,7 @@ class CandidatePoolApiUrl(object):
     TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + "/%s" + CandidatePoolApiWords.STATS)
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
+    SMARTLIST = SMARTLISTS + '/%s'
     SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
     SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
     SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
@@ -754,6 +765,61 @@ class SmsCampaignApiUrl(object):
     BLAST_REPLIES = BLAST + CampaignWords.REPLIES
 
 
+class PushCampaignApi(object):
+    """
+    REST URLs for Push Campaign Service endpoints
+    """
+    VERSION = 'v1'
+
+    API_URL = '/%s/%s' % (VERSION, '%s')
+    # endpoint /v1/push-campaigns
+    # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
+    CAMPAIGNS = '/%s/%s' % (VERSION, 'push-campaigns')
+    # endpoint /v1/push-campaigns/:id
+    # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
+    CAMPAIGN = '/%s/%s' % (VERSION, 'push-campaigns/<int:campaign_id>')
+    # endpoint /v1/push-campaigns/:id/sends
+    # This gives the records from "sends" for a given id of campaign
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/<int:blast_id>'
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    # endpoint /v1/push-campaigns/:id/send
+    # To send a campaign to candidates
+    SEND = CAMPAIGN + CampaignWords.SEND
+    # /v1/push-campaigns/:id/schedule
+    # To schedule a Push campaign
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    # endpoint /v1/redirect/:id
+    # This endpoint is hit when candidate clicks on any URL present in Push campaign's body text.
+    REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
+
+    # helper endpoints, need to get url_conversion records in some cases
+    URL_CONVERSION = '/%s/%s/<int:_id>' % (VERSION, 'url-conversions')
+    URL_CONVERSION_BY_SEND_ID = '/%s/%s/<int:send_id>' % (VERSION, 'send-url-conversions')
+
+
+class PushCampaignApiUrl(object):
+    """
+    This class contains the REST URLs of push_campaign_service
+    """
+    """ Endpoints' complete URLs for pyTests """
+    # HOST_NAME is http://127.0.0.1:8013 for dev
+    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
+                               GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
+    CAMPAIGNS = HOST_NAME % PushCampaignApi.CAMPAIGNS
+    CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'push-campaigns/%s')
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    BLASTS = CAMPAIGN + CampaignWords.BLASTS
+    BLAST = BLASTS + '/%s'
+    BLAST_SENDS = BLAST + CampaignWords.SENDS
+    SEND = CAMPAIGN + CampaignWords.SEND
+    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
+    REDIRECT = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
+    URL_CONVERSION = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
+    URL_CONVERSION_BY_SEND_ID = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
+
+
 class EmailCampaignEndpoints(object):
     VERSION = 'v1'
 
@@ -763,6 +829,8 @@ class EmailCampaignEndpoints(object):
     API_URL = '/%s/%s' % (VERSION, '%s')
     CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
+    # endpoint /v1/email-campaigns/:id/send
+    # Send the campaign as specified by the id
     SEND = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SEND
     URL_REDIRECT = API_URL % (CampaignWords.REDIRECT + '/<int:url_conversion_id>')
     # endpoint /v1/email-campaigns/:id/blasts
@@ -771,6 +839,12 @@ class EmailCampaignEndpoints(object):
     # endpoint /v1/email-campaigns/:id/blasts/:id
     # Gives the blast object of a campaign for a particular blast_id
     BLAST = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.BLASTS + '/<int:blast_id>'
+    # endpoint /v1/email-campaigns/:id/sends
+    # Gives the sends of a campaign
+    SENDS = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS
+    # endpoint /v1/email-campaigns/:id/sends/:id
+    # Gives the send object of a campaign for a particular send_id
+    SEND_BY_ID = CAMPAIGNS + '/<int:campaign_id>' + CampaignWords.SENDS + '/<int:send_id>'
 
 
 class EmailCampaignUrl(object):
@@ -784,5 +858,9 @@ class EmailCampaignUrl(object):
                                                        + '/' + CampaignWords.REDIRECT + '/%s')
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
+
     EMAIL_TEMPLATE = EmailCampaignEndpoints.HOST_NAME % ('/' + "v1/email-templates")
     EMAIL_TEMPLATE_FOLDER = EmailCampaignEndpoints.HOST_NAME % ('/' +"v1/email-template-folders")
+
+    SENDS = CAMPAIGN + CampaignWords.SENDS
+    SEND_BY_ID = SENDS + '/%s'

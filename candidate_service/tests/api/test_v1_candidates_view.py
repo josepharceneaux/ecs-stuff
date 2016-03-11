@@ -36,8 +36,8 @@ def test_retrieve_candidate_view_information(access_token_first, user_first, tal
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
     candidate_id = create_resp.json()['candidates'][0]['id']
 
-    request_to_candidate_resource(access_token_first, 'get', candidate_id) # view candidate
-    request_to_candidate_resource(access_token_first, 'get', candidate_id) # view candidate again
+    request_to_candidate_view_resource(access_token_first, 'post', candidate_id)  # view candidate
+    request_to_candidate_view_resource(access_token_first, 'post', candidate_id)  # view candidate again
 
     # Retrieve candidate's view information
     view_resp = request_to_candidate_view_resource(access_token_first, 'get', candidate_id)
@@ -65,8 +65,8 @@ def test_all_users_from_domain_get_candidate_view(access_token_first, user_first
     candidate_id = create_resp.json()['candidates'][0]['id']
 
     # user_first and user_same_domain viewing candidate
-    request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    request_to_candidate_resource(access_token_same, 'get', candidate_id)
+    request_to_candidate_view_resource(access_token_first, 'post', candidate_id)
+    request_to_candidate_view_resource(access_token_same, 'post', candidate_id)
 
     # Retrieve candidate's view information
     view_resp = request_to_candidate_view_resource(access_token_first, 'get', candidate_id)
@@ -75,6 +75,8 @@ def test_all_users_from_domain_get_candidate_view(access_token_first, user_first
     print response_info(view_resp_2)
     assert user_first.domain_id == user_same_domain.domain_id
     assert view_resp.status_code == 200 and view_resp_2.status_code == 200
+    assert len(view_resp.json()['candidate_views']) == 2
+    assert len(view_resp_2.json()['candidate_views']) == 2
 
 
 class TestViewAggregate(object):
@@ -93,12 +95,12 @@ class TestViewAggregate(object):
 
         # View candidate with user_first
         candidate_id = create_resp.json()['candidates'][0]['id']
-        request_to_candidate_resource(access_token_first, 'get', candidate_id)
-        request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        request_to_candidate_view_resource(access_token_first, 'post', candidate_id)
+        request_to_candidate_view_resource(access_token_first, 'post', candidate_id)
         
         # View candidate with user_same_domain
-        request_to_candidate_resource(access_token_same, 'get', candidate_id)
-        request_to_candidate_resource(access_token_same, 'get', candidate_id)
+        request_to_candidate_view_resource(access_token_same, 'post', candidate_id)
+        request_to_candidate_view_resource(access_token_same, 'post', candidate_id)
 
         # Retrieve view information
         get_views_resp = requests.get(

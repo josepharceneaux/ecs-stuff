@@ -48,6 +48,9 @@ def fetch_optic_response(resume):
     }
     r = requests.post(BG_URL, headers=HEADERS, json=DATA)
     if r.status_code != requests.codes.ok:
+        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
+        # developer friendly messages. "Error processing this resume. The development team has been
+        # notified of this isse" type of message.
         raise ForbiddenError('Error connecting to BG instance.')
     html_parser = HTMLParser.HTMLParser()
     unquoted = urllib2.unquote(r.content).decode('utf8')
@@ -148,12 +151,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
     :param bs4.element.Tag bg_experience_xml_list:
     :return list output: List of dicts containing experience data.
     """
+    # TODO investigate is current not picking up current jobs.
     output = []
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employement in jobs:
             organization = _tag_text(employement, 'employer')
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
+            # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
             if organization and len(organization) > 5:
                 organization = string.capwords(organization)
             # Position title
@@ -283,6 +288,8 @@ def parse_candidate_skills(bg_skills_xml_list):
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
+        # TODO months used doesnt appear to be a valid tag anymore.
+        # Should instead use start and end (count in days).
         months_used = skill.get('experience', '').strip()
         skill = dict(name=name or skill_text)
         if months_used:

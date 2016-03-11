@@ -463,10 +463,10 @@ def candidate_contact_history(candidate):
 
     # Campaign sends & campaigns
     for email_campaign_send in candidate.email_campaign_sends:
-        if not email_campaign_send.email_campaign_id:
-            logger.error("contact_history: email_campaign_send has no email_campaign_id: %s", email_campaign_send.id)
+        if not email_campaign_send.campaign_id:
+            logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.email_campaign_id)
+        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
         timeline.insert(0, dict(event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
@@ -648,20 +648,14 @@ def add_photos(candidate_id, photos, added_time=None):
     db.session.commit()
 
 
-def update_photo(candidate_id, photo_id, user_id, update_dict):
+def update_photo(candidate_id, user_id, update_dict):
     """
     Function will update CandidatePhoto data
     :type candidate_id:  int|long
     :type photo_id:  int|long
     :type user_id:   int|long
     """
-    # Format inputs
-    photo_update_dict = dict(candidate_id=candidate_id,
-                             image_url=update_dict.get('image_url'),
-                             is_default=update_dict.get('is_default'),
-                             updated_datetime=datetime.datetime.utcnow())
-    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
-
+    photo_id = update_dict['id']
     photo_query = CandidatePhoto.query.filter_by(id=photo_id)
     photo_object = photo_query.first()
 
@@ -674,14 +668,20 @@ def update_photo(candidate_id, photo_id, user_id, update_dict):
     if photo_object.candidate_id != candidate_id:
         raise ForbiddenError('Unauthorized candidate photo', error_code=custom_error.PHOTO_FORBIDDEN)
 
+    # Format inputs
+    photo_update_dict = dict(candidate_id=candidate_id,
+                             image_url=update_dict.get('image_url'),
+                             is_default=update_dict.get('is_default'),
+                             updated_datetime=datetime.datetime.utcnow())
+    photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
+
     # Track all changes
     _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
                                  datetime.datetime.utcnow())
 
     # Update candidate's photo
     photo_query.update(photo_update_dict)
-    db.session.commit()
-
+    return
 
 ######################################
 # Helper Functions For Candidate Notes
@@ -729,7 +729,7 @@ def create_or_update_candidate_from_params(
         skills=None,
         dice_social_profile_id=None,
         dice_profile_id=None,
-        added_time=None,
+        added_datetime=None,
         source_id=None,
         objective=None,
         summary=None,
@@ -776,7 +776,7 @@ def create_or_update_candidate_from_params(
     :type skills:                   list
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
-    :type added_time:               date
+    :type added_datetime:           str
     :type source_id:                int
     :type objective:                basestring
     :type summary:                  basestring
@@ -786,7 +786,7 @@ def create_or_update_candidate_from_params(
     :rtype                          dict
     """
     # Format inputs
-    added_time = added_time or datetime.datetime.now()
+    added_datetime = added_datetime or datetime.datetime.utcnow()
     status_id = status_id or 1
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 
@@ -824,7 +824,7 @@ def create_or_update_candidate_from_params(
                                          candidate_id, user_id, edit_time, resume_url)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
-                                      formatted_name, added_time, status_id,
+                                      formatted_name, added_datetime, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
@@ -848,15 +848,15 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, edit_time)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's education(s)
     if educations:
-        _add_or_update_educations(candidate, educations, added_time, user_id, edit_time)
+        _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_time)
+        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
@@ -880,7 +880,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate, skills, added_time, user_id, edit_time)
+        _add_or_update_skills(candidate, skills, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's social_network(s)
     if social_networks:
@@ -2308,24 +2308,25 @@ def _track_candidate_photo_edits(photo_dict, candidate_photo, candidate_id, user
 def get_search_params_of_smartlists(smartlist_ids):
     """
     This method will return list of search_params of smartlists
-    :param smartlist_ids: IDs of smartlist_ids
+    :param smartlist_ids: IDs of smartlists
     :return:
     """
-    try:
-        smartlist_ids = map(int, smartlist_ids.split(','))
-    except Exception as e:
-        raise InvalidUsage('smartlist_ids are not properly formatted because %s' % e.message)
+    if not isinstance(smartlist_ids, list):
+        smartlist_ids = [smartlist_ids]
 
-    smartlists = Smartlist.query.filter(Smartlist.id.in_(smartlist_ids))
+    smartlists = Smartlist.query.with_entities(Smartlist.id, Smartlist.search_params).filter(
+            Smartlist.id.in_(smartlist_ids)).all()
 
     search_params = []
 
-    for smartlist in smartlists:
+    for smartlist_id, smartlist_search_params in smartlists:
         try:
-            if smartlist.search_params and json.loads(smartlist.search_params):
-                search_params.append(json.loads(smartlist.search_params))
+            if smartlist_search_params and json.loads(smartlist_search_params):
+                search_params.append(json.loads(smartlist_search_params))
         except Exception as e:
             raise InvalidUsage(error_message="Search params of smartlist %s are in bad format "
-                                             "because: %s" % (smartlist.id, e.message))
+                                             "because: %s" % (smartlist_id, e.message))
+
+    logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
 
     return search_params

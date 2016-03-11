@@ -26,7 +26,7 @@ from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi
+from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, SchedulerApiUrl
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
@@ -325,36 +325,50 @@ def test_add_single_queue_item(token_fixture):
     response = add_fp_keys_to_queue(['file1'], user_id, 'bearer {}'.format(
         token_fixture.access_token))
     redis_store.expire(queue_string, 20)
-    assert response == {'redis_key': queue_string, 'quantity': 1}, ('Improperly Formatted redis '
-                                                                    'post response for single item')
+    assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
+    assert response['quantity'] == 1, "Single queue-add count is not 1"
 
 
 # Integration test of the above.
 def test_integration_add_single_item(user_fixture, token_fixture):
     """Test adding a single item via end point."""
+    auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token),
+                    'Content-Type': 'application/json'}
     queue_string = 'batch:{}:fp_keys'.format(user_fixture.id)
     response = requests.post(ResumeApiUrl.BATCH_URL,
-                             headers={'Authorization': 'bearer {}'.format(
-                                 token_fixture.access_token),
-                                      'Content-Type': 'application/json'},
+                             headers=auth_headers,
                              data=json.dumps({'filenames': ['file1']})
                             )
     assert response.status_code == requests.codes.created
-    assert json.loads(response.content) == {'redis_key': queue_string, 'quantity': 1}, (
+    response_dict = json.loads(response.content)
+    job_id = response_dict['ids'][0]
+    assert response_dict['redis_key'] == queue_string, (
         'Improperly Formatted redis post response for single item')
-
+    assert response_dict['quantity'] == 1, (
+        'Improperly count in redis post response for single item')
+    unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
+                                            headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
 
 def test_add_multiple_queue_items(token_fixture):
     """Tests adding n-100 items to a users queue stored in Redis"""
     user_id = random_word(6)
-    file_count = random.randrange(1, 100)
+    file_count = random.randrange(1, 15)
     filenames = ['file{}'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     queue_status = add_fp_keys_to_queue(filenames, user_id,
                                         'bearer {}'.format(token_fixture.access_token))
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    assert queue_status == {'redis_key': queue_string, 'quantity': file_count}, (
+    assert queue_status['redis_key'] == queue_string, (
         'Improperly Formatted redis post response for multiple items')
+    assert queue_status['quantity'] == file_count, (
+        'Improperly count in redis post response for multiple item')
+    assert len(queue_status['ids']) == file_count, (
+        'Improperly id count in redis response for multiple items')
+    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
+    # Clean up the queue...
+    auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token)}
+    for id in queue_status['ids']:
+        unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (id),
+                                         headers=auth_headers)
 
 
 ####################################################################################################
