@@ -576,6 +576,10 @@ candidates_resource_schema_patch = {
                     "hide": {
                         "type": "boolean"
                     },
+                    "added_datetime": {
+                        "type": ["string", "null"],
+                        "format": "date-time"
+                    },
                     "talent_pool_ids": {
                         "type": ["object", "null"],
                         "additionalProperties": False,
