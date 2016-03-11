@@ -1,4 +1,4 @@
-"""Email Templates API: Provide the endpoints to create, retrieve, update and delete
+"""Email Templates API: Provides the endpoints to create, retrieve, update and delete
 Email Templates. Also contains endpoints for creating and deleting Email Template Folders
 """
 import requests
@@ -51,9 +51,9 @@ def post_email_template():
     email_template_folder_id = data.get("email_template_folder_id")
     if email_template_folder_id and not (isinstance(email_template_folder_id, int) or
                                          email_template_folder_id.isdigit()):
-        raise InvalidUsage(error_message="Invalid input")
+        raise InvalidUsage(error_message="Invalid input: folder_id must be positive integer")
 
-    email_template_folder = EmailTemplateFolder.get(email_template_folder_id)
+    email_template_folder = EmailTemplateFolder.get_by_id(email_template_folder_id)
 
     # Check if the email template folder belongs to current domain
     if email_template_folder and email_template_folder.domain_id != domain_id:
@@ -95,7 +95,7 @@ def get_email_template(template_id):
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
     domain_id = request.user.domain_id
-    template = UserEmailTemplate.get(email_template_id)
+    template = UserEmailTemplate.get_by_id(email_template_id)
     if not template:
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
 
@@ -114,7 +114,7 @@ def get_email_template(template_id):
 
 @mod.route('/v1/email-templates/<int:template_id>', methods=['PUT'])
 @require_oauth()
-def update_email_template():
+def update_email_template(template_id):
     """
         PUT /v1/email-templates
         Function would update existing email template
@@ -143,7 +143,7 @@ def update_email_template():
     email_body_text = data.get("email_body_text") or template.body_text
 
     # Verify owned by same domain
-    template_owner_user = User.get(template.user_id)
+    template_owner_user = User.get_by_id(template.user_id)
     updated_data = {"body_html": body_html, "body_text": email_body_text}
     if template_owner_user.domain_id == domain_id:
         # Update email template
@@ -176,17 +176,18 @@ def delete_email_template(template_id):
 
     template = UserEmailTemplate.get(email_template_id)
     if not template:
-        raise NotFoundError(error_message="Template not found")
+        raise NotFoundError(error_message="Template (id:%d) not found" % email_template_id)
 
     # Verify owned by same domain
     template_owner_user = User.get(template.user_id)
 
     if template_owner_user.domain_id != domain_id:
-        raise ForbiddenError(error_message="Template is not owned by same domain")
+        raise ForbiddenError(error_message="Template (id:%d) is not owned by same domain (id:%d)" % (email_template_id,
+                                                                                                     domain_id))
 
     if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE):
-        raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
-
+        raise ForbiddenError(error_message="User (id:%d) not allowed to delete the template (id:%d)" % (user_id,
+                                                                                                        template.id)
     # Delete the template
     UserEmailTemplate.delete(template)
     return '', requests.codes.no_content
@@ -211,7 +212,7 @@ def create_email_template_folder():
     if not folder_name:
         raise InvalidUsage(error_message="Folder name must be provided.")
     if not isinstance(folder_name, basestring):
-        raise InvalidUsage(error_message="Invalid input")
+        raise InvalidUsage(error_message="Invalid input: Folder name must be a valid string.")
     domain_id = request.user.domain_id
 
     # Check if the name is already exists under same domain
