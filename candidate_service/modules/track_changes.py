@@ -7,9 +7,15 @@ Possible changes include:
 """
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate_edit import CandidateEdit
+from candidate_service.common.models.candidate import (
+    Candidate, CandidateAddress, CandidateCustomField
+)
 
 
-def _track_candidate_edits(update_dict, candidate, user_id, edit_time):
+def _track_candidate_edits(update_dict, candidate, user_id, edit_datetime):
+    """
+    :type candidate:  Candidate
+    """
     for field in update_dict:
 
         # If field_id is not found, do not add record
@@ -23,11 +29,14 @@ def _track_candidate_edits(update_dict, candidate, user_id, edit_time):
             field_id=field_id,
             old_value=getattr(candidate, field),
             new_value=update_dict.get(field),
-            edit_datetime=edit_time
+            edit_datetime=edit_datetime
         ))
 
 
-def _track_candidate_address_edits(address_dict, candidate_id, candidate_address, user_id, edit_time):
+def _track_candidate_address_edits(address_dict, candidate_id, user_id, edit_time, candidate_address=None):
+    """
+    :type candidate_address:  CandidateAddress
+    """
     for field in address_dict:
 
         # If field_id is not found, do not add record
@@ -36,7 +45,8 @@ def _track_candidate_address_edits(address_dict, candidate_id, candidate_address
             continue
 
         # If old_value and new_value are equal, do not add record
-        old_value, new_value = getattr(candidate_address, field), address_dict.get(field)
+        old_value = getattr(candidate_address, field) if candidate_address else None
+        new_value = address_dict.get(field)
         if old_value == new_value:
             continue
 
@@ -50,8 +60,28 @@ def _track_candidate_address_edits(address_dict, candidate_id, candidate_address
         ))
 
 
-def _track_candidate_custom_field_edits(custom_field_dict, candidate_custom_field,
-                                        candidate_id, user_id, edit_time):
+def _track_areas_of_interest_edits(area_of_interest_id, candidate_id, user_id, edit_datetime):
+    """
+    Currently, only adding an area of interest is permitted, so this function will assume
+     old_value to be null, and new_value to be the ID of the area of interest
+    """
+    field_id = CandidateEdit.get_field_id('candidate_area_of_interest', 'area_of_interest_id')
+    old_value, new_value = None, area_of_interest_id
+    db.session.add(CandidateEdit(
+        user_id=user_id,
+        candidate_id=candidate_id,
+        field_id=field_id,
+        old_value=old_value,
+        new_value=new_value,
+        edit_datetime=edit_datetime
+    ))
+
+
+def _track_candidate_custom_field_edits(custom_field_dict, candidate_id, user_id, edit_datetime,
+                                        candidate_custom_field=None):
+    """
+    :type candidate_custom_field:  CandidateCustomField
+    """
     for field in custom_field_dict:
 
         # If field_id is not found, do not add record
@@ -60,7 +90,8 @@ def _track_candidate_custom_field_edits(custom_field_dict, candidate_custom_fiel
             continue
 
         # If old_value and new_value are equal, do not add record
-        old_value, new_value = getattr(candidate_custom_field, field), custom_field_dict.get(field)
+        old_value = getattr(candidate_custom_field, field) if candidate_custom_field else None
+        new_value = custom_field_dict.get(field)
         if old_value == new_value:
             continue
 
@@ -71,7 +102,7 @@ def _track_candidate_custom_field_edits(custom_field_dict, candidate_custom_fiel
             old_value=old_value,
             new_value=new_value,
             is_custom_field=True,
-            edit_datetime=edit_time
+            edit_datetime=edit_datetime
         ))
 
 

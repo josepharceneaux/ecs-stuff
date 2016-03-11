@@ -39,7 +39,7 @@ from track_changes import (
     _track_candidate_education_edits, _track_candidate_email_edits, _track_candidate_experience_bullet_edits,
     _track_candidate_experience_edits, _track_candidate_military_service_edits, _track_candidate_phone_edits,
     _track_candidate_preferred_location_edits, _track_candidate_skill_edits, _track_candidate_social_network_edits,
-    _track_candidate_work_preference_edits
+    _track_candidate_work_preference_edits, _track_areas_of_interest_edits
 )
 
 # Error handling
@@ -795,7 +795,7 @@ def create_or_update_candidate_from_params(
     # Format inputs
     added_datetime = added_datetime or datetime.datetime.utcnow()
     status_id = status_id or 1
-    edit_time = datetime.datetime.now()  # Timestamp for tracking edits
+    edit_time = datetime.datetime.utcnow()  # Timestamp for tracking edits
 
     # Figure out first_name, last_name, middle_name, and formatted_name from inputs
     if first_name or last_name or middle_name or formatted_name:
@@ -841,21 +841,21 @@ def create_or_update_candidate_from_params(
     """
 
     # Add or update Candidate's talent-pools
-    if talent_pool_ids:
-        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating,
-                                              is_updating)
+    if talent_pool_ids:  # TODO: track all updates
+        _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating)
 
     # Add or update Candidate's address(es)
     if addresses:
-        _add_or_update_candidate_addresses(candidate, addresses, user_id, edit_time)
+        _add_or_update_candidate_addresses(candidate, addresses, user_id, edit_time, is_updating)
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
-        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest)
+        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_time, is_updating)
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id, edit_time)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id,
+                                                  edit_time, is_updating)
 
     # Add or update Candidate's education(s)
     if educations:
@@ -1077,11 +1077,10 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     )
     db.session.add(candidate)
     db.session.flush()
-
     return candidate.id
 
 
-def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_time):
+def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_time, is_updating):
     """
     Function will update CandidateAddress or create a new one.
     :type addresses: list[dict[str, T]]
@@ -1127,9 +1126,8 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
                 raise ForbiddenError(error_message="Unauthorized candidate address",
                                      error_code=custom_error.ADDRESS_FORBIDDEN)
 
-            # Track all edits
-            _track_candidate_address_edits(address_dict, candidate_id, candidate_address_obj,
-                                           user_id, edited_time)
+            # Track all updates
+            _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time, candidate_address_obj)
 
             # Update
             candidate_address_query.update(address_dict)
@@ -1139,8 +1137,11 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
             if not does_address_exist(candidate=candidate, address_dict=address_dict):
                 db.session.add(CandidateAddress(**address_dict))
 
+                if is_updating:  # Track all updates
+                    _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time)
 
-def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
+
+def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime, is_updating):
     """
     Function will add CandidateAreaOfInterest
     """
@@ -1154,8 +1155,12 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest):
 
         db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
+        if is_updating:  # Track all updates
+            _track_areas_of_interest_edits(aoi_id, candidate_id, user_id, edit_datetime)
 
-def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, edit_time):
+
+def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time,
+                                              user_id, edit_datetime, is_updating):
     """
     Function will update CandidateCustomField or create a new one.
     """
@@ -1173,8 +1178,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).\
-                filter_by(id=candidate_custom_field_id)
+            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
             can_custom_field_obj = can_custom_field_query.first()
             if not can_custom_field_obj:
                 error_message = 'Candidate custom field you are requesting to update does not exist'
@@ -1185,9 +1189,9 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 raise ForbiddenError(error_message="Unauthorized candidate custom field",
                                      error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
 
-            # Track all edits
-            _track_candidate_custom_field_edits(custom_field_dict, can_custom_field_obj,
-                                                candidate_id, user_id, edit_time)
+            # Track all updates
+            _track_candidate_custom_field_edits(custom_field_dict, candidate_id, user_id,
+                                                edit_datetime, can_custom_field_obj)
 
             # Update CandidateCustomField
             can_custom_field_query.update(custom_field_dict)
@@ -1195,8 +1199,11 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
             # Prevent duplicate insertions
-            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=custom_field_dict):
+            if not does_candidate_cf_exist(candidate, custom_field_dict):
                 db.session.add(CandidateCustomField(**custom_field_dict))
+
+                if is_updating:  # Track all updates
+                    _track_candidate_custom_field_edits(custom_field_dict, candidate_id, user_id, edit_datetime)
 
 
 def _add_or_update_educations(candidate, educations, added_time, user_id, edit_time):
@@ -1913,8 +1920,7 @@ def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_crea
             else:
                 # Prevent duplicate entries
                 if not TalentPoolCandidate.get(candidate_id, talent_pool_id):
-                    db.session.add(TalentPoolCandidate(candidate_id=candidate_id,
-                                                       talent_pool_id=talent_pool_id))
+                    db.session.add(TalentPoolCandidate(candidate_id=candidate_id, talent_pool_id=talent_pool_id))
 
     if is_updating and talent_pools_to_be_deleted:
         for talent_pool_id in talent_pools_to_be_deleted:
