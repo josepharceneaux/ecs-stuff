@@ -6,7 +6,6 @@ import requests
 from flask import request
 from flask import Blueprint
 
-from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
@@ -61,11 +60,8 @@ def post_email_template():
                                            email_template_folder.domain_id)
 
     # If is_immutable value is not passed, make it as 0
-    is_immutable = data.get("is_immutable")
-    if not is_immutable:
-        is_immutable = 0
-    elif int(is_immutable) not in (0, 1):
-            raise InvalidUsage(error_message="Invalid input: should be integer with value 0 or 1")
+    is_immutable = data.get("is_immutable", 0)
+    validate_immutable_value(is_immutable)
 
     if not require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE):
         raise UnauthorizedError(error_message="User is not authorized to create email template")
@@ -75,8 +71,8 @@ def post_email_template():
                                             template_folder_id=email_template_folder_id if
                                             email_template_folder_id else None,
                                             is_immutable=is_immutable)
-    db.session.add(user_email_template)
-    db.session.commit()
+    UserEmailTemplate.save(user_email_template)
+
     user_email_template_id = user_email_template.id
     return jsonify({'template_id': [{'id': user_email_template_id}]}), requests.codes.created
 
@@ -191,8 +187,7 @@ def delete_email_template(**kwargs):
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
 
     # Delete the template
-    db.session.delete(template)
-    db.session.commit()
+    UserEmailTemplate.delete(template)
     return '', requests.codes.no_content
 
 
@@ -236,16 +231,12 @@ def create_email_template_folder():
                                                % (parent_id, domain_id))
 
     # If is_immutable value is not passed, make it as 0
-    is_immutable = data.get("is_immutable")
-    if not is_immutable:
-        is_immutable = 0
-    elif int(is_immutable) not in (0, 1):
-            raise InvalidUsage(error_message="Invalid input: should be integer with value 0 or 1")
+    is_immutable = data.get("is_immutable", 0)
+    validate_immutable_value(is_immutable)
 
     email_template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                                 is_immutable=is_immutable)
-    db.session.add(email_template_folder)
-    db.session.commit()
+    EmailTemplateFolder.save(email_template_folder)
     email_template_folder_id = email_template_folder.id
 
     return jsonify({"template_folder_id": [{"id": email_template_folder_id}]}), requests.codes.created
@@ -287,6 +278,11 @@ def validate_id(id):
 
     if id <= 0:
         raise InvalidUsage(error_message="ID must be greater than 0")
+
+
+def validate_immutable_value(is_immutable):
+    if not (is_immutable.is_digit() and int(is_immutable) in (0, 1)):
+        raise InvalidUsage(error_message="Invalid input: is_immutable should be integer with value 0 or 1")
 
 
 def check_domain_role():
