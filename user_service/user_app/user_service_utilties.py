@@ -3,7 +3,7 @@ from flask import render_template
 from werkzeug.security import gen_salt
 
 from user_service.common.error_handling import InvalidUsage
-from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
+from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup
 from user_service.common.utils.amazon_ses import send_email
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
@@ -86,7 +86,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         db.session.add(sample_templates_folder)
         db.session.commit()
 
-    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.email_template_folder_id == sample_templates_folder.id)
+    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.template_folder_id == sample_templates_folder.id)
     sample_template_names = [t.name for t in sample_templates]
 
     if ('Announcement' not in sample_template_names) and ('Intro' not in sample_template_names):
@@ -95,12 +95,12 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         get_talent_intro = render_template('getTalentIntro.html')
 
         announcement_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Announcement',
-                                                  email_body_html=get_talent_special_announcement, email_body_text='',
-                                                  email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                                  body_html=get_talent_special_announcement, body_text='',
+                                                  template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         intro_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Intro',
-                                           email_body_html=get_talent_intro, email_body_text='',
-                                           email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                           body_html=get_talent_intro, body_text='',
+                                           template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         db.session.add(announcement_template)
         db.session.add(intro_template)

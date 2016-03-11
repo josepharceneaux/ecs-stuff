@@ -71,11 +71,11 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
 
     data = {'name': template_folder_name}
     response = requests.delete(
-        url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
-        headers={'Authorization': 'Bearer %s' % token2,
-                 'Content-type': 'application/json'}
+            url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
+            headers={'Authorization': 'Bearer %s' % token2,
+                     'Content-type': 'application/json'}
     )
-    assert response.status_code == 204
+    assert response.status_code == requests.codes.no_content
     del_domain_roles([role_id1, role_id2])
 
 
@@ -125,7 +125,7 @@ def test_create_email_template_without_name(sample_user, user_auth, template_bod
 
     resp = create_email_template(token, sample_user.id, template_name, template_body, template_name,
                                  is_immutable="1", folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
-    assert resp.status_code == 400
+    assert resp.status_code == requests.codes.bad_request
     del_domain_roles(role_id)
 
 
@@ -151,7 +151,7 @@ def test_create_template_without_email_body(sample_user, user_auth):
     # Pass empty email template body
     resp = create_email_template(token, sample_user.id, template_name, '', template_name,
                                  is_immutable="1", folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
-    assert resp.status_code == 400
+    assert resp.status_code == requests.codes.bad_request
     del_domain_roles(role_id)
 
 
@@ -176,35 +176,10 @@ def test_delete_email_template(sample_user, sample_user_2, template_body, user_a
     add_role_to_test_user(sample_user_2, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', email_template["email_template_id"])
-    assert resp.status_code == 204
+    assert resp.status_code == requests.codes.no_content
     template_after_delete = UserEmailTemplate.query.get(email_template_id)
     assert template_after_delete is None
     del_domain_roles(role_id2)
-
-
-def test_delete_email_template_with_no_id(sample_user, sample_user_2, template_body, user_auth):
-    """
-    Tests deleting user's email template
-    :param sample_user:         user1
-    :param sample_user_2:       user2
-    :param template_body: email template html body
-    :return:
-    """
-    # Add Email template
-    add_email_template(user_auth, sample_user, template_body)
-
-    token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
-
-    # Add or get Role
-    role = "CAN_DELETE_EMAIL_TEMPLATE"
-    role_id = add_domain_role(role, sample_user_2.domain_id)
-
-    # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
-    add_role_to_test_user(sample_user_2, [role])
-
-    resp = request_to_email_template_resource(token2, 'delete', '')
-    assert resp.status_code == 405
-    del_domain_roles(role_id)
 
 
 def test_delete_template_with_non_existing_template_id(sample_user, sample_user_2, template_body, user_auth):
@@ -228,8 +203,8 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    resp = request_to_email_template_resource(token2, 'delete', email_template_id+1)
-    assert resp.status_code == 404
+    resp = request_to_email_template_resource(token2, 'delete', email_template_id + 1)
+    assert resp.status_code == requests.codes.not_found
     del_domain_roles(role_id)
 
 
@@ -255,7 +230,7 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
     add_role_to_test_user(user_from_diff_domain, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', email_template_id)
-    assert resp.status_code == 403
+    assert resp.status_code == requests.codes.forbidden
     del_domain_roles(role_id)
 
 
@@ -281,10 +256,10 @@ def test_get_email_template_via_id(sample_user, sample_user_2, template_body, us
     url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id)
     # Get email_template via template ID
     response = requests.get(
-        url=url, headers={
-            'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
+            url=url, headers={
+                'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
     )
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.ok
     resp_dict = response.json()['email_template']
     assert isinstance(resp_dict, dict)
     assert resp_dict['id'] == email_template_id
@@ -314,10 +289,10 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, tem
     url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id) + '1'
     # Get email_template via template ID
     response = requests.get(
-        url=url, headers={
-            'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
+            url=url, headers={
+                'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
     )
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.not_found
     del_domain_roles(role_id2)
 
 
@@ -337,9 +312,9 @@ def test_update_email_template(sample_user, sample_user_2, template_body, user_a
     add_role_to_test_user(sample_user_2, [role])
 
     updated_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-                                  '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
-                                  '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail' \
-                                  ' testing through script</p>\r\n</body>\r\n</html>\r\n'
+                            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+                            '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail' \
+                            ' testing through script</p>\r\n</body>\r\n</html>\r\n'
 
     # Get email_template via template ID
     resp = update_email_template(email_template["email_template_id"], 'put', token2, sample_user_2.id,
@@ -347,7 +322,7 @@ def test_update_email_template(sample_user, sample_user_2, template_body, user_a
                                  updated_template_body, email_template["template_folder_id"],
                                  email_template["domain_id"])
     db.session.commit()
-    assert resp.status_code == 200
+    assert resp.status_code == requests.codes.ok
     resp_dict = resp.json()['email_template']
     print resp_dict
     assert resp_dict['body_html'] == updated_template_body
@@ -371,21 +346,19 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, template
     add_role_to_test_user(sample_user_2, [role])
 
     updated_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-                                  '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' \
-                                  '\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>' \
-                                  '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
-                                  '/body>\r\n</html>\r\n'
+                            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' \
+                            '\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>' \
+                            '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
+                            '/body>\r\n</html>\r\n'
 
     # Get email_template via template ID
-    """def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
-                          folder_id=None, is_immutable="1", domain_id=None):"""
-    resp = update_email_template(email_template_id+1, 'put', token2, sample_user_2.id,
+    resp = update_email_template(email_template_id + 1, 'put', token2, sample_user_2.id,
                                  email_template["template_name"],
                                  updated_template_body, '', email_template["template_folder_id"],
                                  email_template["is_immutable"],
                                  email_template["domain_id"])
     db.session.commit()
-    assert resp.status_code == 404
+    assert resp.status_code == requests.codes.not_found
     del_domain_roles(role_id2)
 
 

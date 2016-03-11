@@ -115,17 +115,6 @@ def parse_openweb_date(openweb_date):
     return date_obj
 
 
-def validate_id(id):
-    """
-    Function will validate email template ID
-    """
-    if not id:
-        raise InvalidUsage(error_message="ID must be provided")
-
-    if id <= 0:
-        raise InvalidUsage(error_message="ID must be greater than 0")
-
-
 def validate_immutable_value(is_immutable):
     if not (is_immutable.is_digit() and int(is_immutable) in (0, 1)):
         raise InvalidUsage(error_message="Invalid input: is_immutable should be integer with value 0 or 1")
