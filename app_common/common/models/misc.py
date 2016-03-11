@@ -7,6 +7,7 @@ import datetime
 import time
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
+from push_campaign import PushCampaign, PushCampaignBlast, PushCampaignSend, PushCampaignSendUrlConversion
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -18,6 +19,7 @@ class Activity(db.Model):
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
+    user = relationship('User', backref='activity')
     params = db.Column('Params', db.Text)
 
     def __repr__(self):
@@ -64,6 +66,7 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_domain_areas_of_interest(cls, domain_id):
         """
+        :type domain_id: int|long
         :rtype: list[AreaOfInterest]
         """
         return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
@@ -221,6 +224,7 @@ class Frequency(db.Model):
 
     # Relationships
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
+    push_campaigns = relationship('PushCampaign', backref='frequency')
 
     # frequency Ids
     ONCE = 1
@@ -340,12 +344,40 @@ class UrlConversion(db.Model):
     def __repr__(self):
         return "<UrlConversion (id = {})>".format(self.id)
 
+    @classmethod
+    def get_by_id_and_domain_id_for_push_campaign_send(cls, _id, domain_id):
+        """
+        This method returns a UrlConversion object that is associated to a campaign send object
+        given by `send_id` and it belongs to domain with id `domain_id`.
+        :param _id: UrlConversion id
+        :type _id: int | long
+        :param domain_id: Domain id of user
+        :type domain_id: int | long
+        :return: UrlConversion object | None
+        :rtype: UrlConversion | None
+        """
+        # importing User and Domain here due to cyclic dependency
+        from user import User, Domain
+        return cls.query.join(PushCampaignSendUrlConversion).join(
+            PushCampaignSend).join(PushCampaignBlast).join(PushCampaign).join(User).join(Domain).filter(
+            PushCampaignSendUrlConversion.url_conversion_id == _id).filter(
+            PushCampaign.user_id == User.id).filter(User.domain_id == domain_id).first()
+
     # Relationships
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+
     email_campaign_sends_url_conversions = relationship('EmailCampaignSendUrlConversion',
                                                         cascade='all,delete-orphan',
                                                         passive_deletes=True,
                                                         backref='url_conversion')
+
+    push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
+                                                       cascade='all,delete-orphan',
+                                                       passive_deletes=True,
+                                                       backref='url_conversion',
+                                                       lazy='dynamic')
+
+

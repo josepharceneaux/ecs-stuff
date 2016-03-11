@@ -107,8 +107,7 @@ class EmailCampaignSmartlist(db.Model):
 class EmailCampaignBlast(db.Model):
     __tablename__ = 'email_campaign_blast'
     id = db.Column(db.Integer, primary_key=True)
-    campaign_id = db.Column('EmailCampaignId', db.Integer,
-                            db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     sends = db.Column('Sends', db.Integer, default=0)
     html_clicks = db.Column('HtmlClicks', db.Integer, default=0)
     text_clicks = db.Column('TextClicks', db.Integer, default=0)
@@ -141,8 +140,7 @@ class EmailCampaignBlast(db.Model):
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
-    email_campaign_id = db.Column('EmailCampaignId', db.Integer,
-                                  db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
