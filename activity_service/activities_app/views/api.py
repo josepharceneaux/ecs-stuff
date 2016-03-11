@@ -10,17 +10,16 @@ import re
 from time import time
 from dateutil import parser
 # framework specific
-from flask import Blueprint
 from flask import jsonify
 from flask import request
+from flask import Blueprint
 
 # application specific
-from activity_service.activities_app import db, logger
 from activity_service.common.models.user import User
+from activity_service.activities_app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
-from activity_service.common.utils.activity_utils import ActivityMessageIds
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
@@ -123,141 +122,143 @@ class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
     MESSAGES = {
-        ActivityMessageIds.RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
-                                        "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
-                                        "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
-                                        " on event '%(eventTitle)s'",
-                                        "candidate.png"),
-
-        ActivityMessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
-                                          "%(username)s created %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
-                                          "%(username)s deleted %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
-                                          "%(username)s updated %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
-                                                  "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
-                                                  "%(username)s imported %(count)s candidates via spreadsheet",
-                                                  "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_WIDGET: (
-            "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
-                                                     "%(username)s added %(count)s candidates via mobile",
-                                                     "candidate.png"),
-        ActivityMessageIds.CANDIDATE_UPDATE: (
-            "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
+        Activity.MessageIds.RSVP_EVENT: (
+            "%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
+            "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
+            "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
+            " on event '%(eventTitle)s'",
+            "candidate.png"),
+        Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
+                                           "%(username)s created %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
+                                           "%(username)s deleted %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
+                                           "%(username)s updated %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_WEB: (
+            "%(username)s uploaded resume of candidate %(formattedName)s",
+            "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_CSV: (
+            "%(username)s imported candidate %(formattedName)s via spreadsheet",
+            "%(username)s imported %(count)s candidates via spreadsheet",
+            "candidate.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_WIDGET: (
+            "Candidate %(formattedName)s joined via widget",
+            "%(count)s candidates joined via widget", "widget.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_MOBILE: (
+            "%(username)s added candidate %(formattedName)s via mobile",
+            "%(username)s added %(count)s candidates via mobile",
+            "candidate.png"),
+        Activity.MessageIds.CANDIDATE_UPDATE: (
+            "%(username)s updated candidate %(formattedName)s",
+            "%(username)s updated %(count)s candidates",
 
             "candidate.png"),
-        ActivityMessageIds.CANDIDATE_DELETE: (
+        Activity.MessageIds.CANDIDATE_DELETE: (
             "%(username)s deleted candidate %(formattedName)s",
             "%(username)s deleted %(count)s candidates",
             "candidate.png"),
-        ActivityMessageIds.CAMPAIGN_CREATE: (
+        Activity.MessageIds.CAMPAIGN_CREATE: (
             "%(username)s created an %(campaign_type)s campaign: %(campaign_name)s",
             "%(username)s created %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_DELETE: (
+        Activity.MessageIds.CAMPAIGN_DELETE: (
             "%(username)s deleted an %(campaign_type)s campaign: %(name)s",
             "%(username)s deleted %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SEND: (
+        Activity.MessageIds.CAMPAIGN_SEND: (
             "Campaign %(name)s was sent to %(num_candidates)s candidates",
             "%(count)s campaigns were sent out",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EXPIRE: (
+        Activity.MessageIds.CAMPAIGN_EXPIRE: (
             "%(username)s's recurring campaign %(name)s has expired",
             "%(count)s recurring campaigns of %(username)s have expired", "campaign.png"),  # TODO
-        ActivityMessageIds.CAMPAIGN_PAUSE: (
+        Activity.MessageIds.CAMPAIGN_PAUSE: (
             "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_RESUME: (
+        Activity.MessageIds.CAMPAIGN_RESUME: (
             "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.SMARTLIST_CREATE: (
+        Activity.MessageIds.SMARTLIST_CREATE: (
             "%(username)s created list %(name)s", "%(username)s created %(count)s lists",
             "smartlist.png"),
-        ActivityMessageIds.SMARTLIST_DELETE: (
+        Activity.MessageIds.SMARTLIST_DELETE: (
             "%(username)s deleted list: %(name)s", "%(username)s deleted %(count)s lists",
             "smartlist.png"),
-        ActivityMessageIds.DUMBLIST_CREATE: (
+        Activity.MessageIds.DUMBLIST_CREATE: (
             "%(username)s created a list: <b>%(name)s</b>.", "%(username)s created %(count)s lists",
             "dumblist.png"),
-        ActivityMessageIds.DUMBLIST_DELETE: (
+        Activity.MessageIds.DUMBLIST_DELETE: (
             "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists",
             "dumblist.png"),
-        ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
+        Activity.MessageIds.SMARTLIST_ADD_CANDIDATE: (
             "%(formattedName)s was added to list %(name)s",
             "%(count)s candidates were added to list %(name)s",
             "smartlist.png"),
-        ActivityMessageIds.SMARTLIST_REMOVE_CANDIDATE: (
+        Activity.MessageIds.SMARTLIST_REMOVE_CANDIDATE: (
             "%(formattedName)s was removed from list %(name)s",
             "%(count)s candidates were removed from list %(name)s",
             "smartlist.png"),
-        ActivityMessageIds.USER_CREATE: (
+        Activity.MessageIds.USER_CREATE: (
             "%(username)s has joined", "%(count)s users have joined", "notification.png"),
-        ActivityMessageIds.WIDGET_VISIT: (
+        Activity.MessageIds.WIDGET_VISIT: (
             "Widget was visited", "Widget was visited %(count)s times", "widget.png"),
-        ActivityMessageIds.NOTIFICATION_CREATE: (
+        Activity.MessageIds.NOTIFICATION_CREATE: (
             "You received an update notification", "You received %(count)s update notifications",
             "notification.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_SEND: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_SEND: (
             "%(candidate_name)s received email of campaign %(campaign_name)s",
             "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_OPEN: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_OPEN: (
             "%(candidate_name)s opened email of campaign %(campaign_name)s",
             "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_CLICK: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_CLICK: (
             "%(candidate_name)s clicked email of campaign %(campaign_name)s",
             "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_SEND: (
+        Activity.MessageIds.CAMPAIGN_SMS_SEND: (
             "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
             "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_CLICK: (
+        Activity.MessageIds.CAMPAIGN_SMS_CLICK: (
             "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
             "%(candidate_name)s clicked on %(campaign_name)s.",
             "campa"
             "ign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_REPLY: (
+        Activity.MessageIds.CAMPAIGN_SMS_REPLY: (
             "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SCHEDULE: (
+        Activity.MessageIds.CAMPAIGN_SCHEDULE: (
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
-        ActivityMessageIds.PIPELINE_CREATE: (
+        Activity.MessageIds.PIPELINE_CREATE: (
             "%(username)s created a pipeline: <b>%(name)s</b>.",
             "%(username)s created a pipeline: <b>%(name)s</b>.",
             "pipeline.png"),
-        ActivityMessageIds.PIPELINE_DELETE: (
+        Activity.MessageIds.PIPELINE_DELETE: (
             "%(username)s deleted pipeline: <b>%(name)s</b>.",
             "%(username)s deleted pipeline: <b>%(name)s</b>.",
             "pipeline.png"),
-        ActivityMessageIds.TALENT_POOL_CREATE: (
+        Activity.MessageIds.TALENT_POOL_CREATE: (
             "%(username)s created a Talent Pool: <b>%(name)s</b>.",
             "%(username)s created a Talent Pool: <b>%(name)s</b>.",
             "talent_pool.png"),
-        ActivityMessageIds.TALENT_POOL_DELETE: (
+        Activity.MessageIds.TALENT_POOL_DELETE: (
             "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
             "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
             "talent_pool.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_CREATE: (
+        Activity.MessageIds.CAMPAIGN_PUSH_CREATE: (
             "%(username)s created a Push campaign: '%(campaign_name)s'",
             "%(username)s created a Push campaign: '%(campaign_name)s'",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_SEND: (
+        Activity.MessageIds.CAMPAIGN_PUSH_SEND: (
             "Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
             "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_CLICK: (
+        Activity.MessageIds.CAMPAIGN_PUSH_CLICK: (
             "%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
             "%(candidate_name)s clicked on %(campaign_name)s.",
             "campaign.png")

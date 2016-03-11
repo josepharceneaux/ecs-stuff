@@ -8,9 +8,9 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
 
@@ -232,5 +232,5 @@ def _assert_valid_response(campaign_obj, user_phone, candidate_phone):
     assert campaign_reply_in_db[0].body_text == reply_text
     reply_count_after = get_replies_count(campaign_obj)
     assert reply_count_after == reply_count_before + 1
-    assert_for_activity(user_phone.user_id, ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+    assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
                         campaign_reply_in_db[0].id)
