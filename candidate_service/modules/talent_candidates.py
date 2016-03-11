@@ -729,7 +729,7 @@ def create_or_update_candidate_from_params(
         skills=None,
         dice_social_profile_id=None,
         dice_profile_id=None,
-        added_time=None,
+        added_datetime=None,
         source_id=None,
         objective=None,
         summary=None,
@@ -776,7 +776,7 @@ def create_or_update_candidate_from_params(
     :type skills:                   list
     :type dice_social_profile_id:   int
     :type dice_profile_id:          int
-    :type added_time:               date
+    :type added_datetime:           str
     :type source_id:                int
     :type objective:                basestring
     :type summary:                  basestring
@@ -786,7 +786,7 @@ def create_or_update_candidate_from_params(
     :rtype                          dict
     """
     # Format inputs
-    added_time = added_time or datetime.datetime.now()
+    added_datetime = added_datetime or datetime.datetime.utcnow()
     status_id = status_id or 1
     edit_time = datetime.datetime.now()  # Timestamp for tracking edits
 
@@ -824,7 +824,7 @@ def create_or_update_candidate_from_params(
                                          candidate_id, user_id, edit_time, resume_url)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
-                                      formatted_name, added_time, status_id,
+                                      formatted_name, added_datetime, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
@@ -848,15 +848,15 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, edit_time)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's education(s)
     if educations:
-        _add_or_update_educations(candidate, educations, added_time, user_id, edit_time)
+        _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_time)
+        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
@@ -880,7 +880,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate, skills, added_time, user_id, edit_time)
+        _add_or_update_skills(candidate, skills, added_datetime, user_id, edit_time)
 
     # Add or update Candidate's social_network(s)
     if social_networks:

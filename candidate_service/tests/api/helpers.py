@@ -367,13 +367,16 @@ def request_to_candidate_social_network_resource(access_token, request, candidat
     return define_and_send_request(access_token, request, url)
 
 
-def request_to_candidate_work_preference_resource(access_token, request, candidate_id='',
-                                                  work_preference_id=''):
+def request_to_candidate_work_preference_resource(access_token, request, candidate_id=None,
+                                                  work_preference_id=None):
     """
     Function sends a request to CandidateWorkPreferenceResource
     :param request: delete
     """
-    url = CandidateApiUrl.WORK_PREFERENCE % (candidate_id, work_preference_id)
+    url = CandidateApiUrl.WORK_PREFERENCE % candidate_id
+    if work_preference_id:
+        url = CandidateApiUrl.WORK_PREFERENCE_ID % (candidate_id, work_preference_id)
+
     return define_and_send_request(access_token, request, url)
 
 

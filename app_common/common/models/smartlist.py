@@ -1,3 +1,4 @@
+import json
 from db import db
 import datetime
 from talent_pools_pipelines import TalentPipeline
@@ -15,7 +16,7 @@ class Smartlist(db.Model):
 
     # Relationships
     user = db.relationship('User', backref=db.backref('smart_list', cascade="all, delete-orphan"))
-    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list'))
+    talent_pipeline = db.relationship('TalentPipeline', backref=db.backref('smart_list', cascade="all, delete-orphan"))
 
     def delete(self):
         """Hide smartlist"""
@@ -26,6 +27,22 @@ class Smartlist(db.Model):
 
     def __repr__(self):
         return "%s(%s)" % (self.__class__.__name__, self.id)
+
+    def to_dict(self, include_stats=False, get_stats_function=None):
+        smart_list = {
+            'id': self.id,
+            'name': self.name,
+            'user_id': self.user_id,
+            'is_hidden': self.is_hidden,
+            'search_params': json.loads(self.search_params) if self.search_params else None,
+            'added_time': str(self.added_time)
+        }
+        if include_stats and get_stats_function:
+            to_date = datetime.datetime.utcnow()
+            from_date = to_date - datetime.timedelta(days=30)
+            smart_list['stats'] = get_stats_function(self, 'SmartList', None, from_date.isoformat(), to_date.isoformat())
+
+        return smart_list
 
 
 class SmartlistCandidate(db.Model):
@@ -48,18 +65,3 @@ class SmartlistCandidate(db.Model):
 
     def __repr__(self):
         return "<SmartListCandidate> (id = {})".format(self.id)
-
-
-class SmartlistStats(db.Model):
-    __tablename__ = 'smartlist_stats'
-    id = db.Column(db.Integer, primary_key=True)
-    smartlist_id = db.Column(db.Integer, db.ForeignKey('smart_list.Id', ondelete='CASCADE'), nullable=False)
-    total_number_of_candidates = db.Column(db.Integer, nullable=False, default=0)
-    candidates_engagement = db.Column(db.Integer, nullable=False, default=0)
-    added_datetime = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-
-    # Relationships
-    smart_list = db.relationship('Smartlist', backref=db.backref('smartlist_stats', cascade="all, delete-orphan"))
-
-    def __repr__(self):
-        return "<SmartListStats (id = {})>".format(self.id)

@@ -11,11 +11,14 @@ accept_content = {
 def make_celery(app, default_queue):
     celery = Celery(app.import_name, broker=app.config['REDIS_URL'],
                     backend=app.config['CELERY_RESULT_BACKEND_URL'])
+    app.config['CELERY_REDIS_SCHEDULER_URL'] = app.config['REDIS_URL'] + '/2'
+    app.config['CELERY_REDIS_SCHEDULER_KEY_PREFIX'] = 'candidate-pool-stats-'
     app.config['CELERY_QUEUES'] = (
         Queue(default_queue, routing_key=default_queue + '_key'),
     )
     app.config['CELERY_DEFAULT_QUEUE'] = default_queue
     app.config['CELERY_DEFAULT_ROUTING_KEY'] = default_queue + '_key'
+    app.config['CELERY_TIMEZONE'] = 'UTC'
     celery.conf.update(app.config)
     celery.conf.update(accept_content)
     return celery

@@ -177,7 +177,7 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
     Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
     """
     # Retrieve non existing candidate
-    AddUserRoles.all_roles(user=user_first)
+    AddUserRoles.all_roles(user_first)
     last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
     non_existing_candidate_id = last_candidate.id * 100
     resp = request_to_candidate_resource(access_token_first, 'get', non_existing_candidate_id)
@@ -187,9 +187,11 @@ def test_get_non_existing_candidate(access_token_first, user_first, talent_pool)
 
     # Create Candidate and hide it
     data = generate_single_candidate_data([talent_pool.id])
-    candidate_id = request_to_candidates_resource(access_token_first, 'post', data)\
-        .json()['candidates'][0]['id']
-    request_to_candidate_resource(access_token_first, 'delete', candidate_id)
+    candidate_id = request_to_candidates_resource(
+        access_token_first, 'post', data).json()['candidates'][0]['id']
+    hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+    request_to_candidates_resource(access_token_first, 'patch', hide_data)
+
     # Retrieve web-hidden candidate
     resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
     print response_info(resp)
