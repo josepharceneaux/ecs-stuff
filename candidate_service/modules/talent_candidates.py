@@ -1247,7 +1247,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                 raise ForbiddenError('Unauthorized candidate education', custom_error.EDUCATION_FORBIDDEN)
 
             # Track all changes made to CandidateEducation
-            _track_education_edits(education_dict, can_education_obj, candidate_id, user_id, edit_datetime)
+            _track_education_edits(education_dict, candidate_id, user_id, edit_datetime, can_education_obj)
 
             # Update CandidateEducation
             db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
@@ -1288,8 +1288,8 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                         raise ForbiddenError('Unauthorized candidate degree', custom_error.DEGREE_FORBIDDEN)
 
                     # Track all changes made to CandidateEducationDegree
-                    _track_education_degree_edits(education_degree_dict, can_edu_degree_obj, candidate_id, user_id,
-                                                  edit_datetime)
+                    _track_education_degree_edits(education_degree_dict, candidate_id, user_id,
+                                                  edit_datetime, can_edu_degree_obj)
 
                     can_edu_degree_query.update(education_degree_dict)
 
