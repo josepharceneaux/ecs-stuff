@@ -15,7 +15,7 @@ from email_campaign_service.common.error_handling import (jsonify, InvalidUsage,
                                                           ResourceNotFound, UnauthorizedError)
 
 email_template_blueprint = Blueprint('email_template_service', __name__)
-IMMUTABLE_TRUE = 1
+ON = 1
 
 
 @email_template_blueprint.route('/v1/email-templates', methods=['POST'])
@@ -106,7 +106,7 @@ def get_email_template(template_id):
                                            "domain(id:%d)" % (template_id, domain_id))
 
     # Verify is_immutable
-    if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE):
+    if template.is_immutable == ON and not require_all_roles(DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE):
         raise ForbiddenError(error_message="User %d not allowed to update the template" % template_owner_user.id)
 
     return jsonify({'email_template': {'body_html': template.body_html, 'id': template_id}})
@@ -135,7 +135,7 @@ def update_email_template(template_id):
                                                                                                  user_id))
 
     # Verify is_immutable
-    if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE):
+    if template.is_immutable == ON and not require_all_roles(DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE):
         raise ForbiddenError(error_message="User %d not allowed to update the template (id:%d)" % (user_id,
                                                                                                    template_id))
 
@@ -185,7 +185,7 @@ def delete_email_template(template_id):
         raise ForbiddenError(error_message="Template (id:%d) is not owned by same domain (id:%d)" % (template_id,
                                                                                                      domain_id))
 
-    if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE):
+    if template.is_immutable == ON and not require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE):
         raise ForbiddenError(error_message="User (id:%d) not allowed to delete the template (id:%d)" % (user_id,
                                                                                                         template.id))
     # Delete the template
