@@ -1,4 +1,4 @@
-"""Email Templates API: Provide the endpoints to create, retrieve, update and delete
+"""Email Templates API: Provides the endpoints to create, retrieve, update and delete
 Email Templates. Also contains endpoints for creating and deleting Email Template Folders
 """
 import requests
@@ -11,9 +11,10 @@ from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
 from email_campaign_service.common.models.misc import (UserEmailTemplate, EmailTemplateFolder)
-from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError, NotFoundError,
-                                                          ResourceNotFound, UnauthorizedError)
-
+from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError,
+                                                          NotFoundError, ResourceNotFound,
+                                                          UnauthorizedError)
+# TODO --basit: rename `mod` to readable name
 mod = Blueprint('email_template_service', __name__)
 IMMUTABLE_TRUE = 1
 
@@ -23,7 +24,7 @@ IMMUTABLE_TRUE = 1
 def post_email_template():
     """
 
-        POST /email-templates
+        POST /v1/email-templates
         Function will create an email template
         Required parameters:
         name:                     Name of email template
@@ -38,7 +39,7 @@ def post_email_template():
     template_name = data.get('name')
     if not template_name:
         raise InvalidUsage(error_message="Template name is empty")
-
+    # TODO --basit: rename field
     email_template_html_body = data.get("email_body_html")
     if not email_template_html_body:
         raise InvalidUsage(error_message="Email HTML body is empty")
@@ -47,12 +48,12 @@ def post_email_template():
     existing_template_name = UserEmailTemplate.get(template_name)
     if existing_template_name:
         raise InvalidUsage(error_message="Template name with name=%s already exists" % existing_template_name)
-
+    # TODO --basit: rename field
     email_template_folder_id = data.get("email_template_folder_id")
     if email_template_folder_id and not (isinstance(email_template_folder_id, int) or
                                          email_template_folder_id.isdigit()):
         raise InvalidUsage(error_message="Invalid input")
-
+    # TODO --basit: IMO get -> get_by_id will be more readable
     email_template_folder = EmailTemplateFolder.get(email_template_folder_id)
 
     # Check if the email template folder belongs to current domain
@@ -75,18 +76,20 @@ def post_email_template():
                                             template_folder_id=email_template_folder_id if
                                             email_template_folder_id else None,
                                             is_immutable=is_immutable)
+    # TODO --basit: as zohaib suggested
     db.session.add(user_email_template)
     db.session.commit()
     user_email_template_id = user_email_template.id
     return jsonify({'template_id': [{'id': user_email_template_id}]}), requests.codes.created
 
 
+# TODO --basit: As discussed earlier, can these 2 be in one line?
 @mod.route('/v1/email-templates/', methods=['GET'])
 @mod.route('/v1/email-templates/<int:id>', methods=['GET'])
 @require_oauth()
 def get_email_template(**kwargs):
     """
-        GET /email-templates
+        GET /v1/email-templates
         Function will return email template based on specified id
         Required parameters:
         id:     ID of of email template
@@ -98,6 +101,7 @@ def get_email_template(**kwargs):
     if isinstance(email_template_id, basestring):
         email_template_id = int(email_template_id)
     domain_id = request.user.domain_id
+    # TODO --basit: get_by_id
     template = UserEmailTemplate.get(email_template_id)
     if not template:
         raise ResourceNotFound(error_message="Template with id %d not found" % email_template_id)
@@ -119,7 +123,7 @@ def get_email_template(**kwargs):
 @require_oauth()
 def update_email_template(**kwargs):
     """
-        PUT /email-templates
+        PUT /v1/email-templates
         Function would update existing email template
         Required parameters:
         id:     ID of email template
@@ -141,11 +145,12 @@ def update_email_template(**kwargs):
     if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE):
         raise ForbiddenError(error_message="User %d not allowed to update the template (id:%d)" % (user_id,
                                                                                                    email_template_id))
-
+    # TODO --basit: rename fields
     email_body_html = data.get("email_body_html") or template.body_html
     email_body_text = data.get("email_body_text") or template.body_text
 
     # Verify owned by same domain
+    # TODO --basit: get_by_id
     template_owner_user = User.get(template.user_id)
     updated_data = {"body_html": email_body_html, "body_text": email_body_text}
     if template_owner_user.domain_id == domain_id:
@@ -162,7 +167,7 @@ def update_email_template(**kwargs):
 @require_oauth()
 def delete_email_template(**kwargs):
     """
-        DELETE /email-templates
+        DELETE /v1/email-templates
         Function will delete email template
         Required parameters:
         id:     ID of email template
@@ -179,17 +184,20 @@ def delete_email_template(**kwargs):
 
     template = UserEmailTemplate.get(email_template_id)
     if not template:
+        # TODO --basit: add id of template as well in message
         raise NotFoundError(error_message="Template not found")
 
     # Verify owned by same domain
     template_owner_user = User.get(template.user_id)
 
     if template_owner_user.domain_id != domain_id:
+        # TODO --basit: Update message as was discussed
         raise ForbiddenError(error_message="Template is not owned by same domain")
 
     if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE):
+        # TODO --basit: Update message as was discussed
         raise ForbiddenError(error_message="User %d not allowed to delete the template" % user_id)
-
+    # TODO --basit: as Zohaib suggested
     # Delete the template
     db.session.delete(template)
     db.session.commit()
@@ -201,7 +209,7 @@ def delete_email_template(**kwargs):
 @require_oauth()
 def create_email_template_folder():
     """
-        POST /email-template-folders
+        POST /v1/email-template-folders
         Create email template folder
         Required parameters:
         name:          Name of email template folder
@@ -215,6 +223,7 @@ def create_email_template_folder():
     if not folder_name:
         raise InvalidUsage(error_message="Folder name must be provided.")
     if not isinstance(folder_name, basestring):
+        # TODO --basit: Message should be more meaningful
         raise InvalidUsage(error_message="Invalid input")
     domain_id = request.user.domain_id
 
@@ -278,6 +287,7 @@ def delete_email_template_folder(**kwargs):
     return '', requests.codes.no_content
 
 
+# TODO --basit: Move these to validations.py
 def validate_id(id):
     """
     Function will validate email template ID
@@ -289,5 +299,6 @@ def validate_id(id):
         raise InvalidUsage(error_message="ID must be greater than 0")
 
 
+# TODO --basit: Is it being used?
 def check_domain_role():
     pass
