@@ -196,3 +196,28 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
+
+
+@pytest.fixture()
+def email_template_body():
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
+           '\r\n</body>\r\n</html>\r\n'
+
+
+@pytest.fixture(scope='session')
+def template_id(sample_user, domain_id):
+    """
+    Retrieves email template for the test email campaign
+
+    :param sample_user:
+    :return:    Id of template retrieved
+    """
+    # Retrieve campaign template from 'Sample Templates' folder
+    email_template_folder = db.session.query(EmailTemplateFolder).filter_by(name='Sample Templates',
+                                                                            domain_id=domain_id).first()
+    email_template_folder_id = email_template_folder.id
+    template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=email_template_folder_id)
+
+    return template['id']
