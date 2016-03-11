@@ -763,12 +763,6 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
             if date_at_current_pointer >= added_date:
                 total_number_of_pipelines_for_each_date[date_string_at_current_pointer] += 1
 
-    for key in talent_pipelines_in_talent_pool_stats:
-        if key in total_number_of_pipelines_for_each_date and total_number_of_pipelines_for_each_date[key] != 0:
-            talent_pipelines_in_talent_pool_stats[key] /= total_number_of_pipelines_for_each_date[key]
-        else:
-            talent_pipelines_in_talent_pool_stats[key] = 0
-
     talent_pipelines_in_talent_pool_stats_keys = sorted(
             talent_pipelines_in_talent_pool_stats.keys(), key=lambda added_date:
             datetime.strptime(added_date, '%m/%d/%Y').date(), reverse=True)
