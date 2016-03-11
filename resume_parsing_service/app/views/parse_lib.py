@@ -21,12 +21,13 @@ import magic
 import requests
 # Module Specific
 from .utils import create_parsed_resume_candidate, update_candidate_from_resume
-from resume_parsing_service.app import logger
+from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
+from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 
@@ -34,6 +35,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
+RESUME_EXPIRE_TIME = 604800 # one week in seconds.
 
 
 def process_resume(parse_params):
@@ -59,7 +61,14 @@ def process_resume(parse_params):
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
     # Parse the actual resume content.
-    parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
+    hashed_file_name = gen_hash_from_file(resume_file)
+    cached_resume = redis_store.get(hashed_file_name)
+    if cached_resume:
+        parsed_resume = json.loads(cached_resume)
+    else:
+        parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
+        redis_store.set(hashed_file_name, json.dumps(parsed_resume))
+        redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
     if not create_candidate:
         return parsed_resume
     oauth_string = parse_params.get('oauth')
