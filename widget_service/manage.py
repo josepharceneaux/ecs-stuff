@@ -5,11 +5,11 @@ import os
 from flask.ext.script import Manager
 from flask import url_for
 
-from widget_app import app
-from widget_app.flask_scripts.db import fill_db
-from widget_app.flask_scripts.db import destroy_db
-from widget_app.flask_scripts.url_encode import encode_domain_ids
-from widget_app.flask_scripts.url_encode import encode_widget_ids
+from app import app
+from app.flask_scripts.db_utils import fill_db
+from app.flask_scripts.db_utils import destroy_db
+from app.flask_scripts.url_encode import encode_domain_ids
+from app.flask_scripts.url_encode import encode_widget_ids
 
 manager = Manager(app)
 env = os.getenv('GT_ENVIRONMENT') or 'dev'

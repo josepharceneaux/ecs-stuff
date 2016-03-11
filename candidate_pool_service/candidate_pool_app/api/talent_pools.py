@@ -678,7 +678,6 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     talent_pipelines_of_talent_pool = TalentPipeline.query.filter(TalentPipeline.talent_pool_id == talent_pool_id).all()
-    total_number_of_talent_pipelines = len(talent_pipelines_of_talent_pool)
     talent_pool_stats = []
 
     from_date -= timedelta(days=interval)
@@ -688,7 +687,7 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
             total_number_of_candidates += get_talent_pipeline_stat_for_given_day(talent_pipeline, to_date)
 
         talent_pool_stats.append({
-            'total_number_of_candidates': total_number_of_candidates/total_number_of_talent_pipelines,
+            'total_number_of_candidates': total_number_of_candidates,
             'added_datetime': to_date.isoformat(),
         })
         to_date -= timedelta(days=interval)

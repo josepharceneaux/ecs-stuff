@@ -566,7 +566,6 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
     smartlists_of_talent_pipeline = Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id).all()
-    total_number_of_smartlists = len(smartlists_of_talent_pipeline)
     talent_pipeline_stats = []
 
     from_date -= timedelta(days=interval)
@@ -576,7 +575,7 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
             total_number_of_candidates += get_smartlist_stat_for_a_given_day(smartlist, to_date)
 
         talent_pipeline_stats.append({
-            'total_number_of_candidates': total_number_of_candidates/total_number_of_smartlists,
+            'total_number_of_candidates': total_number_of_candidates,
             'added_datetime': to_date.isoformat(),
         })
         to_date -= timedelta(days=interval)
