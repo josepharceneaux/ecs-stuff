@@ -349,7 +349,7 @@ class EmailCampaignBlastById(Resource):
         blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
                                                      request.user,
                                                      CampaignUtils.EMAIL)
-        return dict(blast=blast_obj.to_json()), requests.codes.OK
+        return dict(blast=blast_obj.to_json()), requests.codes.ok
 
 
 @api.route(EmailCampaignEndpoints.SENDS)

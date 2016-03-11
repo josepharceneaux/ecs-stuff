@@ -531,27 +531,3 @@ def candidate_second(request, user_first):
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
-
-
-@pytest.fixture(autouse=True)
-def sample_user_from_domain_first(domain_first, request):
-    user_attrs = dict(
-        domain_id=domain_first.id, first_name='Jamtry', last_name='Jonas',
-        password=USER_HASHED_PASSWORD,
-        email='sample_user@{}.com'.format(randomword(7)), added_time=datetime(2050, 4, 26)
-    )
-    user, created = get_or_create(session=db.session, model=User, defaults=None, **user_attrs)
-    if created:
-        db.session.add(user)
-        db.session.commit()
-
-    def fin():
-        try:
-            db.session.delete(sample_user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
-    return user

@@ -7,7 +7,6 @@ import datetime
 import time
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
-from push_campaign import PushCampaign, PushCampaignBlast, PushCampaignSend, PushCampaignSendUrlConversion
 from ..utils.scheduler_utils import SchedulerUtils
 
 
@@ -19,7 +18,6 @@ class Activity(db.Model):
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
-    user = relationship('User', backref='activity')
     params = db.Column('Params', db.Text)
 
     def __repr__(self):
@@ -28,12 +26,12 @@ class Activity(db.Model):
     @classmethod
     def get_by_user_id_params_type_source_id(cls, user_id, params, type, source_id):
         return cls.query.filter(
-                db.and_(
-                        Activity.user_id == user_id,
-                        Activity.params == params,
-                        Activity.type == type,
-                        Activity.source_id == source_id,
-                )).first()
+            db.and_(
+                Activity.user_id == user_id,
+                Activity.params == params,
+                Activity.type == type,
+                Activity.source_id == source_id,
+            )).first()
 
     @classmethod
     def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
@@ -59,14 +57,13 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_area_of_interest(cls, domain_id, name):
         return cls.query.filter(db.and_(
-                AreaOfInterest.domain_id == domain_id,
-                AreaOfInterest.name == name
+            AreaOfInterest.domain_id == domain_id,
+            AreaOfInterest.name == name
         )).first()
 
     @classmethod
     def get_domain_areas_of_interest(cls, domain_id):
         """
-        :type domain_id: int|long
         :rtype: list[AreaOfInterest]
         """
         return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
@@ -147,6 +144,7 @@ class Country(db.Model):
                                               Country.code == name_or_code)).first()
         return country_row.id if country_row else None
 
+
     @classmethod
     def country_name_from_country_id(cls, country_id):
         if not country_id:
@@ -223,7 +221,6 @@ class Frequency(db.Model):
 
     # Relationships
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
-    push_campaigns = relationship('PushCampaign', backref='frequency')
 
     # frequency Ids
     ONCE = 1
@@ -308,67 +305,7 @@ class CustomField(db.Model):
         :type domain_id:  int|long
         :rtype:  list[CustomField]
         """
-        return cls.query.filter_by(domain_id=domain_id).all()
-
-
-class UserEmailTemplate(db.Model):
-    __tablename__ = 'user_email_template'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
-    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
-    name = db.Column('Name', db.String(255), nullable=False)
-    body_html = db.Column('EmailBodyHtml', db.Text)
-    body_text = db.Column('EmailBodyText', db.Text)
-    template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id',
-                                                                          ondelete=u'SET NULL'), index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    # Relationships
-    template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
-                                                                              cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
-
-
-class EmailTemplateFolder(db.Model):
-    __tablename__ = 'email_template_folder'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
-                          index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
-    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
-                                                                                      cascade="all, delete-orphan"))
-
-    @classmethod
-    def get_by_name_and_domain_id(cls, folder_name, domain_id):
-        """
-        Method to get email template folder based on folder name and domain id.
-        :type folder_name:  string
-        :type domain_id:  int | long
-        :rtype:  EmailTemplateFolder
-        """
-        assert folder_name, "folder_name not provided"
-        assert domain_id, "domain_id not provided"
-        return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
-
-    @classmethod
-    def get_by_parent_and_domain_id(cls, parent_id, domain_id):
-        """
-        Method to get email template folder based on folder name and domain id.
-        :type parent_id:  int | long
-        :type domain_id:  int | long
-        :rtype:  EmailTemplateFolder
-        """
-        assert parent_id, "parent_id not provided"
-        assert domain_id, "domain_id not provided"
-        return cls.query.filter_by(parent_id=parent_id, domain_id=domain_id).first()
+        return cls.query.filter(CustomField.domain_id==domain_id).all()
 
 
 class CustomFieldCategory(db.Model):
@@ -403,40 +340,12 @@ class UrlConversion(db.Model):
     def __repr__(self):
         return "<UrlConversion (id = {})>".format(self.id)
 
-    @classmethod
-    def get_by_id_and_domain_id_for_push_campaign_send(cls, _id, domain_id):
-        """
-        This method returns a UrlConversion object that is associated to a campaign send object
-        given by `send_id` and it belongs to domain with id `domain_id`.
-        :param _id: UrlConversion id
-        :type _id: int | long
-        :param domain_id: Domain id of user
-        :type domain_id: int | long
-        :return: UrlConversion object | None
-        :rtype: UrlConversion | None
-        """
-        # importing User and Domain here due to cyclic dependency
-        from user import User, Domain
-        return cls.query.join(PushCampaignSendUrlConversion).join(
-            PushCampaignSend).join(PushCampaignBlast).join(PushCampaign).join(User).join(Domain).filter(
-            PushCampaignSendUrlConversion.url_conversion_id == _id).filter(
-            PushCampaign.user_id == User.id).filter(User.domain_id == domain_id).first()
-
     # Relationships
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
-
     email_campaign_sends_url_conversions = relationship('EmailCampaignSendUrlConversion',
                                                         cascade='all,delete-orphan',
                                                         passive_deletes=True,
                                                         backref='url_conversion')
-
-    push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
-                                                       cascade='all,delete-orphan',
-                                                       passive_deletes=True,
-                                                       backref='url_conversion',
-                                                       lazy='dynamic')
-
-

@@ -199,7 +199,7 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
 
 
 @pytest.fixture()
-def email_template_body():
+def template_body():
     return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
            '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \

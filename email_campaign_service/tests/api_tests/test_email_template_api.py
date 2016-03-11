@@ -79,15 +79,15 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     del_domain_roles([role_id1, role_id2])
 
 
-def test_create_email_template(sample_user, user_auth, email_template_body):
+def test_create_email_template(sample_user, user_auth, template_body):
     """
     Test for creating email template
     :param sample_user:         sample user
-    :param email_template_body: email template html body
+    :param template_body: email template html body
     :return:
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
     template_name = email_template["template_name"]
 
@@ -98,11 +98,11 @@ def test_create_email_template(sample_user, user_auth, email_template_body):
     assert template.is_immutable == 1
 
 
-def test_create_email_template_without_name(sample_user, user_auth, email_template_body):
+def test_create_email_template_without_name(sample_user, user_auth, template_body):
     """
     Test for creating email template without passing name
     :param sample_user:         sample user
-    :param email_template_body: email template html body
+    :param template_body: email template html body
     result : The response should be Bad Request - 400
     """
     domain_id = sample_user.domain_id
@@ -123,7 +123,7 @@ def test_create_email_template_without_name(sample_user, user_auth, email_templa
     # Empty template name
     template_name = ''
 
-    resp = create_email_template(token, sample_user.id, template_name, email_template_body, template_name,
+    resp = create_email_template(token, sample_user.id, template_name, template_body, template_name,
                                  is_immutable="1", folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
     assert resp.status_code == 400
     del_domain_roles(role_id)
@@ -155,15 +155,15 @@ def test_create_template_without_email_body(sample_user, user_auth):
     del_domain_roles(role_id)
 
 
-def test_delete_email_template(sample_user, sample_user_2, email_template_body, user_auth):
+def test_delete_email_template(sample_user, sample_user_2, template_body, user_auth):
     """
     Tests deleting user's email template
     :param sample_user:         user1
     :param sample_user_2:       user2
-    :param email_template_body: email template html body
+    :param template_body: email template html body
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
 
     token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
@@ -182,16 +182,16 @@ def test_delete_email_template(sample_user, sample_user_2, email_template_body, 
     del_domain_roles(role_id2)
 
 
-def test_delete_email_template_with_no_id(sample_user, sample_user_2, email_template_body, user_auth):
+def test_delete_email_template_with_no_id(sample_user, sample_user_2, template_body, user_auth):
     """
     Tests deleting user's email template
     :param sample_user:         user1
     :param sample_user_2:       user2
-    :param email_template_body: email template html body
+    :param template_body: email template html body
     :return:
     """
     # Add Email template
-    add_email_template(user_auth, sample_user, email_template_body)
+    add_email_template(user_auth, sample_user, template_body)
 
     token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
 
@@ -207,16 +207,16 @@ def test_delete_email_template_with_no_id(sample_user, sample_user_2, email_temp
     del_domain_roles(role_id)
 
 
-def test_delete_template_with_non_existing_template_id(sample_user, sample_user_2, email_template_body, user_auth):
+def test_delete_template_with_non_existing_template_id(sample_user, sample_user_2, template_body, user_auth):
     """
     Tests deleting user's email template with non existing template_id
     :param sample_user:         user1
     :param sample_user_2:       user2
-    :param email_template_body: email template html body
+    :param template_body: email template html body
     result : The response should be Not Found - 404
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
 
     token2 = user_auth.get_auth_token(sample_user_2, get_bearer_token=True)['access_token']
@@ -233,16 +233,16 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     del_domain_roles(role_id)
 
 
-def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, email_template_body, user_auth):
+def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, template_body, user_auth):
     """
     Tests deleting user's email template from different domain
     :param sample_user:             user1
     :param user_from_diff_domain:   user2
-    :param email_template_body:     email template html body
+    :param template_body:     email template html body
     result : The response should be Forbidden error - 403
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
 
     token2 = user_auth.get_auth_token(user_from_diff_domain, get_bearer_token=True)['access_token']
@@ -259,7 +259,7 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
     del_domain_roles(role_id)
 
 
-def test_get_email_template_via_id(sample_user, sample_user_2, email_template_body, user_auth):
+def test_get_email_template_via_id(sample_user, sample_user_2, template_body, user_auth):
     """
     Test:   Retrieve email_template via template's ID
     Expect: 200
@@ -267,7 +267,7 @@ def test_get_email_template_via_id(sample_user, sample_user_2, email_template_bo
     :type user_auth:      UserAuthentication
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
@@ -291,7 +291,7 @@ def test_get_email_template_via_id(sample_user, sample_user_2, email_template_bo
     del_domain_roles(role_id2)
 
 
-def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, email_template_body, user_auth):
+def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, template_body, user_auth):
     """
     Test:   Retrieve email_template via template's ID
     Expect: 404 - NOT FOUND
@@ -299,7 +299,7 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, ema
     :type user_auth:      UserAuthentication
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
@@ -321,13 +321,13 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, ema
     del_domain_roles(role_id2)
 
 
-def test_update_email_template(sample_user, sample_user_2, email_template_body, user_auth):
+def test_update_email_template(sample_user, sample_user_2, template_body, user_auth):
     """
     Test :To update email template by other user in the same domain
     Expect: 200
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
     # Add or get Role
@@ -336,7 +336,7 @@ def test_update_email_template(sample_user, sample_user_2, email_template_body, 
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+    updated_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
                                   '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
                                   '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test for update campaign mail' \
                                   ' testing through script</p>\r\n</body>\r\n</html>\r\n'
@@ -344,23 +344,23 @@ def test_update_email_template(sample_user, sample_user_2, email_template_body, 
     # Get email_template via template ID
     resp = update_email_template(email_template["email_template_id"], 'put', token2, sample_user_2.id,
                                  email_template["template_name"],
-                                 updated_email_template_body, email_template["template_folder_id"],
+                                 updated_template_body, email_template["template_folder_id"],
                                  email_template["domain_id"])
     db.session.commit()
     assert resp.status_code == 200
     resp_dict = resp.json()['email_template']
     print resp_dict
-    assert resp_dict['email_body_html'] == updated_email_template_body
+    assert resp_dict['body_html'] == updated_template_body
     del_domain_roles(role_id2)
 
 
-def test_update_non_existing_email_template(sample_user, sample_user_2, email_template_body, user_auth):
+def test_update_non_existing_email_template(sample_user, sample_user_2, template_body, user_auth):
     """
     Test : To update email template by other user in the same domain
     Expect: 404 - NOT FOUND
     """
     # Add Email template
-    email_template = add_email_template(user_auth, sample_user, email_template_body)
+    email_template = add_email_template(user_auth, sample_user, template_body)
     email_template_id = email_template["email_template_id"]
     # Get access token for sample_user_2
     token2 = user_auth.get_auth_token(sample_user_2, True)['access_token']
@@ -370,7 +370,7 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    updated_email_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+    updated_template_body = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
                                   '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">' \
                                   '\r\n<html>\r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>' \
                                   '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
@@ -381,7 +381,7 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
                           folder_id=None, is_immutable="1", domain_id=None):"""
     resp = update_email_template(email_template_id+1, 'put', token2, sample_user_2.id,
                                  email_template["template_name"],
-                                 updated_email_template_body, '', email_template["template_folder_id"],
+                                 updated_template_body, '', email_template["template_folder_id"],
                                  email_template["is_immutable"],
                                  email_template["domain_id"])
     db.session.commit()
@@ -389,7 +389,7 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, email_te
     del_domain_roles(role_id2)
 
 
-def add_email_template(user_auth, template_owner, email_template_body):
+def add_email_template(user_auth, template_owner, template_body):
     """
     This function will create email template
     """
@@ -409,7 +409,7 @@ def add_email_template(user_auth, template_owner, email_template_body):
 
     template_name = 'test_email_template%i' % time.time()
     is_immutable = "1"
-    resp = create_email_template(token, template_owner.id, template_name, email_template_body, '', is_immutable,
+    resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
                                  folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
     db.session.commit()
     resp_obj = resp.json()

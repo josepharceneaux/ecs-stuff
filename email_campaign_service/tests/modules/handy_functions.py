@@ -289,8 +289,8 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
             email_template_folder_id=folder_id,
             user_id=user_id,
             type=0,
-            email_body_html=body_html,
-            email_body_text=body_text,
+            body_html=body_html,
+            body_text=body_text,
             is_immutable=is_immutable
     )
 
@@ -319,8 +319,8 @@ def update_email_template(email_template_id, request, token, user_id, template_n
             email_template_folder_id=folder_id,
             user_id=user_id,
             type=0,
-            email_body_html=body_html,
-            email_body_text=body_text,
+            body_html=body_html,
+            body_text=body_text,
             is_immutable=is_immutable
     )
 

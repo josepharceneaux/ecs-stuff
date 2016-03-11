@@ -9,7 +9,8 @@ from flask import Blueprint
 from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
-from email_campaign_service.common.models.misc import (UserEmailTemplate, EmailTemplateFolder)
+from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
+from email_campaign_service.common.utils.validators import (validate_id, validate_immutable_value)
 from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError, NotFoundError,
                                                           ResourceNotFound, UnauthorizedError)
 
@@ -22,11 +23,11 @@ IMMUTABLE_TRUE = 1
 def post_email_template():
     """
 
-        POST /email-templates
+        POST /v1/email-templates
         Function will create an email template
         Required parameters:
         name:                     Name of email template
-        email_body_html:          Body of email template
+        body_html:                Body of email template
         email_template_folder_id: ID of email template folder
         is_immutable:             Parameter to determine is the email template is  mutable or not
     """
@@ -38,7 +39,7 @@ def post_email_template():
     if not template_name:
         raise InvalidUsage(error_message="Template name is empty")
 
-    email_template_html_body = data.get("email_body_html")
+    email_template_html_body = data.get("body_html")
     if not email_template_html_body:
         raise InvalidUsage(error_message="Email HTML body is empty")
 
@@ -78,16 +79,16 @@ def post_email_template():
 
 
 @mod.route('/v1/email-templates/', methods=['GET'])
-@mod.route('/v1/email-templates/<int:id>', methods=['GET'])
+@mod.route('/v1/email-templates/<int:template_id>', methods=['GET'])
 @require_oauth()
-def get_email_template(**kwargs):
+def get_email_template(template_id):
     """
-        GET /email-templates
+        GET /v1/email-templates
         Function will return email template based on specified id
         Required parameters:
-        id:     ID of of email template
+        template_id:     ID of of email template
     """
-    email_template_id = kwargs.get("id")
+    email_template_id = template_id
 
     # Validate email template id
     validate_id(email_template_id)
@@ -108,19 +109,19 @@ def get_email_template(**kwargs):
     if template.is_immutable == IMMUTABLE_TRUE and not require_all_roles(DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE):
         raise ForbiddenError(error_message="User %d not allowed to update the template" % template_owner_user.id)
 
-    return jsonify({'email_template': {'email_body_html': template.body_html, 'id': email_template_id}})
+    return jsonify({'email_template': {'body_html': template.body_html, 'id': email_template_id}})
 
 
-@mod.route('/v1/email-templates/<int:id>', methods=['PUT'])
+@mod.route('/v1/email-templates/<int:template_id>', methods=['PUT'])
 @require_oauth()
-def update_email_template(**kwargs):
+def update_email_template():
     """
-        PUT /email-templates
+        PUT /v1/email-templates
         Function would update existing email template
         Required parameters:
-        id:     ID of email template
+        template_id:     ID of email template
     """
-    email_template_id = kwargs.get("id")
+    email_template_id = template_id
     validate_id(email_template_id)
 
     data = get_valid_json_data(request)
@@ -138,12 +139,12 @@ def update_email_template(**kwargs):
         raise ForbiddenError(error_message="User %d not allowed to update the template (id:%d)" % (user_id,
                                                                                                    email_template_id))
 
-    email_body_html = data.get("email_body_html") or template.body_html
+    body_html = data.get("body_html") or template.body_html
     email_body_text = data.get("email_body_text") or template.body_text
 
     # Verify owned by same domain
     template_owner_user = User.get(template.user_id)
-    updated_data = {"body_html": email_body_html, "body_text": email_body_text}
+    updated_data = {"body_html": body_html, "body_text": email_body_text}
     if template_owner_user.domain_id == domain_id:
         # Update email template
         template.update(**updated_data)
@@ -151,19 +152,19 @@ def update_email_template(**kwargs):
         raise ForbiddenError(error_message="Template(id:%d) is not owned by user(id:%d) &"
                                            "domain(id:%d)" % (email_template_id, user_id, domain_id))
 
-    return jsonify({'email_template': {'email_body_html': email_body_html, 'id': email_template_id}})
+    return jsonify({'email_template': {'body_html': body_html, 'id': email_template_id}})
 
 
-@mod.route('/v1/email-templates/<int:id>', methods=['DELETE'])
+@mod.route('/v1/email-templates/<int:template_id>', methods=['DELETE'])
 @require_oauth()
-def delete_email_template(**kwargs):
+def delete_email_template(template_id):
     """
-        DELETE /email-templates
+        DELETE /v1/email-templates
         Function will delete email template
         Required parameters:
-        id:     ID of email template
+        template_id:     ID of email template
     """
-    email_template_id = kwargs.get("id")
+    email_template_id = template_id
 
     # Validate email template id
     validate_id(email_template_id)
@@ -196,7 +197,7 @@ def delete_email_template(**kwargs):
 @require_oauth()
 def create_email_template_folder():
     """
-        POST /email-template-folders
+        POST /v1/email-template-folders
         Create email template folder
         Required parameters:
         name:          Name of email template folder
@@ -243,17 +244,15 @@ def create_email_template_folder():
 
 
 @require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE_FOLDER)
-@mod.route('/v1/email-template-folders/<int:id>', methods=['DELETE'])
+@mod.route('/v1/email-template-folders/<int:folder_id>', methods=['DELETE'])
 @require_oauth()
-def delete_email_template_folder(**kwargs):
+def delete_email_template_folder(folder_id):
     """
-        DELETE /email-template-folders
+        DELETE /v1/email-template-folders
         Required parameters:
-        id:     ID of email template
+        folder_id:     ID of email template
     """
     domain_id = request.user.domain_id
-
-    folder_id = kwargs.get('id')
     validate_id(folder_id)
 
     template_folder = EmailTemplateFolder.get(folder_id)
@@ -267,23 +266,3 @@ def delete_email_template_folder(**kwargs):
         EmailTemplateFolder.delete(template_folder)
 
     return '', requests.codes.no_content
-
-
-def validate_id(id):
-    """
-    Function will validate email template ID
-    """
-    if not id:
-        raise InvalidUsage(error_message="ID must be provided")
-
-    if id <= 0:
-        raise InvalidUsage(error_message="ID must be greater than 0")
-
-
-def validate_immutable_value(is_immutable):
-    if not (is_immutable.is_digit() and int(is_immutable) in (0, 1)):
-        raise InvalidUsage(error_message="Invalid input: is_immutable should be integer with value 0 or 1")
-
-
-def check_domain_role():
-    pass
