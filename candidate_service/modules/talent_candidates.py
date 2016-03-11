@@ -148,6 +148,7 @@ def fetch_candidate_info(candidate, fields=None):
         'id': candidate_id,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
+        'updated_at_datetime': created_at_datetime,
         'emails': emails,
         'phones': phones,
         'addresses': addresses,
