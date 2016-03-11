@@ -28,34 +28,37 @@ ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_P
 test_config = load_test_config()
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def token_first():
     """
     Au Authentication token for user_first.
     """
-    info = test_config['USER_FIRST']
+    info = test_config['CLIENT'].copy()
+    info.update(test_config['USER_FIRST'])
     return get_token(info)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def token_same_domain(request):
     """
     Authentication token for user that belongs to same domain as user_first.
     """
-    info = test_config['USER_SAME_DOMAIN']
+    info = test_config['CLIENT'].copy()
+    info.update(test_config['USER_SAME_DOMAIN'])
     return get_token(info)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def token_second(request):
     """
      Authentication token for user_second.
     """
-    info = test_config['USER_SECOND']
+    info = test_config['CLIENT'].copy()
+    info.update(test_config['USER_SECOND'])
     return get_token(info)
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def user_first(request, token_first):
     """
     This fixture will be used to get user from UserService using id from config.
@@ -73,7 +76,7 @@ def user_first(request, token_first):
     return user
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def user_second(request, token_second):
     """
     This fixture will be used to get user from UserService using id from config.
@@ -92,7 +95,7 @@ def user_second(request, token_second):
     return user
 
 
-@pytest.fixture()
+@pytest.fixture(scope='session')
 def user_same_domain(request, token_same_domain):
     """
     This fixture will be used to get user from UserService using id from config.
