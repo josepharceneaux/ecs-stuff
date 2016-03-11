@@ -7,6 +7,7 @@ Notes:
 # Standard libraries
 import logging
 import datetime
+import os
 from time import time
 
 # Flask specific
@@ -18,6 +19,8 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.models.db import db
 
 # Validators
+from candidate_service.common.talent_config_manager import TalentConfigKeys
+from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.models_utils import to_json
 from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
@@ -1592,11 +1595,12 @@ class CandidateDeviceResource(Resource):
         one_signal_device_id = data.get('one_signal_device_id')
         if not one_signal_device_id:
             raise InvalidUsage('device_id is not given in post data')
-        device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
-                                                                                 authenticated_user.domain_id)
-        if device:
-            raise InvalidUsage('Given OneSignal Device id (%s) is already associated to a '
-                               'candidate in your doamin')
+        if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.PROD:
+            device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
+                                                                                     authenticated_user.domain_id)
+            if device:
+                raise InvalidUsage('Given OneSignal Device id (%s) is already associated to a '
+                                   'candidate in your domain')
         one_signal_client = OneSignalSdk(app_id=ONE_SIGNAL_APP_ID,
                                          user_auth_key=ONE_SIGNAL_REST_API_KEY)
         # Send a GET request to OneSignal API to confirm that this device id is valid
