@@ -44,10 +44,10 @@ def format_phone_number(phone_number, country_code='US'):
             return dict(formatted_number=str(formatted_number), extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
-                                             (phone_number, country_code))
+                               (phone_number, country_code))
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
-                                         (phone_number, country_code))
+                           (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -70,12 +70,12 @@ def is_valid_url_format(url):
     Reference: https://github.com/django/django-old/blob/1.3.X/django/core/validators.py#L42
     """
     regex = re.compile(
-            r'^https?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
-            r'localhost|'  # localhost...
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
     return url is not None and regex.search(url)
 
 
@@ -109,8 +109,7 @@ def parse_openweb_date(openweb_date):
     if date_obj and (date_obj.year > date.today().year + 2):  # Filters out any year 2 more than the current year
         date_obj = None
 
-    if date_obj and (
-                date_obj.year == 1970):  # Sometimes, it can't parse out the year so puts 1970, just for the hell of it
+    if date_obj and (date_obj.year == 1970):  # Sometimes, it can't parse out the year so puts 1970, just for the hell of it
         date_obj = None
 
     return date_obj
