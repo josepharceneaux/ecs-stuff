@@ -294,25 +294,6 @@ def update_smartlist_stats():
         delete_dangling_stats(smartlist_ids, container='smartlist')
 
 
-def schedule_candidate_daily_stats_update():
-
-    celery_app.conf.update({'CELERYBEAT_SCHEDULE': {
-        'update_talent_pipeline_stats': {
-            'task': 'update_talent_pipeline_stats',
-            'schedule': crontab(minute=0, hour=0),  # Daily at Midnight
-        },
-        'update_talent_pool_stats': {
-            'task': 'update_talent_pool_stats',
-            'schedule': crontab(minute=0, hour=0),  # Daily at Midnight
-        },
-        'update_smartlist_stats': {
-            'task': 'update_smartlist_stats',
-            'schedule': crontab(minute=0, hour=0),  # Daily at Midnight
-        },
-
-    }})
-
-
 def delete_dangling_stats(id_list, container):
     """
     This method will delete dangling statistics from Redis for each of three containers

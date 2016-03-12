@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Celery Beat: Candidate Pool Service" type="PythonConfigurationType" factoryName="Python" folderName="candidate_pool_service">
+  <configuration default="false" name="Run Update Stats Script" type="PythonConfigurationType" factoryName="Python" folderName="candidate_pool_service">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
@@ -12,7 +12,7 @@
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/candidate_pool_service/run_celery_beat.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/candidate_pool_service/run_update_stats.py" />
     <option name="PARAMETERS" value="" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <method />

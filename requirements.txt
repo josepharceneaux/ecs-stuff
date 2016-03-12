@@ -89,4 +89,3 @@ Flask-Cache==0.13.1
 OneSignalPythonSdk==0.1
 
 redis-collections==0.1.7
-celerybeat-redis==0.1.3
