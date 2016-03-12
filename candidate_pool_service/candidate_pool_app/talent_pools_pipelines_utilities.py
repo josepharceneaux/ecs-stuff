@@ -256,16 +256,14 @@ def update_talent_pool_stats():
         # Updating TalentPool Statistics
         logger.info("TalentPool statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
         talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
-        try:
-            for talent_pool_tuple in talent_pools:
-                response = requests.get('http://127.0.0.1:8008/v1/talent-pools/%s/stats' % talent_pool_tuple[0],
-                                        headers=generate_jwt_header(), params=dict(is_update=1))
-                if response.status_code == 204:
-                    logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
-                else:
-                    logger.exception("Update statistics for TalentPool %s is not successful" % talent_pool_tuple[0])
-        except Exception as e:
-            logger.exception("An Exception occurs while updating TalentPipeline Statistics because: %s" % e.message)
+        for talent_pool_tuple in talent_pools:
+            try:
+                get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool')
+                logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for TalentPool %s is not successful because: "
+                                 "%s" % (talent_pool_tuple[0], e.message))
+
         talent_pool_ids = map(lambda talent_pool: talent_pool[0], talent_pools)
         delete_dangling_stats(talent_pool_ids, container='talent-pool')
 
@@ -276,16 +274,14 @@ def update_talent_pipeline_stats():
         # Updating TalentPipeline Statistics
         logger.info("TalentPipeline statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
         talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
-        try:
-            for talent_pipeline_tuple in talent_pipelines:
-                response = requests.get('http://127.0.0.1:8008/v1/talent-pipelines/%s/stats' % talent_pipeline_tuple[0],
-                                        headers=generate_jwt_header(), params=dict(is_update=1))
-                if response.status_code == 204:
-                    logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
-                else:
-                    logger.exception("Update statistics for TalentPipeline %s is not successful" % talent_pipeline_tuple[0])
-        except Exception as e:
-            logger.exception("An Exception occurs while updating TalentPipeline Statistics because: %s" % e.message)
+        for talent_pipeline_tuple in talent_pipelines:
+            try:
+                get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]), 'TalentPipeline')
+                logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for TalentPipeline %s is not successful because: "
+                                 "%s" % (talent_pipeline_tuple[0], e.message))
+
         talent_pipeline_ids = map(lambda talent_pipeline: talent_pipeline[0], talent_pipelines)
         delete_dangling_stats(talent_pipeline_ids, container='talent-pipeline')
 
@@ -296,16 +292,13 @@ def update_smartlist_stats():
         # Updating SmartList Statistics
         logger.info("SmartList statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
         smartlists = Smartlist.query.with_entities(Smartlist.id).all()
-        try:
-            for smartlist_tuple in smartlists:
-                response = requests.get('http://127.0.0.1:8008/v1/smartlists/%s/stats' % smartlist_tuple[0],
-                                        headers=generate_jwt_header(), params=dict(is_update=1))
-                if response.status_code == 204:
-                    logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
-                else:
-                    logger.exception("Update statistics for SmartList %s is not successful" % smartlist_tuple[0])
-        except Exception as e:
-            logger.exception("An Exception occurs while updating SmartList Statistics because: %s" % e.message)
+        for smartlist_tuple in smartlists:
+            try:
+                get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList')
+                logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for SmartList %s is not successful because: "
+                                 "%s" % (smartlist_tuple[0], e.message))
 
         smartlist_ids = map(lambda smartlist: smartlist[0], smartlists)
         delete_dangling_stats(smartlist_ids, container='smartlist')
