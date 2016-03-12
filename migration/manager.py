@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+from random import randint
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
 from app_common.common.models.db import db

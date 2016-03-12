@@ -16,6 +16,7 @@ def make_celery(app, default_queue):
     )
     app.config['CELERY_DEFAULT_QUEUE'] = default_queue
     app.config['CELERY_DEFAULT_ROUTING_KEY'] = default_queue + '_key'
+    app.config['CELERY_TIMEZONE'] = 'UTC'
     celery.conf.update(app.config)
     celery.conf.update(accept_content)
     return celery
