@@ -258,7 +258,7 @@ def update_talent_pool_stats():
         talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
         try:
             for talent_pool_tuple in talent_pools:
-                response = requests.get(CandidatePoolApiUrl.TALENT_POOL_GET_STATS % talent_pool_tuple[0],
+                response = requests.get('http://127.0.0.1:8008/v1/talent-pools/%s/stats' % talent_pool_tuple[0],
                                         headers=generate_jwt_header(), params=dict(is_update=1))
                 if response.status_code == 204:
                     logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
@@ -278,7 +278,7 @@ def update_talent_pipeline_stats():
         talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
         try:
             for talent_pipeline_tuple in talent_pipelines:
-                response = requests.get(CandidatePoolApiUrl.TALENT_PIPELINE_GET_STATS % talent_pipeline_tuple[0],
+                response = requests.get('http://127.0.0.1:8008/v1/talent-pipelines/%s/stats' % talent_pipeline_tuple[0],
                                         headers=generate_jwt_header(), params=dict(is_update=1))
                 if response.status_code == 204:
                     logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
@@ -298,7 +298,7 @@ def update_smartlist_stats():
         smartlists = Smartlist.query.with_entities(Smartlist.id).all()
         try:
             for smartlist_tuple in smartlists:
-                response = requests.get(CandidatePoolApiUrl.SMARTLIST_GET_STATS % smartlist_tuple[0],
+                response = requests.get('http://127.0.0.1:8008/v1/smartlists/%s/stats' % smartlist_tuple[0],
                                         headers=generate_jwt_header(), params=dict(is_update=1))
                 if response.status_code == 204:
                     logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
