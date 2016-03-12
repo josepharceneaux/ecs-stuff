@@ -4,14 +4,12 @@ import decimal
 import requests
 from flask import request
 from dateutil.parser import parse
-from celery.schedules import crontab
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
-from candidate_pool_service.modules.smartlists import get_candidates
 from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User, TalentPoolCandidate
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
 
@@ -60,6 +58,35 @@ def generate_jwt_header(oauth_token=None, user_id=None):
     return headers
 
 
+def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
+    """
+    This endpoint will be used to get smartlist candidates for given duration
+    :param smartlist: Smartlist Object
+    :param from_date: From Date
+    :param to_date: To Date
+    :return:
+    """
+    if smartlist.search_params:
+        try:
+            search_params = json.loads(smartlist.search_params)
+        except ValueError:
+            raise InvalidUsage('search_params(%s) are not JSON serializable for smartlist(id:%s). '
+                               'User(id:%s)' % (smartlist.search_params, smartlist.id, smartlist.user_id))
+
+        search_params['date_from'] = from_date
+        search_params['date_to'] = to_date
+        search_params['fields'] = 'count_only'
+
+        is_successful, response = get_candidates_from_search_api(search_params, generate_jwt_header(user_id=smartlist.user_id))
+        if not is_successful:
+            raise NotFoundError("Couldn't get statistics for smarlist %s for date %s" % (smartlist.id, to_date))
+        else:
+            return response.get('total_found')
+    else:
+        return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
+                                               SmartlistCandidate.added_time <= datetime.strptime(to_date, '%m/%d/%Y')).count()
+
+
 def get_candidates_from_search_api(query_string, headers):
     """
     This function will get candidates information based on query_string from Search API
@@ -96,15 +123,14 @@ def get_smartlist_stat_for_a_given_day(smartlist, date_object):
     """
     epoch_time_string = '12/31/1969'
     smartlists_growth_stats_dict = redis_dict(redis_store, 'smartlists_growth_stat_%s' % smartlist.id)
-    # If date_object is before smartlist creation date then we don't need to store statistics information in Database
-    if date_object < smartlist.added_time.date():
+    if date_object < (smartlist.added_time.date() - timedelta(days=90)):
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
         if date_string not in smartlists_growth_stats_dict:
             # Get SmartList Candidates Using Search API
-            response = get_candidates(smartlist, False, True, None)
-            smartlists_growth_stats_dict[date_string] = response.get('total_found')
+            smartlists_growth_stats_dict[date_string] = get_smartlist_candidates_for_given_date(
+                    smartlist, epoch_time_string, date_string)
 
         return smartlists_growth_stats_dict[date_string]
 
@@ -118,8 +144,7 @@ def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
     """
     epoch_time_string = '12/31/1969'
     pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline.id)
-    # If date_object is before talent-pipeline creation date then we don't need to store statistics information in Database
-    if date_object < talent_pipeline.added_time.date():
+    if date_object < (talent_pipeline.added_time.date() - timedelta(days=90)):
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
@@ -139,11 +164,10 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
     :param date_object: DateTime Object
     :return:
     """
-    epoch_time_string = '12/31/1969'
     pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_%s' % talent_pool.id)
 
     # If date_object is before talent-pool creation date then we don't need to store statistics information in Database
-    if date_object < talent_pool.added_time.date():
+    if date_object < (talent_pool.added_time.date() - timedelta(days=90)):
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
@@ -330,7 +354,7 @@ def get_stats_generic_function(container_object, container_name, user=None, from
                                                                                            container_object.id))
 
     try:
-        from_date = parse(from_date_string).date() if from_date_string else container_object.added_time.date()
+        from_date = parse(from_date_string).date() if from_date_string else (container_object.added_time.date() - timedelta(days=90))
         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)

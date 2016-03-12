@@ -553,7 +553,7 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
     interval = request.args.get('interval', '1')
 
     try:
-        from_date = parse(from_date_string).date() if from_date_string else datetime.fromtimestamp(0).date()
+        from_date = parse(from_date_string).date() if from_date_string else (talent_pipeline.added_time.date() - timedelta(days=90))
         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
