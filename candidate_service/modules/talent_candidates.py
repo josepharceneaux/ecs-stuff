@@ -58,6 +58,7 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
+from candidate_service.common.datetime_utils import utc_isoformat
 
 
 ##################################################
@@ -83,7 +84,7 @@ def fetch_candidate_info(candidate, fields=None):
 
     created_at_datetime = None
     if get_all_fields or 'created_at_datetime' in fields:
-        created_at_datetime = str(candidate.added_time)
+        created_at_datetime = utc_isoformat(candidate.added_time)
 
     emails = None
     if get_all_fields or 'emails' in fields:
