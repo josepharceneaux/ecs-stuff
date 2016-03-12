@@ -5,34 +5,6 @@ from candidate_pool_service.common.utils.handy_functions import add_role_to_test
 from common_functions import *
 
 
-def test_get_talent_pool_stats(access_token_first, access_token_second, talent_pool):
-
-    data = {
-        'talent_pool_candidates': [candidate_first.id, candidate_second.id]
-    }
-
-    # Logged-in user trying to add candidates to talent_pool
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
-    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
-    assert status_code == 200
-
-    sleep(40)
-
-    # Logged-in user trying to get statistics of a non-existing talent_pool
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
-    assert status_code == 404
-
-    # Logged-in user trying to get statistics of a talent_pool of different domain
-    response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
-    assert status_code == 403
-
-    # Logged-in user trying to get statistics of a talent_pool
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
-
-    assert status_code == 200
-    assert len(response.get('talent_pool_data')) >= 1
-
-
 def test_talent_pool_api_post(access_token_first, access_token_second, user_first, user_second):
 
     data = {
