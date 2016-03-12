@@ -332,6 +332,7 @@ def delete_dangling_stats(id_list, container):
     for key in redis_store.keys(redist_key + '*'):
         if int(key.replace(redist_key, '')) not in id_list:
             redis_store.delete(redis_store.get(key))
+            redis_store.delete(key)
 
     logger.info("Dangling Statistics have been deleted for %s" % container)
 
@@ -348,7 +349,7 @@ def get_stats_generic_function(container_object, container_name, user=None, from
     :return:
     """
     if not container_object:
-        raise NotFoundError("%s with id=%s doesn't exist in database" % (container_name, container_object.id))
+        raise NotFoundError("%s doesn't exist in database" % container_name)
 
     if user and container_object.user.domain_id != user.domain_id:
         raise ForbiddenError("Logged-in user %s is unauthorized to get stats of %s: %s" % (user.id, container_name,

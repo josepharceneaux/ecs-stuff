@@ -14,9 +14,10 @@ from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
-    get_stats_generic_function, get_talent_pipeline_stat_for_given_day)
+    get_stats_generic_function, get_talent_pipeline_stat_for_given_day, update_smartlist_stats,
+    update_talent_pipeline_stats, update_talent_pool_stats)
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.utils.candidate_service_calls import search_candidates_from_params
 
@@ -699,6 +700,16 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
                         talent_pool_stats) else reference_talent_pool_stat)
 
     return jsonify({'talent_pool_data': talent_pool_stats})
+
+
+@talent_pool_blueprint.route('statistics-update', methods=['GET'])
+@require_oauth()
+@require_all_roles(DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+def update_all_statistics():
+    update_talent_pipeline_stats.delay()
+    update_talent_pool_stats.delay()
+    update_smartlist_stats.delay()
+    return '', 204
 
 
 api = TalentApi(talent_pool_blueprint)

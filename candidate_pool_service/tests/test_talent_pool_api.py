@@ -5,29 +5,18 @@ from candidate_pool_service.common.utils.handy_functions import add_role_to_test
 from common_functions import *
 
 
-def test_update_talent_pool_stats(access_token_first, user_first, talent_pool, candidate_first,
-                                  candidate_second):
+def test_get_talent_pool_stats(access_token_first, access_token_second, talent_pool):
 
     data = {
         'talent_pool_candidates': [candidate_first.id, candidate_second.id]
     }
 
     # Logged-in user trying to add candidates to talent_pool
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
-    # Logged-in user trying to update statistics of all talent_pools in database
-    status_code = talent_pool_update_stats(access_token_first)
-    assert status_code == 204
-
-
-def test_get_talent_pool_stats(access_token_first, access_token_second, talent_pool):
-
-    # Emptying TalentPoolStats table
-    TalentPoolStats.query.delete()
-
-    generate_random_stats('talent-pool', talent_pool.id)
+    sleep(40)
 
     # Logged-in user trying to get statistics of a non-existing talent_pool
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id + 1000)
@@ -37,20 +26,11 @@ def test_get_talent_pool_stats(access_token_first, access_token_second, talent_p
     response, status_code = talent_pool_get_stats(access_token_second, talent_pool.id)
     assert status_code == 403
 
-    from_date = str(datetime.utcnow() - timedelta(2))
-    to_date = str(datetime.utcnow() - timedelta(1))
-
-    # Logged-in user trying to get statistics of a talent_pipeline
-    response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id, {'from_date': from_date,
-                                                                                       'to_date': to_date})
-    assert status_code == 200
-    assert not response.get('talent_pool_data')
-
     # Logged-in user trying to get statistics of a talent_pool
     response, status_code = talent_pool_get_stats(access_token_first, talent_pool.id)
 
     assert status_code == 200
-    assert len(response.get('talent_pool_data')) >= 10
+    assert len(response.get('talent_pool_data')) >= 1
 
 
 def test_talent_pool_api_post(access_token_first, access_token_second, user_first, user_second):

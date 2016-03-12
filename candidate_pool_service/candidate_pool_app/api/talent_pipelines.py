@@ -586,7 +586,7 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
                 talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
                         talent_pipeline_stats) else reference_talent_pipeline_stat)
 
-    return jsonify({'talent_pool_data': talent_pipeline_stats})
+    return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
 
 api = TalentApi(talent_pipeline_blueprint)
