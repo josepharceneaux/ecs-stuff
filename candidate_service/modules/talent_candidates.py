@@ -851,7 +851,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
-        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime, is_updating)
+        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime,
+                                                   is_updating)
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
@@ -1436,10 +1437,12 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
     """
     # If any of work_experiences' is_current is True, set all of candidate's experiences' is_current to False
     candidate_id, candidate_experiences = candidate.id, candidate.experiences
+    current_year = datetime.datetime.utcnow().year
     if any([experience.get('is_current') for experience in work_experiences]):
         CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
 
-    for work_experience in work_experiences:
+    number_of_experiences = len(work_experiences)
+    for i, work_experience in enumerate(work_experiences):
         # CandidateExperience
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
@@ -1447,11 +1450,11 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             position=work_experience.get('position'),
             city=work_experience.get('city'),
             state=work_experience.get('state'),
-            end_month=work_experience.get('end_month'),
+            end_month=work_experience.get('end_month') or 1,
             start_year=work_experience.get('start_year'),
             country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
-            start_month=work_experience.get('start_month'),
-            end_year=work_experience.get('end_year'),
+            start_month=work_experience.get('start_month') or 1,
+            end_year=work_experience.get('end_year') or current_year if i == (number_of_experiences - 1) else None,
             is_current=work_experience.get('is_current')
         )
 
@@ -1487,8 +1490,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems()
-                                              if v is not None)
+                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v is not None)
 
                 experience_bullet_id = experience_bullet.get('id')
                 if experience_bullet_id:  # Update
@@ -1993,3 +1995,30 @@ def get_search_params_of_smartlists(smartlist_ids):
     logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
 
     return search_params
+
+
+def get_total_months_experience(candidate_id):
+    """
+    :type candidate_id:  int|long
+    :rtype:  int
+    """
+    experiences = CandidateExperience.query.filter_by(candidate_id=candidate_id)\
+        .order_by(CandidateExperience.end_year.desc()).all()
+
+    if experiences:
+        last_position_end_year = experiences[0].end_year            # is available
+        last_position_end_month = experiences[0].end_month          # is available
+        first_position_start_year = experiences[-1].start_year
+        first_position_start_month = experiences[-1].start_month    # is available
+
+        if first_position_start_year:
+            total_months_of_experience = (last_position_end_year - first_position_start_year) * 12 + \
+                                         (last_position_end_month - first_position_start_month)
+        else:
+            total_months_of_experience = 0
+    else:
+        total_months_of_experience = 0
+
+    return total_months_of_experience
+
+
