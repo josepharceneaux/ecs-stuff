@@ -134,10 +134,10 @@ class TestCreateCampaign(object):
         }
 
         r = requests.post(
-                url=EmailCampaignUrl.CAMPAIGNS,
-                data=json.dumps(data),
-                headers={'Authorization': 'Bearer %s' % access_token_first,
-                         'content-type': 'application/json'}
+            url=EmailCampaignUrl.CAMPAIGNS,
+            data=json.dumps(data),
+            headers={'Authorization': 'Bearer %s' % access_token_first,
+                     'content-type': 'application/json'}
         )
         assert r.status_code == 201
         resp_object = r.json()
@@ -168,10 +168,10 @@ class TestCreateCampaign(object):
                 'list_ids': [smartlist_id]
                 }
         r = requests.post(
-                url=EmailCampaignUrl.CAMPAIGNS,
-                data=json.dumps(data),
-                headers={'Authorization': 'Bearer %s' % access_token_first,
-                         'content-type': 'application/json'}
+            url=EmailCampaignUrl.CAMPAIGNS,
+            data=json.dumps(data),
+            headers={'Authorization': 'Bearer %s' % access_token_first,
+                     'content-type': 'application/json'}
         )
         resp_object = r.json()
         assert 'error' in resp_object
@@ -203,7 +203,7 @@ class TestSendCampaign(object):
         Custom error should be NoSmartlistAssociatedWithCampaign.
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(
-                self.URL % email_campaign_of_user_first.id, access_token_first)
+            self.URL % email_campaign_of_user_first.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
                                               email_campaign_of_user_first,
@@ -215,8 +215,8 @@ class TestSendCampaign(object):
         """
         with app.app_context():
             CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
-                    self.URL % email_campaign_of_user_first.id, access_token_first,
-                    email_campaign_of_user_first)
+                self.URL % email_campaign_of_user_first.id, access_token_first,
+                email_campaign_of_user_first)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
@@ -225,7 +225,7 @@ class TestSendCampaign(object):
         of logged-in user. It should get Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-                self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
+            self.HTTP_METHOD, self.URL % email_campaign_in_other_domain.id, access_token_first)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -244,8 +244,8 @@ class TestSendCampaign(object):
         candidate having no email associated. So, Custom error should be raised.
         """
         CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
-                self.URL % campaign_with_candidate_having_no_email.id,
-                access_token_first, campaign_with_candidate_having_no_email.id)
+            self.URL % campaign_with_candidate_having_no_email.id,
+            access_token_first, campaign_with_candidate_having_no_email.id)
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -256,7 +256,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_valid_candidate
         response = requests.post(
-                self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
         assert_mail(campaign.subject)
 
@@ -271,8 +271,8 @@ class TestSendCampaign(object):
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
         response = requests.post(
-                self.URL % campaign_with_valid_candidate.id,
-                headers=dict(Authorization='Bearer %s' % access_token_first))
+            self.URL % campaign_with_valid_candidate.id,
+            headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
@@ -285,7 +285,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(
-                self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
         assert_mail(campaign.subject)
 
@@ -439,7 +439,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
         assert str(
-                send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 

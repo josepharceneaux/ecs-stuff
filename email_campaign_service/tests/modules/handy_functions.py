@@ -188,13 +188,10 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def post_to_email_template_resource(access_token, data, domain_id=None):
+def post_to_email_template_resource(access_token, data):
     """
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
-    :param access_token
-    :param data
-    :param domain_id
     """
     response = requests.post(
             url=EmailCampaignUrl.EMAIL_TEMPLATE, data=json.dumps(data),
@@ -219,11 +216,10 @@ def response_info(resp_request, resp_json, resp_status):
 def define_and_send_request(request_method, url, access_token, data=None):
     """
     Function will define request based on params and make the appropriate call.
-    :param  request_method:  can only be get, post, put, patch, or delete
-    :param url
-    :param access_token
-    :param template_id
-    :param data
+    :param request_method:  can only be get, post, put, patch, or delete
+    :param url: url for request
+    :param access_token: token for authentication
+    :param data: data in form of dictionary
     """
     request_method = request_method.lower()
     assert request_method in ['get', 'put', 'patch', 'delete']
@@ -264,7 +260,7 @@ def get_template_folder(token):
     return template_folder_id['id'], template_folder_name
 
 
-def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable="1",
+def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
                           folder_id=None, domain_id=None, role_id=None):
     """
     Creates a email campaign template with params provided
@@ -274,7 +270,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     :param template_name:           Template name
     :param body_html:               Body html
     :param body_text:               Body text
-    :param is_immutable:            "1" if immutable, otherwise "0"
+    :param is_immutable:            1 if immutable, otherwise 0
     :param folder_id:               folder id
     :param domain_id                domain_id
     :param role_id                  user scoped role id
@@ -283,7 +279,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     # Check the user has role to create template
     role = DomainRole.query.get(role_id)
     domain_role_name = role.role_name
-    assert domain_role_name == "CAN_CREATE_EMAIL_TEMPLATE"
+    assert domain_role_name == DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
     data = dict(
             name=template_name,
             email_template_folder_id=folder_id,
@@ -294,25 +290,23 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
             is_immutable=is_immutable
     )
 
-    create_resp = post_to_email_template_resource(token, data=data, domain_id=domain_id)
+    create_resp = post_to_email_template_resource(token, data=data)
     return create_resp
 
 
 def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
-                          folder_id=None, is_immutable="1", domain_id=None):
+                          folder_id=None, is_immutable=1):
     """
-
-    :param email_template_id
-    :param request
-    :param token:
-    :param user_id:
-    :param template_name:
-    :param body_html:
-    :param body_text:
-    :param is_immutable:
-    :param folder_id:
-    :param domain_id:
-    :return:
+        Update existing email template fields using values provided by user.
+        :param email_template_id: id of email template
+        :param request: request object
+        :param token: token for authentication
+        :param user_id: user's id
+        :param template_name: Name of template
+        :param body_html: HTML body for email template
+        :param body_text: HTML text for email template
+        :param folder_id: ID of email template folder
+        :param is_immutable: SPecify whether theemail template is mutable or not
     """
     data = dict(
             name=template_name,
@@ -365,3 +359,37 @@ def del_domain_roles(role_ids):
             db.session.commit()
     else:
         db.session.query(DomainRole).filter_by(id=role_ids).delete()
+
+def add_email_template(user_auth, template_owner, template_body):
+    """
+    This function will create email template
+    """
+    # Get access token
+    auth_token = user_auth.get_auth_token(template_owner, get_bearer_token=True)
+    token = auth_token['access_token']
+    domain_id = template_owner.domain_id
+    # Add or get Role
+    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
+    role_id = add_domain_role(role, domain_id)
+
+    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to sample_user
+    add_role_to_test_user(template_owner, [role])
+
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token)
+
+    template_name = 'test_email_template%i' % time.time()
+    is_immutable = 1
+    resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
+                                 folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
+    db.session.commit()
+    resp_obj = resp.json()
+    resp_dict = resp_obj['template_id'][0]
+    del_domain_roles(role_id)
+
+    return {"email_template_id": resp_dict['id'],
+            "template_folder_id": template_folder_id,
+            "template_folder_name": template_folder_name,
+            "template_name": template_name,
+            "is_immutable": is_immutable,
+            "domain_id": domain_id}
