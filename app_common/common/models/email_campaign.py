@@ -131,7 +131,7 @@ class EmailCampaignBlast(db.Model):
         """
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
-               cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
+            cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
