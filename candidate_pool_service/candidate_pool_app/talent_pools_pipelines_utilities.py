@@ -12,7 +12,7 @@ from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.modules.smartlists import get_candidates
 from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User, TalentPoolCandidate
 from candidate_pool_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
@@ -148,17 +148,10 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
     else:
         date_string = date_object.strftime('%m/%d/%Y')
         if date_string not in pools_growth_stats_dict:
-            # Get Talent Pool Candidates Using Search API
-            query_parameters = {'talent_pool_id': talent_pool.id, 'fields':'count_only',
-                                'date_from': epoch_time_string, 'date_to': date_string}
-            headers = generate_jwt_header(request.oauth_token, talent_pool.user_id)
-            is_successful, response = get_candidates_from_search_api(query_parameters, headers)
-
-            if not is_successful:
-                raise NotFoundError("TalentPoolStatistics: Couldn't get candidates from candidates search "
-                                    "service because: %s" % response)
-            else:
-                pools_growth_stats_dict[date_string] = response.get('total_found')
+            b = TalentPoolCandidate.query.filter(
+                    TalentPoolCandidate.talent_pool_id == talent_pool.id,
+                    TalentPoolCandidate.added_time <= date_object).all()
+            pools_growth_stats_dict[date_string] = len(b)
 
         return pools_growth_stats_dict[date_string]
 
