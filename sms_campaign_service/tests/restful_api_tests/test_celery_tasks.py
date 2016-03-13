@@ -24,7 +24,6 @@ from sms_campaign_service.common.models.user import DomainRole
 from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          EmptyDestinationUrl)
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (ResourceNotFound, InternalServerError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -36,7 +35,7 @@ from sms_campaign_service.common.campaign_services.validators import \
 # Database Models
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.models.misc import (UrlConversion, Frequency)
+from sms_campaign_service.common.models.misc import (UrlConversion, Frequency, Activity)
 
 # Service Specific
 from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
@@ -227,7 +226,7 @@ class TestURLRedirectionApi(object):
             scheduled_sms_campaign_of_current_user)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
-        assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_SMS_CLICK,
+        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
                             scheduled_sms_campaign_of_current_user.id)
 
     def test_get_with_no_signature(self, url_conversion_by_send_test_sms_campaign):

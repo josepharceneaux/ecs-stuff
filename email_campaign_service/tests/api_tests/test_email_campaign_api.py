@@ -24,9 +24,8 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
-from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.error_handling import InvalidUsage
-from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
+from email_campaign_service.common.models.misc import (UrlConversion, Activity)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -474,12 +473,12 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
             CampaignsTestsHelpers.assert_for_activity(user.id,
-                                                      ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                                      Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id,
-                                                  ActivityMessageIds.CAMPAIGN_SEND,
+                                                  Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
 
     # For each url_conversion record we assert that source_url is saved correctly
