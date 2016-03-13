@@ -25,9 +25,12 @@ class Activity(db.Model):
 
     class MessageIds(object):
         """
-        This class contains the Activity Message Ids to create an activity for a particular action.
-        This is placed inside common/utils/ so that other services can use this to create activities
-        without initializing activity_service.
+        When user performs some action e.g. creates a smartlist or create a candidate etc, we need
+        to create an activity for those actions. So, here we have the Activity Message Ids to create
+        such activities. Corresponding activity messages are in activity_service.
+        (These ids and messages will be moved to database later).
+        This is placed inside Activity model so that any service can use these ids to create
+        activities without initializing activity_service.
         """
         #########################################################################################
         #   LEGACY CODES

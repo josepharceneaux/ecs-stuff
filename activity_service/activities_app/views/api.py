@@ -132,7 +132,6 @@ class TalentActivityManager(object):
             "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
             " on event '%(eventTitle)s'",
             "candidate.png"),
-        # TODO--w: What if we name these like EVENT_CREATED, EVENT_DELETED and etc. If it's too much then leave for now
         Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
                                            "%(username)s created %(count)s events.</b>",
                                            "event.png"),
