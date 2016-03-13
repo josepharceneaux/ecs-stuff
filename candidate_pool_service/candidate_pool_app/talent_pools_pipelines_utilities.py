@@ -150,8 +150,9 @@ def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
         date_string = date_object.strftime('%m/%d/%Y')
         if date_string not in pipelines_growth_stats_dict:
             # Get Talent Pipeline Candidates Using Search API
-            response = get_candidates_of_talent_pipeline(talent_pipeline, fields='count_only', request_params={
-                'date_from': epoch_time_string, 'date_to': date_string})
+
+            response = get_candidates_of_talent_pipeline(talent_pipeline, request_params={
+                'date_from': epoch_time_string, 'date_to': date_string, 'fields': 'count_only'})
             pipelines_growth_stats_dict[date_string] = response.get('total_found')
 
         return pipelines_growth_stats_dict[date_string]
@@ -180,14 +181,11 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
         return pools_growth_stats_dict[date_string]
 
 
-def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_celery_task=False,
-                                      request_params=None):
+def get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=None, request_params=None):
     """
         Fetch all candidates of a talent-pipeline
         :param talent_pipeline: TalentPipeline Object
-        :param fields: Return fields
         :param oauth_token: Authorization Token
-        :param is_celery_task: Is this method is called by a celery task or not
         :param request_params: Request parameters
         :return: A dict containing info of all candidates according to query parameters
         """
@@ -214,14 +212,6 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
                                          "because: %s" % e.message)
 
-    if not is_celery_task:
-        request_params['fields'] = request.args.get('fields', '') or fields
-        request_params['sort_by'] = request.args.get('sort_by', '')
-        request_params['limit'] = request.args.get('limit', '')
-        request_params['page'] = request.args.get('page', '')
-    else:
-        request_params['fields'] = fields
-
     request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
     request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
     request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
@@ -233,11 +223,7 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
                                                              generate_jwt_header(oauth_token, talent_pipeline.user_id))
 
     if not is_successful:
-        if is_celery_task:
-            logger.exception("Couldn't get candidates from candidates search service because: %s" % response)
-            return False
-        else:
-            raise NotFoundError("Couldn't get candidates from candidates search service because: %s" % response)
+        raise NotFoundError("Couldn't get candidates from candidates search service because: %s" % response)
     else:
         return response
 

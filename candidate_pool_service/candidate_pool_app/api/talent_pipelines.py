@@ -477,7 +477,13 @@ class TalentPipelineCandidates(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        return get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=request.oauth_token)
+        request_params = dict()
+        request_params['fields'] = request.args.get('fields', '')
+        request_params['sort_by'] = request.args.get('sort_by', '')
+        request_params['limit'] = request.args.get('limit', '')
+        request_params['page'] = request.args.get('page', '')
+
+        return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params=request_params)
 
 
 class TalentPipelineCampaigns(Resource):
