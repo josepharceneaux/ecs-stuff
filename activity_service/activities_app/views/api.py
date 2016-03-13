@@ -132,6 +132,7 @@ class TalentActivityManager(object):
             "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
             " on event '%(eventTitle)s'",
             "candidate.png"),
+        # TODO--w: What if we name these like EVENT_CREATED, EVENT_DELETED and etc. If it's too much then leave for now
         Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
                                            "%(username)s created %(count)s events.</b>",
                                            "event.png"),
@@ -272,7 +273,7 @@ class TalentActivityManager(object):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
     def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
-        """Method for retrieving activity logs based on a domain ID that is extraced via an
+        """Method for retrieving activity logs based on a domain ID that is extracted via an
            authenticated user ID.
         :param int user_id: ID of the authenticated user.
         :param datetime|None start_datetime: Optional datetime object for query filters.
