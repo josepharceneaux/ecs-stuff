@@ -3,7 +3,7 @@ from candidate_service.common.talent_config_manager import load_gettalent_config
 from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_service.common.talent_flask import TalentFlask
-from candidate_service.common.talent_celery import make_celery
+from candidate_service.common.talent_celery import init_celery_app
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
@@ -19,7 +19,7 @@ try:
     db.app = app
 
     # Instantiate Celery
-    celery_app = make_celery(app, 'celery_candidate_documents_scheduler')
+    celery_app = init_celery_app(app, 'celery_candidate_documents_scheduler')
 
     from candidate_service.common.redis_cache import redis_store
     redis_store.init_app(app)

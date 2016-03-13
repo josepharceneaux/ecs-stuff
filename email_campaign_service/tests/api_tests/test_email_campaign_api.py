@@ -105,6 +105,54 @@ class TestGetCampaigns(object):
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
+    def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
+                                                   email_campaign_of_user_second,
+                                                   email_campaign_in_other_domain,
+                                                   access_token_first,
+                                                   talent_pipeline):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
+        paginated response. Here two campaigns have been created by different users of same domain.
+        """
+        # Test GET api of email campaign using per_page=1 and default page=1.
+        # It should return first campaign in response.
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?per_page=1')
+        assert len(email_campaigns) == 1
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        # Test GET api of talent-pipelines/:id/campaigns
+        assert_talent_pipeline_response(talent_pipeline, access_token_first)
+
+        # Test GET api of email campaign using per_page=1 for page=2. It should
+        # return second campaign in response.
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?per_page=1&page=2')
+        assert len(email_campaigns) == 1
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_second)
+
+        # Test GET api of email campaign with 2 results per_page
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?per_page=2')
+        assert len(email_campaigns) == 2
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        # Test GET api of talent-pipelines/:id/campaigns
+        assert_talent_pipeline_response(talent_pipeline, access_token_first)
+
+        # Test GET api of email campaign with default per_page=10 and page =1.
+        # It should get both campaigns in response.
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?&page=1')
+        assert len(email_campaigns) == 2
+        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+
+        # Test GET api of email campaign with page = 2. No campaign should be received in response
+        # as we have created only two campaigns so far and default per_page is 10.
+        email_campaigns = get_campaign_or_campaigns(access_token_first,
+                                                    pagination_query='?page=2')
+        assert len(email_campaigns) == 0
+
 
 class TestCreateCampaign(object):
     """
@@ -412,11 +460,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     # Need to add this as processing of POST request runs on Celery
     time.sleep(20)
     db.session.commit()
-    assert len(campaign.blasts) == 1
+    assert len(campaign.blasts.all()) == 1
     campaign_blast = campaign.blasts[0]
     assert campaign_blast.sends == expected_count
     # assert on sends
-    campaign_sends = campaign.sends
+    campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == expected_count
     sends_url_conversions = []
     # assert on activity of individual campaign sends
