@@ -25,10 +25,9 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.user import Domain
-from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.utils.amazon_ses import send_email
+from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
-from email_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -92,14 +91,12 @@ def create_email_campaign(user_id, oauth_token, name, subject,
                                    frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id
                                    )
-
-    db.session.add(email_campaign)
-    db.session.commit()
+    EmailCampaign.save(email_campaign)
 
     try:
         # Add activity
         CampaignBase.create_activity(user_id,
-                                     ActivityMessageIds.CAMPAIGN_CREATE,
+                                     Activity.MessageIds.CAMPAIGN_CREATE,
                                      email_campaign,
                                      dict(id=email_campaign.id,
                                           name=name))
@@ -190,7 +187,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
         # Add activity
         try:
             CampaignBase.create_activity(user.id,
-                                         ActivityMessageIds.CAMPAIGN_SEND,
+                                         Activity.MessageIds.CAMPAIGN_SEND,
                                          campaign,
                                          dict(id=campaign.id, name=campaign.name,
                                               num_candidates=len(candidate_ids_and_emails)))
@@ -472,7 +469,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
     # Add activity
     try:
         CampaignBase.create_activity(user.id,
-                                     ActivityMessageIds.CAMPAIGN_EMAIL_SEND,
+                                     Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                      email_campaign_send,
                                      dict(campaign_name=campaign.name,
                                           candidate_name=candidate.name))
@@ -643,8 +640,8 @@ def update_hit_count(url_conversion):
             # Add activity
             try:
                 CampaignBase.create_activity(candidate.user_id,
-                                             ActivityMessageIds.CAMPAIGN_EMAIL_OPEN if is_open
-                                             else ActivityMessageIds.CAMPAIGN_EMAIL_CLICK,
+                                             Activity.MessageIds.CAMPAIGN_EMAIL_OPEN if is_open
+                                             else Activity.MessageIds.CAMPAIGN_EMAIL_CLICK,
                                              email_campaign_send,
                                              dict(candidateId=candidate.id,
                                                   campaign_name=email_campaign_send.email_campaign.name,

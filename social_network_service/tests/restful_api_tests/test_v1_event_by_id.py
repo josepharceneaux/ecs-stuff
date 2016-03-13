@@ -13,7 +13,6 @@ from social_network_service.common.models import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import auth_header, send_request, unauthorize_test
 from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
@@ -155,7 +154,7 @@ class TestEventById(object):
 
         # Check activity updated
         activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
-                                                          type_=ActivityMessageIds.EVENT_UPDATE,
+                                                          type_=Activity.MessageIds.EVENT_UPDATE,
                                                           user_id=event_db['user_id'])
 
         data = json.loads(activity.params)
@@ -189,7 +188,7 @@ class TestEventById(object):
         db.db.session.commit()
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
                                                           source_id=event_id,
-                                                          type_=ActivityMessageIds.EVENT_DELETE)
+                                                          type_=Activity.MessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
         assert data['event_title'] == event_data['title']
 

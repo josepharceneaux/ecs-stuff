@@ -28,6 +28,7 @@ from dateutil.relativedelta import relativedelta
 
 # Database Models
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.models.user import UserPhone, User
 from sms_campaign_service.common.models.candidate import (PhoneLabel, Candidate, CandidatePhone)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSend,
@@ -36,7 +37,6 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage)
@@ -770,7 +770,7 @@ class SmsCampaignBase(CampaignBase):
         params = {'candidate_name': candidate.first_name + ' ' + candidate.last_name,
                   'campaign_name': self.campaign.name}
         self.create_activity(self.user.id,
-                             _type=ActivityMessageIds.CAMPAIGN_SMS_SEND,
+                             _type=Activity.MessageIds.CAMPAIGN_SMS_SEND,
                              source=source,
                              params=params)
 
@@ -918,7 +918,7 @@ class SmsCampaignBase(CampaignBase):
                   'campaign_name': campaign.name}
         auth_header = cls.get_authorization_header(user_id)
         cls.create_activity(user_id,
-                            _type=ActivityMessageIds.CAMPAIGN_SMS_REPLY,
+                            _type=Activity.MessageIds.CAMPAIGN_SMS_REPLY,
                             source=sms_campaign_reply,
                             params=params)
 

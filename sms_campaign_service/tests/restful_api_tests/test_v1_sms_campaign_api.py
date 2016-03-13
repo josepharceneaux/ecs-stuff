@@ -22,12 +22,12 @@ from sms_campaign_service.common.campaign_services.tests_helpers import Campaign
 
 # Models
 from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.error_handling import (UnauthorizedError, InvalidUsage,
                                                         InternalServerError, ForbiddenError,
                                                         ResourceNotFound)
@@ -457,7 +457,7 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert response.status_code == 207
         assert sms_campaign_in_other_domain.id in response.json()['not_owned_ids']
-        assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_DELETE,
+        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
 
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, valid_header, user_first,
@@ -475,7 +475,7 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert response.status_code == 207
         assert last_id in response.json()['not_found_ids']
-        assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_DELETE,
+        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
 
     def test_campaigns_delete_with_valid_and_invalid_ids(self, valid_header, user_first,
@@ -492,7 +492,7 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert response.status_code == 207
         assert 0 in response.json()['not_deleted_ids']
-        assert_for_activity(user_first.id, ActivityMessageIds.CAMPAIGN_DELETE,
+        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
 
     def test_campaigns_delete_with_deleted_record(self, valid_header, user_first,
@@ -547,7 +547,7 @@ def _assert_campaign_creation(response, user_id, expected_status_code):
     resp = response.json()
     assert 'location' in response.headers
     assert 'id' in resp
-    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_CREATE, resp['id'])
+    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, resp['id'])
 
 
 def _delete_created_number_of_user(user):

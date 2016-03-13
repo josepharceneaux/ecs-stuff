@@ -56,7 +56,8 @@ def validate_and_format_request_data(data, user_id):
         raise InvalidUsage("`list_ids` must be in list format")
     if filter(lambda list_id: not isinstance(list_id, (int, long)), list_ids):
         raise InvalidUsage("`list_ids` should be a list of integers")
-
+    if not frequency_id:
+        frequency_id = Frequency.ONCE  # Set default to Once
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not start_datetime:

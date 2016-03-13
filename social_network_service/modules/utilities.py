@@ -21,7 +21,7 @@ from pytz import timezone
 
 # Application Specific Imports
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.utils.activity_utils import ActivityMessageIds
+from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
@@ -285,7 +285,7 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'event_title': event_obj.title})
 
             add_activity(user_id=user_id,
-                         activity_type=ActivityMessageIds.EVENT_CREATE,
+                         activity_type=Activity.MessageIds.EVENT_CREATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,
                          params=activity_data)
@@ -300,7 +300,7 @@ def process_event(data, user_id, method='Create'):
             activity_data.update({'event_title': event_obj.title})
 
             add_activity(user_id=user_id,
-                         activity_type=ActivityMessageIds.EVENT_UPDATE,
+                         activity_type=Activity.MessageIds.EVENT_UPDATE,
                          source_id=event_id,
                          source_table=Event.__tablename__,
                          params=activity_data)
