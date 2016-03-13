@@ -9,7 +9,7 @@ import simplecrypt
 from widget_service.common.models.user import Domain
 from widget_service.common.models.widget import WidgetPage
 from widget_service.common.utils.handy_functions import random_letter_digit_string
-from widget_service.widget_app import db
+from widget_service.app import db
 
 simplecrypt.EXPANSION_COUNT = (10000, 10000, 10000)
 

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+from random import randint
 from flask.ext.script import Manager
 from flask.ext.migrate import Migrate, MigrateCommand
 from app_common.common.models.db import db
@@ -33,6 +35,23 @@ migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand)
 
+
+@manager.command
+def normalize_added_time_field_in_talent_pool_candidate_table():
+    """
+    This method will normalize added_time field in talent_pool_candidate table
+    :return:
+    """
+    talent_pools = talent_pools_pipelines.TalentPool.query.with_entities(talent_pools_pipelines.TalentPool.id).all()
+    for talent_pool_tuple in talent_pools:
+        talent_pool = talent_pools_pipelines.TalentPool.query.get(talent_pool_tuple[0])
+        added_time = talent_pool.added_time
+        talent_pool_candidates = talent_pools_pipelines.TalentPoolCandidate.query.filter_by(
+                talent_pool_id=talent_pool.id).all()
+        for talent_pool_candidate in talent_pool_candidates:
+            random_date = added_time + timedelta(days=randint(0, (datetime.utcnow() - added_time).days))
+            talent_pool_candidate.added_time = random_date
+        db.session.commit()
 
 # @manager.command
 # def add_admin_roles_to_existing_users():

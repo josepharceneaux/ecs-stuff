@@ -46,11 +46,6 @@ try:
     db.create_all()
     db.session.commit()
 
-    from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import \
-        schedule_candidate_daily_stats_update
-
-    schedule_candidate_daily_stats_update()
-
     # Enable CORS for *.gettalent.com and localhost
     CORS(app, resources=GTApis.CORS_HEADERS)
 

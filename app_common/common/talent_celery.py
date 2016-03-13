@@ -41,8 +41,11 @@ def init_celery_app(flask_app, default_queue, modules_to_include=None):
     flask_app.config['CELERY_QUEUES'] = (
         Queue(default_queue, routing_key=default_queue + '_key'),
     )
+
     flask_app.config['CELERY_DEFAULT_QUEUE'] = default_queue
     flask_app.config['CELERY_DEFAULT_ROUTING_KEY'] = default_queue + '_key'
+    flask_app.config['CELERY_TIMEZONE'] = 'UTC'
+
     celery_app.conf.update(flask_app.config)
     celery_app.conf.update(accept_content)
     logger = flask_app.config[TalentConfigKeys.LOGGER]

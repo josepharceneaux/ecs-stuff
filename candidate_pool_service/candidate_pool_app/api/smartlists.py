@@ -5,16 +5,15 @@ from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
+from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.modules.smartlists import (get_candidates, create_smartlist_dict,
                                                        save_smartlist, get_all_smartlists)
 from candidate_pool_service.modules.validators import (validate_and_parse_request_data,
                                                        validate_and_format_smartlist_post_data)
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import update_smartlists_stats_task
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
 
 __author__ = 'jitesh'
 
@@ -139,71 +138,25 @@ class SmartlistResource(Resource):
         return {'smartlist': {'id': smartlist.id}}
 
 
-@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_UPDATE_STATS, methods=['POST'])
-@require_oauth(allow_null_user=True)
-def update_smartlists_stats():
-    """
-    This method will update the statistics of all smartlists daily.
-    :return: None
-    """
-    logger.info("SmartLists statistics update process has been started")
-    update_smartlists_stats_task.delay()
-    return '', 204
-
-
 @smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_GET_STATS, methods=['GET'])
-@require_oauth()
+@require_oauth(allow_null_user=True)
 def get_smartlist_stats(smartlist_id):
     """
     This method will return the statistics of a smartlist over a given period of time with time-period = 1 day
     :param smartlist_id: Id of a smartlist
     :return: A list of time-series data
     """
+
     smartlist = Smartlist.query.get(smartlist_id)
-
-    if not smartlist:
-        raise NotFoundError(error_message="SmartList with id=%s doesn't exist in database" % smartlist_id)
-
-    if smartlist.user.domain_id != request.user.domain_id:
-        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of smartlist %s"
-                                           % (request.user.id, smartlist.id))
-
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
-
-    try:
-        from_date = parse(from_date_string) if from_date_string else datetime.fromtimestamp(0)
-        to_date = parse(to_date_string) if to_date_string else datetime.utcnow()
-    except Exception as e:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
-
-    if not is_number(interval):
-        raise InvalidUsage("Interval '%s' should be integer" % interval)
-
-    interval = int(interval)
-    if interval < 1:
-        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
-
-    smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
-                                                  SmartlistStats.added_datetime >= from_date,
-                                                  SmartlistStats.added_datetime <= to_date).all()
-    smartlist_stats.reverse()
-
-    smartlist_stats = smartlist_stats[::interval]
-
-    # Computing number_of_candidates_added by subtracting candidate count of previous day from candidate
-    # count of current_day
-    smartlist_stats = map(lambda (i, smart_list_stat): {
-        'total_number_of_candidates': smart_list_stat.total_number_of_candidates,
-        'number_of_candidates_added': (smart_list_stat.total_number_of_candidates - (
-            smartlist_stats[i + 1].total_number_of_candidates if i + 1 < len(smartlist_stats) else
-            smart_list_stat.total_number_of_candidates)),
-        'added_datetime': smart_list_stat.added_datetime.isoformat(),
-        'candidates_engagement': smart_list_stat.candidates_engagement
-    }, enumerate(smartlist_stats))
-
-    return jsonify({'smartlist_data': smartlist_stats})
+    response = get_stats_generic_function(smartlist, 'SmartList', request.user, from_date_string,
+                                          to_date_string, interval)
+    if 'is_update' in request.args:
+        return '', 204
+    else:
+        return jsonify({'smartlist_data': response})
 
 
 api = TalentApi(smartlist_blueprint)
