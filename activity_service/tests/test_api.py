@@ -19,6 +19,8 @@ from .fixtures import org_fixture
 from .fixtures import token_fixture
 from .fixtures import user_fixture
 
+DATE_INPUT_FORMAT = '%Y-%m-%dT%H:%M:%S'
+
 
 def test_call_requires_auth(token_fixture):
     # this should become a test for non-aggregate responses.
@@ -39,8 +41,8 @@ def test_reponse_is_user_filtered(token_fixture):
 
 
 def test_response_can_be_time_filtered(token_fixture):
-    today = (datetime.today() + timedelta(minutes=-1)).isoformat()
-    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_time={}'.format(today)
+    today = (datetime.today() + timedelta(minutes=-1)).strftime(DATE_INPUT_FORMAT)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_datetime={}'.format(today)
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 3

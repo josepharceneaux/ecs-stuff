@@ -22,7 +22,7 @@ from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
-ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
@@ -34,25 +34,29 @@ def get_activities(page):
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
+    start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
     is_aggregate_request = request.args.get('aggregate') == '1'
+    start_param = request.args.get('start_datetime')
+    end_param = request.args.get('end_datetime')
+    if start_param:
+        start_datetime = parser.parse(start_param).strftime(DATE_FORMAT)
+    if end_param:
+        end_datetime = parser.parse(end_param).strftime(DATE_FORMAT)
     tam = TalentActivityManager()
     if is_aggregate_request:
-        return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
+        return jsonify({'activities': tam.get_recent_readable(valid_user_id,
+                                                              start_datetime=start_datetime,
+                                                              end_datetime=end_datetime)})
     else:
-        request_start_time = request_end_time = None
-        if request.args.get('start_time'):
-            request_start_time = parser.parse(request.args.get('start_time'))
-        if request.args.get('end_time'):
-            request_end_time = parser.parse(request.args.get('start_time'))
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
         try:
             request_page = int(page)
         except ValueError:
             return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
         return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
-                                          start_datetime=request_start_time,
-                                          end_datetime=request_end_time, page=request_page))
+                                          start_datetime=start_datetime,
+                                          end_datetime=end_datetime, page=request_page))
 
 
 @mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
@@ -302,18 +306,22 @@ class TalentActivityManager(object):
         return activities_response
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
-    def get_recent_readable(self, user_id, limit=3):
+    def get_recent_readable(self, user_id, start_datetime=None, end_datetime=None, limit=3):
         start_time = time()
         current_user = User.query.filter_by(id=user_id).first()
         logger.info("Fetched current user in {} seconds".format(time() - start_time))
-        # # Get the last 25 activities and aggregate them by type, with order.
+        # Get the last 25 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         logger.info("Fetched domain IDs in {} seconds".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
         logger.info("Flattened domain IDs in {} seconds".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
-        activities = Activity.query.filter(*filters).limit(25)
+        if start_datetime:
+            filters.append(Activity.added_time>=start_datetime)
+        if end_datetime:
+            filters.append(Activity.added_time<=end_datetime)
+        activities = Activity.query.filter(*filters)
         logger.info("Fetched limit activities in {} seconds".format(time() - start_time))
 
         aggregated_activities = []
