@@ -318,7 +318,7 @@ class TestURLRedirectionMethods(object):
         _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
         _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
 
-    def test_process_url_redirect_with_deleted_candidate(self, user_first, valid_header,
+    def test_process_url_redirect_with_deleted_candidate(self, valid_header,
                                                          url_conversion_by_send_test_sms_campaign,
                                                          candidate_first):
         """
@@ -449,8 +449,6 @@ def _delete_candidate(candidate, headers):
     response = requests.delete(CandidateApiUrl.CANDIDATE % candidate.id, headers=headers)
     assert response.status_code == 204
     db.session.commit()
-
-
 
 
 def _delete_url_conversion(url_conversion_obj):

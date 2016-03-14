@@ -1,9 +1,12 @@
+
 __author__ = 'basit'
 
 import datetime
+
 from db import db
 from sqlalchemy.orm import relationship
 from ..error_handling import InvalidUsage
+from ..datetime_utils import utc_isoformat
 
 
 class SmsCampaign(db.Model):
@@ -27,6 +30,23 @@ class SmsCampaign(db.Model):
 
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
+
+    def to_dict(self, include_fields=None):
+        """
+        This returns required fields when an sms-campaign object is requested.
+        :param list[str] | None include_fields: List of fields to include, or None for all.
+        :rtype: dict[str, T]
+        """
+        return_dict = {"id": self.id,
+                       "user_id": self.user_phone.user_id,
+                       "name": self.name,
+                       "frequency": self.frequency.name if self.frequency else None,
+                       "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                       "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                       "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
+                       "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
+                       "list_ids": [smartlist.id for smartlist in self.smartlists]}
+        return return_dict
 
     @classmethod
     def get_by_user_phone_id(cls, user_phone_id):

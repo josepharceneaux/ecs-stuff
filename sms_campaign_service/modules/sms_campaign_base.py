@@ -421,7 +421,7 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
         """
         raise_if_not_instance_of(candidate, Candidate)
-        candidate_phones = candidate.candidate_phone
+        candidate_phones = candidate.phones
         mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
 
         # filter only mobile numbers

@@ -1484,7 +1484,7 @@ class CampaignBase(object):
         if not send_url_conversion_obj:
             raise ResourceNotFound(
                 'url_redirect: campaign_send_url_conversion_obj not found for '
-                'url_conversion(id:%s)' % url_conversion_id)
+                'url_conversion(id:%s)' % url_conversion_id, ResourceNotFound.http_status_code())
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
         # get url_conversion obj
         url_conversion_obj = send_url_conversion_obj.url_conversion
