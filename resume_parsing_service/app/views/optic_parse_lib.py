@@ -16,7 +16,7 @@ from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.utils.validators import format_phone_number
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
-ISO8601_DT_FORMAT = "%Y-%m-%d"
+ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
 def fetch_optic_response(resume):
@@ -167,7 +167,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             start_date_str = get_date_from_date_tag(employement, 'start')
             start_month, start_year = None, None
             if start_date_str:
-                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DT_FORMAT)
+                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
                 start_year = start_datetime.year
                 start_month = start_datetime.month
 
@@ -176,7 +176,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             end_date_str = get_date_from_date_tag(employement, 'end')
             end_month, end_year = None, None
             if end_date_str:
-                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DT_FORMAT)
+                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
                 end_month = end_datetime.month
                 end_year = end_datetime.year
 
