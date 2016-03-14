@@ -1441,9 +1441,26 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
     if any([experience.get('is_current') for experience in work_experiences]):
         CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
 
-    number_of_experiences = len(work_experiences)
-    for i, work_experience in enumerate(work_experiences):
-        # CandidateExperience
+    latest_start_date = 0  # Arbitrary value; it's just a starting point for comparison
+    for work_experience in work_experiences:
+
+        # Find the latest start date of all the provided experiences
+        start_year = work_experience.get('start_year')
+        if start_year:
+            if start_year > latest_start_date:
+                latest_start_date = start_year
+
+        # end_year of job must be None if it's candidate's current job
+        is_current, end_year = work_experience.get('is_current'), work_experience.get('end_year')
+        if is_current:
+            end_year = None
+        # if end_year is not provided, it should be set to current_year assuming it's the most recent job
+        elif not end_year and start_year == latest_start_date:
+            end_year = current_year
+        # if end_year is not provided, and it's not the latest job, end_year should be latest job's start_year
+        elif not end_year and start_year != latest_start_date:
+            end_year = start_year - 1
+
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
             organization=work_experience.get('organization'),
@@ -1451,11 +1468,11 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             city=work_experience.get('city'),
             state=work_experience.get('state'),
             end_month=work_experience.get('end_month') or 1,
-            start_year=work_experience.get('start_year'),
+            start_year=start_year,
             country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
             start_month=work_experience.get('start_month') or 1,
-            end_year=work_experience.get('end_year') or current_year if i == (number_of_experiences - 1) else None,
-            is_current=work_experience.get('is_current')
+            end_year=end_year,
+            is_current=is_current
         )
 
         experience_id = work_experience.get('id')
@@ -1997,28 +2014,25 @@ def get_search_params_of_smartlists(smartlist_ids):
     return search_params
 
 
-def get_total_months_experience(candidate_id):
+def aggregate_total_months_experience(candidate, experience_dict):
     """
-    :type candidate_id:  int|long
-    :rtype:  int
+    :type candidate:  Candidate
+    :param experience_dict:
     """
-    experiences = CandidateExperience.query.filter_by(candidate_id=candidate_id)\
-        .order_by(CandidateExperience.end_year.desc()).all()
+    # experience_dict = dict(
+    #     end_month=work_experience.get('end_month') or 1,
+    #     start_year=start_year,
+    #     start_month=work_experience.get('start_month') or 1,
+    #     end_year=end_year,
+    #     is_current=is_current
+    # )
+    start_year = experience_dict.get('start_year')
+    start_month = experience_dict.get('start_month')    # or 1
+    end_year = experience_dict.get('end_year')
+    end_month = experience_dict.get('end_month')        # or 1
+    total_months_experience = 0
+    if start_year and end_year:
+        total_months_experience = (end_year - start_year) * 12 + (end_month - start_month)
 
-    if experiences:
-        last_position_end_year = experiences[0].end_year            # is available
-        last_position_end_month = experiences[0].end_month          # is available
-        first_position_start_year = experiences[-1].start_year
-        first_position_start_month = experiences[-1].start_month    # is available
-
-        if first_position_start_year:
-            total_months_of_experience = (last_position_end_year - first_position_start_year) * 12 + \
-                                         (last_position_end_month - first_position_start_month)
-        else:
-            total_months_of_experience = 0
-    else:
-        total_months_of_experience = 0
-
-    return total_months_of_experience
-
-
+    candidate.total_months_experience += total_months_experience
+    return
