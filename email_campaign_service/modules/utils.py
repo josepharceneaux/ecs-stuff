@@ -47,7 +47,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     """
 
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
+    pagination_query = '?per_page=1&page=2'
+    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,
                             params=params, headers=create_oauth_headers())
     if response.status_code == InvalidUsage.http_status_code():
         raise InvalidUsage(response.content)

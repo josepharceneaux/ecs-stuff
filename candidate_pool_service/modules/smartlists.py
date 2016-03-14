@@ -11,7 +11,7 @@ from candidate_pool_service.common.utils.candidate_service_calls import (search_
 __author__ = 'jitesh'
 
 
-def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=1):
+def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=1, per_page = 15):
     """
     Get the candidates of a smart or dumb list.
     :param smartlist: Smartlist row object
@@ -48,7 +48,7 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
         total_candidates_in_smartlist = SmartlistCandidate.query.with_entities(
                 SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).count()
         smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
-                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page, 15, False)
+                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page, per_page, False)
         smartlist_candidate_rows = smartlist_candidate_rows.items
 
         candidates = []

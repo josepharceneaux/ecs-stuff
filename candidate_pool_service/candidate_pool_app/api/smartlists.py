@@ -39,14 +39,14 @@ class SmartlistCandidates(Resource):
         :rtype: json
         """
         smartlist_id = kwargs['smartlist_id']
-        candidate_ids_only, count_only, page = validate_and_parse_request_data(request.args)
+        candidate_ids_only, count_only, page, per_page= validate_and_parse_request_data(request.args)
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists.")
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smartlist, candidate_ids_only, count_only, request.oauth_token, page)
+        return get_candidates(smartlist, candidate_ids_only, count_only, request.oauth_token, page, per_page)
 
 
 class SmartlistResource(Resource):
