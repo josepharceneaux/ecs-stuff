@@ -666,10 +666,16 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     interval = request.args.get('interval', '1')
 
     try:
-        from_date = parse(from_date_string).date() if from_date_string else (talent_pool.added_time.date() - timedelta(days=90))
+        from_date = parse(from_date_string).date() if from_date_string else talent_pool.added_time.date()
         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    if from_date < talent_pool.added_time.date():
+        from_date = talent_pool.added_time.date()
+
+    if from_date > to_date:
+        raise InvalidUsage("`to_date` cannot come before `from_date`")
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
