@@ -15,7 +15,7 @@ from ..utils.scheduler_utils import SchedulerUtils
 class Activity(db.Model):
     __tablename__ = 'activity'
     id = db.Column('Id', db.Integer, primary_key=True)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now(), index=True)
     type = db.Column('Type', db.Integer)
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)

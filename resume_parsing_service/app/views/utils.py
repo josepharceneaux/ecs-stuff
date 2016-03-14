@@ -2,6 +2,7 @@
 # pylint: disable=wrong-import-position, fixme
 __author__ = 'erikfarmer'
 # Standard Library
+import hashlib
 import json
 # Third Party
 import requests
@@ -77,4 +78,8 @@ def get_users_talent_pools(formatted_token_str):
         return [talent_pools_response['talent_pools'][0]['id']]
     except IndexError:
         return []
-    # return [talent_pool['id'] for talent_pool in talent_pools_response['talent_pools']]
+
+
+def gen_hash_from_file(file):
+  # with open(filename,'rb') as file:
+    return hashlib.md5(file.read()).hexdigest()
