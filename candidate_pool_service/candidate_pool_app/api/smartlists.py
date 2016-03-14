@@ -39,7 +39,7 @@ class SmartlistCandidates(Resource):
         :rtype: json
         """
         smartlist_id = kwargs['smartlist_id']
-        candidate_ids_only, count_only, page, per_page= validate_and_parse_request_data(request.args)
+        candidate_ids_only, count_only, page, per_page = validate_and_parse_request_data(request.args)
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists.")
