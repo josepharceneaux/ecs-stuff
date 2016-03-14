@@ -47,20 +47,18 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     :return:
     """
     page = 1
-    per_page = 1000
+    per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    pagination_query = '?per_page=%d&page=%d' % (per_page, page)
-    response = get_candidates_from_smartlist_with_page_params(list_id, pagination_query, params)
+    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
     response_body = json.loads(response.content)
     total_count = response_body['total_found']
     total_count = int(total_count)
     candidates = response_body['candidates']
     if total_count > per_page:
         total_pages = math.ceil(float(total_count) / per_page)
-        for x in range(1, int(total_pages)):
-            page = x + 1
-            pagination_query = '?per_page=%d&page=%d' % (per_page, page)
-            response = get_candidates_from_smartlist_with_page_params(list_id, pagination_query, params)
+        for current_page in range(1, int(total_pages)):
+            next_page = current_page + 1
+            response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params)
             response_body = json.loads(response.content)
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
@@ -68,9 +66,10 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     return candidates
 
 
-def get_candidates_from_smartlist_with_page_params(list_id, pagination_query, params):
+def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params):
+    pagination_query = '?per_page=%d&page=%d' % (per_page, page)
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,
-                        params=params, headers=create_oauth_headers())
+                            params=params, headers=create_oauth_headers())
     if response.status_code == InvalidUsage.http_status_code():
         raise InvalidUsage(response.content)
     return response
