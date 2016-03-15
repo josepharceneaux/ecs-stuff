@@ -73,9 +73,6 @@ def match_candidate_from_openweb(url, auth_user):
             .filter(CandidateSocialNetwork.social_profile_url.in_(urls), Candidate.user_id.in_(users_in_domain)).first()
 
         if candidate_query:
-            if not does_candidate_belong_to_users_domain(auth_user, candidate_query.id):
-                return False, openweb_response
-
             return True, candidate_query
         else:
             return False, openweb_response
