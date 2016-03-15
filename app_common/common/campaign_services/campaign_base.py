@@ -17,7 +17,7 @@ Any service can inherit from this class to implement/override functionality acco
 # Standard Library
 import json
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import abstractmethod
 
 # Third Party
@@ -25,6 +25,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+from push_campaign_service.common.utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
@@ -284,10 +285,14 @@ class CampaignBase(object):
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
                                        % user_id, error_code=ResourceNotFound.http_status_code())
+
             user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
+
+        if user_token_obj.expires < (datetime.now() + timedelta(seconds=60)):
+            user_access_token = refresh_token(user_access_token, token=user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
     def pre_process_save_or_update(self, campaign_data):

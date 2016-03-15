@@ -161,6 +161,32 @@ def refresh_expired_token(token, client_id, client_secret):
     return json.loads(r.text)['access_token']
 
 
+def refresh_token(access_token, token=None):
+    """
+    This method takes a token (str) as input and then returns a new token after refreshing the expired one.
+    :param access_token: auth token to be refreshed
+    :param token: Token model instance or None
+    :return: new token
+    """
+    if not token:
+        token = Token.get_token(access_token=access_token)
+        if not token:
+            raise InternalServerError('No matching token found for given token: %s' % token)
+    if token and isinstance(token, Token):
+        # Sends a refresh request to the Oauth2 server.
+        data = {
+                    'client_id': token.client_id,
+                    'client_secret': token.client.client_secret,
+                    'refresh_token': token.refresh_token,
+                    'grant_type': u'refresh_token'
+                }
+        response = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
+        assert response.status_code == 200, 'Unable to refresh user (id: %s) token' % token.user.id
+        return response.json()['access_token']
+    else:
+        raise InvalidUsage('token must be instance of Token model or None.')
+
+
 def gettalent_generate_password_hash(new_password):
     """
     Wrapper around werkzeug.security.generate_password_hash

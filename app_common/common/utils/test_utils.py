@@ -2,6 +2,9 @@
 This module contains utility methods will be used in API based tests.
 """
 import json
+
+from datetime import datetime, timedelta
+from dateutil.parser import parse
 import requests
 from requests import codes as HttpStatus
 from faker import Faker
@@ -55,6 +58,27 @@ def get_user(user_id, token):
     return response.json()['user']
 
 
+def refresh_token(data):
+    """
+    This utility function gets required data (client_id, client_secret, refresh_token)
+    from data (dict) and refreshes token from AuthService
+    :param data: a dictionary containing client info
+    :type data: dict
+    :return: auth token for user
+    :rtype: str
+    """
+    assert isinstance(data, dict), 'info must be dictionary'
+    data = {'client_id': data.get('client_id'),
+            'client_secret': data.get('client_secret'),
+            'refresh_token': data.get('refresh_token'),
+            'grant_type': 'refresh_token'
+            }
+    resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
+    assert resp.status_code == HttpStatus.OK
+    resp = resp.json()
+    return resp['access_token']
+
+
 def get_token(info):
     """
     This utility function gets required data (client_id, client_secret, username, password)
@@ -73,8 +97,12 @@ def get_token(info):
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
     assert resp.status_code == HttpStatus.OK
-    token = resp.json()['access_token']
-    return token
+    resp = resp.json()
+    access_token = resp['access_token']
+    data.update(resp)
+    if parse(resp['expires_at']) < (datetime.now() + timedelta(seconds=60)):
+        access_token = refresh_token(data)
+    return access_token
 
 
 def unauthorize_test(method, url, data=None):
