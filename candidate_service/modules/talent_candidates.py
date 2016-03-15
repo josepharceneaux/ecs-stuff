@@ -1441,25 +1441,22 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
     if any([experience.get('is_current') for experience in work_experiences]):
         CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
 
-    latest_start_date = 0  # Arbitrary value; it's just a starting point for comparison
+    # Identify maximum start_year of all provided experiences
+    latest_start_date = max(experience.get('start_year') for experience in work_experiences)
     for work_experience in work_experiences:
 
-        # Find the latest start date of all the provided experiences
         start_year = work_experience.get('start_year')
-        if start_year:
-            if start_year > latest_start_date:
-                latest_start_date = start_year
 
         # end_year of job must be None if it's candidate's current job
         is_current, end_year = work_experience.get('is_current'), work_experience.get('end_year')
         if is_current:
             end_year = None
         # if end_year is not provided, it should be set to current_year assuming it's the most recent job
-        elif not end_year and start_year == latest_start_date:
+        elif not end_year and (start_year == latest_start_date):
             end_year = current_year
         # if end_year is not provided, and it's not the latest job, end_year should be latest job's start_year
-        elif not end_year and start_year != latest_start_date:
-            end_year = start_year - 1
+        elif not end_year and (start_year != latest_start_date):
+            end_year = start_year + 1
 
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
@@ -1490,6 +1487,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperience must belong to Candidate
             if can_exp_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate experience', custom_error.EXPERIENCE_FORBIDDEN)
+
+            # Add up candidate's total months of experience
+            update_total_months_experience(candidate, experience_dict, can_exp_obj)
 
             # Track all changes made to CandidateExperience
             _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime, can_exp_obj)
@@ -1547,6 +1547,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 db.session.add(experience)
                 db.session.flush()
                 experience_id = experience.id
+
+                # Add up candidate's total months of experience
+                update_total_months_experience(candidate, experience_dict)
 
                 if is_updating:  # Track all updates
                     _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime)
@@ -2014,25 +2017,50 @@ def get_search_params_of_smartlists(smartlist_ids):
     return search_params
 
 
-def aggregate_total_months_experience(candidate, experience_dict):
+def update_total_months_experience(candidate, experience_dict=None, candidate_experience=None, deleted=False):
     """
+    Function will update candidate's total months of experiences.
+    Edge cases:
+        i. If one of candidate's experiences is removed, its total months will be subtracted from
+           candidate's current total-months-of-experience
+       ii. If an existing candidate experience's dates are updated; candidate.total_months_experience
+            will be updated accordingly
+      iii. Candidate's total months of experience will simply be aggregated if a new experience has been added
+
+    This function does not effect candidate's total months of experience in case all of candidate's
+      experiences have been removed. That functionality is accounted for in CandidateExperienceResource/delete()
     :type candidate:  Candidate
-    :param experience_dict:
+    :type experience_dict:  dict[str]
+    :type candidate_experience:  CandidateExperience
+    :type deleted:  bool
     """
-    # experience_dict = dict(
-    #     end_month=work_experience.get('end_month') or 1,
-    #     start_year=start_year,
-    #     start_month=work_experience.get('start_month') or 1,
-    #     end_year=end_year,
-    #     is_current=is_current
-    # )
-    start_year = experience_dict.get('start_year')
-    start_month = experience_dict.get('start_month')    # or 1
-    end_year = experience_dict.get('end_year')
-    end_month = experience_dict.get('end_month')        # or 1
+    # Starting point for total_months_experience
     total_months_experience = 0
+
+    # This is to prevent code from breaking in case of experience_dict.get(key)
+    if experience_dict is None:
+        experience_dict = {}
+
+    if candidate.total_months_experience is None:
+        candidate.total_months_experience = 0
+
+    start_year, end_year = experience_dict.get('start_year'), experience_dict.get('end_year')
+    start_month, end_month = experience_dict.get('start_month'), experience_dict.get('end_month')
+
     if start_year and end_year:
         total_months_experience = (end_year - start_year) * 12 + (end_month - start_month)
+
+    if candidate_experience:
+        previous_start_year, previous_end_year = candidate_experience.start_year, candidate_experience.end_year
+        previous_start_month, previous_end_month = candidate_experience.start_month, candidate_experience.end_month
+
+        if deleted:  # A CandidateExperience has been removed
+            total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
+                                      (previous_end_month - previous_start_month)
+
+        else:  # An existing CandidateExperience's dates have been updated
+            total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
+                (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
 
     candidate.total_months_experience += total_months_experience
     return
