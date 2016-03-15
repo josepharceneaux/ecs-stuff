@@ -123,7 +123,7 @@ def get_smartlist_stat_for_a_given_day(smartlist, date_object):
     """
     epoch_time_string = '12/31/1969'
     smartlists_growth_stats_dict = redis_dict(redis_store, 'smartlists_growth_stat_%s' % smartlist.id)
-    if date_object < (smartlist.added_time.date() - timedelta(days=90)):
+    if date_object < smartlist.added_time.date():
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
@@ -144,7 +144,7 @@ def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
     """
     epoch_time_string = '12/31/1969'
     pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline.id)
-    if date_object < (talent_pipeline.added_time.date() - timedelta(days=90)):
+    if date_object < talent_pipeline.added_time.date():
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
@@ -168,7 +168,7 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
     pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_%s' % talent_pool.id)
 
     # If date_object is before talent-pool creation date then we don't need to store statistics information in Database
-    if date_object < (talent_pool.added_time.date() - timedelta(days=90)):
+    if date_object < talent_pool.added_time.date():
         return 0
     else:
         date_string = date_object.strftime('%m/%d/%Y')
@@ -333,10 +333,13 @@ def get_stats_generic_function(container_object, container_name, user=None, from
                                                                                            container_object.id))
 
     try:
-        from_date = parse(from_date_string).date() if from_date_string else (container_object.added_time.date() - timedelta(days=90))
+        from_date = parse(from_date_string).date() if from_date_string else container_object.added_time.date()
         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    if from_date < container_object.added_time.date():
+        from_date = container_object.added_time.date()
 
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
