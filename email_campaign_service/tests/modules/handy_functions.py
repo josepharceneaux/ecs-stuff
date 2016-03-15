@@ -264,7 +264,7 @@ def get_template_folder(token):
 
 
 def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
-                          folder_id=None, domain_id=None, role_id=None):
+                          folder_id=None, domain_id=None, role_name=None):
     """
     Creates a email campaign template with params provided
 
@@ -276,13 +276,11 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     :param is_immutable:            1 if immutable, otherwise 0
     :param folder_id:               folder id
     :param domain_id                domain_id
-    :param role_id                  user scoped role id
+    :param role_name                user scope role name
     :return:                        Id of template created
     """
     # Check the user has role to create template
-    role = DomainRole.query.get(role_id)
-    domain_role_name = role.role_name
-    assert domain_role_name == DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
+    assert role_name == DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
     data = dict(
             name=template_name,
             template_folder_id=folder_id,
@@ -325,44 +323,6 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     return create_resp
 
 
-def add_domain_role(role_name, domain_id):
-    """
-    Function to create user roles for test purpose only
-    :param role_name: Name of user role
-    :param domain_id: user's domain ID
-    :return:
-    """
-    domain_role = db.session.query(DomainRole).filter_by(role_name=role_name).first()
-    if domain_role and domain_id == domain_role.domain_id:
-        return domain_role.id
-    elif domain_role:
-        role_id = domain_role.id
-        del_domain_roles(role_id)
-        add_role = DomainRole(role_name=role_name, domain_id=domain_id)
-        db.session.add(add_role)
-        db.session.commit()
-        role_id = add_role.id
-        return role_id
-
-    add_role = DomainRole(role_name=role_name, domain_id=domain_id)
-    db.session.add(add_role)
-    db.session.commit()
-    role_id = add_role.id
-    return role_id
-
-
-def del_domain_roles(role_ids):
-    """
-    Function to delete all created user domain roles for tests
-    :param role_ids: ids for roles to be deleted
-    """
-    if isinstance(role_ids, list):
-        for role_id in role_ids:
-            db.session.query(DomainRole).filter_by(id=role_id).delete()
-            db.session.commit()
-    else:
-        db.session.query(DomainRole).filter_by(id=role_ids).delete()
-
 def add_email_template(user_auth, template_owner, template_body):
     """
     This function will create email template
@@ -373,7 +333,6 @@ def add_email_template(user_auth, template_owner, template_body):
     domain_id = template_owner.domain_id
     # Add or get Role
     role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
-    role_id = add_domain_role(role, domain_id)
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE' to sample_user
     add_role_to_test_user(template_owner, [role])
@@ -384,11 +343,9 @@ def add_email_template(user_auth, template_owner, template_body):
     template_name = 'test_email_template%i' % time.time()
     is_immutable = 1
     resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
-                                 folder_id=template_folder_id, domain_id=domain_id, role_id=role_id)
-    db.session.commit()
+                                 folder_id=template_folder_id, domain_id=domain_id, role_name=role)
     resp_obj = resp.json()
     resp_dict = resp_obj['template_id'][0]
-    del_domain_roles(role_id)
 
     return {"template_id": resp_dict['id'],
             "template_folder_id": template_folder_id,
