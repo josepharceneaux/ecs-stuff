@@ -38,10 +38,10 @@ class EmailCampaign(db.Model):
 
     # Relationships
     frequency = relationship("Frequency", backref="frequency")
-    blasts = relationship('EmailCampaignBlast', cascade='all, delete-orphan',
+    blasts = relationship('EmailCampaignBlast', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
-                         passive_deletes=True, backref='campaign')
+                         passive_deletes=True, lazy='dynamic', backref='campaign')
     smartlists = relationship('EmailCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 

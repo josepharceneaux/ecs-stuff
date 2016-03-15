@@ -1,8 +1,10 @@
 """
-This modules contains helper methods and classes which we are using in e.g. Social Network API app.
+This module contains helper methods and classes which we are using in e.g. Social Network API app.
 
         * ApiResponse:
-            This class is used to create API response object to return json response.
+            This class is used to create API response object to return JSON response.
+
+Here we also have functions which are useful for APIs to implement pagination.
 
 :Authors:
     - Muhammad Basit <basit.getTalent@gmail.com>
@@ -16,9 +18,10 @@ import json
 from flask import Response
 
 # Application Specific
+from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
-from .handy_functions import JSON_CONTENT_TYPE_HEADER
+from .handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
@@ -87,7 +90,8 @@ def get_pagination_params(request):
     return page, per_page
 
 
-def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,
+                           parser=to_json, include_fields=None):
     """
     This function takes query object and then returns ApiResponse object containing
     JSON serializable list of objects by applying pagination on query using given
@@ -101,9 +105,14 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     :param query: A query object on which pagination will be applied.
     :param page: page number
     :param per_page: page size
+    :param parser: Parser to be applied on object. e.g. email_campaign_obj.to_dict().
+                          Default value is to_json()
+    :param include_fields: List of fields we want to be returned from to_json()
     :return: api response object containing list of items
     :rtype ApiResponse
+
     :Example:
+        >>> from app_common.common.models.push_campaign import PushCampaign
         >>> query = PushCampaign.query
         >>> page, per_page = 1, 10
         >>> response = get_paginated_response('campaigns', query, 1, 10)
@@ -126,12 +135,12 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
             ]
         }
     """
-    assert key and isinstance(key, basestring), "key must be a valid string"
-    # error_out=false, do nor raise error if these is nop object to return but return an empty list
+    raise_if_not_instance_of(key, basestring)
+    raise_if_not_instance_of(query, Query)
+    # error_out=false, do nor raise error if these is no object to return but return an empty list
     results = query.paginate(page, per_page, error_out=False)
-
     # convert model objects to serializable dictionaries
-    items = [to_json(item) for item in results.items]
+    items = [parser(item, include_fields) for item in results.items]
     headers = {
         'X-Total': results.total,
         'X-Page-Count': results.pages

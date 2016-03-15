@@ -9,9 +9,8 @@ import time
 # Common Utils
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.misc import UrlConversion
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
-from sms_campaign_service.common.utils.activity_utils import ActivityMessageIds
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -63,10 +62,10 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     assert len(sms_campaign_sends) == expected_count
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
-        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
     if sms_campaign_sends:
         # assert on activity for whole campaign send
-        assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SEND, campaign.id)
+        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
     assert_url_conversion(sms_campaign_sends)
 
 
@@ -119,7 +118,7 @@ def assert_campaign_schedule(response, user_id, campaign_id):
     """
     assert response.status_code == 200, response.json()['error']['message']
     assert 'task_id' in response.json()
-    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
     return response.json()['task_id']
 
 
@@ -130,7 +129,7 @@ def assert_campaign_delete(response, user_id, campaign_id):
     :return:
     """
     assert response.status_code == 200, 'should get ok response(200)'
-    assert_for_activity(user_id, ActivityMessageIds.CAMPAIGN_DELETE, campaign_id)
+    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
 
 
 def delete_test_scheduled_task(task_id, headers):

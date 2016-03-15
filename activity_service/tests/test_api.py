@@ -7,7 +7,7 @@ import json
 import requests
 # Application Specific
 from activity_service.common.utils.handy_functions import random_word
-from activity_service.common.utils.activity_utils import ActivityMessageIds
+from activity_service.common.models.misc import Activity
 from activity_service.common.routes import ActivityApiUrl
 from .fixtures import activities_fixture
 from .fixtures import candidate_fixture
@@ -18,6 +18,8 @@ from .fixtures import domain_fixture
 from .fixtures import org_fixture
 from .fixtures import token_fixture
 from .fixtures import user_fixture
+
+DATE_INPUT_FORMAT = '%Y-%m-%dT%H:%M:%S'
 
 
 def test_call_requires_auth(token_fixture):
@@ -39,8 +41,8 @@ def test_reponse_is_user_filtered(token_fixture):
 
 
 def test_response_can_be_time_filtered(token_fixture):
-    today = (datetime.today() + timedelta(minutes=-1)).isoformat()
-    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_time={}'.format(today)
+    today = (datetime.today() + timedelta(minutes=-1)).strftime(DATE_INPUT_FORMAT)
+    test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?start_datetime={}'.format(today)
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
     assert json.loads(response.content)['total_count'] == 3
@@ -82,7 +84,7 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=ActivityMessageIds.PIPELINE_CREATE,
+                                 type=Activity.MessageIds.PIPELINE_CREATE,
                                  source_table='talent_pipeline',
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_PL1'}
@@ -105,7 +107,7 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=ActivityMessageIds.TALENT_POOL_CREATE,
+                                 type=Activity.MessageIds.TALENT_POOL_CREATE,
                                  source_table='talent_pool',
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_pool1'}
@@ -129,7 +131,7 @@ def test_dumblist_create_and_read(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=ActivityMessageIds.DUMBLIST_CREATE,
+                                 type=Activity.MessageIds.DUMBLIST_CREATE,
                                  source_table='smart_list',
                                  source_id='1337',
                                  params={'name': 'dumblist1'}

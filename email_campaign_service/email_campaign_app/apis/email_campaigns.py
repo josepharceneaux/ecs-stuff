@@ -63,16 +63,18 @@ from email_campaign_service.modules.validations import validate_and_format_reque
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.api_utils import api_route
 from email_campaign_service.common.routes import EmailCampaignEndpoints
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
                                                           ForbiddenError)
+from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
+                                                           get_pagination_params)
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
-from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+
 
 # Blueprint for email-campaign API
 email_campaign_blueprint = Blueprint('email_campaign_api', __name__)
@@ -107,10 +109,11 @@ class EmailCampaignApi(Resource):
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
             return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
         else:
+            page, per_page = get_pagination_params(request)
             # Get all email campaigns from logged in user's domain
-            email_campaigns = EmailCampaign.get_by_domain_id(user.domain_id)
-            return {"email_campaigns": [email_campaign.to_dict(include_fields=include_fields)
-                                        for email_campaign in email_campaigns]}
+            query = EmailCampaign.get_by_domain_id(user.domain_id)
+            return get_paginated_response('email_campaigns', query, page, per_page,
+                                          parser=EmailCampaign.to_dict)
 
     def post(self):
         """
@@ -246,7 +249,6 @@ class EmailCampaignBlasts(Resource):
         .. Response::
 
             {
-                  "count": 2,
                   "blasts": [
                     {
                       "updated_datetime": "2016-02-10 19:37:15",
@@ -285,10 +287,9 @@ class EmailCampaignBlasts(Resource):
         # Get a campaign that was created by this user
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
-        # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts]
-        response = dict(blasts=blasts, count=len(blasts))
-        return response, requests.codes.ok
+        # get paginated response
+        page, per_page = get_pagination_params(request)
+        return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
 @api.route(EmailCampaignEndpoints.BLAST)
@@ -379,7 +380,6 @@ class EmailCampaignSends(Resource):
         .. Response::
 
             {
-                "count": 2,
                 "sends": [
                             {
                               "ses_message_id": "",
@@ -416,10 +416,9 @@ class EmailCampaignSends(Resource):
         # Get a campaign that was created by this user
         campaign = CampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                 CampaignUtils.EMAIL)
-        # Serialize send objects of a campaign
-        sends = [send.to_json() for send in campaign.sends]
-        response = dict(sends=sends, count=len(sends))
-        return response, 200
+        # get paginated response
+        page, per_page = get_pagination_params(request)
+        return get_paginated_response('sends', campaign.sends, page, per_page)
 
 
 @api.route(EmailCampaignEndpoints.SEND_BY_ID)

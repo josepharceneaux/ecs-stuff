@@ -524,6 +524,7 @@ class CandidatePoolApi(object):
     SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
     SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
     SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
+    SMARTLIST_IN_TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + '/smartlists' + CandidatePoolApiWords.STATS
 
 
 class CandidatePoolApiUrl(object):

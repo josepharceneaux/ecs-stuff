@@ -47,15 +47,13 @@ from types import MethodType
 
 # Third Party
 from flask import Flask
-from flask.ext.cors import CORS
-from flask.ext.restful import abort
-from flask.ext.sqlalchemy import BaseQuery, Pagination
 from sqlalchemy import inspect
-from sqlalchemy.orm.dynamic import AppenderQuery
+from flask.ext.cors import CORS
 from healthcheck import HealthCheck
+from flask.ext.sqlalchemy import BaseQuery
+from sqlalchemy.orm.dynamic import AppenderQuery
+
 # Application Specific
-
-
 from ..models.db import db
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
@@ -65,17 +63,17 @@ from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
-def to_json(self, allowed_keys=None, field_parsers=dict()):
+def to_json(self, include_fields=None, field_parsers=dict()):
     """
-    Converts SqlAlchemy object to serializable dictionary
+    Converts SqlAlchemy object to serializable dictionary.
 
-    Some data types are not json serializable e.g. DATETIME, TIMESTAMP
+    Some data types are not JSON serializable e.g. DATETIME, TIMESTAMP
     so we are making a dictionary where keys are types and values are functions which
-     will be used to convert these fields to specific type e.g. str
+    will be used to convert these fields to specific type e.g. str
 
-     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
-     to json serializable dict but we want our datetime object to be converted in
-     ISO 8601 format, fo we can pass a parser functions like
+    field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+    to JSON serializable dict but we want our datetime object to be converted in
+    ISO 8601 format, so we can pass a parser functions like
 
         >>> from app_common.common.utils.handy_functions import to_utc_str
         >>> parsers = dict(start_datetime=to_utc_str,
@@ -104,8 +102,8 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
 
     :param self: instance of respective model class
     :type self: db.Model
-    :param allowed_keys: which columns we need to add in json data
-    :type allowed_keys: list | tuple
+    :param include_fields: which columns we need to add in JSON data
+    :type include_fields: list | tuple
     :param field_parsers: a dictionary with keys as model attributes and values as
      function to parse or convert the field value to specific format
     :type field_parsers: dict
@@ -121,10 +119,10 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
     # get column properties
     columns = inspect(cls).column_attrs._data
 
-    if isinstance(allowed_keys, (list, tuple)):
-        allowed_columns = {name: column for name, column in columns.items() if name in allowed_keys}
+    if isinstance(include_fields, (list, tuple)):
+        allowed_columns = {name: column for name, column in columns.items() if name in include_fields}
         if not allowed_columns:
-            raise InvalidUsage('All given column names are invalid: %s' % allowed_keys)
+            raise InvalidUsage('All given column names are invalid: %s' % include_fields)
     else:
         allowed_columns = columns
 
@@ -151,7 +149,6 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
         else:
             # it is a normal serializable column value so add to data dictionary as it is.
             data[name] = value
-
     return data
 
 

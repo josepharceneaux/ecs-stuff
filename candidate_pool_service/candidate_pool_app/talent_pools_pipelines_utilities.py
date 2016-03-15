@@ -3,17 +3,15 @@ import json
 import decimal
 import requests
 from flask import request
+from dateutil.parser import parse
 from datetime import datetime, timedelta, date
-from candidate_pool_service.candidate_pool_app import logger, app, celery_app
+from candidate_pool_service.common.utils.validators import is_number
+from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
-from candidate_pool_service.common.models.smartlist import SmartlistStats
-from candidate_pool_service.modules.smartlists import get_candidates
-from candidate_pool_service.common.error_handling import InvalidUsage
-from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
-from candidate_pool_service.common.models.email_campaign import EmailCampaignSend
-from candidate_pool_service.common.routes import CandidatePoolApiUrl, SchedulerApiUrl, CandidateApiUrl
+from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User, TalentPoolCandidate
+from candidate_pool_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
     "query",
@@ -42,6 +40,68 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
 
 
+def generate_jwt_header(oauth_token=None, user_id=None):
+    """
+    This methid will generate JWT based Auth Header
+    :param oauth_token: OAuth2.0 based token i.e. Bearer sdhdfvjsdfbjfgksfbjsdfgjsdhf
+    :param user_id: ID of a user
+    :return:
+    """
+
+    if not oauth_token:
+        secret_key, oauth_token = User.generate_jw_token(user_id=user_id)
+        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
+                   'Content-Type': 'application/json'}
+    else:
+        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
+
+    return headers
+
+
+def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
+    """
+    This endpoint will be used to get smartlist candidates for given duration
+    :param smartlist: Smartlist Object
+    :param from_date: From Date
+    :param to_date: To Date
+    :return:
+    """
+    if smartlist.search_params:
+        try:
+            search_params = json.loads(smartlist.search_params)
+        except ValueError:
+            raise InvalidUsage('search_params(%s) are not JSON serializable for smartlist(id:%s). '
+                               'User(id:%s)' % (smartlist.search_params, smartlist.id, smartlist.user_id))
+
+        search_params['date_from'] = from_date
+        search_params['date_to'] = to_date
+        search_params['fields'] = 'count_only'
+
+        is_successful, response = get_candidates_from_search_api(search_params, generate_jwt_header(user_id=smartlist.user_id))
+        if not is_successful:
+            raise NotFoundError("Couldn't get statistics for smarlist %s for date %s" % (smartlist.id, to_date))
+        else:
+            return response.get('total_found')
+    else:
+        return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
+                                               SmartlistCandidate.added_time <= datetime.strptime(to_date, '%m/%d/%Y')).count()
+
+
+def get_candidates_from_search_api(query_string, headers):
+    """
+    This function will get candidates information based on query_string from Search API
+    :param query_string: Query String
+    :param headers: Header dictionary
+    :return:
+    """
+
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=query_string)
+    if response.ok:
+        return True, response.json()
+    else:
+        return False, response
+
+
 def get_pipeline_growth(talent_pipeline, interval):
     """
     This endpoint will return growth in talent-pipeline for given interval size
@@ -50,37 +110,82 @@ def get_pipeline_growth(talent_pipeline, interval):
     :return:
     """
     from_date = datetime.utcnow() - timedelta(days=interval)
-    from_date = from_date if from_date.date() >= talent_pipeline.added_time.date() else talent_pipeline.added_time.date()
-    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().strftime('%m/%d/%Y')) - \
-           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date.strftime('%m/%d/%Y'))
+    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().date()) - \
+           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date.date())
 
 
-def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_string):
+def get_smartlist_stat_for_a_given_day(smartlist, date_object):
+    """
+    This method will get and update smartlist stats for a given day
+    :param smartlist: SmartList Object
+    :param date_object: DateTime Object
+    :return:
+    """
+    epoch_time_string = '12/31/1969'
+    smartlists_growth_stats_dict = redis_dict(redis_store, 'smartlists_growth_stat_%s' % smartlist.id)
+    if date_object < smartlist.added_time.date():
+        return 0
+    else:
+        date_string = date_object.strftime('%m/%d/%Y')
+        if date_string not in smartlists_growth_stats_dict:
+            # Get SmartList Candidates Using Search API
+            smartlists_growth_stats_dict[date_string] = get_smartlist_candidates_for_given_date(
+                    smartlist, epoch_time_string, date_string)
+
+        return smartlists_growth_stats_dict[date_string]
+
+
+def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
     """
     This method will get and update talent-pipeline stats for a given day
     :param talent_pipeline: TalentPipeline Object
-    :param date_string: DateTime String
+    :param date_object: DateTime Object
     :return:
     """
     epoch_time_string = '12/31/1969'
     pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline.id)
-    if date_string not in pipelines_growth_stats_dict:
-        # Get Talent Pipeline Candidates Using Search API
-        response = get_candidates_of_talent_pipeline(talent_pipeline, fields='count_only', request_params={
-            'date_from': epoch_time_string, 'date_to': date_string})
-        pipelines_growth_stats_dict[date_string] = response.get('total_found')
+    if date_object < talent_pipeline.added_time.date():
+        return 0
+    else:
+        date_string = date_object.strftime('%m/%d/%Y')
+        if date_string not in pipelines_growth_stats_dict:
+            # Get Talent Pipeline Candidates Using Search API
 
-    return pipelines_growth_stats_dict[date_string]
+            response = get_candidates_of_talent_pipeline(talent_pipeline, request_params={
+                'date_from': epoch_time_string, 'date_to': date_string, 'fields': 'count_only'})
+            pipelines_growth_stats_dict[date_string] = response.get('total_found')
+
+        return pipelines_growth_stats_dict[date_string]
 
 
-def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=None, is_celery_task=False,
-                                      request_params=None):
+def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
+    """
+    This method will get and update talent-pool stats for a given day
+    :param talent_pool: TalentPool Object
+    :param date_object: DateTime Object
+    :return:
+    """
+    pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_%s' % talent_pool.id)
+
+    # If date_object is before talent-pool creation date then we don't need to store statistics information in Database
+    if date_object < talent_pool.added_time.date():
+        return 0
+    else:
+        date_string = date_object.strftime('%m/%d/%Y')
+        if date_string not in pools_growth_stats_dict:
+            b = TalentPoolCandidate.query.filter(
+                    TalentPoolCandidate.talent_pool_id == talent_pool.id,
+                    TalentPoolCandidate.added_time <= date_object).all()
+            pools_growth_stats_dict[date_string] = len(b)
+
+        return pools_growth_stats_dict[date_string]
+
+
+def get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=None, request_params=None):
     """
         Fetch all candidates of a talent-pipeline
         :param talent_pipeline: TalentPipeline Object
-        :param fields: Return fields
         :param oauth_token: Authorization Token
-        :param is_celery_task: Is this method is called by a celery task or not
         :param request_params: Request parameters
         :return: A dict containing info of all candidates according to query parameters
         """
@@ -107,21 +212,6 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
                                          "because: %s" % e.message)
 
-    if not oauth_token:
-        secret_key, oauth_token = User.generate_jw_token(user_id=talent_pipeline.user_id)
-        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
-                   'Content-Type': 'application/json'}
-    else:
-        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
-
-    if not is_celery_task:
-        request_params['fields'] = request.args.get('fields', '') or fields
-        request_params['sort_by'] = request.args.get('sort_by', '')
-        request_params['limit'] = request.args.get('limit', '')
-        request_params['page'] = request.args.get('page', '')
-    else:
-        request_params['fields'] = fields
-
     request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
     request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
     request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
@@ -129,15 +219,13 @@ def get_candidates_of_talent_pipeline(talent_pipeline, fields='', oauth_token=No
     request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
     # Query Candidate Search API to get all candidates of a given talent-pipeline
-    try:
-        response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=request_params)
-        if response.ok:
-            return response.json()
-        else:
-            raise Exception("Status Code: %s" % response.status_code)
-    except Exception as e:
-        raise InvalidUsage(error_message="Couldn't get candidates from candidates search service because: "
-                                         "%s" % e.message)
+    is_successful, response = get_candidates_from_search_api(request_params,
+                                                             generate_jwt_header(oauth_token, talent_pipeline.user_id))
+
+    if not is_successful:
+        raise NotFoundError("Couldn't get candidates from candidates search service because: %s" % response)
+    else:
+        return response
 
 
 def campaign_json_encoder_helper(obj):
@@ -148,205 +236,142 @@ def campaign_json_encoder_helper(obj):
         return float(obj)
 
 
-@celery_app.task()
-def update_smartlists_stats_task():
-    """
-    This method will update the statistics of all smartlists daily.
-    :return: None
-    """
-    successful_update_smartlist_ids = []
-    smartlist_ids = map(lambda smartlist: smartlist[0], Smartlist.query.with_entities(Smartlist.id).all())
+@celery_app.task(name="update_talent_pool_stats")
+def update_talent_pool_stats():
+    with app.app_context():
+        # Updating TalentPool Statistics
+        logger.info("TalentPool statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
+        talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
+        for talent_pool_tuple in talent_pools:
+            try:
+                get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool')
+                logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for TalentPool %s is not successful because: "
+                                 "%s" % (talent_pool_tuple[0], e.message))
 
-    try:
-        for smartlist_id in smartlist_ids:
-            is_already_existing_stat_for_today = SmartlistStats.query.filter(
-                    SmartlistStats.smartlist_id == smartlist_id,
-                    SmartlistStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
-                    SmartlistStats.added_datetime <= datetime.utcnow()).all()
-
-            if is_already_existing_stat_for_today:
-                continue
-            # Return only candidate_ids
-            response = get_candidates(Smartlist.query.get(smartlist_id), candidate_ids_only=True)
-            total_candidates = response.get('total_found')
-            smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
-
-            number_of_engaged_candidates = 0
-            if smartlist_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) \
-                if int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            smartlist_stat = SmartlistStats(smartlist_id=smartlist_id,
-                                            total_number_of_candidates=total_candidates,
-                                            candidates_engagement=percentage_candidates_engagement)
-            db.session.add(smartlist_stat)
-            db.session.commit()
-            successful_update_smartlist_ids.append(str(smartlist_id))
-
-    except Exception as e:
-        db.session.rollback()
-        logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
-
-    logger.info("Statistics for following %s SmartLists have been updated successfully: "
-                "%s" % (len(successful_update_smartlist_ids), ','.join(map(str, successful_update_smartlist_ids))))
+        talent_pool_ids = map(lambda talent_pool: talent_pool[0], talent_pools)
+        delete_dangling_stats(talent_pool_ids, container='talent-pool')
 
 
-@celery_app.task()
-def update_talent_pools_stats_task():
-    """
-    This method will update the statistics of all talent-pools daily.
-    :return: None
-    """
-    successful_update_talent_pool_ids = []
-    talent_pool_ids = map(lambda talent_pool: talent_pool[0], TalentPool.query.with_entities(TalentPool.id).all())
-
-    try:
-        for talent_pool_id in talent_pool_ids:
-            is_already_existing_stat_for_today = TalentPoolStats.query.filter(
-                    TalentPoolStats.talent_pool_id == talent_pool_id,
-                    TalentPoolStats.added_datetime >= datetime.utcnow() - timedelta(hours=22),
-                    TalentPoolStats.added_datetime <= datetime.utcnow()).all()
-
-            if is_already_existing_stat_for_today:
-                continue
-
-            talent_pool_candidate_ids =[talent_pool_candidate.candidate_id for talent_pool_candidate in
-                                        TalentPoolCandidate.query.filter_by(talent_pool_id=talent_pool_id).all()]
-            total_candidates = len(talent_pool_candidate_ids)
-
-            number_of_engaged_candidates = 0
-            if talent_pool_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(talent_pool_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) if \
-                int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            talent_pool_stat = TalentPoolStats(talent_pool_id=talent_pool_id, total_number_of_candidates=total_candidates,
-                                               candidates_engagement=percentage_candidates_engagement)
-            db.session.add(talent_pool_stat)
-            db.session.commit()
-            successful_update_talent_pool_ids.append(str(talent_pool_id))
-
-    except Exception as e:
-        db.session.rollback()
-        logger.exception("An exception occured update statistics of TalentPools because: %s" % e.message)
-
-    logger.info("Statistics for following %s TalentPools have been updated successfully: "
-                "%s" % (len(successful_update_talent_pool_ids), ','.join(map(str, successful_update_talent_pool_ids))))
-
-
-@celery_app.task()
-def update_talent_pipelines_stats_task(from_date=None, to_date=None):
-    """
-    This method will update the statistics of all talent-pipelines daily.
-    :param from_date: DateTime Object
-    :param to_date: DateTime Object
-    :return: None
-    """
-    epoch_time_string = '12/31/1969'
-    successful_update_talent_pipeline_ids = []
-    talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
-    today_date = datetime.utcnow().date()
-    try:
+@celery_app.task(name="update_talent_pipeline_stats")
+def update_talent_pipeline_stats():
+    with app.app_context():
+        # Updating TalentPipeline Statistics
+        logger.info("TalentPipeline statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
+        talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
         for talent_pipeline_tuple in talent_pipelines:
+            try:
+                get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]), 'TalentPipeline')
+                logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for TalentPipeline %s is not successful because: "
+                                 "%s" % (talent_pipeline_tuple[0], e.message))
 
-            talent_pipeline_id = talent_pipeline_tuple[0]
+        talent_pipeline_ids = map(lambda talent_pipeline: talent_pipeline[0], talent_pipelines)
+        delete_dangling_stats(talent_pipeline_ids, container='talent-pipeline')
 
-            # TalentPipeline Object
-            talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
-            pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline_id)
+@celery_app.task(name="update_smartlist_stats")
+def update_smartlist_stats():
+    with app.app_context():
+        # Updating SmartList Statistics
+        logger.info("SmartList statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
+        smartlists = Smartlist.query.with_entities(Smartlist.id).all()
+        for smartlist_tuple in smartlists:
+            try:
+                get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList')
+                logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
+            except Exception as e:
+                logger.exception("Update statistics for SmartList %s is not successful because: "
+                                 "%s" % (smartlist_tuple[0], e.message))
 
-            if from_date and to_date:
-                last_added_stat_date = from_date if from_date >= talent_pipeline.added_time.date() \
-                    else talent_pipeline.added_time.date()
-                last_added_stat_date -= timedelta(days=1)
-                current_date = to_date
-            else:
-                if len(pipelines_growth_stats_dict):
-                    last_added_stat_date = max(map(lambda added_date: datetime.strptime(added_date, '%m/%d/%Y').date(),
-                                                   pipelines_growth_stats_dict.keys()))
-                else:
-                    last_added_stat_date = talent_pipeline.added_time.date() - timedelta(days=1)
+        smartlist_ids = map(lambda smartlist: smartlist[0], smartlists)
+        delete_dangling_stats(smartlist_ids, container='smartlist')
 
-                current_date = today_date
 
-            if last_added_stat_date < current_date:
-                while last_added_stat_date != current_date:
-                    last_added_stat_date += timedelta(days=1)
-                    last_added_stat_date_string = last_added_stat_date.strftime('%m/%d/%Y')
+def delete_dangling_stats(id_list, container):
+    """
+    This method will delete dangling statistics from Redis for each of three containers
+    :param id_list: List of IDs
+    :param container: Container's name
+    :return:
+    """
+    if container == 'smartlist':
+        redist_key = 'smartlists_growth_stat_'
+    elif container == 'talent-pool':
+        redist_key = 'pools_growth_stat_'
+    elif container == 'talent-pipeline':
+        redist_key = 'pipelines_growth_stat_'
+    else:
+        raise Exception("Container %s is not supported" % container)
 
-                    if last_added_stat_date_string in pipelines_growth_stats_dict:
-                        continue
+    for key in redis_store.keys(redist_key + '*'):
+        if int(key.replace(redist_key, '')) not in id_list:
+            redis_store.delete(redis_store.get(key))
+            redis_store.delete(key)
 
-                    # Get Talent Pipeline Candidates Using Search API
-                    response = get_candidates_of_talent_pipeline(TalentPipeline.query.get(talent_pipeline_id),
-                                                                 fields='count_only', is_celery_task=True,
-                                                                 request_params={'date_from': epoch_time_string,
-                                                                                 'date_to': last_added_stat_date_string})
+    logger.info("Dangling Statistics have been deleted for %s" % container)
 
-                    pipelines_growth_stats_dict[last_added_stat_date_string] = response.get('total_found')
 
-            logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_id)
+def get_stats_generic_function(container_object, container_name, user=None, from_date_string='', to_date_string='', interval=1):
+    """
+    This method will be used to get stats for talent-pools, talent-pipelines or smartlists.
+    :param container_object: TalentPipeline, TalentPool or SmartList Object
+    :param container_name:
+    :param user: Logged-in user
+    :param from_date_string: From Date String
+    :param to_date_string: To Date String
+    :param interval: Interval in days
+    :return:
+    """
+    if not container_object:
+        raise NotFoundError("%s doesn't exist in database" % container_name)
 
-            successful_update_talent_pipeline_ids.append(talent_pipeline_id)
+    if user and container_object.user.domain_id != user.domain_id:
+        raise ForbiddenError("Logged-in user %s is unauthorized to get stats of %s: %s" % (user.id, container_name,
+                                                                                           container_object.id))
 
+    try:
+        from_date = parse(from_date_string).date() if from_date_string else container_object.added_time.date()
+        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
-        db.session.rollback()
-        logger.exception("An exception occured update statistics of TalentPipelines because: %s" % e.message)
+        raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
-    logger.info("Statistics for following %s TalentPipelines have been updated successfully: "
-                "%s" % (len(successful_update_talent_pipeline_ids), ','.join(map(str, successful_update_talent_pipeline_ids))))
+    if from_date < container_object.added_time.date():
+        from_date = container_object.added_time.date()
 
+    if from_date > to_date:
+        raise InvalidUsage("`to_date` cannot come before `from_date`")
 
-def schedule_daily_task_unless_already_scheduled(task_name, url):
-    def is_task_already_scheduled(response_dict):
-        return response_dict.get('error', {}).get('code') == SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED
+    if not is_number(interval):
+        raise InvalidUsage("Interval '%s' should be integer" % interval)
 
-    data = {
-        "frequency": 3600 * 24,  # Daily
-        "task_type": "periodic",
-        "start_datetime": str(datetime.utcnow() + timedelta(seconds=10)),  # Start it 10 seconds from now
-        "end_datetime": "2099-01-05T08:00:00",
-        "url": url,
-        "is_jwt_request": True,
-        "task_name": task_name
-    }
+    interval = int(interval)
+    if interval < 1:
+        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
 
-    secret_key, oauth_token = User.generate_jw_token()
-    headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
-               'Content-Type': 'application/json'}
+    if container_name == 'TalentPipeline':
+        get_stats_for_given_day = get_talent_pipeline_stat_for_given_day
+    elif container_name == 'TalentPool':
+        get_stats_for_given_day = get_talent_pool_stat_for_a_given_day
+    elif container_name == 'SmartList':
+        get_stats_for_given_day = get_smartlist_stat_for_a_given_day
+    else:
+        raise Exception("Container %s is not supported for this method" % container_name)
 
-    response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
+    list_of_stats_dicts = []
+    while to_date >= from_date:
+        list_of_stats_dicts.append({
+            'total_number_of_candidates': get_stats_for_given_day(container_object, to_date),
+            'added_datetime': to_date.isoformat(),
+        })
+        to_date -= timedelta(days=interval)
 
-    if is_task_already_scheduled(response.json()):
-        logger.info("Task %s is already registered with scheduler service", data['task_name'])
-    elif response.status_code != 201:
-        raise Exception("Could not schedule task. Status Code: %s, Response: %s" % (response.status_code, response.json()))
+    reference_stat = get_stats_for_given_day(container_object, to_date)
+    for index, stat_dict in enumerate(list_of_stats_dicts):
+        stat_dict['number_of_candidates_added'] = stat_dict['total_number_of_candidates'] - (
+            list_of_stats_dicts[index + 1]['total_number_of_candidates'] if index + 1 < len(
+                    list_of_stats_dicts) else reference_stat)
 
-
-def schedule_candidate_daily_stats_update():
-
-    env = app.config[TalentConfigKeys.ENV_KEY]
-
-    if env != 'jenkins':
-
-        try:
-            schedule_daily_task_unless_already_scheduled("talent_pools_daily_stats_update",
-                                                         url=CandidatePoolApiUrl.TALENT_POOL_UPDATE_STATS)
-
-            schedule_daily_task_unless_already_scheduled("talent_pipelines_daily_stats_update",
-                                                         url=CandidatePoolApiUrl.TALENT_PIPELINE_UPDATE_STATS)
-
-            schedule_daily_task_unless_already_scheduled("smartlists_daily_stats_update",
-                                                         url=CandidatePoolApiUrl.SMARTLIST_UPDATE_STATS)
-
-        except Exception as e:
-            logger.exception("Couldn't register Candidate statistics update endpoint to Scheduler "
-                             "Service because: %s" % e.message)
+    return list_of_stats_dicts
