@@ -327,7 +327,17 @@ class TalentPipelineSmartListApi(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
+        page = request.args.get('page', 1)
+        per_page = request.args.get('per_page', 10)
+
+        if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+            raise InvalidUsage("page and per_page should be positive integers")
+
+        page = int(page)
+        per_page = int(per_page)
+
+        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
+        smartlists = smartlists.items
 
         return {
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]

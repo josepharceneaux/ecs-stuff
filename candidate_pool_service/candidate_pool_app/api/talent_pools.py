@@ -616,7 +616,17 @@ class TalentPipelinesOfTalentPools(Resource):
             raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
                                                "candidates" % request.user.id)
 
-        talent_pipelines = TalentPipeline.query.filter_by(talent_pool_id=talent_pool_id).all()
+        page = request.args.get('page', 1)
+        per_page = request.args.get('per_page', 10)
+
+        if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+            raise InvalidUsage("page and per_page should be positive integers")
+
+        page = int(page)
+        per_page = int(per_page)
+
+        talent_pipelines = TalentPipeline.query.filter_by(talent_pool_id=talent_pool_id).paginate(page, per_page, False)
+        talent_pipelines = talent_pipelines.items
 
         return {
             'talent_pipelines': [talent_pipeline.to_dict(True, get_stats_generic_function)
