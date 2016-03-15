@@ -1,6 +1,6 @@
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 __author__ = 'erik@getTalent.com'
-# Standared Library
+# Standard Library
 import datetime
 import HTMLParser
 import re
@@ -106,7 +106,7 @@ def parse_candidate_name(bs_contact_xml_list):
         if not surname:
             surname = _tag_text(contact, 'surname')
     first_name = givenname.title() if givenname else 'Unknown'
-    last_name = surname.title() if givenname else 'Unknown'
+    last_name = surname.title() if surname else 'Unknown'
     return {'first_name': first_name, 'last_name': last_name}
 
 
@@ -136,12 +136,12 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
-            # CanidateService currently extracts extensions so we do not need to invoke that
-            # validator as long as we send a 'sane' string.
             raw_phone = p.text.strip()
-            if raw_phone:
+            # JSON_SCHEMA for candidates phone is max:20
+            if raw_phone and len(raw_phone) > 20:
+                raw_phone = " ".join(raw_phone.split())
+            if raw_phone and len(raw_phone) <= 20:
                 output.append({'value': raw_phone})
-
     return output
 
 
