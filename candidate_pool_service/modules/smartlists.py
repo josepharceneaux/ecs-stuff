@@ -164,4 +164,3 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access
 
     # TODO Add activity
     return smartlist
-
