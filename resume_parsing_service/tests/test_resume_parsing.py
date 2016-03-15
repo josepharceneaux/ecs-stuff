@@ -226,7 +226,6 @@ def test_HTML_doc_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
-    # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
     assert_non_create_content_and_status(content, status)
 
 
@@ -278,8 +277,7 @@ def test_doc_FP_with_create(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    # content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
-    content, status = fetch_resume_fp_key_response(token_fixture, 'Breland.Bobby.doc', create_mode=True)
+    content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
