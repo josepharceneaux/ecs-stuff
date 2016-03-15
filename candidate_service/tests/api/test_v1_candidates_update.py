@@ -704,8 +704,8 @@ def test_update_experience_bullet(access_token_first, user_first, talent_pool):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']
 
     experience_dict = candidate_dict['work_experiences'][0]
     candidate_experience_bullet_count = len(experience_dict['bullets'])

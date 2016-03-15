@@ -2061,8 +2061,9 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
                                       (previous_end_month - previous_start_month)
 
         else:  # An existing CandidateExperience's dates have been updated
-            total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
-                (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
+            if start_year and end_year:
+                total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
+                    (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
 
     candidate.total_months_experience += total_months_experience
     return
