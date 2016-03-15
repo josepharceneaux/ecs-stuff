@@ -606,7 +606,7 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
     for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
         talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
                 talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pipeline_stats) else reference_talent_pipeline_stat)
+                        talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
 
     return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 

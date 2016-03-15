@@ -713,7 +713,7 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     for index, talent_pool_stat in enumerate(talent_pool_stats):
         talent_pool_stat['number_of_candidates_added'] = talent_pool_stat['total_number_of_candidates'] - (
                 talent_pool_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pool_stats) else reference_talent_pool_stat)
+                        talent_pool_stats) else reference_talent_pool_stat['total_number_of_candidates'])
 
     return jsonify({'talent_pool_data': talent_pool_stats})
 
