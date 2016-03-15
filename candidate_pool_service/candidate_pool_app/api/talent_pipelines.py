@@ -327,7 +327,17 @@ class TalentPipelineSmartListApi(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).all()
+        page = request.args.get('page', 1)
+        per_page = request.args.get('per_page', 10)
+
+        if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+            raise InvalidUsage("page and per_page should be positive integers")
+
+        page = int(page)
+        per_page = int(per_page)
+
+        smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
+        smartlists = smartlists.items
 
         return {
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
@@ -559,10 +569,16 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
     interval = request.args.get('interval', '1')
 
     try:
-        from_date = parse(from_date_string).date() if from_date_string else (talent_pipeline.added_time.date() - timedelta(days=90))
+        from_date = parse(from_date_string).date() if from_date_string else talent_pipeline.added_time.date()
         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
     except Exception as e:
         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+
+    if from_date < talent_pipeline.added_time.date():
+        from_date = talent_pipeline.added_time.date()
+
+    if from_date > to_date:
+        raise InvalidUsage("`to_date` cannot come before `from_date`")
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
@@ -590,7 +606,7 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
     for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
         talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
                 talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pipeline_stats) else reference_talent_pipeline_stat)
+                        talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
 
     return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
