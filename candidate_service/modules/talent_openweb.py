@@ -4,6 +4,7 @@ Functions related to candidate_service/candidate_app/api validations
 
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import Candidate, CandidateSocialNetwork, SocialNetwork
+from candidate_service.common.models.user import User
 from candidate_service.common.error_handling import InternalServerError, NotFoundError, UnauthorizedError
 from candidate_service.candidate_app import logger
 from candidate_service.common.utils.validators import format_phone_number, parse_openweb_date
@@ -65,8 +66,12 @@ def match_candidate_from_openweb(url, auth_user):
             urls.append(openweb_response['webProfiles'][candidate_url]['url'])
 
         # find if candidate exists in gT database
-        candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
-            .filter(CandidateSocialNetwork.social_profile_url.in_(urls)).first()
+        users_in_domain = [int(domain_user.id) for domain_user in
+                           db.session.query(User).filter(User.domain_id == auth_user.domain_id).all()]
+
+        candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork) \
+            .filter(CandidateSocialNetwork.social_profile_url.in_(urls), Candidate.user_id.in_(users_in_domain)).first()
+
         if candidate_query:
             if not does_candidate_belong_to_users_domain(auth_user, candidate_query.id):
                 return False, openweb_response
