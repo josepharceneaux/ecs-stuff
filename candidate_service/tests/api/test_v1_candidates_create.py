@@ -598,7 +598,7 @@ class TestWorkExperience(object):
                 'work_experiences': [
                     {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
                     {'start_year': 2008, 'end_year': None},  # 12*1 = 12 months of experience
-                    {'start_year': 2011, 'end_year': None}   # 12*5 = 60 months of experience
+                    {'start_year': 2011, 'end_year': 2016}   # 12*5 = 60 months of experience
                 ]
             }
         ]}

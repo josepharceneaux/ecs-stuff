@@ -1451,12 +1451,14 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
         is_current, end_year = work_experience.get('is_current'), work_experience.get('end_year')
         if is_current:
             end_year = None
-        # if end_year is not provided, it should be set to current_year assuming it's the most recent job
-        elif not end_year and (start_year == latest_start_date):
-            end_year = current_year
-        # if end_year is not provided, and it's not the latest job, end_year should be latest job's start_year
-        elif not end_year and (start_year != latest_start_date):
-            end_year = start_year + 1
+
+        if start_year:
+            # if end_year is not provided, it will be set to current_year assuming it's the most recent job
+            if not end_year and (start_year == latest_start_date):
+                end_year = current_year
+            # if end_year is not provided, and it's not the latest job, end_year will be latest job's start_year + 1
+            elif not end_year and (start_year != latest_start_date):
+                end_year = start_year + 1
 
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
