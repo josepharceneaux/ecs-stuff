@@ -49,7 +49,7 @@ def post_email_template():
         raise InvalidUsage(error_message='Template name with name=%s already exists' % existing_template)
 
     template_folder_id = data.get('template_folder_id')
-    if template_folder_id and not (isinstance(emplate_folder_id, int) or
+    if template_folder_id and not (isinstance(template_folder_id, int) or
                                          template_folder_id.isdigit()):
         raise InvalidUsage(error_message='Invalid input: folder_id must be positive integer')
 

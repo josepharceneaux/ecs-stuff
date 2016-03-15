@@ -194,7 +194,7 @@ def post_to_email_template_resource(access_token, data):
     i.e. EmailTemplate/post()
     """
     response = requests.post(
-            url=EmailCampaignUrl.EMAIL_TEMPLATE, data=json.dumps(data),
+            url=EmailCampaignUrl.TEMPLATE, data=json.dumps(data),
             headers={'Authorization': 'Bearer %s' % access_token,
                      'Content-type': 'application/json'}
     )
@@ -236,7 +236,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id
     :param data
     """
-    url = EmailCampaignUrl.EMAIL_TEMPLATE + '/' + str(email_template_id)
+    url = EmailCampaignUrl.TEMPLATE + '/' + str(email_template_id)
     return define_and_send_request(request, url, access_token, data)
 
 
@@ -250,7 +250,7 @@ def get_template_folder(token):
 
     data = {'name': template_folder_name}
     response = requests.post(
-            url=EmailCampaignUrl.EMAIL_TEMPLATE_FOLDER, data=json.dumps(data),
+            url=EmailCampaignUrl.TEMPLATE_FOLDER, data=json.dumps(data),
             headers={'Authorization': 'Bearer %s' % token,
                      'Content-type': 'application/json'}
     )
@@ -282,7 +282,7 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     assert domain_role_name == DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
     data = dict(
             name=template_name,
-            email_template_folder_id=folder_id,
+            template_folder_id=folder_id,
             user_id=user_id,
             type=0,
             body_html=body_html,
@@ -310,7 +310,7 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     """
     data = dict(
             name=template_name,
-            email_template_folder_id=folder_id,
+            template_folder_id=folder_id,
             user_id=user_id,
             type=0,
             body_html=body_html,
@@ -387,7 +387,7 @@ def add_email_template(user_auth, template_owner, template_body):
     resp_dict = resp_obj['template_id'][0]
     del_domain_roles(role_id)
 
-    return {"email_template_id": resp_dict['id'],
+    return {"template_id": resp_dict['id'],
             "template_folder_id": template_folder_id,
             "template_folder_name": template_folder_name,
             "template_name": template_name,
