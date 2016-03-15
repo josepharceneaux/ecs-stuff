@@ -1,25 +1,129 @@
-from sqlalchemy import and_
+import datetime
+
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.mysql import DOUBLE
+
 from ..error_handling import InvalidUsage
-import datetime
-import time
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
+from push_campaign import (PushCampaign, PushCampaignBlast,
+                           PushCampaignSend, PushCampaignSendUrlConversion)
 from ..utils.scheduler_utils import SchedulerUtils
 
 
 class Activity(db.Model):
     __tablename__ = 'activity'
     id = db.Column('Id', db.Integer, primary_key=True)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now(), index=True)
     type = db.Column('Type', db.Integer)
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
     user = relationship('User', backref='activity')
     params = db.Column('Params', db.Text)
+
+    class MessageIds(object):
+        """
+        When user performs some action e.g. creates a smartlist or create a candidate etc, we need
+        to create an activity for those actions. So, here we have the Activity Message Ids to create
+        such activities. Corresponding activity messages are in activity_service.
+        (These ids and messages will be moved to database later).
+        This is placed inside Activity model so that any service can use these ids to create
+        activities without initializing activity_service.
+        """
+        #########################################################################################
+        #   LEGACY CODES
+        #########################################################################################
+
+        # params=dict(formattedName)
+        CANDIDATE_CREATE_WEB = 1
+        CANDIDATE_UPDATE = 2
+        CANDIDATE_DELETE = 3
+        CANDIDATE_CREATE_CSV = 18
+        CANDIDATE_CREATE_WIDGET = 19
+        CANDIDATE_CREATE_MOBILE = 20  # TODO add in
+
+        # params=dict(id, name)
+        # All Campaigns
+        CAMPAIGN_CREATE = 4
+        CAMPAIGN_DELETE = 5
+        CAMPAIGN_SEND = 6  # also has num_candidates
+        CAMPAIGN_EXPIRE = 7  # recurring campaigns only # TODO implement
+        CAMPAIGN_PAUSE = 21
+        CAMPAIGN_RESUME = 22
+        CAMPAIGN_SCHEDULE = 27
+
+        # params=dict(name, is_smartlist=0/1)
+        SMARTLIST_CREATE = 8
+        SMARTLIST_DELETE = 9
+        SMARTLIST_ADD_CANDIDATE = 10  # also has formattedName (of candidate) and candidateId
+        SMARTLIST_REMOVE_CANDIDATE = 11  # also has formattedName and candidateId
+
+        # params=dict(firstName, lastName)
+        USER_CREATE = 12
+
+        # params=dict(client_ip)
+        WIDGET_VISIT = 13
+
+        # TODO implement frontend + backend
+        NOTIFICATION_CREATE = 14  # when we want to show the users a message
+
+        # params=dict(candidateId, campaign_name, candidate_name)
+        # Email campaign
+        CAMPAIGN_EMAIL_SEND = 15
+        CAMPAIGN_EMAIL_OPEN = 16
+        CAMPAIGN_EMAIL_CLICK = 17
+
+        # Social Network Service
+        RSVP_EVENT = 23
+        EVENT_CREATE = 28
+        EVENT_DELETE = 29
+        EVENT_UPDATE = 30
+
+        # SMS campaign
+        CAMPAIGN_SMS_SEND = 24
+        CAMPAIGN_SMS_CLICK = 25
+        CAMPAIGN_SMS_REPLY = 26
+
+        # Dumblists
+        # TODO
+
+        CAMPAIGN_SMS_CREATE = 28
+
+        # Push campaign
+        CAMPAIGN_PUSH_CREATE = 29
+        CAMPAIGN_PUSH_SEND = 30
+        CAMPAIGN_PUSH_CLICK = 31
+
+    ####################################################################################################
+    #   V2.0+ Codes
+    #   Activity Codes are set up in blocks of 100 to avoid search for the last used int.
+    ####################################################################################################
+
+        # RESUME_PARSING_SERVICE 100-199
+        # USER_SERVICE_PORT  200-299
+        # CANDIDATE_SERVICE 300-399
+        # WIDGET_SERVICE 400-499
+        # SOCIAL_NETWORK_SERVICE 500-599
+
+        # CANDIDATE_POOL_SERVICE = 600-699
+
+        # params = dict(name)
+        PIPELINE_CREATE = 600
+        PIPELINE_DELETE = 601
+        # params = dict(name)
+        TALENT_POOL_CREATE = 602
+        TALENT_POOL_DELETE = 603
+        # params = dict(name)
+        DUMBLIST_CREATE = 604
+        DUMBLIST_DELETE = 605
+
+        # SPREADSHEET_IMPORT_SERVICE 700-799
+        # DASHBOARD_SERVICE 800-899
+        # SCHEDULER_SERVICE 900-999
+        # SMS_CAMPAIGN_SERVICE 1000-1099
+        # EMAIL_CAMPAIGN_SERVICE 1100-1199
 
     def __repr__(self):
         return "<Activity: (id = {})>".format(self.id)
@@ -38,6 +142,7 @@ class Activity(db.Model):
     def get_by_user_id_type_source_id(cls, user_id, type_, source_id):
         assert user_id
         return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
+
 
 
 class AreaOfInterest(db.Model):
@@ -65,6 +170,7 @@ class AreaOfInterest(db.Model):
     @classmethod
     def get_domain_areas_of_interest(cls, domain_id):
         """
+        :type domain_id: int|long
         :rtype: list[AreaOfInterest]
         """
         return cls.query.filter(AreaOfInterest.domain_id == domain_id).all()
@@ -222,6 +328,7 @@ class Frequency(db.Model):
 
     # Relationships
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
+    push_campaigns = relationship('PushCampaign', backref='frequency')
 
     # frequency Ids
     ONCE = 1
@@ -342,6 +449,7 @@ class EmailTemplateFolder(db.Model):
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                        cascade="all, delete-orphan"))
 
+
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
@@ -374,12 +482,40 @@ class UrlConversion(db.Model):
     def __repr__(self):
         return "<UrlConversion (id = {})>".format(self.id)
 
+    @classmethod
+    def get_by_id_and_domain_id_for_push_campaign_send(cls, _id, domain_id):
+        """
+        This method returns a UrlConversion object that is associated to a campaign send object
+        given by `send_id` and it belongs to domain with id `domain_id`.
+        :param _id: UrlConversion id
+        :type _id: int | long
+        :param domain_id: Domain id of user
+        :type domain_id: int | long
+        :return: UrlConversion object | None
+        :rtype: UrlConversion | None
+        """
+        # importing User and Domain here due to cyclic dependency
+        from user import User, Domain
+        return cls.query.join(PushCampaignSendUrlConversion).join(
+            PushCampaignSend).join(PushCampaignBlast).join(PushCampaign).join(User).join(Domain).filter(
+            PushCampaignSendUrlConversion.url_conversion_id == _id).filter(
+            PushCampaign.user_id == User.id).filter(User.domain_id == domain_id).first()
+
     # Relationships
     sms_campaign_sends_url_conversions = relationship('SmsCampaignSendUrlConversion',
                                                       cascade='all,delete-orphan',
                                                       passive_deletes=True,
                                                       backref='url_conversion')
+
     email_campaign_sends_url_conversions = relationship('EmailCampaignSendUrlConversion',
                                                         cascade='all,delete-orphan',
                                                         passive_deletes=True,
                                                         backref='url_conversion')
+
+    push_campaign_sends_url_conversions = relationship('PushCampaignSendUrlConversion',
+                                                       cascade='all,delete-orphan',
+                                                       passive_deletes=True,
+                                                       backref='url_conversion',
+                                                       lazy='dynamic')
+
+

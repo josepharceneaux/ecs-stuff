@@ -46,14 +46,14 @@ other model classes inherit. But this changes will only effect this app or the a
 from types import MethodType
 
 # Third Party
-from flask import current_app
+from flask import Flask
 from sqlalchemy import inspect
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
+from flask.ext.sqlalchemy import BaseQuery
+from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
-
-
 from ..models.db import db
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
@@ -63,17 +63,17 @@ from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
-def to_json(self, allowed_keys=None, field_parsers=dict()):
+def to_json(self, include_fields=None, field_parsers=dict()):
     """
-    Converts SqlAlchemy object to serializable dictionary
+    Converts SqlAlchemy object to serializable dictionary.
 
-    Some data types are not json serializable e.g. DATETIME, TIMESTAMP
+    Some data types are not JSON serializable e.g. DATETIME, TIMESTAMP
     so we are making a dictionary where keys are types and values are functions which
-     will be used to convert these fields to specific type e.g. str
+    will be used to convert these fields to specific type e.g. str
 
-     field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
-     to json serializable dict but we want our datetime object to be converted in
-     ISO 8601 format, fo we can pass a parser functions like
+    field_parsers can be useful in some cases. e.g we want to convert our SqlAlchemy model object
+    to JSON serializable dict but we want our datetime object to be converted in
+    ISO 8601 format, so we can pass a parser functions like
 
         >>> from app_common.common.utils.handy_functions import to_utc_str
         >>> parsers = dict(start_datetime=to_utc_str,
@@ -102,8 +102,8 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
 
     :param self: instance of respective model class
     :type self: db.Model
-    :param allowed_keys: which columns we need to add in json data
-    :type allowed_keys: list | tuple
+    :param include_fields: which columns we need to add in JSON data
+    :type include_fields: list | tuple
     :param field_parsers: a dictionary with keys as model attributes and values as
      function to parse or convert the field value to specific format
     :type field_parsers: dict
@@ -119,10 +119,10 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
     # get column properties
     columns = inspect(cls).column_attrs._data
 
-    if isinstance(allowed_keys, (list, tuple)):
-        allowed_columns = {name: column for name, column in columns.items() if name in allowed_keys}
+    if isinstance(include_fields, (list, tuple)):
+        allowed_columns = {name: column for name, column in columns.items() if name in include_fields}
         if not allowed_columns:
-            raise InvalidUsage('All given column names are invalid: %s' % allowed_keys)
+            raise InvalidUsage('All given column names are invalid: %s' % include_fields)
     else:
         allowed_columns = columns
 
@@ -149,35 +149,76 @@ def to_json(self, allowed_keys=None, field_parsers=dict()):
         else:
             # it is a normal serializable column value so add to data dictionary as it is.
             data[name] = value
-
     return data
 
 
-def save(instance):
+def save(self):
     """
     This method allows a model instance to save itself in database by calling save
     e.g.
     event = Event(**kwargs)
     Event.save(event)
+    :param self: model instance
     :return: same model instance
     """
     # Add instance to db session and then commit that change to save that
-    db.session.add(instance)
+    db.session.add(self)
     db.session.commit()
-    return instance
+    return self
 
 
-def update(instance, **data):
+def update(self, **data):
     """
     This method allows a model instance to update itself in database by calling update
     e.g.
     event = Event.get(event_id)
     event.update(**data)
+
+    :param self: model instance to be updated
     :return: same model instance
     """
     # update this instance by given data
-    instance.query.filter_by(id=instance.id).update(data)
+    self.query.filter_by(id=self.id).update(data)
     db.session.commit()
+    return self
+
+
+@classmethod
+def create_or_update(cls, conditions, **data):
+    """
+    This method allows a model instance to create or update itself in database
+    :param conditions: a dictionary where keys are column names and values are to match with
+     db records in respective table.
+     e.g. cls = Event and conditions=dict(social_network_event_id=12345, user_id=2)
+     We will search for a record with these conditions like this
+        query = cls.query.filter(cls.social_network_event_id == 12345).filter(cls.user_id == 2)
+
+    :param cls: model class, some child class of db.Model
+    :param data: data to update model instance
+    :return: model instance
+    """
+    # update this instance by given data
+    assert isinstance(conditions, dict) and any(conditions), \
+        'first argument should be a valid dictionary'
+    query = cls.query
+    # apply filter for all given conditions
+    for key, value in conditions.iteritems():
+        query.filter(getattr(cls, key) == value)
+
+    # get first instance if exists
+    instance = query.first()
+
+    try:
+        # if there is already a record with given conditions, update it otherwise create a new
+        # record
+        if instance:
+            instance.update(**data)
+        else:
+            instance = cls(**data)
+            cls.save(instance)
+    except Exception:
+        db.session.rollback()
+        raise
     return instance
 
 
@@ -188,29 +229,39 @@ def get_by_id(cls, _id):
     that class on which this is invoked.
     e.g. event = Event.get_by_id(2)
     It will return Event class model instance with given id or it will return None if no event found.
+    :param cls: model class, some child class of db.Model
     :param _id: id for given instance
-    :type _id: int
+    :type _id: int | long
     :return: Model instance
     """
-
-    try:
-        # get Model instance given by id
-        obj = cls.query.get(_id)
-    except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].exception(
-            "Couldn't get record from db table %s. Error is: %s" % (cls.__name__, error.message))
-        return None
-    return obj
+    # get Model instance given by id (primary_key)
+    return cls.query.get(_id)
 
 
 @classmethod
-def delete(cls, ref):
+def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
+    :param cls: model class, some child class of db.Model
     :param ref: id for instance | model instance
     :type ref: int | model object
+    :param app: flask app, if someone wants to run this method using app_context
+    :type app: Flask obj
     :return: Boolean
     :rtype: bool
+
+        :Example:
+            You  can delete a record either by primary key or passing the whole model instance.
+
+            # Using primary key
+            >>> event_id = 123
+            >>> Event.delete(event_id)
+
+            # Using model instance
+            >>> event_id = 456
+            >>> event = Event.get(event_id)
+            >>> if event:
+            >>>     Event.delete(event)
     """
     try:
         if isinstance(ref, (int, long)):
@@ -220,8 +271,11 @@ def delete(cls, ref):
         db.session.delete(obj)
         db.session.commit()
     except Exception as error:
-        current_app.config[TalentConfigKeys.LOGGER].error(
-            "Couldn't delete record from db. Error is: %s" % error.message)
+        db.session.rollback()
+        if isinstance(app, Flask):
+            with app.app_context():
+                app.config[TalentConfigKeys.LOGGER].error(
+                    "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
 
@@ -239,8 +293,7 @@ def add_model_helpers(cls):
              add_model_helpers(db.Model)
 
              This will add all these method on db.Model and all its child classes.
-    :param cls:
-    :return:
+    :param cls: model class, some child class of db.Model
     """
     cls.session = db.session
     # this method converts model instance to json serializable dictionary
@@ -254,6 +307,14 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
+
+    # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
+    # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
+    # method from BaseQuery class to AppenderQuery class to get pagination functionality
+    # we can now do something like,
+    # blasts = campaigns.blasts.paginate(1, 15, False).items
+    # or we can call `get_paginated_response` and pass `campaign.blasts` as query.
+    AppenderQuery.paginate = BaseQuery.__dict__['paginate']
 
 
 def init_talent_app(app_name):

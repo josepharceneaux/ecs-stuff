@@ -27,15 +27,16 @@ from flask import current_app
 # Database Models
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
-from ..models.misc import (UrlConversion, Frequency)
+from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
+from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
-from ..utils.activity_utils import ActivityMessageIds
+
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
@@ -432,7 +433,7 @@ class CampaignBase(object):
         params = {'username': user.name, 'campaign_name': source.name,
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(user.id,
-                            _type=ActivityMessageIds.CAMPAIGN_CREATE,
+                            _type=Activity.MessageIds.CAMPAIGN_CREATE,
                             source=source,
                             params=params)
 
@@ -642,7 +643,7 @@ class CampaignBase(object):
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         self.create_activity(
             self.user.id,
-            _type=ActivityMessageIds.CAMPAIGN_DELETE,
+            _type=Activity.MessageIds.CAMPAIGN_DELETE,
             source=source,
             params=params
         )
@@ -864,7 +865,7 @@ class CampaignBase(object):
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__),
                   'campaign_name': source.name}
         cls.create_activity(user.id,
-                            _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
+                            _type=Activity.MessageIds.CAMPAIGN_SCHEDULE,
                             source=source,
                             params=params)
 
@@ -1178,7 +1179,6 @@ class CampaignBase(object):
          **See Also**
         .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
         :param candidates:
-        :return:
         """
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
@@ -1229,6 +1229,7 @@ class CampaignBase(object):
             # This runs all tasks asynchronously and sets callback function to be hit once all
             # tasks in list finish running without raising any error. Otherwise callback
             # results in failure status.
+            # http://ask.github.io/celery/userguide/tasksets.html#chords
             chord(tasks)(callback)
         except Exception:
             current_app.config[TalentConfigKeys.LOGGER].exception(
@@ -1241,7 +1242,6 @@ class CampaignBase(object):
         This will be called by Celery worker to send campaigns asynchronously.
         :param data_to_send_campaign: This is the data used by celery task to send campaign
         :type data_to_send_campaign: tuple
-        :return:
         """
         pass
 
@@ -1249,8 +1249,7 @@ class CampaignBase(object):
     @abstractmethod
     def celery_error_handler(uuid):
         """
-        This function logs any error occurred for tasks running on celery,
-        :return:
+        This function logs any error occurred for tasks running on celery.
         """
         pass
 
@@ -1270,7 +1269,6 @@ class CampaignBase(object):
         :type campaign_type: str
         :type blast_id: int
         :type oauth_header: dict
-        :return:
         """
         pass
 
@@ -1344,23 +1342,21 @@ class CampaignBase(object):
             send_url_conversion_model.save(new_record)
 
     @classmethod
-    def create_campaign_send_activity(cls, user_id, source, oauth_header, num_candidates):
+    def create_campaign_send_activity(cls, user_id, source, num_candidates):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for Campaign sent.
 
         - Activity will appear as " 'Jobs at Oculus' has been sent to '50' candidates".
 
-        - This method is called from send_sms_campaign_to_candidates() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+        - Call this method when a campaign is created some subclass like SmsCampaignBase,
+        PushCampaignBase etc.
 
         :param user_id: id of user
-        :param source: sms_campaign obj
-        :param oauth_header: Authorization header
+        :param source: sms_campaign | push_campaign obj
         :param num_candidates: number of candidates to which campaign is sent
         :type user_id: int
-        :type source: SmsCampaign
-        :type oauth_header: dict
+        :type source: SmsCampaign | PushCampaign | EmailCampaign
         :type num_candidates: int
         :exception: InvalidUsage
 
@@ -1371,7 +1367,7 @@ class CampaignBase(object):
         raise_if_not_instance_of(num_candidates, (int, long))
         params = {'name': source.name, 'num_candidates': num_candidates}
         cls.create_activity(user_id,
-                            _type=ActivityMessageIds.CAMPAIGN_SEND,
+                            _type=Activity.MessageIds.CAMPAIGN_SEND,
                             source=source,
                             params=params)
 
@@ -1725,3 +1721,19 @@ class CampaignBase(object):
         # POST call to activity_service to create activity
         http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header,
                      data=json_data, user_id=user_id)
+
+    @staticmethod
+    def get_url_conversion_by_send_id(send_id, campaign_type, user):
+        model_name = campaign_type + '_send_url_conversion'
+        send_url_conversion_model = get_model(campaign_type, model_name)
+        send_url_conversion = send_url_conversion_model.query.filter_by(send_id=send_id).first()
+        if not send_url_conversion:
+            raise ResourceNotFound('Resource not found')
+        send = send_url_conversion.send
+        if not send:
+            raise ResourceNotFound('Resource not found')
+        if send.candidate.user.domain_id == user.domain_id:
+            url_conversion = send_url_conversion.url_conversion
+            return url_conversion
+        else:
+            raise ForbiddenError("You can not get other domain's url_conversion records")

@@ -54,6 +54,10 @@ candidates_resource_schema_post = {
                     "resume_url": {
                         "type": ["string", "null"]
                     },
+                    "added_datetime": {
+                        "type": ["string", "null"],
+                        "format": "date-time"
+                    },
                     "talent_pool_ids": {
                         "type": "object",
                         "required": ["add"],
@@ -568,6 +572,13 @@ candidates_resource_schema_patch = {
                     },
                     "resume_url": {
                         "type": ["string", "null"]
+                    },
+                    "hide": {
+                        "type": "boolean"
+                    },
+                    "added_datetime": {
+                        "type": ["string", "null"],
+                        "format": "date-time"
                     },
                     "talent_pool_ids": {
                         "type": ["object", "null"],
@@ -1102,11 +1113,50 @@ resource_schema_photos_patch = {
     "type": "object",
     "additionalProperties": False,
     "properties": {
-        "image_url": {"type": "string"},
-        "is_default": {"type": ["boolean", "null"]},
-        "added_datetime": {
-            "type": ["string", "null"]
-            # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+        "photos": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["id"],
+                # "additionalProperties": False,
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "image_url": {
+                        "type": "string"
+                    },
+                    "is_default": {
+                        "type": ["boolean", "null"]
+                    },
+                    "added_datetime": {
+                        "type": ["string", "null"]
+                        # "format": "date-time" #TODO uncomment this when we can get datetime.isoformat() to comply with 'date-time' format
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+notes_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["notes"],
+    "properties": {
+        "notes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["comment"],
+                "properties": {
+                    "comment": {"type": "string"}
+                }
+            }
         }
     }
 }

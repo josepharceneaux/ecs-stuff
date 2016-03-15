@@ -266,7 +266,7 @@ def test_talent_pipeline_api_get(access_token_first, access_token_second, user_s
     assert response['talent_pipeline']['positions'] == talent_pipeline.positions
     assert json.dumps(response['talent_pipeline']['search_params']) == talent_pipeline.search_params
     assert response['talent_pipeline']['talent_pool_id'] == talent_pipeline.talent_pool_id
-    assert response['talent_pipeline']['date_needed'] == str(talent_pipeline.date_needed)
+    assert response['talent_pipeline']['date_needed'] == talent_pipeline.date_needed.isoformat()
 
     # Logged-in user trying to get talent_pipelines of his domain
     response, status_code = talent_pipeline_api(access_token_second)

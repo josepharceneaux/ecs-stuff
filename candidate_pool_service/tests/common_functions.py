@@ -3,12 +3,9 @@ import random
 import json
 import requests
 from werkzeug.security import gen_salt
-from candidate_pool_service.candidate_pool_app import db
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
-from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate, SmartlistStats
-from candidate_pool_service.common.models.talent_pools_pipelines import (
-    TalentPoolStats, TalentPipelinesInTalentPoolStats, TalentPipelineStats)
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
 
 def talent_pool_api(access_token, talent_pool_id='', data='', action='GET'):
@@ -223,27 +220,3 @@ def create_candidates_from_candidate_api(access_token, data):
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]
 
-
-def generate_random_stats(container, id):
-    """
-    This method will generate random statistics for TalentPools, TalentPipelines or SmartLists
-    :param container: talent-pool|smartlist|talent-pipeline
-    :param id: Id of a container
-    :return:
-    """
-    for i in range(10):
-        random_number = int(random.random() * 100)
-        if container == 'smartlist':
-            db.session.add(SmartlistStats(smartlist_id=id, total_number_of_candidates=random_number,
-                                          candidates_engagement=random_number))
-        elif container == 'talent-pool':
-            db.session.add(TalentPoolStats(talent_pool_id=id, total_number_of_candidates=random_number,
-                                           candidates_engagement=random_number))
-        elif container == 'talent-pipeline':
-            db.session.add(TalentPipelineStats(talent_pipeline_id=id, total_number_of_candidates=random_number,
-                                               candidates_engagement=random_number))
-        else:
-            db.session.add(TalentPipelinesInTalentPoolStats(average_number_of_candidates=random_number,
-                                                            talent_pool_id=id))
-
-    db.session.commit()

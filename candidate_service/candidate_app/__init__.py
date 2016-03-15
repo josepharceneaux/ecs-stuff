@@ -3,7 +3,7 @@ from candidate_service.common.talent_config_manager import load_gettalent_config
 from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_service.common.talent_flask import TalentFlask
-from candidate_service.common.talent_celery import make_celery
+from candidate_service.common.talent_celery import init_celery_app
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
@@ -19,7 +19,7 @@ try:
     db.app = app
 
     # Instantiate Celery
-    celery_app = make_celery(app, 'celery_candidate_documents_scheduler')
+    celery_app = init_celery_app(app, 'celery_candidate_documents_scheduler')
 
     from candidate_service.common.redis_cache import redis_store
     redis_store.init_app(app)
@@ -36,7 +36,7 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
         CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidatePhotosResource
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -233,7 +233,7 @@ try:
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(
         CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference/<int:id>',
+        '/v1/candidates/<int:candidate_id>/work_preference',
         endpoint='candidate_work_preference'
     )
 
@@ -243,9 +243,15 @@ try:
     # ****** CandidateViewResource ******
     api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
 
+    # ****** CandidateDeviceResource ******
+    api.add_resource(
+        CandidateDeviceResource, CandidateApi.DEVICES,
+        endpoint='candidate_devices'
+    )
+
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
-    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO ,endpoint='candidate_photo')
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO, endpoint='candidate_photo')
 
     # ****** Candidate Search *******
     api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)
@@ -263,6 +269,9 @@ try:
 
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidatePreferenceResource, CandidateApi.CANDIDATE_PREFERENCES, endpoint='candidate_preference')
+
+    # ****** CandidatePreferenceResource *******
+    api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
 
     db.create_all()
     db.session.commit()

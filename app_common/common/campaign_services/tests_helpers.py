@@ -238,8 +238,7 @@ class CampaignsTestsHelpers(object):
         json_response = response.json()
         assert entity in json_response
         if check_count:
-            assert 'count' in json_response
-            assert json_response['count'] == count
+            assert len(json_response[entity]) == count
             if not count:  # if count is 0, campaign_sends should be []
                 assert not json_response[entity]
             else:

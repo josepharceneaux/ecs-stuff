@@ -13,6 +13,7 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
 from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
+
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
@@ -38,7 +39,7 @@ def get_candidate_if_exists(candidate_id):
     """
     Function checks to see if candidate exists in the database and is not web-hidden.
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
-    otherwise the Candidate-query-object will be returned
+    otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
     """
     assert isinstance(candidate_id, (int, long))
@@ -114,7 +115,7 @@ def is_area_of_interest_authorized(user_domain_id, area_of_interest_ids):
     """
     Function checks if area_of_interest_ids belong to the logged-in-user's domain
     :type   user_domain_id:       int|long
-    :type   area_of_interest_ids: [int]
+    :type   area_of_interest_ids: list[int]
     :rtype: bool
     """
     assert isinstance(area_of_interest_ids, list)
@@ -156,12 +157,14 @@ def validate_id_list(key, values):
         # if multiple values then return as list else single value.
         return values[0] if values.__len__() == 1 else values
     else:
+        if not values.strip().isdigit():
+            raise InvalidUsage("`%s` must be comma separated ids()" % key)
         return values.strip()
 
 
 def validate_string_list(key, values):
-    if ',' in values:
-        values = [value.strip() for value in values.split(',') if value.strip()]
+    if ',' in values or isinstance(values, list):
+        values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
         return values[0] if values.__len__() == 1 else values
     else:
         return values.strip()
@@ -298,25 +301,27 @@ def validate_and_format_data(request_data):
     request_vars = {}
     for key, value in request_data.iteritems():
         key = is_backward_compatible(key)
-        if key == -1:
+        if key == -1 or not value or (isinstance(value, basestring) and not value.strip()):
             continue
-        if value.strip():
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
-                request_vars[key] = value
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
-                request_vars[key] = validate_is_digit(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
-                request_vars[key] = validate_is_number(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
-                request_vars[key] = validate_id_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
-                request_vars[key] = validate_sort_by(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
-                request_vars[key] = validate_string_list(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
-                request_vars[key] = validate_fields(key, value)
-            if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
-                request_vars[key] = convert_date(key, value)
+        if is_number(value):
+            value = str(value)
+
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == '':
+            request_vars[key] = value
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'digit':
+            request_vars[key] = validate_is_digit(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == 'number':
+            request_vars[key] = validate_is_number(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "id_list":
+            request_vars[key] = validate_id_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "sorting":
+            request_vars[key] = validate_sort_by(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "string_list":
+            request_vars[key] = validate_string_list(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "return_fields":
+            request_vars[key] = validate_fields(key, value)
+        if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
+            request_vars[key] = convert_date(key, value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
