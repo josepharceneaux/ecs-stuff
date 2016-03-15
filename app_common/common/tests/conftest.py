@@ -19,7 +19,6 @@ from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
-from ..models.email_campaign import UserEmailTemplate, EmailTemplateFolder
 
 
 fake = Faker()

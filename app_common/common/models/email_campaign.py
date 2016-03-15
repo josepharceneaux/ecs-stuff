@@ -226,6 +226,14 @@ class UserEmailTemplate(db.Model):
     template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                               cascade="all, delete-orphan"))
 
+    @classmethod
+    def get_by_id(cls, template_id):
+        return cls.query.filter_by(id=template_id).first()
+
+    @classmethod
+    def get_by_name(cls, template_name):
+        return cls.query.filter_by(name=template_name).first()
+
 
 class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
@@ -241,6 +249,10 @@ class EmailTemplateFolder(db.Model):
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_id(cls, _id):
+        return cls.query.filter_by(id=_id).first()
 
     @classmethod
     def get_by_name_and_domain_id(cls, folder_name, domain_id):

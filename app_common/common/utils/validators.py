@@ -116,6 +116,11 @@ def parse_openweb_date(openweb_date):
 
 
 def validate_immutable_value(is_immutable):
+    """
+    This function validates the is_immutable value that came from user's end to make sure
+    that it is either 0 or 1. Raises in valid usage exception if other value is received.
+    :param is_immutable: Value for is_immutable that came from user's end and needs to be validated.
+    """
     if (isinstance(is_immutable, int) and is_immutable not in (0, 1)) or ((
                 isinstance(is_immutable, basestring) and int(is_immutable) not in (0, 1))):
-        raise InvalidUsage(error_message="Invalid input: is_immutable should be integer with value 0 or 1")
+        raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1')

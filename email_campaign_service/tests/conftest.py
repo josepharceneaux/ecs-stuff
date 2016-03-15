@@ -4,7 +4,9 @@ import re
 
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.candidate import CandidateEmail
-from email_campaign_service.common.models.email_campaign import EmailClient
+
+from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
+                                                                 EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
@@ -206,7 +208,7 @@ def template_body():
            '\r\n</body>\r\n</html>\r\n'
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def template_id(sample_user, domain_id):
     """
     Retrieves email template for the test email campaign

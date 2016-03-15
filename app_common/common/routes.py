@@ -859,8 +859,8 @@ class EmailCampaignUrl(object):
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
     BLAST = BLASTS + '/%s'
 
-    EMAIL_TEMPLATE = EmailCampaignEndpoints.HOST_NAME % ("/v1/email-templates")
-    EMAIL_TEMPLATE_FOLDER = EmailCampaignEndpoints.HOST_NAME % ("/v1/email-template-folders")
+    TEMPLATE = EmailCampaignEndpoints.HOST_NAME % '/v1/email-templates'
+    TEMPLATE_FOLDER = EmailCampaignEndpoints.HOST_NAME % '/v1/email-template-folders'
 
     SENDS = CAMPAIGN + CampaignWords.SENDS
     SEND_BY_ID = SENDS + '/%s'
