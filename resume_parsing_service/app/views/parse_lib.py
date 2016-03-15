@@ -16,20 +16,20 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
 from pdfminer.pdfparser import PDFDocument
 from pdfminer.pdfparser import PDFParser
-from xhtml2pdf import pisa
 import magic
 import requests
 # Module Specific
-from .utils import create_parsed_resume_candidate, update_candidate_from_resume
 from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.app.views.utils import create_parsed_resume_candidate, update_candidate_from_resume
+from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
-from resume_parsing_service.app.views.utils import gen_hash_from_file
-from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -53,7 +53,7 @@ def process_resume(parse_params):
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
-        resume_file = download_file(file_picker_bucket, filename_str)
+        resume_bin = resume_file = download_file(file_picker_bucket, filename_str)
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
@@ -73,6 +73,11 @@ def process_resume(parse_params):
         return parsed_resume
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+    try:
+        s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
+        parsed_resume['candidate']['resume_url'] = key.name
+    except Exception as e:
+        logger.exception('Failure during s3 upload')
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                              oauth_string)
     response_dict = json.loads(candidate_post_response.content)
@@ -139,12 +144,6 @@ def parse_resume(file_obj, filename_str):
         doc_content = ocr_image(file_obj)
         logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
-        """
-        BurningGlass doesn't work when the file's MIME type is text/html, even if the file is a .doc
-        file. (Apparently HTML files that have a .doc extension are also valid doc files, that can
-        be opened/edited in MS Word/LibreOffice/etc.) So, we have to convert the file into PDF using
-        xhtml2pdf.
-        """
         start_time = time()
         doc_content = file_obj.read()
         mime_type = magic.from_buffer(doc_content, mime=True)
@@ -153,27 +152,6 @@ def parse_resume(file_obj, filename_str):
             filename_str, time() - start_time
         )
         final_file_ext = file_ext
-
-        if mime_type == 'text/html':
-            start_time = time()
-            file_obj = StringIO()
-            try:
-                create_pdf_status = pisa.CreatePDF(doc_content, file_obj)
-                if create_pdf_status.err:
-                    logger.error('PDF create error: {}'.format(create_pdf_status.err))
-                    raise InvalidUsage('Error processing {}. Cannot convert text/html to pdf'.format(filename_str))
-            except Exception as e:
-                logger.exception(
-                    'parse_resume: Couldn\'t convert text/html file \'{}\' to PDF. Exception: {}'.format(
-                        filename_str, e.message))
-                raise InvalidUsage('Unable to convert {} to pdf'.format(filename_str))
-
-            file_obj.seek(0)
-            doc_content = file_obj.read()
-            final_file_ext = '.pdf'
-            logger.info(
-                "Benchmark: pisa.CreatePDF(%s) and reading file took %ss", filename_str,
-                time() - start_time)
 
     if not doc_content:
         logger.error('parse_resume: No doc_content')
