@@ -90,7 +90,7 @@ def test_create_email_template(sample_user, user_auth, template_body):
     template_name = template['template_name']
 
     # Get added template row
-    template = db.session.query(UserEmailTemplate).filter_by(id=template_id).first()
+    template = UserEmailTemplate.get_by_id(template_id)
     # Assert with template_name
     assert template.name == template_name
     assert template.is_immutable == 1
@@ -122,7 +122,7 @@ def test_create_email_template_without_name(sample_user, user_auth, template_bod
     template_name = ''
 
     resp = create_email_template(token, sample_user.id, template_name, template_body, template_name,
-                                 is_immutable=1, folder_id=template_folder_id, domain_id=domain_id, role_name=role)
+                                 is_immutable=1, folder_id=template_folder_id)
     assert resp.status_code == requests.codes.bad_request
 
 
@@ -148,7 +148,7 @@ def test_create_template_without_email_body(sample_user, user_auth):
 
     # Pass empty email template body
     resp = create_email_template(token, sample_user.id, template_name, '', template_name,
-                                 is_immutable=1, folder_id=template_folder_id, domain_id=domain_id, role_name=role)
+                                 is_immutable=1, folder_id=template_folder_id)
     assert resp.status_code == requests.codes.bad_request
 
 

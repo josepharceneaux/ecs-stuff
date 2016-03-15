@@ -264,7 +264,7 @@ def get_template_folder(token):
 
 
 def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
-                          folder_id=None, domain_id=None, role_name=None):
+                          folder_id=None):
     """
     Creates a email campaign template with params provided
 
@@ -279,8 +279,6 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     :param role_name                user scope role name
     :return:                        Id of template created
     """
-    # Check the user has role to create template
-    assert role_name == DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
     data = dict(
             name=template_name,
             template_folder_id=folder_id,
@@ -343,7 +341,8 @@ def add_email_template(user_auth, template_owner, template_body):
     template_name = 'test_email_template%i' % time.time()
     is_immutable = 1
     resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
-                                 folder_id=template_folder_id, domain_id=domain_id, role_name=role)
+                                 folder_id=template_folder_id)
+    db.session.commit()
     resp_obj = resp.json()
     resp_dict = resp_obj['template_id'][0]
 
