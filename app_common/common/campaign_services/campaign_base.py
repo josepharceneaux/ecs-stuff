@@ -25,7 +25,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from push_campaign_service.common.utils.auth_utils import refresh_token
+from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
