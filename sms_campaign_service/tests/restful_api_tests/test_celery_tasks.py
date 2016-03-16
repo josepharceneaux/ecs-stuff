@@ -17,7 +17,6 @@ import urllib
 from datetime import datetime, timedelta
 
 # Third Party
-import re
 import requests
 
 # Common Utils

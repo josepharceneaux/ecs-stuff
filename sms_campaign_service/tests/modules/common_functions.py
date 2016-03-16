@@ -14,7 +14,7 @@ from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
-SLEEP_TIME = 20
+SLEEP_TIME = 30
 
 
 def assert_url_conversion(sms_campaign_sends):
