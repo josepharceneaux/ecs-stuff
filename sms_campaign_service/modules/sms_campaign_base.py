@@ -179,14 +179,14 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user" by calling super constructor and "user_phone" by
         calling get_user_phone() method,
         :return:
         """
         # sets the user_id
-        super(SmsCampaignBase, self).__init__(user_id)
+        super(SmsCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
             raise ForbiddenError('User(id:%s) has no phone number' % self.user.id)

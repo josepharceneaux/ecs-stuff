@@ -60,6 +60,8 @@ class CampaignBase(object):
         - It takes "user_id" as keyword argument, gets the user object from database and sets
             user object in self.user.
         - It also sets type of campaign in self.campaign_type.
+        - If campaign_id is provided, it gets the campaign object from database for given
+            campaign type by validating that campaign belongs to logged-in user's domain
 
     * get_campaign_type(self) [abstract]
         Child classes will implement this to set type of campaign in self.campaign_type
@@ -234,7 +236,16 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, campaign_id=None):
+        """
+        This gets the user object from given user_id and set it in self.user.
+        If campaign id is provided, it gets the campaign object if it belongs to logged-in
+        user's domain.
+        :param user_id: Id of logged-in user
+        :param campaign_id: Id of campaign object in database
+        :type user_id: int | long
+        :type campaign_id: int | long | None
+        """
         raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
@@ -247,6 +258,9 @@ class CampaignBase(object):
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
+        if campaign_id:
+            self.campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
+                                                                 self.campaign_type)
 
     @abstractmethod
     def get_campaign_type(self):

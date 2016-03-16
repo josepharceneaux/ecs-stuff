@@ -426,7 +426,7 @@ class ScheduleSmsCampaign(Resource):
                     500 (Internal Server Error)
         """
         # create object of class SmsCampaignBase
-        sms_camp_obj = SmsCampaignBase(request.user.id)
+        sms_camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         # call method schedule() to schedule the campaign and get the task_id
         task_id = sms_camp_obj.reschedule(request, campaign_id)
         if task_id:
@@ -568,7 +568,7 @@ class CampaignById(Resource):
                     5017 (INVALID_URL_FORMAT)
         """
         campaign_data = get_valid_json_data(request)
-        camp_obj = SmsCampaignBase(request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         invalid_smartlist_ids = camp_obj.update(campaign_data, campaign_id=campaign_id)
         # If any of the smartlist_id found invalid
         if invalid_smartlist_ids['count']:
@@ -606,7 +606,7 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ERROR_DELETING_SMS_CAMPAIGN)
         """
-        campaign_obj = SmsCampaignBase(request.user.id)
+        campaign_obj = SmsCampaignBase(request.user.id, campaign_id)
         campaign_deleted = campaign_obj.delete(campaign_id)
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
@@ -663,7 +663,7 @@ class SendSmsCampaign(Resource):
                          5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        camp_obj = SmsCampaignBase(request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         camp_obj.send(campaign_id)
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
 
