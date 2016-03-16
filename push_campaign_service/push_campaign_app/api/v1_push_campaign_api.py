@@ -971,10 +971,10 @@ class PushCampaignUrlRedirection(Resource):
                                                         requested_url=request.full_path)
             return redirect(redirection_url)
         # In case any type of exception occurs, candidate should only get internal server error
-        except Exception:
+        except Exception as e:
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
-            logger.exception("Error occurred while URL redirection for Push campaign.")
+            logger.exception("Error occurred while URL redirection for Push campaign.\nError: %s" % str(e))
         return dict(message='Internal Server Error'), 500
 
 
