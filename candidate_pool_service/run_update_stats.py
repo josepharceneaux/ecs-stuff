@@ -8,7 +8,7 @@ from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities 
 stats_update_key = 'stats-update-timestamp-%s' % datetime.utcnow().date().strftime('%m/%d/%Y')
 
 if not redis_store.exists(stats_update_key):
-    redis_store.setex(stats_update_key, 86400)
+    redis_store.setex(stats_update_key, 1, 86400)
     logger.info("CRON JOB: Stats update process has been started")
 
     update_smartlist_stats.delay()

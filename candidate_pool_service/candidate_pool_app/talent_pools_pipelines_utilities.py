@@ -175,7 +175,7 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
         if date_string not in pools_growth_stats_dict:
             b = TalentPoolCandidate.query.filter(
                     TalentPoolCandidate.talent_pool_id == talent_pool.id,
-                    TalentPoolCandidate.added_time <= date_object).all()
+                    TalentPoolCandidate.added_time.date() <= date_object).all()
             pools_growth_stats_dict[date_string] = len(b)
 
         return pools_growth_stats_dict[date_string]
