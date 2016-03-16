@@ -238,9 +238,9 @@ class CampaignBase(object):
 
     def __init__(self, user_id, campaign_id=None):
         """
-        This gets the user object from given user_id and set it in self.user.
+        This gets the user object from given user_id and sets it in self.user.
         If campaign id is provided, it gets the campaign object if it belongs to logged-in
-        user's domain.
+        user's domain and sets it in self.campaign.
         :param user_id: Id of logged-in user
         :param campaign_id: Id of campaign object in database
         :type user_id: int | long

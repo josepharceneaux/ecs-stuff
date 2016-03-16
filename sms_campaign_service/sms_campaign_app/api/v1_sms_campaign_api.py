@@ -10,19 +10,19 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
-        - ScheduleSmsCampaign: /v1/sms-campaigns/:id/schedule
+        - ScheduleSmsCampaign: /v1/sms-campaigns/:campaign_id/schedule
 
             POST    : Schedules the campaign from given campaign_id and data provided
             PUT     : Re-schedules the campaign from given campaign_id and data provided
             DELETE  : Un-schedules the campaign from given campaign_id
 
-        - SmsCampaigns: /v1/sms-campaigns/:id
+        - SmsCampaigns: /v1/sms-campaigns/:campaign_id
 
             GET     : Gets campaign data using given id
             PUT    : Updates existing campaign using given id
             DELETE  : Deletes SMS campaign from db using given id
 
-        - SendSmsCampaign: /v1/sms-campaigns/:id/send
+        - SendSmsCampaign: /v1/sms-campaigns/:campaign_id/send
 
             POST    : Sends the SMS Campaign by campaign id
 
@@ -36,32 +36,32 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : When candidate replies to an SMS campaign, this endpoint is hit from Twilio
                         to notify our app.
 
-        - SmsCampaignBlasts:  /v1/sms-campaigns/:id/blasts
+        - SmsCampaignBlasts:  /v1/sms-campaigns/:campaign_id/blasts
 
             GET    : Gets the all the "blast" records for given SMS campaign id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastById:  /v1/sms-campaigns/:id/blasts/:id
+        - SmsCampaignBlastById:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id
 
             GET    : Gets the "blast" record for given SMS campaign id and blast_id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastSends:  /v1/sms-campaigns/:id/blasts/:id/sends
+        - SmsCampaignBlastSends:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
 
             GET    : Gets the "sends" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_sends'.
 
-        - SmsCampaignBlastReplies:  /v1/sms-campaigns/:id/blasts/:id/replies
+        - SmsCampaignBlastReplies:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
 
             GET    : Gets the "replies" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_replies'
 
-        - SmsCampaignSends:  /v1/sms-campaigns/:id/sends
+        - SmsCampaignSends:  /v1/sms-campaigns/:campaign_id/sends
 
             GET    : Gets all the "sends" records for given SMS campaign id
                         from db table sms_campaign_sends
 
-        - SmsCampaignReplies:  /v1/sms-campaigns/:id/replies
+        - SmsCampaignReplies:  /v1/sms-campaigns/:campaign_id/replies
 
             GET    : Gets all the "replies" records for given SMS campaign id
                         from db table "sms_campaign_replies"
@@ -133,6 +133,7 @@ class SMSCampaigns(Resource):
         .. Response::
 
             {
+                  "count": 2,
                   "campaigns": [
                             {
                               "added_datetime": "2016-02-09T16:13:21+00:00",
@@ -141,7 +142,7 @@ class SMSCampaigns(Resource):
                               "user_id": 1,
                               "name": "Smartlist",
                               "body_text": null,
-                              "list_ids": [],
+                              "list_ids": [1, 2, 3],
                               "id": 1,
                               "end_datetime": null
                             },
@@ -152,9 +153,7 @@ class SMSCampaigns(Resource):
                               "user_id": 1,
                               "name": "Smartlist",
                               "body_text": null,
-                              "list_ids": [
-                                2
-                              ],
+                              "list_ids": [2],
                               "id": 4,
                               "end_datetime": null
                             }
@@ -305,7 +304,7 @@ class SMSCampaigns(Resource):
 @api.route(SmsCampaignApi.SCHEDULE)
 class ScheduleSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/schedule
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/schedule
     This resource is used to
         1- Schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
@@ -475,7 +474,7 @@ class ScheduleSmsCampaign(Resource):
 @api.route(SmsCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id
     This resource is used to
         1- Get campaign from given campaign_id [GET]
         2- Update an existing SMS campaign [PUT]
@@ -619,7 +618,7 @@ class CampaignById(Resource):
 @api.route(SmsCampaignApi.SEND)
 class SendSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/send
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/send
     This resource is used to send SMS Campaign to candidates [POST]
     """
     decorators = [require_oauth()]
@@ -629,7 +628,7 @@ class SendSmsCampaign(Resource):
         It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
         Once the campaign is scheduled, _scheduler_service_ will pick it up and it will ping the
-        this endpoint (https://sms-campaign-service/v1/campaign/:id/send)
+        this endpoint (https://sms-campaign-service.gettalent.com/v1/sms-campaign/:campaign_id/send)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
@@ -785,7 +784,7 @@ class SmsReceive(Resource):
 @api.route(SmsCampaignApi.BLASTS)
 class SmsCampaignBlasts(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/blasts.
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts.
     This class returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
@@ -852,7 +851,7 @@ class SmsCampaignBlasts(Resource):
 @api.route(SmsCampaignApi.BLAST)
 class SmsCampaignBlastById(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/blasts/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id
     This gives the blast object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -908,7 +907,7 @@ class SmsCampaignBlastById(Resource):
 @api.route(SmsCampaignApi.BLAST_SENDS)
 class SmsCampaignBlastSends(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/blasts/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
     This resource is used to GET Campaign "sends" for one particular blast of a given campaign.
     """
     decorators = [require_oauth()]
@@ -977,7 +976,7 @@ class SmsCampaignBlastSends(Resource):
 @api.route(SmsCampaignApi.BLAST_REPLIES)
 class SmsCampaignBlastReplies(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/blasts/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
     This gives the replies object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -1043,7 +1042,7 @@ class SmsCampaignBlastReplies(Resource):
 @api.route(SmsCampaignApi.SENDS)
 class SmsCampaignSends(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/sends
     This resource is used to GET Campaign sends
     """
     decorators = [require_oauth()]
@@ -1110,7 +1109,7 @@ class SmsCampaignSends(Resource):
 @api.route(SmsCampaignApi.REPLIES)
 class SmsCampaignReplies(Resource):
     """
-    Endpoint looks like /v1/sms-campaigns/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/replies
     This resource is used to GET Campaign replies
     """
     decorators = [require_oauth()]

@@ -31,10 +31,9 @@ class SmsCampaign(db.Model):
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
 
-    def to_dict(self, include_fields=None):
+    def to_dict(self):
         """
         This returns required fields when an sms-campaign object is requested.
-        :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
         return_dict = {"id": self.id,
