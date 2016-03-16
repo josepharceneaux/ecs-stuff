@@ -228,7 +228,7 @@ class UserEmailTemplate(db.Model):
 
     @classmethod
     def get_by_id(cls, template_id):
-        return cls.query.filter_by(id=template_id).first()
+        return cls.query.get(template_id)
 
     @classmethod
     def get_by_name(cls, template_name):

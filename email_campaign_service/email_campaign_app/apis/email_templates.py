@@ -6,6 +6,7 @@ import requests
 from flask import request
 from flask import Blueprint
 
+from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.validators import validate_immutable_value
@@ -73,6 +74,7 @@ def post_email_template():
                                             template_folder_id else None,
                                             is_immutable=is_immutable)
     UserEmailTemplate.save(template)
+    db.session.commit()
 
     template_id = template.id
     return jsonify({'template_id': [{'id': template_id}]}), requests.codes.created

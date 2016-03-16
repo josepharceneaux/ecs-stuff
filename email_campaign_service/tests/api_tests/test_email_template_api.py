@@ -88,7 +88,7 @@ def test_create_email_template(sample_user, user_auth, template_body):
     template = add_email_template(user_auth, sample_user, template_body)
     template_id = template['template_id']
     template_name = template['template_name']
-
+    db.session.commit()
     # Get added template row
     template = UserEmailTemplate.get_by_id(template_id)
     # Assert with template_name
