@@ -126,11 +126,11 @@ def candidate_first(request, talent_pool, token_first, user_first):
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_first)['candidate']
 
-    def tear_down():
-        delete_candidate(candidate_id, token_first,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
+    # def tear_down():
+    #     delete_candidate(candidate_id, token_first,
+    #                      expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+    #
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -147,11 +147,11 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_same_domain)['candidate']
 
-    def tear_down():
-        delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
+    # def tear_down():
+    #     delete_candidate(candidate_id, token_same_domain,
+    #                      expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+    #
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -168,11 +168,11 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_second)['candidate']
 
-    def tear_down():
-        delete_candidate(candidate_id, token_second,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
+    # def tear_down():
+    #     delete_candidate(candidate_id, token_second,
+    #                      expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+    #
+    # request.addfinalizer(tear_down)
     return candidate
 
 
