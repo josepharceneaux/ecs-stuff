@@ -16,7 +16,7 @@ from email_campaign_service.common.error_handling import (jsonify, InvalidUsage,
                                                           ResourceNotFound, UnauthorizedError)
 
 template_blueprint = Blueprint('email_template_service', __name__)
-ON = 1
+ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
 
 
 @template_blueprint.route('/v1/email-templates', methods=['POST'])

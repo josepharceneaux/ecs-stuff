@@ -211,13 +211,13 @@ class EmailCampaignSendUrlConversion(db.Model):
 class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), index=True)
     type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
     name = db.Column('Name', db.String(255), nullable=False)
     body_html = db.Column('EmailBodyHtml', db.Text)
     body_text = db.Column('EmailBodyText', db.Text)
-    template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id',
-                                                                          ondelete=u'SET NULL'), index=True)
+    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
+                                                                                      ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
     updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
             "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
@@ -239,10 +239,10 @@ class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
+    parent_id = db.Column('ParentId', db.Integer,  db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
                           index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
     updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
                              server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
