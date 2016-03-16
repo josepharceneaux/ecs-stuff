@@ -8,7 +8,7 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
-
+from sqlalchemy import text
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 
@@ -72,12 +72,8 @@ VALUES ("KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z", "DbS8yb895bBw4AXFe182bjYmv5X
 INSERT INTO domain_role (role_name) VALUES ("CAN_ADD_USER_ROLES"),("CAN_DELETE_USER_ROLES"), ("CAN_ADD_USERS"),
 ("CAN_GET_USERS"),("CAN_DELETE_USERS"),("CAN_ADD_TALENT_POOLS"),("CAN_GET_TALENT_POOLS"),("CAN_DELETE_TALENT_POOLS"),("CAN_ADD_TALENT_POOLS_TO_GROUP"),("CAN_ADD_CANDIDATES"),("CAN_GET_CANDIDATES"),
 ("CAN_DELETE_CANDIDATES"),("CAN_ADD_TALENT_PIPELINE_SMART_LISTS"), ("CAN_DELETE_TALENT_PIPELINE_SMART_LISTS");
-INSERT INTO user_scoped_roles (UserId, RoleId) VALUES (1, 1), (1,2),(1, 3),(1, 4),(1, 5),(1, 6),(1, 7),(1, 8),(1, 9),(1, 10),(1, 11),(1, 12),(1, 13),(1, 14),
-(2,1),(2,2),(2,3),(2,4),(2,5),(2,6),(2,7),(2,8),(2,9),(2,10),(2,11),(2,12),(2,13),(2,14),
-(3,1),(3,2),(3,3),(3,4),(3,5),(3,6),(3,7),(3,8),(3,9),(3,10),(3,11),(3,12),(3,13),(3,14);
+INSERT INTO user_scoped_roles (UserId, RoleId) VALUES (1, 1), (1,2),(2,1),(2,2),(3,1),(3,2);
 '''
-
-from sqlalchemy import text
 
 sql = text(q)
 result = db.engine.execute(sql)
