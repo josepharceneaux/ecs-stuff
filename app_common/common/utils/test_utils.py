@@ -239,6 +239,7 @@ def get_candidate(candidate_id, token, expected_status=(200,)):
 
 def delete_candidate(candidate_id, token, expected_status=(200,)):
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, token)
+    print(response.content)
     assert response.status_code in expected_status
 
 

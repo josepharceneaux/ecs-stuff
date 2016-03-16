@@ -180,6 +180,7 @@ def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
     logger.info(response.content)
+    print(response.content)
     assert response.status_code in expected_status
     return response.json()
 
