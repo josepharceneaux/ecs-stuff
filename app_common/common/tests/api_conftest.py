@@ -115,7 +115,7 @@ def user_same_domain(request, token_same_domain):
 
 
 @pytest.fixture(scope='function')
-def candidate_first(request, talent_pool, token_first):
+def candidate_first(request, talent_pool, token_first, user_first):
     """
     This fixture created a test candidate in domain first and it will be deleted
     after test has run.
@@ -156,7 +156,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
 
 
 @pytest.fixture(scope='function')
-def candidate_second(request, token_second, talent_pool_second):
+def candidate_second(request, token_second, talent_pool_second, user_second):
     """
     This fixture created a test candidate using for domain second and it will be deleted
     after test has run.
