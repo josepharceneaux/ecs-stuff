@@ -62,6 +62,7 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience
 )
+from candidate_service.modules.api_calls import create_smartlist
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
 )
@@ -70,7 +71,7 @@ from candidate_service.modules.talent_openweb import (
     find_in_openweb_by_email
 )
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
-    create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
+    create_campaign_from_api, create_campaign_send_from_api
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -1317,8 +1318,11 @@ class CandidateClientEmailCampaignResource(Resource):
             "candidate_ids": candidate_ids
         }
 
-        created_smartlist = create_smartlist_from_api(smartlist_object, access_token=request.headers.get('authorization'))
+        create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
+        if create_smartlist_resp.status_code != 201:
+            return create_smartlist_resp.json(), create_smartlist_resp.status_code
 
+        created_smartlist = create_smartlist_resp.json()
         if not created_smartlist or not created_smartlist.get('smartlist'):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
@@ -1336,8 +1340,10 @@ class CandidateClientEmailCampaignResource(Resource):
             "list_ids": [int(created_smartlist_id)]
         }
         try:
-            email_campaign_created = create_campaign_from_api(email_campaign_object, access_token=request.headers.get('authorization'))
-            email_campaign_send_created = create_campaign_send_from_api(email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
+            email_campaign_created = create_campaign_from_api(email_campaign_object,
+                                                              request.headers.get('authorization'))
+            email_campaign_send_created = create_campaign_send_from_api(
+                email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
         except Exception as e:
             raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
 
