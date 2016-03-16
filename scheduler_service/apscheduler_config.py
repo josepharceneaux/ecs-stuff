@@ -7,14 +7,14 @@ from scheduler_service import SchedulerUtils
 
 __author__ = 'saad'
 
-MAX_THREAD_POOLS = 10
+MAX_THREAD_POOLS = 12
 
 url = urlparse(flask_app.config['REDIS_URL'])
 job_store = RedisJobStore(host=url.hostname, password=url.password)
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),
-    'processpool': ProcessPoolExecutor(max_workers=10)
+    'processpool': ProcessPoolExecutor(max_workers=12)
 }
 
 jobstores = {

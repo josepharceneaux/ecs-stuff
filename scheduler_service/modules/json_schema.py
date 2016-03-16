@@ -26,9 +26,6 @@ one_time_task_job_schema = {
     "type": "object",
     "required": ["run_datetime"],
     "properties": {
-        "run_datetime": [{
-            "type": "string",
-        }]
     }
 }
 
@@ -39,10 +36,10 @@ periodic_task_job_schema = {
     "required": ["start_datetime", "end_datetime", "frequency"],
     "properties": {
         "start_datetime": {
-            "type": "date-time",
+            "type": "string",
         },
         "end_datetime": {
-            "type": "date-time",
+            "type": "string",
         },
         "frequency": {
             "type": "number",
