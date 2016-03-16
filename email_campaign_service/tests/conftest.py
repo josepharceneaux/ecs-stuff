@@ -252,9 +252,8 @@ def template_id(sample_user, domain_id):
     :return:    Id of template retrieved
     """
     # Retrieve campaign template from 'Sample Templates' folder
-    email_template_folder = db.session.query(EmailTemplateFolder).filter_by(name='Sample Templates',
-                                                                            domain_id=domain_id).first()
-    email_template_folder_id = email_template_folder.id
-    template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=email_template_folder_id)
+    template_folder = EmailTemplateFolder.get_by_name_and_domain_id('Sample Templates', domain_id)
+    template_folder_id = template_folder.id
+    template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=template_folder_id)
 
     return template['id']
