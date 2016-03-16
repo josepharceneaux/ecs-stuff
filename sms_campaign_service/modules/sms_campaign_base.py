@@ -653,7 +653,7 @@ class SmsCampaignBase(CampaignBase):
             redirect_url = str(app_redirect_url % url_conversion_id)
             # sign the redirect URL
             long_url = CampaignUtils.sign_redirect_url(redirect_url,
-                                                       datetime.now() + relativedelta(years=+1))
+                                                       datetime.utcnow() + relativedelta(years=+1))
             # long_url looks like (for prod)
             # http://sms-campaing-service.gettalent.com/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
