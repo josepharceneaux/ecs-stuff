@@ -504,7 +504,7 @@ def _get_args_from_url(url):
     for arg_pair in args:
         key, value = arg_pair.split('=')
         request_args[key] = value
-    request_args['signature'] = urllib.unquote(request_args['signature']).decode('utf8')
+    # request_args['signature'] = urllib.unquote(request_args['signature']).decode('utf8')
     return request_args
 
 
