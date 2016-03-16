@@ -136,6 +136,7 @@ class GTApis(object):
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
                                        "http://127.0.0.1",
+                                       "https://127.0.0.1",
                                        "http://localhost"]}}
 
 
@@ -524,6 +525,7 @@ class CandidatePoolApi(object):
     SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
     SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
     SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
+    SMARTLIST_IN_TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + '/smartlists' + CandidatePoolApiWords.STATS
 
 
 class CandidatePoolApiUrl(object):

@@ -22,6 +22,7 @@ from ska import (sign_url, Signature)
 
 # Database Models
 from ..models.db import db
+from ..models.misc import Activity
 from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist, SmsCampaignBlast,
                                    SmsCampaignSend)
@@ -31,7 +32,6 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 # Common Utils
 from ..routes import SchedulerApiUrl
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
-from ..utils.activity_utils import ActivityMessageIds
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 from .validators import raise_if_dict_values_are_not_int_or_long
 from ..utils.handy_functions import (http_request, raise_if_not_instance_of,
@@ -213,7 +213,7 @@ class CampaignUtils(object):
         """
         Activity messages have names and ids. e.g. CAMPAIGN_SEND = 6.
         So we pass here CAMPAIGN_SEND and it will give us 6.
-        For a given message name, we get the its id from class ActivityMessageIds.
+        For a given message name, we get the its id from class Activity.MessageIds.
         :param activity_name: e.g. CAMPAIGN_SMS_CLICK or CAMPAIGN_PUSH_CLICK
         :type activity_name: str
         :exception:  Invalid Usage
@@ -221,9 +221,9 @@ class CampaignUtils(object):
         :rtype: int
         """
         raise_if_not_instance_of(activity_name, basestring)
-        if not hasattr(ActivityMessageIds, activity_name):
+        if not hasattr(Activity.MessageIds, activity_name):
             raise InvalidUsage('Unknown activity message id %s.' % activity_name)
-        message_id = getattr(ActivityMessageIds, activity_name)
+        message_id = getattr(Activity.MessageIds, activity_name)
         if not message_id:
             raise InvalidUsage('No Activity message %s found for id.' % activity_name)
         return message_id

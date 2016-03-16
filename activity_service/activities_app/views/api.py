@@ -10,20 +10,19 @@ import re
 from time import time
 from dateutil import parser
 # framework specific
-from flask import Blueprint
 from flask import jsonify
 from flask import request
+from flask import Blueprint
 
 # application specific
-from activity_service.activities_app import db, logger
 from activity_service.common.models.user import User
+from activity_service.activities_app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
-from activity_service.common.utils.activity_utils import ActivityMessageIds
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
-ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
+DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
@@ -35,25 +34,29 @@ def get_activities(page):
     :param int page: Page used in pagination for GET requests.
     :return: JSON formatted pagination response or message notifying creation status.
     """
+    start_datetime, end_datetime = None, None
     valid_user_id = request.user.id
     is_aggregate_request = request.args.get('aggregate') == '1'
+    start_param = request.args.get('start_datetime')
+    end_param = request.args.get('end_datetime')
+    if start_param:
+        start_datetime = parser.parse(start_param).strftime(DATE_FORMAT)
+    if end_param:
+        end_datetime = parser.parse(end_param).strftime(DATE_FORMAT)
     tam = TalentActivityManager()
     if is_aggregate_request:
-        return jsonify({'activities': tam.get_recent_readable(valid_user_id)})
+        return jsonify({'activities': tam.get_recent_readable(valid_user_id,
+                                                              start_datetime=start_datetime,
+                                                              end_datetime=end_datetime)})
     else:
-        request_start_time = request_end_time = None
-        if request.args.get('start_time'):
-            request_start_time = parser.parse(request.args.get('start_time'))
-        if request.args.get('end_time'):
-            request_end_time = parser.parse(request.args.get('start_time'))
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
         try:
             request_page = int(page)
         except ValueError:
             return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
         return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
-                                          start_datetime=request_start_time,
-                                          end_datetime=request_end_time, page=request_page))
+                                          start_datetime=start_datetime,
+                                          end_datetime=end_datetime, page=request_page))
 
 
 @mod.route(ActivityApi.ACTIVITY_MESSAGES, methods=['GET'])
@@ -123,141 +126,143 @@ class TalentActivityManager(object):
     """API class for ActivityService."""
     # params=dict(id, formattedName, sourceProductId, client_ip (if widget))
     MESSAGES = {
-        ActivityMessageIds.RSVP_EVENT: ("%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
-                                        "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
-                                        "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
-                                        " on event '%(eventTitle)s'",
-                                        "candidate.png"),
-
-        ActivityMessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
-                                          "%(username)s created %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
-                                          "%(username)s deleted %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
-                                          "%(username)s updated %(count)s events.</b>",
-                                          "event.png"),
-
-        ActivityMessageIds.CANDIDATE_CREATE_WEB: ("%(username)s uploaded resume of candidate %(formattedName)s",
-                                                  "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_CSV: ("%(username)s imported candidate %(formattedName)s via spreadsheet",
-                                                  "%(username)s imported %(count)s candidates via spreadsheet",
-                                                  "candidate.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_WIDGET: (
-            "Candidate %(formattedName)s joined via widget", "%(count)s candidates joined via widget", "widget.png"),
-        ActivityMessageIds.CANDIDATE_CREATE_MOBILE: ("%(username)s added candidate %(formattedName)s via mobile",
-                                                     "%(username)s added %(count)s candidates via mobile",
-                                                     "candidate.png"),
-        ActivityMessageIds.CANDIDATE_UPDATE: (
-            "%(username)s updated candidate %(formattedName)s", "%(username)s updated %(count)s candidates",
+        Activity.MessageIds.RSVP_EVENT: (
+            "%(firstName)s  %(lastName)s responded <b>%(response)s</b> "
+            "on %(creator)s 's event <b>'%(eventTitle)s'</b> %(img)s",
+            "%(firstName)s  %(lastName)s responded <b>%(response)s<b>"
+            " on event '%(eventTitle)s'",
+            "candidate.png"),
+        Activity.MessageIds.EVENT_CREATE: ("%(username)s created an event <b>%(event_title)s",
+                                           "%(username)s created %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.EVENT_DELETE: ("%(username)s deleted an event <b>%(event_title)s",
+                                           "%(username)s deleted %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.EVENT_UPDATE: ("%(username)s updated an event <b>%(event_title)s.",
+                                           "%(username)s updated %(count)s events.</b>",
+                                           "event.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_WEB: (
+            "%(username)s uploaded resume of candidate %(formattedName)s",
+            "%(username)s uploaded %(count)s candidate resumes", "candidate.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_CSV: (
+            "%(username)s imported candidate %(formattedName)s via spreadsheet",
+            "%(username)s imported %(count)s candidates via spreadsheet",
+            "candidate.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_WIDGET: (
+            "Candidate %(formattedName)s joined via widget",
+            "%(count)s candidates joined via widget", "widget.png"),
+        Activity.MessageIds.CANDIDATE_CREATE_MOBILE: (
+            "%(username)s added candidate %(formattedName)s via mobile",
+            "%(username)s added %(count)s candidates via mobile",
+            "candidate.png"),
+        Activity.MessageIds.CANDIDATE_UPDATE: (
+            "%(username)s updated candidate %(formattedName)s",
+            "%(username)s updated %(count)s candidates",
 
             "candidate.png"),
-        ActivityMessageIds.CANDIDATE_DELETE: (
+        Activity.MessageIds.CANDIDATE_DELETE: (
             "%(username)s deleted candidate %(formattedName)s",
             "%(username)s deleted %(count)s candidates",
             "candidate.png"),
-        ActivityMessageIds.CAMPAIGN_CREATE: (
+        Activity.MessageIds.CAMPAIGN_CREATE: (
             "%(username)s created an %(campaign_type)s campaign: %(campaign_name)s",
             "%(username)s created %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_DELETE: (
+        Activity.MessageIds.CAMPAIGN_DELETE: (
             "%(username)s deleted an %(campaign_type)s campaign: %(name)s",
             "%(username)s deleted %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SEND: (
+        Activity.MessageIds.CAMPAIGN_SEND: (
             "Campaign %(name)s was sent to %(num_candidates)s candidates",
             "%(count)s campaigns were sent out",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EXPIRE: (
+        Activity.MessageIds.CAMPAIGN_EXPIRE: (
             "%(username)s's recurring campaign %(name)s has expired",
             "%(count)s recurring campaigns of %(username)s have expired", "campaign.png"),  # TODO
-        ActivityMessageIds.CAMPAIGN_PAUSE: (
+        Activity.MessageIds.CAMPAIGN_PAUSE: (
             "%(username)s paused campaign %(name)s", "%(username)s paused %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_RESUME: (
+        Activity.MessageIds.CAMPAIGN_RESUME: (
             "%(username)s resumed campaign %(name)s", "%(username)s resumed %(count)s campaigns",
             "campaign.png"),
-        ActivityMessageIds.SMARTLIST_CREATE: (
+        Activity.MessageIds.SMARTLIST_CREATE: (
             "%(username)s created list %(name)s", "%(username)s created %(count)s lists",
             "smartlist.png"),
-        ActivityMessageIds.SMARTLIST_DELETE: (
+        Activity.MessageIds.SMARTLIST_DELETE: (
             "%(username)s deleted list: %(name)s", "%(username)s deleted %(count)s lists",
             "smartlist.png"),
-        ActivityMessageIds.DUMBLIST_CREATE: (
+        Activity.MessageIds.DUMBLIST_CREATE: (
             "%(username)s created a list: <b>%(name)s</b>.", "%(username)s created %(count)s lists",
             "dumblist.png"),
-        ActivityMessageIds.DUMBLIST_DELETE: (
+        Activity.MessageIds.DUMBLIST_DELETE: (
             "%(username)s deleted list %(name)s", "%(username)s deleted %(count)s lists",
             "dumblist.png"),
-        ActivityMessageIds.SMARTLIST_ADD_CANDIDATE: (
+        Activity.MessageIds.SMARTLIST_ADD_CANDIDATE: (
             "%(formattedName)s was added to list %(name)s",
             "%(count)s candidates were added to list %(name)s",
             "smartlist.png"),
-        ActivityMessageIds.SMARTLIST_REMOVE_CANDIDATE: (
+        Activity.MessageIds.SMARTLIST_REMOVE_CANDIDATE: (
             "%(formattedName)s was removed from list %(name)s",
             "%(count)s candidates were removed from list %(name)s",
             "smartlist.png"),
-        ActivityMessageIds.USER_CREATE: (
+        Activity.MessageIds.USER_CREATE: (
             "%(username)s has joined", "%(count)s users have joined", "notification.png"),
-        ActivityMessageIds.WIDGET_VISIT: (
+        Activity.MessageIds.WIDGET_VISIT: (
             "Widget was visited", "Widget was visited %(count)s times", "widget.png"),
-        ActivityMessageIds.NOTIFICATION_CREATE: (
+        Activity.MessageIds.NOTIFICATION_CREATE: (
             "You received an update notification", "You received %(count)s update notifications",
             "notification.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_SEND: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_SEND: (
             "%(candidate_name)s received email of campaign %(campaign_name)s",
             "%(count)s candidates received email of campaign %(campaign_name)s", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_OPEN: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_OPEN: (
             "%(candidate_name)s opened email of campaign %(campaign_name)s",
             "%(count)s candidates opened email of campaign %(campaign_name)s", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_EMAIL_CLICK: (
+        Activity.MessageIds.CAMPAIGN_EMAIL_CLICK: (
             "%(candidate_name)s clicked email of campaign %(campaign_name)s",
             "Campaign %(campaign_name)s was clicked %(count)s times", "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_SEND: (
+        Activity.MessageIds.CAMPAIGN_SMS_SEND: (
             "SMS Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
             "SMS Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_CLICK: (
+        Activity.MessageIds.CAMPAIGN_SMS_CLICK: (
             "%(candidate_name)s clicked on SMS Campaign <b>%(campaign_name)s</b>.",
             "%(candidate_name)s clicked on %(campaign_name)s.",
             "campa"
             "ign.png"),
-        ActivityMessageIds.CAMPAIGN_SMS_REPLY: (
+        Activity.MessageIds.CAMPAIGN_SMS_REPLY: (
             "%(candidate_name)s replied <b>%(reply_text)s</b> on SMS campaign %(campaign_name)s.",
             "%(candidate_name)s replied '%(reply_text)s' on campaign %(campaign_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_SCHEDULE: (
+        Activity.MessageIds.CAMPAIGN_SCHEDULE: (
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "%(username)s scheduled an %(campaign_type)s campaign: <b>%(campaign_name)s</b>.",
             "campaign.png"),
-        ActivityMessageIds.PIPELINE_CREATE: (
+        Activity.MessageIds.PIPELINE_CREATE: (
             "%(username)s created a pipeline: <b>%(name)s</b>.",
             "%(username)s created a pipeline: <b>%(name)s</b>.",
             "pipeline.png"),
-        ActivityMessageIds.PIPELINE_DELETE: (
+        Activity.MessageIds.PIPELINE_DELETE: (
             "%(username)s deleted pipeline: <b>%(name)s</b>.",
             "%(username)s deleted pipeline: <b>%(name)s</b>.",
             "pipeline.png"),
-        ActivityMessageIds.TALENT_POOL_CREATE: (
+        Activity.MessageIds.TALENT_POOL_CREATE: (
             "%(username)s created a Talent Pool: <b>%(name)s</b>.",
             "%(username)s created a Talent Pool: <b>%(name)s</b>.",
             "talent_pool.png"),
-        ActivityMessageIds.TALENT_POOL_DELETE: (
+        Activity.MessageIds.TALENT_POOL_DELETE: (
             "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
             "%(username)s deleted Talent Pool: <b>%(name)s</b>.",
             "talent_pool.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_CREATE: (
+        Activity.MessageIds.CAMPAIGN_PUSH_CREATE: (
             "%(username)s created a Push campaign: '%(campaign_name)s'",
             "%(username)s created a Push campaign: '%(campaign_name)s'",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_SEND: (
+        Activity.MessageIds.CAMPAIGN_PUSH_SEND: (
             "Push Campaign <b>%(campaign_name)s</b> has been sent to %(candidate_name)s.",
             "Push Campaign %(campaign_name)s has been sent to %(candidate_name)s.",
             "campaign.png"),
-        ActivityMessageIds.CAMPAIGN_PUSH_CLICK: (
+        Activity.MessageIds.CAMPAIGN_PUSH_CLICK: (
             "%(candidate_name)s clicked on Push Campaign <b>%(campaign_name)s</b>.",
             "%(candidate_name)s clicked on %(campaign_name)s.",
             "campaign.png")
@@ -267,7 +272,7 @@ class TalentActivityManager(object):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
 
     def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
-        """Method for retrieving activity logs based on a domain ID that is extraced via an
+        """Method for retrieving activity logs based on a domain ID that is extracted via an
            authenticated user ID.
         :param int user_id: ID of the authenticated user.
         :param datetime|None start_datetime: Optional datetime object for query filters.
@@ -301,18 +306,22 @@ class TalentActivityManager(object):
         return activities_response
 
     # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
-    def get_recent_readable(self, user_id, limit=3):
+    def get_recent_readable(self, user_id, start_datetime=None, end_datetime=None, limit=3):
         start_time = time()
         current_user = User.query.filter_by(id=user_id).first()
         logger.info("Fetched current user in {} seconds".format(time() - start_time))
-        # # Get the last 25 activities and aggregate them by type, with order.
+        # Get the last 25 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         logger.info("Fetched domain IDs in {} seconds".format(time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
         logger.info("Flattened domain IDs in {} seconds".format(time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
-        activities = Activity.query.filter(*filters).limit(25)
+        if start_datetime:
+            filters.append(Activity.added_time>=start_datetime)
+        if end_datetime:
+            filters.append(Activity.added_time<=end_datetime)
+        activities = Activity.query.filter(*filters)
         logger.info("Fetched limit activities in {} seconds".format(time() - start_time))
 
         aggregated_activities = []

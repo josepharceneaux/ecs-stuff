@@ -29,15 +29,15 @@ from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
-from ..models.misc import (UrlConversion, Frequency)
 from ..models.email_campaign import EmailCampaignBlast
+from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
-from ..utils.activity_utils import ActivityMessageIds
+
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
@@ -438,7 +438,7 @@ class CampaignBase(object):
         params = {'username': user.name, 'campaign_name': source.name,
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         cls.create_activity(user.id,
-                            _type=ActivityMessageIds.CAMPAIGN_CREATE,
+                            _type=Activity.MessageIds.CAMPAIGN_CREATE,
                             source=source,
                             params=params)
 
@@ -648,7 +648,7 @@ class CampaignBase(object):
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
         self.create_activity(
             self.user.id,
-            _type=ActivityMessageIds.CAMPAIGN_DELETE,
+            _type=Activity.MessageIds.CAMPAIGN_DELETE,
             source=source,
             params=params
         )
@@ -870,7 +870,7 @@ class CampaignBase(object):
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__),
                   'campaign_name': source.name}
         cls.create_activity(user.id,
-                            _type=ActivityMessageIds.CAMPAIGN_SCHEDULE,
+                            _type=Activity.MessageIds.CAMPAIGN_SCHEDULE,
                             source=source,
                             params=params)
 
@@ -1372,7 +1372,7 @@ class CampaignBase(object):
         raise_if_not_instance_of(num_candidates, (int, long))
         params = {'name': source.name, 'num_candidates': num_candidates}
         cls.create_activity(user_id,
-                            _type=ActivityMessageIds.CAMPAIGN_SEND,
+                            _type=Activity.MessageIds.CAMPAIGN_SEND,
                             source=source,
                             params=params)
 

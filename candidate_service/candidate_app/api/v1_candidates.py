@@ -99,7 +99,7 @@ class CandidatesResource(Resource):
         """
         start_time = time()
         # Authenticate user
-        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
+        authed_user, body_dict = request.user, get_json_if_exist(request)
 
         # Validate json data
         try:

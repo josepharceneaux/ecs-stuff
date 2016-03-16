@@ -84,10 +84,27 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
                                   assign_roles_to_user_first,
                                   access_token_first, talent_pool):
     """
-    This returns a campaign which has one candidate associated having email address.
+    This returns a campaign which has two candidates associated having email address.
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
                                                email_campaign_of_user_first, count=2)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+@pytest.fixture()
+def campaign_with_ten_candidates(request, email_campaign_of_user_first,
+                                 assign_roles_to_user_first,
+                                 access_token_first, talent_pool):
+    """
+    This returns a campaign which has ten candidates associated having email addresses.
+    """
+    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+                                               email_campaign_of_user_first, count=10)
 
     def fin():
         delete_campaign(campaign)
@@ -170,6 +187,23 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     return campaign_with_valid_candidate
 
 
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_bulk(request, campaign_with_ten_candidates,
+                       access_token_first):
+    """
+    This fixture sends the campaign 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    if request.param == 'with_client':
+        campaign_with_ten_candidates.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+        sleep_time = 5
+    else:
+        sleep_time = 15
+    # send campaign
+    send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
+    return campaign_with_ten_candidates
+
+
 @pytest.fixture()
 def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
     """
@@ -187,11 +221,12 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     email_campaign_sends = json_response['email_campaign_sends'][0]
     assert 'new_html' in email_campaign_sends
     new_html = email_campaign_sends['new_html']
-    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
+    matched = re.search(r'&\w+;',
+                        new_html)  # check the new_html for escaped HTML characters using regex
     assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
-    assert 'new_text' in email_campaign_sends # Check if there is email text which candidate would see in email
-    assert 'email_campaign_id' in email_campaign_sends # Check if there is email campaign id in response
-    assert campaign.id == email_campaign_sends['email_campaign_id'] # Check if both IDs are same
+    assert 'new_text' in email_campaign_sends  # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends  # Check if there is email campaign id in response
+    assert campaign.id == email_campaign_sends['email_campaign_id']  # Check if both IDs are same
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign

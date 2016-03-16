@@ -485,8 +485,8 @@ def test_update_education_primary_info(access_token_first, user_first, talent_po
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']
 
     candidate_education_count = len(candidate_dict['educations'])
 
@@ -496,8 +496,8 @@ def test_update_education_primary_info(access_token_first, user_first, talent_po
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
-    updated_can_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    updated_can_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']
     education_dict = updated_can_dict['educations'][0]
 
     can_ed_from_data = data['candidates'][0]['educations'][0]
