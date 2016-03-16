@@ -275,9 +275,6 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     :param body_text:               Body text
     :param is_immutable:            1 if immutable, otherwise 0
     :param folder_id:               folder id
-    :param domain_id                domain_id
-    :param role_name                user scope role name
-    :return:                        Id of template created
     """
     data = dict(
             name=template_name,

@@ -34,7 +34,7 @@ def test_create_email_template_folder(sample_user, user_auth):
 
     # Assert that folder is created with correct name
     db.session.commit()
-    folder_row = EmailTemplateFolder.query.filter_by(id=template_folder_id).first()
+    folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
     assert folder_row.name == template_folder_name
 
 
@@ -58,7 +58,7 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
 
     # Assert that folder is created with correct name
     db.session.commit()
-    folder_row = EmailTemplateFolder.query.filter_by(id=template_folder_id).first()
+    folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
     assert folder_row.name == template_folder_name
 
     token2 = auth_token['access_token']
@@ -174,8 +174,9 @@ def test_delete_email_template(sample_user, sample_user_2, template_body, user_a
     add_role_to_test_user(sample_user_2, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', template['template_id'])
+    db.session.commit()
     assert resp.status_code == requests.codes.no_content
-    template_after_delete = UserEmailTemplate.query.get(template_id)
+    template_after_delete = UserEmailTemplate.get_by_id(template_id)
     assert template_after_delete is None
 
 
@@ -199,7 +200,7 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    resp = request_to_email_template_resource(token2, 'delete', template_id + 1)
+    resp = request_to_email_template_resource(token2, 'delete', template_id + 1000)
     assert resp.status_code == requests.codes.not_found
 
 
@@ -335,7 +336,7 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, template
                             '/body>\r\n</html>\r\n'
 
     # Get email_template via template ID
-    resp = update_email_template(template_id + 1, 'put', token2, sample_user_2.id,
+    resp = update_email_template(template_id + 1000, 'put', token2, sample_user_2.id,
                                  template['template_name'],
                                  updated_template_body, '', template['template_folder_id'],
                                  template['is_immutable'])
