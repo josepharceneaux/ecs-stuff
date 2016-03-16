@@ -21,7 +21,6 @@ def test_create_email_template_folder(sample_user, user_auth):
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token = auth_token['access_token']
-    domain_id = sample_user.domain_id
 
     # Add or get Role
     role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER

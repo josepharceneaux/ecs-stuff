@@ -1,6 +1,7 @@
 # Standard Imports
 import json
 import time
+import random
 import requests
 
 # Application Specific
@@ -335,7 +336,7 @@ def add_email_template(user_auth, template_owner, template_body):
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
 
-    template_name = 'test_email_template%i' % time.time()
+    template_name = 'test_email_template%i' % (time.time() + random.randint(1, 100))
     is_immutable = 1
     resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
                                  folder_id=template_folder_id)
