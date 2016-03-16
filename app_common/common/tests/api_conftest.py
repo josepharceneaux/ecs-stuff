@@ -68,11 +68,11 @@ def user_first(request, token_first):
     """
     user_id = test_config['USER_FIRST']['user_id']
     user = get_user(user_id, token_first)
-    add_roles(user_id, ROLES, token_first)
+    # add_roles(user_id, ROLES, token_first)
 
-    def tear_down():
-        remove_roles(user_id, ROLES, token_first)
-    request.addfinalizer(tear_down)
+    # def tear_down():
+    #     remove_roles(user_id, ROLES, token_first)
+    # request.addfinalizer(tear_down)
     return user
 
 
@@ -86,12 +86,12 @@ def user_second(request, token_second):
     """
     user_id = test_config['USER_SECOND']['user_id']
     user = get_user(user_id, token_second)
-    add_roles(user_id, ROLES, token_second)
-
-    def tear_down():
-        remove_roles(user_id, ROLES, token_second)
-
-    request.addfinalizer(tear_down)
+    # add_roles(user_id, ROLES, token_second)
+    #
+    # def tear_down():
+    #     remove_roles(user_id, ROLES, token_second)
+    #
+    # request.addfinalizer(tear_down)
     return user
 
 
@@ -105,12 +105,12 @@ def user_same_domain(request, token_same_domain):
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
     user = get_user(user_id, token_same_domain)
-    add_roles(user_id, ROLES, token_same_domain)
-
-    def tear_down():
-        remove_roles(user_id, ROLES, token_same_domain)
-
-    request.addfinalizer(tear_down)
+    # add_roles(user_id, ROLES, token_same_domain)
+    #
+    # def tear_down():
+    #     remove_roles(user_id, ROLES, token_same_domain)
+    # 
+    # request.addfinalizer(tear_down)
     return user
 
 
