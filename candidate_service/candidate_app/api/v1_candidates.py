@@ -60,7 +60,7 @@ from candidate_service.modules.talent_candidates import (
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
-    fetch_aggregated_candidate_views
+    fetch_aggregated_candidate_views, update_total_months_experience
 )
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
@@ -813,9 +813,13 @@ class CandidateExperienceResource(Resource):
                 raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
             db.session.delete(experience)
+            update_total_months_experience(candidate, candidate_experience=experience, deleted=True)
 
         else:  # Delete all experiences
             map(db.session.delete, candidate.experiences)
+
+            # Set Candidate's total_months_experience to 0
+            candidate.total_months_experience = 0
 
         db.session.commit()
 

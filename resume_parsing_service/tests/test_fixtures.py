@@ -62,7 +62,7 @@ def culture_fixture(request):
 @pytest.fixture(autouse=True)
 def domain_fixture(culture_fixture, org_fixture, request):
     domain = Domain(name=random_word(40), usage_limitation=0,
-                    expiration=datetime.datetime(2050, 4, 26),
+                    expiration='0000-00-00 00:00:00',
                     added_time=datetime.datetime(2050, 4, 26),
                     organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
                     default_tracking_code=1, default_from_name=(random_word(100)),

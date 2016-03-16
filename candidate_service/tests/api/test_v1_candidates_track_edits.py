@@ -262,8 +262,8 @@ def test_edit_candidate_experience(access_token_first, user_first, talent_pool):
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    old_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['work_experiences'][0]
+    old_experience_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
 
     # Update Candidate's experience
     data = {'candidates': [
@@ -271,11 +271,12 @@ def test_edit_candidate_experience(access_token_first, user_first, talent_pool):
             {'id': old_experience_dict['id'], 'organization': 'Dice', 'position': 'Software Engineer'}
         ]}
     ]}
-    request_to_candidates_resource(access_token_first, 'patch', data)
+    updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
+    print response_info(updated_resp)
 
     # Retrieve Candidate
-    new_experience_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['work_experiences'][0]
+    new_experience_dict = request_to_candidate_resource(
+        access_token_first, 'get', candidate_id).json()['candidate']['work_experiences'][0]
 
     # Retrieve Candidate Edits
     edit_resp = request_to_candidate_edit_resource(access_token_first, 'get', candidate_id)
@@ -285,10 +286,10 @@ def test_edit_candidate_experience(access_token_first, user_first, talent_pool):
     assert edit_resp.status_code == 200
     assert new_experience_dict['organization'] != old_experience_dict['organization']
     assert new_experience_dict['position'] != old_experience_dict['position']
-    assert candidate_edits[0]['old_value'] == old_experience_dict['position']
-    assert candidate_edits[0]['new_value'] == new_experience_dict['position']
-    assert candidate_edits[1]['old_value'] == old_experience_dict['organization']
-    assert candidate_edits[1]['new_value'] == new_experience_dict['organization']
+    assert candidate_edits[-2]['old_value'] == old_experience_dict['position']
+    assert candidate_edits[-2]['new_value'] == new_experience_dict['position']
+    assert candidate_edits[-1]['old_value'] == old_experience_dict['organization']
+    assert candidate_edits[-1]['new_value'] == new_experience_dict['organization']
 
 
 def test_edit_candidate_experience_bullet(access_token_first, user_first, talent_pool):
@@ -328,8 +329,8 @@ def test_edit_candidate_experience_bullet(access_token_first, user_first, talent
 
     candidate_edits = edit_resp.json()['candidate']['edits']
     assert edit_resp.status_code == 200
-    assert candidate_edits[0]['old_value'] == old_experience_bullet_dict['description']
-    assert candidate_edits[0]['new_value'] == new_experience_bullet_dict['description']
+    assert candidate_edits[-1]['old_value'] == old_experience_bullet_dict['description']
+    assert candidate_edits[-1]['new_value'] == new_experience_bullet_dict['description']
 
 
 def test_edit_candidate_work_preference(access_token_first, user_first, talent_pool):
