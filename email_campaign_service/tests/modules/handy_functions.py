@@ -1,7 +1,7 @@
 # Standard Imports
 import json
 import time
-import random
+import datetime
 import requests
 
 # Application Specific
@@ -250,7 +250,7 @@ def get_template_folder(token):
     :param token:
     :return: template_folder_id, template_folder_name
     """
-    template_folder_name = 'test_template_folder_%i' % time.time()
+    template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
     data = {'name': template_folder_name}
     response = requests.post(
@@ -336,7 +336,7 @@ def add_email_template(user_auth, template_owner, template_body):
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
 
-    template_name = 'test_email_template%i' % (time.time() + random.randint(1, 100))
+    template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
     is_immutable = 1
     resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
                                  folder_id=template_folder_id)
