@@ -62,6 +62,8 @@ class TestSmsCampaignWithIdHTTPGET(object):
         response_campaign = response.json()['campaign']
         assert response_campaign['name'] == campaign.name
         assert response_campaign['body_text'] == campaign.body_text
+        assert response_campaign['list_ids'] == [smartlist.id for smartlist
+                                                 in sms_campaign_of_current_user.smartlists]
 
     def test_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
