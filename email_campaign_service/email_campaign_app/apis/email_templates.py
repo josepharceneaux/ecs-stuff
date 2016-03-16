@@ -29,8 +29,9 @@ def post_email_template():
         Required parameters:
         name:                     Name of email template
         body_html:                Body of email template
-        template_folder_id: ID of email template folder
+        template_folder_id:       ID of email template folder
         is_immutable:             Parameter to determine is the email template is  mutable or not
+        :return:                  Template id
     """
     user_id = request.user.id
     domain_id = request.user.domain_id
@@ -89,6 +90,7 @@ def get_email_template(template_id):
         Function will return email template based on specified id
         Required parameters:
         :param template_id: ID of of email template
+        :return: Email Template with specified id
     """
 
     # Validate email template id
@@ -122,6 +124,7 @@ def update_email_template(template_id):
         Function would update existing email template
         Required parameters:
         :param template_id: ID of of email template
+        :return: Updated email template
     """
     if template_id == 0:
         raise InvalidUsage(error_message='template_id must be greater than 0')
@@ -165,6 +168,7 @@ def delete_email_template(template_id):
         Function will delete email template
         Required parameters:
         :param template_id: ID of of email template
+        :return: Response with no content and status 200 (ok)
     """
 
     # Validate email template id
@@ -254,6 +258,7 @@ def delete_email_template_folder(folder_id):
         DELETE /v1/email-template-folders
         Required parameters:
         :param folder_id: ID of of email template
+        :return: NResponse with no content and status 200 (ok)
     """
     user_id = request.user.id
     domain_id = request.user.domain_id
