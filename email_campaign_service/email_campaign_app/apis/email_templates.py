@@ -78,7 +78,7 @@ def post_email_template():
     db.session.commit()
 
     template_id = template.id
-    return jsonify({'template_id': [{'id': template_id}]}), requests.codes.created
+    return jsonify({'template_id': [{'id': template_id}]}), requests.codes.CREATED
 
 
 @template_blueprint.route('/v1/email-templates/', methods=['GET'])
@@ -196,7 +196,7 @@ def delete_email_template(template_id):
                                                                                                         template.id))
     # Delete the template
     UserEmailTemplate.delete(template)
-    return '', requests.codes.no_content
+    return '', requests.codes.NO_CONTENT
 
 
 @require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER)
@@ -247,7 +247,7 @@ def create_email_template_folder():
     EmailTemplateFolder.save(template_folder)
     template_folder_id = template_folder.id
 
-    return jsonify({'template_folder_id': [{'id': template_folder_id}]}), requests.codes.created
+    return jsonify({'template_folder_id': [{'id': template_folder_id}]}), requests.codes.CREATED
 
 
 @require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE_FOLDER)
@@ -276,4 +276,4 @@ def delete_email_template_folder(folder_id):
     else:
         EmailTemplateFolder.delete(template_folder)
 
-    return '', requests.codes.no_content
+    return '', requests.codes.NO_CONTENT

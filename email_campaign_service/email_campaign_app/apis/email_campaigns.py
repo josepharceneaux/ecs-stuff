@@ -146,7 +146,7 @@ class EmailCampaignApi(Resource):
                                          end_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'])
 
-        return {'campaign': campaign}, requests.codes.created
+        return {'campaign': campaign}, requests.codes.CREATED
 
 
 @api.route(EmailCampaignEndpoints.SEND)
@@ -187,7 +187,7 @@ class EmailCampaignSendApi(Resource):
             return jsonify(data)
 
         return dict(message='email_campaign(id:%s) is being sent to candidates.'
-                            % campaign_id), requests.codes.ok
+                            % campaign_id), requests.codes.OK
 
 
 @api.route(EmailCampaignEndpoints.URL_REDIRECT)
@@ -350,7 +350,7 @@ class EmailCampaignBlastById(Resource):
         blast_obj = CampaignBase.get_valid_blast_obj(campaign_id, blast_id,
                                                      request.user,
                                                      CampaignUtils.EMAIL)
-        return dict(blast=blast_obj.to_json()), requests.codes.ok
+        return dict(blast=blast_obj.to_json()), requests.codes.OK
 
 
 @api.route(EmailCampaignEndpoints.SENDS)

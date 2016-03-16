@@ -73,7 +73,7 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
             headers={'Authorization': 'Bearer %s' % token2,
                      'Content-type': 'application/json'}
     )
-    assert response.status_code == requests.codes.no_content
+    assert response.status_code == requests.codes.NO_CONTENT
 
 
 def test_create_email_template(sample_user, user_auth, template_body):
@@ -122,7 +122,7 @@ def test_create_email_template_without_name(sample_user, user_auth, template_bod
 
     resp = create_email_template(token, sample_user.id, template_name, template_body, template_name,
                                  is_immutable=1, folder_id=template_folder_id)
-    assert resp.status_code == requests.codes.bad_request
+    assert resp.status_code == requests.codes.BAD_REQUEST
 
 
 def test_create_template_without_email_body(sample_user, user_auth):
@@ -148,7 +148,7 @@ def test_create_template_without_email_body(sample_user, user_auth):
     # Pass empty email template body
     resp = create_email_template(token, sample_user.id, template_name, '', template_name,
                                  is_immutable=1, folder_id=template_folder_id)
-    assert resp.status_code == requests.codes.bad_request
+    assert resp.status_code == requests.codes.BAD_REQUEST
 
 
 def test_delete_email_template(sample_user, sample_user_2, template_body, user_auth):
@@ -174,7 +174,7 @@ def test_delete_email_template(sample_user, sample_user_2, template_body, user_a
 
     resp = request_to_email_template_resource(token2, 'delete', template['template_id'])
     db.session.commit()
-    assert resp.status_code == requests.codes.no_content
+    assert resp.status_code == requests.codes.NO_CONTENT
     template_after_delete = UserEmailTemplate.get_by_id(template_id)
     assert template_after_delete is None
 
@@ -200,7 +200,7 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     add_role_to_test_user(sample_user_2, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', template_id + 1000)
-    assert resp.status_code == requests.codes.not_found
+    assert resp.status_code == requests.codes.NOT_FOUND
 
 
 def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, template_body, user_auth):
@@ -225,7 +225,7 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
     add_role_to_test_user(user_from_diff_domain, [role])
 
     resp = request_to_email_template_resource(token2, 'delete', template_id)
-    assert resp.status_code == requests.codes.forbidden
+    assert resp.status_code == requests.codes.FORBIDDEN
 
 
 def test_get_email_template_via_id(sample_user, sample_user_2, template_body, user_auth):
@@ -250,7 +250,7 @@ def test_get_email_template_via_id(sample_user, sample_user_2, template_body, us
             url=url, headers={
                 'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
     )
-    assert response.status_code == requests.codes.ok
+    assert response.status_code == requests.codes.OK
     resp_dict = response.json()['template']
     assert isinstance(resp_dict, dict)
     assert resp_dict['id'] == template_id
@@ -279,7 +279,7 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, tem
             url=url, headers={
                 'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
     )
-    assert response.status_code == requests.codes.not_found
+    assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_update_email_template(sample_user, sample_user_2, template_body, user_auth):
@@ -307,7 +307,7 @@ def test_update_email_template(sample_user, sample_user_2, template_body, user_a
                                  updated_template_body, template['template_folder_id'],
                                  template['domain_id'])
     db.session.commit()
-    assert resp.status_code == requests.codes.ok
+    assert resp.status_code == requests.codes.OK
     resp_dict = resp.json()['template']
     print resp_dict
     assert resp_dict['body_html'] == updated_template_body
@@ -339,4 +339,4 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, template
                                  template['template_name'],
                                  updated_template_body, '', template['template_folder_id'],
                                  template['is_immutable'])
-    assert resp.status_code == requests.codes.not_found
+    assert resp.status_code == requests.codes.NOT_FOUND
