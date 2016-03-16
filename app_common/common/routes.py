@@ -136,6 +136,7 @@ class GTApis(object):
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
                                        "http://127.0.0.1",
+                                       "https://127.0.0.1",
                                        "http://localhost"]}}
 
 

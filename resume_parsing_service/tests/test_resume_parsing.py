@@ -168,15 +168,6 @@ def test_doc_from_fp_key(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-def test_985_from_fp_key(token_fixture, user_fixture):
-    """Test that .doc files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
-    content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
-    assert_create_or_update_content_and_status(content, status)
-
-
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -209,6 +200,14 @@ def test_jpg_from_fp_key(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_doc_with_texthtml_mime(token_fixture, user_fixture):
+    """Test that jpg files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_fp_key_response(token_fixture, 'Breland.Bobby.doc')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test JSON POST Parsing without create option
 ####################################################################################################
@@ -227,7 +226,6 @@ def test_HTML_doc_by_post(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'Bridgeport.Ave.doc')
-    # For this resume xhtml2pdf loses essentially all the content and just reports back css/font info...
     assert_non_create_content_and_status(content, status)
 
 
@@ -280,6 +278,15 @@ def test_doc_FP_with_create(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_985_from_fp_key(token_fixture, user_fixture):
+    """Test that .doc files from S3 can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+    content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
