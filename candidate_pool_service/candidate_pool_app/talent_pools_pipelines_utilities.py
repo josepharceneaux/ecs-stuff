@@ -84,7 +84,7 @@ def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
             return response.get('total_found')
     else:
         return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
-                                               SmartlistCandidate.added_time <= datetime.strptime(to_date, '%m/%d/%Y')).count()
+                                               SmartlistCandidate.added_time.date() <= datetime.strptime(to_date, '%m/%d/%Y').date()).count()
 
 
 def get_candidates_from_search_api(query_string, headers):
