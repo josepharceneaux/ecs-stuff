@@ -1,7 +1,7 @@
 """Test Email Template API: Contains tests for Email Templates and Email Template Folders endpoints
 """
 import json
-import time
+import datetime
 import requests
 
 from email_campaign_service.common.models.db import db
@@ -143,7 +143,7 @@ def test_create_template_without_email_body(sample_user, user_auth):
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
 
-    template_name = 'test_email_template%i' % time.time()
+    template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
 
     # Pass empty email template body
     resp = create_email_template(token, sample_user.id, template_name, '', template_name,
