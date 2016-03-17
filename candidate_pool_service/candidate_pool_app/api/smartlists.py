@@ -114,10 +114,8 @@ class SmartlistResource(Resource):
             raise InvalidUsage("Received empty request body")
         # request data must pass through this function, as this will create data in desired format
         data = validate_and_format_smartlist_post_data(data, auth_user)
-        smartlist = save_smartlist(user_id=auth_user.id, name=data.get('name'),
-                                   talent_pipeline_id=data.get('talent_pipeline_id'),
-                                   search_params=data.get('search_params'), candidate_ids=data.get('candidate_ids'),
-                                   access_token=request.oauth_token)
+        smartlist = save_smartlist(user_id=auth_user.id, name=data.get('name'), search_params=data.get('search_params'),
+                                   candidate_ids=data.get('candidate_ids'), access_token=request.oauth_token)
         return {'smartlist': {'id': smartlist.id}}, 201
 
     def delete(self, **kwargs):
