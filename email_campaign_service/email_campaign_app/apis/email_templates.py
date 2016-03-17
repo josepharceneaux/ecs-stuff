@@ -20,6 +20,8 @@ template_blueprint = Blueprint('email_template_service', __name__)
 @template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates', methods=['POST'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE)
+
+#TODO you have to document the Sphinx-way, I don't think following is Sphinx compliant
 def post_email_template():
     """
 
@@ -247,6 +249,7 @@ def delete_email_template_folder(folder_id):
     """
     user_id = request.user.id
     domain_id = request.user.domain_id
+    # TODO; probably in following (and all such occurences) we can just do 'if not folder_id'
     if folder_id == 0:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 

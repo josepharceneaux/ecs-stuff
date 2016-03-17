@@ -213,6 +213,8 @@ def response_info(resp_request, resp_json, resp_status):
     :type resp_json:        dict
     :type resp_status:      int
     """
+
+    # TODO--I am not certain how this method is super useful. Can we not do without it?
     args = (resp_request, resp_json, resp_status)
     return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
@@ -220,7 +222,7 @@ def response_info(resp_request, resp_json, resp_status):
 def define_and_send_request(request_method, url, access_token, data=None):
     """
     Function will define request based on params and make the appropriate call.
-    :param request_method:  can only be get, post, put, patch, or delete
+    :param request_method:  can only be GET, POST, PUT, PATCH, or DELETE
     :param url: url for request
     :param access_token: token for authentication
     :param data: data in form of dictionary
@@ -256,6 +258,7 @@ def get_template_folder(token):
     response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
                              'Content-type': 'application/json'})
+    # TODO--we should use request.codes everywhere now
     assert response.status_code == 201
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
@@ -301,7 +304,7 @@ def update_email_template(email_template_id, request, token, user_id, template_n
         :param body_html: HTML body for email template
         :param body_text: HTML text for email template
         :param folder_id: ID of email template folder
-        :param is_immutable: SPecify whether theemail template is mutable or not
+        :param is_immutable: Specify whether the email template is mutable or not
     """
     data = dict(
             name=template_name,

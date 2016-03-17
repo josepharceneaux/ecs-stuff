@@ -42,6 +42,9 @@ def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     Test for deleting email template folder
     It creates a test folder by sample_user and deletes that by the sample_user_2 of same domain
     """
+    # TODO; above needs more comment. Why are we deleting with sample_user_2?
+    # TODO: What will happen after we try deleting with sample_user_2? Must be answered in the commnet
+
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token1 = auth_token['access_token']
 
@@ -99,6 +102,7 @@ def test_create_email_template_without_name(sample_user, user_auth):
     :param user_auth: For user authentication
     result : The response should be Bad Request - 400
     """
+    # TODO; above one also needs a more thorough comment
     # Add or get Role
     role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
 
@@ -147,6 +151,7 @@ def test_create_template_without_email_body(sample_user, user_auth):
 
     template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
 
+    # TODO--add in the comment which one is the email template body param
     # Pass empty email template body
     resp = create_email_template(token, sample_user.id, template_name, '', template_name,
                                  is_immutable=ON, folder_id=template_folder_id)
@@ -187,6 +192,7 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     :param sample_user_2:       user2
     result : The response should be Not Found - 404
     """
+    # TODO; in all of the comments above is 'result' the Sphinx way of doing the comments
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -211,6 +217,8 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
     :param user_from_diff_domain: user2
     result : The response should be Forbidden error - 403
     """
+    # TODO---what makes the deleting from different domain? Is it user_from_diff_domain's token?
+    # TODO--kindly shed some light in comments if possible
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -232,6 +240,8 @@ def test_get_email_template_via_id(sample_user, sample_user_2, user_auth):
     Test:   Retrieve email_template via template's ID
     Expect: 200 - ok
     """
+    # TODO--I am slightly confused. So template is added using sample_user
+    # TODO-- but we successfully retrieve it using sample_user_2--how does that work? Comments should explain
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -260,6 +270,7 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, use
     Test:   Retrieve email_template via template's ID
     Expect: 404 - NOT FOUND
     """
+    # TODO--same comment as above
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -271,6 +282,8 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, use
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
+    # TODO--now that I am thinking there could be a template with id of 1000 in future, we should generate a random str with
+    # timestampe I guess
 
     url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id) + '1000'
     # Get email_template via template ID
@@ -332,6 +345,7 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, user_aut
                             '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
                             '/body>\r\n</html>\r\n'
 
+    # TODO -- same comment about template_id as above
     # Get email_template via template ID
     resp = update_email_template(template_id + 1000, 'put', token2, sample_user_2.id,
                                  template['template_name'],
