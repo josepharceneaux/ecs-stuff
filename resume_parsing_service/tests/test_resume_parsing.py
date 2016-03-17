@@ -315,12 +315,12 @@ def test_batch_processing(user_fixture, token_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES])
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     # mock hit from scheduler service.
     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
                                   headers={'Authorization': 'bearer {}'.format(
                                       token_fixture.access_token)})
     formatted_response = json.loads(batch_response.content)
+    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     assert 'candidate' in formatted_response, "Candidate should be in response content"
 
 
