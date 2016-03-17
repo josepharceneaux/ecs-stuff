@@ -247,6 +247,7 @@ def update_talent_pool_stats():
                 get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool')
                 logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for TalentPool %s is not successful because: "
                                  "%s" % (talent_pool_tuple[0], e.message))
 
@@ -265,6 +266,7 @@ def update_talent_pipeline_stats():
                 get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]), 'TalentPipeline')
                 logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for TalentPipeline %s is not successful because: "
                                  "%s" % (talent_pipeline_tuple[0], e.message))
 
@@ -283,6 +285,7 @@ def update_smartlist_stats():
                 get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList')
                 logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for SmartList %s is not successful because: "
                                  "%s" % (smartlist_tuple[0], e.message))
 
