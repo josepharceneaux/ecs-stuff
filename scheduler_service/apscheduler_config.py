@@ -3,13 +3,13 @@ from apscheduler.jobstores.redis import RedisJobStore
 from scheduler_service.scheduler import flask_app
 from redis._compat import urlparse
 
-from scheduler_service import SchedulerUtils
+from scheduler_service import SchedulerUtils, TalentConfigKeys
 
 __author__ = 'saad'
 
 MAX_THREAD_POOLS = 12
 
-url = urlparse(flask_app.config['REDIS_URL'])
+url = urlparse(flask_app.config[TalentConfigKeys.REDIS_UgiRL_KEY])
 job_store = RedisJobStore(host=url.hostname, password=url.password)
 
 executors = {

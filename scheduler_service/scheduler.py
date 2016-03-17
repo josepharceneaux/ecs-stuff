@@ -48,6 +48,9 @@ scheduler.add_jobstore(job_store)
 # Request timeout is 30 seconds.
 REQUEST_TIMEOUT = 30
 
+# Datetime format
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
+
 
 def apscheduler_listener(event):
     """
@@ -333,13 +336,13 @@ def serialize_task(task):
                 task_type=SchedulerUtils.PERIODIC
         )
         if task_dict['start_datetime']:
-            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime(DATETIME_FORMAT)
 
         if task_dict['end_datetime']:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime(DATETIME_FORMAT)
 
         if task_dict['next_run_datetime']:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime(DATETIME_FORMAT)
 
     # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
@@ -354,7 +357,7 @@ def serialize_task(task):
         )
 
         if task_dict['run_datetime']:
-            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime(DATETIME_FORMAT)
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
