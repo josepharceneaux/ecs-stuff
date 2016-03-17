@@ -29,7 +29,7 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
-from candidate_service.common.datetime_utils import isoformat_to_datetime
+from candidate_service.common.datetime_utils import isoformat_to_mysql_datetime
 from jsonschema import validate, FormatChecker, ValidationError
 
 # Decorators
@@ -60,8 +60,9 @@ from candidate_service.modules.talent_candidates import (
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
-    fetch_aggregated_candidate_views
+    fetch_aggregated_candidate_views, update_total_months_experience
 )
+from candidate_service.modules.api_calls import create_smartlist
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
 )
@@ -70,7 +71,7 @@ from candidate_service.modules.talent_openweb import (
     find_in_openweb_by_email
 )
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
-    create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
+    create_campaign_from_api, create_campaign_send_from_api
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -96,7 +97,7 @@ class CandidatesResource(Resource):
         """
         start_time = time()
         # Authenticate user
-        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
+        authed_user, body_dict = request.user, get_json_if_exist(request)
 
         # Validate json data
         try:
@@ -190,6 +191,9 @@ class CandidatesResource(Resource):
             emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
+            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+                if candidate_dict.get('added_datetime') else None
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=user_id,
                 is_creating=is_creating,
@@ -214,7 +218,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=isoformat_to_datetime(candidate_dict['added_datetime']) if candidate_dict.get('added_datetime') else None,
+                added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
@@ -253,7 +257,7 @@ class CandidatesResource(Resource):
         try:
             validate(instance=body_dict, schema=candidates_resource_schema_patch,
                      format_checker=FormatChecker())
-        except Exception as e:
+        except ValidationError as e:
             raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
         candidates = body_dict.get('candidates')
@@ -341,6 +345,9 @@ class CandidatesResource(Resource):
                            'address': email.get('address'), 'is_default': email.get('is_default')}
                           for email in candidate_dict.get('emails')]
 
+            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+            if candidate_dict.get('added_datetime') else None
+
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -364,7 +371,7 @@ class CandidatesResource(Resource):
                 skills=candidate_dict.get('skills'),
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
-                added_time=candidate_dict.get('added_time'),
+                added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
@@ -807,9 +814,13 @@ class CandidateExperienceResource(Resource):
                 raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
             db.session.delete(experience)
+            update_total_months_experience(candidate, candidate_experience=experience, deleted=True)
 
         else:  # Delete all experiences
             map(db.session.delete, candidate.experiences)
+
+            # Set Candidate's total_months_experience to 0
+            candidate.total_months_experience = 0
 
         db.session.commit()
 
@@ -1278,7 +1289,7 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        subject = body_dict.get('subject', 'No Subject')
+        subject = body_dict.get('email_subject', 'No Subject')
         _from = body_dict.get('email_from')
         reply_to = body_dict.get('email_reply_to')
         body_html = body_dict.get('email_body_html')
@@ -1307,8 +1318,11 @@ class CandidateClientEmailCampaignResource(Resource):
             "candidate_ids": candidate_ids
         }
 
-        created_smartlist = create_smartlist_from_api(smartlist_object, access_token=request.headers.get('authorization'))
+        create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
+        if create_smartlist_resp.status_code != 201:
+            return create_smartlist_resp.json(), create_smartlist_resp.status_code
 
+        created_smartlist = create_smartlist_resp.json()
         if not created_smartlist or not created_smartlist.get('smartlist'):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
@@ -1326,8 +1340,10 @@ class CandidateClientEmailCampaignResource(Resource):
             "list_ids": [int(created_smartlist_id)]
         }
         try:
-            email_campaign_created = create_campaign_from_api(email_campaign_object, access_token=request.headers.get('authorization'))
-            email_campaign_send_created = create_campaign_send_from_api(email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
+            email_campaign_created = create_campaign_from_api(email_campaign_object,
+                                                              request.headers.get('authorization'))
+            email_campaign_send_created = create_campaign_send_from_api(
+                email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
         except Exception as e:
             raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
 

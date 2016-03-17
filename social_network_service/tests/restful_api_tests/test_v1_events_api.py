@@ -15,7 +15,6 @@ import sys
 
 from social_network_service.common.models import db
 from social_network_service.common.models.misc import Activity
-from social_network_service.common.utils.activity_utils import ActivityMessageIds
 from social_network_service.custom_exceptions import VenueNotFound, \
     EventInputMissing, InvalidDatetime, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
 from social_network_service.social_network_app import logger
@@ -233,7 +232,7 @@ class TestResourceEvents:
         db.db.session.commit()
         activities = Activity.get_by_user_id_type_source_id(user_id=event_data['user_id'],
                                                             source_id=event_id,
-                                                            type_=ActivityMessageIds.EVENT_CREATE)
+                                                            type_=Activity.MessageIds.EVENT_CREATE)
         data = json.loads(activities.params)
         assert data['event_title'] == event_data['title']
 

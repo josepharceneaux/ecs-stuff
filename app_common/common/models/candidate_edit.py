@@ -32,6 +32,7 @@ class CandidateEdit(db.Model):
             'total_months_experience': 7,
             'culture_id': 8,
             'filename': 9,
+            'is_web_hidden': 10
         },
         'candidate_address': {
             'address_line_1': 101,

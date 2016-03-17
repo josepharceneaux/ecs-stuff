@@ -254,7 +254,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
                 candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
-                candidate.totalMonthsExperience AS `total_months_experience`,
+                candidate.totalMonthsExperience AS `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
@@ -345,12 +345,18 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                                                             candidate_ids_string=tuple(candidate_ids))
         candidate_engagement = candidate_engagement.fetchone()['candidate_engagement'] or ''
 
+        session.connection().execute('SET SESSION group_concat_max_len=50000;')
+
         results = session.connection().execute(text(sql_query), candidate_ids_string=tuple(candidate_ids),
                                                sep=group_concat_separator, date_format=MYSQL_DATE_FORMAT)
 
         # Go through results & build action dicts
         for field_name_to_sql_value in results:
             candidate_id = field_name_to_sql_value['id']
+            is_hidden = field_name_to_sql_value['is_web_hidden']
+            if is_hidden == 1:
+                logger.info("Unable to upload candidate document of hidden candidate: %s" % candidate_id)
+                continue
             action_dict = dict(type='add', id=str(candidate_id))
 
             # Remove keys with empty values
@@ -515,7 +521,12 @@ def _send_batch_request(action_dicts):
 
     # If the batch request size > 5MB, split it up
     for i, action_dict in enumerate(action_dicts):
-        action_dict_json = simplejson.dumps(action_dict)
+        try:
+            action_dict_json = simplejson.dumps(action_dict)
+        except UnicodeDecodeError:
+            logger.exception("talent_cloud_search._send_batch_request(): Couldn't encode action_dict to JSON: %s",
+                             action_dict)
+            continue
         if len(action_dict_json) > DOCUMENT_SIZE_LIMIT_BYTES:
             # Individual doc size shouldn't exceed 1MB
             logger.error("_send_batch_request: action dict was > 1MB, so couldn't send: %s" % action_dict)
@@ -895,14 +906,14 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
     # Multi-select facet scenario
     for filter_query in filter_queries:
         if 'user_id' in filter_query:
-            fq_without_user_id = params_fq.replace(filter_query, '')
+            fq_without_user_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
             query_user_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_user_id,
                                    'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{user_id: {size:50}}"}
             result_user_id_facet = search_service.search(**query_user_id_facet)
             facet_owner = result_user_id_facet['facets']['user_id']['buckets']
             existing_facets['username'] = get_username_facet_info_with_ids(facet_owner)
         if 'area_of_interest_id' in filter_query:
-            fq_without_area_of_interest = params_fq.replace(filter_query, '')
+            fq_without_area_of_interest = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
             query_area_of_interest_facet = {'query': query_string, 'size': 0,
                                             'filter_query': fq_without_area_of_interest, 'query_parser': 'lucene',
                                             'ret': '_no_fields', 'facet': "{area_of_interest_id: {size:500}}"}
@@ -911,14 +922,14 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             existing_facets['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
                                                                                'name')
         if 'source_id' in filter_query:
-            fq_without_source_id = params_fq.replace(filter_query, '')
+            fq_without_source_id = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
             query_source_id_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_source_id,
                                      'query_parser': 'lucene', 'ret': '_no_fields', 'facet': "{source_id: {size:50}}"}
             result_source_id_facet = search_service.search(**query_source_id_facet)
             facet_source = result_source_id_facet['facets']['source_id']['buckets']
             existing_facets['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
         if 'school_name' in filter_query:
-            fq_without_school_name = params_fq.replace(filter_query, '')
+            fq_without_school_name = re.sub(r'\(\s*(and|or|not)\s*\)', '', params_fq.replace(filter_query, ''))
             query_school_name_facet = {'query': query_string, 'size':0, 'filter_query': fq_without_school_name,
                                        'query_parser': 'lucene', 'ret': '_no_fields',
                                        'facet': "{school_name: {size:500}}"}
@@ -927,6 +938,7 @@ def _update_facet_counts(filter_queries, params_fq, existing_facets, query_strin
             existing_facets['school_name'] = get_bucket_facet_value_count(facet_school)
         if 'degree_type' in filter_query:
             fq_without_degree_type = params_fq.replace(filter_query, '')
+
             query_degree_type_facet = {'query': query_string, 'size': 0, 'filter_query': fq_without_degree_type,
                                        'query_parser': 'lucene', 'ret': '_no_fields', 'facet':
                                            "{degree_type: {size:50}}"}

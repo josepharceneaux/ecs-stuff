@@ -294,19 +294,21 @@ class Client(db.Model):
 class Token(db.Model):
     __tablename__ = 'token'
     id = db.Column(db.Integer, primary_key=True)
-    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'),
-                          nullable=False)
-    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    client_id = db.Column(db.String(40), db.ForeignKey('client.client_id', ondelete='CASCADE'), nullable=False)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     token_type = db.Column(db.String(40))
-    access_token = db.Column(db.String(255), unique=True)
-    refresh_token = db.Column(db.String(255), unique=True)
-    expires = db.Column(db.DateTime)
+    access_token = db.Column(db.String(255), unique=True, nullable=False)
+    refresh_token = db.Column(db.String(255), unique=True, nullable=False)
+    expires = db.Column(db.DateTime, nullable=False)
     _scopes = db.Column(db.Text)
+
+    __table_args__ = (
+        db.UniqueConstraint("client_id", "user_id", name="client_user_key"),
+    )
 
     # Relationships
     user = db.relationship('User', backref=db.backref('token', cascade="all, delete-orphan"))
     client = db.relationship('Client', backref=db.backref('token', cascade="all, delete-orphan"))
-    # currently only bearer is supported
 
     def delete(self):
         db.session.delete(self)
