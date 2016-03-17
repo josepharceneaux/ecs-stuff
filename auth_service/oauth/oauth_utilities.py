@@ -89,6 +89,7 @@ def save_token(token, request, *args, **kwargs):
     else:
         if latest_token:
             db.session.delete(latest_token)
+            db.session.flush()
 
         expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
         token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
