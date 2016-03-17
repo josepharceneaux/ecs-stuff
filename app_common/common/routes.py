@@ -680,7 +680,7 @@ class SocialNetworkApi(object):
     EVENT_ORGANIZER = RELATIVE_VERSION % '{0}/<int:organizer_id>'.format(SocialNetworkWords.EVENT_ORGANIZER)
     TIMEZONES = RELATIVE_VERSION % SocialNetworkWords.TIMEZONE
     RSVP = RELATIVE_VERSION % SocialNetworkWords.RSVP
-    IMPORTER = RELATIVE_VERSION % '{0}/<string:mod>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
+    IMPORTER = RELATIVE_VERSION % '{0}/<string:mode>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
     EVENTBRITE_IMPORTER = RELATIVE_VERSION % '{0}/eventbrite'.format(SocialNetworkWords.IMPORTER)
     CODE = RELATIVE_VERSION % SocialNetworkWords.CODE
 
@@ -709,7 +709,7 @@ class SocialNetworkApiUrl(object):
     TOKEN_REFRESH = API_URL % '{0}/%s/token/refresh'.format(SocialNetworkWords.SOCIAL_NETWORKS)
     USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % '{0}/%s/user/credentials'.format(SocialNetworkWords.SOCIAL_NETWORKS)
     RSVP = API_URL % SocialNetworkWords.RSVP
-    IMPORTER = API_URL % '{0}/<string:mod>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
+    IMPORTER = API_URL % '{0}/<string:mode>/<string:social_network>'.format(SocialNetworkWords.IMPORTER)
     EVENTBRITE_IMPORTER = API_URL % '{0}/eventbrite'.format(SocialNetworkWords.IMPORTER)
     CODE = API_URL % SocialNetworkWords.CODE
 

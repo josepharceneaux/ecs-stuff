@@ -11,6 +11,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import User
 from social_network_service.common.models.misc import Product
@@ -146,14 +147,21 @@ class RSVPBase(object):
     def __init__(self, *args, **kwargs):
         if kwargs.get('user_credentials'):
             self.user_credentials = kwargs.get('user_credentials')
-            self.user = User.get_by_id(self.user_credentials.user_id)
+
+            # To resolve session expire issue, save the fields in a dict
+            self.user_credentials_dict = dict(id=self.user_credentials.id,
+                                              access_token=self.user_credentials.access_token,
+                                              refresh_token=self.user_credentials.refresh_token,
+                                              social_network_id=self.user_credentials.social_network_id,
+                                              user_id=self.user_credentials.user_id)
+            self.user = User.get_by_id(self.user_credentials_dict['user_id'])
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
         self.headers = kwargs.get('headers')
         self.social_network = kwargs.get('social_network')
         self.api_url = kwargs.get('social_network').api_url
-        self.access_token = self.user_credentials.access_token
+        self.access_token = self.user_credentials_dict['access_token']
         self.start_date_dt = None
         self.rsvps = []
 
@@ -497,7 +505,6 @@ class RSVPBase(object):
                 attendee.source_product_id)
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
-                'added_time': attendee.added_time,
                 'user_id': attendee.gt_user_id,
                 'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
@@ -601,9 +608,9 @@ class RSVPBase(object):
         """
         assert attendee.event.title is not None
         event_title = attendee.event.title
-        gt_user_first_name = self.user_credentials.user.first_name
-        gt_user_last_name = self.user_credentials.user.last_name
-        type_of_rsvp = 23  # to show message on activity feed
+        gt_user_first_name = self.user.first_name
+        gt_user_last_name = self.user.last_name
+
         first_name = attendee.first_name
         last_name = attendee.last_name
         params = {'firstName': first_name,
@@ -613,20 +620,10 @@ class RSVPBase(object):
                   'img': attendee.vendor_img_link,
                   'creator': '%s' % gt_user_first_name + ' %s'
                                                          % gt_user_last_name}
-        activity_in_db = Activity.get_by_user_id_params_type_source_id(
-            attendee.gt_user_id,
-            json.dumps(params),
-            type_of_rsvp,
-            attendee.rsvp_id)
-        data = {'source_table': 'rsvp',
-                'source_id': attendee.rsvp_id,
-                'added_time': attendee.added_time,
-                'type': type_of_rsvp,
-                'user_id': attendee.gt_user_id,
-                'params': json.dumps(params)}
-        if activity_in_db:
-            activity_in_db.update(**data)
-        else:
-            candidate_activity = Activity(**data)
-            Activity.save(candidate_activity)
+
+        add_activity(user_id=attendee.gt_user_id,
+                     activity_type=Activity.MessageIds.RSVP_EVENT,
+                     source_id=attendee.rsvp_id,
+                     source_table=RSVP.__tablename__,
+                     params=json.dumps(params))
         return attendee
