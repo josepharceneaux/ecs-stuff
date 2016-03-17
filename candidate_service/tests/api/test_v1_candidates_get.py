@@ -146,29 +146,29 @@ def test_get_candidate_via_id_and_email(access_token_first, user_first, talent_p
     data = generate_single_candidate_data([talent_pool.id])
     resp = request_to_candidates_resource(access_token_first, 'post', data)
     print response_info(resp)
-    # resp_dict = resp.json()
+    resp_dict = resp.json()
 
-    # db.session.commit()
-    #
-    # # Candidate ID & Email
-    # candidate_id = resp_dict['candidates'][0]['id']
-    # candidate_email = Candidate.get_by_id(candidate_id).emails[0].address
-    #
-    # # Get candidate via Candidate ID
-    # resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
-    #
-    # resp_dict = resp.json()
-    # print response_info(resp)
-    # assert resp.status_code == 200
-    # assert isinstance(resp_dict, dict)
-    #
-    # # Get candidate via Candidate Email
-    # resp = request_to_candidate_resource(access_token_first, 'get', candidate_email=candidate_email)
-    #
-    # resp_dict = resp.json()
-    # print response_info(resp)
-    # assert resp.status_code == 200
-    # assert isinstance(resp_dict, dict)
+    db.session.commit()
+
+    # Candidate ID & Email
+    candidate_id = resp_dict['candidates'][0]['id']
+    candidate_email = Candidate.get_by_id(candidate_id).emails[0].address
+
+    # Get candidate via Candidate ID
+    resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+
+    resp_dict = resp.json()
+    print response_info(resp)
+    assert resp.status_code == 200
+    assert isinstance(resp_dict, dict)
+
+    # Get candidate via Candidate Email
+    resp = request_to_candidate_resource(access_token_first, 'get', candidate_email=candidate_email)
+
+    resp_dict = resp.json()
+    print response_info(resp)
+    assert resp.status_code == 200
+    assert isinstance(resp_dict, dict)
 
 
 def test_get_non_existing_candidate(access_token_first, user_first, talent_pool):
