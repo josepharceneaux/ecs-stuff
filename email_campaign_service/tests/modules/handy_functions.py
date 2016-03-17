@@ -198,7 +198,7 @@ def post_to_email_template_resource(access_token, data):
     i.e. EmailTemplate/post()
     """
     response = requests.post(
-            url=EmailCampaignUrl.TEMPLATE, data=json.dumps(data),
+            url=EmailCampaignUrl.TEMPLATES, data=json.dumps(data),
             headers={'Authorization': 'Bearer %s' % access_token,
                      'Content-type': 'application/json'}
     )
@@ -235,12 +235,12 @@ def define_and_send_request(request_method, url, access_token, data=None):
 def request_to_email_template_resource(access_token, request, email_template_id, data=None):
     """
     Function sends a request to email template resource
-    :param access_token
+    :param access_token: Token for user authorization
     :param request: get, post, patch, delete
-    :param email_template_id
-    :param data
+    :param email_template_id: Id of email template
+    :param data: data in form of dictionary
     """
-    url = EmailCampaignUrl.TEMPLATE + '/' + str(email_template_id)
+    url = EmailCampaignUrl.TEMPLATES + '/' + str(email_template_id)
     return define_and_send_request(request, url, access_token, data)
 
 
@@ -253,11 +253,9 @@ def get_template_folder(token):
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
     data = {'name': template_folder_name}
-    response = requests.post(
-            url=EmailCampaignUrl.TEMPLATE_FOLDER, data=json.dumps(data),
-            headers={'Authorization': 'Bearer %s' % token,
-                     'Content-type': 'application/json'}
-    )
+    response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
+                             headers={'Authorization': 'Bearer %s' % token,
+                             'Content-type': 'application/json'})
     assert response.status_code == 201
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
@@ -327,11 +325,10 @@ def add_email_template(user_auth, template_owner, template_body):
     auth_token = user_auth.get_auth_token(template_owner, get_bearer_token=True)
     token = auth_token['access_token']
     domain_id = template_owner.domain_id
-    # Add or get Role
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE' to sample_user
-    add_role_to_test_user(template_owner, [role])
+    add_role_to_test_user(template_owner, [DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE,
+                                           DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
 
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)
@@ -350,3 +347,10 @@ def add_email_template(user_auth, template_owner, template_body):
             "template_name": template_name,
             "is_immutable": is_immutable,
             "domain_id": domain_id}
+
+
+def template_body():
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
+           '\r\n</body>\r\n</html>\r\n'

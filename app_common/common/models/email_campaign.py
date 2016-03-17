@@ -219,7 +219,7 @@ class UserEmailTemplate(db.Model):
     template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
                                                                                       ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
             "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     # Relationships

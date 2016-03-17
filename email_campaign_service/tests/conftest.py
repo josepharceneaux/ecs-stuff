@@ -236,14 +236,6 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
 
 
 @pytest.fixture()
-def template_body():
-    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
-           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
-           '\r\n</body>\r\n</html>\r\n'
-
-
-@pytest.fixture()
 def template_id(sample_user, domain_id):
     """
     Retrieves email template for the test email campaign
