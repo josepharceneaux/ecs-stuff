@@ -9,7 +9,7 @@ from flask import Blueprint
 from email_campaign_service.common.routes import EmailCampaignEndpoints
 from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
-from email_campaign_service.common.utils.validators import validate_immutable_value
+from email_campaign_service.common.utils.validators import validate_and_return_immutable_value
 from email_campaign_service.common.utils.auth_utils import (require_oauth, require_all_roles)
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate, EmailTemplateFolder)
 from email_campaign_service.common.error_handling import (jsonify, InvalidUsage, ForbiddenError, ResourceNotFound)
@@ -20,19 +20,13 @@ template_blueprint = Blueprint('email_template_service', __name__)
 @template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates', methods=['POST'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE)
-
-#TODO you have to document the Sphinx-way, I don't think following is Sphinx compliant
 def post_email_template():
     """
+    Function will create an email template based on the values provided by user in post data.
+    Values required from data are template name, html body of template, template folder id and
+    either a 0 or 1 as is_immutable value for the template.
 
-        POST /v1/email-templates
-        Function will create an email template
-        Required parameters:
-        name:                     Name of email template
-        body_html:                Body of email template
-        template_folder_id:       ID of email template folder
-        is_immutable:             Parameter to determine is the email template is  mutable or not
-        :return:                  Template id
+    :return: ID of the created template.
     """
     user_id = request.user.id
     domain_id = request.user.domain_id
@@ -64,7 +58,7 @@ def post_email_template():
 
     # If is_immutable value is not passed, make it as 0
     is_immutable = data.get('is_immutable', 0)
-    validate_immutable_value(is_immutable)
+    is_immutable = validate_and_return_immutable_value(is_immutable)
 
     template = UserEmailTemplate(user_id=user_id, type=0,
                                  name=template_name, body_html=template_html_body,
@@ -86,13 +80,12 @@ def get_email_template(template_id):
     """
         GET /v1/email-templates
         Function will return email template based on specified id
-        Required parameters:
         :param template_id: ID of of email template
         :return: Email Template with specified id
     """
 
     # Validate email template id
-    if template_id == 0:
+    if not template_id:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     domain_id = request.user.domain_id
@@ -120,7 +113,7 @@ def update_email_template(template_id):
         :param template_id: ID of of email template
         :return: Updated email template
     """
-    if template_id == 0:
+    if not template_id:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     data = get_valid_json_data(request)
@@ -154,16 +147,9 @@ def update_email_template(template_id):
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE)
 def delete_email_template(template_id):
-    """
-        DELETE /v1/email-templates
-        Function will delete email template
-        Required parameters:
-        :param template_id: ID of of email template
-        :return: Response with no content and status 200 (ok)
-    """
 
     # Validate email template id
-    if template_id == 0:
+    if not template_id:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     user_id = request.user.id
@@ -226,7 +212,7 @@ def create_email_template_folder():
 
     # If is_immutable value is not passed, make it as 0
     is_immutable = data.get('is_immutable', 0)
-    validate_immutable_value(is_immutable)
+    is_immutable = validate_and_return_immutable_value(is_immutable)
 
     template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                           is_immutable=is_immutable)
@@ -249,8 +235,7 @@ def delete_email_template_folder(folder_id):
     """
     user_id = request.user.id
     domain_id = request.user.domain_id
-    # TODO; probably in following (and all such occurences) we can just do 'if not folder_id'
-    if folder_id == 0:
+    if not folder_id:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     template_folder = EmailTemplateFolder.get_by_id(folder_id)

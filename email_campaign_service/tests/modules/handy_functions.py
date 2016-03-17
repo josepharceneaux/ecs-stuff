@@ -164,7 +164,7 @@ def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagin
     response = requests.get(url=url,
                             params=params,
                             headers={'Authorization': 'Bearer %s' % access_token})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     resp = response.json()
     assert entity in resp
     return resp[entity]
@@ -179,7 +179,7 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
     response = requests.get(
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
         headers={'Authorization': 'Bearer %s' % access_token})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     resp = response.json()
     print "Response JSON: %s" % json.dumps(resp)
     assert 'email_campaigns' in resp, "Response dict should have email_campaigns key"
@@ -203,20 +203,6 @@ def post_to_email_template_resource(access_token, data):
                      'Content-type': 'application/json'}
     )
     return response
-
-
-def response_info(resp_request, resp_json, resp_status):
-    """
-    Function returns the following information about the request:
-        1. Request, 2. Response dict, and 3. Response status
-    :param resp_request
-    :type resp_json:        dict
-    :type resp_status:      int
-    """
-
-    # TODO--I am not certain how this method is super useful. Can we not do without it?
-    args = (resp_request, resp_json, resp_status)
-    return "\nRequest: %s \nResponse JSON: %s \nResponse status: %s" % args
 
 
 def define_and_send_request(request_method, url, access_token, data=None):
@@ -258,8 +244,7 @@ def get_template_folder(token):
     response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
                              'Content-type': 'application/json'})
-    # TODO--we should use request.codes everywhere now
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
     return template_folder_id['id'], template_folder_name

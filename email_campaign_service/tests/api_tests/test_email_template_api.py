@@ -18,7 +18,9 @@ ON = 1  # Global variable for comparing value of is_immutable in the functions t
 def test_create_email_template_folder(sample_user, user_auth):
     """
     Test for creating new email template folder
-    It creates a test folder and asserts that it is created with correct name
+    It creates a test folder and asserts that it is created with correct name.
+    :param sample_user: we would use this to create the template.
+    :param user_auth: For user authorization
     """
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token = auth_token['access_token']
@@ -39,11 +41,16 @@ def test_create_email_template_folder(sample_user, user_auth):
 
 def test_delete_email_template_folder(sample_user, sample_user_2, user_auth):
     """
-    Test for deleting email template folder
-    It creates a test folder by sample_user and deletes that by the sample_user_2 of same domain
+    Test for deleting email template folder.
+    It creates a test folder by sample_user and deletes that by the sample_user_2 of same domain.
+    This verifies that the users of the same domain having appropriate privileges are able to delete
+    email template folders created by users of same domain. Deletion should be successful and
+    a response of 204 (NO_CONTENT) must be returned.
+
+    :param sample_user: we would use this to create the template folder.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to delete the folder.
+    :param user_auth: For user authorization
     """
-    # TODO; above needs more comment. Why are we deleting with sample_user_2?
-    # TODO: What will happen after we try deleting with sample_user_2? Must be answered in the commnet
 
     auth_token = user_auth.get_auth_token(sample_user, get_bearer_token=True)
     token1 = auth_token['access_token']
@@ -97,12 +104,12 @@ def test_create_email_template(sample_user, user_auth):
 
 def test_create_email_template_without_name(sample_user, user_auth):
     """
-    Test for creating email template without passing name
+    Test for creating email template without passing name. The response should be Bad Request - 400
+    because we are requesting to create an email template without passing the appropriate
+    value for template name.
     :param sample_user: sample user
     :param user_auth: For user authentication
-    result : The response should be Bad Request - 400
     """
-    # TODO; above one also needs a more thorough comment
     # Add or get Role
     role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
 
@@ -129,10 +136,11 @@ def test_create_email_template_without_name(sample_user, user_auth):
 
 def test_create_template_without_email_body(sample_user, user_auth):
     """
-    Test for creating email template without passing email body
+    Test for creating email template without passing email body. The response should be Bad Request - 400
+    because template_body is mandatory for creating an email template.
+
     :param sample_user: sample user
     :param user_auth: For user authentication
-    result: The response should be Bad Request - 400
     """
     # Add or get Role
     role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
@@ -151,20 +159,20 @@ def test_create_template_without_email_body(sample_user, user_auth):
 
     template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
 
-    # TODO--add in the comment which one is the email template body param
     # Pass empty email template body
-    resp = create_email_template(token, sample_user.id, template_name, '', template_name,
-                                 is_immutable=ON, folder_id=template_folder_id)
+    resp = create_email_template(token, sample_user.id, template_name, '',  # empty template body
+                                 template_name, is_immutable=ON, folder_id=template_folder_id)
     assert resp.status_code == requests.codes.BAD_REQUEST
 
 
 def test_delete_email_template(sample_user, sample_user_2, user_auth):
     """
-    Tests deleting user's email template
+    Tests deleting user's email template. Template should be deleted successfully returning
+    204 (NO CONTENT) response.
+
     :param sample_user: user1
     :param sample_user_2: user2
     :param user_auth: For user authentication
-    result: Template should be deleted successfully returning a no content response
     """
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
@@ -186,13 +194,13 @@ def test_delete_email_template(sample_user, sample_user_2, user_auth):
 
 def test_delete_template_with_non_existing_template_id(sample_user, sample_user_2, user_auth):
     """
-    Tests deleting user's email template with non existing template_id
-    :param user_auth:           For user authorization
-    :param sample_user:         user1
-    :param sample_user_2:       user2
-    result : The response should be Not Found - 404
+    Tests deleting user's email template with non existing template_id. The response should be Not Found - 404
+    as we are trying to delete a template which does not exist.
+
+    :param sample_user: we would use this to create the template.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to delete the template.
+    :param user_auth: For user authorization
     """
-    # TODO; in all of the comments above is 'result' the Sphinx way of doing the comments
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -205,24 +213,26 @@ def test_delete_template_with_non_existing_template_id(sample_user, sample_user_
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
 
-    resp = request_to_email_template_resource(token2, 'delete', template_id + 1000)
+    resp = request_to_email_template_resource(token2, 'delete', str(template_id) +
+                                              str(datetime.datetime.now().microsecond))
     assert resp.status_code == requests.codes.NOT_FOUND
 
 
 def test_delete_template_from_different_domain(sample_user, user_from_diff_domain, user_auth):
     """
-    Tests deleting user's email template from different domain
-    :param user_auth: For user authentication
-    :param sample_user: user1
-    :param user_from_diff_domain: user2
-    result : The response should be Forbidden error - 403
+    Tests deleting user's email template from different domain. The response should be Forbidden error - 403
+    as a user with a different domain than template owner user is not allowed to delete the email template.
+
+    :param user_auth: For user authorization
+    :param sample_user: user1 whose token will be used to create the template.
+    :param user_from_diff_domain: user2 with a different domain from sample_user. We will try
+                                  to delete the template using the token for user2.
     """
-    # TODO---what makes the deleting from different domain? Is it user_from_diff_domain's token?
-    # TODO--kindly shed some light in comments if possible
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
 
+    # get authorization token from user with different domain to send as bearer token in the request.
     token2 = user_auth.get_auth_token(user_from_diff_domain, get_bearer_token=True)['access_token']
 
     # Add or get Role
@@ -237,11 +247,16 @@ def test_delete_template_from_different_domain(sample_user, user_from_diff_domai
 
 def test_get_email_template_via_id(sample_user, sample_user_2, user_auth):
     """
-    Test:   Retrieve email_template via template's ID
-    Expect: 200 - ok
+    Retrieve email_template via template's ID. We will create the email template using sample_user
+    and try to retrieve it using the template id returned in the response. sample_user_2 with the same domain
+    as the creator would be used to get the email template via id, verifying the users with same domain are
+    allowed to access the templates created by fellow domain users. Response should be 200 (OK).
+
+    :param sample_user: we would use this to create the template.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to retrieve the template.
+    :param user_auth: For user authorization
     """
-    # TODO--I am slightly confused. So template is added using sample_user
-    # TODO-- but we successfully retrieve it using sample_user_2--how does that work? Comments should explain
+
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -254,7 +269,7 @@ def test_get_email_template_via_id(sample_user, sample_user_2, user_auth):
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
     url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id)
-    # Get email_template via template ID
+    # Get email_template via template ID using token for 2nd user
     response = requests.get(
             url=url, headers={
                 'Authorization': 'Bearer %s' % token2, 'Content-type': 'application/json'}
@@ -267,10 +282,16 @@ def test_get_email_template_via_id(sample_user, sample_user_2, user_auth):
 
 def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, user_auth):
     """
-    Test:   Retrieve email_template via template's ID
-    Expect: 404 - NOT FOUND
+    Retrieve email_template via ID for which email template doesn't exist.We will create the email
+    template using sample_user and try to retrieve it by appending some random value to the template id returned
+    in the response. sample_user_2 with the same domain as the creator would be used to get the email template via id,
+    as users with same domain are allowed to access the templates created by fellow domain users.
+    Response should be 400 (NOT FOUND) as template id we are using to get is non-existent.
+
+    :param sample_user: we would use this to create the template.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to retrieve the template.
+    :param user_auth: For user authorization
     """
-    # TODO--same comment as above
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
     template_id = template['template_id']
@@ -282,10 +303,8 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, use
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to sample_user_2
     add_role_to_test_user(sample_user_2, [role])
-    # TODO--now that I am thinking there could be a template with id of 1000 in future, we should generate a random str with
-    # timestampe I guess
 
-    url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id) + '1000'
+    url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id) + str(datetime.datetime.now().microsecond)
     # Get email_template via template ID
     response = requests.get(
             url=url, headers={
@@ -296,8 +315,11 @@ def test_get_email_template_with_non_existing_id(sample_user, sample_user_2, use
 
 def test_update_email_template(sample_user, sample_user_2, user_auth):
     """
-    Test :To update email template by other user in the same domain
-    Expect: 200 - ok
+    To update email template by other user in the same domain
+    Response should be 200 (OK)
+    :param sample_user: we would use this to create the template.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to update the template.
+    :param user_auth: For user authorization
     """
     # Add Email template
     template = add_email_template(user_auth, sample_user, template_body())
@@ -327,6 +349,9 @@ def test_update_email_template(sample_user, sample_user_2, user_auth):
 def test_update_non_existing_email_template(sample_user, sample_user_2, user_auth):
     """
     Test : To update email template by other user in the same domain
+    :param sample_user: we would use this to create the template.
+    :param sample_user_2: This is the user from same domain as sample_user and would be used to retrieve the template.
+    :param user_auth: For user authorization
     Expect: 404 - NOT FOUND
     """
     # Add Email template
@@ -345,9 +370,9 @@ def test_update_non_existing_email_template(sample_user, sample_user_2, user_aut
                             '\r\n<p>test for update campaign mail testing through script</p>\r\n<' \
                             '/body>\r\n</html>\r\n'
 
-    # TODO -- same comment about template_id as above
     # Get email_template via template ID
-    resp = update_email_template(template_id + 1000, 'put', token2, sample_user_2.id,
+    resp = update_email_template(str(template_id) + str(datetime.datetime.now().microsecond),
+                                 'put', token2, sample_user_2.id,
                                  template['template_name'],
                                  updated_template_body, '', template['template_folder_id'],
                                  template['is_immutable'])
