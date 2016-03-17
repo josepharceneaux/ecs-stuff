@@ -1,6 +1,6 @@
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 __author__ = 'erik@getTalent.com'
-# Standared Library
+# Standard Library
 import datetime
 import HTMLParser
 import re
@@ -16,7 +16,7 @@ from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.utils.validators import format_phone_number
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
-ISO8601_DT_FORMAT = "%Y-%m-%d"
+ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
 def fetch_optic_response(resume):
@@ -106,7 +106,7 @@ def parse_candidate_name(bs_contact_xml_list):
         if not surname:
             surname = _tag_text(contact, 'surname')
     first_name = givenname.title() if givenname else 'Unknown'
-    last_name = surname.title() if givenname else 'Unknown'
+    last_name = surname.title() if surname else 'Unknown'
     return {'first_name': first_name, 'last_name': last_name}
 
 
@@ -136,12 +136,12 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
         #TODO: look into adding a type using p.attrs['type']
         for p in phones:
-            # CanidateService currently extracts extensions so we do not need to invoke that
-            # validator as long as we send a 'sane' string.
             raw_phone = p.text.strip()
-            if raw_phone:
+            # JSON_SCHEMA for candidates phone is max:20
+            if raw_phone and len(raw_phone) > 20:
+                raw_phone = " ".join(raw_phone.split())
+            if raw_phone and len(raw_phone) <= 20:
                 output.append({'value': raw_phone})
-
     return output
 
 
@@ -167,7 +167,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             start_date_str = get_date_from_date_tag(employement, 'start')
             start_month, start_year = None, None
             if start_date_str:
-                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DT_FORMAT)
+                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
                 start_year = start_datetime.year
                 start_month = start_datetime.month
 
@@ -176,7 +176,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             end_date_str = get_date_from_date_tag(employement, 'end')
             end_month, end_year = None, None
             if end_date_str:
-                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DT_FORMAT)
+                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
                 end_month = end_datetime.month
                 end_year = end_datetime.year
 

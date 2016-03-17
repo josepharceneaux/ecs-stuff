@@ -84,8 +84,6 @@ class TalentPipelineApi(Resource):
             return dict(talent_pipelines=talent_pipelines_data[(page - 1) * 10:page * 10], page_number=page,
                         talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
 
-
-
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """

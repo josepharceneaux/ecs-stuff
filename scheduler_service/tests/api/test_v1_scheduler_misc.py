@@ -47,7 +47,7 @@ class TestSchedulerMisc(object):
 
         # Set the expiry after 5 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=5)
-        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+        #expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
 
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)

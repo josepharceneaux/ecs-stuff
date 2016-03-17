@@ -26,7 +26,9 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
 def save_meetup_token_and_flushredis(_redis):
     if _redis.get('Meetup'):
         _token = _redis.get('Meetup')
-        _redis.flushall()
+        # Commenting this out because we need persistence in redis to store parsed resumes to save our
+        # BG transactions.
+        # _redis.flushall()
         _redis.set('Meetup', _token)
 
 # Flush redis-cache

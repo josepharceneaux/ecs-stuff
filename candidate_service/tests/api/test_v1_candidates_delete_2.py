@@ -20,6 +20,44 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 ######################## CandidateExperience ########################
+class TestDeleteWorkExperience(object):
+    def test_delete_experience_and_check_total_months_experience(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Delete one of candidate's work experiences
+        Expect:  Candidate.total_months_experience to be updated accordingly
+        """
+        AddUserRoles.all_roles(user_first)
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'work_experiences': [
+                    {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
+                    {'start_year': 2011, 'end_year': None}   # 12*5 = 60 months of experience
+                ]
+            }
+        ]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Check candidate's total_months_experience from db
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
+        candidate = Candidate.get_by_id(candidate_id)
+        assert candidate.total_months_experience == 84  # 24 + 60
+
+        # Retrieve candidate
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+
+        # Add more experiences
+        experience_id = get_resp.json()['candidate']['work_experiences'][0]['id']
+        del_resp = request_to_candidate_experience_resource(access_token_first, 'delete', candidate_id,
+                                                            experience_id=experience_id)
+        print response_info(del_resp)
+        db.session.commit()
+        assert candidate.total_months_experience == 24  # (84 - 60)
+
+
 def test_non_logged_in_user_delete_can_experience():
     """
     Test:   Delete candidate's experiences without logging in
