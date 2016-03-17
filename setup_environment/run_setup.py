@@ -23,23 +23,23 @@ db.app = app
 
 with app.app_context():
 
-    # from candidate_service.candidate_app import app
-    # with app.app_context():
-    #     from candidate_service.modules.talent_cloud_search import (define_index_fields, index_documents,
-    #                                                                make_search_service_public)
-    #
-    #     # Create Amazon Cloud Search Domain if It doesn't exist and define index field for Amazon CloudSearch
-    #     define_index_fields()
-    #
-    #     # Make Amazon Cloud Search public
-    #     make_search_service_public()
-    #
-    #     # Index Amazon Cloud Search
-    #     index_documents()
-    #
-    # # Create Amazon S3 Bucket
-    # from common.utils.talent_s3 import create_bucket
-    # create_bucket()
+    from candidate_service.candidate_app import app
+    with app.app_context():
+        from candidate_service.modules.talent_cloud_search import (define_index_fields, index_documents,
+                                                                   make_search_service_public)
+
+        # Create Amazon Cloud Search Domain if It doesn't exist and define index field for Amazon CloudSearch
+        define_index_fields()
+
+        # Make Amazon Cloud Search public
+        make_search_service_public()
+
+        # Index Amazon Cloud Search
+        index_documents()
+
+    # Create Amazon S3 Bucket
+    from common.utils.talent_s3 import create_bucket
+    create_bucket()
 
     from common.models.user import Domain
 
