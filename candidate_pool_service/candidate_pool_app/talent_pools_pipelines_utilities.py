@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import json
 import decimal
 import requests
-from flask import request
+from sqlalchemy import Date, cast
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
@@ -84,7 +84,7 @@ def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
             return response.get('total_found')
     else:
         return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
-                                               SmartlistCandidate.added_time <= datetime.strptime(to_date, '%m/%d/%Y')).count()
+                                               cast(SmartlistCandidate.added_time, Date) <= datetime.strptime(to_date, '%m/%d/%Y').date()).count()
 
 
 def get_candidates_from_search_api(query_string, headers):
@@ -175,7 +175,7 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
         if date_string not in pools_growth_stats_dict:
             b = TalentPoolCandidate.query.filter(
                     TalentPoolCandidate.talent_pool_id == talent_pool.id,
-                    TalentPoolCandidate.added_time <= date_object).all()
+                    cast(TalentPoolCandidate.added_time, Date) <= date_object).all()
             pools_growth_stats_dict[date_string] = len(b)
 
         return pools_growth_stats_dict[date_string]
