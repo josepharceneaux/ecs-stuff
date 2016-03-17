@@ -5,6 +5,7 @@ JSON Schemas for validating data sent to Tasks
 # Required parameters in JSON data
 from scheduler_service import SchedulerUtils
 
+# Schema for validation of both one time and periodic tasks common fields
 base_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -20,7 +21,7 @@ base_job_schema = {
     }
 }
 
-# Required parameters for
+# Required parameters for one_time job
 one_time_task_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -29,7 +30,7 @@ one_time_task_job_schema = {
     }
 }
 
-# Required parameters for
+# Required parameters for periodic job
 periodic_task_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",

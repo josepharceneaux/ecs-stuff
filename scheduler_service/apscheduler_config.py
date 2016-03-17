@@ -14,7 +14,7 @@ job_store = RedisJobStore(host=url.hostname, password=url.password)
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),
-    'processpool': ProcessPoolExecutor(max_workers=12)
+    'processpool': ProcessPoolExecutor(max_workers=10)
 }
 
 jobstores = {
