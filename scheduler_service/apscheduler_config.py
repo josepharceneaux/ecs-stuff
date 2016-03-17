@@ -9,7 +9,7 @@ __author__ = 'saad'
 
 MAX_THREAD_POOLS = 12
 
-url = urlparse(flask_app.config[TalentConfigKeys.REDIS_UgiRL_KEY])
+url = urlparse(flask_app.config[TalentConfigKeys.REDIS_URL_KEY])
 job_store = RedisJobStore(host=url.hostname, password=url.password)
 
 executors = {
