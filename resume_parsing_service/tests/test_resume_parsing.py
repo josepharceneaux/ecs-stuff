@@ -329,22 +329,24 @@ def test_add_single_queue_item(token_fixture):
     """Test adding a single item to a users queue stored in Redis"""
     user_id = random_word(6)
     queue_string = 'batch:{}:fp_keys'.format(user_id)
-    response = add_fp_keys_to_queue(['file1'], user_id, 'bearer {}'.format(
+    response = add_fp_keys_to_queue(['file1a'], user_id, 'bearer {}'.format(
         token_fixture.access_token))
-    redis_store.expire(queue_string, 20)
+    redis_store.expire(queue_string, 1)
     assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
     assert response['quantity'] == 1, "Single queue-add count is not 1"
 
 
 # Integration test of the above.
 def test_integration_add_single_item(user_fixture, token_fixture):
+    print "Single batch item integration test"
     """Test adding a single item via end point."""
     auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token),
                     'Content-Type': 'application/json'}
     queue_string = 'batch:{}:fp_keys'.format(user_fixture.id)
+    #TODO assert no queue
     response = requests.post(ResumeApiUrl.BATCH_URL,
                              headers=auth_headers,
-                             data=json.dumps({'filenames': ['file1']})
+                             data=json.dumps({'filenames': ['file1b']})
                             )
     assert response.status_code == requests.codes.created
     response_dict = json.loads(response.content)
@@ -353,6 +355,7 @@ def test_integration_add_single_item(user_fixture, token_fixture):
         'Improperly Formatted redis post response for single item')
     assert response_dict['quantity'] == 1, (
         'Improperly count in redis post response for single item')
+    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
     unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
                                             headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
 
@@ -360,7 +363,7 @@ def test_add_multiple_queue_items(token_fixture):
     """Tests adding n-100 items to a users queue stored in Redis"""
     user_id = random_word(6)
     file_count = random.randrange(1, 15)
-    filenames = ['file{}'.format(i) for i in xrange(file_count)]
+    filenames = ['file{}c'.format(i) for i in xrange(file_count)]
     queue_string = 'batch:{}:fp_keys'.format(user_id)
     queue_status = add_fp_keys_to_queue(filenames, user_id,
                                         'bearer {}'.format(token_fixture.access_token))
