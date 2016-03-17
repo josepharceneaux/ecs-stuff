@@ -586,6 +586,32 @@ def test_create_candidate_educations_with_no_degrees(access_token_first, user_fi
 
 
 ######################## CandidateExperience ########################
+class TestWorkExperience(object):
+    def test_create_experiences(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Add candidate work experience and check for total months of experiences accumulated
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'work_experiences': [
+                    {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
+                    {'start_year': 2008, 'end_year': None},  # 12*1 = 12 months of experience
+                    {'start_year': 2011, 'end_year': 2016}   # 12*5 = 60 months of experience
+                ]
+            }
+        ]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Check candidate's total_months_experience from db
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
+        assert Candidate.get_by_id(candidate_id).total_months_experience == 96  # 24 + 12 + 60
+
+
 def test_create_candidate_experience(access_token_first, user_first, talent_pool):
     """
     Test:   Create CandidateExperience for Candidate
