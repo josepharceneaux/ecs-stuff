@@ -193,7 +193,7 @@ def validate_fields(key, value):
     try:
         fields = ','.join([RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[field] for field in fields])
     except KeyError:
-        raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name", error_code=400)
+        raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name" % fields, error_code=400)
     return fields
 
 
