@@ -4,7 +4,7 @@ from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.error_handling import InternalServerError, InvalidUsage
+from candidate_pool_service.common.error_handling import InternalServerError
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
@@ -22,22 +22,19 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
     """
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
-        try:
-            search_params = json.loads(smartlist.search_params)
-        except ValueError:
-            raise InvalidUsage('search_params(%s) are not JSON serializable for '
-                               'smartlist(id:%s). User(id:%s)'
-                               % (smartlist.search_params, smartlist.id, smartlist.user_id))
         # Page Number to be fetched from Amazon CloudSearch
-        search_params['page'] = page
+        request_params = dict(smartlist_ids=smartlist.id)
         if candidate_ids_only:
-            search_params['fields'] = 'id'
+            request_params['fields'] = 'id'
+
         if count_only:
-            search_params['fields'] = 'count_only'
+            request_params['fields'] = 'count_only'
             smartlist.oauth_token = oauth_token
+            smartlist.request_params = request_params
             search_results = search_and_count_candidates_from_params(smartlist)
         else:
-            search_results = search_candidates_from_params(search_params, oauth_token, smartlist.user_id)
+            request_params['page'] = page
+            search_results = search_candidates_from_params(request_params, oauth_token, smartlist.user_id)
 
     # If a dumblist & getting count only, just do count
     elif count_only:
@@ -70,7 +67,7 @@ def search_and_count_candidates_from_params(smartlist):
     :param smartlist: SmartList object
     :return:
     """
-    return search_candidates_from_params(smartlist.search_params, smartlist.oauth_token, smartlist.user_id)
+    return search_candidates_from_params(smartlist.request_params, smartlist.oauth_token, smartlist.user_id)
 
 
 def create_candidates_dict(candidate_ids):
@@ -129,13 +126,14 @@ def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     return "Could not find any smartlist in your domain"
 
 
-def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access_token=None):
+def save_smartlist(user_id, name, talent_pipeline_id, search_params=None, candidate_ids=None, access_token=None):
     """
     Creates a smart or dumb list.
 
     :param user_id: list owner
     :param name: name of list
     :param search_params:
+    :param talent_pipeline_id:
     :param candidate_ids: only set if you want to create a dumb list
     :type candidate_ids: list[long|int] | None
     * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
@@ -148,7 +146,7 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access
 
     smartlist = Smartlist(name=name,
                           user_id=user_id,
-                          search_params=search_params)
+                          search_params=search_params, talent_pipeline_id=talent_pipeline_id)
     db.session.add(smartlist)
     db.session.commit()
 
@@ -160,7 +158,7 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access
         db.session.commit()
 
         # Update candidate documents on cloudsearch
-        # update_candidates_on_cloudsearch(access_token, candidate_ids)
+        update_candidates_on_cloudsearch(access_token, candidate_ids)
 
     # TODO Add activity
     return smartlist
