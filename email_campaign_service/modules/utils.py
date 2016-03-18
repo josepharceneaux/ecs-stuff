@@ -45,7 +45,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     :return:
     """
     page = 1
-    per_page = 10  # smartlists can have a large number of users, hence page size of 1000
+    per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
     response_headers = response.headers
