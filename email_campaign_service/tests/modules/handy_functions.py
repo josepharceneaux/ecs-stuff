@@ -175,8 +175,10 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
     talent_pipeline and then asserts if we get an OK response.
     :param list[str] fields:  List of fields each EmailCampaign should have.  If None, will assert on all fields.
     """
+    params = {'fields': ','.join(fields)} if fields else {}
     response = requests.get(
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
+        params=params,
         headers={'Authorization': 'Bearer %s' % access_token})
     assert response.status_code == 200
     resp = response.json()

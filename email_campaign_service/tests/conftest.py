@@ -179,9 +179,9 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     """
     if request.param == 'with_client':
         campaign_with_valid_candidate.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 5
-    else:
         sleep_time = 15
+    else:
+        sleep_time = 30
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
     return campaign_with_valid_candidate
