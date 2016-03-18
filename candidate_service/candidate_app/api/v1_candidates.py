@@ -62,7 +62,7 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience
 )
-from candidate_service.modules.api_calls import create_smartlist
+from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
 )
@@ -1339,13 +1339,14 @@ class CandidateClientEmailCampaignResource(Resource):
             "email_client_id": email_client_id,
             "list_ids": [int(created_smartlist_id)]
         }
-        try:
-            email_campaign_created = create_campaign_from_api(email_campaign_object,
-                                                              request.headers.get('authorization'))
-            email_campaign_send_created = create_campaign_send_from_api(
-                email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
-        except Exception as e:
-            raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
+        email_campaign_created = create_campaign(email_campaign_object, request.headers.get('authorization'))
+        if email_campaign_created.status_code != 201:
+            return email_campaign_created.json(), email_campaign_created.status_code
+
+        email_campaign_send_created = create_campaign_send(email_campaign_created.get('campaign').get('id'),
+                                                           access_token=request.headers.get('authorization'))
+        if email_campaign_send_created.status_code != 200:
+            return email_campaign_send_created.json(), email_campaign_send_created.status_code
 
         return email_campaign_send_created, 201
 
