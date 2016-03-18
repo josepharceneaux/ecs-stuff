@@ -578,6 +578,9 @@ def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
 
+    if to_date > datetime.utcnow().date():
+        raise InvalidUsage("`to_date` cannot be in future")
+
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
 

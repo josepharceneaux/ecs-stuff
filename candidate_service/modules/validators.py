@@ -277,7 +277,7 @@ def is_backward_compatible(key):
 
         if key == 'username':
             key = 'user_ids'
-        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+        elif key == 'area_of_interest_id':
             key = 'area_of_interest_ids'
         elif key == 'status' or key == 'source':
             key += '_ids'
