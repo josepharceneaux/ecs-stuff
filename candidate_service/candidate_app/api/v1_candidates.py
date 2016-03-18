@@ -1343,12 +1343,12 @@ class CandidateClientEmailCampaignResource(Resource):
         if email_campaign_created.status_code != 201:
             return email_campaign_created.json(), email_campaign_created.status_code
 
-        email_campaign_send_created = create_campaign_send(email_campaign_created.get('campaign').get('id'),
+        email_campaign_send_created = create_campaign_send(email_campaign_created.json().get('campaign').get('id'),
                                                            access_token=request.headers.get('authorization'))
-        if email_campaign_send_created.status_code != 200:
+        if not email_campaign_send_created.ok:
             return email_campaign_send_created.json(), email_campaign_send_created.status_code
 
-        return email_campaign_send_created, 201
+        return email_campaign_send_created.json(), 201
 
 
 class CandidateViewResource(Resource):
