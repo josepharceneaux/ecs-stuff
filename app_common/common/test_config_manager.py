@@ -117,7 +117,7 @@ def load_test_config():
     :rtype: dict
     """
     config_parse = TestConfigParser()
-    env = os.getenv(TalentConfigKeys.ENV_KEY)
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     if env == TalentEnvs.DEV:
         path = os.path.join(os.path.expanduser('~'), TEST_CONFIG_PATH)
         config_parse.read(path)
