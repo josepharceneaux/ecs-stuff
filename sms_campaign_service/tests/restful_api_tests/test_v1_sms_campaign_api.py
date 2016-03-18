@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns of SMS Campaign API.
+    This module contains pyTests for endpoint /v1/sms-campaigns of SMS Campaign API.
 """
 # Standard Imports
 import json

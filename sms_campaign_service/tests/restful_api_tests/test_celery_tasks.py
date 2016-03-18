@@ -132,7 +132,7 @@ class TestCeleryTasks(object):
             sms_campaign_smartlist, sms_campaign_smartlist_2, sample_sms_campaign_candidates,
             candidate_phone_1):
         """
-        - This tests the endpoint /v1/campaigns/:id/send
+        - This tests the endpoint /v1/sms-campaigns/:id/send
 
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. One candidate have no phone number associated. So, total sends should be 1.

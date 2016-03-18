@@ -188,7 +188,6 @@ class SmsCampaignBase(CampaignBase):
         :type user_id: int | long
         :type campaign_id: int | long | None
         """
-        # TODO kindly add params and etc in the comments
         # sets the user_id
         super(SmsCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.user_phone = self.get_user_phone()
@@ -357,7 +356,7 @@ class SmsCampaignBase(CampaignBase):
             4- task_id (Task created on APScheduler)
         Finally we return the "task_id".
 
-        - This method is called from the endpoint /v1/campaigns/:id/schedule on HTTP
+        - This method is called from the endpoint /v1/sms-campaigns/:id/schedule on HTTP
             methods POST/PUT
 
         :param data_to_schedule: required data to schedule an SMS campaign
@@ -615,7 +614,7 @@ class SmsCampaignBase(CampaignBase):
                 2- Create a URL (using id of url_conversion record created in step 1) to redirect
                     candidate to our app and save that as source_url
                     (for the same database record we created in step 1). This source_url looks like
-                     http://127.0.0.1:8011/v1/campaigns/1/redirect/1?candidate_id=1
+                     http://127.0.0.1:8012/v1/redirect/1
                 3- Convert the source_url into shortened URL using Google's shorten URL API.
                 4- Replace the link in original body text with the shortened URL
                     (which we created in step 2)

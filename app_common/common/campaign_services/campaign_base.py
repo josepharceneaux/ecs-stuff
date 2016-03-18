@@ -246,9 +246,6 @@ class CampaignBase(object):
         :type user_id: int | long
         :type campaign_id: int | long | None
         """
-        # TODO; I am not objecting to this. Just thinking out loud. Just doing assert two times on int or long using
-        # TODO (contd): isinstanceof() would be more readable no? Becuase we are explicitly creating a dict here and then
-        # (contd) and then setting a key value pair here. I think we should do two asserts here
         raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
@@ -485,8 +482,8 @@ class CampaignBase(object):
     @classmethod
     def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
         """
-        This function returns True if campaign lies in the domain of logged-in user. Otherwise
-        it raises the Forbidden error.
+        This function returns campaign object if campaign lies in the domain of logged-in user.
+        Otherwise it raises the Forbidden error.
         :param campaign_id: id of campaign form getTalent database
         :param current_user: logged in user's object
         :type campaign_id: int | long
@@ -495,8 +492,6 @@ class CampaignBase(object):
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
-        # TODO; we should update comments above and in other pertinent places & also I think it doesn't return True rather campaign_obj
-
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
         campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
@@ -610,7 +605,7 @@ class CampaignBase(object):
         :rtype: bool
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id in v1_sms_campaign_api.py
         """
         if not campaign_id:
             raise InvalidUsage('delete: campaign_id cannot be emtpy.')
@@ -695,7 +690,7 @@ class CampaignBase(object):
         :rtype: dict
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
@@ -759,7 +754,7 @@ class CampaignBase(object):
                             'frequency_id': 0,
                             'start_datetime': '2016-10-30T17:55:00Z',
                             'end_datetime': '2016-12-30T17:55:00Z',
-                            'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
+                            'url_to_run_task': 'http://127.0.0.1:8012/v1/sms-campaigns/1/send',
                             'task_type': 'one_time',
                             'data_to_post': None
                             }
@@ -975,7 +970,7 @@ class CampaignBase(object):
         :exception: Invalid usage
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         if not isinstance(pre_processed_data, dict):
             raise InvalidUsage('pre_processed_data should be a dict.')
