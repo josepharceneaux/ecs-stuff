@@ -561,10 +561,13 @@ class CandidatePreferredLocation(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
     address = db.Column('Address', db.String(255))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    iso3166_country = db.Column(db.String(2))
     city = db.Column('City', db.String(255))
     region = db.Column('Region', db.String(255))
     zip_code = db.Column('ZipCode', db.String(10))
+
+    # TODO: Below table(s) to be removed once all tables have been migrated (updated)
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
@@ -676,7 +679,7 @@ class CandidateMilitaryService(db.Model):
     __tablename__ = 'candidate_military_service'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    iso3166_country = db.Column(db.String(2))
     service_status = db.Column('ServiceStatus', db.String(200))
     highest_rank = db.Column('HighestRank', db.String(255))
     highest_grade = db.Column('HighestGrade', db.String(7))
@@ -688,6 +691,7 @@ class CandidateMilitaryService(db.Model):
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
 
     @classmethod
     def get_by_id(cls, _id):
@@ -741,7 +745,7 @@ class CandidateAddress(db.Model):
     city = db.Column('City', db.String(100))
     state = db.Column('State', db.String(100))
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
-    # _country = db.Column('_Country', db.String(100))
+    iso3166_country = db.Column(db.String(2))
     zip_code = db.Column('ZipCode', db.String(10))
     po_box = db.Column('POBox', db.String(20))
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
@@ -772,12 +776,13 @@ class CandidateEducation(db.Model):
     school_type = db.Column('SchoolType', db.String(100))
     city = db.Column('City', db.String(50))
     state = db.Column('State', db.String(50))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    iso3166_country = db.Column(db.String(2))
     is_current = db.Column('IsCurrent', db.Boolean)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
 
     # Relationships
     degrees = relationship('CandidateEducationDegree', cascade='all, delete-orphan', passive_deletes=True)
@@ -860,7 +865,7 @@ class CandidateExperience(db.Model):
     state = db.Column('State', db.String(50))
     end_month = db.Column('EndMonth', db.SmallInteger)
     start_year = db.Column('StartYear', YEAR)
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    iso3166_country = db.Column(db.String(2))
     start_month = db.Column('StartMonth', db.SmallInteger)
     end_year = db.Column('EndYear', YEAR)
     is_current = db.Column('IsCurrent', db.Boolean, default=False)
@@ -869,6 +874,7 @@ class CandidateExperience(db.Model):
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
 
     # Relationships
     candidate = relationship('Candidate', backref=backref(

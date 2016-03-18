@@ -10,8 +10,8 @@ def get_country_name(country_code=None):
         return 'United States'
 
     try:
-        foo = pc.countries.get(alpha2=country_code.upper())
-        country_name = foo.name
+        country = pc.countries.get(alpha2=country_code.upper())
+        country_name = country.name
     except KeyError:
         return {'error': 'Country code not recognized: {}'.format(country_code)}
 

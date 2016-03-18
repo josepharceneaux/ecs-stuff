@@ -293,6 +293,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
+                                },
                                 "is_current": {
                                     "type": ["boolean", "null"]
                                 },
@@ -382,6 +386,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
+                                },
                                 "zip_code": {
                                     "type": ["string", "null"],
                                     "maxLength": 31
@@ -459,6 +467,10 @@ candidates_resource_schema_post = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "highest_rank": {
                                     "type": ["string", "null"],
@@ -908,6 +920,10 @@ candidates_resource_schema_patch = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "zip_code": {
                                     "type": ["string", "null"],

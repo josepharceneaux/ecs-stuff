@@ -9,7 +9,6 @@ from candidate_service.common.utils.handy_functions import sample_phone_number
 
 # Faker
 from faker import Faker
-# Instantiate faker
 fake = Faker()
 
 
@@ -139,33 +138,77 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     return data
 
 
-def candidate_addresses(candidate_id=None, address_id=None):
-    """
-    Sample data for creating or updating Candidate + CandidateAddress
-    :rtype  dict
-    """
-    # Data for updating a CandidateAddress of an existing Candidate
-    if candidate_id and address_id:
-        data = {'candidates': [{'id': candidate_id, 'addresses': [
-            {'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-             'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
-        ]}]}
+class GenerateCandidateDate(object):
+    @staticmethod
+    def addresses(talent_pool_ids):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': talent_pool_ids}, 'addresses': [
+                {'address_line_1': fake.street_address(), 'city': fake.city(),
+                 'state': fake.state(), 'zip_code': fake.zipcode(), 'country_code': fake.country_code()}]
+            }
+        ]}
+        return data
 
-    # Data for adding a CandidateAddress to an existing Candidate
-    elif candidate_id and not address_id:
-        data = {'candidates': [{'id': candidate_id, 'addresses': [
-            {'address_line_1': fake.street_address(), 'city': fake.city(), 'is_default': True,
-             'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
-        ]}]}
+    @staticmethod
+    def educations(talent_pool_ids):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': talent_pool_ids}, 'educations': [
+                {'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+                 'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean()}
+            ]}
+        ]}
+        return data
 
-    # Data for creating a Candidate + CandidateAddress
-    else:
-        data = {'candidates': [{'emails': [{'address': fake.email()}], 'addresses': [
-            {'address_line_1': fake.street_address(), 'city': fake.city(),
-             'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}
-        ]}]}
+    @staticmethod
+    def military_services(talent_pool_ids):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': talent_pool_ids}, 'military_services': [
+                {'country_code': fake.country_code(), 'branch': fake.military_ship(),
+                 'highest_rank': 'lieutenant', 'status': 'active', 'highest_grade': '0-1',
+                 'comments': fake.bs(), 'from_date': '1974-5-25', 'to_date': '1996-12-12'}
+            ]}
+        ]}
+        return data
 
-    return data
+    @staticmethod
+    def work_experiences(talent_pool_ids):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': talent_pool_ids}, 'work_experiences': [
+                {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
+                 'state': fake.state(), 'country_code': fake.country_code(), 'start_year': 2008,
+                 'end_year': 2012, 'start_month': 10, 'end_month': 2, 'is_current': True}
+            ]}
+        ]}
+        return data
+
+    @staticmethod
+    def preferred_locations(talent_pool_ids):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': talent_pool_ids}, 'preferred_locations': [
+                {'city': fake.city(), 'state': fake.state(), 'country_code': fake.country_code()}
+            ]}
+        ]}
+        return data
 
 
 def candidate_areas_of_interest(domain_aoi, candidate_id=None, aoi_id=None):
