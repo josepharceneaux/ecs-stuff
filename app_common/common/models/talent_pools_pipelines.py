@@ -133,3 +133,13 @@ class TalentPipeline(db.Model):
 
         return talent_pipeline
 
+    @classmethod
+    def get_by_user_and_talent_pool_id(cls, user_id, talent_pool_id):
+        """
+        This returns talent-pool object for particular user and talent_pool_id
+        :param user_id: id of user object
+        :param talent_pool_id: if of talent_pool object
+        """
+        assert user_id, 'user_id not provided'
+        assert talent_pool_id, 'talent_pool_id not provided'
+        return cls.query.filter_by(user_id=user_id, talent_pool_id=talent_pool_id).first()
