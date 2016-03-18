@@ -811,12 +811,12 @@ def create_or_update_candidate_from_params(
     domain_id = domain_id_from_user_id(user_id=user_id)
 
     # If candidate_id is not provided, Check if candidate exists
+    candidate_id_from_dice_profile = None
     if is_creating:
-        candidate_id = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id,
-                                                 domain_id, emails)
+        candidate_id_from_dice_profile = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id)
 
     # Raise an error if creation is requested and candidate_id is provided/found
-    if candidate_id and is_creating:
+    if is_creating and (candidate_id or candidate_id_from_dice_profile):
         raise InvalidUsage(error_message='Candidate already exists, creation failed',
                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                            additional_error_info={'id': candidate_id})
@@ -951,13 +951,12 @@ def domain_id_from_user_id(user_id):
     return user.domain_id
 
 
-def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id, emails):
+def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id):
     """
     Function will search the db for a candidate with the same parameter(s) as provided
     :type dice_social_profile_id: int|long
     :type dice_profile_id: int|long
     :type domain_id: int|long
-    :type emails: list
     :return candidate_id if found, otherwise None
     """
     candidate = None
@@ -977,16 +976,6 @@ def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id
     # If candidate is found, return its ID
     if candidate:
         return candidate.id
-
-    # If candidate still not found, check for existing email address, if specified
-    if emails:
-        for email in emails:
-            email_address = email.get('address')
-            candidate_email = db.session.query(CandidateEmail).join(Candidate).join(User).filter(
-                CandidateEmail.address == email_address, User.domain_id == domain_id
-            ).first()
-            if candidate_email:
-                return candidate_email.candidate_id
 
     return None
 
@@ -1666,8 +1655,8 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email = get_candidate_email_from_domain_if_exists(user_id, email_dict['address'])
-            # Prevent duplicate email address for the same candidate in the same domain
+            email = CandidateEmail.get_by_address(email_address=email_address)
+            # Prevent duplicate entries
             if not email:
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
