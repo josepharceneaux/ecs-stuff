@@ -185,6 +185,7 @@ class SmsCampaignBase(CampaignBase):
         calling get_user_phone() method,
         :return:
         """
+        # TODO kindly add params and etc in the comments
         # sets the user_id
         super(SmsCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.user_phone = self.get_user_phone()

@@ -246,6 +246,9 @@ class CampaignBase(object):
         :type user_id: int | long
         :type campaign_id: int | long | None
         """
+        # TODO; I am not objecting to this. Just thinking out loud. Just doing assert two times on int or long using
+        # TODO (contd): isinstanceof() would be more readable no? Becuase we are explicitly creating a dict here and then
+        # (contd) and then setting a key value pair here. I think we should do two asserts here
         raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
@@ -274,12 +277,12 @@ class CampaignBase(object):
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
         """
-        This returns the authorization header containing access token token associated
+        This returns the authorization header containing access token associated
         with current user. We use this access token to communicate with other services,
-        like activity_service to create activity.
+        like e.g. activity_service to create activity.
         If access_token is provided, we return the auth header, otherwise we get the access token
         from database table "Token" and then return the auth header.
-        If access token is not found by these two methods ,we raise Forbidden error.
+        If access token is not found by these two methods, we raise Forbidden error.
 
         :param user_id: id of user
         :param bearer_access_token: e.g. 'Bearer IxzJAm3RWFnZENln37E3ivs2gxUfzB'
@@ -488,12 +491,12 @@ class CampaignBase(object):
         :param current_user: logged in user's object
         :type campaign_id: int | long
         :type current_user: User
-        :exception: InvalidUsage
-        :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
+        # TODO; we should update comments above and in other pertinent places & also I think it doesn't return True rather campaign_obj
+
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
         campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
