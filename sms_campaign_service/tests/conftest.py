@@ -53,7 +53,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
     return {"frequency_id": Frequency.ONCE,
-            "start_datetime": to_utc_str(datetime.utcnow()),
+            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
             "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
 
 
