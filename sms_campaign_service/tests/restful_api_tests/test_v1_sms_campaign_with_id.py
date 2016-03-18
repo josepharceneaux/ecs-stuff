@@ -10,6 +10,7 @@ import json
 import requests
 
 # Service Specific
+# TODO; I think following import isn't being used
 from sms_campaign_service.common.utils.handy_functions import to_utc_str
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
@@ -50,8 +51,8 @@ class TestSmsCampaignWithIdHTTPGET(object):
         """
         User auth token is valid. It uses 'sms_campaign_of_current_user' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
-        Response should be OK. It then assert all fields of record got from GET call with the
-        original field values(provided at time of creation of campaign).
+        Response should be OK. It then assert all fields of record that we get from GET call with the
+        original field values (provided at time of creation of campaign).
         :return:
         """
         response = requests.get(self.URL % sms_campaign_of_current_user.id,
@@ -162,6 +163,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert resp
         assert resp['name'] == modified_name
         assert resp['frequency'].lower() in Frequency.standard_frequencies()
+        # TODO-w: Do we need this TODO? If it's small we can address this.
         # TODO: Need to update datetime format for SMS campaign API.
         # assert resp['start_datetime'] == scheduler_data['start_datetime']
         # assert resp['end_datetime'] == scheduler_data['end_datetime']
