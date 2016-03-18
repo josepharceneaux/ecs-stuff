@@ -45,7 +45,7 @@ SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
 # This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
-                        "body_text": "Hi all, we have few openings at http://www.abc.com",
+                        "body_text": "Hi all, we have few openings at https://www.gettalent.com",
                         "smartlist_ids": ""
                         }
 
@@ -53,8 +53,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
     return {"frequency_id": Frequency.ONCE,
-            # TODO: remove timedelta from start_datetime after scheduler_service update
-            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
+            "start_datetime": to_utc_str(datetime.utcnow()),
             "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
 
 

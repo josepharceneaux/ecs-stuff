@@ -500,17 +500,16 @@ class CampaignById(Resource):
 
             {
                   "campaign": {
-                                "start_datetime": "",
-                                "name": "Smartlist",
-                                "frequency_id": 1,
-                                "body_text": "HI all, we have few openings at http://www.abc.com",
-                                "updated_time": "2016-02-09 16:13:21",
-                                "added_datetime": "2016-02-09 16:13:21",
-                                "user_phone_id": 1,
-                                "scheduler_task_id": "",
-                                "id": 1,
-                                "end_datetime": ""
-                              }
+                        "added_datetime": "2016-02-09T16:13:21+00:00",
+                        "start_datetime": "2016-02-09T16:13:21+00:00",
+                        "frequency": "Once",
+                        "user_id": 1,
+                        "name": "Job opening at getTalent",
+                        "body_text": "HI all, we have few openings at https://www.gettalent.com",
+                        "list_ids": [1, 2, 3],
+                        "id": 1,
+                        "end_datetime": null
+                      }
             }
 
         .. Status:: 200 (OK)
