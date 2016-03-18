@@ -772,7 +772,7 @@ class SendRequestTest(Resource):
             db.db.session.commit()
             token = Token.query.filter_by(user_id=request.user.id).first()
             token.update(expires=expiry)
-            run_job(user_id, request.oauth_token, url, task.get('content_type', 'application/json'),
+            run_job(user_id, request.oauth_token, url, task.get('content-type', 'application/json'),
                     task.get('post_data', dict()))
         else:
             try:

@@ -226,7 +226,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
-    content_type = data.get('content_type', 'application/json')
+    content_type = data.get('content-type', 'application/json')
 
     job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
     job_config['url'] = get_valid_url_from_dict(data, 'url')

@@ -31,7 +31,7 @@ one_time_task_job_schema = {
         "run_datetime": {
             "type": "string",
         },
-        "content_type": {
+        "content-type": {
             "type": "string",
             "default": "application/json"
         },
@@ -70,7 +70,7 @@ periodic_task_job_schema = {
         "frequency": {
             "type": "number",
         },
-        "content_type": {
+        "content-type": {
             "type": "string",
             "default": "application/json"
         },

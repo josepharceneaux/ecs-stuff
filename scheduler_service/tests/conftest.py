@@ -21,7 +21,7 @@ def job_config_periodic(request):
     return {
         "frequency": 3600,
         'task_type': SchedulerUtils.PERIODIC,
-        "content_type": "application/json",
+        "content-type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "start_datetime": "2015-12-05T08:00:00",
         "end_datetime": "2017-01-05T08:00:00",
@@ -38,7 +38,7 @@ def job_config_periodic(request):
 def job_config_one_time(request):
     return {
         'task_type': SchedulerUtils.ONE_TIME,
-        "content_type": "application/json",
+        "content-type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "run_datetime": "2017-05-05T08:00:00",
         "post_data": {
