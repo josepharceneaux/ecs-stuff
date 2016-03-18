@@ -146,6 +146,7 @@ def validate_is_digit(key, value):
 def validate_is_number(key, value):
     if not is_number(value):
         raise InvalidUsage("`%s` should be a numeric value" % key, 400)
+    return value
 
 
 def validate_id_list(key, values):
