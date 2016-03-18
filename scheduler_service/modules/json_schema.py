@@ -25,8 +25,32 @@ base_job_schema = {
 one_time_task_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "required": ["run_datetime"],
+    "additionalProperties": False,
+    "required": ["url", "task_type", "run_datetime"],
     "properties": {
+        "run_datetime": {
+            "type": "string",
+        },
+        "content_type": {
+            "type": "string",
+            "default": "application/json"
+        },
+        "task_name": {
+            "type": "string"
+        },
+        "task_type": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string"
+        },
+        "post_data": {
+            "type": "object"
+        },
+        "is_jwt_request": {
+            "type": "boolean",
+            "default": False
+        }
     }
 }
 
@@ -34,7 +58,8 @@ one_time_task_job_schema = {
 periodic_task_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "required": ["start_datetime", "end_datetime", "frequency"],
+    "additionalProperties": False,
+    "required": ["url", "task_type", "start_datetime", "end_datetime", "frequency", "post_data"],
     "properties": {
         "start_datetime": {
             "type": "string",
@@ -44,6 +69,26 @@ periodic_task_job_schema = {
         },
         "frequency": {
             "type": "number",
+        },
+        "content_type": {
+            "type": "string",
+            "default": "application/json"
+        },
+        "task_name": {
+            "type": "string"
+        },
+        "task_type": {
+            "type": "string"
+        },
+        "url": {
+            "type": "string"
+        },
+        "post_data": {
+            "type": "object"
+        },
+        "is_jwt_request": {
+            "type": "boolean",
+            "default": False
         }
     }
 }
