@@ -1,10 +1,10 @@
-import json
 from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.error_handling import InternalServerError
+from candidate_pool_service.common.utils.api_utils import ApiResponse
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
@@ -45,19 +45,27 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
         total_candidates_in_smartlist = SmartlistCandidate.query.with_entities(
                 SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).count()
         smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
-                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(int(page), int(per_page), False)
+                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(int(page),
+                                                                                               int(per_page), False)
+        headers = {
+                    'X-Total': smartlist_candidate_rows.total,
+                    'X-Page-Count': smartlist_candidate_rows.pages
+        }
         smartlist_candidate_rows = smartlist_candidate_rows.items
-
         candidates = []
         candidate_ids = []
         for smartlist_candidate_row in smartlist_candidate_rows:
             candidates.append({'id': smartlist_candidate_row.candidate_id})
             candidate_ids.append(smartlist_candidate_row.candidate_id)
         if candidate_ids_only:
-            return {'candidates': candidates, 'total_found': total_candidates_in_smartlist}
-        search_results = create_candidates_dict(candidate_ids)
+            response = {
+                        'candidates': candidates,
+                        'total_found': total_candidates_in_smartlist
+            }
+            return ApiResponse(response, headers=headers, status=200)
 
-    return search_results
+        search_results = create_candidates_dict(candidate_ids)
+        return search_results
 
 
 @cache.memoize(timeout=86400)

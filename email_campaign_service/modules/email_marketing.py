@@ -219,7 +219,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                 list_of_new_email_html_or_text.append(resp_dict)
             db.session.commit()
 
-            # This will be needed later
+            # TODO: This will be needed later
             # update_candidate_document_on_cloud(user, candidate_ids_and_emails,
             #                                    new_candidates_only, campaign,
             #                                    len(list_of_new_email_html_or_text))
@@ -235,7 +235,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     else:
         raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
                            % campaign.id,
-                           error_code = CampaignException.NO_VALID_CANDIDATE_FOUND)
+                           error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,

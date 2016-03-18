@@ -1,6 +1,5 @@
 # Standard Imports
 import json
-import math
 import HTMLParser
 from urllib import urlencode
 from datetime import datetime
@@ -19,8 +18,7 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
-                                                          ForbiddenError)
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
@@ -47,16 +45,17 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     :return:
     """
     page = 1
-    per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
+    per_page = 10  # smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
+    response_headers = response.headers
+    assert response_headers
+    no_of_pages = response_headers['X-Page-Count']
+    assert no_of_pages
     response_body = json.loads(response.content)
-    total_count = response_body['total_found']
-    total_count = int(total_count)
     candidates = response_body['candidates']
-    if total_count > per_page:
-        total_pages = math.ceil(float(total_count) / per_page)
-        for current_page in range(1, int(total_pages)):
+    if int(no_of_pages) > 1:
+        for current_page in range(1, int(no_of_pages)):
             next_page = current_page + 1
             response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params)
             response_body = json.loads(response.content)
