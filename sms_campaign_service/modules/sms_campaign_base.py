@@ -183,7 +183,10 @@ class SmsCampaignBase(CampaignBase):
         """
         Here we set the "user" by calling super constructor and "user_phone" by
         calling get_user_phone() method,
-        :return:
+        :param user_id: Id of logged-in user
+        :param campaign_id: Id of campaign object in database
+        :type user_id: int | long
+        :type campaign_id: int | long | None
         """
         # sets the user_id
         super(SmsCampaignBase, self).__init__(user_id, campaign_id=campaign_id)

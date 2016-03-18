@@ -463,7 +463,7 @@ class TestSmsCampaignHTTPDelete(object):
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, valid_header, user_first,
                                                                  sms_campaign_of_current_user):
         """
-        Test with one existing, one invalid id and one non existing ids of SMS campaign.
+        Test with one existing, and one non existing ids of SMS campaign.
         It should get 207 status code.
         """
         non_existing_id = CampaignsTestsHelpers.get_last_id(SmsCampaign) + 1000
