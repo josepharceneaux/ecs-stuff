@@ -251,8 +251,8 @@ class EmailTemplateFolder(db.Model):
                                                                                       cascade="all, delete-orphan"))
 
     @classmethod
-    def get_by_id(cls, _id):
-        return cls.query.filter_by(id=_id).first()
+    def get_by_id(cls, folder_id):
+        return cls.query.get(folder_id)
 
     @classmethod
     def get_by_name_and_domain_id(cls, folder_name, domain_id):

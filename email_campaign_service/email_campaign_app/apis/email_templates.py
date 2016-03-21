@@ -85,7 +85,7 @@ def get_email_template(template_id):
     """
 
     # Validate email template id
-    if not template_id:
+    if template_id == 0:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     domain_id = request.user.domain_id
@@ -113,7 +113,7 @@ def update_email_template(template_id):
         :param template_id: ID of of email template
         :return: Updated email template
     """
-    if not template_id:
+    if template_id == 0:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     data = get_valid_json_data(request)
@@ -149,7 +149,7 @@ def update_email_template(template_id):
 def delete_email_template(template_id):
 
     # Validate email template id
-    if not template_id:
+    if template_id == 0:
         raise InvalidUsage(error_message='template_id must be greater than 0')
 
     user_id = request.user.id

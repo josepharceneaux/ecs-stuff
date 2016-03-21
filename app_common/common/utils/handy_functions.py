@@ -278,7 +278,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             else:
                 # raise any Server error
                 log_exception("http_request: Server error from %s on %s call. "
-                                 "Make sure requested server is running." % (url, method_type))
+                              "Make sure requested server is running." % (url, method_type))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
@@ -287,13 +287,15 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                             "http_request: Couldn't make %s call on %s. "
                             "Make sure requested server is running." % (method_type, url), app=app)
             raise
+        except requests.Timeout as e:
+            log_exception('http_request: HTTP request timeout, %s' % e.message)
+            raise
         except requests.RequestException as e:
             log_exception('http_request: HTTP request failed, %s' % e.message)
             raise
-
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s' % (error_message, user_id), app=app)
+                          'user_id: %s' % (error_message, user_id), app=app)
         return response
     else:
         log_error('http_request: Unknown Method type %s ' % method_type, app=app)
