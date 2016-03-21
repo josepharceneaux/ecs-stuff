@@ -1,5 +1,5 @@
 # Standard Imports
-import datetime
+from datetime import datetime
 
 # Third Party
 import pytz
@@ -35,7 +35,7 @@ class DatetimeUtils(object):
             raise InvalidUsage('datetime should be provided in str format '
                                'as 2015-10-08T06:16:00.000Z')
         try:
-            datetime.datetime.strptime(str_datetime, cls.ISO8601_FORMAT)
+            datetime.strptime(str_datetime, cls.ISO8601_FORMAT)
         except ValueError:
             raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
                                'like 2015-10-08T06:16:00.000Z. Given Date is %s' % str_datetime)
@@ -54,7 +54,7 @@ class DatetimeUtils(object):
         """
         if not isinstance(dt, datetime):
             raise InvalidUsage('param should be a datetime object')
-        return dt > datetime.datetime.utcnow().replace(tzinfo=tzutc())
+        return dt > datetime.utcnow().replace(tzinfo=tzutc())
 
     @classmethod
     def is_datetime_in_valid_format_and_in_future(cls, datetime_str):
@@ -98,7 +98,7 @@ class DatetimeUtils(object):
         """
         if not isinstance(datetime_obj, datetime):
             raise InvalidUsage('Given param should be datetime obj')
-        return datetime_obj.datetime.strftime(cls.ISO8601_FORMAT)
+        return datetime_obj.strftime(cls.ISO8601_FORMAT)
 
     @staticmethod
     def utc_isoformat(datetime_obj):
@@ -127,6 +127,6 @@ class DatetimeUtils(object):
     def isoformat_to_datetime(iso8601_datetime_string):
         """
         :param str iso8601_datetime_string: ISO8601 formatted datetime string
-        :rtype: datetime.datetime
+        :rtype: datetime
         """
-        return datetime.datetime.strptime(iso8601_datetime_string, DatetimeUtils.ISO8601_FORMAT)
+        return datetime.strptime(iso8601_datetime_string, DatetimeUtils.ISO8601_FORMAT)
