@@ -3,13 +3,13 @@ from datetime import datetime
 
 # Third Party
 import pytz
+from pytz import timezone
 from dateutil import parser
 from dateutil.tz import tzutc
 from flask import current_app
 from dateutil.parser import parse
 
 # Application Specific
-from pytz import timezone
 from error_handling import InvalidUsage
 from talent_config_manager import TalentConfigKeys
 
