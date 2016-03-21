@@ -25,7 +25,8 @@ class TestClientEmailCampaign(object):
 
     def test_client_email_campaign(self, access_token_first, user_first, talent_pool, client_email_campaign_subject):
         """
-        creates a candidate and then sends an email campaign to them
+        creates a candidate and then sends an email campaign to them. This is the functionality that is implemented
+        by the browser plugins in Gmail.
         via the v1/candidates/client_email_campaign endpoint with all possible values for email_subject to ensure that
         the email campaign is created each time regardless of subject input
         """

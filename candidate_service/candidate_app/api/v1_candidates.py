@@ -1290,6 +1290,8 @@ class CandidateClientEmailCampaignResource(Resource):
 
         candidates_list = body_dict.get('candidates')
         subject = body_dict.get('email_subject')
+        # this is to handle the case if we get an email without subject, so that it does not cause the client email campaign
+        # creation to fail.
         if not subject or subject is None or subject.strip() == '':
             subject = 'No Subject'
         _from = body_dict.get('email_from')
