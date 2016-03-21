@@ -724,7 +724,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     # Make search request with error handling
-
     search_service = _cloud_search_domain_connection()
 
     try:
