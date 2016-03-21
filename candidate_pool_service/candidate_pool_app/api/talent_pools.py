@@ -687,6 +687,9 @@ def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
 
+    if to_date > datetime.utcnow().date():
+        raise InvalidUsage("`to_date` cannot be in future")
+
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
 
