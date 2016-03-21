@@ -52,3 +52,8 @@ def delete_device(request):
 
     request.addfinalizer(tear_down)
     return data
+
+
+@pytest.fixture(params=["", " ", "Test Email", None])
+def client_email_campaign_subject(request):
+    return request.param

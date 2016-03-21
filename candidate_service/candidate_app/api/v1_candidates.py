@@ -1289,7 +1289,9 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        subject = body_dict.get('email_subject', 'No Subject')
+        subject = body_dict.get('email_subject')
+        if not subject or subject is None or subject.strip() == '':
+            subject = 'No Subject'
         _from = body_dict.get('email_from')
         reply_to = body_dict.get('email_reply_to')
         body_html = body_dict.get('email_body_html')
