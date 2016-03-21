@@ -169,7 +169,7 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
-                country_code = military_service.get('country_code') or 'us'
+                country_code = military_service.get('country_code') or 'US'
                 if not is_country_code_valid(country_code):
                     raise InvalidUsage("Country code not recognized: {}".format(country_code))
 

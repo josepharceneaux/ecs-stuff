@@ -121,7 +121,8 @@ def is_country_code_valid(country_code):
     Checks to see if country-code is a valid country code per ISO-3166 standards
     """
     try:
-        pycountry.countries.get(alpha2=country_code)
+        pycountry.countries.get(alpha2=country_code.upper())
     except KeyError:
         return False
+    return True
 

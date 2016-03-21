@@ -46,12 +46,12 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'addresses': [
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
-                        'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country(),
+                        'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country_code(),
                         'is_default': True, 'po_box': None
                     },
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
-                        'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country(),
+                        'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country_code(),
                         'is_default': False, 'po_box': ''
                     }
                 ],
@@ -68,14 +68,14 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
                         'state': fake.state(), 'start_month': 11, 'start_year': 2005, 'is_current': True,
-                        'end_month': 10, 'end_year': 2007, 'country': fake.country(), 'bullets': [
+                        'end_month': 10, 'end_year': 2007, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
                     ]
                     },
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
                         'state': fake.state(), 'start_month': 1, 'start_year': 2008, 'is_current': None,
-                        'end_month': 5, 'end_year': 2012, 'country': fake.country(), 'bullets': [
+                        'end_month': 5, 'end_year': 2012, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
                     ]
                     }
@@ -115,8 +115,8 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     }
                 ],
                 'preferred_locations': [
-                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country()},
-                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country()}
+                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country_code()},
+                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country_code()}
                 ],
                 'skills': [
                     {'name': 'payroll', 'months_used': 15, 'last_used_date': fake.date()},
@@ -418,7 +418,7 @@ def candidate_preferred_locations(talent_pool):
     """
     data = {'candidates': [
         {'preferred_locations': [
-            {'city': fake.city(), 'state': fake.state(), 'country': fake.country()}
+            {'city': fake.city(), 'state': fake.state(), 'country': fake.country_code()}
         ], 'talent_pool_ids': {'add': [talent_pool.id]}}
     ]}
     return data

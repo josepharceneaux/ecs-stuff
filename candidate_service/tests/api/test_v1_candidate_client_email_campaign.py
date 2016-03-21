@@ -15,7 +15,7 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (
-    request_to_candidates_resource,
+    request_to_candidates_resource, response_info,
     request_to_candidate_resource, AddUserRoles
 )
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
@@ -34,6 +34,7 @@ class TestClientEmailCampaign(object):
         # Create a Candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_candidate_response = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_candidate_response)
 
         # Get Candidate via ID
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
