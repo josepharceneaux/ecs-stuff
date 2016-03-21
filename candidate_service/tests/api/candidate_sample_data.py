@@ -5,6 +5,8 @@ This module entails candidate sample data functions for testing
 import random
 from random import randrange
 
+from boltons.iterutils import remap
+
 from candidate_service.common.utils.handy_functions import sample_phone_number
 
 # Faker
@@ -159,10 +161,8 @@ class GenerateCandidateDate(object):
                 ]
             }
         ]}
-        if talent_pool_ids is None:  # Don't need talent_pool_ids when updating candidate
-            del data['candidates'][0]['talent_pool_ids']
-        data = dict((k, v) for k, v in data.iteritems() if v is not None)
-
+        # Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
         return data
 
     @staticmethod

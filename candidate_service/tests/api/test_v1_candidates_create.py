@@ -437,7 +437,6 @@ class TestCreateCandidateAddress(object):
         # Create Candidate with address
         AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateDate.addresses([talent_pool.id])
-        print "data: {}".format(data)
         country_code = data['candidates'][0]['addresses'][0]['country_code']
         create_resp = request_to_candidates_resource(access_token_first, 'post', data)
         print response_info(create_resp)
