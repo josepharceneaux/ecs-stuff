@@ -1093,7 +1093,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
             address_line_2=address.get('address_line_2'),
             city=city,
             state=state,
-            zip_code=address.get('zip_code'),
+            zip_code=zip_code,
             iso3166_country=address.get('country_code'),
             po_box=address.get('po_box'),
             is_default=i == 0 if address_has_default else address.get('is_default'),
