@@ -33,14 +33,14 @@ from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
+from ..datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
-
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
-from validators import (validate_datetime_format, validate_form_data,
+from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
                         raise_if_dict_values_are_not_int_or_long)
@@ -828,7 +828,7 @@ class CampaignBase(object):
             raise InvalidUsage('data_to_schedule must be a dict.')
         frequency = data_to_schedule.get('frequency')
         if not frequency:  # This means it is a one time job
-            validate_datetime_format(data_to_schedule['start_datetime'])
+            DatetimeUtils.validate_datetime_format(data_to_schedule['start_datetime'])
             task = {
                 "task_type": SchedulerUtils.ONE_TIME,
                 "run_datetime": data_to_schedule['start_datetime'],

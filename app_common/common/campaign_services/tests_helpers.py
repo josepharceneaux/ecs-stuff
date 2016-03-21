@@ -13,11 +13,13 @@ import requests
 # Application Specific
 from ..models.db import db
 from ..tests.conftest import fake
+from campaign_utils import get_model
 from ..routes import CandidatePoolApiUrl
+from ..datetime_utils import DatetimeUtils
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
-from campaign_utils import (to_utc_str, get_model)
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
+                                     raise_if_not_instance_of)
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 
@@ -368,7 +370,7 @@ def _assert_invalid_datetime(method, url, token, data, key):
     :return:
     """
     old_value = data[key]
-    data[key] = to_utc_str(datetime.utcnow() - timedelta(hours=10))  # Past datetime
+    data[key] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(hours=10))  # Past datetime
     response = send_request(method, url, token, data)
     CampaignsTestsHelpers.assert_api_response(response)
     data[key] = old_value

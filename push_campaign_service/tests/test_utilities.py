@@ -3,7 +3,7 @@ from faker import Faker
 from requests import codes as HttpStatus
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
-from push_campaign_service.common.utils.handy_functions import to_utc_str
+from push_campaign_service.common.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
                                                            get_fake_dict)
@@ -108,8 +108,8 @@ def generate_campaign_schedule_data():
     end = datetime.utcnow() + timedelta(days=10)
     data = {
         "frequency_id": 2,
-        "start_datetime": to_utc_str(start),
-        "end_datetime": to_utc_str(end)
+        "start_datetime": DatetimeUtils.to_utc_str(start),
+        "end_datetime": DatetimeUtils.to_utc_str(end)
     }
     return data
 

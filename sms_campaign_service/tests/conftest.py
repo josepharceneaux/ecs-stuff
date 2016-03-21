@@ -38,8 +38,9 @@ from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCa
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend)
 # Common Utils
-from sms_campaign_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
-                                                               to_utc_str)
+from sms_campaign_service.common.datetime_utils import DatetimeUtils
+from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+
 
 SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
@@ -53,8 +54,8 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
     return {"frequency_id": Frequency.ONCE,
-            "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
-            "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
+            "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
+            "end_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
 
 
 def remove_any_user_phone_record_with_twilio_test_number():

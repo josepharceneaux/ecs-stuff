@@ -119,19 +119,6 @@ def url_conversion(long_url):
         return None, error_message
 
 
-def to_utc_str(dt):
-    """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
-    :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
 def get_utc_datetime(dt, tz):
     """
     This method takes datetime object and timezone name and returns UTC specific datetime

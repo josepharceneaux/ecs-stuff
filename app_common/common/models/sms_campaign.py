@@ -6,7 +6,7 @@ import datetime
 from db import db
 from sqlalchemy.orm import relationship
 from ..error_handling import InvalidUsage
-from ..datetime_utils import utc_isoformat
+from ..datetime_utils import DatetimeUtils
 
 
 class SmsCampaign(db.Model):
@@ -40,9 +40,9 @@ class SmsCampaign(db.Model):
                        "user_id": self.user_phone.user_id,
                        "name": self.name,
                        "frequency": self.frequency.name if self.frequency else None,
-                       "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
-                       "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
-                       "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
+                       "start_datetime": DatetimeUtils.utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                       "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                       "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
                        "list_ids": [smartlist.id for smartlist in self.smartlists]}
         return return_dict

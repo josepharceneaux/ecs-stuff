@@ -5,7 +5,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 We have CampaignUtils class here which contains following methods:
 
 We also have some functions here like
-    - to_utc_str()
     - unix_time()
     - get_model() etc.
 """
@@ -387,19 +386,6 @@ class CampaignUtils(object):
         if not campaign_obj:
             raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
-
-
-def to_utc_str(dt):
-    """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
-    :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def unix_time(dt):
