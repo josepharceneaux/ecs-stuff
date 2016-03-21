@@ -146,12 +146,12 @@ def get_cloud_search_connection():
 
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
-        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=app.
-                                                                     config[TalentConfigKeys.AWS_KEY],
-                                                                     aws_secret_access_key=app.
-                                                                     config[TalentConfigKeys.AWS_SECRET],
-                                                                     sign_request=True,
-                                                                     region=app.config[TalentConfigKeys.CS_REGION_KEY])
+        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(
+            aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
+            aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET],
+            sign_request=True,
+            region=app.config[TalentConfigKeys.CS_REGION_KEY]
+        )
 
         _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
@@ -689,7 +689,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     # Adding facet fields parameters
 
     if not count_only:
-        params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50}," \
+        params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
