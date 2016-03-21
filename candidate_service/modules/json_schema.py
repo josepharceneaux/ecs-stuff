@@ -235,6 +235,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
+                                },
                                 "po_box": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -422,6 +426,10 @@ candidates_resource_schema_post = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "start_year": {
                                     "type": ["integer", "null"],
@@ -764,6 +772,10 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
+                                },
                                 "po_box": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -826,6 +838,10 @@ candidates_resource_schema_patch = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "is_current": {
                                     "type": ["boolean", "null"]
@@ -960,6 +976,10 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
+                                },
                                 "start_year": {
                                     "type": ["integer", "null"],
                                     "minimum": 1950, "maximum": CURRENT_YEAR
@@ -1010,6 +1030,10 @@ candidates_resource_schema_patch = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "highest_rank": {
                                     "type": ["string", "null"],

@@ -140,17 +140,29 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
 
 class GenerateCandidateDate(object):
     @staticmethod
-    def addresses(talent_pool_ids):
+    def addresses(talent_pool_ids=None, candidate_id=None, address_id=None, is_default=False):
         """
         :type talent_pool_ids:  list[int]
+        :param talent_pool_ids is required for creating candidate, but not for updating
+        :type candidate_id: int | long
         :rtype:  dict[list]
         """
         data = {'candidates': [
-            {'talent_pool_ids': {'add': talent_pool_ids}, 'addresses': [
-                {'address_line_1': fake.street_address(), 'city': fake.city(),
-                 'state': fake.state(), 'zip_code': fake.zipcode(), 'country_code': fake.country_code()}]
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'addresses':
+                [
+                    {
+                        'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
+                        'state': fake.state(), 'zip_code': fake.zipcode(), 'country_code': fake.country_code(),
+                        'is_default': is_default
+                    }
+                ]
             }
         ]}
+        if talent_pool_ids is None:  # Don't need talent_pool_ids when updating candidate
+            del data['candidates'][0]['talent_pool_ids']
+        data = dict((k, v) for k, v in data.iteritems() if v is not None)
+
         return data
 
     @staticmethod
