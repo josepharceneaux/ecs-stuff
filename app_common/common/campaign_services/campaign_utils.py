@@ -5,7 +5,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 We have CampaignUtils class here which contains following methods:
 
 We also have some functions here like
-    - unix_time()
     - get_model() etc.
 """
 
@@ -20,6 +19,7 @@ from flask import current_app
 from ska import (sign_url, Signature)
 
 # Database Models
+
 from ..models.db import db
 from ..models.misc import Activity
 from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
@@ -30,6 +30,7 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 
 # Common Utils
 from ..routes import SchedulerApiUrl
+from .. datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 from .validators import raise_if_dict_values_are_not_int_or_long
@@ -263,7 +264,7 @@ class CampaignUtils(object):
         return sign_url(auth_user='no_user',
                         secret_key=current_app.config[TalentConfigKeys.SECRET_KEY],
                         url=redirect_url,
-                        valid_until=unix_time(end_datetime.replace(tzinfo=tzutc())))
+                        valid_until=DatetimeUtils.unix_time(end_datetime.replace(tzinfo=tzutc())))
 
     @staticmethod
     def if_valid_signed_url(request_args):
@@ -386,19 +387,6 @@ class CampaignUtils(object):
         if not campaign_obj:
             raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
-
-
-def unix_time(dt):
-    """
-    Converts dt(UTC) datetime object to epoch in seconds
-    :param dt:
-    :type dt: datetime
-    :return: returns epoch time in milliseconds.
-    :rtype: long
-    """
-    epoch = datetime(1970, 1, 1, tzinfo=tzutc('UTC'))
-    delta = dt - epoch
-    return delta.total_seconds()
 
 
 def get_model(file_name, model_name, service_name=None):

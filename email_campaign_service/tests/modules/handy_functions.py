@@ -1,13 +1,18 @@
 # Standard Imports
+import email
+import imaplib
 import json
 import time
 import requests
 
 # Application Specific
+from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
+from email_campaign_service.common.models.misc import (Activity,
+                                                       UrlConversion)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
@@ -19,7 +24,7 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
     create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
-from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
 
@@ -191,3 +196,92 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
         actual_email_campaign_fields_set = set(email_campaign_dict.keys())
         assert expected_email_campaign_fields_set == actual_email_campaign_fields_set, \
             "Response's email campaign fields should match the expected email campaign fields"
+
+
+def assert_mail(subject):
+    """
+    Asserts that the user received the email in his inbox which has the subject as subject,
+
+
+    :param subject:       Email subject
+    :return:
+    """
+    time.sleep(30)
+    abort_after = 60
+    start = time.time()
+    mail_found = False
+    mail = imaplib.IMAP4_SSL('imap.gmail.com')
+    mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+    # mail.list()  # Out: list of "folders" aka labels in gmail.
+    print "Check for mail with subject: %s" % subject
+    header_subject = '(HEADER Subject "%s")' % subject
+    # Wait for 10 seconds then start the loop for 60 seconds
+    time.sleep(10)
+    while True:
+        delta = time.time() - start
+        mail.select("inbox")  # connect to inbox.
+        result, data = mail.uid('search', None, header_subject)
+
+        for latest_email_uid in data[0].split():
+            result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+            raw_email = data[0][1]
+
+            email_message = email.message_from_string(raw_email)
+
+            raw_mail_subject_ = ''.join(email_message['Subject'].split())
+            test_subject = ''.join(subject.split())
+            if raw_mail_subject_ == test_subject:
+                mail_found = True
+                break
+
+        if mail_found:
+            break
+
+        if delta >= abort_after:
+            break
+
+    assert mail_found, "Mail with subject %s was not found." % subject
+
+
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):
+    """
+    This assert that campaign has successfully been sent to candidates and campaign blasts and
+    sends have been updated as expected. It then checks the source URL is correctly formed or
+    in database table "url_conversion".
+    """
+    assert response.status_code == 200
+    assert response.json()
+    if not email_client:
+        json_resp = response.json()
+        assert str(campaign.id) in json_resp['message']
+    # Need to add this as processing of POST request runs on Celery
+    time.sleep(30)
+    db.session.commit()
+    assert len(campaign.blasts.all()) == 1
+    campaign_blast = campaign.blasts[0]
+    assert campaign_blast.sends == expected_count
+    # assert on sends
+    campaign_sends = campaign.sends.all()
+    assert len(campaign_sends) == expected_count
+    sends_url_conversions = []
+    # assert on activity of individual campaign sends
+    for campaign_send in campaign_sends:
+        # Get "email_campaign_send_url_conversion" records
+        sends_url_conversions.extend(campaign_send.url_conversions)
+        if not email_client:
+            CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                      Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                                      campaign_send.id)
+    if campaign_sends:
+        # assert on activity for whole campaign send
+        CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                  Activity.MessageIds.CAMPAIGN_SEND,
+                                                  campaign.id)
+
+    # For each url_conversion record we assert that source_url is saved correctly
+    for send_url_conversion in sends_url_conversions:
+        # get URL conversion record from database table 'url_conversion' and delete it
+        # delete url_conversion record
+        assert str(
+            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        UrlConversion.delete(send_url_conversion.url_conversion)

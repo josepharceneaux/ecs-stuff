@@ -4,16 +4,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
     Here we have validators for campaign services.
 
 Functions in this file are
-    - validate_headers()
-    - validate_datetime_format()
-    - is_datetime_in_future()
     - validation_of_data_to_schedule_campaign()
-    - get_valid_json_data()
-    - validate_blast_candidate_url_conversion_in_db() etc.
+    - validate_blast_candidate_url_conversion_in_db()
+    - raise_if_dict_values_are_not_int_or_long etc.
 """
-
-# Standard Imports
-
 # Third Party
 from flask import current_app
 

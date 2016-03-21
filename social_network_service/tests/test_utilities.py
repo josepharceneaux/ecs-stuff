@@ -13,6 +13,7 @@ from pytz import timezone
 from dateutil.parser import parse
 
 # Application Specific
+from social_network_service.common.datetime_utils import DatetimeUtils
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.utilities import unix_time
 from social_network_service.modules.utilities import snake_case_to_camel_case
@@ -20,7 +21,6 @@ from social_network_service.modules.utilities import camel_case_to_title_case
 from social_network_service.modules.utilities import camel_case_to_snake_case
 from social_network_service.modules.utilities import convert_keys_to_snake_case
 from social_network_service.modules.utilities import convert_keys_to_camel_case
-from social_network_service.modules.utilities import get_utc_datetime
 from social_network_service.modules.utilities import import_from_dist_packages
 from social_network_service.modules.utilities import milliseconds_since_epoch
 from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
@@ -137,13 +137,13 @@ def test_get_utc_datetime():
     :return:
     """
     now = datetime(2015, 10, 16, 12, 12, 12)
-    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
+    assert DatetimeUtils.get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
 
     # now = datetime(2015, 10, 16, 11, 11, 11, tzinfo=timezone('Asia/Karachi'))
     now = parse('2015-10-16T11:11:11Z')
     print now
-    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
+    assert DatetimeUtils.get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
 
 

@@ -7,12 +7,9 @@ import re
 import json
 import random
 import string
-from datetime import datetime
 
 # Third Party
-import pytz
 import requests
-from pytz import timezone
 from itertools import izip_longest
 
 from flask import Flask
@@ -117,31 +114,6 @@ def url_conversion(long_url):
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
         return None, error_message
-
-
-def get_utc_datetime(dt, tz):
-    """
-    This method takes datetime object and timezone name and returns UTC specific datetime
-    :Example:
-        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
-        >> timezone = 'Asia/Karachi'
-        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
-    :param dt: datetime object
-    :type dt: datetime
-    :return: timezone specific datetime object
-    :rtype string
-    """
-    assert tz, 'Timezone should not be none'
-    assert isinstance(dt, datetime), 'dt should be datetime object'
-    # get timezone info from given datetime object
-    local_timezone = timezone(tz)
-    try:
-        local_dt = local_timezone.localize(dt, is_dst=None)
-    except ValueError:
-        # datetime object already contains timezone info
-        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    utc_dt = local_dt.astimezone(pytz.utc)
-    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def grouper(iterable, group_size, fillvalue=None):

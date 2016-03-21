@@ -9,6 +9,7 @@ from flask import current_app
 from dateutil.parser import parse
 
 # Application Specific
+from pytz import timezone
 from error_handling import InvalidUsage
 from talent_config_manager import TalentConfigKeys
 
@@ -65,7 +66,6 @@ class DatetimeUtils(object):
         and is_datetime_in_future() functions.
         :param datetime_str:
         :type datetime_str: str
-        :return:
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
         if not cls.is_datetime_in_future(cls.get_datetime_obj_if_str_datetime_in_valid_format(datetime_str)):
@@ -130,3 +130,41 @@ class DatetimeUtils(object):
         :rtype: datetime
         """
         return datetime.strptime(iso8601_datetime_string, DatetimeUtils.ISO8601_FORMAT)
+
+    @staticmethod
+    def unix_time(dt):
+        """
+        Converts dt(UTC) datetime object to epoch in seconds
+        :param dt:
+        :type dt: datetime
+        :return: returns epoch time in milliseconds.
+        :rtype: long
+        """
+        epoch = datetime(1970, 1, 1, tzinfo=tzutc())
+        delta = dt - epoch
+        return delta.total_seconds()
+
+    @staticmethod
+    def get_utc_datetime(dt, tz):
+        """
+        This method takes datetime object and timezone name and returns UTC specific datetime
+        :Example:
+            >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
+            >> timezone = 'Asia/Karachi'
+            >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
+        :param dt: datetime object
+        :type dt: datetime
+        :return: timezone specific datetime object
+        :rtype string
+        """
+        assert tz, 'Timezone should not be none'
+        assert isinstance(dt, datetime), 'dt should be datetime object'
+        # get timezone info from given datetime object
+        local_timezone = timezone(tz)
+        try:
+            local_dt = local_timezone.localize(dt, is_dst=None)
+        except ValueError:
+            # datetime object already contains timezone info
+            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+        utc_dt = local_dt.astimezone(pytz.utc)
+        return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
