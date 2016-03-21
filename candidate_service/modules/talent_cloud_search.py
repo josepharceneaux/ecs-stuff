@@ -787,21 +787,19 @@ def get_faceting_information(facets):
     facet_military_highest_grade = facets.get('military_highest_grade').get('buckets')
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
     facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
+    facet_total_months_experience = facets.get('total_months_experience').get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
 
     if facet_aoi:
-        search_facets_values['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
-                                                                                'name')
+        search_facets_values['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi, 'name')
 
     if facet_source:
-        search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source,
-                                                                      'description')
+        search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
 
     if facet_status:
-        search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status,
-                                                                      'description')
+        search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status, 'description')
 
     if facet_skills:
         search_facets_values['skills'] = get_bucket_facet_value_count(facet_skills)
@@ -813,7 +811,8 @@ def get_faceting_information(facets):
         search_facets_values['organization'] = get_bucket_facet_value_count(facet_organization)
 
     if facet_candidate_engagement_score:
-        search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(facet_candidate_engagement_score)
+        search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(
+            facet_candidate_engagement_score)
 
     if facet_university:
         search_facets_values['school_name'] = get_bucket_facet_value_count(facet_university)
@@ -833,9 +832,13 @@ def get_faceting_information(facets):
     if facet_military_highest_grade:
         search_facets_values['military_highest_grade'] = get_bucket_facet_value_count(facet_military_highest_grade)
 
+    if facet_total_months_experience:
+        search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
+
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
-        search_facets_values['custom_field_id_and_value'] = get_bucket_facet_value_count(facet_custom_field_id_and_value)
+        search_facets_values['custom_field_id_and_value'] = get_bucket_facet_value_count(
+            facet_custom_field_id_and_value)
 
     return search_facets_values
 
