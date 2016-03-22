@@ -7,9 +7,6 @@ from candidate_service.candidate_app import app
 # Conftest
 from candidate_service.common.tests.conftest import *
 
-# Helper functions
-from helpers import *
-
 # Sample data
 from candidate_sample_data import (
     generate_single_candidate_data, candidate_phones, candidate_military_service,
