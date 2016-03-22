@@ -43,13 +43,13 @@ def test_health_check():
 TEST_DATA = dict(
     no_url='Dear candidates, your application has been received',
     with_keywords='Dear candidates, as for http, we will use https. please visit at www',
-    http_url='Dear candidates, please apply at http://www.example.com',
-    https_url='Dear candidates, please apply at https://www.example.com',
-    www_url='Dear candidates, please apply at www.example.com',
+    http_url='Dear candidates, please apply at http://www.gettalent.com"',
+    https_url='Dear candidates, please apply at https://www.gettalent.com"',
+    www_url='Dear candidates, please apply at https://www.gettalent.com"',
     ftp_url='Dear candidates, please download registration form at ftp://mysite.com '
             'or ftps://mysite.com',
-    multiple_urls='Dear candidates, please apply at http://www.example.com or www.example.com '
-                  'or https://www.example.com',
+    multiple_urls='Dear candidates, please apply at http://www.gettalent.com or www.gettalent.com'
+                  'or https://www.gettalent.com"',
     valid_url='https://www.google.com',
     invalid_url=fake.word())
 

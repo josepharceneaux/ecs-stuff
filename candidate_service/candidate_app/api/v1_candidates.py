@@ -51,6 +51,7 @@ from candidate_service.common.models.candidate import (
     CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
+from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -1312,10 +1313,15 @@ class CandidateClientEmailCampaignResource(Resource):
 
         campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
-
+        # In first version, we only have one candidate when sending campaign via email-client.
+        # So, here we are picking first candidate and the id of first talent_pool it is
+        # associated with.
+        talent_pipeline = TalentPipeline.get_by_user_and_talent_pool_id(
+            request.user.id, body_dict.get('candidates')[0]['talent_pool_ids'][0])
         smartlist_object = {
             "name": list_name,
-            "candidate_ids": candidate_ids
+            "candidate_ids": candidate_ids,
+            "talent_pipeline_id": talent_pipeline.id
         }
 
         create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))

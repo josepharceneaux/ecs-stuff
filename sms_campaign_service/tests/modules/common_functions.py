@@ -7,10 +7,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import time
 
 # Common Utils
-from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 

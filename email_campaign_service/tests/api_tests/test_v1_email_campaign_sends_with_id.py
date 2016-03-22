@@ -19,7 +19,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign, 
 
 class TestEmailCampaignSendsWithId(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/sends/:id
+    This class contains tests for endpoint /v1/email-campaigns/:id/sends/:id
     """
     URL = EmailCampaignUrl.SEND_BY_ID
     HTTP_METHOD = 'get'
