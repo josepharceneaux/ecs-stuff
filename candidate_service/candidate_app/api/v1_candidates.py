@@ -19,7 +19,7 @@ from candidate_service.common.models.db import db
 
 # Validators
 from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.validators import is_valid_email
+from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
@@ -70,9 +70,6 @@ from candidate_service.modules.talent_cloud_search import (
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
-)
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
-    create_campaign_from_api, create_campaign_send_from_api
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -173,6 +170,9 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
+                country_code = military_service.get('country_code') or 'US'
+                if not is_country_code_valid(country_code):
+                    raise InvalidUsage("Country code not recognized: {}".format(country_code))
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
