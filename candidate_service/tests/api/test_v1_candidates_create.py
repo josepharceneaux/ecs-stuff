@@ -20,6 +20,7 @@ from candidate_sample_data import (
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 
+# Models
 from candidate_service.common.models.candidate import CandidateEmail
 
 # Custom errors
@@ -27,14 +28,6 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 def test_candidate_creation_postman(access_token_first, user_first, talent_pool, domain_aoi):
-    """
-
-    :param access_token_first:
-    :param user_first:
-    :param talent_pool:
-    :param domain_aoi:
-    :return:
-    """
     AddUserRoles.all_roles(user=user_first)
     data = {
         "candidates": [

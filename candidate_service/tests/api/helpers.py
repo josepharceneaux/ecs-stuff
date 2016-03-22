@@ -126,6 +126,24 @@ def response_info(response):
     return content.format(url, request, status_code, _json)
 
 
+def api_request(access_token, method, url, data=None):
+    """
+    :type access_token:  str
+    :type method:        str
+    :type url:           str
+    :type data:          dict
+    """
+    method = method.lower()
+    assert method in ["get", "post", "patch", "put", "delete"]
+    assert isinstance(url, basestring), "Url must be of type string"
+    request_method = getattr(requests, method)
+    headers = {"Authorization": "Bearer {}".format(access_token)}
+    if data:
+        headers["content-type"] = "application/json"
+
+    return request_method(url=url, headers=headers)
+
+
 def request_to_candidate_search_resource(token, request, data=None):
     """ Function will send a request to candidate search api
     :type token:  str
@@ -144,7 +162,7 @@ def request_to_candidates_resource(access_token, request, data=None):
     :type data: dict
     """
     if request.lower() == 'post':
-        assert data is not None
+        assert data is not None, "Post request to candidate service must include some data"
 
     url = CandidateApiUrl.CANDIDATES
     return define_and_send_request(access_token, request, url, data)
