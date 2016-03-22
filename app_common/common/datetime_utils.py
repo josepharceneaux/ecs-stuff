@@ -12,6 +12,7 @@ from dateutil.parser import parse
 # Application Specific
 from error_handling import InvalidUsage
 from talent_config_manager import TalentConfigKeys
+from utils.handy_functions import raise_if_not_instance_of
 
 
 class DatetimeUtils(object):
@@ -43,19 +44,18 @@ class DatetimeUtils(object):
         return True
 
     @staticmethod
-    def is_datetime_in_future(dt):
+    def is_datetime_in_future(datetime_obj):
         """
         This function validates that given datetime obj has date and time in future by comparing
         with current UTC datetime object.
-        :param dt: datetime obj
-        :type dt: datetime
+        :param datetime_obj: datetime obj
+        :type datetime_obj: datetime
         :exception: Invalid usage
         :return: True if given datetime is ahead of current datetime
         :rtype: bool
         """
-        if not isinstance(dt, datetime):
-            raise InvalidUsage('param should be a datetime object')
-        return dt > datetime.utcnow().replace(tzinfo=tzutc())
+        raise_if_not_instance_of(datetime_obj, datetime)
+        return datetime_obj > datetime.utcnow().replace(tzinfo=tzutc())
 
     @classmethod
     def is_datetime_in_valid_format_and_in_future(cls, datetime_str):
@@ -132,39 +132,41 @@ class DatetimeUtils(object):
         return datetime.strptime(iso8601_datetime_string, DatetimeUtils.ISO8601_FORMAT)
 
     @staticmethod
-    def unix_time(dt):
+    def unix_time(datetime_obj):
         """
-        Converts dt(UTC) datetime object to epoch in seconds
-        :param dt:
-        :type dt: datetime
+        Converts datetime_obj(UTC) datetime object to epoch in seconds
+        :param datetime_obj:
+        :type datetime_obj: datetime
         :return: returns epoch time in milliseconds.
         :rtype: long
         """
         epoch = datetime(1970, 1, 1, tzinfo=tzutc())
-        delta = dt - epoch
+        delta = datetime_obj - epoch
         return delta.total_seconds()
 
     @staticmethod
-    def get_utc_datetime(dt, tz):
+    def get_utc_datetime(datetime_obj, given_timezone):
         """
         This method takes datetime object and timezone name and returns UTC specific datetime
         :Example:
             >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
             >> timezone = 'Asia/Karachi'
             >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
-        :param dt: datetime object
-        :type dt: datetime
+        :param datetime_obj: datetime object
+        :param given_timezone: timezone
+        :type datetime_obj: datetime
+        :type given_timezone: str
         :return: timezone specific datetime object
         :rtype string
         """
-        assert tz, 'Timezone should not be none'
-        assert isinstance(dt, datetime), 'dt should be datetime object'
+        raise_if_not_instance_of(given_timezone, basestring)
+        raise_if_not_instance_of(datetime_obj, datetime)
         # get timezone info from given datetime object
-        local_timezone = timezone(tz)
+        local_timezone = timezone(given_timezone)
         try:
-            local_dt = local_timezone.localize(dt, is_dst=None)
+            local_dt = local_timezone.localize(datetime_obj, is_dst=None)
         except ValueError:
             # datetime object already contains timezone info
-            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            return datetime_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
         utc_dt = local_dt.astimezone(pytz.utc)
         return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
