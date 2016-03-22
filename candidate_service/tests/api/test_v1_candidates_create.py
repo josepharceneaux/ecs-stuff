@@ -7,8 +7,8 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import (
-    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
-)
+    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource,
+    request_to_source_resource)
 # Sample data
 from candidate_sample_data import (
     generate_single_candidate_data, candidate_phones, candidate_military_service,
@@ -958,3 +958,173 @@ def test_create_candidate_social_networks(access_token_first, user_first, talent
     assert isinstance(can_social_networks, list)
     assert can_social_networks[0]['name'] == 'Facebook'
     assert can_social_networks[0]['profile_url'] == can_social_networks_data[0]['profile_url']
+
+
+# ############################ CandidateSource ##################################
+def test_candidate_source_creation(access_token_first, user_first, talent_pool, domain_first):
+    """
+    Create candidate source using candidate service endpoint
+    :param access_token_first:
+    :param user_first:
+    :param talent_pool:
+    :param domain_first:
+    :return:
+    """
+    AddUserRoles.all_roles(user=user_first)
+    data = {
+        "sources": [
+            {
+                'description': 'Meetup event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            }
+        ]
+    }
+
+    create_resp = request_to_source_resource(access_token_first, 'post', data=data)
+
+    assert create_resp.status_code == 201
+
+    source_ids = create_resp.json()['ids']
+
+    delete_resp = request_to_source_resource(access_token=access_token_first,
+                                             request='delete',
+                                             source_id=source_ids[0],
+                                             data=data)
+
+    assert delete_resp.status_code == 200
+
+
+def test_candidate_source_update(access_token_first, user_first, talent_pool, domain_first):
+    """
+    Create candidate source using candidate service endpoint
+    :param access_token_first:
+    :param user_first:
+    :param talent_pool:
+    :param domain_first:
+    :return:
+    """
+    AddUserRoles.all_roles(user=user_first)
+    data = {
+        "sources": [
+            {
+                'description': 'Meetup event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            }
+        ]
+    }
+
+    create_resp = request_to_source_resource(access_token_first, 'post', data=data,
+                                             sources=True)
+
+    assert create_resp.status_code == 201
+
+    source_ids = create_resp.json()['ids']
+
+    data["sources"][0]['id'] = source_ids[0]
+
+    update_resp = request_to_source_resource(access_token=access_token_first,
+                                             request='patch',
+                                             data=data,
+                                             sources=True)
+
+    assert update_resp.status_code == 200
+
+    delete_resp = request_to_source_resource(access_token=access_token_first,
+                                             request='delete',
+                                             source_id=source_ids[0],
+                                             )
+
+    assert delete_resp.status_code == 200
+
+
+def test_multiple_candidate_source_creation(access_token_first, user_first, talent_pool, domain_first):
+    """
+    Create candidate source using candidate service endpoint
+    :param access_token_first:
+    :param user_first:
+    :param talent_pool:
+    :param domain_first:
+    :return:
+    """
+    AddUserRoles.all_roles(user=user_first)
+    data = {
+        "sources": [
+            {
+                'description': 'Meetup event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            },
+            {
+                'description': 'Eventbrite event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            }
+        ]
+    }
+
+    create_resp = request_to_source_resource(access_token_first, 'post', data=data)
+
+    assert create_resp.status_code == 201
+
+    source_ids = create_resp.json()['ids']
+
+    for _id in source_ids:
+        delete_resp = request_to_source_resource(access_token=access_token_first,
+                                                 request='delete',
+                                                 source_id=_id,
+                                                 )
+
+        assert delete_resp.status_code == 200
+
+
+def test_multiple_candidate_source_update(access_token_first, user_first, talent_pool, domain_first):
+    """
+    Create candidate source using candidate service endpoint
+    :param access_token_first:
+    :param user_first:
+    :param talent_pool:
+    :param domain_first:
+    :return:
+    """
+    AddUserRoles.all_roles(user=user_first)
+    data = {
+        "sources": [
+            {
+                'description': 'Meetup event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            },
+            {
+                'description': 'Eventbrite event title description',
+                'notes': 'These are event notes',
+                'domain_id': domain_first.id
+            }
+        ]
+    }
+
+    create_resp = request_to_source_resource(access_token_first, 'post', data=data,
+                                             sources=True)
+
+    assert create_resp.status_code == 201
+
+    source_ids = create_resp.json()['ids']
+
+    data["sources"][0]['id'] = source_ids[0]
+    data["sources"][1]['id'] = source_ids[1]
+
+    update_resp = request_to_source_resource(access_token=access_token_first,
+                                             request='patch',
+                                             data=data,
+                                             sources=True)
+
+    assert update_resp.status_code == 200
+
+    for _id in source_ids:
+        delete_resp = request_to_source_resource(access_token=access_token_first,
+                                                 request='delete',
+                                                 source_id=_id,
+                                                 )
+
+        assert delete_resp.status_code == 200

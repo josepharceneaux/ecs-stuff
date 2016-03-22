@@ -311,6 +311,7 @@ class CandidateApiWords(object):
     PHOTOS = "/photos"
     DEVICES = '/devices'
     NOTES = "/notes"
+    SOURCES = '/sources'
 
 
 class CandidateApi(object):
@@ -379,6 +380,9 @@ class CandidateApi(object):
 
     WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
     CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
+
+    SOURCES = CANDIDATES + CandidateApiWords.SOURCES
+    SOURCE = CANDIDATES + CandidateApiWords.SOURCES + '/<int:source_id>'
 
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
     CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
@@ -459,6 +463,9 @@ class CandidateApiUrl(object):
     NOTES = CANDIDATE + CandidateApiWords.NOTES
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+
+    SOURCES = CANDIDATES + CandidateApiWords.SOURCES
+    SOURCE = CANDIDATES + CandidateApiWords.SOURCES + '/%s'
 
 
 class WidgetApi(object):

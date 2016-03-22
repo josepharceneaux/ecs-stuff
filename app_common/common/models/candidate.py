@@ -176,6 +176,17 @@ class CandidateSource(db.Model):
             )
         ).first()
 
+    @classmethod
+    def get_by_description_and_notes_domain_id(cls, source_name, source_description, domain_id):
+        assert source_description and source_name
+        return cls.query.filter(
+            and_(
+                cls.description == source_name,
+                cls.notes == source_description,
+                cls.domain_id == domain_id
+            )
+        ).first()
+
 
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'

@@ -1160,3 +1160,51 @@ notes_schema = {
         }
     }
 }
+
+
+resource_schema_source_post = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["sources"],
+    "properties": {
+        "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["domain_id", "description"],
+                # "additionalProperties": False,
+                "properties": {
+                    "domain_id": {"type": "integer"},
+                    "description": {"type": "string"},
+                    "notes": {"type": ["string", "null"]}
+                }
+            }
+        }
+    }
+}
+
+resource_schema_source_update = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["sources"],
+    "properties": {
+        "sources": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "required": ["id"],
+                # "additionalProperties": False,
+                "properties": {
+                    "id": {"type": "integer"},
+                    "domain_id": {"type": "integer"},
+                    "description": {"type": "string"},
+                    "notes": {"type": ["string", "null"]}
+                }
+            }
+        }
+    }
+}

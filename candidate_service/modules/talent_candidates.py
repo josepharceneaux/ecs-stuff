@@ -21,8 +21,8 @@ from candidate_service.common.models.candidate import (
     CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField,
     CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
-)
+    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment,
+    CandidateSource)
 from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
@@ -33,6 +33,7 @@ from candidate_service.common.models.misc import (Country, AreaOfInterest)
 from candidate_service.common.models.user import User
 
 # Modules
+from candidate_service.common.utils.models_utils import get_by_id
 from track_changes import (
     _track_candidate_photo_edits, _track_candidate_address_edits, _track_custom_field_edits,
     _track_candidate_edits, _track_education_degree_bullet_edits, _track_education_degree_edits,
@@ -2067,3 +2068,48 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     candidate.total_months_experience += total_months_experience
     return
+
+
+def add_or_update_sources(data):
+    """
+    Add entry in candidate source table whose id is referenced to Candidate Table column source_id (Foreign Key)
+    :param data: Data of candidate source in dict
+    :return:
+    """
+    return_source_ids = []
+    for source in data['sources']:
+        # If id is present in dictionary, assume that it is an update request
+        candidate_source_id = source.get('id')
+        if candidate_source_id:
+            candidate_source = CandidateSource.query.filter(CandidateSource.id == int(candidate_source_id))\
+                .first()
+
+            # If candidate source is present then simply update data
+            if candidate_source:
+                candidate_source.updated_datetime = datetime.datetime.utcnow()
+                if source.get('description'):
+                    candidate_source.description = source.get('description')
+                if source.get('notes'):
+                    candidate_source.notes = source.get('notes')
+                if source.get('domain_id'):
+                    candidate_source.domain_id = int(source.get('domain_id'))
+
+                db.session.commit()
+                return_source_ids.append(candidate_source.id)
+            else:
+                return_source_ids.append(candidate_source.id)
+        else:
+            candidate_source = CandidateSource.get_by_description_and_notes_domain_id(source['description'],
+                                                                                      source['notes'],
+                                                                                      source['domain_id'])
+            # If candidate_source is not found then add record in db otherwise silently bypass
+            if not candidate_source:
+                candidate_source = CandidateSource(**source)
+                db.session.add(candidate_source)
+                db.session.commit()
+                return_source_ids.append(candidate_source.id)
+            else:
+                return_source_ids.append(candidate_source.id)
+
+    return return_source_ids
+

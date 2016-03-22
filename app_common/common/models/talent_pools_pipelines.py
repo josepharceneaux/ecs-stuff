@@ -32,6 +32,15 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @classmethod
+    def get_by_user_id(cls, user_id):
+        """
+        Filter first record using user_id
+        :param user_id:
+        :return:
+        """
+        return cls.query.filter_by(user_id=user_id)
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

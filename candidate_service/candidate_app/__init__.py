@@ -36,8 +36,8 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
         CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource
-    )
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource,
+        CandidateSourceResource)
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
     from candidate_service.common.talent_api import TalentApi
@@ -272,6 +272,10 @@ try:
 
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
+
+    # ******* CandidateSourceResource ***********
+    api.add_resource(CandidateSourceResource, CandidateApi.SOURCES, endpoint='candidate_sources')
+    api.add_resource(CandidateSourceResource, CandidateApi.SOURCE, endpoint='candidate_source')
 
     db.create_all()
     db.session.commit()

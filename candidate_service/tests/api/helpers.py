@@ -422,6 +422,20 @@ def req_to_notes_resource(token, request, candidate_id=None, data=None):
     return define_and_send_request(token, request, url, data)
 
 
+def request_to_source_resource(access_token, request, sources=False, source_id='', data=None):
+    """
+    Function sends a request to CandidateSourceResource
+    If sources is True, the request will hit /sources endpoint.
+    :param request: delete
+    """
+    if sources:
+        url = CandidateApiUrl.SOURCES
+    else:
+        url = CandidateApiUrl.SOURCE % source_id
+
+    return define_and_send_request(access_token, request, url, data=data)
+
+
 def check_for_id(_dict):
     """
     Checks for id-key in candidate_dict and all its nested objects that must have an id-key

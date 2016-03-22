@@ -18,7 +18,7 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.models.db import db
 
 # Validators
-from candidate_service.common.utils.models_utils import to_json
+from candidate_service.common.utils.models_utils import to_json, get_by_id
 from candidate_service.common.utils.validators import is_valid_email
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
@@ -27,8 +27,8 @@ from candidate_service.modules.validators import (
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema
-)
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema,
+    resource_schema_source_post, resource_schema_source_update)
 from candidate_service.common.datetime_utils import isoformat_to_mysql_datetime
 from jsonschema import validate, FormatChecker, ValidationError
 
@@ -48,8 +48,8 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
-)
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment,
+    CandidateSource)
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
@@ -60,8 +60,8 @@ from candidate_service.modules.talent_candidates import (
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
-    fetch_aggregated_candidate_views, update_total_months_experience
-)
+    fetch_aggregated_candidate_views, update_total_months_experience,
+    add_or_update_sources)
 from candidate_service.modules.api_calls import create_smartlist
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
@@ -1889,3 +1889,79 @@ class CandidateNotesResource(Resource):
             {'id': note.id, 'candidate_id': note.candidate_id,
              'comment': note.comment, 'added_time': str(note.added_time)
         } for note in CandidateTextComment.get_by_candidate_id(candidate_id)]}
+
+
+class CandidateSourceResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/sources
+        Function will add candidate source to db
+        """
+        # Validate request body
+        body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_source_post, format_checker=FormatChecker())
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
+
+        returned_source_ids = add_or_update_sources(body_dict)
+
+        return dict(ids=returned_source_ids), 201
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, source_id, **kwargs):
+        """
+        Endpoints:
+           i.  GET /v1/candidates/sources/:source_id
+        Function will return candidate source information
+        :param source_id: id of candidate source
+        """
+        candidate_source = db.session.query(CandidateSource).filter(CandidateSource.id == int(source_id)).first()
+
+        if not candidate_source:
+            raise NotFoundError(error_message="Candidate with id %s not found" % source_id)
+
+        data = dict(description=candidate_source.description,
+                    notes=candidate_source.notes,
+                    domain_id=candidate_source.domain_id,
+                    updated_time=candidate_source.updated_time)
+
+        return data, 200
+
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        """
+        Endpoint:  PATCH /v1/candidates/sources
+        Function will update candidate source in db using id
+        :param source_id: candidate source id
+        """
+        # Validate request body
+        body_dict = get_json_if_exist(_request=request)
+        try:
+            validate(instance=body_dict, schema=resource_schema_source_update, format_checker=FormatChecker())
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e),
+                               error_code=custom_error.INVALID_INPUT)
+
+        returned_source_ids = add_or_update_sources(body_dict)
+
+        return dict(ids=returned_source_ids), 200
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, source_id, **kwargs):
+        """
+        Endpoints:
+             i.  DELETE /v1/candidates/sources/:source_id
+        Function will delete candidate's photo(s) from database
+        :param source_id: candidate source id
+        """
+        candidate_source = db.session.query(CandidateSource).filter(CandidateSource.id == int(source_id)).first()
+        if not candidate_source:
+            raise NotFoundError(error_message="Candidate with id %s not found" % source_id)
+        candidate_id = candidate_source.id
+        db.session.query(CandidateSource).delete()
+        return dict(message="Candidate with id %s is successfully deleted." % candidate_id), 200

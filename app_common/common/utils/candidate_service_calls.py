@@ -59,7 +59,7 @@ def update_candidates_on_cloudsearch(access_token, candidate_ids):
                                   % (response.status_code, response.json()))
 
 
-def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids_only=False, user_id=None):
+def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids_only=False, secret_key_id=None):
     """
     Function sends a request to CandidateResource/post()
     Call candidate api using oauth token or user_id
@@ -67,29 +67,29 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     :param oauth_token: Oauth token, if None, then create a secret X-Talent-Key oauth token (JWT)
     :param data: Candidates object data to create candidate
     :param return_candidate_ids_only: If true it will only return the created candidate ids
+    :param secret_key_id: secret_key_id generated against user_id using JWT
     else it will return the created candidate response json object
     Returns: list of created candidate ids
     # """
 
-    if not oauth_token and not user_id:
-        raise InvalidUsage(error_message="Call to candidate service should be made either with user oauth or JWT oauth."
-                                         "oauth_token and user_id cannot be None at same time.")
+    if not oauth_token and not secret_key_id:
+        raise InternalServerError(
+            error_message="Call to candidate service should be made either with user oauth or JWT oauth."
+                          "oauth_token and secret_key_id both cannot be None.")
 
     headers = dict()
-    if not oauth_token and user_id:
-        secret_key_id, oauth_token = User.generate_jw_token(user_id=user_id)
-        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
-        headers.update({'Authorization': oauth_token})
-    else:
+    if not oauth_token and secret_key_id:
+        raise InternalServerError(
+            error_message="create_candidates_from_api: oauth_token and secret_key_id cannot be null at the same time")
+    elif oauth_token:
         headers.update({'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token})
-
+    if secret_key_id:
+        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
     headers.update({'content-type': 'application/json'})
 
     resp = requests.post(
             url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
-                                                                                  % oauth_token,
-                     'content-type': 'application/json'},
+            headers=headers,
             data=json.dumps(data)
     )
     assert resp.status_code == 201

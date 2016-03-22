@@ -11,14 +11,19 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.rsvp import RSVP
+from social_network_service.common.models.talent_pools_pipelines import TalentPool
 from social_network_service.common.models.user import User
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
+from social_network_service.common.routes import CandidateApiUrl
+from social_network_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
+from social_network_service.common.utils.handy_functions import generate_jwt_headers, http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
 
@@ -449,21 +454,23 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
-        entry_in_db = CandidateSource.get_by_description_and_notes(
-            attendee.event.title,
-            attendee.event.description)
 
         data = {'description': attendee.event.title,
                 'notes': attendee.event.description[:495] if attendee.event.description else None,
                 # field is 500 chars
                 'domain_id': self.user.domain_id}
-        if entry_in_db:
-            entry_in_db.update(**data)
-            entry_id = entry_in_db.id
-        else:
-            entry = CandidateSource(**data)
-            CandidateSource.save(entry)
-            entry_id = entry.id
+
+        headers = generate_jwt_headers(user_id=attendee.gt_user_id,
+                                       content_type='application/json')
+
+        data = dict(sources=[data])
+        response = http_request('post',
+                                url=CandidateApiUrl.SOURCES,
+                                headers=headers,
+                                data=json.dumps(data)
+                                )
+
+        entry_id = response.json()['ids'][0]
         attendee.candidate_source_id = entry_id
         return attendee
 
@@ -494,7 +501,6 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
-        # TODO - May be need to use candidate_service here to save data in db
         newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
@@ -503,32 +509,56 @@ class RSVPBase(object):
                 attendee.gt_user_id,
                 attendee.candidate_source_id,
                 attendee.source_product_id)
+
+        talent_pools = TalentPool.get_by_user_id(attendee.gt_user_id)
+        talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
+
+        if not talent_pool_ids:
+            raise InternalServerError("save_attendee_as_candidate: user doesn't have any talent_pool")
+
+        # Create data dictionary
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
-                'user_id': attendee.gt_user_id,
-                'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
-                'source_product_id': attendee.source_product_id}
+                'talent_pool_ids': dict(add=talent_pool_ids)
+                }
+
+        social_network_data = {
+                         'name': attendee.full_name,
+                         'profile_url': attendee.social_profile_url
+                        }
+
+        # Update if already exist
         if candidate_in_db:
-            candidate_in_db.update(**data)
             candidate_id = candidate_in_db.id
-        else:
-            candidate = Candidate(**data)
-            Candidate.save(candidate)
-            candidate_id = candidate.id
+            data = dict(candidates=[data])
+
+            # Get candidate social network if already exist
+            candidate_social_network_in_db = \
+                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
+                                    candidate_id, attendee.social_network_id)
+            if candidate_social_network_in_db:
+                social_network_data.update({'id': candidate_social_network_in_db.id})
+
+        if attendee.email:
+            data.update({'emails': [{'address': attendee.email,
+                                     'label': 'Primary',
+                                     'is_default': True}]})
+
+        # Update social network data to be sent with candidate
+        data.update({'social_networks': [social_network_data]})
+
+        # Generate JWT header and send request to candidate service for candidate creation/modification
+        headers = generate_jwt_headers(user_id=attendee.gt_user_id)
+        response = create_candidates_from_candidate_api(headers['Authorization'],
+                                                        data=data,
+                                                        return_candidate_ids_only=True,
+                                                        secret_key_id=headers['X-Talent-Secret-Key-ID'])
+
+        # Get created candidate id
+        candidate_id = response[0]
         attendee.candidate_id = candidate_id
-        # Creating entry in CandidateSocialNetwork Table
-        candidate_social_network_in_db = \
-            CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                candidate_id, attendee.social_network_id)
-        data = {'candidate_id': attendee.candidate_id,
-                'social_network_id': attendee.social_network_id,
-                'social_profile_url': attendee.social_profile_url}
-        if candidate_social_network_in_db:
-            candidate_social_network_in_db.update(**data)
-        else:
-            candidate_data = CandidateSocialNetwork(**data)
-            CandidateSocialNetwork.save(candidate_data)
+
         return attendee
 
     @staticmethod
