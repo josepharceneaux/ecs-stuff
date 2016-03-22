@@ -159,7 +159,7 @@ class TestCreateCampaign(object):
     Here are the tests for creating a campaign from endpoint /v1/email-campaigns
     """
 
-    def test_create_email_campaign(self, access_token_first, talent_pool,
+    def test_create_email_campaign(self, access_token_first, talent_pipeline,
                                    assign_roles_to_user_first):
         name = fake.name()
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
@@ -168,7 +168,7 @@ class TestCreateCampaign(object):
         body_text = fake.sentence()
         body_html = "<html><body><h1>%s</h1></body></html>" % body_text
         smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
-                                                                      talent_pool)
+                                                                      talent_pipeline)
         data = {
             "name": name,
             "subject": subject,
@@ -196,7 +196,7 @@ class TestCreateCampaign(object):
         delete_campaign(resp_object['campaign'])
 
     def test_create_email_campaign_whitespace_campaign_name(self, assign_roles_to_user_first,
-                                                            access_token_first, talent_pool):
+                                                            access_token_first, talent_pipeline):
         name = '       '
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
@@ -205,7 +205,7 @@ class TestCreateCampaign(object):
         body_text = fake.sentence()
         body_html = "<html><body><h1>%s</h1></body></html>" % body_text
         smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
-                                                                      talent_pool)
+                                                                      talent_pipeline)
         data = {'name': name,
                 'subject': subject,
                 'from': email_from,
@@ -254,7 +254,7 @@ class TestSendCampaign(object):
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
                                               email_campaign_of_user_first,
-                                              assign_roles_to_user_first):
+                                              assign_roles_to_user_first, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get invalid usage error.
@@ -263,7 +263,7 @@ class TestSendCampaign(object):
         with app.app_context():
             CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
-                email_campaign_of_user_first)
+                email_campaign_of_user_first, talent_pipeline.id)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):

@@ -146,6 +146,7 @@ def validate_is_digit(key, value):
 def validate_is_number(key, value):
     if not is_number(value):
         raise InvalidUsage("`%s` should be a numeric value" % key, 400)
+    return value
 
 
 def validate_id_list(key, values):
@@ -193,7 +194,7 @@ def validate_fields(key, value):
     try:
         fields = ','.join([RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH[field] for field in fields])
     except KeyError:
-        raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name", error_code=400)
+        raise InvalidUsage(error_message="Field name `%s` is not correct `return field` name" % fields, error_code=400)
     return fields
 
 
@@ -276,7 +277,7 @@ def is_backward_compatible(key):
 
         if key == 'username':
             key = 'user_ids'
-        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+        elif key == 'area_of_interest_id':
             key = 'area_of_interest_ids'
         elif key == 'status' or key == 'source':
             key += '_ids'

@@ -5,6 +5,7 @@ they hit this endpoint with an email body
 """
 
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.models.email_campaign import EmailClient
 
 # this import is not used per se but without it, the test throws an app context error
 # Candidate Service app instance
@@ -23,7 +24,7 @@ from candidate_service.tests.api.candidate_sample_data import generate_single_ca
 
 class TestClientEmailCampaign(object):
 
-    def test_client_email_campaign(self, access_token_first, user_first, talent_pool):
+    def test_client_email_campaign(self, access_token_first, user_first, talent_pipeline):
         """
         creates a candidate and then sends an email campaign to them
         via the v1/candidates/client_email_campaign endpoint
@@ -32,12 +33,14 @@ class TestClientEmailCampaign(object):
         AddUserRoles.all_roles(user=user_first)
 
         # Create a Candidate
-        data = generate_single_candidate_data([talent_pool.id])
-        create_candidate_response = request_to_candidates_resource(access_token_first, 'post', data)
+        data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
+        create_candidate_response = request_to_candidates_resource(access_token_first,
+                                                                   'post', data)
 
         # Get Candidate via ID
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
-        get_candidate_response = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        get_candidate_response = request_to_candidate_resource(access_token_first,
+                                                               'get', candidate_id)
 
         # create POST request body
         candidate = get_candidate_response.json()['candidate']
@@ -48,7 +51,7 @@ class TestClientEmailCampaign(object):
             'email_reply_to': 'amir@gettalent.com',
             'email_body_html': '<html><body>Email Body</body></html>',
             'email_body_text': 'Plaintext part of email goes here, if any',
-            'email_client_id': 101
+            'email_client_id': EmailClient.get_id_by_name('Browser')
          }
 
         # send the post request to /v1/candidates/client-email-campaign
