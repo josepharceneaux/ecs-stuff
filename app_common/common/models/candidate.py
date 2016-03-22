@@ -53,7 +53,7 @@ class Candidate(db.Model):
     license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan', passive_deletes=True)
     military_services = relationship('CandidateMilitaryService', cascade='all, delete-orphan', passive_deletes=True)
     patent_histories = relationship('CandidatePatentHistory', cascade='all, delete-orphan', passive_deletes=True)
-    phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True)
+    phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
     photos = relationship('CandidatePhoto', cascade='all, delete-orphan', passive_deletes=True)
     publications = relationship('CandidatePublication', cascade='all, delete-orphan', passive_deletes=True)
     preferred_locations = relationship('CandidatePreferredLocation', cascade='all, delete-orphan', passive_deletes=True)

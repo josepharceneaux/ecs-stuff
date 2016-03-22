@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns/:id/sends of email-campaign API.
+    This module contains pyTests for endpoint /v1/email-campaigns/:id/sends of email-campaign API.
 """
 # Third Party
 import requests
@@ -14,7 +14,7 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 class TestEmailCampaignSends(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/sends/:id/sends
+    This class contains tests for endpoint /v1/email-campaigns/:id/sends/:id/sends
     """
     URL = EmailCampaignUrl.SENDS
     HTTP_METHOD = 'get'

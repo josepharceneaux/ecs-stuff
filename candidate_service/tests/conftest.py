@@ -57,12 +57,7 @@ def delete_device(request):
 @pytest.fixture(params=["", " ", "Test Email", None])
 def client_email_campaign_subject(request):
     """
-    This fixture is used to return to us the possible values that can be set as the email subject in the POST request.
-    :param request:
-    :return:
-    """
-    """
-    :param request:
-    :return:
+    This fixture is used to return to us the possible values that can be set as
+     the email subject in the POST request.
     """
     return request.param

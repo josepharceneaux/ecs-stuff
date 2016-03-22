@@ -2,11 +2,9 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 
 __author__ = 'ufarooqi'
 
-import json
 from flask import Blueprint
 from dateutil import parser
 from sqlalchemy import and_
-from datetime import datetime, timedelta
 from flask_restful import Resource
 from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
