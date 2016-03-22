@@ -72,7 +72,8 @@ class TestSendSmsCampaign(object):
             self.URL % sms_campaign_of_current_user.id, access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
-                                              sms_campaign_of_current_user):
+                                              sms_campaign_of_current_user,
+                                              talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should result in invalid usage error.
@@ -82,7 +83,7 @@ class TestSendSmsCampaign(object):
         with app.app_context():
             CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % sms_campaign_of_current_user.id, access_token_first,
-                sms_campaign_of_current_user)
+                sms_campaign_of_current_user, talent_pipeline.id)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
