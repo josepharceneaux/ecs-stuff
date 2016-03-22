@@ -102,7 +102,8 @@ def get_email_template(template_id):
     return jsonify({'template': {'body_html': template.body_html, 'id': template_id}})
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates/<int:template_id>', methods=['PUT'])
+@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates/<int:template_id>',
+                          methods=['PATCH'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE)
 def update_email_template(template_id):

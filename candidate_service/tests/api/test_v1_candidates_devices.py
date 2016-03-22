@@ -18,7 +18,8 @@ from candidate_service.candidate_app import app, logger
 from candidate_service.common.test_config_manager import load_test_config
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.tests.api.helpers import define_and_send_request, AddUserRoles
+from candidate_service.tests.api.helpers import AddUserRoles
+from candidate_service.common.utils.handy_functions import define_and_send_request
 
 test_config = load_test_config()
 PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']

@@ -458,3 +458,24 @@ def get_valid_json_data(req):
     if not data:
         raise InvalidUsage('No data provided.')
     return data
+
+
+def define_and_send_request(access_token, request, url, data=None):
+    """
+    Function will define request based on params and make the appropriate call.
+    :param request_method:  can only be GET, POST, PUT, PATCH, or DELETE
+    :param url: url for request
+    :param access_token: token for authentication
+    :param data: data in form of dictionary
+    """
+
+    request = request.lower()
+    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    method = getattr(requests, request)
+    if data is None:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    else:
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      data=json.dumps(data))
+

@@ -13,7 +13,8 @@ from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 raise_if_not_instance_of)
+                                                                 raise_if_not_instance_of,
+                                                                 define_and_send_request)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
@@ -205,21 +206,6 @@ def post_to_email_template_resource(access_token, data):
     return response
 
 
-def define_and_send_request(request_method, url, access_token, data=None):
-    """
-    Function will define request based on params and make the appropriate call.
-    :param request_method:  can only be GET, POST, PUT, PATCH, or DELETE
-    :param url: url for request
-    :param access_token: token for authentication
-    :param data: data in form of dictionary
-    """
-    request_method = request_method.lower()
-    assert request_method in ['get', 'put', 'patch', 'delete']
-    method = getattr(requests, request_method)
-    return method(url=url, data=json.dumps(data), headers={'Authorization': 'Bearer %s' % access_token,
-                                                           'Content-type': 'application/json'})
-
-
 def request_to_email_template_resource(access_token, request, email_template_id, data=None):
     """
     Function sends a request to email template resource
@@ -229,7 +215,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param data: data in form of dictionary
     """
     url = EmailCampaignUrl.TEMPLATES + '/' + str(email_template_id)
-    return define_and_send_request(request, url, access_token, data)
+    return define_and_send_request(access_token, request, url, data)
 
 
 def get_template_folder(token):
@@ -305,16 +291,13 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     return create_resp
 
 
-def add_email_template(user_auth, template_owner, template_body):
+def add_email_template(token, template_owner, template_body):
     """
     This function will create email template
     """
-    # Get access token
-    auth_token = user_auth.get_auth_token(template_owner, get_bearer_token=True)
-    token = auth_token['access_token']
     domain_id = template_owner.domain_id
 
-    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to sample_user
+    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to template_owner
     add_role_to_test_user(template_owner, [DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE,
                                            DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
 

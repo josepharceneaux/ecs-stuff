@@ -236,11 +236,9 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
 
 
 @pytest.fixture()
-def template_id(sample_user, domain_id):
+def template_id(domain_id):
     """
     Retrieves email template for the test email campaign
-
-    :param sample_user:
     :return:    Id of template retrieved
     """
     # Retrieve campaign template from 'Sample Templates' folder

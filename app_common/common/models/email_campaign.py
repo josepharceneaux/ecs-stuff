@@ -228,6 +228,10 @@ class UserEmailTemplate(db.Model):
 
     @classmethod
     def get_by_id(cls, template_id):
+        """
+        :type template_id:  int | long
+        :return: UserEmailTemplate
+        """
         return cls.query.get(template_id)
 
     @classmethod
@@ -252,6 +256,10 @@ class EmailTemplateFolder(db.Model):
 
     @classmethod
     def get_by_id(cls, folder_id):
+        """
+        :type folder_id:  int | long
+        :return: EmailTemplateFolder
+        """
         return cls.query.get(folder_id)
 
     @classmethod
