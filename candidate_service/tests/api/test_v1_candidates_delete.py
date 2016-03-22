@@ -254,130 +254,122 @@ class TestDeleteCandidateAddress(object):
         assert len(can_dict_after_update['addresses']) == 0
 
 
-####################### CandidateAreaOfInterest ########################
-def test_non_logged_in_user_delete_can_aoi():
-    """
-    Test:   Delete candidate's aoi without logging in
-    Expect: 401
-    """
-    # Delete Candidate's areas of interest
-    resp = request_to_candidate_aoi_resource(None, 'delete', 5, True)
-    print response_info(resp)
-    assert resp.status_code == 401
+class TestDeleteCandidateAOI(object):
+    def test_non_logged_in_user_delete_can_aoi(self):
+        """
+        Test:   Delete candidate's aoi without logging in
+        Expect: 401
+        """
+        # Delete Candidate's areas of interest
+        resp = send_request('delete', CandidateApiUrl.AOIS % 5, access_token_first)
+        print response_info(resp)
+        assert resp.status_code == 401
 
+    def test_delete_candidate_aoi_with_bad_input(self):
+        """
+        Test:   Attempt to delete candidate aoi with non integer values for candidate_id & aoi_id
+        Expect: 404
+        """
+        # Delete Candidate's areas of interest
+        resp = request_to_candidate_aoi_resource(None, 'delete', candidate_id='x', all_aois=True)
+        print response_info(resp)
+        assert resp.status_code == 404
 
-def test_delete_candidate_aoi_with_bad_input():
-    """
-    Test:   Attempt to delete candidate aoi with non integer values for candidate_id & aoi_id
-    Expect: 404
-    """
-    # Delete Candidate's areas of interest
-    resp = request_to_candidate_aoi_resource(None, 'delete', candidate_id='x', all_aois=True)
-    print response_info(resp)
-    assert resp.status_code == 404
+        # Delete Candidate's area of interest
+        resp = request_to_candidate_aoi_resource(None, 'delete', candidate_id=5, aoi_id='x')
+        print response_info(resp)
+        assert resp.status_code == 404
 
-    # Delete Candidate's area of interest
-    resp = request_to_candidate_aoi_resource(None, 'delete', candidate_id=5, aoi_id='x')
-    print response_info(resp)
-    assert resp.status_code == 404
+    def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(
+            self, access_token_first, user_first, talent_pool, user_second, access_token_second):
+        """
+        Test:   Attempt to delete the aois of a Candidate that belongs to a user in a diff domain
+        Expect: 204
+        """
+        AddUserRoles.add(user=user_first)
+        AddUserRoles.delete(user=user_second)
 
+        # Create candidate_1 & candidate_2 with user_first & user_first_2
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data)
+        candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
-def test_delete_can_aoi_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                talent_pool, user_second,
-                                                                access_token_second):
-    """
-    Test:   Attempt to delete the aois of a Candidate that belongs to a user in a diff domain
-    Expect: 204
-    """
-    AddUserRoles.add(user=user_first)
-    AddUserRoles.delete(user=user_second)
+        # Delete candidate_1's areas of interest with user_first_2 logged in
+        updated_resp = request_to_candidate_aoi_resource(access_token_second, 'delete',
+                                                         candidate_1_id, all_aois=True)
+        print response_info(updated_resp)
+        assert updated_resp.status_code == 403
+        assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    # Create candidate_1 & candidate_2 with user_first & user_first_2
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp_1 = request_to_candidates_resource(access_token_first, 'post', data)
-    candidate_1_id = create_resp_1.json()['candidates'][0]['id']
+    def test_delete_candidate_aoi_with_no_id(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to delete Candidate's aoi without providing area_of_interest_id
+        Expect: 404
+        """
+        # Remove one of Candidate's areas of interest without an id
+        candidate_id = 5 # This is arbitrary since a 404 is expected
+        updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id)
+        print response_info(updated_resp)
+        assert updated_resp.status_code == 404
 
-    # Delete candidate_1's areas of interest with user_first_2 logged in
-    updated_resp = request_to_candidate_aoi_resource(access_token_second, 'delete',
-                                                     candidate_1_id, all_aois=True)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 403
-    assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
+    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+        """
+        Test:   Remove all of candidate's aois from db
+        Expect: 204, Candidate should not have any aois left
+        """
+        # Create Candidate
+        AddUserRoles.all_roles(user=user_first)
+        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
+        # Retrieve Candidate's aois
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        can_aois = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']['areas_of_interest']
 
-def test_delete_candidate_aoi_with_no_id(access_token_first, user_first, talent_pool):
-    """
-    Test:   Attempt to delete Candidate's aoi without providing area_of_interest_id
-    Expect: 404
-    """
-    # Remove one of Candidate's areas of interest without an id
-    candidate_id = 5 # This is arbitrary since a 404 is expected
-    updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id)
-    print response_info(updated_resp)
-    assert updated_resp.status_code == 404
+        # Remove all of Candidate's areas of interest
+        updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id, True)
+        print response_info(updated_resp)
 
+        # Retrieve Candidate after update
+        can_dict_after_update = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
 
-def test_delete_all_of_candidates_areas_of_interest(access_token_first, user_first,
-                                                    talent_pool, domain_aoi):
-    """
-    Test:   Remove all of candidate's aois from db
-    Expect: 204, Candidate should not have any aois left
-    """
-    # Create Candidate
-    AddUserRoles.all_roles(user=user_first)
-    data = generate_single_candidate_data([talent_pool.id], domain_aoi)
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        assert updated_resp.status_code == 204
+        assert len(can_dict_after_update['areas_of_interest']) == 0
+        assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
+        assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
-    # Retrieve Candidate's aois
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    can_aois = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']['areas_of_interest']
+    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+        """
+        Test:   Remove Candidate's area of interest from db
+        Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
+        """
+        # Create Candidate
+        AddUserRoles.all_roles(user_first)
+        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
-    # Remove all of Candidate's areas of interest
-    updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id, True)
-    print response_info(updated_resp)
+        # Retrieve Candidate areas of interest
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        can_aois = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
+            json()['candidate']['areas_of_interest']
 
-    # Retrieve Candidate after update
-    can_dict_after_update = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
+        # Current number of Candidate's areas of interest
+        candidate_aois_count = len(can_aois)
 
-    assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['areas_of_interest']) == 0
-    assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
-    assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
+        # Remove one of Candidate's area of interest
+        updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id,
+                                                         aoi_id=can_aois[0]['id'])
+        print response_info(updated_resp)
 
+        # Retrieve Candidate after update
+        can_dict_after_update = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']
 
-def test_delete_can_area_of_interest(access_token_first, user_first, talent_pool, domain_aoi):
-    """
-    Test:   Remove Candidate's area of interest from db
-    Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
-    """
-    AddUserRoles.all_roles(user=user_first)
-
-    # Create Candidate
-    data = generate_single_candidate_data([talent_pool.id], domain_aoi)
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-
-    # Retrieve Candidate areas of interest
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    can_aois = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
-        json()['candidate']['areas_of_interest']
-
-    # Current number of Candidate's areas of interest
-    candidate_aois_count = len(can_aois)
-
-    # Remove one of Candidate's area of interest
-    updated_resp = request_to_candidate_aoi_resource(access_token_first, 'delete', candidate_id,
-                                                     aoi_id=can_aois[0]['id'])
-    print response_info(updated_resp)
-
-    # Retrieve Candidate after update
-    can_dict_after_update = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
-
-    assert updated_resp.status_code == 204
-    assert len(can_dict_after_update['areas_of_interest']) == candidate_aois_count - 1
-    assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
-    assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
+        assert updated_resp.status_code == 204
+        assert len(can_dict_after_update['areas_of_interest']) == candidate_aois_count - 1
+        assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
+        assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
 
 ######################## CandidateCustomFields ########################
