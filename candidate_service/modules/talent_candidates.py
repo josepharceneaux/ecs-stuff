@@ -1461,7 +1461,6 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             state=work_experience.get('state'),
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
-            # country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
             iso3166_country=work_experience.get('country_code'),
             start_month=work_experience.get('start_month') or 1,
             end_year=end_year,
@@ -1749,7 +1748,6 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
-            # country_id=Country.country_id_from_name_or_code(military_service.get('country')),
             iso3166_country=military_service.get('country_code'),
             service_status=military_service.get('status'),
             highest_rank=military_service.get('highest_rank'),

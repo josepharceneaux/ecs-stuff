@@ -27,9 +27,9 @@ def get_language(language_code=None):
         return 'English'
 
     try:
-        foo = pc.languages.get(iso639_1_code=language_code.lower())
-        language = foo.name
+        language = pc.languages.get(iso639_1_code=language_code.lower())
+        language_name = language.name
     except KeyError:
         return {'error': 'Language code not recognized: {}'.format(language_code)}
 
-    return language
+    return language_name
