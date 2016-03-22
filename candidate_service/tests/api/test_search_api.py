@@ -13,7 +13,6 @@ from candidate_service.tests.api.helpers import (
     response_info, AddUserRoles, request_to_candidate_search_resource
 )
 # Standard libraries
-import random
 import datetime
 import uuid
 import time
