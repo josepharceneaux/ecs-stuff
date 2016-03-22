@@ -179,14 +179,17 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user" by calling super constructor and "user_phone" by
         calling get_user_phone() method,
-        :return:
+        :param user_id: Id of logged-in user
+        :param campaign_id: Id of campaign object in database
+        :type user_id: int | long
+        :type campaign_id: int | long | None
         """
         # sets the user_id
-        super(SmsCampaignBase, self).__init__(user_id)
+        super(SmsCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.user_phone = self.get_user_phone()
         if not self.user_phone:
             raise ForbiddenError('User(id:%s) has no phone number' % self.user.id)
@@ -353,7 +356,7 @@ class SmsCampaignBase(CampaignBase):
             4- task_id (Task created on APScheduler)
         Finally we return the "task_id".
 
-        - This method is called from the endpoint /v1/campaigns/:id/schedule on HTTP
+        - This method is called from the endpoint /v1/sms-campaigns/:id/schedule on HTTP
             methods POST/PUT
 
         :param data_to_schedule: required data to schedule an SMS campaign
@@ -421,7 +424,7 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: send_campaign_to_candidate() method in SmsCampaignBase class.
         """
         raise_if_not_instance_of(candidate, Candidate)
-        candidate_phones = candidate.candidate_phone
+        candidate_phones = candidate.phones
         mobile_label_id = PhoneLabel.phone_label_id_from_phone_label(MOBILE_PHONE_LABEL)
 
         # filter only mobile numbers
@@ -611,7 +614,7 @@ class SmsCampaignBase(CampaignBase):
                 2- Create a URL (using id of url_conversion record created in step 1) to redirect
                     candidate to our app and save that as source_url
                     (for the same database record we created in step 1). This source_url looks like
-                     http://127.0.0.1:8011/v1/campaigns/1/redirect/1?candidate_id=1
+                     http://127.0.0.1:8012/v1/redirect/1
                 3- Convert the source_url into shortened URL using Google's shorten URL API.
                 4- Replace the link in original body text with the shortened URL
                     (which we created in step 2)
@@ -653,7 +656,7 @@ class SmsCampaignBase(CampaignBase):
             redirect_url = str(app_redirect_url % url_conversion_id)
             # sign the redirect URL
             long_url = CampaignUtils.sign_redirect_url(redirect_url,
-                                                       datetime.now() + relativedelta(years=+1))
+                                                       datetime.utcnow() + relativedelta(years=+1))
             # long_url looks like (for prod)
             # http://sms-campaing-service.gettalent.com/v1/redirect/1052?valid_until=1453990099.0
             #           &auth_user=no_user&extra=&signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D
