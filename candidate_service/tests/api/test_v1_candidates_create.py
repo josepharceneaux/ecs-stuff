@@ -9,11 +9,12 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from helpers import (response_info, AddUserRoles, get_country_code_from_name)
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.test_utils import send_request
 
 # Sample data
 from candidate_sample_data import (
-    GenerateCandidateDate,
-    generate_single_candidate_data, candidate_phones, candidate_military_service,
+    GenerateCandidateDate, generate_single_candidate_data, candidate_phones, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 
@@ -23,13 +24,9 @@ from candidate_service.common.models.candidate import CandidateEmail
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
-# Urls
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import send_request
-
 
 def test_candidate_creation_postman(access_token_first, user_first, talent_pool, domain_aoi):
-    AddUserRoles.all_roles(user=user_first)
+    AddUserRoles.all_roles(user_first)
     data = {
         "candidates": [
             {"first_name": "James", "middle_name": "Earl", "last_name": "Jones",
@@ -268,7 +265,7 @@ class TestCreateHiddenCandidate(object):
         assert len(candidate.emails) == candidate_emails_count
 
     def test_create_hidden_candidate_with_different_user_from_same_domain(
-            self, access_token_first, user_first, access_token_same, user_same_domain, talent_pool):
+            self, access_token_first, user_first, user_same_domain, talent_pool):
         """
         Test: Create a candidate that was previously web-hidden with a different
               user from the same domain
@@ -981,55 +978,55 @@ class TestCreatePreferredLocation(object):
         assert can_preferred_locations[0]['state'] == can_preferred_locations_data[0]['state']
 
 
-######################## CandidateSkills ########################
-def test_create_candidate_skills(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidateSkill for Candidate
-    Expect: 201
-    """
-    # Create Candidate
-    AddUserRoles.add_and_get(user=user_first)
-    data = candidate_skills(talent_pool)
-    create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+class TestCreateSkills(object):
+    def test_create_candidate_skills(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidateSkill for Candidate
+        Expect: 201
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user_first)
+        data = candidate_skills(talent_pool)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_dict = get_resp.json()['candidate']
 
-    # Assert data sent in = data retrieved
-    can_skills = candidate_dict['skills']
-    can_skills_data = data['candidates'][0]['skills'][0]
-    assert isinstance(can_skills, list)
-    assert can_skills[0]['name'] == can_skills_data['name']
-    assert can_skills[0]['months_used'] == can_skills_data['months_used']
-    assert can_skills[0]['name'] == can_skills_data['name']
-    assert can_skills[0]['months_used'] == can_skills_data['months_used']
+        # Assert data sent in = data retrieved
+        can_skills = candidate_dict['skills']
+        can_skills_data = data['candidates'][0]['skills'][0]
+        assert isinstance(can_skills, list)
+        assert can_skills[0]['name'] == can_skills_data['name']
+        assert can_skills[0]['months_used'] == can_skills_data['months_used']
+        assert can_skills[0]['name'] == can_skills_data['name']
+        assert can_skills[0]['months_used'] == can_skills_data['months_used']
 
 
-######################## CandidateSocialNetworks ########################
-def test_create_candidate_social_networks(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidateSocialNetwork for Candidate
-    Expect: 201
-    """
-    # Create Candidate
-    AddUserRoles.add_and_get(user=user_first)
-    data = candidate_social_network(talent_pool)
-    create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+class TestCreateSocialNetworks(object):
+    def test_create_candidate_social_networks(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidateSocialNetwork for Candidate
+        Expect: 201
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user=user_first)
+        data = candidate_social_network(talent_pool)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_dict = get_resp.json()['candidate']
 
-    # Assert data sent in = data retrieved
-    can_social_networks = candidate_dict['social_networks']
-    can_social_networks_data = data['candidates'][0]['social_networks']
-    assert isinstance(can_social_networks, list)
-    assert can_social_networks[0]['name'] == 'Facebook'
-    assert can_social_networks[0]['profile_url'] == can_social_networks_data[0]['profile_url']
+        # Assert data sent in = data retrieved
+        can_social_networks = candidate_dict['social_networks']
+        can_social_networks_data = data['candidates'][0]['social_networks']
+        assert isinstance(can_social_networks, list)
+        assert can_social_networks[0]['name'] == 'Facebook'
+        assert can_social_networks[0]['profile_url'] == can_social_networks_data[0]['profile_url']
