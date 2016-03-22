@@ -151,12 +151,12 @@ def to_fix_test_search_source(user_first, access_token_first):
 
 def test_search_candidate_experience(user_first, access_token_first):
     """Test to search candidates with experience"""
-    AddUserRoles.add_and_get(user=user_first)
+    AddUserRoles.add_and_get(user_first)
     user_id = user_first.id
-    experience_2_years = {'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013, 'start_month': 06,
-                          'end_year': 2015, 'end_month': '06'}
-    experience_0_years = {'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015, 'start_month': 01,
-                          'end_year': 2015, 'end_month': 02, 'is_current': True}
+    experience_2_years = {'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013,
+                          'start_month': 06, 'end_year': 2015, 'end_month': 06}
+    experience_0_years = {'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015,
+                          'start_month': 01, 'end_year': 2015, 'end_month': 02, 'is_current': True}
     candidate_ids = []
     candidate_with_0_years_exp = populate_candidates(count=3, owner_user_id=user_id,
                                                      candidate_experience_dict=experience_0_years)

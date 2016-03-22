@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import json
 import decimal
 import requests
-from flask import request
+from sqlalchemy import Date, cast
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
@@ -84,7 +84,7 @@ def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
             return response.get('total_found')
     else:
         return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
-                                               SmartlistCandidate.added_time <= datetime.strptime(to_date, '%m/%d/%Y')).count()
+                                               cast(SmartlistCandidate.added_time, Date) <= datetime.strptime(to_date, '%m/%d/%Y').date()).count()
 
 
 def get_candidates_from_search_api(query_string, headers):
@@ -175,7 +175,7 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
         if date_string not in pools_growth_stats_dict:
             b = TalentPoolCandidate.query.filter(
                     TalentPoolCandidate.talent_pool_id == talent_pool.id,
-                    TalentPoolCandidate.added_time <= date_object).all()
+                    cast(TalentPoolCandidate.added_time, Date) <= date_object).all()
             pools_growth_stats_dict[date_string] = len(b)
 
         return pools_growth_stats_dict[date_string]
@@ -247,6 +247,7 @@ def update_talent_pool_stats():
                 get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool')
                 logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for TalentPool %s is not successful because: "
                                  "%s" % (talent_pool_tuple[0], e.message))
 
@@ -265,6 +266,7 @@ def update_talent_pipeline_stats():
                 get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]), 'TalentPipeline')
                 logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for TalentPipeline %s is not successful because: "
                                  "%s" % (talent_pipeline_tuple[0], e.message))
 
@@ -283,6 +285,7 @@ def update_smartlist_stats():
                 get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList')
                 logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
             except Exception as e:
+                db.session.rollback()
                 logger.exception("Update statistics for SmartList %s is not successful because: "
                                  "%s" % (smartlist_tuple[0], e.message))
 
@@ -343,6 +346,9 @@ def get_stats_generic_function(container_object, container_name, user=None, from
 
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
+
+    if to_date > datetime.utcnow().date():
+        raise InvalidUsage("`to_date` cannot be in future")
 
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)

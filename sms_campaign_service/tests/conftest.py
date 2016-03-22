@@ -18,7 +18,7 @@ from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain,
-     user_same_domain, user_second, access_token_second)
+     user_same_domain, user_second, access_token_second, talent_pipeline, talent_pool)
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl

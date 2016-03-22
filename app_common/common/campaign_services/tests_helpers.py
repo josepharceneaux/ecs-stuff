@@ -177,14 +177,15 @@ class CampaignsTestsHelpers(object):
         assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
-    def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign):
+    def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign,
+                                                  talent_pipeline_id):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get invalid usage error.
         Custom error should be NoCandidateAssociatedWithSmartlist .
-        :return:
         """
-        smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token)
+        smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token,
+                                                                          talent_pipeline_id)
         campaign_type = campaign.__tablename__
         #  Need to do this because cannot make changes until prod is stable
         campaign_smartlist_model = get_model(campaign_type,
@@ -252,14 +253,15 @@ class FixtureHelpers(object):
     This contains the functions which will be useful for similar fixtures across campaigns
     """
     @classmethod
-    def create_smartlist_with_search_params(cls, access_token):
+    def create_smartlist_with_search_params(cls, access_token, talent_pipeline_id):
         """
         This creates a smartlist with search params and returns the id of smartlist
         """
         name = fake.word()
         search_params = {"maximum_years_experience": "5", "location": "San Jose, CA",
                          "minimum_years_experience": "2"}
-        data = {'name': name, 'search_params': search_params}
+        data = {'name': name, 'search_params': search_params,
+                'talent_pipeline_id': talent_pipeline_id}
         response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, access_token, data)
         assert response.status_code == 201  # Successfully created
         json_resp = response.json()
