@@ -24,7 +24,7 @@ class SmsCampaign(db.Model):
 
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
-                          passive_deletes=True, backref='campaign')
+                          passive_deletes=True, lazy='dynamic', backref='campaign')
     smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
@@ -66,9 +66,9 @@ class SmsCampaignBlast(db.Model):
 
     # Relationships
     blast_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
-                               passive_deletes=True, backref='blast')
+                               passive_deletes=True, lazy='dynamic', backref='blast')
     blast_replies = relationship('SmsCampaignReply', cascade='all,delete-orphan',
-                                 passive_deletes=True, backref='blast')
+                                 passive_deletes=True, lazy='dynamic', backref='blast')
 
     def __repr__(self):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)

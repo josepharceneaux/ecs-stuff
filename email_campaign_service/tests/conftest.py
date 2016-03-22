@@ -1,14 +1,17 @@
+
 __author__ = 'basit'
 
 import re
 
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign, send_campaign)
+                                                                  delete_campaign)
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 @pytest.fixture()
@@ -183,7 +186,9 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     else:
         sleep_time = 30
     # send campaign
-    send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+                                        campaign_with_valid_candidate,
+                                        access_token_first, sleep_time=sleep_time)
     return campaign_with_valid_candidate
 
 
@@ -200,7 +205,8 @@ def sent_campaign_bulk(request, campaign_with_ten_candidates,
     else:
         sleep_time = 15
     # send campaign
-    send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND, campaign_with_ten_candidates,
+                                        access_token_first, sleep_time=sleep_time)
     return campaign_with_ten_candidates
 
 
@@ -215,7 +221,8 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     """
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-    response = send_campaign(campaign_with_valid_candidate, access_token_first)
+    response = CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND, campaign_with_valid_candidate,
+                                                   access_token_first)
     json_response = response.json()
     assert 'email_campaign_sends' in json_response
     email_campaign_sends = json_response['email_campaign_sends'][0]

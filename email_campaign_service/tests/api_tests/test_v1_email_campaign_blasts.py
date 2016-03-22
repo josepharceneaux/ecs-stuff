@@ -15,7 +15,6 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import send_campaign
 
 
 class TestEmailCampaignBlasts(object):
@@ -79,8 +78,9 @@ class TestEmailCampaignBlasts(object):
 
         # sending campaign 10 times to create 10 blast objects
         for _ in xrange(1, 10):
-            send_campaign(sent_campaign, access_token_first)
-
+            CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+                                                sent_campaign, access_token_first)
+        db.session.commit()
         #  Test GET blasts of email campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -88,7 +88,6 @@ class TestEmailCampaignBlasts(object):
         json_resp = response.json()[self.ENTITY]
         # pick 4th blast object and assert valid response
         received_blast_obj = json_resp[3]
-        db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[3].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == 2
@@ -101,7 +100,6 @@ class TestEmailCampaignBlasts(object):
         # pick second blast object and assert valid response
         # pick first blast object from the response. it will be 5th blast object
         received_blast_obj = json_resp[0]
-        db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[4].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == 2
@@ -113,7 +111,6 @@ class TestEmailCampaignBlasts(object):
         json_resp = response.json()[self.ENTITY]
         # pick second blast object from the response. it will be 10th blast object
         received_blast_obj = json_resp[1]
-        db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[9].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == 2

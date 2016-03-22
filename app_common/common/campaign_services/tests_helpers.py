@@ -4,6 +4,7 @@ This module contains tests code that is common across services. e.g SMS and Push
 __author__ = 'basit'
 
 # Standard Imports
+import time
 import json
 from datetime import datetime, timedelta
 
@@ -17,7 +18,8 @@ from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
 from campaign_utils import (to_utc_str, get_model)
-from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
+                                     raise_if_not_instance_of)
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 
@@ -245,6 +247,27 @@ class CampaignsTestsHelpers(object):
             else:
                 assert json_response[entity]
 
+    @staticmethod
+    def send_campaign(url, campaign, access_token, sleep_time=20):
+        """
+        This function sends the campaign via /v1/email-campaigns/:id/send or
+        /v1/sms-campaigns/:id/send depending on campaign type.
+        sleep_time is set to be 20s here. One can modify this by passing required value.
+        :param url: URL to hit for sending given campaign
+        :param campaign: Email campaign obj
+        :param access_token: Auth token to make HTTP request
+        :param sleep_time: time in seconds to wait for the task to be run on Celery.
+        """
+        assert campaign, 'Invalid campaign object'
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(url, basestring)
+        # send campaign
+        response = send_request('post', url % campaign.id, access_token)
+        assert response.ok
+        time.sleep(sleep_time)
+        # db.session.commit()
+        return response
+
 
 class FixtureHelpers(object):
     """
@@ -433,3 +456,4 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     """
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]
+

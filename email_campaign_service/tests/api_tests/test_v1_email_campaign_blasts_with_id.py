@@ -7,9 +7,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Third Party
 import requests
 
-# Service Specific
-from email_campaign_service.tests.modules.handy_functions import send_campaign
-
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
 from email_campaign_service.common.routes import EmailCampaignUrl
@@ -70,7 +67,9 @@ class TestEmailCampaignBlastsWithId(object):
         Here we assume that requested blast_id is associated with such a campaign which does not
         belong to domain of logged-in user. It should result in Forbidden error.
         """
-        send_campaign(email_campaign_in_other_domain, access_token_other)
+        CampaignsTestsHelpers.send_campaign(EmailCampaignUrl,
+                                            email_campaign_in_other_domain,
+                                            access_token_other)
         blast_id = email_campaign_in_other_domain.blasts[0].id
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD,
