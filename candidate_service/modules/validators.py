@@ -215,7 +215,7 @@ def convert_date(key, value):
 SEARCH_INPUT_AND_VALIDATIONS = {
     "sort_by": 'sorting',
     "limit": 'digit',
-    "page": 'digit',
+    "page": 'string_list',
     "query": '',
     # Facets
     "date_from": 'date_range',

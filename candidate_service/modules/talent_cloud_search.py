@@ -11,12 +11,13 @@ from copy import deepcopy
 from datetime import datetime
 from flask import request
 from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.talent_config_manager import TalentConfigKeys
-from candidate_service.common.error_handling import InternalServerError
+from candidate_service.common.error_handling import InternalServerError, InvalidUsage
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
@@ -93,6 +94,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
+    'resume_text':                   dict(IndexFieldType='text',            TextArrayOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'custom_field_id_and_value':     dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'candidate_rating_id_and_value': dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -366,6 +368,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
+            resume_text = ''
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
@@ -384,6 +387,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         # If int-array, turn all values to ints
                         sql_value_array = [int(field_value) for field_value in sql_value_array]
                     field_name_to_sql_value[field_name] = sql_value_array
+
+                if 'text' in index_field_type:
+                    if isinstance(field_name_to_sql_value[field_name], (list, set, tuple)):
+                        resume_text += ' '.join(field_name_to_sql_value[field_name])
+                    else:
+                        resume_text += field_name_to_sql_value[field_name]
+
+            field_name_to_sql_value['resume_text'] = resume_text
 
             # Add the required values we didn't get from DB
             if not domain_id:
@@ -650,8 +661,16 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     sort = sort % (sort_field, sort_order.lower())
 
-    page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
-    offset = (page - 1) * search_limit if search_limit else 0
+    cursor, offset = None, None
+    page = request_vars.get('page', 1)
+    if is_number(page):
+        page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
+        offset = (page - 1) * search_limit if search_limit else 0
+        if page * search_limit > 10000:
+            logger.error("Pagination is only supported for first 10,000 candidates")
+            raise InvalidUsage("Pagination is only supported for first 10,000 candidates")
+    else:
+        cursor = page
 
     if count_only:
         search_limit = 0
@@ -674,8 +693,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    params = dict(query=search_query, sort=sort, start=offset, size=search_limit)
-    params['query_parser'] = 'lucene'
+    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene')
+    if offset:
+        params['start'] = offset
+    else:
+        params['cursor'] = cursor
 
     params['filter_query'] = filter_query
 
@@ -761,6 +783,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     search_results['max_score'] = max_score
     search_results['max_pages'] = max_pages
     search_results['facets'] = facets
+    if 'cursor' in results['hits']:
+        search_results['cursor'] = results['hits']['cursor']
     # for values in search_results['candidates']:
     #     if 'email' in values:
     #         values['email'] = {"address": values['email']}
@@ -1199,7 +1223,10 @@ def _get_max_score(params, search_service):
     # Limit search to one result, we only want max_score which is top most row when sorted with above criteria
     params['size'] = 1
     params['ret'] = "_score"
-    params['start'] = 0
+    if 'start' in params:
+        params['start'] = 0
+    else:
+        params['cursor'] = 'initial'
     params.pop("facet", None)
     single_result = search_service.search(**params)
     single_hit = single_result['hits']['hit']
