@@ -133,13 +133,14 @@ def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     return "Could not find any smartlist in your domain"
 
 
-def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access_token=None):
+def save_smartlist(user_id, name, talent_pipeline_id, search_params=None, candidate_ids=None, access_token=None):
     """
     Creates a smart or dumb list.
 
     :param user_id: list owner
     :param name: name of list
     :param search_params:
+    :param talent_pipeline_id:
     :param candidate_ids: only set if you want to create a dumb list
     :type candidate_ids: list[long|int] | None
     * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
@@ -152,7 +153,7 @@ def save_smartlist(user_id, name, search_params=None, candidate_ids=None, access
 
     smartlist = Smartlist(name=name,
                           user_id=user_id,
-                          search_params=search_params)
+                          search_params=search_params, talent_pipeline_id=talent_pipeline_id)
     db.session.add(smartlist)
     db.session.commit()
 

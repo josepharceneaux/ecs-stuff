@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns/:id/schedule of SMS Campaign API.
+    This module contains pyTests for endpoint /v1/sms-campaigns/:id/schedule of SMS Campaign API.
 """
 # Standard Imports
 import json
@@ -20,7 +20,7 @@ from sms_campaign_service.common.campaign_services.tests_helpers import Campaign
 
 class TestSmsCampaignScheduleHTTPPOST(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/schedule.
+    This class contains tests for endpoint /v1/sms-campaigns/:id/schedule.
     """
     HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.SCHEDULE
@@ -193,7 +193,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
 
 class TestSmsCampaignScheduleHTTPPUT(object):
     """
-    This class contains tests for /v1/campaigns/:id/schedule HTTP PUT method.
+    This class contains tests for /v1/sms-campaigns/:id/schedule HTTP PUT method.
     """
     HTTP_METHOD = 'put'
     URL = SmsCampaignApiUrl.SCHEDULE
@@ -312,7 +312,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
 
 class TestSmsCampaignScheduleHTTPDELETE(object):
     """
-    This class contains tests for /v1/campaigns/:id/schedule HTTP DELETE method.
+    This class contains tests for /v1/sms-campaigns/:id/schedule HTTP DELETE method.
     """
     HTTP_METHOD = 'delete'
     URL = SmsCampaignApiUrl.SCHEDULE

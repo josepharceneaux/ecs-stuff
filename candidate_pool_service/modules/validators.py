@@ -3,6 +3,7 @@ from sqlalchemy import and_
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_pool_service.common.error_handling import InvalidUsage, ForbiddenError
 __author__ = 'jitesh'
 
@@ -28,6 +29,8 @@ def validate_and_format_smartlist_post_data(data, user):
     smartlist_name = data.get('name')
     candidate_ids = data.get('candidate_ids')  # comma separated ids
     search_params = data.get('search_params')
+    talent_pipeline_id = data.get('talent_pipeline_id')
+
     if not smartlist_name or not smartlist_name.strip():
         raise InvalidUsage(error_message="Missing input: `name` is required for creating list")
     # any of the parameters "search_params" or "candidate_ids" should be present
@@ -41,10 +44,17 @@ def validate_and_format_smartlist_post_data(data, user):
         # validate if search_params in valid dict format.
         if not isinstance(search_params, dict):
             raise InvalidUsage("`search_params` should in dictionary format.")
+
+    talent_pipeline = TalentPipeline.query.get(talent_pipeline_id) if talent_pipeline_id else None
+
+    if not talent_pipeline:
+        raise InvalidUsage("Valid talent-pipeline-id is required to create new smartlist")
+
     smartlist_name = smartlist_name.strip()
     formatted_request_data = {'name': smartlist_name,
                               'candidate_ids': None,
-                              'search_params': None}
+                              'search_params': None,
+                              'talent_pipeline_id': talent_pipeline.id}
     if candidate_ids:
         if not isinstance(candidate_ids, list):
             raise InvalidUsage("`candidate_ids` should be in list format.")

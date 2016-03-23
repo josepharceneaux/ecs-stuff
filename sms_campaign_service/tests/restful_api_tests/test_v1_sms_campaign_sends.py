@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns/:id/sends of
+    This module contains pyTests for endpoint /v1/sms-campaigns/:id/sends of
     SMS Campaign API.
 """
 # Third Party

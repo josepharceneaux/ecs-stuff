@@ -122,7 +122,7 @@ def app_context(request):
 
 def test_auth_service(app_context):
     headers = {'content-type': 'application/x-www-form-urlencoded'}
-    params = {'client_id': app_context.client_id, 'client_secret': app_context.client_secret, 'grant_type': 'password'}
+    params = {'grant_type': 'password', 'client_id': app_context.client_id, 'client_secret': app_context.client_secret}
 
     # Fetch Bearer Token
     app_context.access_token, refresh_token, status_code = app_context.token_handler(params, headers)

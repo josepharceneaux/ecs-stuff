@@ -1,6 +1,7 @@
 """Various misc validators"""
 import re
 import phonenumbers
+import pycountry
 from ..error_handling import InvalidUsage
 
 
@@ -113,3 +114,15 @@ def parse_openweb_date(openweb_date):
         date_obj = None
 
     return date_obj
+
+
+def is_country_code_valid(country_code):
+    """
+    Checks to see if country-code is a valid country code per ISO-3166 standards
+    """
+    try:
+        pycountry.countries.get(alpha2=country_code.upper())
+    except KeyError:
+        return False
+    return True
+

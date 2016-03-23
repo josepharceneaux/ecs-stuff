@@ -4,12 +4,19 @@ Helper functions for tests written for the candidate_service
 # Standard library
 import requests
 import json
+
+# Third party
+import pycountry as pc
+
 # Models
 from candidate_service.common.models.user import DomainRole
+
 # Candidate REST urls
 from candidate_service.common.routes import CandidateApiUrl
+
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
+
 
 __all__ = [
     'AddUserRoles',
@@ -529,3 +536,14 @@ def remove_id_key(_dict):
                         for i in range(0, len(dictionary[_key])):
                             remove_id_key(_dict=dictionary[_key][i])  # recurse
     return _dict
+
+
+def get_country_code_from_name(country_name):
+    """
+    Example: 'United States' = 'US'
+    """
+    try:
+        country = pc.countries.get(name=country_name)
+    except KeyError:
+        return
+    return country.alpha2

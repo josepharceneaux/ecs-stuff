@@ -497,6 +497,30 @@ def talent_pipeline(request, user_first, talent_pool):
 
 
 @pytest.fixture()
+def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
+    search_params = {
+        "skills": "Python",
+        "minimum_years_experience": "4",
+        "location": "California"
+    }
+    talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
+                                     date_needed=datetime.utcnow().isoformat(sep=' '),
+                                     user_id=user_from_diff_domain.id,
+                                     talent_pool_id=talent_pool_other.id, search_params=json.dumps(search_params))
+    db.session.add(talent_pipeline)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pipeline)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pipeline
+
+
+@pytest.fixture()
 def candidate_first(request, user_first):
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)

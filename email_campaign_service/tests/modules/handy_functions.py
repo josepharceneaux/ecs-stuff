@@ -54,14 +54,14 @@ def assign_roles(user):
                                  DomainRole.Roles.CAN_GET_CANDIDATES])
 
 
-def create_email_campaign_smartlist(access_token, talent_pool, campaign,
+def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
                                     emails_list=True, count=1):
     """
     This associates smartlist ids with given campaign
     """
     # create candidate
     smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
-                                                                  talent_pool,
+                                                                  talent_pipeline,
                                                                   emails_list=emails_list,
                                                                   count=count)
 
@@ -70,17 +70,19 @@ def create_email_campaign_smartlist(access_token, talent_pool, campaign,
     return campaign, smartlist_id
 
 
-def create_smartlist_with_candidate(access_token, talent_pool, emails_list=True, count=1):
+def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1):
     """
     This creates candidate(s) as specified by the count,  and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
     """
     # create candidate
-    data = FakeCandidatesData.create(talent_pool=talent_pool, emails_list=emails_list, count=count)
+    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                     emails_list=emails_list, count=count)
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
     smartlist_data = {'name': fake.word(),
-                      'candidate_ids': candidate_ids}
+                      'candidate_ids': candidate_ids,
+                      'talent_pipeline_id': talent_pipeline.id}
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     return smartlist_id, candidate_ids
@@ -175,8 +177,10 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
     talent_pipeline and then asserts if we get an OK response.
     :param list[str] fields:  List of fields each EmailCampaign should have.  If None, will assert on all fields.
     """
+    params = {'fields': ','.join(fields)} if fields else {}
     response = requests.get(
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
+        params=params,
         headers={'Authorization': 'Bearer %s' % access_token})
     assert response.status_code == 200
     resp = response.json()
