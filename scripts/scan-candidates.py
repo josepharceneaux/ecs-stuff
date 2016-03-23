@@ -30,7 +30,7 @@ POOL_ID_NAME = 'talent_pool_id'
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Scan database for inconsistencies between candidates and talent pools.\nSupply password if --stage or --prod.')
+    parser = argparse.ArgumentParser(description="Scan database for inconsistencies between candidates and talent pools.\nSupply password if --stage or --prod.")
     parser.add_argument('--stage', nargs=1)
     parser.add_argument('--prod', nargs=1)
     args = parser.parse_args()
@@ -58,9 +58,11 @@ if __name__ == "__main__":
     results = connection.execute('select * from talent_pool_candidate')
     candidate_talent_pools = set()
     talent_pool_candidates = []
+    talent_pool_candidate_ids = set()
     for row in results:
         talent_pool_candidates.append(row.id)
         candidate_talent_pools.add(row.talent_pool_id)
+        talent_pool_candidate_ids.add(row.candidate_id)
 
     # Gather all talent pool ids into a set
     results = connection.execute('select * from talent_pool')
@@ -99,7 +101,15 @@ if __name__ == "__main__":
             # print "    No candidates in pool ", pool
             empty_pools.append(pool)
     print "    ", len(empty_pools), " empty talent pools."
+    print
+
+    # Scan for candidates with no talent_pools
+    print "Checking for candidates with no talent pool..."
+    count = 0
+    for talent_pool_candidate in candidate_ids:
+        if talent_pool_candidate not in talent_pool_candidate_ids:
+            count += 1
+    print "    ", count, " candidates without talent pool."
 
     connection.close()
-
     sys.exit(0)
