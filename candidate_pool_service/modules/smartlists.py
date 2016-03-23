@@ -65,7 +65,8 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
             return ApiResponse(response, headers=headers, status=200)
 
         search_results = create_candidates_dict(candidate_ids)
-        return search_results
+
+    return search_results
 
 
 @cache.memoize(timeout=86400)
