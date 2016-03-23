@@ -1,6 +1,6 @@
-# Add column to DB tables
+# Add a column to DB tables
 
-# The DB name is specified in the URI
+# The DB name is specified in the URI. The tables and the column name and type are specified in constants below
 
 import sys
 
@@ -20,6 +20,8 @@ TABLES = [ 'candidate_address', 'candidate_education', 'candidate_experience', '
 
 COLUMN = 'iso3166_country'
 
+TYPE = 'varchar(2)'
+
 if __name__ == "__main__":
 
     uri = MYSQL_LOCAL_URI
@@ -36,7 +38,7 @@ if __name__ == "__main__":
     print "Connected"
 
     for table in TABLES:
-        query = 'alter table {} add {} varchar(2)'.format(table, COLUMN)
+        query = 'alter table {} add {} {}'.format(table, COLUMN, TYPE)
         try:
             print "   ", query
             results = connection.execute(query)
