@@ -146,8 +146,11 @@ def parse_resume(file_obj, filename_str):
     if is_resume_image:
         # If file is an image, OCR it
         start_time = time()
-        doc_content = ocr_image(file_obj)
-        logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
+        doc_content = google_vision_ocr(file_obj)
+        logger.info(
+            "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
+                                                                         time() - start_time)
+        )
     else:
         start_time = time()
         doc_content = file_obj.read()
@@ -258,7 +261,6 @@ def google_vision_ocr(file_string_io):
             }
         ]
     }
-    start = time()
     try:
         google_request = requests.post("{}?key={}".format(GOOGLE_CLOUD_VISION_URL, GOOGLE_API_KEY),
                                        json.dumps(req_data),
@@ -269,10 +271,7 @@ def google_vision_ocr(file_string_io):
         raise InternalServerError("Unable to reach GAPI in resume OCR")
     if google_request.status_code is not requests.codes.ok:
         raise InternalServerError('Error in response from candidate service during creation')
-    logger.info(
-        "Benchmark: google_vision_ocr: took {}s to process".format(time() - start)
-    )
-    ocr_results = json.loads(r.content)
+    ocr_results = json.loads(google_request.content)
     return ocr_results['responses'][0]['textAnnotations'][0]['description']
 
 
