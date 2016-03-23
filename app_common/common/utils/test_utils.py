@@ -17,7 +17,7 @@ from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePo
 fake = Faker()
 
 
-def send_request(method, url, access_token, data=None, is_json=True):
+def send_request(method, url, access_token, data=None, is_json=True, verify=True):
     """
     This is a generic method to send HTTP request. We can just pass our data/ payload
     and it will make it json and send it to target url with application/json as content-type
@@ -28,6 +28,7 @@ def send_request(method, url, access_token, data=None, is_json=True):
     :param data: payload data for request
     :param is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
+    :param verify: set this to false 
     :return:
     """
     assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
@@ -37,7 +38,7 @@ def send_request(method, url, access_token, data=None, is_json=True):
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
-    return request_method(url, data=data, headers=headers)
+    return request_method(url, data=data, headers=headers, verify=verify)
 
 
 def get_user(user_id, token):
