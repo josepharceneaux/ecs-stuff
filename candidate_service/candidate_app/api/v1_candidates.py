@@ -347,7 +347,7 @@ class CandidatesResource(Resource):
                           for email in candidate_dict.get('emails')]
 
             added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
-            if candidate_dict.get('added_datetime') else None
+                if candidate_dict.get('added_datetime') else None
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,

@@ -1088,17 +1088,18 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
     for i, address in enumerate(addresses):
 
         zip_code = sanitize_zip_code(address.get('zip_code'))
-        city, state = address.get('city'), address.get('state')
+        city = address.get('city')
+        subdivision_code = address.get('subdivision_code').upper() if address.get('subdivision_code') else None
         address_dict = dict(
             address_line_1=address.get('address_line_1'),
             address_line_2=address.get('address_line_2'),
             city=city,
-            state=state,
+            iso3166_subdivision=subdivision_code,
             zip_code=zip_code,
             iso3166_country=address.get('country_code'),
             po_box=address.get('po_box'),
             is_default=i == 0 if address_has_default else address.get('is_default'),
-            coordinates=get_coordinates(zipcode=zip_code, city=city, state=state),
+            coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code),
             candidate_id=candidate_id,
             resume_id=candidate_id   # TODO: remove once all tables have been added & migrated
         )
@@ -1274,7 +1275,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                 if education_degree_id:  # Update CandidateEducationDegree
 
                     # CandidateEducationDegree must be recognized
-                    can_edu_degree_query = db.session.query(CandidateEducationDegree).\
+                    can_edu_degree_query = db.session.query(CandidateEducationDegree). \
                         filter_by(id=education_degree_id)
                     can_edu_degree_obj = can_edu_degree_query.first()
                     if not can_edu_degree_obj:
@@ -1300,13 +1301,13 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
 
                         # Remove keys with None values
                         education_degree_bullet_dict = dict(
-                                (k, v) for k, v in education_degree_bullet_dict.iteritems() if v is not None)
+                            (k, v) for k, v in education_degree_bullet_dict.iteritems() if v is not None)
 
                         education_degree_bullet_id = education_degree_bullet.get('id')
                         if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
 
                             # CandidateEducationDegreeBullet must be recognized
-                            can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet).\
+                            can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet). \
                                 filter_by(id=education_degree_bullet_id)
                             can_edu_degree_bullet_obj = can_edu_degree_bullet_query.first()
                             if not can_edu_degree_bullet_obj:
@@ -1314,7 +1315,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                                                     error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
 
                             # CandidateEducationDegreeBullet must belong to Candidate
-                            if can_edu_degree_bullet_obj.candidate_education_degree.\
+                            if can_edu_degree_bullet_obj.candidate_education_degree. \
                                     candidate_education.candidate_id != candidate_id:
                                 raise ForbiddenError('Unauthorized candidate degree bullet',
                                                      error_code=custom_error.DEGREE_BULLET_FORBIDDEN)
