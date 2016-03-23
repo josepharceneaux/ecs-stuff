@@ -22,7 +22,8 @@ import requests
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.utils import create_parsed_resume_candidate, update_candidate_from_resume
+from resume_parsing_service.app.views.utils import update_candidate_from_resume
+from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
@@ -31,23 +32,23 @@ from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
 
-
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-RESUME_EXPIRE_TIME = 604800 # one week in seconds.
+RESUME_EXPIRE_TIME = 604800  # one week in seconds.
 
 
 def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
+    :param dict parse_params:
     :return: dict: {'candidate': {...}, 'raw': {...}}
     """
     filepicker_key = parse_params.get('filepicker_key')
     # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
     create_candidate = parse_params.get('create_candidate', False)
     talent_pools = parse_params.get('talent_pools')
-    #Talent pools are the ONLY thing required to create a candidate.
+    # Talent pools are the ONLY thing required to create a candidate.
     if create_candidate and not talent_pools:
         raise InvalidUsage('Talent Pools required for candidate creation')
     if filepicker_key:
@@ -92,8 +93,10 @@ def process_resume(parse_params):
         parsed_resume['candidate']['id'] = existing_candidate_id
         update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
         if update_response.status_code is not requests.codes.ok:
-            logger.info("ResumetoCandidateError. {} received from CandidateService (update)".format(update_response.status_code))
-            raise InternalServerError('Candidate from {} exists, error updating info'.format(filename_str))
+            logger.info("ResumetoCandidateError. {} received from CandidateService (update)".format(
+                update_response.status_code))
+            raise InternalServerError(
+                'Candidate from {} exists, error updating info'.format(filename_str))
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 
@@ -146,7 +149,6 @@ def parse_resume(file_obj, filename_str):
     else:
         start_time = time()
         doc_content = file_obj.read()
-        mime_type = magic.from_buffer(doc_content, mime=True)
         logger.info(
             "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
             filename_str, time() - start_time
@@ -161,8 +163,9 @@ def parse_resume(file_obj, filename_str):
     start_time = time()
     optic_response = fetch_optic_response(encoded_resume)
     logger.info(
-        "Benchmark: parse_resume_with_bg(%s) took %ss", filename_str + final_file_ext,
-        time() - start_time)
+        "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str + final_file_ext,
+                                                              time() - start_time)
+    )
     if optic_response:
         candidate_data = parse_optic_xml(optic_response)
         # Consider returning tuple
@@ -188,7 +191,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                              auth=abby_ocr_api_auth_tuple,
                              files=files,
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
-                            )
+                             )
     if response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
