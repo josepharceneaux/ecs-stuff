@@ -388,13 +388,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         sql_value_array = [int(field_value) for field_value in sql_value_array]
                     field_name_to_sql_value[field_name] = sql_value_array
 
-                if 'text' in index_field_type:
+                if 'literal' in index_field_type:
                     if isinstance(field_name_to_sql_value[field_name], (list, set, tuple)):
                         resume_text += ' '.join(field_name_to_sql_value[field_name])
                     else:
-                        resume_text += field_name_to_sql_value[field_name]
+                        resume_text += ' ' + field_name_to_sql_value[field_name]
 
-            field_name_to_sql_value['resume_text'] = resume_text
+            field_name_to_sql_value['resume_text'] = resume_text.strip()
+            logger.info('%s' % resume_text)
 
             # Add the required values we didn't get from DB
             if not domain_id:
