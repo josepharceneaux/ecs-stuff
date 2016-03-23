@@ -1,8 +1,10 @@
 # Check data consistency of candidates and their talent pools
 
 # TODO: How to connect to staging / prod since there's an ssh tunnel
+# Current convention is to run this on the bastion host
 
 import sys
+import argparse
 
 from sqlalchemy import *
 from sqlalchemy.sql import select
@@ -23,31 +25,22 @@ CANDIDATES_NAME = 'talent_pool_candidate'
 # Talent Pool table
 TALENT_POOL_NAME = 'talent_pool'
 
-# Poll ID Column
+# Pool ID Column
 POOL_ID_NAME = 'talent_pool_id'
 
 if __name__ == "__main__":
 
-    arg_count = len(sys.argv)
-    me = sys.argv[0]
+    parser = argparse.ArgumentParser(description='Scan database for inconsistencies between candidates and talent pools.\nSupply password if --stage or --prod.')
+    parser.add_argument('--stage', nargs=1)
+    parser.add_argument('--prod', nargs=1)
+    args = parser.parse_args()
 
-    def usage():
-        print "Usage: ", me, " [prod | stage] [password]"
-        sys.exit(1)
-
-    # Select the database from the command line arguments
-    if arg_count == 1:
-        uri = MYSQL_LOCAL_URI
+    if args.prod:
+        uri = MYSQL_PROD.format(args.prod[0])
+    elif args.stage:
+        uri = MYSQL_STAGE.format(args.stage[0])
     else:
-        if arg_count != 3:
-            usage()
-
-        if sys.argv[1] == 'prod':
-            uri = MYSQL_PROD.format(sys.argv[2])
-        elif sys.argv[1] == 'stage':
-            uri = MYSQL_STAGE.format(sys.argv[2])
-        else:
-            usage()
+        uri = MYSQL_LOCAL_URI
 
     print "Connecting to", uri, "...",
     sys.stdout.flush()
@@ -61,7 +54,7 @@ if __name__ == "__main__":
 
     print "Connected"
 
-    # Gather all unique pool ids into a set
+    # Gather all unique talent_pool_candidate ids into a set
     results = connection.execute('select * from talent_pool_candidate')
     candidate_talent_pools = set()
     talent_pool_candidates = []
