@@ -68,7 +68,7 @@ def campaign_with_candidate_having_no_email(request, email_campaign_of_user_firs
     """
     This creates a campaign which has candidates associated having no email
     """
-    campaign, id = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign, list_id = create_email_campaign_smartlist(access_token_first, talent_pool,
                                                email_campaign_of_user_first,
                                                emails_list=False)
 
