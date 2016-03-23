@@ -155,8 +155,8 @@ class GenerateCandidateDate(object):
                 [
                     {
                         'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-                        'state': fake.state(), 'zip_code': fake.zipcode(), 'country_code': fake.country_code(),
-                        'is_default': is_default
+                        'subdivision_code': 'US-' + fake.state_abbr(), 'zip_code': fake.zipcode(),
+                        'country_code': fake.country_code(), 'is_default': is_default
                     }
                 ]
             }
