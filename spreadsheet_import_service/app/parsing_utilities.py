@@ -35,7 +35,6 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     :param filename: spreadsheet file name
     :return: An array containing rows of spreadsheets
     """
-
     is_csv = ".csv" in filename
     if is_csv:
         return convert_csv_to_table(spreadsheet_file)
@@ -46,7 +45,16 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     table = []
     for row_index in range(first_sheet.nrows):
         cells = first_sheet.row(row_index)  # array of cell objects
-        table.append([cell.value for cell in cells if cell.value])
+
+        cell_values = []
+        for cell in cells:
+            cell_value = cell.value
+            if isinstance(cell_value, float):  # there should be no float-type data
+                cell_value = str(int(cell_value))
+            if cell_value:
+                cell_values.append(cell_value)
+
+        table.append(cell_values)
     table = [row for row in table if row]
     return table
 
