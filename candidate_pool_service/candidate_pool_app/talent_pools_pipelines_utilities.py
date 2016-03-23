@@ -347,6 +347,9 @@ def get_stats_generic_function(container_object, container_name, user=None, from
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
 
+    if to_date > datetime.utcnow().date():
+        raise InvalidUsage("`to_date` cannot be in future")
+
     if not is_number(interval):
         raise InvalidUsage("Interval '%s' should be integer" % interval)
 

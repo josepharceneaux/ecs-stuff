@@ -694,7 +694,8 @@ class CampaignWords(object):
     SEND = '/send'
     BLASTS = '/blasts'
     REPLIES = '/replies'
-    EMAIL_CAMPAIGN = 'email-' + CAMPAIGNS
+    SMS_CAMPAIGNS = 'sms-' + CAMPAIGNS
+    EMAIL_CAMPAIGNS = 'email-' + CAMPAIGNS
 
 
 class SmsCampaignApi(object):
@@ -706,16 +707,16 @@ class SmsCampaignApi(object):
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
                                GTApis.SMS_CAMPAIGN_SERVICE_PORT)
     API_URL = '/%s/%s' % (VERSION, '%s')
-    # endpoint /v1/campaigns
+    # endpoint /v1/sms-campaigns
     # GET all campaigns of a user, POST new campaign, DELETE campaigns of a user from given ids
-    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.CAMPAIGNS)
-    # endpoint /v1/campaigns/:id
+    CAMPAIGNS = '/%s/%s' % (VERSION, CampaignWords.SMS_CAMPAIGNS)
+    # endpoint /v1/sms-campaigns/:campaign_id
     # GET campaign by its id, POST: updates a campaign, DELETE a campaign from given id
     CAMPAIGN = CAMPAIGNS + '/<int:campaign_id>'
-    # /v1/campaigns/:id/schedule
+    # /v1/sms-campaigns/:campaign_id/schedule
     # To schedule an SMS campaign
     SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
-    # endpoint /v1/campaigns/:id/send
+    # endpoint /v1/sms-campaigns/:campaign_id/send
     # To send a campaign to candidates
     SEND = CAMPAIGN + CampaignWords.SEND
     # endpoint /v1/redirect/:id
@@ -724,22 +725,22 @@ class SmsCampaignApi(object):
     # endpoint /v1/receive
     # This endpoint is callback URL when candidate replies to a campaign via SMS
     RECEIVE = API_URL % CampaignWords.RECEIVE
-    # endpoint /v1/campaigns/:id/blasts
+    # endpoint /v1/sms-campaigns/:campaign_id/blasts
     # Gives the blasts of a campaign
     BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    # endpoint /v1/campaigns/:id/blasts/:id
+    # endpoint /v1/sms-campaigns/:campaign_id/blasts/:blast_id
     # Gives the blast object of SMS campaign from given blast id.
     BLAST = CAMPAIGN + CampaignWords.BLASTS + '/<int:blast_id>'
-    # endpoint /v1/campaigns/:id/blasts/:id/sends
+    # endpoint /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
     # Gives the sends objects of a blast object of SMS campaign from given blast id.
     BLAST_SENDS = BLAST + CampaignWords.SENDS
-    # endpoint /v1/campaigns/:id/blasts/:id/replies
+    # endpoint /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
     # Gives the replies objects of a blast object of SMS campaign from given blast id.
     BLAST_REPLIES = BLAST + CampaignWords.REPLIES
-    # endpoint /v1/campaigns/:id/sends
+    # endpoint /v1/sms-campaigns/:campaign_id/sends
     # This gives the records from "sends" for a given id of campaign
     SENDS = CAMPAIGN + CampaignWords.SENDS
-    # endpoint /v1/campaigns/:id/replies
+    # endpoint /v1/sms-campaigns/:campaign_id/replies
     # This gives the records from "sms_campaign_reply" for a given id of campaign
     REPLIES = CAMPAIGN + CampaignWords.REPLIES
 
@@ -826,7 +827,7 @@ class EmailCampaignEndpoints(object):
                                GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     API_URL = '/%s/%s' % (VERSION, '%s')
-    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGN
+    CAMPAIGNS = RELATIVE_VERSION % CampaignWords.EMAIL_CAMPAIGNS
     CAMPAIGN = CAMPAIGNS + '/<int:id>'
     # endpoint /v1/email-campaigns/:id/send
     # Send the campaign as specified by the id

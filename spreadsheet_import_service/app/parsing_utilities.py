@@ -128,6 +128,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             this_source_id = source_id
 
+            number_of_educations = 0
+
             for column_index, column in enumerate(row):
                 if column_index >= len(header_row):
                     continue

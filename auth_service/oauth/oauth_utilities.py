@@ -155,3 +155,20 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
         elif hasattr(tok, 'client_id'):
             request.client = self._clientgetter(tok.client_id)
         return True
+
+    def revoke_token(self, token, token_type_hint, request, *args, **kwargs):
+        """Revoke an access or refresh token.
+        """
+        if token_type_hint:
+            tok = self._tokengetter(**{token_type_hint: token})
+        else:
+            tok = self._tokengetter(access_token=token)
+            if not tok:
+                tok = self._tokengetter(refresh_token=token)
+
+        if tok:
+            tok.delete()
+            return True
+        request.error_message = "Invalid token supplied."
+        return False
+

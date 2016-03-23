@@ -146,6 +146,7 @@ def validate_is_digit(key, value):
 def validate_is_number(key, value):
     if not is_number(value):
         raise InvalidUsage("`%s` should be a numeric value" % key, 400)
+    return value
 
 
 def validate_id_list(key, values):
@@ -214,7 +215,7 @@ def convert_date(key, value):
 SEARCH_INPUT_AND_VALIDATIONS = {
     "sort_by": 'sorting',
     "limit": 'digit',
-    "page": 'digit',
+    "page": 'string_list',
     "query": '',
     # Facets
     "date_from": 'date_range',
@@ -276,7 +277,7 @@ def is_backward_compatible(key):
 
         if key == 'username':
             key = 'user_ids'
-        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+        elif key == 'area_of_interest_id':
             key = 'area_of_interest_ids'
         elif key == 'status' or key == 'source':
             key += '_ids'

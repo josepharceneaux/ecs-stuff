@@ -14,9 +14,9 @@ from helpers import (
 )
 # Candidate sample data
 from candidate_sample_data import (
-    fake, generate_single_candidate_data, candidate_addresses,
-    candidate_educations, candidate_experience, candidate_work_preference, candidate_emails,
-    candidate_phones, candidate_areas_of_interest
+    fake, generate_single_candidate_data, GenerateCandidateDate, candidate_educations,
+    candidate_experience,  candidate_work_preference, candidate_emails, candidate_phones,
+    candidate_areas_of_interest
 )
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -246,29 +246,26 @@ def test_add_new_candidate_address(access_token_first, user_first, talent_pool):
     Test:   Add a new CandidateAddress to an existing Candidate
     Expect: 200
     """
-    AddUserRoles.add_get_edit(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_get_edit(user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Add a new address to the existing Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    data = candidate_addresses(candidate_id=candidate_id)
+    data = GenerateCandidateDate.addresses(talent_pool_ids=[talent_pool.id], candidate_id=candidate_id)
     update_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(update_resp)
 
     # Retrieve Candidate after update
-    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
-
-    candidate_address = updated_candidate_dict['addresses'][0]
+    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
+    candidate_address = updated_candidate_dict['addresses'][-1]
     assert updated_candidate_dict['id'] == candidate_id
     assert isinstance(candidate_address, dict)
-    assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1']
-    assert candidate_address['city'] == data['candidates'][0]['addresses'][0]['city']
-    assert candidate_address['state'] == data['candidates'][0]['addresses'][0]['state']
-    assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
+    assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][-1]['address_line_1']
+    assert candidate_address['city'] == data['candidates'][0]['addresses'][-1]['city']
+    assert candidate_address['state'] == data['candidates'][0]['addresses'][-1]['state']
+    assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][-1]['zip_code']
 
 
 def test_multiple_is_default_addresses(access_token_first, user_first, talent_pool):
@@ -276,20 +273,18 @@ def test_multiple_is_default_addresses(access_token_first, user_first, talent_po
     Test:   Add more than one CandidateAddress with is_default set to True
     Expect: 200, but only one CandidateAddress must have is_default True, the rest must be False
     """
-    AddUserRoles.add_get_edit(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_get_edit(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Add a new address to the existing Candidate with is_default set to True
     candidate_id = create_resp.json()['candidates'][0]['id']
-    data = candidate_addresses(candidate_id=candidate_id)
+    data = GenerateCandidateDate.addresses(candidate_id=candidate_id, is_default=True)
     request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate after update
-    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
     updated_can_addresses = updated_candidate_dict['addresses']
     # Only one of the addresses must be default!
     assert sum([1 for address in updated_can_addresses if address['is_default']]) == 1
@@ -300,27 +295,23 @@ def test_update_an_existing_address(access_token_first, user_first, talent_pool)
     Test:   Update an existing CandidateAddress
     Expect: 200
     """
-    AddUserRoles.add_get_edit(user=user_first)
-
     # Create Candidate
+    AddUserRoles.add_get_edit(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = request_to_candidates_resource(access_token_first, 'post', data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
     candidate_address = candidate_dict['addresses'][0]
 
     # Update one of Candidate's addresses
-    data = candidate_addresses(candidate_id, candidate_address['id'])
+    data = GenerateCandidateDate.addresses(candidate_id=candidate_id, address_id=candidate_address['id'])
     updated_resp = request_to_candidates_resource(access_token_first, 'patch', data)
     print response_info(updated_resp)
 
     # Retrieve Candidate after update
-    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).\
-        json()['candidate']
-
+    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
     updated_address = updated_candidate_dict['addresses'][0]
     assert isinstance(updated_candidate_dict, dict)
     assert updated_candidate_dict['id'] == candidate_id
@@ -343,12 +334,11 @@ def test_update_candidate_current_address(access_token_first, user_first, talent
 
     # Add another address
     candidate_id = create_resp.json()['candidates'][0]['id']
-    data = candidate_addresses(candidate_id=candidate_id)
+    data = GenerateCandidateDate.addresses(candidate_id=candidate_id, is_default=True)
     request_to_candidates_resource(access_token_first, 'patch', data)
 
     # Retrieve Candidate
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
     can_addresses = candidate_dict['addresses']
 
     # Update: Set the last CandidateAddress in can_addresses as the default candidate-address
@@ -358,8 +348,7 @@ def test_update_candidate_current_address(access_token_first, user_first, talent
     assert updated_resp.status_code == 200
 
     # Retrieve Candidate after update
-    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    updated_candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
 
     updated_addresses = updated_candidate_dict['addresses']
     assert isinstance(updated_addresses, list)
@@ -391,8 +380,7 @@ def test_add_new_area_of_interest(access_token_first, user_first, talent_pool, d
     print response_info(resp)
 
     # Retrieve Candidate after update
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
     candidate_aois = candidate_dict['areas_of_interest']
     assert isinstance(candidate_aois, list)
     assert candidate_aois[0]['name'] == db.session.query(AreaOfInterest).get(candidate_aois[0]['id']).name
