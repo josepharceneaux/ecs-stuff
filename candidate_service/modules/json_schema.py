@@ -231,6 +231,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -767,6 +771,10 @@ candidates_resource_schema_patch = {
                                 "state": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
                                 },
                                 "country": {
                                     "type": ["string", "null"],

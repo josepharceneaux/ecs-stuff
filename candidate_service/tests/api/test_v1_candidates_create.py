@@ -28,7 +28,6 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 def test_candidate_creation_postman(access_token_first, user_first, talent_pool, domain_aoi):
     """
-
     :param access_token_first:
     :param user_first:
     :param talent_pool:
