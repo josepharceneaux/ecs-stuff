@@ -332,10 +332,13 @@ class TalentPipelineSmartListApi(Resource):
         page = int(page)
         per_page = int(per_page)
 
+        total_number_of_smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).count()
         smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
         smartlists = smartlists.items
 
         return {
+            'page_number': page, 'smartlists_per_page': per_page,
+            'total_number_of_smartlists': total_number_of_smartlists,
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
         }
 

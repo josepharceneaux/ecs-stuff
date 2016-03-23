@@ -1659,7 +1659,8 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email = CandidateEmail.get_by_address(email_address=email_address)
+            email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
+                                                CandidateEmail.candidate_id == candidate_id).first()
             # Prevent duplicate entries
             if not email:
                 email_dict.update(dict(candidate_id=candidate_id))
