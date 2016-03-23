@@ -296,14 +296,15 @@ class TestSendCampaign(object):
             access_token_first, campaign_with_candidate_having_no_email.id)
 
     def test_number_of_candidates_in_campaign_send(
-            self, access_token_first, talent_pool, email_campaign_of_user_first, assign_roles_to_user_first):
+            self, access_token_first, talent_pipeline, email_campaign_of_user_first, assign_roles_to_user_first):
         """
         Creates email campaign smartlist with 20 candidates. Hits candidate pool service
         to get paginated response with 2 per page. Total should be 20, pages should be
         10 and number of candidates in page 1 should be 2.
         """
-        campaign, list_id = create_email_campaign_smartlist(access_token_first, talent_pool,
+        campaign, list_id = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                             email_campaign_of_user_first, emails_list=True, count=20)
+
         response = requests.get(
             url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + '?per_page=2&page=1',
             headers={'Authorization': 'Bearer %s' % access_token_first,
