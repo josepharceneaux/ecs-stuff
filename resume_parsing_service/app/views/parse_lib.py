@@ -36,6 +36,8 @@ IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 604800  # one week in seconds.
+GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
+GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
 
 
 def process_resume(parse_params):
@@ -178,7 +180,7 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     """
     Posts the image to Abby OCR API, then keeps pinging to check if it's done. Quits if not done in
     certain number of tries.
-    :param cStringIO.StringI img_file_obj: File initially posted to the resume parsing service.
+    :param cStringIO.StringIO img_file_obj: File initially posted to the resume parsing service.
     :param string export_format: Abby OCR param.
     :return: Image file OCR'd in desired format.
     """
@@ -237,6 +239,41 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
         return response.content
     else:
         return 0
+
+
+def google_vision_ocr(file_string_io):
+    b64_string = base64.b64encode(file_string_io.getvalue())
+    req_data = {
+        "requests": [
+            {
+                "image": {
+                    "content": b64_string
+                },
+                "features": [
+                    {
+                        "type": "TEXT_DETECTION",
+                        "maxResults": 1
+                    }
+                ]
+            }
+        ]
+    }
+    start = time()
+    try:
+        google_request = requests.post("{}?key={}".format(GOOGLE_CLOUD_VISION_URL, GOOGLE_API_KEY),
+                                       json.dumps(req_data),
+                                       timeout=20,
+                                       headers={'content-type': 'application/json'})
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.exception("google_vision_ocr: Could not reach GAPI")
+        raise InternalServerError("Unable to reach GAPI in resume OCR")
+    if google_request.status_code is not requests.codes.ok:
+        raise InternalServerError('Error in response from candidate service during creation')
+    logger.info(
+        "Benchmark: google_vision_ocr: took {}s to process".format(time() - start)
+    )
+    ocr_results = json.loads(r.content)
+    return ocr_results['responses'][0]['textAnnotations'][0]['description']
 
 
 def convert_pdf_to_text(pdf_file_obj):
