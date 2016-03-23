@@ -395,7 +395,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         resume_text += ' ' + field_name_to_sql_value[field_name]
 
             field_name_to_sql_value['resume_text'] = resume_text.strip()
-            logger.info('%s' % resume_text)
 
             # Add the required values we didn't get from DB
             if not domain_id:
