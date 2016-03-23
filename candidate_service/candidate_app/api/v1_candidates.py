@@ -1327,7 +1327,9 @@ class CandidateClientEmailCampaignResource(Resource):
         smartlist_object = {
             "name": list_name,
             "candidate_ids": candidate_ids,
-            "talent_pipeline_id": talent_pipeline.id if talent_pipeline else 1
+            # not sure what should be the default if there is no talent_pipeline, set to 0 for the smartlist to fail,
+            # and assigning this to @basit.
+            "talent_pipeline_id": talent_pipeline.id if talent_pipeline else 0
         }
 
         create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
