@@ -693,13 +693,13 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    params = dict(query='*', sort=sort, size=search_limit, query_parser='lucene')
+    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene')
     if offset:
         params['start'] = offset
     else:
         params['cursor'] = cursor
 
-    params['filter_query'] = '(and (or user_id:566 user_id:2 user_id:496) (term field=domain_id 1) )'
+    params['filter_query'] = filter_query
 
     if sort_field == "distance":
         params['expr'] = "{'distance':'haversin(%s,%s,coordinates.latitude,coordinates.longitude)'}"\
