@@ -143,43 +143,43 @@ class TestSchedulerExceptions(object):
         # Invalid usage exception. run_datetime cannot be in past
         assert response.status_code == 400
 
-    def test_schedule_job_with_wrong_taskname_without_user(self, auth_header_no_user, job_config, job_cleanup):
-        """
-        Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
-        response.
-        This test case is to create a named task which is in case of server to server communication (global tasks)
-        Also check for creating job with incorrect task_name (allowed characters (-, _) and alpha numeric)
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-
-        # Assign task_name in job post data (general task) with not allowed characters
-        job_config['task_name'] = 'Custom_General Named_Task'
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header_no_user)
-        assert response.status_code == 400
-
-        # Schedule a general job
-        job_config['task_name'] = 'General_Named_Task'
-        response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-                                    headers=auth_header_no_user)
-        if response_get.status_code == 200:
-            response = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-                                       headers=auth_header_no_user)
-            assert response.status_code == 200
-
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                 headers=auth_header_no_user)
-        assert response.status_code == 201
-        data = response.json()
-        assert data['id']
-
-        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
-        job_cleanup['header'] = auth_header_no_user
-        job_cleanup['job_ids'] = [data['id']]
+    # def test_schedule_job_with_wrong_taskname_without_user(self, auth_header_no_user, job_config, job_cleanup):
+    #     """
+    #     Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
+    #     response.
+    #     This test case is to create a named task which is in case of server to server communication (global tasks)
+    #     Also check for creating job with incorrect task_name (allowed characters (-, _) and alpha numeric)
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #     :return:
+    #     """
+    #
+    #     # Assign task_name in job post data (general task) with not allowed characters
+    #     job_config['task_name'] = 'Custom_General Named_Task'
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header_no_user)
+    #     assert response.status_code == 400
+    #
+    #     # Schedule a general job
+    #     job_config['task_name'] = 'General_Named_Task'
+    #     response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+    #                                 headers=auth_header_no_user)
+    #     if response_get.status_code == 200:
+    #         response = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+    #                                    headers=auth_header_no_user)
+    #         assert response.status_code == 200
+    #
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header_no_user)
+    #     assert response.status_code == 201
+    #     data = response.json()
+    #     assert data['id']
+    #
+    #     # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
+    #     job_cleanup['header'] = auth_header_no_user
+    #     job_cleanup['job_ids'] = [data['id']]
 
     def test_invalid_job_time_interval_exception(self, auth_header, job_config):
         """
