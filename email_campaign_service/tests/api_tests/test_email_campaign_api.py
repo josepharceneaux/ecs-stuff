@@ -23,11 +23,12 @@ import requests
 # Application Specific
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.tests.conftest import fake, uuid
+from email_campaign_service.common.routes import CandidatePoolApiUrl
 from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.misc import (UrlConversion, Activity)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
+from email_campaign_service.tests.conftest import fake, uuid, create_email_campaign_smartlist
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
@@ -293,6 +294,31 @@ class TestSendCampaign(object):
         CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
             self.URL % campaign_with_candidate_having_no_email.id,
             access_token_first, campaign_with_candidate_having_no_email.id)
+
+    def test_number_of_candidates_in_campaign_send(
+            self, access_token_first, talent_pool, email_campaign_of_user_first, assign_roles_to_user_first):
+        """
+        Creates email campaign smartlist with 20 candidates. Hits candidate pool service
+        to get paginated response with 2 per page. Total should be 20, pages should be
+        10 and number of candidates in page 1 should be 2.
+        """
+        campaign, list_id = create_email_campaign_smartlist(access_token_first, talent_pool,
+                                                            email_campaign_of_user_first, emails_list=True, count=20)
+        response = requests.get(
+            url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + '?per_page=2&page=1',
+            headers={'Authorization': 'Bearer %s' % access_token_first,
+                     'content-type': 'application/json'}
+        )
+        response_headers = response.headers
+        assert response_headers
+        no_of_pages = response_headers['X-Page-Count']
+        assert no_of_pages == '10'
+        total = response_headers['X-Total']
+        assert total == '20'
+        response_body = json.loads(response.content)
+        candidates = response_body['candidates']
+
+        assert len(candidates) == 2
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):

@@ -68,7 +68,7 @@ def campaign_with_candidate_having_no_email(request, email_campaign_of_user_firs
     """
     This creates a campaign which has candidates associated having no email
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign, id = create_email_campaign_smartlist(access_token_first, talent_pool,
                                                email_campaign_of_user_first,
                                                emails_list=False)
 
@@ -86,7 +86,7 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
     """
     This returns a campaign which has two candidates associated having email address.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign, id = create_email_campaign_smartlist(access_token_first, talent_pool,
                                                email_campaign_of_user_first, count=2)
 
     def fin():
@@ -103,7 +103,7 @@ def campaign_with_ten_candidates(request, email_campaign_of_user_first,
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign, id = create_email_campaign_smartlist(access_token_first, talent_pool,
                                                email_campaign_of_user_first, count=10)
 
     def fin():

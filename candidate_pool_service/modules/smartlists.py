@@ -58,15 +58,13 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
             candidates.append({'id': smartlist_candidate_row.candidate_id})
             candidate_ids.append(smartlist_candidate_row.candidate_id)
         if candidate_ids_only:
-            response = {
-                        'candidates': candidates,
-                        'total_found': total_candidates_in_smartlist
-            }
-            return ApiResponse(response, headers=headers, status=200)
-
-        search_results = create_candidates_dict(candidate_ids)
-
-    return search_results
+            search_results = create_candidates_dict(candidate_ids)
+            return search_results
+        response = {
+                    'candidates': candidates,
+                    'total_found': total_candidates_in_smartlist
+        }
+        return ApiResponse(response, headers=headers, status=200)
 
 
 @cache.memoize(timeout=86400)

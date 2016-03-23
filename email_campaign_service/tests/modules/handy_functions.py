@@ -67,7 +67,7 @@ def create_email_campaign_smartlist(access_token, talent_pool, campaign,
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
-    return campaign
+    return campaign, smartlist_id
 
 
 def create_smartlist_with_candidate(access_token, talent_pool, emails_list=True, count=1):
