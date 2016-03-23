@@ -663,7 +663,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     cursor, offset = None, None
     page = request_vars.get('page', 1)
-    if is_number(request_vars.get('page')):
+    if is_number(page):
         page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
         offset = (page - 1) * search_limit if search_limit else 0
         if page * search_limit > 10000:
