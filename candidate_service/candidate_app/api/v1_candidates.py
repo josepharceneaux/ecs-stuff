@@ -1328,12 +1328,10 @@ class CandidateClientEmailCampaignResource(Resource):
         if not talent_pipeline:
             logger.warn("Email Campaign is trying to send to candidate (%s) outside a pipeline" % first_candidate_id)
             raise InvalidUsage(error_message="talent does not belong to pipeline")
-        
+
         smartlist_object = {
             "name": list_name,
             "candidate_ids": candidate_ids,
-            # not sure what should be the default if there is no talent_pipeline, set to 0 for the smartlist to fail,
-            # and assigning this to @basit.
             "talent_pipeline_id": talent_pipeline.id
         }
 
