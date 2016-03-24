@@ -264,11 +264,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             if status_code == 201:
                 candidate_ids.append(response.get('candidates')[0].get('id'))
-            elif status_code == 400:
+            else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
                 error_messages.append(response.get('error'))
                 continue
-            else:
-                return jsonify(response), status_code
 
         # TODO: Upload candidate documents to cloud
 
