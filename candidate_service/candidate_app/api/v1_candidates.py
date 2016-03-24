@@ -94,16 +94,14 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Authenticate user
+        # Authenticated user
         authed_user, body_dict = request.user, get_json_if_exist(request)
 
         # Validate json data
         try:
-            validate(instance=body_dict, schema=candidates_resource_schema_post,
-                     format_checker=FormatChecker())
+            validate(instance=body_dict, schema=candidates_resource_schema_post, format_checker=FormatChecker())
         except ValidationError as e:
-            raise InvalidUsage(error_message="Schema validation error: %s" % e.message,
-                               error_code=custom_error.INVALID_INPUT)
+            raise InvalidUsage("Schema validation error: %s" % e.message, custom_error.INVALID_INPUT)
 
         candidates = body_dict.get('candidates')
 
@@ -170,7 +168,8 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
-                country_code = military_service.get('country_code') or 'US'
+                country_code = military_service.get('country_code').upper() \
+                    if military_service.get('country_code') else "US"
                 if not is_country_code_valid(country_code):
                     raise InvalidUsage("Country code not recognized: {}".format(country_code))
 

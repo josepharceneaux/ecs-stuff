@@ -119,9 +119,10 @@ def parse_openweb_date(openweb_date):
 def is_country_code_valid(country_code):
     """
     Checks to see if country-code is a valid country code per ISO-3166 standards
+    :param country_code: must be ALL CAPS Alpha2 iso3166 country code, e.d. "US"
     """
     try:
-        pycountry.countries.get(alpha2=country_code.upper())
+        pycountry.countries.get(alpha2=country_code)
     except KeyError:
         return False
     return True
