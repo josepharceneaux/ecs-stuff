@@ -166,6 +166,27 @@ class GenerateCandidateDate(object):
         return data
 
     @staticmethod
+    def emails(talent_pool_ids=None, candidate_id=None, email_id=None):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
+                'emails': [
+                    {
+                        'id': email_id, 'label': 'primary', 'address': fake.safe_email()
+                    }
+                ]
+            }
+        ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
+        return data
+
+
+    @staticmethod
     def educations(talent_pool_ids):
         """
         :type talent_pool_ids:  list[int]
