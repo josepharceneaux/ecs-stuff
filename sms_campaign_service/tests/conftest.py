@@ -18,7 +18,7 @@ from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain,
-     user_same_domain, user_second, access_token_second)
+     user_same_domain, user_second, access_token_second, talent_pipeline, talent_pool)
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
@@ -45,7 +45,7 @@ SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
 # This is data to create/update SMS campaign
 CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
-                        "body_text": "Hi all, we have few openings at http://www.abc.com",
+                        "body_text": "Hi all, we have few openings at https://www.gettalent.com",
                         "smartlist_ids": ""
                         }
 
@@ -53,7 +53,6 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
     return {"frequency_id": Frequency.ONCE,
-            # TODO: remove timedelta from start_datetime after scheduler_service update
             "start_datetime": to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
             "end_datetime": to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
 

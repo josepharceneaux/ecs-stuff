@@ -46,14 +46,14 @@ def email_campaign_in_other_domain(request,
                                    access_token_other,
                                    user_from_diff_domain,
                                    assign_roles_to_user_of_other_domain,
-                                   talent_pool_other):
+                                   talent_pipeline_other):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     for user in different domain
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
-    create_email_campaign_smartlist(access_token_other, talent_pool_other,
+    create_email_campaign_smartlist(access_token_other, talent_pipeline_other,
                                     campaign)
 
     def fin():
@@ -66,11 +66,11 @@ def email_campaign_in_other_domain(request,
 @pytest.fixture()
 def campaign_with_candidate_having_no_email(request, email_campaign_of_user_first,
                                             assign_roles_to_user_first,
-                                            access_token_first, talent_pool):
+                                            access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first,
                                                emails_list=False)
 
@@ -84,11 +84,11 @@ def campaign_with_candidate_having_no_email(request, email_campaign_of_user_firs
 @pytest.fixture()
 def campaign_with_valid_candidate(request, email_campaign_of_user_first,
                                   assign_roles_to_user_first,
-                                  access_token_first, talent_pool):
+                                  access_token_first, talent_pipeline):
     """
     This returns a campaign which has two candidates associated having email address.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=2)
 
     def fin():
@@ -101,11 +101,11 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
 @pytest.fixture()
 def campaign_with_ten_candidates(request, email_campaign_of_user_first,
                                  assign_roles_to_user_first,
-                                 access_token_first, talent_pool):
+                                 access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pool,
+    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=10)
 
     def fin():
@@ -181,9 +181,9 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     """
     if request.param == 'with_client':
         campaign_with_valid_candidate.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 5
-    else:
         sleep_time = 15
+    else:
+        sleep_time = 30
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
     return campaign_with_valid_candidate

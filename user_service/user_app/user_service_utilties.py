@@ -115,17 +115,26 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     temp_password = gen_salt(20)
     hashed_password = gettalent_generate_password_hash(temp_password)
 
+    user_group = None
+
     # Get user's group ID
     if not user_group_id:
         user_groups = UserGroup.all_groups_of_domain(domain_id=domain_id)
         if user_groups:  # TODO: this shouldn't be necessary since each domain must belong to a user_group
-            user_group_id = user_groups[0].id
+            user_group = user_groups[0]
+    else:
+        user_group = UserGroup.query.get(user_group_id)
+
+    if not user_group:
+        raise InvalidUsage("Either user_group_id is not provided or no group exists in user's domain")
+
+    if user_group.domain_id != domain_id:
+        raise InvalidUsage("User Group %s belongs to different domain" % user_group.id)
 
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
                 dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-                user_group_id=user_group_id)
-
+                user_group_id=user_group.id)
     db.session.add(user)
     db.session.commit()
 

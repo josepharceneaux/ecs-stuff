@@ -57,7 +57,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list, candidate_ids)
 
     # Wait for addition of candidates in Amazon Cloud Search
-    sleep(50)
+    sleep(60)
 
     # Logged-in user trying to get all candidates of talent-pipeline without search_params
     # and only three candidates in its dumb_list

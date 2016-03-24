@@ -60,6 +60,8 @@ class CampaignBase(object):
         - It takes "user_id" as keyword argument, gets the user object from database and sets
             user object in self.user.
         - It also sets type of campaign in self.campaign_type.
+        - If campaign_id is provided, it gets the campaign object from database for given
+            campaign type by validating that campaign belongs to logged-in user's domain
 
     * get_campaign_type(self) [abstract]
         Child classes will implement this to set type of campaign in self.campaign_type
@@ -234,7 +236,16 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, campaign_id=None):
+        """
+        This gets the user object from given user_id and sets it in self.user.
+        If campaign id is provided, it gets the campaign object if it belongs to logged-in
+        user's domain and sets it in self.campaign.
+        :param user_id: Id of logged-in user
+        :param campaign_id: Id of campaign object in database
+        :type user_id: int | long
+        :type campaign_id: int | long | None
+        """
         raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
@@ -247,6 +258,9 @@ class CampaignBase(object):
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
+        if campaign_id:
+            self.campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
+                                                                 self.campaign_type)
 
     @abstractmethod
     def get_campaign_type(self):
@@ -260,12 +274,12 @@ class CampaignBase(object):
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
         """
-        This returns the authorization header containing access token token associated
+        This returns the authorization header containing access token associated
         with current user. We use this access token to communicate with other services,
-        like activity_service to create activity.
+        like e.g. activity_service to create activity.
         If access_token is provided, we return the auth header, otherwise we get the access token
         from database table "Token" and then return the auth header.
-        If access token is not found by these two methods ,we raise Forbidden error.
+        If access token is not found by these two methods, we raise Forbidden error.
 
         :param user_id: id of user
         :param bearer_access_token: e.g. 'Bearer IxzJAm3RWFnZENln37E3ivs2gxUfzB'
@@ -468,14 +482,12 @@ class CampaignBase(object):
     @classmethod
     def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
         """
-        This function returns True if campaign lies in the domain of logged-in user. Otherwise
-        it raises the Forbidden error.
+        This function returns campaign object if campaign lies in the domain of logged-in user.
+        Otherwise it raises the Forbidden error.
         :param campaign_id: id of campaign form getTalent database
         :param current_user: logged in user's object
         :type campaign_id: int | long
         :type current_user: User
-        :exception: InvalidUsage
-        :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
@@ -593,7 +605,7 @@ class CampaignBase(object):
         :rtype: bool
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id in v1_sms_campaign_api.py
         """
         if not campaign_id:
             raise InvalidUsage('delete: campaign_id cannot be emtpy.')
@@ -678,7 +690,7 @@ class CampaignBase(object):
         :rtype: dict
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
@@ -742,7 +754,7 @@ class CampaignBase(object):
                             'frequency_id': 0,
                             'start_datetime': '2016-10-30T17:55:00Z',
                             'end_datetime': '2016-12-30T17:55:00Z',
-                            'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
+                            'url_to_run_task': 'http://127.0.0.1:8012/v1/sms-campaigns/1/send',
                             'task_type': 'one_time',
                             'data_to_post': None
                             }
@@ -958,7 +970,7 @@ class CampaignBase(object):
         :exception: Invalid usage
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         if not isinstance(pre_processed_data, dict):
             raise InvalidUsage('pre_processed_data should be a dict.')
@@ -1484,7 +1496,7 @@ class CampaignBase(object):
         if not send_url_conversion_obj:
             raise ResourceNotFound(
                 'url_redirect: campaign_send_url_conversion_obj not found for '
-                'url_conversion(id:%s)' % url_conversion_id)
+                'url_conversion(id:%s)' % url_conversion_id, ResourceNotFound.http_status_code())
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
         # get url_conversion obj
         url_conversion_obj = send_url_conversion_obj.url_conversion
