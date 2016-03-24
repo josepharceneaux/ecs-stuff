@@ -1082,20 +1082,21 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
     candidate_id = candidate.id
     address_has_default = any([address.get('is_default') for address in addresses])
     if address_has_default:
-        CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
+        CandidateAddress.set_is_default_to_false(candidate_id)
 
     for i, address in enumerate(addresses):
 
         zip_code = sanitize_zip_code(address.get('zip_code'))
         city = address.get('city')
+        country_code = address.get('country_code').upper() if address.get('country_code') else None
         subdivision_code = address.get('subdivision_code').upper() if address.get('subdivision_code') else None
         address_dict = dict(
             address_line_1=address.get('address_line_1'),
             address_line_2=address.get('address_line_2'),
             city=city,
             iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
             zip_code=zip_code,
-            iso3166_country=address.get('country_code'),
             po_box=address.get('po_box'),
             is_default=i == 0 if address_has_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code),
@@ -1215,13 +1216,15 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
 
     for education in educations:
         # CandidateEducation
+        country_code = education.get('country_code').upper() if education.get('country_code') else None
+        subdivision_code = education.get('subdivision_code').upper() if education.get('subdivision_code') else None
         education_dict = dict(
             list_order=education.get('list_order') or 1,
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
             city=education.get('city'),
-            state=education.get('state'),
-            iso3166_country=education.get('country_code'),
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
             is_current=education.get('is_current'),
             added_time=added_datetime
         )
@@ -1454,15 +1457,17 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             elif not end_year and (start_year != latest_start_date):
                 end_year = start_year + 1
 
+        country_code = work_experience.get('country_code').upper() if work_experience.get('country_code') else None
+        subdivision_code = work_experience.get('subdivision_code').upper() if work_experience.get('subdivision_code') else None
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),
-            state=work_experience.get('state'),
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
-            iso3166_country=work_experience.get('country_code'),
             start_month=work_experience.get('start_month') or 1,
             end_year=end_year,
             is_current=is_current
@@ -1799,10 +1804,14 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
     candidate_id, candidate_preferred_locations = candidate.id, candidate.preferred_locations
     for preferred_location in preferred_locations:
 
+        country_code = preferred_location.get('country_code').upper() \
+            if preferred_location.get('country_code') else None
+        subdivision_code = preferred_location.get('subdivision_code').upper() \
+            if preferred_location.get('subdivision_code') else None
         preferred_location_dict = dict(
             address=preferred_location.get('address'),
-            # country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
-            iso3166_country=preferred_location.get('country_code'),
+            iso3166_country=country_code,
+            iso3166_subdivision=subdivision_code,
             city=preferred_location.get('city'),
             region=preferred_location.get('state'),
             zip_code=sanitize_zip_code(preferred_location.get('zip_code'))
