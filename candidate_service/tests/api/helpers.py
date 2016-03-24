@@ -108,22 +108,22 @@ class AddUserRoles(object):
 #                       data=json.dumps(data))
 #
 #
-def response_info(response):
-    """
-    Function returns the following response information:
-        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
-    :type response: requests.models.Response
-    """
-    url = response.url
-    request = response.request
-    status_code = response.status_code
-    try:
-        _json = response.json()
-    except Exception:
-        _json = None
-
-    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
-    return content.format(url, request, status_code, _json)
+# def response_info(response):
+#     """
+#     Function returns the following response information:
+#         1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+#     :type response: requests.models.Response
+#     """
+#     url = response.url
+#     request = response.request
+#     status_code = response.status_code
+#     try:
+#         _json = response.json()
+#     except Exception:
+#         _json = None
+#
+#     content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+#     return content.format(url, request, status_code, _json)
 
 
 # def send_request(method, url, access_token, data=None, is_json=True, **kwargs):
