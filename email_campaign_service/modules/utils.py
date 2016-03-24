@@ -158,7 +158,7 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
     # args=url_conversion_id, hmac_key=current.HMAC_KEY))
     logger.info('create_email_campaign_url_conversion: url_conversion_id:%s' % url_conversion.id)
     signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignUrl.URL_REDIRECT % url_conversion.id,
-                                           datetime.now() + relativedelta(years=+1))
+                                           datetime.utcnow() + relativedelta(years=+1))
 
     # In case of prod, do not save source URL
     if CampaignUtils.IS_DEV:
