@@ -131,7 +131,7 @@ class CandidatesResource(Resource):
                         candidate_id = candidate_email_obj.candidate_id
                         # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                         candidate_ids_from_candidate_email_obj.append(candidate_id)
-                        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+                        candidate = Candidate.get_by_id(candidate_id)
                         if candidate.is_web_hidden:  # Un-hide candidate from web, if found
                             candidate.is_web_hidden = 0
                             # If candidate's web-hidden is set to false, it will be treated as an update
