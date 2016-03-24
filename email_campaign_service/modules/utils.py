@@ -49,11 +49,14 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
     response_headers = response.headers
+    # TODO ; they said we shouldn't add asserts so may be we should get rid of the following asserts
     assert response_headers
     no_of_pages = response_headers['X-Page-Count']
     assert no_of_pages
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
+    # TODO; should the following condition not be (otherwise what if the no_of_pages is 1)--above?
+    # if int(no_of_pages) >= 1:
     if int(no_of_pages) > 1:
         for current_page in range(1, int(no_of_pages)):
             next_page = current_page + 1
@@ -66,6 +69,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
 
 
 def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params):
+    # TODO; please comment the method and validate the params
     pagination_query = '?per_page=%d&page=%d' % (per_page, page)
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,
                             params=params, headers=create_oauth_headers())

@@ -321,6 +321,8 @@ class TestSendCampaign(object):
 
         assert len(candidates) == 2
 
+        # TODO : we should get the records of page 2, page 'n - 1' and and then 'n' to test the whole cycle
+
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
