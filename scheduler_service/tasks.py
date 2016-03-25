@@ -24,13 +24,16 @@ from scheduler_service import celery_app as celery, flask_app as app, TalentConf
 
 
 @celery.task(name="send_request", queue=SchedulerUtils.QUEUE)
-def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False):
+def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False, request_method="post"):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
     :param url: the URL where to send post request
     :param content_type: the content type i.e json or xml
     :param secret_key_id: Redis key which have a corresponding secret value to decrypt data
+    :param post_data: Data to post with post request
+    :param is_jwt_request: If true, then request will be send using JWT authorization
+    :param request_method: The type of request i.e POST, DELETE, GET, UPDATE, PATCH
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
@@ -51,7 +54,7 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
 
         # Send request to URL with job post data
         logger.info("Sending post request to %s" % url)
-        response = http_request(method_type='POST', url=url, data=post_data, headers=headers)
+        response = http_request(method_type=request_method, url=url, data=post_data, headers=headers)
 
         try:
             return response.text

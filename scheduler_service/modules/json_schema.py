@@ -50,6 +50,11 @@ one_time_task_job_schema = {
         "is_jwt_request": {
             "type": "boolean",
             "default": False
+        },
+        "request_method": {
+            "type": "string",
+            "default": "post",
+            "enum": ["post", "get", "delete", "patch", "put"]
         }
     }
 }
@@ -69,6 +74,7 @@ periodic_task_job_schema = {
         },
         "frequency": {
             "type": "number",
+            "minimum": SchedulerUtils.MIN_ALLOWED_FREQUENCY
         },
         "content-type": {
             "type": "string",
@@ -89,6 +95,11 @@ periodic_task_job_schema = {
         "is_jwt_request": {
             "type": "boolean",
             "default": False
+        },
+        "request_method": {
+            "type": "string",
+            "default": "post",
+            "enum": ["post", "get", "delete", "patch", "put"]
         }
     }
 }

@@ -20,6 +20,7 @@ from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApi
+from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
@@ -744,47 +745,81 @@ class SendRequestTest(Resource):
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
+        3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
     """
     @require_oauth()
     def post(self):
-        env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-        if not (env_key == 'dev' or env_key == 'jenkins'):
-            raise ForbiddenError("You are not authorized to access this endpoint.")
+        dummy_request_method(_request=request)
 
-        user_id = request.user.id
+        return dict(message='Dummy POST Endpoint called')
+
+    @require_oauth()
+    def put(self):
+        dummy_request_method(_request=request)
+
+        return dict(message='Dummy PUT Endpoint called')
+
+    @require_oauth()
+    def patch(self):
+        dummy_request_method(_request=request)
+
+        return dict(message='Dummy PATCH Endpoint called')
+
+    @require_oauth()
+    def delete(self):
+        dummy_request_method(_request=request)
+
+        return dict(message='Dummy DELETE Endpoint called')
+
+    @require_oauth()
+    def get(self):
+        dummy_request_method(_request=request)
+
+        return dict(message='Dummy GET Endpoint called')
+
+
+def dummy_request_method(_request):
+    """
+    Dummy endpoint to test GET, POST, DELETE request using celery
+    :param _request:
+    :return:
+    """
+    env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
+    if not (env_key == TalentEnvs.DEV or env_key == TalentEnvs.JENKINS):
+        raise ForbiddenError("You are not authorized to access this endpoint.")
+
+    user_id = _request.user.id
+    try:
+        task = _request.get_json()
+    except BadRequest:
+        raise InvalidUsage('Given data is not JSON serializable')
+
+    # Post data param expired. If yes, then expire the token
+    expired = task.get('expired', False)
+
+    url = task.get('url', '')
+
+    if expired:
+        # Set the date in past to expire request oauth token.
+        # This is to test that run_job method refresh token or not
+        expiry = datetime.utcnow() - timedelta(days=5)
+        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+        db.db.session.commit()
+        token = Token.query.filter_by(user_id=_request.user.id).first()
+        token.update(expires=expiry)
+        run_job(user_id, _request.oauth_token, url, task.get('content-type', 'application/json'),
+                task.get('post_data', dict()))
+    else:
         try:
-            task = request.get_json()
-        except BadRequest:
-            raise InvalidUsage('Given data is not JSON serializable')
-
-        # Post data param expired. If yes, then expire the token
-        expired = task.get('expired', False)
-
-        url = task.get('url', '')
-
-        if expired:
-            # Set the date in past to expire request oauth token.
-            # This is to test that run_job method refresh token or not
-            expiry = datetime.utcnow() - timedelta(days=5)
-            expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
-
-            # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
+            # Try deleting the user if exist
             db.db.session.commit()
-            token = Token.query.filter_by(user_id=request.user.id).first()
-            token.update(expires=expiry)
-            run_job(user_id, request.oauth_token, url, task.get('content-type', 'application/json'),
-                    task.get('post_data', dict()))
-        else:
-            try:
-                # Try deleting the user if exist
-                db.db.session.commit()
-                test_user_id = task['test_user_id']
-                test_user = User.query.filter_by(id=test_user_id).first()
-                test_user.delete()
-            except Exception:
-                pass
-
-        return dict(message='Dummy Endpoint called')
+            test_user_id = task['test_user_id']
+            test_user = User.query.filter_by(id=test_user_id).first()
+            test_user.delete()
+        except Exception:
+            pass
 
 
 def raise_if_scheduler_not_running():

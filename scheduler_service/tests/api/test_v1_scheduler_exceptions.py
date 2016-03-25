@@ -50,6 +50,21 @@ class TestSchedulerExceptions(object):
                                  headers=auth_header)
         assert response.status_code == 400
 
+    def test_incorrect_request_method_exception(self, auth_header, job_config):
+        """
+            Create a job by using invalid request_method and check if exception occurs with status code 400
+            Args:
+                auth_data: Fixture that contains token.
+                job_config (dict): Fixture that contains job config to be used as
+                POST data while hitting the endpoint.
+            :return:
+            """
+        # Create job with invalid request method
+        job_config['request_method'] = 'invalid_request'
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 400
+
     def test_invalid_isjwtrequest_exception(self, auth_header, job_config):
         """
             Create a job using incorrect isjwtrequest, it should throw 500 exception with error code
