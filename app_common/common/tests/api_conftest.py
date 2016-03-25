@@ -16,14 +16,16 @@ import pytest
 from requests import codes as HttpStatus
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import get_token, get_user, add_roles, remove_roles, \
+from ..utils.test_utils import get_token, get_user, add_roles, \
     create_candidate, get_candidate, delete_candidate, create_smartlist, delete_smartlist, \
-    delete_talent_pool, create_talent_pools, get_talent_pool
+    delete_talent_pool, create_talent_pools, get_talent_pool, get_talent_pipeline, delete_talent_pipeline, \
+    create_talent_pipelines
 
 ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
          'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
          'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES',
-         'CAN_ADD_TALENT_PIPELINE_SMART_LISTS', 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS']
+         'CAN_ADD_TALENT_PIPELINE_SMART_LISTS', 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS',
+         'CAN_ADD_TALENT_PIPELINES']
 
 test_config = load_test_config()
 
@@ -176,17 +178,41 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     return candidate
 
 
+@pytest.fixture()
+def talent_pipeline(request, token_first, user_first):
+    """
+    This fixture created a talent pipeline that is associated to user_first
+    :param request: request object
+    :param token_first: authentication token for user_first
+    """
+    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
+
+    def tear_down():
+        delete_talent_pipeline(talent_pipeline_id, token_first,
+                               expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
+    return talent_pipeline_obj
+
+
 @pytest.fixture(scope='function')
-def smartlist_first(request, token_first, candidate_first):
+def smartlist_first(request, token_first, user_first, candidate_first, talent_pool):
     """
     This fixture creates a smartlist that contains a candidate from domain_first.
-    :param request: request object
+    :param request: request objecttalent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
     :param candidate_first: candidate object
     :param token_first: access token for user_first
     :return: smartlist objects (dict)
     """
+    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+    # talent_pipeline = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
     candidate_ids = [candidate_first['id']]
-    smartlist = create_smartlist(candidate_ids, token_first)['smartlist']
+    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():
@@ -198,7 +224,7 @@ def smartlist_first(request, token_first, candidate_first):
 
 
 @pytest.fixture(scope='function')
-def smartlist_second(request, token_second, candidate_second):
+def smartlist_second(request, token_second, candidate_second, talent_pool_second):
     """
     This fixture creates a smartlist that is associated contains a candidate from domain_second.
     :param request: request object
@@ -206,8 +232,10 @@ def smartlist_second(request, token_second, candidate_second):
     :param candidate_second: candidate object
     :return: smartlist object
     """
+    talent_pipelines = create_talent_pipelines(token_first, talent_pool_second['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_second['id']]
-    smartlist = create_smartlist(candidate_ids, token_second)['smartlist']
+    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():
@@ -218,7 +246,7 @@ def smartlist_second(request, token_second, candidate_second):
 
 
 @pytest.fixture(scope='function')
-def smartlist_same_domain(request, token_same_domain, candidate_same_domain):
+def smartlist_same_domain(request, token_same_domain, candidate_same_domain, talent_pool):
     """
     This fixture creates a smartlist that belongs to "user_same_domain"
     :param request:
@@ -227,8 +255,10 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain):
     :param candidate_same_domain: candidate from domain as of user_same_domain
     :return: smartlist object
     """
+    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_same_domain['id']]
-    smartlist = create_smartlist(candidate_ids, token_same_domain)['smartlist']
+    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
 
     def tear_down():

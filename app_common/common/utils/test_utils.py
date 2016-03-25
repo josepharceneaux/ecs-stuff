@@ -194,14 +194,15 @@ def add_roles(user_id, roles, token):
     :param token: auth token
     :return: True | False
     """
-    data = {"roles": roles}
-    response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
-                            token, data=data)
 
-    print(response.content)
-    if response.status_code == HttpStatus.BAD_REQUEST and response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS:
-        return None
-    assert response.status_code == HttpStatus.OK
+    for role in roles:
+        data = {"roles": [role]}
+        response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
+                                token, data=data)
+        if response.status_code == HttpStatus.BAD_REQUEST:
+            assert response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS
+        else:
+            assert response.status_code == HttpStatus.OK
 
 
 def remove_roles(user_id, roles, token):
@@ -268,11 +269,12 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
     assert response.status_code in expected_status
 
 
-def create_smartlist(candidate_ids, token, expected_status=(201,)):
+def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(201,)):
     assert isinstance(candidate_ids, (list, tuple)), 'candidate_ids must be list or tuple'
     data = {
         'candidate_ids': candidate_ids,
-        'name': fake.word()
+        'name': fake.word(),
+        "talent_pipeline_id": talent_pipeline_id
     }
     response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token, data=data)
     print(response.content)
@@ -282,6 +284,39 @@ def create_smartlist(candidate_ids, token, expected_status=(201,)):
 
 def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token)
+    print(response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200,)):
+    data = {
+        "talent_pipelines": []
+    }
+    for index in xrange(count):
+        talent_pipeline = {
+              "name": randomword(30),
+              "description": fake.paragraph(),
+              "talent_pool_id": talent_pool_id,
+              "date_needed": (datetime.now() + timedelta(days=100)).strftime("%Y-%m-%d")
+        }
+        data["talent_pipelines"].append(talent_pipeline)
+    response = send_request('post', CandidatePoolApiUrl.TALENT_PIPELINES, token, data=data)
+    print(response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
+    response = send_request('get', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id, token)
+    print(response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
+    response = send_request('delete', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id,
+                            token)
     print(response.content)
     assert response.status_code in expected_status
     return response.json()
