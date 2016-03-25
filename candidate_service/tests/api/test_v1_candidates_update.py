@@ -16,7 +16,6 @@ from candidate_service.common.tests.conftest import *
 from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
 # Candidate sample data
 from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateDate)
