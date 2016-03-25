@@ -12,4 +12,4 @@ from candidate_pool_service.common.talent_celery import CELERY_WORKER_ARGS
 from candidate_pool_service.candidate_pool_app import logger, celery_app as celery
 
 logger.info("Celery worker has been started successfully")
-celery.start(argv=CELERY_WORKER_ARGS + ['celery_stats_scheduler'])
+celery.start(argv=CELERY_WORKER_ARGS + ['celery_stats_scheduler'] + ['-n', 'celery_stats_scheduler'])
