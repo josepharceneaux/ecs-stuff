@@ -2,7 +2,7 @@ from flask.ext.cors import CORS
 
 from candidate_service.common.utils.models_utils import init_talent_app
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
+from candidate_service.common.routes import CandidateApi, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_service.common.talent_flask import TalentFlask
 from candidate_service.common.talent_celery import init_celery_app
