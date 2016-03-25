@@ -92,22 +92,22 @@ class AddUserRoles(object):
                                             DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
 
-# def define_and_send_request(access_token, request, url, data=None):
-#     """
-#     Function will define request based on params and make the appropriate call.
-#     :param  request:  can only be get, post, put, patch, or delete
-#     """
-#     request = request.lower()
-#     assert request in ['get', 'post', 'put', 'patch', 'delete']
-#     method = getattr(requests, request)
-#     if data is None:
-#         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
-#     else:
-#         return method(url=url,
-#                       headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
-#                       data=json.dumps(data))
-#
-#
+def define_and_send_request(access_token, request, url, data=None):
+    """
+    Function will define request based on params and make the appropriate call.
+    :param  request:  can only be get, post, put, patch, or delete
+    """
+    request = request.lower()
+    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    method = getattr(requests, request)
+    if data is None:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    else:
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      data=json.dumps(data))
+
+
 # def response_info(response):
 #     """
 #     Function returns the following response information:

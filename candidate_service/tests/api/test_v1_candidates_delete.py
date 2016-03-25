@@ -953,6 +953,3 @@ def test_delete_candidates_education_degree_bullet(access_token_first, user_firs
     assert len(can_dict_after_update['educations']) == educations_count_before_delete
     assert len(can_dict_after_update['educations'][0]['degrees']) == degrees_count_before_delete
     assert len(can_dict_after_update['educations'][0]['degrees'][0]['bullets']) == degree_bullets_count_before_delete - 1
-
-
-
