@@ -224,7 +224,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
 
 
 @pytest.fixture(scope='function')
-def smartlist_second(request, token_second, candidate_second, talent_pool_second):
+def smartlist_second(request, token_second, user_second, candidate_second, talent_pool_second):
     """
     This fixture creates a smartlist that is associated contains a candidate from domain_second.
     :param request: request object
@@ -246,7 +246,7 @@ def smartlist_second(request, token_second, candidate_second, talent_pool_second
 
 
 @pytest.fixture(scope='function')
-def smartlist_same_domain(request, token_same_domain, candidate_same_domain, talent_pool):
+def smartlist_same_domain(request, token_same_domain, user_same_domain, candidate_same_domain, talent_pool):
     """
     This fixture creates a smartlist that belongs to "user_same_domain"
     :param request:
