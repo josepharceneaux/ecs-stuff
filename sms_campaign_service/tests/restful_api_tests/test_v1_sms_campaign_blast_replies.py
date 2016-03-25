@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns/:id/blasts/:id/replies of
+    This module contains pyTests for endpoint /v1/sms-campaigns/:id/blasts/:id/replies of
     SMS Campaign API.
 """
 # Third Party
@@ -15,7 +15,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 
 class TestSmsCampaignBlastReplies(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/blasts/:id/replies
+    This class contains tests for endpoint /v1/sms-campaigns/:id/blasts/:id/replies
     """
     URL = SmsCampaignApiUrl.BLAST_REPLIES
     HTTP_METHOD = 'get'

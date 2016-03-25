@@ -41,6 +41,22 @@ def send_request(method, url, access_token, data=None, is_json=True, verify=True
     return request_method(url, data=data, headers=headers, verify=verify)
 
 
+def response_info(response):
+    """
+    Function returns the following response information:
+        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+    :type response: requests.models.Response
+    """
+    url, request, status_code = response.url, response.request, response.status_code
+    try:
+        _json = response.json()
+    except Exception:
+        _json = None
+
+    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+    return content.format(url, request, status_code, _json)
+
+
 def get_user(user_id, token):
     """
     This utility is used to get user info from UserService

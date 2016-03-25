@@ -51,14 +51,14 @@ from candidate_service.common.utils.validators import sanitize_zip_code, is_numb
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    get_candidate_email_from_domain_if_exists, does_phone_exist,
-    does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    does_phone_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
     get_education_degree_if_exists, does_military_service_exist
 )
 
 # Common utilities
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.datetime_utils import utc_isoformat
+from candidate_service.common.utils.iso_standards import get_country_name
 
 
 ##################################################
@@ -247,7 +247,7 @@ def candidate_addresses(candidate_id):
              'state': address.state,
              'zip_code': address.zip_code,
              'po_box': address.po_box,
-             'country': Country.country_name_from_country_id(country_id=address.country_id),
+             'country': get_country_name(address.iso3166_country),
              'latitude': address.coordinates and address.coordinates.split(',')[0],
              'longitude': address.coordinates and address.coordinates.split(',')[1],
              'is_default': address.is_default
@@ -272,7 +272,7 @@ def candidate_experiences(candidate_id):
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
              'state': experience.state,
-             'country': Country.country_name_from_country_id(country_id=experience.country_id),
+             'country': get_country_name(experience.iso3166_country),
              'is_current': experience.is_current,
              'bullets': _candidate_experience_bullets(experience=experience),
              } for experience in experiences]
@@ -322,7 +322,7 @@ def candidate_preferred_locations(candidate):
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
-             'country': Country.country_name_from_country_id(country_id=preferred_location.country_id)
+             'country': get_country_name(preferred_location.iso3166_country)
              } for preferred_location in preferred_locations]
 
 
@@ -340,7 +340,7 @@ def candidate_educations(candidate):
              'degrees': _candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
-             'country': Country.country_name_from_country_id(country_id=education.country_id),
+             'country': get_country_name(education.iso3166_country),
              'added_time': str(education.added_time)
              } for education in educations]
 
@@ -424,7 +424,7 @@ def candidate_military_services(candidate_id):
              'highest_rank': military_info.highest_rank,
              'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
              'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
-             'country': Country.country_name_from_country_id(country_id=military_info.country_id),
+             'country': get_country_name(military_info.iso3166_country),
              'comments': military_info.comments
              } for military_info in military_experiences]
 
@@ -710,6 +710,7 @@ def add_notes(candidate_id, data):
         notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
         db.session.add(CandidateTextComment(**notes_dict))
 
+
 ######################################################
 # Helper Functions For Creating and Updating Candidate
 ######################################################
@@ -808,15 +809,15 @@ def create_or_update_candidate_from_params(
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
     # Get user's domain ID
-    domain_id = domain_id_from_user_id(user_id=user_id)
+    domain_id = domain_id_from_user_id(user_id)
 
     # If candidate_id is not provided, Check if candidate exists
+    candidate_id_from_dice_profile = None
     if is_creating:
-        candidate_id = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id,
-                                                 domain_id, emails)
+        candidate_id_from_dice_profile = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id)
 
     # Raise an error if creation is requested and candidate_id is provided/found
-    if candidate_id and is_creating:
+    if is_creating and (candidate_id or candidate_id_from_dice_profile):
         raise InvalidUsage(error_message='Candidate already exists, creation failed',
                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                            additional_error_info={'id': candidate_id})
@@ -836,7 +837,7 @@ def create_or_update_candidate_from_params(
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate = Candidate.get_by_id(candidate_id)
     """
     :type candidate: Candidate
     """
@@ -851,7 +852,8 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
-        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime, is_updating)
+        _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime,
+                                                   is_updating)
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
@@ -950,13 +952,12 @@ def domain_id_from_user_id(user_id):
     return user.domain_id
 
 
-def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id, emails):
+def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id):
     """
     Function will search the db for a candidate with the same parameter(s) as provided
     :type dice_social_profile_id: int|long
     :type dice_profile_id: int|long
     :type domain_id: int|long
-    :type emails: list
     :return candidate_id if found, otherwise None
     """
     candidate = None
@@ -976,16 +977,6 @@ def get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id
     # If candidate is found, return its ID
     if candidate:
         return candidate.id
-
-    # If candidate still not found, check for existing email address, if specified
-    if emails:
-        for email in emails:
-            email_address = email.get('address')
-            candidate_email = db.session.query(CandidateEmail).join(Candidate).join(User).filter(
-                CandidateEmail.address == email_address, User.domain_id == domain_id
-            ).first()
-            if candidate_email:
-                return candidate_email.candidate_id
 
     return None
 
@@ -1094,19 +1085,24 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
         CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
 
     for i, address in enumerate(addresses):
-        address_dict = address.copy()
-        zip_code = sanitize_zip_code(address.get('zip_code'))
-        address_dict.update({
-            'country_id': Country.country_id_from_name_or_code(address.get('country')),
-            'zip_code': zip_code,
-            'coordinates': get_coordinates(zip_code, address.get('city'), address.get('state')),
-            'is_default': i == 0 if address_has_default else address.get('is_default'),
-            'country': None,
-            'candidate_id': candidate_id,
-            'resume_id': candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-        })
 
-        # No fields in particular are required for address, i.e. dict is empty; just continue
+        zip_code = sanitize_zip_code(address.get('zip_code'))
+        city, state = address.get('city'), address.get('state')
+        address_dict = dict(
+            address_line_1=address.get('address_line_1'),
+            address_line_2=address.get('address_line_2'),
+            city=city,
+            state=state,
+            zip_code=zip_code,
+            iso3166_country=address.get('country_code'),
+            po_box=address.get('po_box'),
+            is_default=i == 0 if address_has_default else address.get('is_default'),
+            coordinates=get_coordinates(zipcode=zip_code, city=city, state=state),
+            candidate_id=candidate_id,
+            resume_id=candidate_id   # TODO: remove once all tables have been added & migrated
+        )
+
+        # No fields in particular are required for address, i.e. if dict is empty; just continue
         if not address_dict:
             continue
 
@@ -1120,13 +1116,11 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
             candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
             candidate_address_obj = candidate_address_query.first()
             if not candidate_address_obj:
-                raise InvalidUsage(error_message='Candidate address not found',
-                                   error_code=custom_error.ADDRESS_NOT_FOUND)
+                raise InvalidUsage('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
 
             # CandidateAddress must belong to Candidate
             if candidate_address_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate address",
-                                     error_code=custom_error.ADDRESS_FORBIDDEN)
+                raise ForbiddenError("Unauthorized candidate address", custom_error.ADDRESS_FORBIDDEN)
 
             # Track all updates
             _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time, candidate_address_obj)
@@ -1226,7 +1220,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
             school_type=education.get('school_type'),
             city=education.get('city'),
             state=education.get('state'),
-            country_id=Country.country_id_from_name_or_code(education.get('country')),
+            iso3166_country=education.get('country_code'),
             is_current=education.get('is_current'),
             added_time=added_datetime
         )
@@ -1436,23 +1430,41 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
     """
     # If any of work_experiences' is_current is True, set all of candidate's experiences' is_current to False
     candidate_id, candidate_experiences = candidate.id, candidate.experiences
+    current_year = datetime.datetime.utcnow().year
     if any([experience.get('is_current') for experience in work_experiences]):
         CandidateExperience.set_is_current_to_false(candidate_id=candidate_id)
 
+    # Identify maximum start_year of all provided experiences
+    latest_start_date = max(experience.get('start_year') for experience in work_experiences)
     for work_experience in work_experiences:
-        # CandidateExperience
+
+        start_year = work_experience.get('start_year')
+
+        # end_year of job must be None if it's candidate's current job
+        is_current, end_year = work_experience.get('is_current'), work_experience.get('end_year')
+        if is_current:
+            end_year = None
+
+        if start_year:
+            # if end_year is not provided, it will be set to current_year assuming it's the most recent job
+            if not end_year and (start_year == latest_start_date):
+                end_year = current_year
+            # if end_year is not provided, and it's not the latest job, end_year will be latest job's start_year + 1
+            elif not end_year and (start_year != latest_start_date):
+                end_year = start_year + 1
+
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
             organization=work_experience.get('organization'),
             position=work_experience.get('position'),
             city=work_experience.get('city'),
             state=work_experience.get('state'),
-            end_month=work_experience.get('end_month'),
-            start_year=work_experience.get('start_year'),
-            country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
-            start_month=work_experience.get('start_month'),
-            end_year=work_experience.get('end_year'),
-            is_current=work_experience.get('is_current')
+            end_month=work_experience.get('end_month') or 1,
+            start_year=start_year,
+            iso3166_country=work_experience.get('country_code'),
+            start_month=work_experience.get('start_month') or 1,
+            end_year=end_year,
+            is_current=is_current
         )
 
         experience_id = work_experience.get('id')
@@ -1471,6 +1483,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             if can_exp_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate experience', custom_error.EXPERIENCE_FORBIDDEN)
 
+            # Add up candidate's total months of experience
+            update_total_months_experience(candidate, experience_dict, can_exp_obj)
+
             # Track all changes made to CandidateExperience
             _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime, can_exp_obj)
 
@@ -1487,8 +1502,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems()
-                                              if v is not None)
+                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v is not None)
 
                 experience_bullet_id = experience_bullet.get('id')
                 if experience_bullet_id:  # Update
@@ -1528,6 +1542,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 db.session.add(experience)
                 db.session.flush()
                 experience_id = experience.id
+
+                # Add up candidate's total months of experience
+                update_total_months_experience(candidate, experience_dict)
 
                 if is_updating:  # Track all updates
                     _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime)
@@ -1642,8 +1659,9 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email = get_candidate_email_from_domain_if_exists(user_id, email_dict['address'])
-            # Prevent duplicate email address for the same candidate in the same domain
+            email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
+                                                CandidateEmail.candidate_id == candidate_id).first()
+            # Prevent duplicate entries
             if not email:
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
@@ -1731,7 +1749,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
-            country_id=Country.country_id_from_name_or_code(military_service.get('country')),
+            iso3166_country=military_service.get('country_code'),
             service_status=military_service.get('status'),
             highest_rank=military_service.get('highest_rank'),
             highest_grade=military_service.get('highest_grade'),
@@ -1782,7 +1800,8 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
 
         preferred_location_dict = dict(
             address=preferred_location.get('address'),
-            country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
+            # country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
+            iso3166_country=preferred_location.get('country_code'),
             city=preferred_location.get('city'),
             region=preferred_location.get('state'),
             zip_code=sanitize_zip_code(preferred_location.get('zip_code'))
@@ -1993,3 +2012,53 @@ def get_search_params_of_smartlists(smartlist_ids):
     logger.info("Search Params for smartlist_ids %s are following: %s" % (smartlist_ids, search_params))
 
     return search_params
+
+
+def update_total_months_experience(candidate, experience_dict=None, candidate_experience=None, deleted=False):
+    """
+    Function will update candidate's total months of experiences.
+    Edge cases:
+        i. If one of candidate's experiences is removed, its total months will be subtracted from
+           candidate's current total-months-of-experience
+       ii. If an existing candidate experience's dates are updated; candidate.total_months_experience
+            will be updated accordingly
+      iii. Candidate's total months of experience will simply be aggregated if a new experience has been added
+
+    This function does not effect candidate's total months of experience in case all of candidate's
+      experiences have been removed. That functionality is accounted for in CandidateExperienceResource/delete()
+    :type candidate:  Candidate
+    :type experience_dict:  dict[str]
+    :type candidate_experience:  CandidateExperience
+    :type deleted:  bool
+    """
+    # Starting point for total_months_experience
+    total_months_experience = 0
+
+    # This is to prevent code from breaking in case of experience_dict.get(key)
+    if experience_dict is None:
+        experience_dict = {}
+
+    if candidate.total_months_experience is None:
+        candidate.total_months_experience = 0
+
+    start_year, end_year = experience_dict.get('start_year'), experience_dict.get('end_year')
+    start_month, end_month = experience_dict.get('start_month'), experience_dict.get('end_month')
+
+    if start_year and end_year:
+        total_months_experience = (end_year - start_year) * 12 + (end_month - start_month)
+
+    if candidate_experience:
+        previous_start_year, previous_end_year = candidate_experience.start_year, candidate_experience.end_year
+        previous_start_month, previous_end_month = candidate_experience.start_month, candidate_experience.end_month
+
+        if deleted:  # A CandidateExperience has been removed
+            total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
+                                      (previous_end_month - previous_start_month)
+
+        else:  # An existing CandidateExperience's dates have been updated
+            if start_year and end_year:
+                total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
+                    (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
+
+    candidate.total_months_experience += total_months_experience
+    return

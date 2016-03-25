@@ -689,7 +689,7 @@ class PushCampaignBlastSends(Resource):
         """
         Returns Campaign sends for given campaign_id and blast_id.
         We can pass query params like page number and page size like
-        /v1/campaigns/:campaign_id/blasts/:id/sends?page=2&per_page=20
+        /v1/push-campaigns/:campaign_id/blasts/:id/sends?page=2&per_page=20
         :param blast_id: integer, blast unique id
         :param campaign_id: integer, unique id representing campaign in getTalent database
         :return: 1- count of campaign sends and 2- Push campaign sends records as dict

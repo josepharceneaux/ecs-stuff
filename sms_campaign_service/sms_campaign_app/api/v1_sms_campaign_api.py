@@ -4,25 +4,25 @@
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
-        - SmsCampaigns: /v1/campaigns
+        - SmsCampaigns: /v1/sms-campaigns
 
             GET     : Gets list of all the SMS campaigns that belong to user
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
-        - ScheduleSmsCampaign: /v1/campaigns/:id/schedule
+        - ScheduleSmsCampaign: /v1/sms-campaigns/:campaign_id/schedule
 
             POST    : Schedules the campaign from given campaign_id and data provided
             PUT     : Re-schedules the campaign from given campaign_id and data provided
             DELETE  : Un-schedules the campaign from given campaign_id
 
-        - SmsCampaigns: /v1/campaigns/:id
+        - SmsCampaigns: /v1/sms-campaigns/:campaign_id
 
             GET     : Gets campaign data using given id
             PUT    : Updates existing campaign using given id
             DELETE  : Deletes SMS campaign from db using given id
 
-        - SendSmsCampaign: /v1/campaigns/:id/send
+        - SendSmsCampaign: /v1/sms-campaigns/:campaign_id/send
 
             POST    : Sends the SMS Campaign by campaign id
 
@@ -36,32 +36,32 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : When candidate replies to an SMS campaign, this endpoint is hit from Twilio
                         to notify our app.
 
-        - SmsCampaignBlasts:  /v1/campaigns/:id/blasts
+        - SmsCampaignBlasts:  /v1/sms-campaigns/:campaign_id/blasts
 
             GET    : Gets the all the "blast" records for given SMS campaign id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastById:  /v1/campaigns/:id/blasts/:id
+        - SmsCampaignBlastById:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id
 
             GET    : Gets the "blast" record for given SMS campaign id and blast_id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastSends:  /v1/campaigns/:id/blasts/:id/sends
+        - SmsCampaignBlastSends:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
 
             GET    : Gets the "sends" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_sends'.
 
-        - SmsCampaignBlastReplies:  /v1/campaigns/:id/blasts/:id/replies
+        - SmsCampaignBlastReplies:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
 
             GET    : Gets the "replies" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_replies'
 
-        - SmsCampaignSends:  /v1/campaigns/:id/sends
+        - SmsCampaignSends:  /v1/sms-campaigns/:campaign_id/sends
 
             GET    : Gets all the "sends" records for given SMS campaign id
                         from db table sms_campaign_sends
 
-        - SmsCampaignReplies:  /v1/campaigns/:id/replies
+        - SmsCampaignReplies:  /v1/sms-campaigns/:campaign_id/replies
 
             GET    : Gets all the "replies" records for given SMS campaign id
                         from db table "sms_campaign_replies"
@@ -108,7 +108,7 @@ api.route = types.MethodType(api_route, api)
 @api.route(SmsCampaignApi.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
-    Endpoint looks like /v1/campaigns
+    Endpoint looks like /v1/sms-campaigns
     This resource is used to
         1- Get all campaigns created by current user [GET]
         2- Create an SMS campaign [POST]
@@ -133,31 +133,31 @@ class SMSCampaigns(Resource):
         .. Response::
 
             {
-                "count": 2,
-                "campaigns": [
+                  "count": 2,
+                  "campaigns": [
                             {
-                              "added_datetime": "2015-11-19 18:54:04",
-                              "frequency_id": 1,
-                              "id": 3,
-                              "name": "New Campaign",
-                              "start_datetime": "",
-                              "body_text": "Welcome all boys",
-                              "end_datetime": "",
-                              "updated_time": "2015-11-19 18:53:55",
-                              "user_phone_id": 1
+                              "added_datetime": "2016-02-09T16:13:21+00:00",
+                              "start_datetime": null,
+                              "frequency": "Once",
+                              "user_id": 1,
+                              "name": "Smartlist",
+                              "body_text": null,
+                              "list_ids": [1, 2, 3],
+                              "id": 1,
+                              "end_datetime": null
                             },
                             {
-                              "added_datetime": "2015-11-19 18:55:08",
-                              "frequency_id": 1,
+                              "added_datetime": "2016-02-09T17:44:05+00:00",
+                              "start_datetime": null,
+                              "frequency": "Once",
+                              "user_id": 1,
+                              "name": "Smartlist",
+                              "body_text": null,
+                              "list_ids": [2],
                               "id": 4,
-                              "name": "New Campaign",
-                              "start_datetime": "",
-                              "body_text": "Job opening at...",
-                              "end_datetime": "",
-                              "updated_time": "2015-11-19 18:54:51",
-                              "user_phone_id": 1
+                              "end_datetime": null
                             }
-              ]
+                            ]
             }
 
         .. Status:: 200 (OK)
@@ -165,7 +165,7 @@ class SMSCampaigns(Resource):
                     500 (Internal Server Error)
         """
         camp_obj = SmsCampaignBase(request.user.id)
-        all_campaigns = [campaign.to_json() for campaign in camp_obj.get_all_campaigns()]
+        all_campaigns = [campaign.to_dict() for campaign in camp_obj.get_all_campaigns()]
         return dict(count=len(all_campaigns), campaigns=all_campaigns), 200
 
     def post(self):
@@ -304,7 +304,7 @@ class SMSCampaigns(Resource):
 @api.route(SmsCampaignApi.SCHEDULE)
 class ScheduleSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/schedule
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/schedule
     This resource is used to
         1- Schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
@@ -425,7 +425,7 @@ class ScheduleSmsCampaign(Resource):
                     500 (Internal Server Error)
         """
         # create object of class SmsCampaignBase
-        sms_camp_obj = SmsCampaignBase(request.user.id)
+        sms_camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         # call method schedule() to schedule the campaign and get the task_id
         task_id = sms_camp_obj.reschedule(request, campaign_id)
         if task_id:
@@ -474,7 +474,7 @@ class ScheduleSmsCampaign(Resource):
 @api.route(SmsCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id
     This resource is used to
         1- Get campaign from given campaign_id [GET]
         2- Update an existing SMS campaign [PUT]
@@ -499,17 +499,17 @@ class CampaignById(Resource):
         .. Response::
 
             {
-                "campaign": {
-                          "body_text": "Dear all, please visit http://www.qc-technologies.com",
-                          "frequency_id": 1,
-                          "updated_time": "2015-11-24 16:31:09",
-                          "user_phone_id": 1,
-                          "start_datetime": "",
-                          "added_datetime": "2015-11-24 16:30:57",
-                          "end_datetime": "",
-                          "id": 1,
-                          "name": "UpdatedName"
-                        }
+                  "campaign": {
+                        "added_datetime": "2016-02-09T16:13:21+00:00",
+                        "start_datetime": "2016-02-09T16:13:21+00:00",
+                        "frequency": "Once",
+                        "user_id": 1,
+                        "name": "Job opening at getTalent",
+                        "body_text": "HI all, we have few openings at https://www.gettalent.com",
+                        "list_ids": [1, 2, 3],
+                        "id": 1,
+                        "end_datetime": null
+                      }
             }
 
         .. Status:: 200 (OK)
@@ -521,7 +521,7 @@ class CampaignById(Resource):
         """
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-        return dict(campaign=campaign.to_json()), 200
+        return dict(campaign=campaign.to_dict()), 200
 
     def put(self, campaign_id):
         """
@@ -566,7 +566,7 @@ class CampaignById(Resource):
                     5017 (INVALID_URL_FORMAT)
         """
         campaign_data = get_valid_json_data(request)
-        camp_obj = SmsCampaignBase(request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         invalid_smartlist_ids = camp_obj.update(campaign_data, campaign_id=campaign_id)
         # If any of the smartlist_id found invalid
         if invalid_smartlist_ids['count']:
@@ -604,7 +604,7 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ERROR_DELETING_SMS_CAMPAIGN)
         """
-        campaign_obj = SmsCampaignBase(request.user.id)
+        campaign_obj = SmsCampaignBase(request.user.id, campaign_id)
         campaign_deleted = campaign_obj.delete(campaign_id)
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
@@ -617,7 +617,7 @@ class CampaignById(Resource):
 @api.route(SmsCampaignApi.SEND)
 class SendSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/send
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/send
     This resource is used to send SMS Campaign to candidates [POST]
     """
     decorators = [require_oauth()]
@@ -627,7 +627,7 @@ class SendSmsCampaign(Resource):
         It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
         Once the campaign is scheduled, _scheduler_service_ will pick it up and it will ping the
-        this endpoint (https://sms-campaign-service/v1/campaign/:id/send)
+        this endpoint (https://sms-campaign-service.gettalent.com/v1/sms-campaign/:campaign_id/send)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
@@ -661,7 +661,7 @@ class SendSmsCampaign(Resource):
                          5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        camp_obj = SmsCampaignBase(request.user.id)
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         camp_obj.send(campaign_id)
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
 
@@ -783,7 +783,7 @@ class SmsReceive(Resource):
 @api.route(SmsCampaignApi.BLASTS)
 class SmsCampaignBlasts(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts.
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts.
     This class returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
@@ -850,7 +850,7 @@ class SmsCampaignBlasts(Resource):
 @api.route(SmsCampaignApi.BLAST)
 class SmsCampaignBlastById(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id
     This gives the blast object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -906,7 +906,7 @@ class SmsCampaignBlastById(Resource):
 @api.route(SmsCampaignApi.BLAST_SENDS)
 class SmsCampaignBlastSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
     This resource is used to GET Campaign "sends" for one particular blast of a given campaign.
     """
     decorators = [require_oauth()]
@@ -975,7 +975,7 @@ class SmsCampaignBlastSends(Resource):
 @api.route(SmsCampaignApi.BLAST_REPLIES)
 class SmsCampaignBlastReplies(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
     This gives the replies object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -1041,7 +1041,7 @@ class SmsCampaignBlastReplies(Resource):
 @api.route(SmsCampaignApi.SENDS)
 class SmsCampaignSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/sends
     This resource is used to GET Campaign sends
     """
     decorators = [require_oauth()]
@@ -1108,7 +1108,7 @@ class SmsCampaignSends(Resource):
 @api.route(SmsCampaignApi.REPLIES)
 class SmsCampaignReplies(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/replies
     This resource is used to GET Campaign replies
     """
     decorators = [require_oauth()]

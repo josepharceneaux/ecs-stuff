@@ -58,7 +58,6 @@ def import_from_table():
     }
     :return:
     """
-
     user_id = request.user.id
 
     posted_data = request.get_json(silent=True)

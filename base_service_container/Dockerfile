@@ -50,6 +50,8 @@ CMD eval "$(pyenv init -)"
 CMD ["pyenv", "shell", "2.7.9"]
 CMD ["pyenv", "local", "2.7.9"]
 
+RUN pip install -U pip
+
 # Install Python requirements common to all services
 RUN pip install -r /root/base_service_container/requirements.txt
 

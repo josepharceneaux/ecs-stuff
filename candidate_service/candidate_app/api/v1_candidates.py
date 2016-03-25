@@ -22,7 +22,7 @@ from candidate_service.common.models.db import db
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.validators import is_valid_email
+from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
@@ -54,6 +54,7 @@ from candidate_service.common.models.candidate import (
     CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
+from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -63,17 +64,15 @@ from candidate_service.modules.talent_candidates import (
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
-    fetch_aggregated_candidate_views
+    fetch_aggregated_candidate_views, update_total_months_experience
 )
+from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
     upload_candidate_documents, delete_candidate_documents
 )
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
-)
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
-    create_smartlist_from_api, create_campaign_from_api, create_campaign_send_from_api
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -135,7 +134,7 @@ class CandidatesResource(Resource):
                         candidate_id = candidate_email_obj.candidate_id
                         # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                         candidate_ids_from_candidate_email_obj.append(candidate_id)
-                        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+                        candidate = Candidate.get_by_id(candidate_id)
                         if candidate.is_web_hidden:  # Un-hide candidate from web, if found
                             candidate.is_web_hidden = 0
                             # If candidate's web-hidden is set to false, it will be treated as an update
@@ -174,6 +173,9 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
+                country_code = military_service.get('country_code') or 'US'
+                if not is_country_code_valid(country_code):
+                    raise InvalidUsage("Country code not recognized: {}".format(country_code))
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -816,9 +818,13 @@ class CandidateExperienceResource(Resource):
                 raise ForbiddenError('Not authorized', custom_error.EXPERIENCE_FORBIDDEN)
 
             db.session.delete(experience)
+            update_total_months_experience(candidate, candidate_experience=experience, deleted=True)
 
         else:  # Delete all experiences
             map(db.session.delete, candidate.experiences)
+
+            # Set Candidate's total_months_experience to 0
+            candidate.total_months_experience = 0
 
         db.session.commit()
 
@@ -1287,7 +1293,7 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        subject = body_dict.get('subject', 'No Subject')
+        subject = body_dict.get('email_subject', 'No Subject')
         _from = body_dict.get('email_from')
         reply_to = body_dict.get('email_reply_to')
         body_html = body_dict.get('email_body_html')
@@ -1300,7 +1306,7 @@ class CandidateClientEmailCampaignResource(Resource):
         if not isinstance(candidates_list, list):
             raise InvalidUsage(error_message="Candidates must be a list.")
 
-        candidate_ids = [int(candidate['id']) for candidate in body_dict.get('candidates')]
+        candidate_ids = [int(candidate['id']) for candidate in candidates_list]
         if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
             raise ForbiddenError(error_message="Candidates do not belong to logged-in user")
 
@@ -1311,13 +1317,30 @@ class CandidateClientEmailCampaignResource(Resource):
         campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
 
+        # In first version, we only have one candidate when sending campaign via email-client.
+        # So, here we are picking first candidate and the id of first talent_pool it is
+        # associated with.
+
+        talent_pipeline = db.session.query(TalentPipeline.id).\
+            join(TalentPool, TalentPipeline.talent_pool_id == TalentPool.id).\
+            join(TalentPoolCandidate, TalentPool.id == TalentPoolCandidate.talent_pool_id).\
+            filter(TalentPoolCandidate.candidate_id == candidate_ids[0]).first()
+
+        if not talent_pipeline:
+            logger.warn("Email Campaign is trying to send to candidate (%s) outside a pipeline" % candidate_ids[0])
+            raise InvalidUsage(error_message="talent does not belong to pipeline")
+
         smartlist_object = {
             "name": list_name,
-            "candidate_ids": candidate_ids
+            "candidate_ids": candidate_ids,
+            "talent_pipeline_id": talent_pipeline.id
         }
 
-        created_smartlist = create_smartlist_from_api(smartlist_object, access_token=request.headers.get('authorization'))
+        create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
+        if create_smartlist_resp.status_code != 201:
+            return create_smartlist_resp.json(), create_smartlist_resp.status_code
 
+        created_smartlist = create_smartlist_resp.json()
         if not created_smartlist or not created_smartlist.get('smartlist'):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
@@ -1334,13 +1357,16 @@ class CandidateClientEmailCampaignResource(Resource):
             "email_client_id": email_client_id,
             "list_ids": [int(created_smartlist_id)]
         }
-        try:
-            email_campaign_created = create_campaign_from_api(email_campaign_object, access_token=request.headers.get('authorization'))
-            email_campaign_send_created = create_campaign_send_from_api(email_campaign_created.get('campaign').get('id'), access_token=request.headers.get('authorization'))
-        except Exception as e:
-            raise InternalServerError(error_message="Could not create your campaign %s" % e.message)
+        email_campaign_created = create_campaign(email_campaign_object, request.headers.get('authorization'))
+        if email_campaign_created.status_code != 201:
+            return email_campaign_created.json(), email_campaign_created.status_code
 
-        return email_campaign_send_created, 201
+        email_campaign_send_created = create_campaign_send(email_campaign_created.json().get('campaign').get('id'),
+                                                           access_token=request.headers.get('authorization'))
+        if not email_campaign_send_created.ok:
+            return email_campaign_send_created.json(), email_campaign_send_created.status_code
+
+        return email_campaign_send_created.json(), 201
 
 
 class CandidateViewResource(Resource):

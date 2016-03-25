@@ -3,18 +3,25 @@ Test cases for CandidateResource/post()
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
+
 # Conftest
 from candidate_service.common.tests.conftest import *
+
 # Helper functions
 from helpers import (
-    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource
+    response_info, AddUserRoles, request_to_candidate_resource, request_to_candidates_resource,
+    get_country_code_from_name
 )
+
 # Sample data
 from candidate_sample_data import (
+    GenerateCandidateDate,
     generate_single_candidate_data, candidate_phones, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
+
 from candidate_service.common.models.candidate import CandidateEmail
+
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -421,26 +428,46 @@ class TestCreateHiddenCandidate(object):
         assert create_resp.json()['candidates'][0]['id'] == candidate_id
 
 
-######################## CandidateAddress ########################
-def test_create_candidate_with_bad_zip_code(access_token_first, user_first, talent_pool):
-    """
-    Test:   Attempt to create a Candidate with invalid zip_code
-    Expect: 201, but zip_code must be Null
-    """
-    AddUserRoles.add_and_get(user=user_first)
+class TestCreateCandidateAddress(object):
+    def test_create_candidate_address(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Create new candidate + candidate-address
+        Expect: 201
+        """
+        # Create Candidate with address
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateDate.addresses([talent_pool.id])
+        country_code = data['candidates'][0]['addresses'][0]['country_code']
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Create Candidate
-    data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id])
-    data['candidates'][0]['addresses'][0]['zip_code'] = 'ABCDEFG'
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_country_code_from_name(get_resp.json()['candidate']['addresses'][0]['country']) == country_code
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
-    assert candidate_dict['addresses'][0]['zip_code'] is None
+
+    def test_create_candidate_with_bad_zip_code(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to create a Candidate with invalid zip_code
+        Expect: 201, but zip_code must be Null
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user=user_first)
+        data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id])
+        data['candidates'][0]['addresses'][0]['zip_code'] = 'ABCDEFG'
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_dict = request_to_candidate_resource(
+            access_token_first, 'get', candidate_id).json()['candidate']
+        assert candidate_dict['addresses'][0]['zip_code'] is None
 
 
 ######################## CandidateAreaOfInterest ########################
@@ -520,72 +547,137 @@ def test_create_candidate_custom_fields_outside_of_domain(access_token_second, t
     assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
 
-######################## CandidateEducations ########################
-def test_create_candidate_educations(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidateEducation for Candidate
-    Expect: 201
-    """
-    AddUserRoles.add_and_get(user=user_first)
-    # Create Candidate
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+class TestCreateCandidateEducation(object):
+    def test_create_successfully(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Create candidate + education
+        Expect: 201
+        """
+        # Create candidate + education
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateDate.educations([talent_pool.id])
+        country_code = data['candidates'][0]['educations'][0]['country_code']
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
-    can_educations = candidate_dict['educations']
-    data_educations = data['candidates'][0]['educations'][0]
-    assert isinstance(can_educations, list)
-    assert can_educations[0]['country'] == 'United States'
-    assert can_educations[0]['state'] == data_educations['state']
-    assert can_educations[0]['city'] == data_educations['city']
-    assert can_educations[0]['school_name'] == data_educations['school_name']
-    assert can_educations[0]['school_type'] == data_educations['school_type']
-    assert can_educations[0]['is_current'] == data_educations['is_current']
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_country_code_from_name(get_resp.json()['candidate']['educations'][0]['country']) == country_code
 
-    can_edu_degrees = can_educations[0]['degrees']
-    assert isinstance(can_edu_degrees, list)
-    assert can_edu_degrees[0]['gpa'] == '3.50'
-    assert can_edu_degrees[0]['start_year'] == str(data_educations['degrees'][0]['start_year'])
+    def test_create_candidate_educations(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidateEducation for Candidate
+        Expect: 201
+        """
+        AddUserRoles.add_and_get(user=user_first)
+        # Create Candidate
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    can_edu_degree_bullets = can_edu_degrees[0]['bullets']
-    assert isinstance(can_edu_degree_bullets, list)
-    assert can_edu_degree_bullets[0]['major'] == data_educations['degrees'][0]['bullets'][0]['major']
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']
+        can_educations = candidate_dict['educations']
+        data_educations = data['candidates'][0]['educations'][0]
+        assert isinstance(can_educations, list)
+        assert can_educations[0]['country'] == 'United States'
+        assert can_educations[0]['state'] == data_educations['state']
+        assert can_educations[0]['city'] == data_educations['city']
+        assert can_educations[0]['school_name'] == data_educations['school_name']
+        assert can_educations[0]['school_type'] == data_educations['school_type']
+        assert can_educations[0]['is_current'] == data_educations['is_current']
 
+        can_edu_degrees = can_educations[0]['degrees']
+        assert isinstance(can_edu_degrees, list)
+        assert can_edu_degrees[0]['gpa'] == '3.50'
+        assert can_edu_degrees[0]['start_year'] == str(data_educations['degrees'][0]['start_year'])
 
-def test_create_candidate_educations_with_no_degrees(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidateEducation for Candidate
-    Expect: 201
-    """
-    AddUserRoles.add_and_get(user=user_first)
+        can_edu_degree_bullets = can_edu_degrees[0]['bullets']
+        assert isinstance(can_edu_degree_bullets, list)
+        assert can_edu_degree_bullets[0]['major'] == data_educations['degrees'][0]['bullets'][0]['major']
 
-    # Create Candidate without degrees
-    data = generate_single_candidate_data([talent_pool.id])
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data=data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+    def test_create_candidate_educations_with_no_degrees(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidateEducation for Candidate
+        Expect: 201
+        """
+        AddUserRoles.add_and_get(user=user_first)
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+        # Create Candidate without degrees
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data=data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    can_educations = candidate_dict['educations']
-    data_educations = data['candidates'][0]['educations'][0]
-    assert isinstance(can_educations, list)
-    assert can_educations[0]['city'] == data_educations['city']
-    assert can_educations[0]['school_name'] == data_educations['school_name']
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']
 
-    can_edu_degrees = can_educations[0]['degrees']
-    assert isinstance(can_edu_degrees, list)
+        can_educations = candidate_dict['educations']
+        data_educations = data['candidates'][0]['educations'][0]
+        assert isinstance(can_educations, list)
+        assert can_educations[0]['city'] == data_educations['city']
+        assert can_educations[0]['school_name'] == data_educations['school_name']
+
+        can_edu_degrees = can_educations[0]['degrees']
+        assert isinstance(can_edu_degrees, list)
 
 
 ######################## CandidateExperience ########################
+class TestCreateWorkExperience(object):
+    def test_create_work_experience_successfully(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate + work experience
+        Expect: 201
+        """
+        # Create candidate +  work experience
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateDate.work_experiences([talent_pool.id])
+        country_code = data['candidates'][0]['work_experiences'][0]['country_code']
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_country_code_from_name(get_resp.json()['candidate']['work_experiences'][0]['country']) == country_code
+
+    def test_create_experiences(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Add candidate work experience and check for total months of experiences accumulated
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'work_experiences': [
+                    {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
+                    {'start_year': 2008, 'end_year': None},  # 12*1 = 12 months of experience
+                    {'start_year': 2011, 'end_year': 2016}   # 12*5 = 60 months of experience
+                ]
+            }
+        ]}
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Check candidate's total_months_experience from db
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        db.session.commit()
+        assert Candidate.get_by_id(candidate_id).total_months_experience == 96  # 24 + 12 + 60
+
+
 def test_create_candidate_experience(access_token_first, user_first, talent_pool):
     """
     Test:   Create CandidateExperience for Candidate
@@ -826,58 +918,98 @@ def test_create_candidate_with_bad_phone_label(access_token_first, user_first, t
     assert candidate_dict['phones'][-1]['label'] == 'Other'
 
 
-######################## CandidateMilitaryService ########################
-def test_create_candidate_military_service(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidateMilitaryService for Candidate
-    Expect: 201
-    """
-    # Create Candidate
-    AddUserRoles.add_and_get(user=user_first)
-    data = candidate_military_service(talent_pool)
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+class TestCreateMilitaryService(object):
+    def test_create_military_service_successfully(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate + military service
+        Expect: 201
+        """
+        # Create candidate +  military service
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateDate.military_services([talent_pool.id])
+        country_code = data['candidates'][0]['military_services'][0]['country_code']
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_country_code_from_name(get_resp.json()['candidate']['military_services'][0]['country']) == country_code
 
-    # Assert data sent in = data retrieved
-    can_military_services = candidate_dict['military_services']
-    can_military_services_data = data['candidates'][0]['military_services'][0]
-    assert isinstance(can_military_services, list)
-    assert can_military_services[-1]['comments'] == can_military_services_data['comments']
-    assert can_military_services[-1]['highest_rank'] == can_military_services_data['highest_rank']
-    assert can_military_services[-1]['branch'] == can_military_services_data['branch']
+    def test_create_candidate_military_service(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidateMilitaryService for Candidate
+        Expect: 201
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user=user_first)
+        data = candidate_military_service(talent_pool)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']
+
+        # Assert data sent in = data retrieved
+        can_military_services = candidate_dict['military_services']
+        can_military_services_data = data['candidates'][0]['military_services'][0]
+        assert isinstance(can_military_services, list)
+        assert can_military_services[-1]['comments'] == can_military_services_data['comments']
+        assert can_military_services[-1]['highest_rank'] == can_military_services_data['highest_rank']
+        assert can_military_services[-1]['branch'] == can_military_services_data['branch']
 
 
-######################## CandidatePreferredLocations ########################
-def test_create_candidate_preferred_location(access_token_first, user_first, talent_pool):
-    """
-    Test:   Create CandidatePreferredLocations for Candidate
-    Expect: 201
-    """
-    # Create Candidate
-    AddUserRoles.add_and_get(user=user_first)
-    data = candidate_preferred_locations(talent_pool)
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+class TestCreatePreferredLocation(object):
+    def test_create_preferred_locations_successfully(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate + preferred locations
+        Expect: 201
+        """
+        # Create candidate +  preferred locations
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateDate.preferred_locations([talent_pool.id])
+        country_code = data['candidates'][0]['preferred_locations'][0]['country_code']
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Retrieve Candidate
-    candidate_id = create_resp.json()['candidates'][0]['id']
-    candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
-        .json()['candidate']
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_country_code_from_name(get_resp.json()['candidate']['preferred_locations'][0]['country']) == country_code
 
-    # Assert data sent in = data retrieved
-    can_preferred_locations = candidate_dict['preferred_locations']
-    can_preferred_locations_data = data['candidates'][0]['preferred_locations']
-    assert isinstance(can_preferred_locations, list)
-    assert can_preferred_locations[0]['city'] == can_preferred_locations_data[0]['city']
-    assert can_preferred_locations[0]['city'] == can_preferred_locations_data[0]['city']
-    assert can_preferred_locations[0]['state'] == can_preferred_locations_data[0]['state']
+    def test_create_candidate_preferred_location(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Create CandidatePreferredLocations for Candidate
+        Expect: 201
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user=user_first)
+        data = candidate_preferred_locations(talent_pool)
+        create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id)\
+            .json()['candidate']
+
+        # Assert data sent in = data retrieved
+        can_preferred_locations = candidate_dict['preferred_locations']
+        can_preferred_locations_data = data['candidates'][0]['preferred_locations']
+        assert isinstance(can_preferred_locations, list)
+        assert can_preferred_locations[0]['city'] == can_preferred_locations_data[0]['city']
+        assert can_preferred_locations[0]['city'] == can_preferred_locations_data[0]['city']
+        assert can_preferred_locations[0]['state'] == can_preferred_locations_data[0]['state']
 
 
 ######################## CandidateSkills ########################

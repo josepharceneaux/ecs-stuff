@@ -19,7 +19,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign, 
 
 class TestEmailCampaignBlastsWithId(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/blasts/:id
+    This class contains tests for endpoint /v1/email-campaigns/:id/blasts/:id
     """
     URL = EmailCampaignUrl.BLAST
     HTTP_METHOD = 'get'

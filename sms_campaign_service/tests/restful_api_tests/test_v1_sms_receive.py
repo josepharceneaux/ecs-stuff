@@ -133,7 +133,7 @@ class TestSmsReceive(object):
         try:
             SmsCampaignBase.process_candidate_reply(
                 {'To': user_phone_1.value,
-                 'From': candidates_with_same_phone[0].candidate_phone[0].value,
+                 'From': candidates_with_same_phone[0].phones[0].value,
                  'Body': "What's the venue?"})
         except MultipleCandidatesFound as error:
             assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND

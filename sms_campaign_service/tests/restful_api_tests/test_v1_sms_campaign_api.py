@@ -1,7 +1,7 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/campaigns of SMS Campaign API.
+    This module contains pyTests for endpoint /v1/sms-campaigns of SMS Campaign API.
 """
 # Standard Imports
 import json
@@ -463,18 +463,17 @@ class TestSmsCampaignHTTPDelete(object):
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, valid_header, user_first,
                                                                  sms_campaign_of_current_user):
         """
-        Test with one existing, one invalid id and one non existing ids of SMS campaign.
+        Test with one existing, and one non existing ids of SMS campaign.
         It should get 207 status code.
-        :return:
         """
-        last_id = CampaignsTestsHelpers.get_last_id(SmsCampaign)
+        non_existing_id = CampaignsTestsHelpers.get_last_id(SmsCampaign) + 1000
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [last_id, sms_campaign_of_current_user.id]
+                                       'ids': [non_existing_id, sms_campaign_of_current_user.id]
                                    }))
         assert response.status_code == 207
-        assert last_id in response.json()['not_found_ids']
+        assert non_existing_id in response.json()['not_found_ids']
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user.id)
 

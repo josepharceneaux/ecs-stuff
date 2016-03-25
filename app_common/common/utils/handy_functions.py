@@ -32,7 +32,7 @@ JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 def random_word(length):
-    """Creates a random lowercase string, usefull for testing data."""
+    """Creates a random lowercase string, useful for testing data."""
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 

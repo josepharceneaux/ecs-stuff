@@ -11,6 +11,7 @@ import datetime
 
 # Third-party imports
 from dateutil.tz import tzutc
+from jsonschema import validate, FormatChecker, ValidationError
 from pytz import timezone
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -30,6 +31,9 @@ from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.models_utils import get_by_id
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
+
+from scheduler_service.modules.json_schema import periodic_task_job_schema
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
     get_valid_datetime_from_dict, get_valid_integer_from_dict, get_valid_task_name_from_dict
 from scheduler_service.custom_exceptions import TriggerTypeError, JobNotCreatedError, TaskAlreadyScheduledError
@@ -43,6 +47,9 @@ scheduler.add_jobstore(job_store)
 
 # Request timeout is 30 seconds.
 REQUEST_TIMEOUT = 30
+
+# Datetime format
+DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S.%fZ'
 
 
 def apscheduler_listener(event):
@@ -116,11 +123,10 @@ def validate_periodic_job(data):
     valid_data.update({'end_datetime': end_datetime})
 
     # If value of frequency is not integer or lesser than 1 hour then throw exception
-    if int(frequency) < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
+    if frequency < SchedulerUtils.MIN_ALLOWED_FREQUENCY:
         raise InvalidUsage('Invalid value of frequency. Value should be greater than or equal to '
                            '%s' % SchedulerUtils.MIN_ALLOWED_FREQUENCY)
 
-    frequency = int(frequency)
     valid_data.update({'frequency': frequency})
     current_datetime = datetime.datetime.utcnow()
     current_datetime = current_datetime.replace(tzinfo=timezone('UTC'))
@@ -169,8 +175,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
         token = Token.get_token(access_token=access_token.split(' ')[1])
         # If token has expired we refresh it
-        past_datetime = token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)
-        if token and past_datetime < datetime.datetime.utcnow():
+        if token and (token.expires - datetime.timedelta(seconds=REQUEST_TIMEOUT)) < datetime.datetime.utcnow():
             data = {
                 'client_id': token.client_id,
                 'client_secret': token.client.client_secret,
@@ -184,6 +189,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
                                     data=urlencode(data))
                 logger.info('Token refreshed %s' % resp.json()['expires_at'])
                 access_token = "Bearer " + resp.json()['access_token']
+
     # If is_jwt_request parameter is true then send jwt token request
     elif is_jwt_request:
         secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
@@ -192,7 +198,8 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     # Call celery task to send post_data to URL
     send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
                              serializer='json',
-                             queue=SchedulerUtils.QUEUE)
+                             queue=SchedulerUtils.QUEUE,
+                             routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
 
 
 def schedule_job(data, user_id=None, access_token=None):
@@ -204,9 +211,23 @@ def schedule_job(data, user_id=None, access_token=None):
     :param access_token: CSRF access token for the sending post request to url with post_data
     :return:
     """
+    # Validate json data
+    try:
+        validate(instance=data, schema=base_job_schema,
+                 format_checker=FormatChecker())
+        if data.get('task_type') == SchedulerUtils.PERIODIC:
+            validate(instance=data, schema=periodic_task_job_schema,
+                     format_checker=FormatChecker())
+        elif data.get('task_type') == SchedulerUtils.ONE_TIME:
+            validate(instance=data, schema=one_time_task_job_schema,
+                     format_checker=FormatChecker())
+    except ValidationError as e:
+        raise InvalidUsage(error_message="Schema validation error: %s" % e.message)
+
     job_config = dict()
     job_config['post_data'] = data.get('post_data', dict())
-    content_type = data.get('content_type', 'application/json')
+    content_type = data.get('content-type', 'application/json')
+
     job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
     job_config['url'] = get_valid_url_from_dict(data, 'url')
 
@@ -315,13 +336,13 @@ def serialize_task(task):
                 task_type=SchedulerUtils.PERIODIC
         )
         if task_dict['start_datetime']:
-            task_dict['start_datetime'] = task_dict['start_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['start_datetime'] = task_dict['start_datetime'].strftime(DATETIME_FORMAT)
 
         if task_dict['end_datetime']:
-            task_dict['end_datetime'] = task_dict['end_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['end_datetime'] = task_dict['end_datetime'].strftime(DATETIME_FORMAT)
 
         if task_dict['next_run_datetime']:
-            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['next_run_datetime'] = task_dict['next_run_datetime'].strftime(DATETIME_FORMAT)
 
     # Date Trigger is a one_time task_type
     elif isinstance(task.trigger, DateTrigger):
@@ -336,7 +357,7 @@ def serialize_task(task):
         )
 
         if task_dict['run_datetime']:
-            task_dict['run_datetime'] = task_dict['run_datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            task_dict['run_datetime'] = task_dict['run_datetime'].strftime(DATETIME_FORMAT)
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
