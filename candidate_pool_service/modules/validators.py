@@ -17,7 +17,14 @@ def validate_and_parse_request_data(data):
     if 'count_only' in return_fields:
         count_only = True
 
-    return candidate_ids_only, count_only, data.get('page', 1)
+    page = data.get('page', 1)
+
+    if not (str(page).isdigit() and int(page) > 0):
+        raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+
+    page = int(page)
+
+    return candidate_ids_only, count_only, page
 
 
 def validate_and_format_smartlist_post_data(data, user):

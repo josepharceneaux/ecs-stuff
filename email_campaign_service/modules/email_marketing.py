@@ -10,6 +10,7 @@ import json
 import datetime
 
 # Third Party
+import itertools
 from celery import chord
 from sqlalchemy import and_
 
@@ -39,7 +40,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
-                                                            CandidateSubscriptionPreference)
+                                                            CandidateSubscriptionPreference, EmailLabel)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.candidate_service_calls import \
@@ -380,13 +381,22 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         subscribed_candidate_ids = new_candidate_ids
     # Get emails
     candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
-                                                              CandidateEmail.address) \
+                                                              CandidateEmail.address,
+                                                              CandidateEmail.updated_time,
+                                                              CandidateEmail.email_label_id) \
         .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
-        .group_by(CandidateEmail.address)
+        .order_by(CandidateEmail.updated_time) \
+        .order_by(CandidateEmail.candidate_id)
     # list of tuples (candidate id, email address)
-    ids_and_email = [(row.candidate_id, row.address) for row in candidate_email_rows]
+    ids_and_email_and_labels = []
+    ids_and_email_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
+    for key, igroup in itertools.groupby(ids_and_email_labels, lambda candidate: candidate[0]):
+        ids_and_email_and_labels.append(list(igroup))
     filtered_email_rows = []
-    for _id, email in ids_and_email:
+    email_labels = EmailLabel.query.all()
+    email_labels = [(email_label.id, email_label.description) for email_label in email_labels]
+    for iterator in ids_and_email_and_labels:
+        _id, email = get_candidateId_email_by_priority(iterator, email_labels)
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
         # If there is only one candidate for an email-address in user's domain, we are good to go,
         # otherwise log and raise the invalid error.
@@ -400,6 +410,25 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
             raise InvalidUsage('There exist multiple candidates with same email address '
                                'in user`s domain')
     return filtered_email_rows
+
+
+def get_candidateId_email_by_priority(emails_obj, email_labels):
+    """
+    For now, just return Primary email if exist, otherwise any other email
+    :param emails_obj:
+    :return:
+    """
+    if not(isinstance(emails_obj, list) and len(emails_obj) > 0):
+        raise InternalServerError("get_candidateId_email_by_priority")
+
+    primary_email_id = int([email_label[0] for email_label in email_labels if email_label[1].lower() == 'primary'][0])
+    for email_obj in emails_obj:
+        # If there is a primary email, simply return that
+        if email_obj[2] == primary_email_id:
+            return email_obj[0], email_obj[1]
+
+    # If primary email not found, then return any other email
+    return emails_obj[0][0], emails_obj[0][1]
 
 
 def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,
