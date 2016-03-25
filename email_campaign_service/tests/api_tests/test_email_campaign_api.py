@@ -300,7 +300,8 @@ class TestSendCampaign(object):
         """
         Creates email campaign smartlist with 20 candidates. Hits candidate pool service
         to get paginated response with 2 per page. Total should be 20, pages should be
-        10 and number of candidates in page 1 should be 2.
+        10 and number of candidates in page 1 should be 2. Total candidates after getting all
+        pages should be 20.
         """
         campaign, list_id = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                             email_campaign_of_user_first, emails_list=True, count=20)
@@ -318,10 +319,20 @@ class TestSendCampaign(object):
         assert total == '20'
         response_body = json.loads(response.content)
         candidates = response_body['candidates']
-
         assert len(candidates) == 2
 
-        # TODO : we should get the records of page 2, page 'n - 1' and and then 'n' to test the whole cycle
+        if int(no_of_pages) > 1:
+            for current_page in range(1, int(no_of_pages)):
+                next_page = current_page + 1
+                response = requests.get(
+                                        url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + '?per_page=2&page=%d' %
+                                                                                                 next_page,
+                                        headers={'Authorization': 'Bearer %s' % access_token_first,
+                                                 'content-type': 'application/json'}
+                )
+                response_body = json.loads(response.content)
+                candidates.extend(response_body['candidates'])
+        assert len(candidates) == 20
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):

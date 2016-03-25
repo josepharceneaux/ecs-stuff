@@ -18,7 +18,7 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import InvalidUsage
+from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
@@ -49,14 +49,15 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
     response_headers = response.headers
-    # TODO ; they said we shouldn't add asserts so may be we should get rid of the following asserts
-    assert response_headers
+    if not response_headers:
+        raise InternalServerError("Invalid pagination response from candidate pool service. "
+                                  "Missing Headers.")
     no_of_pages = response_headers['X-Page-Count']
-    assert no_of_pages
+    if not no_of_pages:
+        raise InternalServerError("Invalid pagination response headers from candidate pool service. "
+                                  "Missing value X-Page-Count.")
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
-    # TODO; should the following condition not be (otherwise what if the no_of_pages is 1)--above?
-    # if int(no_of_pages) >= 1:
     if int(no_of_pages) > 1:
         for current_page in range(1, int(no_of_pages)):
             next_page = current_page + 1
@@ -69,12 +70,23 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
 
 
 def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params):
-    # TODO; please comment the method and validate the params
+    """
+    Method to get candidates from smartlist based on smartlist id and pagination params.
+    :param list_id: Id of smartlist.
+    :param per_page: Number of results per page
+    :param page: Number of page to fetch in response
+    :param params: SPecific params to include in request. e.g. candidates_ids_only etc
+    :return:
+    """
+    if not list_id:
+        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Smartlist id not provided")
+    if not per_page or not page:
+        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided")
+    if params is None:
+        params = {}
     pagination_query = '?per_page=%d&page=%d' % (per_page, page)
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,
                             params=params, headers=create_oauth_headers())
-    if response.status_code == InvalidUsage.http_status_code():
-        raise InvalidUsage(response.content)
     return response
 
 
