@@ -1,11 +1,11 @@
-import cgi
-import urllib
-import time
-import random
-import urlparse
-import hmac
 import binascii
+import hashlib  # 2.5+
+import hmac
+import random
+import time
 import urllib
+import urlparse
+
 
 class OAuthClient:
 
@@ -22,7 +22,8 @@ class OAuthClient:
     OAUTH_VERSION = '1.0'
     ENDPOINT_URL = ''
 
-    def __init__(self, url, method, consumerKey, consumerSecret, token, tokenSecret, signatureMethod, oauthVersion):
+    def __init__(self, url, method, consumerKey, consumerSecret, token, tokenSecret,
+                 signatureMethod, oauthVersion):
         self.ENDPOINT_URL = url
         self.HTTP_METHOD = method
         self.OAUTH_CONSUMER_KEY = consumerKey
@@ -46,8 +47,8 @@ class OAuthClient:
     def generate_timestamp(self):
         return int(time.time())
 
-    def generate_nonce(self,length=8):
-        return ''.join([str(random.randint(0,9)) for i in range(length)])
+    def generate_nonce(self, length=8):
+        return ''.join([str(random.randint(0, 9)) for i in range(length)])
 
     def get_normalized_parameters(self):
         """Return a string that contains the parameters that must be signed."""
@@ -58,8 +59,8 @@ class OAuthClient:
         except:
             pass
         # Escape key values before sorting.
-        key_values = [(self.escape(self._utf8_str(k)), self.escape(self._utf8_str(v))) \
-            for k,v in params.items()]
+        key_values = [(self.escape(self._utf8_str(k)), self.escape(self._utf8_str(v)))
+                      for k, v in params.items()]
         # Sort lexicographically, first after key, then after value.
         key_values.sort()
         # Combine key value pairs into a string.
@@ -82,19 +83,19 @@ class OAuthClient:
 
     def get_normalized_parameters(self):
         """Return a string that contains the parameters that must be signed."""
-        params =  self.OAUTH_PARAMETERS
+        params = self.OAUTH_PARAMETERS
         urlparams = urlparse.urlparse(self.ENDPOINT_URL)
         # check for query string
-        if(len(urlparams.query)>0):
-            params.update({urlparams.query.split("=")[0] : urlparams.query.split("=")[1]})
+        if(len(urlparams.query) > 0):
+            params.update({urlparams.query.split("=")[0]: urlparams.query.split("=")[1]})
         try:
             # Exclude the signature if it exists.
             del params['oauth_signature']
         except:
             pass
         # Escape key values before sorting.
-        key_values = [(self.escape(self._utf8_str(k)), self.escape(self._utf8_str(v))) \
-            for k,v in params.items()]
+        key_values = [(self.escape(self._utf8_str(k)), self.escape(self._utf8_str(v)))
+                      for k, v in params.items()]
         # Sort lexicographically, first after key, then after value.
         key_values.sort()
         # remove print
@@ -122,19 +123,14 @@ class OAuthClient:
         key, raw = self.build_signature_base_string()
 
         # HMAC object.
-        try:
-            import hashlib # 2.5
-            hashed = hmac.new(key, raw, hashlib.sha1)
-        except:
-            import sha # Deprecated
-            hashed = hmac.new(key, raw, sha)
+        hashed = hmac.new(key, raw, hashlib.sha1)
 
         # Calculate the digest base 64.
         return binascii.b2a_base64(hashed.digest())[:-1]
 
     def get_authorizationString(self):
-        OAUTH_TIMESTAMP = self.generate_timestamp();
-        OAUTH_NONCE = self.generate_nonce();
+        OAUTH_TIMESTAMP = self.generate_timestamp()
+        OAUTH_NONCE = self.generate_nonce()
 
         self.OAUTH_PARAMETERS = {
                                 'oauth_consumer_key': self.OAUTH_CONSUMER_KEY,
@@ -150,8 +146,5 @@ class OAuthClient:
         # check this!
         self.OAUTH_PARAMETERS['oauth_signature'] = OAUTH_SIGNATURE
 
-        OAUTH_STRING = "OAuth oauth_version="+'"'+self.OAUTH_VERSION+'"'+", oauth_signature_method="+'"'+self.OAUTH_SIGNATURE_METHOD+'"'+", oauth_nonce="+'"'+OAUTH_NONCE+'"'+", oauth_timestamp="+'"'+str(OAUTH_TIMESTAMP)+'"'+", oauth_consumer_key="+'"'+self.OAUTH_CONSUMER_KEY+'"'+", oauth_token="+'"'+self.OAUTH_TOKEN+'"'+", oauth_signature="+'"'+OAUTH_SIGNATURE+'"'+"";
+        OAUTH_STRING = "OAuth oauth_version="+'"'+self.OAUTH_VERSION+'"'+", oauth_signature_method="+'"'+self.OAUTH_SIGNATURE_METHOD+'"'+", oauth_nonce="+'"'+OAUTH_NONCE+'"'+", oauth_timestamp="+'"'+str(OAUTH_TIMESTAMP)+'"'+", oauth_consumer_key="+'"'+self.OAUTH_CONSUMER_KEY+'"'+", oauth_token="+'"'+self.OAUTH_TOKEN+'"'+", oauth_signature="+'"'+OAUTH_SIGNATURE+'"'+""
         return OAUTH_STRING
-
-
-
