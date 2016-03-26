@@ -232,7 +232,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     :param candidate_second: candidate object
     :return: smartlist object
     """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool_second['id'])
+    talent_pipelines = create_talent_pipelines(token_second, talent_pool_second['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
@@ -255,7 +255,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     :param candidate_same_domain: candidate from domain as of user_same_domain
     :return: smartlist object
     """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipelines = create_talent_pipelines(token_same_domain, talent_pool['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
