@@ -267,9 +267,11 @@ def google_vision_ocr(file_string_io):
                                        timeout=20,
                                        headers={'content-type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        logger.exception("google_vision_ocr: Could not reach GAPI")
-        raise InternalServerError("Unable to reach GAPI in resume OCR")
+        logger.exception("google_vision_ocr: Could not reach Google API")
+        raise InternalServerError("Unable to reach Google API in resume OCR")
     if google_request.status_code is not requests.codes.ok:
+        logger.info('Google API response error with headers: {} content{}'.format(
+            google_request.headers, google_request.content))
         raise InternalServerError('Error in response from candidate service during creation')
     ocr_results = json.loads(google_request.content)
     return ocr_results['responses'][0]['textAnnotations'][0]['description']
