@@ -107,7 +107,7 @@ def generate_campaign_schedule_data():
     start = datetime.utcnow() + timedelta(seconds=20)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
-        "frequency_id": 2,
+        "frequency_id": 1,
         "start_datetime": to_utc_str(start),
         "end_datetime": to_utc_str(end)
     }
