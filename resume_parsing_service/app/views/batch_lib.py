@@ -17,14 +17,15 @@ from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.routes import ResumeApiUrl, SchedulerApiUrl
 from resume_parsing_service.common.utils.handy_functions import grouper
 
-
 DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+
 
 def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
     """
     Adds filename to redis list. The redis key is formed using the user_id.
     :param list filepicker_keys:
     :param str user_id:
+    :param str token_str:
     :return str:
     """
     # Dirty hack for the time being. Need to go over API consistency after crunch period (1/28/16)
@@ -50,20 +51,20 @@ def add_fp_keys_to_queue(filepicker_keys, user_id, token_str):
                                                       'Authorization': token_str,
                                                       'Content-Type': 'application/json'
                                                   })
-            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+            except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
                 logger.exception("add_fp_keys_to_queue. Could not reach Scheduler")
                 raise InternalServerError("Unable to reach Scheduler")
             if scheduler_request.status_code != 201:
                 raise TalentError("Issue scheduling resume parsing {}".format(
                     scheduler_request.content))
-            id = json.loads(scheduler_request.content)['id']
-            job_ids.append(id)
+            _id = json.loads(scheduler_request.content)['id']
+            job_ids.append(_id)
         scheduled += timedelta(seconds=20)
 
     return {'redis_key': queue_string, 'quantity': list_length, 'ids': job_ids}
 
 
-def _process_batch_item(user_id, create_candidate=True):
+def process_batch_item(user_id, create_candidate=True):
     """
     Endpoint for scheduler service to parse resumes update status data.
     :param int user_id: Id of the user who scheduled the batch process.
