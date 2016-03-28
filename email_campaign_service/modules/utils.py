@@ -15,6 +15,7 @@ from email_campaign_service.email_campaign_app import logger
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.utils.api_utils import DEFAULT_PAGE
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -46,7 +47,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     :param list_id: smartlist id.
     :return:
     """
-    page = 1
+    page = DEFAULT_PAGE
     per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign)
@@ -60,9 +61,9 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
                                   "Missing value X-Page-Count.")
     response_body = json.loads(response.content)
     candidates = response_body['candidates']
-    if int(no_of_pages) > 1:
-        for current_page in range(1, int(no_of_pages)):
-            next_page = current_page + 1
+    if int(no_of_pages) > DEFAULT_PAGE:
+        for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
+            next_page = current_page + DEFAULT_PAGE
             response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params, campaign)
             response_body = json.loads(response.content)
             candidates.extend(response_body['candidates'])
@@ -77,7 +78,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     :param list_id: Id of smartlist.
     :param per_page: Number of results per page
     :param page: Number of page to fetch in response
-    :param params: SPecific params to include in request. e.g. candidates_ids_only etc
+    :param params: Specific params to include in request. e.g. candidates_ids_only etc
     :param campaign: Email Campaign object
     :return:
     """

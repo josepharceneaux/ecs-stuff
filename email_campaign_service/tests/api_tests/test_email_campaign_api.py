@@ -440,6 +440,7 @@ def assert_mail(subject):
     :param subject:       Email subject
     :return:
     """
+    time.sleep(30)
     abort_after = 60
     start = time.time()
     mail_found = False
