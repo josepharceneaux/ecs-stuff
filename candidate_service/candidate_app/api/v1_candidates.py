@@ -1318,14 +1318,42 @@ class CandidateClientEmailCampaignResource(Resource):
         campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
 
-        # In first version, we only have one candidate when sending campaign via email-client.
-        # So, here we are picking first candidate and the id of first talent_pool it is
-        # associated with.
+        # @XXX, @FIXME
+        # we can't at this point loop through pipelines in cloudsearch just to get the candidate pipeline
+        # so we created a pipeline called "gT Extensions Pipeline" that belong to getTalent domain.
+        # the issue here is the user owner, not sure if we can create the pipeline under the current domain
+        # and add new table field to hide it (then we will need to create a hidden pool).
 
-        talent_pipeline = db.session.query(TalentPipeline.id).\
-            join(TalentPool, TalentPipeline.talent_pool_id == TalentPool.id).\
-            join(TalentPoolCandidate, TalentPool.id == TalentPoolCandidate.talent_pool_id).\
-            filter(TalentPoolCandidate.candidate_id == candidate_ids[0]).first()
+        pipeline_owner = db.session.query(User).filter(User.email == 'janim007@gmail.com').first()
+
+        talent_pipeline = db.session.query(TalentPipeline.id). \
+            filter(TalentPipeline.name == "gT Extensions Pipeline",
+                   TalentPipeline.user_id == pipeline_owner.id).first()
+
+        if not talent_pipeline:
+            gt_talent_pool = db.session.query(TalentPool.id).filter(TalentPool.name == 'gT_Extensions_Pool').first()
+
+            if not gt_talent_pool:
+                gt_talent_pool = TalentPool(name="gT_Extensions_Pool",
+                                            description="default talent pool for all extensions",
+                                            domain_id=pipeline_owner.domain_id,
+                                            user_id=pipeline_owner.id)
+
+                db.session.add(gt_talent_pool)
+                db.session.commit()
+
+            date_needed = date.today().replace(year=date.today().year + 10)
+
+            talent_pipeline = TalentPipeline(name="gT Extensions Pipeline",
+                                             description="Default talent pipeline for all extensions",
+                                             positions=1,
+                                             date_needed=date_needed,
+                                             user_id=pipeline_owner.id,
+                                             talent_pool_id=gt_talent_pool.id,
+                                             search_params="")
+
+            db.session.add(talent_pipeline)
+            db.session.commit()
 
         if not talent_pipeline:
             logger.warn("Email Campaign is trying to send to candidate (%s) outside a pipeline" % candidate_ids[0])
