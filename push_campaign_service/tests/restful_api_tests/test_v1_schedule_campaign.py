@@ -130,10 +130,10 @@ class TestScheduleCampaignUsingPOST(object):
 
         response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
         blasts = response['blasts']
-        assert len(blasts) > 0
+        assert len(blasts) == 1
         blast = blasts[0]
         # One send expected since only one candidate is associated with campaign
-        assert blast['sends'] > 0
+        assert blast['sends'] == 1
 
         # Now remove the task from scheduler
         delete_scheduler_task(task_id, token_first, expected_status=(HttpStatus.OK,))
@@ -152,10 +152,10 @@ class TestScheduleCampaignUsingPOST(object):
 
         response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
         blasts = response['blasts']
-        assert len(blasts) > 0
+        assert len(blasts) == 1
         blast = blasts[0]
         # One send expected since only one candidate is associated with campaign
-        assert blast['sends'] > 0
+        assert blast['sends'] == 1
 
         # Now remove the task from scheduler
         delete_scheduler_task(task_id, token_same_domain, expected_status=(HttpStatus.OK,))
