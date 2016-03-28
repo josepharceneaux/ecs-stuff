@@ -126,6 +126,8 @@ class TestSmartlistResource(object):
             smartlist_candidate_ids = [row['id'] for row in candidates]
             assert sorted(candidate_ids) == sorted(smartlist_candidate_ids)
 
+            # Checking by sending pagination param "page" as total number of pages plus 1, it should return total_found
+            # and an empty candidates list.
             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
                                smartlist_id, {'fields': 'candidate_ids_only'}, access_token_first,
                                page=no_of_pages + DEFAULT_PAGE, per_page=2)

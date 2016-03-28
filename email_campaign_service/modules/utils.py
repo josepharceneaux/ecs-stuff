@@ -88,7 +88,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     if not per_page or not page:
         raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided"
                                   "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
-    if params is None:
+    if not params:
         params = {}
     pagination_query = '?per_page=%d&page=%d' % (per_page, page)
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,

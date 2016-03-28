@@ -50,8 +50,8 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
         total_candidates_in_smartlist = SmartlistCandidate.query.with_entities(
                 SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).count()
         smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
-                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(int(page),
-                                                                                               int(per_page), False)
+                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page,
+                                                                                               per_page, False)
         headers = {
                     'X-Total': smartlist_candidate_rows.total,
                     'X-Page-Count': smartlist_candidate_rows.pages

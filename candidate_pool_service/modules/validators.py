@@ -20,19 +20,19 @@ def validate_and_parse_request_data(data):
     per_page = data.get('per_page', DEFAULT_PAGE_SIZE)
 
     try:
-        int(page)
+        page = int(page)
     except ValueError:
         raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
 
-    if int(page) <= 0:
+    if page <= 0:
         raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
 
     try:
-        int(per_page)
+        per_page = int(per_page)
     except ValueError:
         raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
 
-    if int(per_page) <= 0:
+    if per_page <= 0:
         raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
 
     return candidate_ids_only, count_only, page, per_page
