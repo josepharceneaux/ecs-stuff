@@ -829,7 +829,7 @@ class CampaignBase(object):
             raise InvalidUsage('data_to_schedule must be a dict.')
         frequency = data_to_schedule.get('frequency')
         if not frequency:  # This means it is a one time job
-            DatetimeUtils.validate_datetime_format(data_to_schedule['start_datetime'])
+            DatetimeUtils.validate_datetime_in_iso_utc_format(data_to_schedule['start_datetime'])
             task = {
                 "task_type": SchedulerUtils.ONE_TIME,
                 "run_datetime": data_to_schedule['start_datetime'],

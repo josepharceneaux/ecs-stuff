@@ -1,3 +1,7 @@
+"""
+This file contains handy functions related to datetime objects encapsulated under class
+DatetimeUtils.
+"""
 # Standard Imports
 from datetime import datetime
 
@@ -6,17 +10,11 @@ import pytz
 from pytz import timezone
 from dateutil import parser
 from dateutil.tz import tzutc
-from flask import current_app
 from dateutil.parser import parse
 
 # Application Specific
 from ..error_handling import InvalidUsage
 from validators import raise_if_not_instance_of
-from ..talent_config_manager import TalentConfigKeys
-
-# TODO: Major design decision. We need an __init__() and also I think we can may be solve it
-# TODO: little more elegantly if we implement it using magic methods __lg__, __lt__ and etc.as
-# #TODO: kindly think about it and let me know an alternative design implementation on these lines.
 
 
 class DatetimeUtils(object):
@@ -25,10 +23,8 @@ class DatetimeUtils(object):
     """
     ISO8601_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    # TODO--w: Need comment at the top of file, also, IMHO, we should change the following method
-    # TODO--w: to validate_datetime_in_iso_utc_format()
     @classmethod
-    def validate_datetime_format(cls, str_datetime):
+    def validate_datetime_in_iso_utc_format(cls, str_datetime):
         """
         This validates the given datetime is in ISO UTC format or not. Proper format should be like
         '2015-10-08T06:16:55.000Z'.
@@ -63,32 +59,11 @@ class DatetimeUtils(object):
         raise_if_not_instance_of(datetime_obj, datetime)
         return datetime_obj > datetime.utcnow().replace(tzinfo=tzutc())
 
-    # TODO--w: to avoid confusion due to 'in' we can rename this to
-    # TODO: is_datetime_valid_and_in_future(). Secondly, whenever there method starts with 'is',
-    # TODO: we expect it to return a bool but it's not returning bool in success case.
-    # TODO: Thirdly, may be we should not have methods that do more than one thing at a time so
-    # TODO: we can have two methods is_datetime_valid() and is_datetime_in_future() and have the
-    # TODO: calling code use it.
-    @classmethod
-    def is_datetime_in_valid_format_and_in_future(cls, datetime_str):
-        """
-        Here we check given string datetime is in valid format, then we convert it
-        into datetime obj. Finally we check if it is in future.
-        This uses get_datetime_obj_if_str_datetime_in_valid_format()
-        and is_datetime_in_future() functions.
-        :param datetime_str:
-        :type datetime_str: str
-        """
-        logger = current_app.config[TalentConfigKeys.LOGGER]
-        if not cls.is_datetime_in_future(cls.get_datetime_obj_if_str_datetime_in_valid_format(datetime_str)):
-            logger.warn('Given datetime string should be in future. %s' % datetime_str)
-            raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
-
     @classmethod
     def get_datetime_obj_if_str_datetime_in_valid_format(cls, str_datetime):
         """
         This converts given string datetime into UTC datetime obj.
-        This uses validate_datetime_format() to validate the format of given str.
+        This uses validate_datetime_in_iso_utc_format() to validate the format of given str.
         Valid format should be like 2015-10-08T06:16:55Z
         :param str_datetime:
         :return: datetime obj
@@ -96,7 +71,7 @@ class DatetimeUtils(object):
         """
         if not isinstance(str_datetime, basestring):
             raise InvalidUsage('param should be a string of datetime')
-        cls.validate_datetime_format(str_datetime)
+        cls.validate_datetime_in_iso_utc_format(str_datetime)
         return parse(str_datetime).replace(tzinfo=tzutc())
 
     @classmethod

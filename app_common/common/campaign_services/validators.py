@@ -54,7 +54,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     if not data_to_schedule_campaign.get('start_datetime'):
         raise InvalidUsage('start_datetime is required field.')
     # validate format of start_datetime
-    DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['start_datetime'])
+    DatetimeUtils.validate_datetime_in_iso_utc_format(data_to_schedule_campaign['start_datetime'])
     # get number of seconds from frequency id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
@@ -62,7 +62,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
     if frequency:
         # validate format of end_datetime
-        DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['end_datetime'])
+        DatetimeUtils.validate_datetime_in_iso_utc_format(data_to_schedule_campaign['end_datetime'])
     data_to_schedule_campaign['frequency'] = frequency
     # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
