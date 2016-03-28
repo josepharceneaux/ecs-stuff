@@ -15,12 +15,13 @@ Get Campaign's Sends: /v1/push-campaigns/:id/sends [GET]
 """
 # Builtin imports
 import sys
+import time
 
 # 3rd party imports
 from requests import codes as HttpStatus
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_campaign_sends
+from push_campaign_service.tests.test_utilities import get_campaign_sends, SLEEP_TIME
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
@@ -80,6 +81,7 @@ class TestCampaignSends(object):
         campaign_id = campaign_in_db['id']
         blasts_count = campaign_blasts_pagination
         per_page = blasts_count - 5
+        time.sleep(3 * SLEEP_TIME)
         response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
                                       expected_status=(HttpStatus.OK,))
         assert len(response['sends']) == per_page
