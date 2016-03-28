@@ -23,12 +23,11 @@ import requests
 # Application Specific
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.routes import CandidatePoolApiUrl
 from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.misc import (UrlConversion, Activity)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
-from email_campaign_service.tests.conftest import fake, uuid, create_email_campaign_smartlist
+from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
