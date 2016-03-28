@@ -14,6 +14,10 @@ from ..error_handling import InvalidUsage
 from validators import raise_if_not_instance_of
 from ..talent_config_manager import TalentConfigKeys
 
+# TODO: Major design decision. We need an __init__() and also I think we can may be solve it
+# TODO: little more elegantly if we implement it using magic methods __lg__, __lt__ and etc.as
+# #TODO: kindly think about it and let me know an alternative design implementation on these lines.
+
 
 class DatetimeUtils(object):
     """
@@ -21,6 +25,8 @@ class DatetimeUtils(object):
     """
     ISO8601_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
+    # TODO--w: Need comment at the top of file, also, IMHO, we should change the following method
+    # TODO--w: to validate_datetime_in_iso_utc_format()
     @classmethod
     def validate_datetime_format(cls, str_datetime):
         """
@@ -57,6 +63,12 @@ class DatetimeUtils(object):
         raise_if_not_instance_of(datetime_obj, datetime)
         return datetime_obj > datetime.utcnow().replace(tzinfo=tzutc())
 
+    # TODO--w: to avoid confusion due to 'in' we can rename this to
+    # TODO: is_datetime_valid_and_in_future(). Secondly, whenever there method starts with 'is',
+    # TODO: we expect it to return a bool but it's not returning bool in success case.
+    # TODO: Thirdly, may be we should not have methods that do more than one thing at a time so
+    # TODO: we can have two methods is_datetime_valid() and is_datetime_in_future() and have the
+    # TODO: calling code use it.
     @classmethod
     def is_datetime_in_valid_format_and_in_future(cls, datetime_str):
         """
