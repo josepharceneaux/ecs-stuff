@@ -13,7 +13,7 @@ from pytz import timezone
 from dateutil.parser import parse
 
 # Application Specific
-from social_network_service.common.datetime_utils import DatetimeUtils
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.utilities import unix_time
 from social_network_service.modules.utilities import snake_case_to_camel_case

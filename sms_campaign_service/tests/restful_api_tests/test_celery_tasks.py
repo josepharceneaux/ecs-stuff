@@ -38,7 +38,7 @@ from sms_campaign_service.common.models.misc import (UrlConversion, Frequency, A
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import app
-from sms_campaign_service.common.datetime_utils import DatetimeUtils
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost

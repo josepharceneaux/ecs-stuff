@@ -16,8 +16,8 @@ from email_campaign_service.common.models.misc import (Activity,
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 raise_if_not_instance_of)
+from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
+from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \

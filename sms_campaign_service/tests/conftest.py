@@ -38,7 +38,7 @@ from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCa
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend)
 # Common Utils
-from sms_campaign_service.common.datetime_utils import DatetimeUtils
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 

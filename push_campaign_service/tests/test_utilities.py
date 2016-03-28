@@ -3,7 +3,7 @@ from faker import Faker
 from requests import codes as HttpStatus
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
-from push_campaign_service.common.datetime_utils import DatetimeUtils
+from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
                                                            get_fake_dict)

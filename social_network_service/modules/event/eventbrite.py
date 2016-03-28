@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from social_network_service.common.datetime_utils import DatetimeUtils
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error
