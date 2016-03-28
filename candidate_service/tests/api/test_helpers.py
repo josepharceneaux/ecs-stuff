@@ -8,9 +8,9 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import (check_for_id, remove_id_key, response_info, AddUserRoles)
+from helpers import check_for_id, remove_id_key, AddUserRoles
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
-from candidate_service.common.utils.test_utils import send_request
+from candidate_service.common.utils.test_utils import send_request, response_info
 
 # Url
 from candidate_service.common.routes import CandidateApiUrl
