@@ -19,7 +19,7 @@ from candidate_service.common.models.db import db
 
 # Validators
 from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.validators import is_valid_email
+from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
@@ -51,7 +51,7 @@ from candidate_service.common.models.candidate import (
     CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
 )
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
-from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
+from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -70,9 +70,6 @@ from candidate_service.modules.talent_cloud_search import (
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
-)
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import (
-    create_campaign_from_api, create_campaign_send_from_api
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
@@ -134,7 +131,7 @@ class CandidatesResource(Resource):
                         candidate_id = candidate_email_obj.candidate_id
                         # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                         candidate_ids_from_candidate_email_obj.append(candidate_id)
-                        candidate = Candidate.get_by_id(candidate_id=candidate_id)
+                        candidate = Candidate.get_by_id(candidate_id)
                         if candidate.is_web_hidden:  # Un-hide candidate from web, if found
                             candidate.is_web_hidden = 0
                             # If candidate's web-hidden is set to false, it will be treated as an update
@@ -173,6 +170,9 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
+                country_code = military_service.get('country_code') or 'US'
+                if not is_country_code_valid(country_code):
+                    raise InvalidUsage("Country code not recognized: {}".format(country_code))
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -1290,7 +1290,11 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InvalidUsage(error_message="JSON body cannot be empty.")
 
         candidates_list = body_dict.get('candidates')
-        subject = body_dict.get('email_subject', 'No Subject')
+        subject = body_dict.get('email_subject')
+        # this is to handle the case if we get an email without subject, so that it does not cause the client email
+        # campaign creation to fail. (This is in the case of the browser plugins).
+        if not subject or subject.strip() == '':
+            subject = 'No Subject'
         _from = body_dict.get('email_from')
         reply_to = body_dict.get('email_reply_to')
         body_html = body_dict.get('email_body_html')
@@ -1303,7 +1307,7 @@ class CandidateClientEmailCampaignResource(Resource):
         if not isinstance(candidates_list, list):
             raise InvalidUsage(error_message="Candidates must be a list.")
 
-        candidate_ids = [int(candidate['id']) for candidate in body_dict.get('candidates')]
+        candidate_ids = [int(candidate['id']) for candidate in candidates_list]
         if not do_candidates_belong_to_users_domain(authed_user, candidate_ids):
             raise ForbiddenError(error_message="Candidates do not belong to logged-in user")
 
@@ -1313,11 +1317,20 @@ class CandidateClientEmailCampaignResource(Resource):
 
         campaign_name = 'Campaign %s %s' % (subject, email_client_name[0])
         list_name = 'List %s' % campaign_name
+
         # In first version, we only have one candidate when sending campaign via email-client.
         # So, here we are picking first candidate and the id of first talent_pool it is
         # associated with.
-        talent_pipeline = TalentPipeline.get_by_user_and_talent_pool_id(
-            request.user.id, body_dict.get('candidates')[0]['talent_pool_ids'][0])
+
+        talent_pipeline = db.session.query(TalentPipeline.id).\
+            join(TalentPool, TalentPipeline.talent_pool_id == TalentPool.id).\
+            join(TalentPoolCandidate, TalentPool.id == TalentPoolCandidate.talent_pool_id).\
+            filter(TalentPoolCandidate.candidate_id == candidate_ids[0]).first()
+
+        if not talent_pipeline:
+            logger.warn("Email Campaign is trying to send to candidate (%s) outside a pipeline" % candidate_ids[0])
+            raise InvalidUsage(error_message="talent does not belong to pipeline")
+
         smartlist_object = {
             "name": list_name,
             "candidate_ids": candidate_ids,

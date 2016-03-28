@@ -35,7 +35,6 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     :param filename: spreadsheet file name
     :return: An array containing rows of spreadsheets
     """
-
     is_csv = ".csv" in filename
     if is_csv:
         return convert_csv_to_table(spreadsheet_file)
@@ -46,7 +45,16 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     table = []
     for row_index in range(first_sheet.nrows):
         cells = first_sheet.row(row_index)  # array of cell objects
-        table.append([cell.value for cell in cells if cell.value])
+
+        cell_values = []
+        for cell in cells:
+            cell_value = cell.value
+            if isinstance(cell_value, float):  # there should be no float-type data
+                cell_value = str(int(cell_value))
+            if cell_value:
+                cell_values.append(cell_value)
+
+        table.append(cell_values)
     table = [row for row in table if row]
     return table
 
@@ -119,7 +127,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         logger.info("import CSV table: %s", table)
 
-        candidate_ids = []
+        candidate_ids, error_messages = [], []
         for row in table:
             first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
             emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
@@ -127,6 +135,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             talent_pool_dict = {'add': talent_pool_ids}
 
             this_source_id = source_id
+
+            number_of_educations = 0
 
             for column_index, column in enumerate(row):
                 if column_index >= len(header_row):
@@ -254,15 +264,16 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             if status_code == 201:
                 candidate_ids.append(response.get('candidates')[0].get('id'))
-            else:
-                return jsonify(response), status_code
+            else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
+                error_messages.append(response.get('error'))
+                continue
 
         # TODO: Upload candidate documents to cloud
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
         logger.info("Successfully imported %s candidates from CSV: User %s", len(candidate_ids), user.id)
-        return jsonify(dict(count=len(candidate_ids), status='complete')), 201
+        return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
 
     except Exception as e:
         email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %

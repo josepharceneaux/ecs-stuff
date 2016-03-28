@@ -162,48 +162,42 @@ def test_bad_header(token_fixture, user_fixture):
 ####################################################################################################
 def test_doc_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, DOC_FP_KEY)
     assert_non_create_content_and_status(content, status)
 
 
 def test_v15_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.5 pdf files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, PDF15_FP_KEY)
     assert_non_create_content_and_status(content, status)
 
 
 def test_v14_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.4 pdf files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_14.pdf')
     assert_non_create_content_and_status(content, status)
 
 
 def test_v13_pdf_from_fp_key(token_fixture, user_fixture):
     """Test that v1.3 pdf files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin_13.pdf')
     assert_non_create_content_and_status(content, status)
 
 
 def test_jpg_from_fp_key(token_fixture, user_fixture):
     """Test that jpg files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'test_bin.jpg')
     assert_non_create_content_and_status(content, status)
 
 
 def test_doc_with_texthtml_mime(token_fixture, user_fixture):
     """Test that jpg files from S3 can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, 'Breland.Bobby.doc')
     assert_non_create_content_and_status(content, status)
 

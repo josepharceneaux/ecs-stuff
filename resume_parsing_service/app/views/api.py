@@ -9,16 +9,14 @@ from flask.ext.cors import CORS
 # Module Specific
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.app.views.batch_lib import _process_batch_item
+from resume_parsing_service.app.views.batch_lib import process_batch_item
 from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 from resume_parsing_service.app.views.parse_lib import process_resume
 from resume_parsing_service.app.views.utils import get_users_talent_pools
 from resume_parsing_service.common.utils.auth_utils import require_oauth
 from resume_parsing_service.common.routes import ResumeApi
 
-
 PARSE_MOD = Blueprint('resume_api', __name__)
-
 
 # Enable CORS
 CORS(PARSE_MOD, resources={
@@ -124,5 +122,5 @@ def process_batch_request(user_id):
     :return: HTTP/JSON response containing parsed resume information.
     """
     # TODO: add in TalentPool capturing.
-    parsing_response = _process_batch_item(user_id)
+    parsing_response = process_batch_item(user_id)
     return jsonify(**parsing_response), 200
