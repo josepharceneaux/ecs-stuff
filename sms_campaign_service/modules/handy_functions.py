@@ -29,7 +29,7 @@ from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (raise_if_dict_values_are_not_int_or_long, CampaignUtils)
 from sms_campaign_service.common.utils.validators import format_phone_number
-from sms_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
+from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast

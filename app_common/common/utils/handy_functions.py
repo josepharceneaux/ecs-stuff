@@ -319,28 +319,6 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     return [missing_item for missing_item in missing_items]
 
 
-def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
-    """
-    This validates that given object is an instance of given instance. If it is not, it raises
-    the given exception.
-    :param obj: obj e,g. User object
-    :param instances: Class for which given object is expected to be an instance.
-    :param exception: Exception to be raised
-    :type obj: object
-    :type instances: class
-    :type exception: Exception
-    :exception: Invalid Usage
-    """
-    if not isinstance(obj, instances):
-        given_obj_name = dict(obj=obj).keys()[0]
-        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
-        if isinstance(instances, (list, tuple)):
-            raise exception(error_message % ", ".join([instance.__name__
-                                                       for instance in instances]))
-        else:
-            raise exception(error_message % instances.__name__)
-
-
 def sample_phone_number():
     """Create random phone number.
     Phone number only creates area code + 7 random digits

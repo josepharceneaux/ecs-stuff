@@ -30,12 +30,12 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 
 # Common Utils
 from ..routes import SchedulerApiUrl
-from .. datetime_utils import DatetimeUtils
+from ..utils.datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 from .validators import raise_if_dict_values_are_not_int_or_long
-from ..utils.handy_functions import (http_request, raise_if_not_instance_of,
-                                     snake_case_to_pascal_case)
+from ..utils.handy_functions import (http_request, snake_case_to_pascal_case)
+from ..utils.validators import raise_if_not_instance_of
 
 
 def _get_campaign_type_prefix(campaign_type):

@@ -15,11 +15,11 @@ from ..models.db import db
 from ..tests.conftest import fake
 from campaign_utils import get_model
 from ..routes import CandidatePoolApiUrl
-from ..datetime_utils import DatetimeUtils
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
-from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
-                                     raise_if_not_instance_of)
+from ..utils.datetime_utils import DatetimeUtils
+from ..utils.validators import raise_if_not_instance_of
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER)
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
 

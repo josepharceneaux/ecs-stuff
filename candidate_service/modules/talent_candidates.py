@@ -56,9 +56,9 @@ from candidate_service.modules.validators import (
 )
 
 # Common utilities
-from candidate_service.common.geo_services.geo_coordinates import get_coordinates
-from candidate_service.common.datetime_utils import DatetimeUtils
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.iso_standards import get_country_name
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 
 ##################################################

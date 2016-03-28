@@ -29,8 +29,8 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
-from candidate_service.common.datetime_utils import DatetimeUtils
 from jsonschema import validate, FormatChecker, ValidationError
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles

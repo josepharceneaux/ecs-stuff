@@ -20,7 +20,7 @@ from ..models.misc import (Frequency, UrlConversion)
 from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
-from ..datetime_utils import DatetimeUtils
+from ..utils.datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items,

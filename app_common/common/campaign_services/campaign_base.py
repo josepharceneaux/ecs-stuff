@@ -33,10 +33,11 @@ from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
-from ..datetime_utils import DatetimeUtils
+from ..utils.datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
+from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
@@ -45,7 +46,7 @@ from validators import (validate_form_data,
                         validate_blast_candidate_url_conversion_in_db,
                         raise_if_dict_values_are_not_int_or_long)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     raise_if_not_instance_of, generate_jwt_headers)
+                                     generate_jwt_headers)
 
 
 class CampaignBase(object):

@@ -1,9 +1,10 @@
 import datetime
 
-from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
-from ..datetime_utils import DatetimeUtils
+
+from db import db
+from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (ResourceNotFound, ForbiddenError)
 
 __author__ = 'jitesh'

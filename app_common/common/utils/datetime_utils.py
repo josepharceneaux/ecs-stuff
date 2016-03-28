@@ -10,9 +10,9 @@ from flask import current_app
 from dateutil.parser import parse
 
 # Application Specific
-from error_handling import InvalidUsage
-from talent_config_manager import TalentConfigKeys
-from utils.handy_functions import raise_if_not_instance_of
+from ..error_handling import InvalidUsage
+from validators import raise_if_not_instance_of
+from ..talent_config_manager import TalentConfigKeys
 
 
 class DatetimeUtils(object):
