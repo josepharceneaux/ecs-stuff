@@ -210,6 +210,7 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
 
 
 def schedule_campaign(campaign_id, data, token, expected_status=(200,)):
+    logger.info('tests : schedule_campaign: Going to schedule push campaign (id: %s)' % campaign_id)
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests : schedule_campaign: %s', response.content)
     assert response.status_code in expected_status
