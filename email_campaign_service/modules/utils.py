@@ -83,10 +83,10 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     """
     if not list_id:
         raise InternalServerError("get_candidates_from_smartlist_with_page_params: Smartlist id not provided"
-                                  "for campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
+                                  "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
     if not per_page or not page:
         raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided"
-                                  "for campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
+                                  "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
     if params is None:
         params = {}
     pagination_query = '?per_page=%d&page=%d' % (per_page, page)

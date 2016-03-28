@@ -2,9 +2,9 @@ import json
 from sqlalchemy import and_
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.candidate import Candidate
-from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_pool_service.common.error_handling import InvalidUsage, ForbiddenError
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 __author__ = 'jitesh'
 
 
@@ -16,8 +16,26 @@ def validate_and_parse_request_data(data):
         candidate_ids_only = True
     if 'count_only' in return_fields:
         count_only = True
+    page = data.get('page', DEFAULT_PAGE)
+    per_page = data.get('per_page', DEFAULT_PAGE_SIZE)
 
-    return candidate_ids_only, count_only, data.get('page', 1), data.get('per_page', 15)
+    try:
+        int(page)
+    except ValueError:
+        raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
+
+    if int(page) <= 0:
+        raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
+
+    try:
+        int(per_page)
+    except ValueError:
+        raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
+
+    if int(per_page) <= 0:
+        raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
+
+    return candidate_ids_only, count_only, page, per_page
 
 
 def validate_and_format_smartlist_post_data(data, user):

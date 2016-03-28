@@ -1,36 +1,30 @@
 from candidate_pool_service.candidate_pool_app import cache
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from candidate_pool_service.common.error_handling import InternalServerError
+from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
-from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.utils.api_utils import ApiResponse
-from candidate_pool_service.common.error_handling import (InternalServerError, InvalidUsage)
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
 __author__ = 'jitesh'
 
 
-def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=1, per_page = 15):
+def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=DEFAULT_PAGE,
+                   per_page=DEFAULT_PAGE_SIZE):
     """
     Get the candidates of a smart or dumb list.
+    :param count_only: True if only count of candidates is required, false otherwise.
+    :param candidate_ids_only: True if only Ids of candidates are required, false otherwise.
     :param smartlist: Smartlist row object
     :param oauth_token: Authorization Token String
     :param page: Page Number
+    :param per_page:  Number of records per page.
     :return:  candidates and total_found
     what TalentSearch.search_candidates returns
     """
-    if not isinstance(page, int):
-        if not str(page).isdigit():
-            raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
-    if int(page) <= 0:
-        raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
-
-    if not isinstance(per_page, int):
-        if not str(per_page).isdigit():
-            raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
-    if int(per_page) <= 0:
-        raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
         # Page Number to be fetched from Amazon CloudSearch
@@ -90,7 +84,9 @@ def search_and_count_candidates_from_params(smartlist):
 
 
 def create_candidates_dict(candidate_ids):
-    """Given candidate ids, function will return respective candidates in formatted dict"""
+    """Given candidate ids, function will return respective candidates in formatted dict
+    :param candidate_ids: Ids of candidates.
+    """
     candidates = Candidate.query.filter(Candidate.id.in_(candidate_ids)).all()
     candidates_dict = {"candidates": [], "total_found": 0}
     for candidate in candidates:
@@ -126,6 +122,7 @@ def create_smartlist_dict(smartlist, oauth_token):
 def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     """
     Get all smartlists from user's domain.
+    :param oauth_token: Token for authentication.
     :param auth_user: User object
     :param page: Index of Page
     :param page_size: Size of a single page
@@ -155,8 +152,10 @@ def save_smartlist(user_id, name, talent_pipeline_id, search_params=None, candid
     :param talent_pipeline_id:
     :param candidate_ids: only set if you want to create a dumb list
     :type candidate_ids: list[long|int] | None
-    * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
-    :param access_token: oauth token required only in case of candidate_ids, it is required by search service to upload candidates to cloudsearch
+                         * only one parameter should be present: either `search_params` or `candidate_ids`
+                         (Should be validated by 'calling' function)
+    :param access_token: oauth token required only in case of candidate_ids, it is required by search service
+                         to upload candidates to cloudsearch
     :type access_token: basestring
     :return: Newly created smartlist row object
     """
