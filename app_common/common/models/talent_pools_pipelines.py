@@ -118,7 +118,7 @@ class TalentPipeline(db.Model):
             'search_params': json.loads(
                 self.search_params) if self.search_params else None,
             'talent_pool_id': self.talent_pool_id,
-            'date_needed': self.date_needed.isoformat(),
+            'date_needed': self.date_needed.isoformat() if self.date_needed else None,
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
