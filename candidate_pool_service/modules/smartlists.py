@@ -3,8 +3,8 @@ from candidate_pool_service.common.models.db import db
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
-from candidate_pool_service.common.error_handling import InternalServerError
 from candidate_pool_service.common.utils.api_utils import ApiResponse
+from candidate_pool_service.common.error_handling import (InternalServerError, InvalidUsage)
 from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
                                                                          update_candidates_on_cloudsearch)
 
@@ -20,6 +20,17 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
     :return:  candidates and total_found
     what TalentSearch.search_candidates returns
     """
+    if not isinstance(page, int):
+        if not str(page).isdigit():
+            raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
+    if int(page) <= 0:
+        raise InvalidUsage('Pagination parameter page must be an integer greater than 0.')
+
+    if not isinstance(per_page, int):
+        if not str(per_page).isdigit():
+            raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
+    if int(per_page) <= 0:
+        raise InvalidUsage('Pagination parameter per_page must be an integer greater than 0.')
     # If it is a smartlist, perform the dynamic search
     if smartlist.search_params:
         # Page Number to be fetched from Amazon CloudSearch
@@ -66,7 +77,6 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
         search_results = create_candidates_dict(candidate_ids)
         search_results = ApiResponse(search_results, headers=headers, status=200)
     return search_results
-
 
 
 @cache.memoize(timeout=86400)

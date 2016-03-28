@@ -37,17 +37,19 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
+def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
 
+    :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param campaign: email campaign object
     :param list_id: smartlist id.
     :return:
     """
     page = 1
     per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params)
+    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign)
     response_headers = response.headers
     if not response_headers:
         raise InternalServerError("Invalid pagination response from candidate pool service. "
@@ -61,7 +63,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     if int(no_of_pages) > 1:
         for current_page in range(1, int(no_of_pages)):
             next_page = current_page + 1
-            response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params)
+            response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params, campaign)
             response_body = json.loads(response.content)
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
@@ -69,19 +71,22 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     return candidates
 
 
-def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params):
+def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
     :param list_id: Id of smartlist.
     :param per_page: Number of results per page
     :param page: Number of page to fetch in response
     :param params: SPecific params to include in request. e.g. candidates_ids_only etc
+    :param campaign: Email Campaign object
     :return:
     """
     if not list_id:
-        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Smartlist id not provided")
+        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Smartlist id not provided"
+                                  "for campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
     if not per_page or not page:
-        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided")
+        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided"
+                                  "for campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
     if params is None:
         params = {}
     pagination_query = '?per_page=%d&page=%d' % (per_page, page)
