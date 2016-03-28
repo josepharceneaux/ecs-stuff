@@ -13,8 +13,7 @@ accept_content = {
     'CELERY_ACCEPT_CONTENT': ['pickle', 'json', 'msgpack', 'yaml']
 }
 
-CELERY_WORKER_ARGS = ['celery', 'worker', '-Ofair', '--without-gossip', '--without-mingle', '-l', 'info',
-                      '--concurrency', '1', '-Q']
+CELERY_WORKER_ARGS = ['celery', 'worker', '-Ofair', '--without-gossip', '--without-mingle', '-l', 'info', '--autoscale', '12,1', '-Q']
 
 
 def init_celery_app(flask_app, default_queue, modules_to_include=None):
