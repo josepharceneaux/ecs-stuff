@@ -13,7 +13,6 @@ import requests
 # Module Specific
 from flask import current_app
 from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.utils.validators import format_phone_number
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
@@ -134,7 +133,7 @@ def parse_candidate_phones(bs_contact_xml_list):
     output = []
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
-        #TODO: look into adding a type using p.attrs['type']
+        # TODO: look into adding a type using p.attrs['type']
         for p in phones:
             raw_phone = p.text.strip()
             # JSON_SCHEMA for candidates phone is max:20
@@ -372,11 +371,11 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                                  start_year, end_month, end_year):
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['organization'] or '') == organization and\
-                        (experience['position'] or '') == position_title and\
-                        (experience['start_month'] == start_month and
-                         experience['start_year'] == start_year and
-                         experience['end_month'] == end_month and
-                         experience['end_year'] == end_year):
+        if (experience['organization'] or '') == organization and \
+                        (experience['position'] or '') == position_title and \
+                (experience['start_month'] == start_month and
+                 experience['start_year'] == start_year and
+                 experience['end_month'] == end_month and
+                 experience['end_year'] == end_year):
             return i + 1
     return False

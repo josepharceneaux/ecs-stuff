@@ -24,10 +24,13 @@ from candidate_service.tests.api.candidate_sample_data import generate_single_ca
 
 class TestClientEmailCampaign(object):
 
-    def test_client_email_campaign(self, access_token_first, user_first, talent_pipeline):
+    def test_client_email_campaign(self, access_token_first, user_first, talent_pipeline,
+                                   client_email_campaign_subject):
         """
-        creates a candidate and then sends an email campaign to them
-        via the v1/candidates/client_email_campaign endpoint
+        creates a candidate and then sends an email campaign to them. This is the functionality that is implemented
+        by the browser plugins in Gmail.
+        via the v1/candidates/client_email_campaign endpoint with all possible values for email_subject to ensure that
+        the email campaign is created each time regardless of subject input
         """
         # give the test user roles to perform all needed actions
         AddUserRoles.all_roles(user=user_first)
@@ -46,7 +49,7 @@ class TestClientEmailCampaign(object):
         candidate = get_candidate_response.json()['candidate']
         body = {
             'candidates': [candidate],
-            'email_subject': 'Email Subject',
+            'email_subject': client_email_campaign_subject,
             'email_from': 'Samuel L. Jackson',
             'email_reply_to': 'amir@gettalent.com',
             'email_body_html': '<html><body>Email Body</body></html>',
