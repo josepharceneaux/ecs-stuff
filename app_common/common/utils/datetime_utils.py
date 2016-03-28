@@ -69,7 +69,7 @@ class DatetimeUtils(object):
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
         if not cls.is_datetime_in_future(cls.get_datetime_obj_if_str_datetime_in_valid_format(datetime_str)):
-            logger.error('Datetime str should be in future. %s' % datetime_str)
+            logger.warn('Given datetime string should be in future. %s' % datetime_str)
             raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
 
     @classmethod
@@ -147,7 +147,7 @@ class DatetimeUtils(object):
     @staticmethod
     def get_utc_datetime(datetime_obj, given_timezone):
         """
-        This method takes datetime object and timezone name and returns UTC specific datetime
+        This method takes datetime object and timezone name and returns UTC specific datetime string
         :Example:
             >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
             >> timezone = 'Asia/Karachi'
