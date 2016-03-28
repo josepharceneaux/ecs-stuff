@@ -6,7 +6,6 @@ from datetime import datetime
 from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
-import math
 from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
@@ -52,26 +51,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
                             params=params, headers=create_oauth_headers())
     if response.status_code == InvalidUsage.http_status_code():
         raise InvalidUsage(response.content)
-
-    response_body = response.json()
+    response_body = json.loads(response.content)
     candidates = response_body['candidates']
-
-    total_found = int(response_body['total_found'])
-    # Since there are 15 results on every page. And request for first page is already been made. So, exclude first page
-    # from total
-    total_requests_to_be_made = int(math.ceil(float(total_found) / 15.0) - 1)
-    page_count = 2
-    while total_requests_to_be_made > 0:
-        response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + '?page=%s' % page_count,
-                                params=params, headers=create_oauth_headers())
-        if response.status_code == InvalidUsage.http_status_code():
-            raise InvalidUsage(response.content)
-        data = response.json()
-        [candidates.append(candidate) for candidate in data.get("candidates")]
-        page_count += 1
-
-        total_requests_to_be_made -= 1
-
     if candidate_ids_only:
         return [long(candidate['id']) for candidate in candidates]
     return candidates

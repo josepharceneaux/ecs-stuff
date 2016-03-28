@@ -1,3 +1,8 @@
+import time
+
+from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
+
 __author__ = 'basit'
 
 import re
@@ -8,7 +13,8 @@ from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign, send_campaign)
+                                                                  delete_campaign, send_campaign,
+                                                                  create_smartlist_with_diff_email_candidate)
 
 
 @pytest.fixture()
@@ -88,6 +94,36 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=2)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+@pytest.fixture()
+def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
+                                  assign_roles_to_user_first,
+                                  access_token_first, talent_pipeline):
+    """
+    This returns a campaign which has 2 candidates associated having 2 email address. Email should be send to only one
+    address of both candidates
+    """
+
+    _emails = [
+               # Primary and work label
+               [{'label': 'work', 'address': fake.safe_email()},
+               {'label': 'primary', 'address': fake.safe_email()}],
+               # Work and home label
+               [{'label': 'work', 'address': fake.safe_email()},
+               {'label': 'home', 'address': fake.safe_email()}],
+               ]
+
+    campaign = create_smartlist_with_diff_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+                                                          talent_pipeline=talent_pipeline,
+                                                          _emails=_emails,
+                                                          count=2)
 
     def fin():
         delete_campaign(campaign)
@@ -185,6 +221,23 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
     return campaign_with_valid_candidate
+
+
+@pytest.fixture()
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email, access_token_first):
+    """
+    This fixture sends the campaign 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    sleep_time = 30
+    # send campaign
+    response = requests.post(EmailCampaignUrl.SEND % campaign_with_multiple_candidates_email.id,
+                             headers=dict(Authorization='Bearer %s' % access_token_first))
+
+    assert response.status_code == 200
+    # Wait 30 seconds while email being sent
+    time.sleep(sleep_time)
+    return campaign_with_multiple_candidates_email
 
 
 @pytest.fixture(params=['with_client', 'without_client'])

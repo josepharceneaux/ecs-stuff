@@ -60,6 +60,21 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == 2
 
+    def test_get_sends(self, access_token_first, sent_campaign_multiple_email):
+        """
+        Here we use `sent_campaign` fixture to send campaign with two emails. But email should be sent to only primary
+        or latest email.
+
+        """
+        response = requests.get(
+            self.URL % sent_campaign_multiple_email.id,
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
+                                                            check_count=False)
+        json_resp = response.json()[self.ENTITY]
+        assert json_resp[0]['campaign_id'] == int(sent_campaign_multiple_email.id)
+        assert json_resp[0]['sends'] == 2
+
     def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/blasts
