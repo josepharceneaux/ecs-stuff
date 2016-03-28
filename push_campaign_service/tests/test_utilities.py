@@ -127,21 +127,21 @@ def compare_campaign_data(campaign_first, campaign_second):
 def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.CAMPAIGNS + query, token)
-    logger.info(response.content)
+    logger.info('tests : get_campaigns: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def get_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
-    logger.info(response.content)
+    logger.info('tests : get_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def create_campaign(data, token, expected_status=(201,)):
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    logger.info(response.content)
+    logger.info('tests : create_campaign: ', response.content)
     assert response.status_code in expected_status
     headers = response.headers
     response = response.json()
@@ -151,27 +151,28 @@ def create_campaign(data, token, expected_status=(201,)):
 
 def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    logger.info(response.content)
+    logger.info('tests : update_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def delete_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
-    logger.info(response.content)
+    logger.info('tests : delete_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def delete_campaigns(data, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGNS, token, data=data)
+    logger.info('tests : delete_campaigns: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def send_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
-    logger.info(response.content)
+    logger.info('tests : send_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -179,7 +180,7 @@ def send_campaign(campaign_id, token, expected_status=(200,)):
 def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
-    logger.info(response.content)
+    logger.info('tests : get_blasts: ', response.content)
     print(response.content)
     assert response.status_code in expected_status
     return response.json()
@@ -188,6 +189,7 @@ def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE
 def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
     response = send_request('get', PushCampaignApiUrl.BLAST % (campaign_id, blast_id),
                             token)
+
     assert response.status_code in expected_status
     return response.json()
 
@@ -209,21 +211,21 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
 
 def schedule_campaign(campaign_id, data, token, expected_status=(200,)):
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
-    logger.info(response.content)
+    logger.info('tests : schedule_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def reschedule_campaign(campaign_id, data, token, expected_status=(200,)):
     response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
-    logger.info(response.content)
+    logger.info('tests: reschedule_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def unschedule_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.SCHEDULE % campaign_id, token)
-    logger.info(response.content)
+    logger.info('tests : unschedule_campaign: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -233,14 +235,14 @@ def associate_device_to_candidate(candidate_id, device_id, token, expected_statu
         'one_signal_device_id': device_id
     }
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
-    logger.info(response.content)
+    logger.info('tests : associate_device_to_candidate: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def get_candidate_devices(candidate_id, token, expected_status=(200,)):
     response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
-    logger.info(response.content)
+    logger.info('tests : get_candidate_devices: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -250,6 +252,6 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
         'one_signal_device_id': device_id
     }
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
-    logger.info(response.content)
+    logger.info('tests : delete_candidate_devices: ', response.content)
     assert response.status_code in expected_status
     return response.json()

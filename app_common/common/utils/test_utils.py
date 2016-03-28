@@ -71,7 +71,7 @@ def get_user(user_id, token):
         'token must be a string, given type is %s' % type(token)
     assert str(user_id).isdigit(), 'user_id must be valid number'
     response = send_request('get', UserServiceApiUrl.USER % user_id, token)
-    print(response.content)
+    print('common_tests : get_user: ', response.content)
     assert response.status_code == HttpStatus.OK
     return response.json()['user']
 
@@ -92,7 +92,7 @@ def refresh_token(data):
             'grant_type': 'refresh_token'
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
-    print(resp.content)
+    print('common_tests : refresh_token: ', resp.content)
     assert resp.status_code == HttpStatus.OK
     resp = resp.json()
     return resp['access_token']
@@ -115,7 +115,7 @@ def get_token(info):
             'grant_type': 'password'
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
-    print(resp.content)
+    print('common_tests : get_token: ', resp.content)
     assert resp.status_code == HttpStatus.OK
     resp = resp.json()
     access_token = resp['access_token']
@@ -134,7 +134,7 @@ def unauthorize_test(method, url, data=None):
     :return:
     """
     response = send_request(method, url, 'invalid_token',  data)
-    print(response.content)
+    print('common_tests : unauthorize_test: ', response.content)
     assert response.status_code == HttpStatus.UNAUTHORIZED
 
 
@@ -218,13 +218,13 @@ def remove_roles(user_id, roles, token):
     }
     response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
-    print(response.content)
+    print('common_tests : remove_roles: ', response.content)
     assert response.status_code in [HttpStatus.OK, HttpStatus.BAD_REQUEST]
 
 
 def delete_scheduler_task(task_id, token, expected_status=(200,)):
     response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
-    print(response.content)
+    print('common_tests : delete_scheduler: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -251,21 +251,21 @@ def create_candidate(talent_pool_id, token, expected_status=(201,)):
         ]
     }
     response = send_request('post', CandidateApiUrl.CANDIDATES, token, data=data)
-    print(response.content)
+    print('common_tests : create_candidate: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def get_candidate(candidate_id, token, expected_status=(200,)):
     response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
-    print(response.content)
+    print('common_tests : get_candidate: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def delete_candidate(candidate_id, token, expected_status=(200,)):
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, token)
-    print(response.content)
+    print('common_tests : delete_candidate: ', response.content)
     assert response.status_code in expected_status
 
 
@@ -277,14 +277,14 @@ def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(
         "talent_pipeline_id": talent_pipeline_id
     }
     response = send_request('post', CandidatePoolApiUrl.SMARTLISTS, token, data=data)
-    print(response.content)
+    print('common_tests : create_smartlist: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token)
-    print(response.content)
+    print('common_tests : delete_smartlist: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -302,14 +302,14 @@ def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200
         }
         data["talent_pipelines"].append(talent_pipeline)
     response = send_request('post', CandidatePoolApiUrl.TALENT_PIPELINES, token, data=data)
-    print(response.content)
+    print('common_tests : create_talent_pipelines: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     response = send_request('get', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id, token)
-    print(response.content)
+    print('common_tests : get_talent_pipeline: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -317,7 +317,7 @@ def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
 def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     response = send_request('delete', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id,
                             token)
-    print(response.content)
+    print('common_tests : delete_talent_pipeline: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -333,14 +333,14 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
             }
         data["talent_pools"].append(talent_pool)
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token, data=data)
-    print(response.content)
+    print('common_tests : create_talent_pools: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
 def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
     response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, token)
-    print(response.content)
+    print('common_tests : get_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -348,6 +348,6 @@ def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
 def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token)
-    print(response.content)
+    print('common_tests : delete_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
