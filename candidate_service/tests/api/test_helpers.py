@@ -3,14 +3,17 @@ Test cases for functions in helpers.py
 """
 # Candidate Service app instance
 from candidate_service.candidate_app import app
+
 # Conftest
 from candidate_service.common.tests.conftest import *
+
 # Helper functions
-from helpers import (
-    request_to_candidate_resource, request_to_candidates_resource,
-    check_for_id, remove_id_key, response_info, AddUserRoles
-)
+from helpers import check_for_id, remove_id_key, AddUserRoles
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
+from candidate_service.common.utils.test_utils import send_request, response_info
+
+# Url
+from candidate_service.common.routes import CandidateApiUrl
 
 
 def test_check_for_id(access_token_first, user_first, talent_pool):
@@ -19,14 +22,14 @@ def test_check_for_id(access_token_first, user_first, talent_pool):
     Expect: False if candidate-dict has missing id-key(s)
     """
     # Create candidate
-    AddUserRoles.add_and_get(user=user_first)
+    AddUserRoles.add_and_get(user_first)
     data = generate_single_candidate_data([talent_pool.id])
-    resp = request_to_candidates_resource(access_token_first, 'post', data)
+    resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
     print response_info(resp)
     candidate_id = resp.json()['candidates'][0]['id']
 
-    candidate_dict = request_to_candidate_resource(
-            access_token_first, 'get', candidate_id).json()['candidate']
+    get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+    candidate_dict = get_resp.json()['candidate']
 
     r = check_for_id(_dict=candidate_dict)
     assert r is None
@@ -83,11 +86,11 @@ def test_remove_id_key(access_token_first, user_first, talent_pool):
     # Create Candidate
     AddUserRoles.add_and_get(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
-    create_resp = request_to_candidates_resource(access_token_first, 'post', data)
+    create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
     # Retrieve Candidate
     candidate_id = create_resp.json()['candidates'][0]['id']
-    get_resp = request_to_candidate_resource(access_token_first, 'get', candidate_id)
+    get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
     candidate_dict_with_ids = get_resp.json()['candidate']
     print response_info(get_resp)
 
