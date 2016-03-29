@@ -27,13 +27,15 @@ class DatetimeUtils(object):
         self.value = value
 
     @staticmethod
-    def validate_datetime_in_iso_utc_format(str_datetime):
+    def validate_datetime_format(str_datetime, valid_format=ISO8601_FORMAT):
         """
         This validates the given datetime is in ISO UTC format or not. Proper format should be like
         '2015-10-08T06:16:55.000Z'.
 
         :param str_datetime: str
+        :param valid_format: Format of datetime string
         :type str_datetime: str
+        :type valid_format: str
         :exception: Invalid Usage
         :return: True if given datetime is valid, raises Invalid usage otherwise.
         :rtype: bool | InvalidUsage
@@ -41,8 +43,9 @@ class DatetimeUtils(object):
         if not isinstance(str_datetime, basestring):
             raise InvalidUsage('datetime should be provided in str format '
                                'as 2015-10-08T06:16:00.000Z')
+        raise_if_not_instance_of(valid_format, basestring)
         try:
-            datetime.strptime(str_datetime, DatetimeUtils.ISO8601_FORMAT)
+            datetime.strptime(str_datetime, valid_format)
         except ValueError:
             raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
                                'like 2015-10-08T06:16:00.000Z. Given Date is %s' % str_datetime)
@@ -73,18 +76,21 @@ class DatetimeUtils(object):
         return self.value > current_datetime
 
     @classmethod
-    def get_datetime_obj_if_str_datetime_is_in_valid_iso_format(cls, str_datetime):
+    def get_datetime_obj_if_format_is_valid(cls, str_datetime, valid_format=ISO8601_FORMAT):
         """
         This converts given string datetime into UTC datetime obj.
-        This uses validate_datetime_in_iso_utc_format() to validate the format of given str.
-        Valid format should be like 2015-10-08T06:16:55Z
-        :param str_datetime:
+        This uses validate_datetime_format() to validate the format of given str.
+        Default value of valid_format is something like 2015-10-08T06:16:55.000Z
+        :param str_datetime: datetime object in string
+        :param valid_format: Format of datetime string
+        :type str_datetime: str
+        :type valid_format: str
         :return: datetime obj
         :rtype: datetime
         """
-        if not isinstance(str_datetime, basestring):
-            raise InvalidUsage('param should be a string of datetime')
-        cls.validate_datetime_in_iso_utc_format(str_datetime)
+        raise_if_not_instance_of(str_datetime, basestring)
+        raise_if_not_instance_of(valid_format, basestring)
+        cls.validate_datetime_format(str_datetime, valid_format=valid_format)
         return parse(str_datetime).replace(tzinfo=tzutc())
 
     @staticmethod

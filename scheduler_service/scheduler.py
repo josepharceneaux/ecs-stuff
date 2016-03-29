@@ -267,7 +267,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request')]
-                                    )
+                                    );
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception:
