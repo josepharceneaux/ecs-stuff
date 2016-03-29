@@ -599,6 +599,14 @@ class CandidateLanguage(db.Model):
         return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
 
     @classmethod
+    def get_by_id(cls, _id):
+        """
+        :type _id:  int|long
+        :rtype:  CandidateLanguage
+        """
+        return cls.query.get(_id)
+
+    @classmethod
     def get_by_candidate_id(cls, candidate_id):
         """
         :type candidate_id:  int|long

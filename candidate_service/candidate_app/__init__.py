@@ -258,6 +258,7 @@ try:
 
     # ****** CandidateLanguageResource *******
     api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGES, endpoint='candidate_languages')
+    api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGE, endpoint='candidate_language')
 
     db.create_all()
     db.session.commit()

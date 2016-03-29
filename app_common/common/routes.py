@@ -377,6 +377,7 @@ class CandidateApi(object):
     CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
 
     LANGUAGES = _CANDIDATE_ID + CandidateApiWords.LANGUAGES
+    LANGUAGE = LANGUAGES + _INT_ID
 
 
 class CandidateApiUrl(object):
@@ -451,6 +452,7 @@ class CandidateApiUrl(object):
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
 
     LANGUAGES = CANDIDATE + CandidateApiWords.LANGUAGES
+    LANGUAGE = LANGUAGES + "/%s"
 
 
 class WidgetApi(object):

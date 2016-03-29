@@ -7,6 +7,7 @@ Notes:
 # Standard libraries
 import logging
 import datetime
+import pycountry
 from time import time
 
 # Flask specific
@@ -27,7 +28,7 @@ from candidate_service.modules.validators import (
 )
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema
 )
 from candidate_service.common.datetime_utils import isoformat_to_mysql_datetime
 from jsonschema import validate, FormatChecker, ValidationError
@@ -50,6 +51,7 @@ from candidate_service.common.models.candidate import (
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
     CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
 )
+from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
@@ -62,7 +64,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages
+    add_languages, update_candidate_languages
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -1879,7 +1881,7 @@ class CandidateNotesResource(Resource):
         body_dict = get_json_if_exist(request)
         try:
             validate(instance=body_dict, schema=notes_schema)
-        except Exception as e:
+        except ValidationError as e:
             raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
 
         add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
@@ -1931,24 +1933,54 @@ class CandidateLanguageResource(Resource):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         body_dict = get_json_if_exist(request)
-        # try:
-        #     validate(instance=body_dict, schema=language_schema)
-        # except Exception as e:
-        #     raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+        try:
+            validate(instance=body_dict, schema=language_schema)
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
 
-        add_languages(candidate_id=candidate_id, data=body_dict)
+        add_languages(candidate_id=candidate_id, data=body_dict['candidate_languages'])
         db.session.commit()
-
         return '', 204
-
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
-        Endpoint:  GET /v1/candidates/:candidate_id/languages
+        Endpoints:
+             i. GET /v1/candidates/:candidate_id/languages
+            ii. GET /v1/candidates/:candidate_id/languages/:id
         Function will retrieve all of candidate's languages
         """
         # Authenticated user & candidate ID
+        authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        language = None
+        if language_id:  # Get specified candidate's language
+            language = CandidateLanguage.get_by_id(language_id)
+            """
+            :type language:  CandidateLanguage
+            """
+            if not language:
+                raise NotFoundError('Candidate language not found: {}'.format(language_id),
+                                    custom_error.LANGUAGE_NOT_FOUND)
+            if language.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', custom_error.LANGUAGE_FORBIDDEN)
+
+        return {'candidate_languages': fetch_candidate_languages(candidate_id, language)}
+
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        """
+        Endpoint:  PATCH /v1/candidates/:candidate_id/languages
+        Function will update candidate's languages
+        """
+        # Authenticate user & Candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
@@ -1958,4 +1990,53 @@ class CandidateLanguageResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        return {'candidate_languages': fetch_candidate_languages(candidate_id)}
+        body_dict = get_json_if_exist(request)
+        try:
+            validate(instance=body_dict, schema=language_schema)
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+
+        update_candidate_languages(candidate_id, body_dict['candidate_languages'], authed_user.id)
+        db.session.commit()
+        return '', 204
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/languages/:id
+            ii. DELETE /v1/candidates/:candidate_id/languages
+        :returns:
+            - status code: 200
+            - json body: {'language_ids': [int, int, ...]}
+        """
+        # Authenticated user, Candidate ID, and Language ID
+        authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if language_id:  # Delete specified candidate's language
+            language = CandidateLanguage.get_by_id(language_id)
+            """
+            :type language:  CandidateLanguage
+            """
+            if not language:
+                raise NotFoundError('Candidate language not found: {}'.format(language_id),
+                                    custom_error.LANGUAGE_NOT_FOUND)
+            if language.candidate_id != candidate_id:
+                raise ForbiddenError('Not authorized', custom_error.LANGUAGE_FORBIDDEN)
+
+            db.session.delete(language)
+            db.session.commit()
+
+        else:  # Delete all of candidate's languages
+            candidate_languages = candidate.languages
+            map(db.session.delete, candidate_languages)
+
+        db.session.commit()
+        return '', 204
