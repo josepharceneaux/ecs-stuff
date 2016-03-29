@@ -207,3 +207,70 @@ class EmailCampaignSendUrlConversion(db.Model):
 
     # Relationships
     email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")
+
+
+class UserEmailTemplate(db.Model):
+    __tablename__ = 'user_email_template'
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), index=True)
+    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
+    name = db.Column('Name', db.String(255), nullable=False)
+    body_html = db.Column('EmailBodyHtml', db.Text)
+    body_text = db.Column('EmailBodyText', db.Text)
+    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
+                                                                                      ondelete=u'SET NULL'), index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    # Relationships
+    template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
+                                                                              cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_id(cls, template_id):
+        """
+        :type template_id:  int | long
+        :return: UserEmailTemplate
+        """
+        return cls.query.get(template_id)
+
+    @classmethod
+    def get_by_name(cls, template_name):
+        return cls.query.filter_by(name=template_name).first()
+
+
+class EmailTemplateFolder(db.Model):
+    __tablename__ = 'email_template_folder'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(512))
+    parent_id = db.Column('ParentId', db.Integer,  db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
+                          index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
+                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
+                                                                                      cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_id(cls, folder_id):
+        """
+        :type folder_id:  int | long
+        :return: EmailTemplateFolder
+        """
+        return cls.query.get(folder_id)
+
+    @classmethod
+    def get_by_name_and_domain_id(cls, folder_name, domain_id):
+        """
+        Method to get email template folder based on folder name and domain id.
+        :type folder_name:  string
+        :type domain_id:  int | long
+        :rtype:  EmailTemplateFolder
+        """
+        assert folder_name, "folder_name not provided"
+        assert domain_id, "domain_id not provided"
+        return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()

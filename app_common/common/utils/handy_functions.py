@@ -237,7 +237,7 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             else:
                 # raise any Server error
                 log_exception("http_request: Server error from %s on %s call. "
-                                 "Make sure requested server is running." % (url, method_type))
+                              "Make sure requested server is running." % (url, method_type))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
@@ -246,13 +246,15 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                             "http_request: Couldn't make %s call on %s. "
                             "Make sure requested server is running." % (method_type, url), app=app)
             raise
+        except requests.Timeout as e:
+            log_exception('http_request: HTTP request timeout, %s' % e.message)
+            raise
         except requests.RequestException as e:
             log_exception('http_request: HTTP request failed, %s' % e.message)
             raise
-
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s' % (error_message, user_id), app=app)
+                          'user_id: %s' % (error_message, user_id), app=app)
         return response
     else:
         log_error('http_request: Unknown Method type %s ' % method_type, app=app)
@@ -393,3 +395,24 @@ def get_valid_json_data(req):
     if not data:
         raise InvalidUsage('No data provided.')
     return data
+
+
+def define_and_send_request(access_token, request, url, data=None):
+    """
+    Function will define request based on params and make the appropriate call.
+    :param request_method:  can only be GET, POST, PUT, PATCH, or DELETE
+    :param url: url for request
+    :param access_token: token for authentication
+    :param data: data in form of dictionary
+    """
+
+    request = request.lower()
+    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    method = getattr(requests, request)
+    if data is None:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    else:
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      data=json.dumps(data))
+

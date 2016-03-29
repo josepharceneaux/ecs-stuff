@@ -15,10 +15,8 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import (
-    request_to_candidates_resource,
-    request_to_candidate_resource, AddUserRoles
-)
+from helpers import AddUserRoles
+from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
 
@@ -33,17 +31,17 @@ class TestClientEmailCampaign(object):
         the email campaign is created each time regardless of subject input
         """
         # give the test user roles to perform all needed actions
-        AddUserRoles.all_roles(user=user_first)
+        AddUserRoles.all_roles(user_first)
 
         # Create a Candidate
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
-        create_candidate_response = request_to_candidates_resource(access_token_first,
-                                                                   'post', data)
+        create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_candidate_response)
 
         # Get Candidate via ID
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
-        get_candidate_response = request_to_candidate_resource(access_token_first,
-                                                               'get', candidate_id)
+        get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_candidate_response)
 
         # create POST request body
         candidate = get_candidate_response.json()['candidate']
