@@ -6,6 +6,7 @@ import datetime
 import urlparse
 import dateutil.parser
 import simplejson as json
+import pycountry
 from flask import request
 from datetime import date
 
@@ -29,7 +30,8 @@ from candidate_service.common.models.candidate_edit import CandidateEdit, Candid
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import (Country, AreaOfInterest)
+from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.user import User
 
 # Modules
@@ -692,6 +694,7 @@ def update_photo(candidate_id, user_id, update_dict):
     photo_query.update(photo_update_dict)
     return
 
+
 ######################################
 # Helper Functions For Candidate Notes
 ######################################
@@ -710,6 +713,37 @@ def add_notes(candidate_id, data):
         )
         notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
         db.session.add(CandidateTextComment(**notes_dict))
+
+
+##########################################
+# Helper Functions For Candidate Languages
+##########################################
+def add_languages(candidate_id, data):
+    """
+    Function will insert candidate languages into the db
+    :type candidate_id:  int|long
+    :type data:  list[dict]
+    :rtype:  list[dict]
+    """
+    for language in data:
+        language_dict = dict(
+            candidate_id=candidate_id,
+            resume_id=candidate_id,
+            iso639_language=language['language_code'].lower() if language.get('language_code') else None,
+            read=language.get('read'),
+            write=language.get('write'),
+            speak=language.get('speak')
+        )
+        language_dict = dict((k, v) for k, v in language_dict.iteritems() if v is not None)
+        db.session.add(CandidateLanguage(**language_dict))
+
+
+def fetch_candidate_languages(candidate_id):
+    return [{'id': language.id, 'candidate_id': candidate_id,
+             'language_code': language.iso639_language,
+             'language_name': pycountry.languages.get(iso639_1_code=language.iso639_language).name
+             if language.iso639_language else None
+         } for language in CandidateLanguage.get_by_candidate_id(candidate_id)]
 
 
 ######################################################

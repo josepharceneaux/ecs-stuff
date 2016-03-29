@@ -61,7 +61,8 @@ from candidate_service.modules.talent_candidates import (
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
-    fetch_aggregated_candidate_views, update_total_months_experience
+    fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
+    add_languages
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -1908,3 +1909,53 @@ class CandidateNotesResource(Resource):
             {'id': note.id, 'candidate_id': note.candidate_id,
              'comment': note.comment, 'added_time': str(note.added_time)
         } for note in CandidateTextComment.get_by_candidate_id(candidate_id)]}
+
+
+class CandidateLanguageResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:candidate_id/languages
+        Function will create language(s) for requested candidate
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        body_dict = get_json_if_exist(request)
+        # try:
+        #     validate(instance=body_dict, schema=language_schema)
+        # except Exception as e:
+        #     raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+
+        add_languages(candidate_id=candidate_id, data=body_dict)
+        db.session.commit()
+
+        return '', 204
+
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoint:  GET /v1/candidates/:candidate_id/languages
+        Function will retrieve all of candidate's languages
+        """
+        # Authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        return {'candidate_languages': fetch_candidate_languages(candidate_id)}

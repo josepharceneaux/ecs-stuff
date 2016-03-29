@@ -581,8 +581,8 @@ class CandidatePreferredLocation(db.Model):
 class CandidateLanguage(db.Model):
     __tablename__ = 'candidate_language'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.Id'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
+    iso639_language = db.Column(db.String(2))
     can_read = db.Column('CanRead', db.Boolean)
     can_write = db.Column('CanWrite', db.Boolean)
     can_speak = db.Column('CanSpeak', db.Boolean)
@@ -591,10 +591,20 @@ class CandidateLanguage(db.Model):
     speak = db.Column('Speak', db.Boolean)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below table(s) to be removed once all tables have been migrated (updated)
+    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.Id'))
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
 
     def __repr__(self):
         return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateLanguage]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class CandidateLicenseCertification(db.Model):
