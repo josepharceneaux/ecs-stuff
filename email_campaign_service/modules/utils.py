@@ -41,16 +41,14 @@ HTML_CLICK_URL_TYPE = 2
 def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
-
-    :param candidate_ids_only: Whether or not to get only ids of candidates
-    :param campaign: email campaign object
     :param list_id: smartlist id.
+    :param campaign: email campaign object
+    :param candidate_ids_only: Whether or not to get only ids of candidates
     :return:
     """
-    page = DEFAULT_PAGE
-    per_page = 1000  # smartlists can have a large number of users, hence page size of 1000
+    per_page = 1000  # Smartlists can have a large number of users, hence page size of 1000
     params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign)
+    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE, params, campaign)
     response_headers = response.headers
     if not response_headers:
         raise InternalServerError("Invalid pagination response from candidate pool service. "

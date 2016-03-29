@@ -30,10 +30,10 @@ class TestSmartlistResource(object):
                                                         talent_pool, talent_pipeline, count):
             """
             Creates and returns the id of a smartlist with candidate ids (dumb list).
-            :param talent_pipeline: valid talent pipeline.
             :param access_token_first: Token for authorization.
             :param user_first: User of first domain.
             :param talent_pool: Valid talent pool.
+            :param talent_pipeline: valid talent pipeline.
             :param count: Number of candidates.
             :return: smartlist_id and candidate_ids.
             """
@@ -476,6 +476,15 @@ class TestSmartlistCandidatesApi(object):
 
     def call_smartlist_candidates_get_api_with_pagination_params(self, smartlist_id, params, access_token, page,
                                                                  per_page):
+        """
+        Get candidates of smartlist with pagination params and return the response.
+        :param smartlist_id: Smartlist id.
+        :param params: Specific parameters for search such as candidates_ids_only.
+        :param access_token: Token for authentication.
+        :param page: Page number.
+        :param per_page: Number of records per page.
+        :return: HTTP Response
+        """
         return requests.get(
                 url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id + '?page=%d&per_page=%d' % (page, per_page),
                 params=params,

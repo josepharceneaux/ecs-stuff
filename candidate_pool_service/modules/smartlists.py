@@ -52,10 +52,7 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
         smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
                 SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page,
                                                                                                per_page, False)
-        headers = {
-                    'X-Total': smartlist_candidate_rows.total,
-                    'X-Page-Count': smartlist_candidate_rows.pages
-        }
+        headers = {'X-Total': smartlist_candidate_rows.total, 'X-Page-Count': smartlist_candidate_rows.pages}
         smartlist_candidate_rows = smartlist_candidate_rows.items
         candidates = []
         candidate_ids = []
@@ -63,10 +60,7 @@ def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_
             candidates.append({'id': smartlist_candidate_row.candidate_id})
             candidate_ids.append(smartlist_candidate_row.candidate_id)
         if candidate_ids_only:
-            response = {
-                    'candidates': candidates,
-                    'total_found': total_candidates_in_smartlist
-            }
+            response = {'candidates': candidates, 'total_found': total_candidates_in_smartlist}
             return ApiResponse(response, headers=headers, status=200)
         search_results = create_candidates_dict(candidate_ids)
         search_results = ApiResponse(search_results, headers=headers, status=200)

@@ -406,13 +406,13 @@ class TestSendCampaign(object):
     def test_send_campaign_with_two_smartlists(
             self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first, assign_roles_to_user_first):
         """
-        This function create two smartlists with 20 candidates each and associate them
+        This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
         :param access_token_first: Access token of user_first
         :param user_first: Valid user from fist domain
         :param talent_pipeline: valid talent pipeline
         :param email_campaign_of_user_first: email campaign associated with user first
-        :return:
+        :param assign_roles_to_user_first: Assign required roles to user of first domain.
         """
         smartlist_id1 = create_smartlist_with_candidate(access_token_first,
                                                         talent_pipeline,
@@ -424,7 +424,7 @@ class TestSendCampaign(object):
                                                         count=20)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
-                                        email_campaign_id=campaign.id)
+                                         email_campaign_id=campaign.id)
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         time.sleep(30)
