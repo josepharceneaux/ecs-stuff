@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+"""Functions for retreiving Sovren resume xml and parsing into Candidate Objects."""
 # Standard Library
 from collections import namedtuple
 import base64
