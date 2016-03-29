@@ -798,13 +798,13 @@ class TestCreateEmail(object):
                 {'label': None, 'is_default': None, 'address': fake.safe_email()}
             ], 'talent_pool_ids': {'add': [talent_pool.id]}}
         ]}
-
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
         candidate_dict = get_resp.json()['candidate']
         assert create_resp.status_code == 201
         assert candidate_dict['emails'][0]['label'] == 'Primary'

@@ -153,8 +153,8 @@ def fetch_candidate_info(candidate, fields=None):
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
     resume_url = None
-    if get_all_fields or 'resume_url' in fields:
-        resume_url = get_s3_url("OriginalFiles", candidate.filename)
+    if (get_all_fields or 'resume_url' in fields) and candidate.filename:
+        resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
     return_dict = {
         'id': candidate_id,
