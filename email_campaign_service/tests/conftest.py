@@ -4,7 +4,9 @@ import re
 
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.candidate import CandidateEmail
-from email_campaign_service.common.models.email_campaign import EmailClient
+
+from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
+                                                                 EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
@@ -231,3 +233,17 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value['response'] = response
     return_value['campaign'] = campaign
     return return_value
+
+
+@pytest.fixture()
+def template_id(domain_id):
+    """
+    Retrieves email template for the test email campaign
+    :return:    Id of template retrieved
+    """
+    # Retrieve campaign template from 'Sample Templates' folder
+    template_folder = EmailTemplateFolder.get_by_name_and_domain_id('Sample Templates', domain_id)
+    template_folder_id = template_folder.id
+    template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=template_folder_id)
+
+    return template['id']

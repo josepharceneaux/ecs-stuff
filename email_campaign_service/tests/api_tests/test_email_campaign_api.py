@@ -435,12 +435,9 @@ class TestSendCampaign(object):
 def assert_mail(subject):
     """
     Asserts that the user received the email in his inbox which has the subject as subject,
-
-
     :param subject:       Email subject
-    :return:
     """
-    time.sleep(30)
+    time.sleep(40)
     abort_after = 60
     start = time.time()
     mail_found = False

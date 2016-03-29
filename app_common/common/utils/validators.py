@@ -116,6 +116,20 @@ def parse_openweb_date(openweb_date):
     return date_obj
 
 
+def validate_and_return_immutable_value(is_immutable):
+    """
+    This function validates the is_immutable value that came from user's end to make sure
+    that it is either 0 or 1. Raises in-valid usage exception if other value is received.
+    :param is_immutable: Value for is_immutable that came from user's end and needs to be validated.
+    :return value of is_immutable after validating it
+    """
+
+    if (is_immutable is None) or str(is_immutable) not in ('0', '1'):
+        raise InvalidUsage(error_message='Invalid input: is_immutable should be integer with value 0 or 1')
+    else:
+        return is_immutable
+
+
 def is_country_code_valid(country_code):
     """
     Checks to see if country-code is a valid country code per ISO-3166 standards
@@ -125,4 +139,3 @@ def is_country_code_valid(country_code):
     except KeyError:
         return False
     return True
-

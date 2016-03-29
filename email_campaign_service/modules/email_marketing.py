@@ -364,7 +364,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
             logger.debug("subscription_preference: %s" % subscription_preference)
             if subscription_preference and not subscription_preference.get('frequency_id'):
                 unsubscribed_candidate_ids.append(candidate_id)
-        # Remove unsubscribed candidates
+
+        # Remove un-subscribed candidates
         subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
 
     # If only getting candidates that haven't been emailed before...
@@ -564,7 +565,7 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     # candidate-specific and will be set here
     if campaign.is_subscription:
         pass
-    #             from TalentJobAlerts import get_email_campaign_fields TODO: Job Alerts?
+    # from TalentJobAlerts import get_email_campaign_fields TODO: Job Alerts?
     #             campaign_fields = get_email_campaign_fields(candidate.id,
     #             do_email_business=do_email_business)
     #             If candidate has no matching job openings, don't send the email

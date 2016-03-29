@@ -1,6 +1,7 @@
 # Standard Imports
 import json
 import time
+import datetime
 import requests
 
 # Application Specific
@@ -12,7 +13,8 @@ from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 raise_if_not_instance_of)
+                                                                 raise_if_not_instance_of,
+                                                                 define_and_send_request)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
@@ -165,7 +167,7 @@ def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagin
     response = requests.get(url=url,
                             params=params,
                             headers={'Authorization': 'Bearer %s' % access_token})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     resp = response.json()
     assert entity in resp
     return resp[entity]
@@ -182,7 +184,7 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
         url=CandidatePoolApiUrl.TALENT_PIPELINE_CAMPAIGN % talent_pipeline.id,
         params=params,
         headers={'Authorization': 'Bearer %s' % access_token})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     resp = response.json()
     print "Response JSON: %s" % json.dumps(resp)
     assert 'email_campaigns' in resp, "Response dict should have email_campaigns key"
@@ -193,3 +195,137 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
         actual_email_campaign_fields_set = set(email_campaign_dict.keys())
         assert expected_email_campaign_fields_set == actual_email_campaign_fields_set, \
             "Response's email campaign fields should match the expected email campaign fields"
+
+
+def post_to_email_template_resource(access_token, data):
+    """
+    Function sends a post request to email-templates,
+    i.e. EmailTemplate/post()
+    """
+    response = requests.post(
+            url=EmailCampaignUrl.TEMPLATES, data=json.dumps(data),
+            headers={'Authorization': 'Bearer %s' % access_token,
+                     'Content-type': 'application/json'}
+    )
+    return response
+
+
+def request_to_email_template_resource(access_token, request, email_template_id, data=None):
+    """
+    Function sends a request to email template resource
+    :param access_token: Token for user authorization
+    :param request: get, post, patch, delete
+    :param email_template_id: Id of email template
+    :param data: data in form of dictionary
+    """
+    url = EmailCampaignUrl.TEMPLATES + '/' + str(email_template_id)
+    return define_and_send_request(access_token, request, url, data)
+
+
+def get_template_folder(token):
+    """
+    Function will create and retrieve template folder
+    :param token:
+    :return: template_folder_id, template_folder_name
+    """
+    template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
+
+    data = {'name': template_folder_name}
+    response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
+                             headers={'Authorization': 'Bearer %s' % token,
+                             'Content-type': 'application/json'})
+    assert response.status_code == requests.codes.CREATED
+    response_obj = response.json()
+    template_folder_id = response_obj["template_folder_id"][0]
+    return template_folder_id['id'], template_folder_name
+
+
+def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
+                          folder_id=None):
+    """
+    Creates a email campaign template with params provided
+
+    :param token
+    :param user_id:                 User id
+    :param template_name:           Template name
+    :param body_html:               Body html
+    :param body_text:               Body text
+    :param is_immutable:            1 if immutable, otherwise 0
+    :param folder_id:               folder id
+    """
+    data = dict(
+            name=template_name,
+            template_folder_id=folder_id,
+            user_id=user_id,
+            type=0,
+            body_html=body_html,
+            body_text=body_text,
+            is_immutable=is_immutable
+    )
+
+    create_resp = post_to_email_template_resource(token, data=data)
+    return create_resp
+
+
+def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
+                          folder_id=None, is_immutable=1):
+    """
+        Update existing email template fields using values provided by user.
+        :param email_template_id: id of email template
+        :param request: request object
+        :param token: token for authentication
+        :param user_id: user's id
+        :param template_name: Name of template
+        :param body_html: HTML body for email template
+        :param body_text: HTML text for email template
+        :param folder_id: ID of email template folder
+        :param is_immutable: Specify whether the email template is mutable or not
+    """
+    data = dict(
+            name=template_name,
+            template_folder_id=folder_id,
+            user_id=user_id,
+            type=0,
+            body_html=body_html,
+            body_text=body_text,
+            is_immutable=is_immutable
+    )
+
+    create_resp = request_to_email_template_resource(token, request, email_template_id, data)
+    return create_resp
+
+
+def add_email_template(token, template_owner, template_body):
+    """
+    This function will create email template
+    """
+    domain_id = template_owner.domain_id
+
+    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to template_owner
+    add_role_to_test_user(template_owner, [DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE,
+                                           DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
+
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(token)
+
+    template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
+    is_immutable = 1
+    resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
+                                 folder_id=template_folder_id)
+    db.session.commit()
+    resp_obj = resp.json()
+    resp_dict = resp_obj['template_id'][0]
+
+    return {"template_id": resp_dict['id'],
+            "template_folder_id": template_folder_id,
+            "template_folder_name": template_folder_name,
+            "template_name": template_name,
+            "is_immutable": is_immutable,
+            "domain_id": domain_id}
+
+
+def template_body():
+    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
+           '\r\n</body>\r\n</html>\r\n'

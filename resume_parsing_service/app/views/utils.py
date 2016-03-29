@@ -25,7 +25,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
                                         data=json.dumps({'candidates': [candidate_dict]}),
                                         headers={'Authorization': formatted_token_str,
                                                  'Content-Type': 'application/json'})
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("create_parsed_resume_candidate. Could not reach CandidateService POST")
         raise InternalServerError("Unable to reach Candidates API in during candidate creation")
     if create_response.status_code in xrange(500, 511):
@@ -46,7 +46,7 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str):
                                          data=json.dumps({'candidates': [candidate_dict]}),
                                          headers={'Authorization': formatted_token_str,
                                                   'Content-Type': 'application/json'})
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as error:
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
         raise InternalServerError("Unable to reach Candidates API in during candidate update")
     if update_response.status_code is not requests.codes.ok:
@@ -56,7 +56,7 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str):
     return update_response
 
 
-#TODO: write tests for this.
+# TODO: write tests for this.
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
@@ -80,6 +80,5 @@ def get_users_talent_pools(formatted_token_str):
         return []
 
 
-def gen_hash_from_file(file):
-  # with open(filename,'rb') as file:
-    return hashlib.md5(file.read()).hexdigest()
+def gen_hash_from_file(_file):
+    return hashlib.md5(_file.read()).hexdigest()

@@ -56,6 +56,7 @@ class User(db.Model):
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
+    email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
@@ -438,6 +439,16 @@ class DomainRole(db.Model):
 
         # Admin Roles
         CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
+
+        # Email Template Roles
+        CAN_CREATE_EMAIL_TEMPLATE = "CAN_CREATE_EMAIL_TEMPLATE"
+        CAN_GET_EMAIL_TEMPLATE = "CAN_GET_EMAIL_TEMPLATE"
+        CAN_UPDATE_EMAIL_TEMPLATE = "CAN_UPDATE_EMAIL_TEMPLATE"
+        CAN_DELETE_EMAIL_TEMPLATE = "CAN_DELETE_EMAIL_TEMPLATE"
+
+        # Email Template Folder Roles
+        CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+        CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
 
     def delete(self):
         db.session.delete(self)
