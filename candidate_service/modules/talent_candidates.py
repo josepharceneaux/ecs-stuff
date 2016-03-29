@@ -56,6 +56,7 @@ from candidate_service.modules.validators import (
 )
 
 # Common utilities
+from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.datetime_utils import utc_isoformat
 from candidate_service.common.utils.iso_standards import get_country_name
@@ -153,7 +154,7 @@ def fetch_candidate_info(candidate, fields=None):
 
     resume_url = None
     if get_all_fields or 'resume_url' in fields:
-        resume_url = candidate.filename
+        resume_url = get_s3_url("OriginalFiles", candidate.filename)
 
     return_dict = {
         'id': candidate_id,
