@@ -809,7 +809,7 @@ def create_or_update_candidate_from_params(
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
     # Get user's domain ID
-    domain_id = domain_id_from_user_id(user_id=user_id)
+    domain_id = domain_id_from_user_id(user_id)
 
     # If candidate_id is not provided, Check if candidate exists
     candidate_id_from_dice_profile = None
@@ -837,7 +837,7 @@ def create_or_update_candidate_from_params(
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate = Candidate.get_by_id(candidate_id)
     """
     :type candidate: Candidate
     """

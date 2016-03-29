@@ -166,60 +166,165 @@ class GenerateCandidateDate(object):
         return data
 
     @staticmethod
-    def educations(talent_pool_ids):
-        """
-        :type talent_pool_ids:  list[int]
-        :rtype:  dict[list]
-        """
+    def areas_of_interest(domain_aoi, talent_pool_ids=None, candidate_id=None):
         data = {'candidates': [
-            {'talent_pool_ids': {'add': talent_pool_ids}, 'educations': [
-                {'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
-                 'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean()}
-            ]}
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
+                'areas_of_interest': [{'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]
+            }
         ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
         return data
 
     @staticmethod
-    def military_services(talent_pool_ids):
+    def emails(talent_pool_ids=None, candidate_id=None, email_id=None):
         """
         :type talent_pool_ids:  list[int]
         :rtype:  dict[list]
         """
         data = {'candidates': [
-            {'talent_pool_ids': {'add': talent_pool_ids}, 'military_services': [
-                {'country_code': fake.country_code(), 'branch': fake.military_ship(),
-                 'highest_rank': 'lieutenant', 'status': 'active', 'highest_grade': '0-1',
-                 'comments': fake.bs(), 'from_date': '1974-5-25', 'to_date': '1996-12-12'}
-            ]}
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
+                'emails': [
+                    {
+                        'id': email_id, 'label': 'primary', 'address': fake.safe_email()
+                    }
+                ]
+            }
         ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
         return data
 
     @staticmethod
-    def work_experiences(talent_pool_ids):
+    def phones(talent_pool_ids=None, candidate_id=None, phone_id=None):
         """
         :type talent_pool_ids:  list[int]
         :rtype:  dict[list]
         """
         data = {'candidates': [
-            {'talent_pool_ids': {'add': talent_pool_ids}, 'work_experiences': [
-                {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-                 'state': fake.state(), 'country_code': fake.country_code(), 'start_year': 2008,
-                 'end_year': 2012, 'start_month': 10, 'end_month': 2, 'is_current': True}
-            ]}
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
+                'phones': [
+                    {
+                        'id': phone_id, 'label': 'Work', 'value': sample_phone_number(), 'is_default': False
+                    }
+                ]
+            }
         ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
         return data
 
     @staticmethod
-    def preferred_locations(talent_pool_ids):
+    def educations(talent_pool_ids=None, candidate_id=None, education_id=None, degree_id=None, bullet_id=None):
         """
         :type talent_pool_ids:  list[int]
         :rtype:  dict[list]
         """
         data = {'candidates': [
-            {'talent_pool_ids': {'add': talent_pool_ids}, 'preferred_locations': [
-                {'city': fake.city(), 'state': fake.state(), 'country_code': fake.country_code()}
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'educations': [
+                {
+                    'id': education_id,
+                    'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
+                    'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+                    'degrees': [
+                        {
+                            'id': degree_id, 'type': 'bs', 'title': 'engineer', 'start_year': 2002, 'start_month': 11,
+                            'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
+                            {
+                                'id': bullet_id,
+                                'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'
+                            }]
+                        }
+                    ]
+                }
             ]}
         ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
+        return data
+
+    @staticmethod
+    def military_services(talent_pool_ids=None, candidate_id=None, military_experience_id=None):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'military_services': [
+                {
+                    'id': military_experience_id, 'country_code': fake.country_code(),
+                    'branch': fake.military_ship(), 'highest_rank': 'lieutenant', 'status': 'active',
+                    'highest_grade': '0-1', 'comments': fake.bs(), 'from_date': '1974-5-25', 'to_date': '1996-12-12'
+                }
+            ]}
+        ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
+        return data
+
+    @staticmethod
+    def work_experiences(talent_pool_ids=None, candidate_id=None, experience_id=None, bullet_id=None):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'work_experiences': [
+                {
+                    'id': experience_id, 'organization': fake.company(), 'position': fake.job(),
+                    'city': fake.city(), 'state': fake.state(), 'country_code': fake.country_code(),
+                    'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
+                    'is_current': True, 'bullets':
+                    [
+                        {'id': bullet_id, 'description': fake.bs()}
+                    ]
+                }
+            ]}
+        ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
+        return data
+
+    @staticmethod
+    def preferred_locations(talent_pool_ids=None, candidate_id=None, preferred_location_id=None):
+        """
+        :type talent_pool_ids:  list[int]
+        :rtype:  dict[list]
+        """
+        data = {'candidates': [
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'preferred_locations': [
+                {
+                    'id': preferred_location_id, 'city': fake.city(), 'state': fake.state(),
+                    'country_code': fake.country_code()
+                }
+            ]}
+        ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
+        return data
+
+    @staticmethod
+    def work_preference(talent_pool_ids=None, candidate_id=None, preference_id=None):
+        data = {'candidates': [
+            {
+                'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'work_preference':
+                {
+                    'id': preference_id, "relocate": False, "authorization": "US Citizen", "telecommute": True,
+                    "travel_percentage": randrange(0, 100), "hourly_rate": float('%.2f' % random.uniform(20, 90)),
+                    "salary": randrange(50000, 300000), "employment_type": "full-time employment",
+                    "security_clearance": None, "third_party": False
+                }
+            }
+        ]}
+        # Recursively Remove keys with None values
+        data = remap(data, lambda p, k, v: v is not None)
         return data
 
 
