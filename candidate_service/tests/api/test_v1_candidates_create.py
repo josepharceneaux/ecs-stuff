@@ -445,8 +445,12 @@ class TestCreateCandidateAddress(object):
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
+<<<<<<< HEAD
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
+=======
+        candidate_dict = request_to_candidate_resource(access_token_first, 'get', candidate_id).json()['candidate']
+>>>>>>> bbb78559823e67031f417f1ba8ac0bfd6fc5417f
         assert candidate_dict['addresses'][0]['zip_code'] is None
 
 
