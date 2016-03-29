@@ -205,7 +205,6 @@ class TestCreateCandidate(object):
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-
     def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
         """
         Test: Attempt to create few candidates, one of which will have bad data
