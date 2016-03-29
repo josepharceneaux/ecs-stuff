@@ -29,9 +29,9 @@ class DatetimeUtils(object):
     @staticmethod
     def validate_datetime_format(str_datetime, valid_format=ISO8601_FORMAT):
         """
-        This validates the given datetime is in ISO UTC format or not. Proper format should be like
-        '2015-10-08T06:16:55.000Z'.
-
+        This validates the given string of datetime is in given format or not.
+        Default value of valid_format is ISO UTC format i.e."%Y-%m-%dT%H:%M:%S.%fZ"
+        One can pass any desire format.
         :param str_datetime: str
         :param valid_format: Format of datetime string
         :type str_datetime: str
@@ -41,14 +41,13 @@ class DatetimeUtils(object):
         :rtype: bool | InvalidUsage
         """
         if not isinstance(str_datetime, basestring):
-            raise InvalidUsage('datetime should be provided in str format '
-                               'as 2015-10-08T06:16:00.000Z')
+            raise InvalidUsage('datetime should be provided as string.')
         raise_if_not_instance_of(valid_format, basestring)
         try:
             datetime.strptime(str_datetime, valid_format)
         except ValueError:
-            raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
-                               'like 2015-10-08T06:16:00.000Z. Given Date is %s' % str_datetime)
+            raise InvalidUsage('Invalid dateTime format: Kindly specify UTC datetime in %s format.'
+                               ' Given datetime is %s' % (valid_format, str_datetime))
         return True
 
     def is_in_future(self, neg_offset=0, pos_offset=0):
@@ -57,7 +56,7 @@ class DatetimeUtils(object):
         comparing with current UTC datetime object.
         Datetime value of calling object must have timezone information in it.
         :param neg_offset: number of seconds to be subtracted from current datetime
-        :param pos_offset: number of seconds to be added from current datetime
+        :param pos_offset: number of seconds to be added in current datetime
         :type neg_offset; int | long | float
         :type pos_offset; int | long | float
         :exception: Invalid usage
