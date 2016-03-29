@@ -3,7 +3,7 @@ This file contains handy functions related to datetime objects encapsulated unde
 DatetimeUtils.
 """
 # Standard Imports
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Third Party
 import pytz
@@ -23,8 +23,11 @@ class DatetimeUtils(object):
     """
     ISO8601_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
-    @classmethod
-    def validate_datetime_in_iso_utc_format(cls, str_datetime):
+    def __init__(self, value):
+        self.value = value
+
+    @staticmethod
+    def validate_datetime_in_iso_utc_format(str_datetime):
         """
         This validates the given datetime is in ISO UTC format or not. Proper format should be like
         '2015-10-08T06:16:55.000Z'.
@@ -39,28 +42,38 @@ class DatetimeUtils(object):
             raise InvalidUsage('datetime should be provided in str format '
                                'as 2015-10-08T06:16:00.000Z')
         try:
-            datetime.strptime(str_datetime, cls.ISO8601_FORMAT)
+            datetime.strptime(str_datetime, DatetimeUtils.ISO8601_FORMAT)
         except ValueError:
             raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
                                'like 2015-10-08T06:16:00.000Z. Given Date is %s' % str_datetime)
         return True
 
-    @staticmethod
-    def is_datetime_in_future(datetime_obj):
+    def is_in_future(self, neg_offset=0, pos_offset=0):
         """
-        This function validates that given datetime obj has date and time in future by comparing
-        with current UTC datetime object.
-        :param datetime_obj: datetime obj
-        :type datetime_obj: datetime
+        This function validates that calling datetime object has date and time in future by
+        comparing with current UTC datetime object.
+        Datetime value of calling object must have timezone information in it.
+        :param neg_offset: number of seconds to be subtracted from current datetime
+        :param pos_offset: number of seconds to be added from current datetime
+        :type neg_offset; int | long | float
+        :type pos_offset; int | long | float
         :exception: Invalid usage
         :return: True if given datetime is ahead of current datetime
         :rtype: bool
+
+        **Usage**
+            To use this method
+                >>> obj = DatetimeUtils(datetime.utcnow() + timedelta(minutes=2))
+                >>> obj.is_in_future()
+                >>> True
         """
-        raise_if_not_instance_of(datetime_obj, datetime)
-        return datetime_obj > datetime.utcnow().replace(tzinfo=tzutc())
+        raise_if_not_instance_of(neg_offset, (int, long, float))
+        raise_if_not_instance_of(pos_offset, (int, long, float))
+        current_datetime = datetime.utcnow().replace(tzinfo=tzutc()) - timedelta(seconds=neg_offset) + timedelta(seconds=pos_offset)
+        return self.value > current_datetime
 
     @classmethod
-    def get_datetime_obj_if_str_datetime_in_valid_format(cls, str_datetime):
+    def get_datetime_obj_if_str_datetime_is_in_valid_iso_format(cls, str_datetime):
         """
         This converts given string datetime into UTC datetime obj.
         This uses validate_datetime_in_iso_utc_format() to validate the format of given str.
@@ -74,8 +87,8 @@ class DatetimeUtils(object):
         cls.validate_datetime_in_iso_utc_format(str_datetime)
         return parse(str_datetime).replace(tzinfo=tzutc())
 
-    @classmethod
-    def to_utc_str(cls, datetime_obj):
+    @staticmethod
+    def to_utc_str(datetime_obj):
         """
         This converts given datetime in '2015-10-08T06:16:55.000Z' format.
         :param datetime_obj: given datetime object
@@ -85,7 +98,7 @@ class DatetimeUtils(object):
         """
         if not isinstance(datetime_obj, datetime):
             raise InvalidUsage('Given param should be datetime obj')
-        return datetime_obj.strftime(cls.ISO8601_FORMAT)
+        return datetime_obj.strftime(DatetimeUtils.ISO8601_FORMAT)
 
     @staticmethod
     def utc_isoformat(datetime_obj):
