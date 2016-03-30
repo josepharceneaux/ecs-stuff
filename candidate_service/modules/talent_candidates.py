@@ -1812,13 +1812,11 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
             can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
             can_phone_obj = can_phone_query.first()
             if not can_phone_obj:
-                raise NotFoundError(error_message='Candidate phone not found',
-                                    error_code=custom_error.PHONE_NOT_FOUND)
+                raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
 
             # CandidatePhone must belong to Candidate
             if can_phone_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate phone',
-                                     error_code=custom_error.PHONE_FORBIDDEN)
+                raise ForbiddenError('Unauthorized candidate phone', custom_error.PHONE_FORBIDDEN)
 
             # Track all changes
             track_edits(update_dict=phone_dict, table_name='candidate_phone',
