@@ -8,13 +8,13 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
+from db import db
 from ..models.event import Event
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_campaign import EmailCampaign
-from db import db
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
