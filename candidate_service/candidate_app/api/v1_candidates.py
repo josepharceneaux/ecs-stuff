@@ -7,6 +7,7 @@ Notes:
 # Standard libraries
 import logging
 import datetime
+from datetime import date
 from time import time
 
 # Flask specific
@@ -1324,31 +1325,27 @@ class CandidateClientEmailCampaignResource(Resource):
         # the issue here is the user owner, not sure if we can create the pipeline under the current domain
         # and add new table field to hide it (then we will need to create a hidden pool).
 
-        pipeline_owner = db.session.query(User).filter(User.email == 'janim007@gmail.com').first()
+        current_domain_users = [int(_user.id) for _user in db.session.query(User.id).filter_by(domain=request.user.domain).all()]
 
         talent_pipeline = db.session.query(TalentPipeline.id). \
             filter(TalentPipeline.name == "gT Extensions Pipeline",
-                   TalentPipeline.user_id == pipeline_owner.id).first()
+                   TalentPipeline.user_id.in_(current_domain_users)).first()
 
         if not talent_pipeline:
-            gt_talent_pool = db.session.query(TalentPool.id).filter(TalentPool.name == 'gT_Extensions_Pool').first()
+            gt_talent_pool = db.session.query(TalentPool.id).\
+                filter(TalentPool.domain_id == request.user.domain_id).first()
 
             if not gt_talent_pool:
-                gt_talent_pool = TalentPool(name="gT_Extensions_Pool",
-                                            description="default talent pool for all extensions",
-                                            domain_id=pipeline_owner.domain_id,
-                                            user_id=pipeline_owner.id)
-
-                db.session.add(gt_talent_pool)
-                db.session.commit()
+                logger.warn("domain (%s) don't have any talent pools" % request.user.domain_id)
+                raise InvalidUsage(error_message="Current domain don't have any talent pools")
 
             date_needed = date.today().replace(year=date.today().year + 10)
 
             talent_pipeline = TalentPipeline(name="gT Extensions Pipeline",
                                              description="Default talent pipeline for all extensions",
-                                             positions=1,
+                                             positions=None,
                                              date_needed=date_needed,
-                                             user_id=pipeline_owner.id,
+                                             user_id=request.user.id,
                                              talent_pool_id=gt_talent_pool.id,
                                              search_params="")
 
