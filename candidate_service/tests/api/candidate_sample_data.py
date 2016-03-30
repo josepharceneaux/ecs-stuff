@@ -229,7 +229,8 @@ class GenerateCandidateDate(object):
                 {
                     'id': education_id,
                     'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
-                    'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+                    'subdivision_code': 'US-' + fake.state_abbr(), 'state': fake.state(),
+                    'country_code': fake.country_code(), 'is_current': fake.boolean(),
                     'degrees': [
                         {
                             'id': degree_id, 'type': 'bs', 'title': 'engineer', 'start_year': 2002, 'start_month': 11,

@@ -54,7 +54,7 @@ from candidate_service.modules.validators import (
 from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.datetime_utils import utc_isoformat
-from candidate_service.common.utils.iso_standards import get_country_name
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name
 
 
 ##################################################
@@ -234,13 +234,13 @@ def candidate_addresses(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     # Default CandidateAddress must be returned first
-    addresses = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
-        order_by(CandidateAddress.is_default.desc())
+    addresses = CandidateAddress.query.filter_by(candidate_id=candidate_id).order_by(CandidateAddress.is_default.desc())
     return [{'id': address.id,
              'address_line_1': address.address_line_1,
              'address_line_2': address.address_line_2,
              'city': address.city,
              'state': address.state,
+             'subdivision': get_subdivision_name(address.iso3166_subdivision) if address.iso3166_subdivision else None,
              'zip_code': address.zip_code,
              'po_box': address.po_box,
              'country': get_country_name(address.iso3166_country),
@@ -336,6 +336,7 @@ def candidate_educations(candidate):
              'degrees': _candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
+             'subdivision': get_subdivision_name(education.iso3166_subdivision) if education.iso3166_subdivision else None,
              'country': get_country_name(education.iso3166_country),
              'added_time': str(education.added_time)
              } for education in educations]
