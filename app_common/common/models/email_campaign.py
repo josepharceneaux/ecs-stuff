@@ -1,10 +1,11 @@
 import datetime
 
-from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
+
+from db import db
+from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (ResourceNotFound, ForbiddenError)
-from ..datetime_utils import utc_isoformat
 
 __author__ = 'jitesh'
 
@@ -58,9 +59,9 @@ class EmailCampaign(db.Model):
                        "subject": self.subject,
                        "from": self._from,
                        "reply_to": self.reply_to,
-                       "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
-                       "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
-                       "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
+                       "start_datetime": DatetimeUtils.utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                       "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                       "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        # Conditionally include body_text and body_html because they are deferred fields
                        "body_html": self.body_html if (include_fields and 'body_html' in include_fields) else None,
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,

@@ -7,12 +7,9 @@ import re
 import json
 import random
 import string
-from datetime import datetime
 
 # Third Party
-import pytz
 import requests
-from pytz import timezone
 from itertools import izip_longest
 
 from flask import Flask
@@ -117,44 +114,6 @@ def url_conversion(long_url):
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
         return None, error_message
-
-
-def to_utc_str(dt):
-    """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
-    :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def get_utc_datetime(dt, tz):
-    """
-    This method takes datetime object and timezone name and returns UTC specific datetime
-    :Example:
-        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
-        >> timezone = 'Asia/Karachi'
-        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
-    :param dt: datetime object
-    :type dt: datetime
-    :return: timezone specific datetime object
-    :rtype string
-    """
-    assert tz, 'Timezone should not be none'
-    assert isinstance(dt, datetime), 'dt should be datetime object'
-    # get timezone info from given datetime object
-    local_timezone = timezone(tz)
-    try:
-        local_dt = local_timezone.localize(dt, is_dst=None)
-    except ValueError:
-        # datetime object already contains timezone info
-        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    utc_dt = local_dt.astimezone(pytz.utc)
-    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def grouper(iterable, group_size, fillvalue=None):
@@ -360,28 +319,6 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
         missing_items = [{key: value} for key, value in data_dict.iteritems()
                          if key in required_fields and not value and not value == 0]
     return [missing_item for missing_item in missing_items]
-
-
-def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
-    """
-    This validates that given object is an instance of given instance. If it is not, it raises
-    the given exception.
-    :param obj: obj e,g. User object
-    :param instances: Class for which given object is expected to be an instance.
-    :param exception: Exception to be raised
-    :type obj: object
-    :type instances: class
-    :type exception: Exception
-    :exception: Invalid Usage
-    """
-    if not isinstance(obj, instances):
-        given_obj_name = dict(obj=obj).keys()[0]
-        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
-        if isinstance(instances, (list, tuple)):
-            raise exception(error_message % ", ".join([instance.__name__
-                                                       for instance in instances]))
-        else:
-            raise exception(error_message % instances.__name__)
 
 
 def sample_phone_number():

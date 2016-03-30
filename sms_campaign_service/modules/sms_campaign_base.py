@@ -42,8 +42,8 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 from sms_campaign_service.common.error_handling import (ForbiddenError, InvalidUsage)
 from sms_campaign_service.common.campaign_services.custom_errors import (MultipleCandidatesFound,
                                                                          CampaignException)
-from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion,
-                                                               raise_if_not_instance_of)
+from sms_campaign_service.common.utils.handy_functions import (find_missing_items, url_conversion)
+from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
 from sms_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 
