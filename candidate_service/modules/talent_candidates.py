@@ -56,6 +56,7 @@ from candidate_service.modules.validators import (
 )
 
 # Common utilities
+from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.datetime_utils import utc_isoformat
 from candidate_service.common.utils.iso_standards import get_country_name
@@ -152,8 +153,8 @@ def fetch_candidate_info(candidate, fields=None):
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
     resume_url = None
-    if get_all_fields or 'resume_url' in fields:
-        resume_url = candidate.filename
+    if (get_all_fields or 'resume_url' in fields) and candidate.filename:
+        resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
     return_dict = {
         'id': candidate_id,
@@ -809,7 +810,7 @@ def create_or_update_candidate_from_params(
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
     # Get user's domain ID
-    domain_id = domain_id_from_user_id(user_id=user_id)
+    domain_id = domain_id_from_user_id(user_id)
 
     # If candidate_id is not provided, Check if candidate exists
     candidate_id_from_dice_profile = None
@@ -837,7 +838,7 @@ def create_or_update_candidate_from_params(
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate = Candidate.get_by_id(candidate_id)
     """
     :type candidate: Candidate
     """

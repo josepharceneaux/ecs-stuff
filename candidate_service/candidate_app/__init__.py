@@ -1,32 +1,18 @@
 from flask.ext.cors import CORS
+
+from candidate_service.common.utils.models_utils import init_talent_app
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
+from candidate_service.common.routes import CandidateApi, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_service.common.talent_flask import TalentFlask
 from candidate_service.common.talent_celery import init_celery_app
+from candidate_service.common.models.db import db
 
-app = TalentFlask(__name__)
-load_gettalent_config(app.config)
-logger = app.config[TalentConfigKeys.LOGGER]
-logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
+app, logger = init_talent_app(__name__)
 
 try:
-    from candidate_service.common.error_handling import register_error_handlers
-    register_error_handlers(app=app, logger=logger)
-
-    from candidate_service.common.models.db import db
-    db.init_app(app=app)
-    db.app = app
-
     # Instantiate Celery
     celery_app = init_celery_app(app, 'celery_candidate_documents_scheduler')
-
-    from candidate_service.common.redis_cache import redis_store
-    redis_store.init_app(app)
-
-    # Wrap the flask app and give a healthcheck url
-    from healthcheck import HealthCheck
-    health = HealthCheck(app, HEALTH_CHECK)
 
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
@@ -42,9 +28,6 @@ try:
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-
-    # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources=GTApis.CORS_HEADERS)
 
     # API RESOURCES
     # ****** CandidateResource ******

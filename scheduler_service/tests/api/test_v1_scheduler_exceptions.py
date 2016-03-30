@@ -11,7 +11,6 @@ import requests
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.custom_exceptions import SchedulerServiceApiException
 
 __author__ = 'saad'
 
@@ -48,6 +47,21 @@ class TestSchedulerExceptions(object):
             """
         # Create job with invalid string
         response = requests.post(SchedulerApiUrl.TASKS, data='invalid data',
+                                 headers=auth_header)
+        assert response.status_code == 400
+
+    def test_incorrect_request_method_exception(self, auth_header, job_config):
+        """
+            Create a job by using invalid request_method and check if exception occurs with status code 400
+            Args:
+                auth_data: Fixture that contains token.
+                job_config (dict): Fixture that contains job config to be used as
+                POST data while hitting the endpoint.
+            :return:
+            """
+        # Create job with invalid request method
+        job_config['request_method'] = 'invalid_request'
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == 400
 
@@ -90,8 +104,7 @@ class TestSchedulerExceptions(object):
                                  headers=auth_header)
 
         # Invalid trigger type exception
-        assert response.status_code == 400 and \
-               response.json()['error']['code'] == SchedulerServiceApiException.CODE_TRIGGER_TYPE
+        assert response.status_code == 400
 
     def test_invalid_frequency(self, auth_header, job_config, job_cleanup):
         """
@@ -120,6 +133,35 @@ class TestSchedulerExceptions(object):
         assert data['id']
 
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
+
+    def test_invalid_url_format(self, auth_header, job_config, job_cleanup):
+        """
+        Create a job by hitting the endpoint with invalid URL format and we will get a 400. Then we
+        create a job with correct data and it should be created just fine, finally we delete the
+        job.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        temp_job_config = job_config.copy()
+        temp_job_config['url'] = 'abc'
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(temp_job_config),
+                                 headers=auth_header)
+
+        assert response.status_code == 400
+
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        assert response.status_code == 201
+
+        data = response.json()
+        assert data['id']
+
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
 

@@ -17,7 +17,7 @@ from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 
 try:
-    celery_app.start(argv=CELERY_WORKER_ARGS + [CampaignUtils.EMAIL])
+    celery_app.start(argv=CELERY_WORKER_ARGS + [CampaignUtils.EMAIL] + ['-n', CampaignUtils.EMAIL])
 except Exception as e:
     logger.exception("Couldn't start Celery worker for email_campaign_service in "
                      "%s environment." % (app.config[TalentConfigKeys.ENV_KEY]))
