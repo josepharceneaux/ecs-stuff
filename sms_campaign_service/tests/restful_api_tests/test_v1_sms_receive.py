@@ -172,7 +172,7 @@ class TestSmsReceive(object):
 
     def test_sms_receive_with_valid_data_and_one_campaign_sent(
             self, user_phone_1, sms_campaign_of_current_user,
-            candidate_phone_1, process_send_sms_campaign):
+            candidate_phone_1, sent_campaign):
         """
         - This tests the endpoint /v1/receive
 
@@ -188,7 +188,7 @@ class TestSmsReceive(object):
 
     def test_sms_receive_with_candidate_having_same_phone_in_diff_domains(
             self, user_phone_1, candidates_with_same_phone_in_diff_domains,
-            process_send_sms_campaign, sms_campaign_of_current_user, candidate_phone_1):
+            sent_campaign, sms_campaign_of_current_user, candidate_phone_1):
         """
         - This tests the endpoint /v1/receive
 

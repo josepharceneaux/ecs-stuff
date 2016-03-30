@@ -58,7 +58,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     sms_campaign_blast = campaign.blasts[0]
     assert sms_campaign_blast.sends == expected_count
     # assert on sends
-    sms_campaign_sends = sms_campaign_blast.blast_sends
+    sms_campaign_sends = sms_campaign_blast.blast_sends.all()
     assert len(sms_campaign_sends) == expected_count
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:

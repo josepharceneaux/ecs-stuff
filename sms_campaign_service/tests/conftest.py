@@ -5,7 +5,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Import
 import json
-import time
 from datetime import (datetime, timedelta)
 
 # Third Party
@@ -23,6 +22,7 @@ from sms_campaign_service.common.tests.conftest import \
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
                                                                  delete_test_scheduled_task)
@@ -40,6 +40,7 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 # Common Utils
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 SLEEP_TIME = 20  # needed to add this because tasks run on Celery
@@ -337,7 +338,7 @@ def scheduled_sms_campaign_of_current_user(request, user_first, valid_header,
 
 @pytest.fixture()
 def scheduled_sms_campaign_of_other_domain(request, user_second,
-                                         valid_header_2, sms_campaign_in_other_domain):
+                                           valid_header_2, sms_campaign_in_other_domain):
     """
     This creates the SMS campaign for user_from_diff_domain using valid data.
     :return:
@@ -603,39 +604,66 @@ def users_with_same_phone(request, user_first, user_same_domain):
 
 
 @pytest.fixture()
-def process_send_sms_campaign(user_first, access_token_first,
-                              sms_campaign_of_current_user,
-                              sample_sms_campaign_candidates,
-                              smartlist_for_not_scheduled_campaign,
-                              candidate_phone_1,
-                              ):
+def sent_campaign(access_token_first,
+                  sms_campaign_of_current_user,
+                  sample_sms_campaign_candidates,
+                  smartlist_for_not_scheduled_campaign,
+                  candidate_phone_1, candidate_phone_2
+                  ):
     """
     This function serves the sending part of SMS campaign.
-    This sends campaign to one candidate.
-    :return:
+    This sends campaign to two candidates.
     """
-    response_post = requests.post(SmsCampaignApiUrl.SEND
-                                  % sms_campaign_of_current_user.id,
-                                  headers=dict(Authorization='Bearer %s' % access_token_first))
+    response_post = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
+                                                        sms_campaign_of_current_user,
+                                                        access_token_first, sleep_time=0)
     assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
+    return sms_campaign_of_current_user
 
 
 @pytest.fixture()
-def url_conversion_by_send_test_sms_campaign(request,
-                                             sms_campaign_of_current_user,
-                                             process_send_sms_campaign):
+def campaign_with_ten_candidates(user_first, sms_campaign_of_current_user,
+                                 access_token_first, talent_pipeline):
     """
-    This sends SMS campaign (using process_send_sms_campaign fixture)
-     and returns the source URL from url_conversion database table.
-    :return:
+    This creates an SMS campaign with ten candidates
     """
-    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
-    # Need to commit the session because Celery has its own session, and our session does not
+    # create candidate
+    CampaignsTestsHelpers.assign_roles(user_first)
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, count=10)
+    with app.app_context():
+        SmsCampaignBase.create_campaign_smartlist(sms_campaign_of_current_user, [smartlist_id])
+        print sms_campaign_of_current_user.id
+        return sms_campaign_of_current_user, candidate_ids
+
+
+@pytest.fixture()
+def sent_campaign_bulk(campaign_with_ten_candidates, access_token_first):
+    """
+    This fixture sends the campaign which has 10 candidates associate with it and returns
+    the campaign obj.
+    """
+    # send campaign
+    with app.app_context():
+        response_post = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
+                                                            campaign_with_ten_candidates[0],
+                                                            access_token_first, sleep_time=40)
+        assert_api_send_response(campaign_with_ten_candidates[0], response_post, 200)
+        return campaign_with_ten_candidates
+
+
+@pytest.fixture()
+def url_conversion_by_send_test_sms_campaign(request, sent_campaign):
+    """
+    This sends SMS campaign (using sent_campaign fixture) and returns the source URL
+    from url_conversion database table.
+    """
+    # Need to commit the session because Celery has its own session and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
     # get campaign blast
-    sms_campaign_blast = sms_campaign_of_current_user.blasts[0]
+    sms_campaign_blast = sent_campaign.blasts[0]
     # get URL conversion record from relationship
     url_conversion = \
         sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion

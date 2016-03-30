@@ -1,9 +1,13 @@
 # Standard Imports
+import json
+import time
 import email
 import imaplib
-import json
 import datetime
+
 import requests
+
+
 
 
 # Application Specific
@@ -17,15 +21,9 @@ from email_campaign_service.common.models.misc import (Activity,
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
                                                                  define_and_send_request)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
-from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    create_smartlist_from_api
-from email_campaign_service.common.utils.candidate_service_calls import \
-    create_candidates_from_candidate_api
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
@@ -51,48 +49,18 @@ def create_email_campaign(user):
     return email_campaign
 
 
-def assign_roles(user):
-    """
-    This assign required permission to given user
-    :param user:
-    :return:
-    """
-    add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                 DomainRole.Roles.CAN_GET_CANDIDATES])
-
-
 def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
                                     emails_list=True, count=1):
     """
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline,
-                                                                  emails_list=emails_list,
-                                                                  count=count)
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token, talent_pipeline, emails_list=emails_list, count=count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
     return campaign
-
-
-def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1):
-    """
-    This creates candidate(s) as specified by the count,  and assign it to a smartlist.
-    Finally it returns smartlist_id and candidate_ids.
-    """
-    # create candidate
-    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                     emails_list=emails_list, count=count)
-    candidate_ids = create_candidates_from_candidate_api(access_token, data,
-                                                         return_candidate_ids_only=True)
-    smartlist_data = {'name': fake.word(),
-                      'candidate_ids': candidate_ids,
-                      'talent_pipeline_id': talent_pipeline.id}
-    smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
-    smartlist_id = smartlists['smartlist']['id']
-    return smartlist_id, candidate_ids
 
 
 def delete_campaign(campaign):

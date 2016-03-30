@@ -10,7 +10,6 @@ from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
-                                                                  assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -143,7 +142,7 @@ def assign_roles_to_user_first(user_first):
     """
     This assign required roles to user_first
     """
-    assign_roles(user_first)
+    CampaignsTestsHelpers.assign_roles(user_first)
 
 
 @pytest.fixture()
@@ -151,7 +150,7 @@ def assign_roles_to_user_of_other_domain(user_from_diff_domain):
     """
     This assigns required roles to user_from_diff_domain
     """
-    assign_roles(user_from_diff_domain)
+    CampaignsTestsHelpers.assign_roles(user_from_diff_domain)
 
 
 @pytest.fixture()

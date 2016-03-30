@@ -28,8 +28,7 @@ from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaig
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
-from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  delete_campaign,
+from email_campaign_service.tests.modules.handy_functions import (delete_campaign,
                                                                   assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
@@ -166,8 +165,8 @@ class TestCreateCampaign(object):
         reply_to = fake.safe_email()
         body_text = fake.sentence()
         body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-        smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
-                                                                      talent_pipeline)
+        smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token_first, talent_pipeline)
         data = {
             "name": name,
             "subject": subject,
@@ -203,8 +202,8 @@ class TestCreateCampaign(object):
         reply_to = fake.safe_email()
         body_text = fake.sentence()
         body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-        smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token_first,
-                                                                      talent_pipeline)
+        smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token_first, talent_pipeline)
         data = {'name': name,
                 'subject': subject,
                 'from': email_from,

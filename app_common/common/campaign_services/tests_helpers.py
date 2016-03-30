@@ -17,12 +17,17 @@ from ..tests.conftest import fake
 from campaign_utils import get_model
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
+from ..models.user import (DomainRole, User)
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import raise_if_not_instance_of
-from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER)
+from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
+                                     add_role_to_test_user)
+from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage,
                               UnauthorizedError, ResourceNotFound)
+from ..utils.candidate_service_calls import create_candidates_from_candidate_api
+from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api
 
 
 class CampaignsTestsHelpers(object):
@@ -269,6 +274,35 @@ class CampaignsTestsHelpers(object):
         db.session.commit()
         return response
 
+    @staticmethod
+    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1):
+        """
+        This creates candidate(s) as specified by the count,  and assign it to a smartlist.
+        Finally it returns smartlist_id and candidate_ids.
+        """
+        # create candidate
+        data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                         emails_list=emails_list, count=count)
+        candidate_ids = create_candidates_from_candidate_api(access_token, data,
+                                                             return_candidate_ids_only=True)
+        smartlist_data = {'name': fake.word(),
+                          'candidate_ids': candidate_ids,
+                          'talent_pipeline_id': talent_pipeline.id}
+        smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
+        smartlist_id = smartlists['smartlist']['id']
+        return smartlist_id, candidate_ids
+
+    @staticmethod
+    def assign_roles(user, roles=(DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                  DomainRole.Roles.CAN_GET_CANDIDATES)):
+        """
+        This assign required permission to given user.
+        Default roles are CAN_ADD_CANDIDATES and CAN_GET_CANDIDATES.
+        """
+        raise_if_not_instance_of(user, User)
+        raise_if_not_instance_of(roles, (list, tuple))
+        add_role_to_test_user(user, roles)
+
 
 class FixtureHelpers(object):
     """
@@ -457,4 +491,3 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     """
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]
-

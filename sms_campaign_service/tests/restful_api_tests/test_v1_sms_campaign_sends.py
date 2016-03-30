@@ -1,13 +1,14 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-    This module contains pyTests for endpoint /v1/sms-campaigns/:id/sends of
+    This module contains pyTests for endpoint /v1/sms-campaigns/:campaign_id/sends of
     SMS Campaign API.
 """
 # Third Party
 import requests
 
 # Common Utils
+from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.error_handling import UnauthorizedError
@@ -16,7 +17,7 @@ from sms_campaign_service.common.campaign_services.tests_helpers import Campaign
 
 class TestSmsCampaignSends(object):
     """
-    This class contains tests for endpoint /campaigns/:id/sends
+    This class contains tests for endpoint /campaigns/:campaign_id/sends
     """
     URL = SmsCampaignApiUrl.SENDS
     HTTP_METHOD = 'get'
@@ -119,3 +120,55 @@ class TestSmsCampaignSends(object):
                                                                self.URL,
                                                                access_token_first,
                                                                None)
+
+    def test_get_sends_with_paginated_response(self, access_token_first, sent_campaign_bulk):
+        """
+        Here we test the paginated response of GET call on endpoint /v1/sms-campaigns/:campaign_id/sends
+        """
+        # GET blasts of campaign
+        sent_campaign = sent_campaign_bulk[0]
+        candidate_ids = sent_campaign_bulk[1]
+        response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign.id,
+                                       headers={'Authorization': 'Bearer %s' % access_token_first})
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts,
+                                                            count=1, entity='blasts')
+        json_resp = response_blasts.json()['blasts'][0]
+        assert json_resp['campaign_id'] == sent_campaign.id
+        assert json_resp['sends'] == 10
+        blast_id = json_resp['id']
+        # URL to GET sends
+        url = self.URL % sent_campaign.id
+        #  Test GET sends of SMS campaign with 4 results per_page. It should get 4 blast objects
+        response = requests.get(url + '?per_page=4',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        # Pick first send object
+        received_send_obj = json_resp[0]
+        assert received_send_obj['blast_id'] == blast_id
+        assert received_send_obj['candidate_id'] in candidate_ids
+
+        #  Test GET sends of SMS campaign with 4 results per_page using page = 2
+        response = requests.get(url + '?per_page=4&page=2',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        # pick second blast object from the response. it will be 6th blast object
+        received_send_obj = json_resp[1]
+        assert received_send_obj['blast_id'] == blast_id
+        assert received_send_obj['candidate_id'] in candidate_ids
+
+        response = requests.get(url + '?per_page=4&page=3',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        # pick second send object from the response. it will be 10th send object
+        received_send_obj = json_resp[1]
+        assert received_send_obj['blast_id'] == blast_id
+        assert received_send_obj['candidate_id'] in candidate_ids
+
+        # Test GET blasts of SMS campaign with page = 2. No blast object should be received
+        # in response as we have sent campaign only two times so far and default per_page is 10.
+        response = requests.get(url + '?per_page=4&page=4',
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=0, entity=self.ENTITY)
