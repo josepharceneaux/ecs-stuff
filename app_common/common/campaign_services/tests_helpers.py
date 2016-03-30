@@ -265,7 +265,7 @@ class CampaignsTestsHelpers(object):
         response = send_request('post', url % campaign.id, access_token)
         assert response.ok
         time.sleep(sleep_time)
-        # db.session.commit()
+        db.session.commit()
         return response
 
 

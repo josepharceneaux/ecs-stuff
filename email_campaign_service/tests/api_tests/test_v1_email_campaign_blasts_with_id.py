@@ -67,7 +67,7 @@ class TestEmailCampaignBlastsWithId(object):
         Here we assume that requested blast_id is associated with such a campaign which does not
         belong to domain of logged-in user. It should result in Forbidden error.
         """
-        CampaignsTestsHelpers.send_campaign(EmailCampaignUrl,
+        CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
                                             email_campaign_in_other_domain,
                                             access_token_other)
         blast_id = email_campaign_in_other_domain.blasts[0].id
