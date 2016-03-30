@@ -8,11 +8,11 @@ This file contains function used by email-campaign-api.
 import re
 import json
 import datetime
+import itertools
 
 # Third Party
-import itertools
 from celery import chord
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 
 # Service Specific
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
@@ -380,24 +380,40 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
-    # Get emails
+    # Get candidate emails sorted by updated time and then by candidate_id
+    """
+        Data will be
+        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+    """
     candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
                                                               CandidateEmail.address,
                                                               CandidateEmail.updated_time,
                                                               CandidateEmail.email_label_id) \
         .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
-        .order_by(CandidateEmail.updated_time) \
-        .order_by(CandidateEmail.candidate_id)
+        .order_by(desc(CandidateEmail.updated_time), CandidateEmail.candidate_id)
     # list of tuples (candidate id, email address)
-    ids_and_email_and_labels = []
-    ids_and_email_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
-    for key, igroup in itertools.groupby(ids_and_email_labels, lambda candidate: candidate[0]):
-        ids_and_email_and_labels.append(list(igroup))
+    group_id_and_email_and_labels = []
+
+    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
+
+    # id_email_label: (id, email, label)
+    # After running groupby clause, the data will look like
+    """
+    group_id_and_email_labels = [(candidate_id, email_address, email_label), )]
+    """
+    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
+        group_id_and_email_and_labels.append(list(group_id_email_label))
     filtered_email_rows = []
+
+    # We dont know email_label id of primary email. So, get that from db
     email_labels = EmailLabel.query.all()
     email_labels = [(email_label.id, email_label.description) for email_label in email_labels]
-    for iterator in ids_and_email_and_labels:
-        _id, email = get_candidateId_email_by_priority(iterator, email_labels)
+
+    for id_and_email_and_label in group_id_and_email_and_labels:
+        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_labels)
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
         # If there is only one candidate for an email-address in user's domain, we are good to go,
         # otherwise log and raise the invalid error.
@@ -413,23 +429,38 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     return filtered_email_rows
 
 
-def get_candidateId_email_by_priority(emails_obj, email_labels):
+def get_candidate_id_email_by_priority(emails_obj, email_labels):
     """
-    For now, just return Primary email if exist, otherwise any other email
-    :param emails_obj:
-    :return:
+    Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
+    If found then simply return candidate_id and primary email_address otherwise return first email address.
+    For now, just return Primary email if exist, otherwise just even
+    :param emails_obj: (candidate_id, email_address, email_label_id)
+    :param email_labels: Tuple containing structure ( email_label_id, email_label_description )
+    :return: candidate_id, email_address
     """
     if not(isinstance(emails_obj, list) and len(emails_obj) > 0):
-        raise InternalServerError("get_candidateId_email_by_priority")
+        raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
 
-    primary_email_id = int([email_label[0] for email_label in email_labels if email_label[1].lower() == 'primary'][0])
-    for email_obj in emails_obj:
-        # If there is a primary email, simply return that
-        if email_obj[2] == primary_email_id:
-            return email_obj[0], email_obj[1]
+    # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
+    primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
+                                if email_label_desc.lower() == 'primary'))
 
-    # If primary email not found, then return any other email
-    return emails_obj[0][0], emails_obj[0][1]
+    # Find primary email address using email label id
+    email_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in emails_obj
+                      if email_label_id == primary_email_id)
+
+    candidate_id_and_email_address = next(
+        email_iterator,
+        None)
+
+    # If candidate primary email is found, then just return that
+    if candidate_id_and_email_address:
+        return candidate_id_and_email_address
+
+    # If primary email not found, then return first email
+    # Get first tuple from a list of emails_obj and return candidate_id and email_address
+    candidate_id, email_address, _ = emails_obj[0]
+    return candidate_id, email_address
 
 
 def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_address,

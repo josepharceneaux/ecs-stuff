@@ -93,7 +93,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
 
 
 def create_smartlist_with_diff_email_candidate(access_token,campaign,
-                                               talent_pipeline, emails_list=True, count=1, _emails=None):
+                                               talent_pipeline, emails_list=True, count=1, emails=None):
     """
     This creates candidate(s) as specified by the count,  and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
@@ -103,9 +103,9 @@ def create_smartlist_with_diff_email_candidate(access_token,campaign,
     data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
                                      emails_list=emails_list, count=count)
 
-    if _emails and emails_list:
+    if emails and emails_list:
         for index, candidate in enumerate(data['candidates']):
-            data['candidates'][index]['emails'] = _emails[index]
+            candidate['emails'] = emails[index]
 
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
