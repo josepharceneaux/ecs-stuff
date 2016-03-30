@@ -6,13 +6,27 @@ FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-ser
 
 ecr_registry_url="528222547498.dkr.ecr.us-east-1.amazonaws.com"
 
+# Only push to production if explicitly specified
+if [[ $1 && $1 == "prod" ]] ; then
+    production="true"
+fi
+
 for app_index in ${!FLASK_APPS[@]}
 
 do
-    tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
-    echo $tag_command
-    eval $tag_command
-    push_command="docker push ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
-    echo $push_command
-    eval $push_command
+    if [ $production ] ; then
+	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
+	echo $tag_command
+        eval $tag_command
+	push_command="docker push ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
+	echo $push_command
+        eval $push_command
+    else
+	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:latest"
+	echo $tag_command
+        eval $tag_command
+	push_command="docker push ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:latest"
+	echo $push_command
+        eval $push_command
+    fi
 done
