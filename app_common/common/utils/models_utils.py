@@ -362,10 +362,12 @@ def init_talent_app(app_name):
     """
     if not app_name:
         raise InvalidUsage('app_name is required to start an app.')
+
     flask_app = TalentFlask(app_name)
     load_gettalent_config(flask_app.config)
     # logger init
     logger = flask_app.config[TalentConfigKeys.LOGGER]
+
     try:
         add_model_helpers(db.Model)
         db.init_app(flask_app)

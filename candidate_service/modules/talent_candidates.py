@@ -51,14 +51,15 @@ from candidate_service.common.utils.validators import sanitize_zip_code, is_numb
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    get_candidate_email_from_domain_if_exists, does_phone_exist,
-    does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    does_phone_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
     get_education_degree_if_exists, does_military_service_exist
 )
 
 # Common utilities
+from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 from candidate_service.common.datetime_utils import utc_isoformat
+from candidate_service.common.utils.iso_standards import get_country_name
 
 
 ##################################################
@@ -152,8 +153,8 @@ def fetch_candidate_info(candidate, fields=None):
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
     resume_url = None
-    if get_all_fields or 'resume_url' in fields:
-        resume_url = candidate.filename
+    if (get_all_fields or 'resume_url' in fields) and candidate.filename:
+        resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
     return_dict = {
         'id': candidate_id,
@@ -247,7 +248,7 @@ def candidate_addresses(candidate_id):
              'state': address.state,
              'zip_code': address.zip_code,
              'po_box': address.po_box,
-             'country': Country.country_name_from_country_id(country_id=address.country_id),
+             'country': get_country_name(address.iso3166_country),
              'latitude': address.coordinates and address.coordinates.split(',')[0],
              'longitude': address.coordinates and address.coordinates.split(',')[1],
              'is_default': address.is_default
@@ -272,7 +273,7 @@ def candidate_experiences(candidate_id):
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
              'state': experience.state,
-             'country': Country.country_name_from_country_id(country_id=experience.country_id),
+             'country': get_country_name(experience.iso3166_country),
              'is_current': experience.is_current,
              'bullets': _candidate_experience_bullets(experience=experience),
              } for experience in experiences]
@@ -322,7 +323,7 @@ def candidate_preferred_locations(candidate):
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
-             'country': Country.country_name_from_country_id(country_id=preferred_location.country_id)
+             'country': get_country_name(preferred_location.iso3166_country)
              } for preferred_location in preferred_locations]
 
 
@@ -340,7 +341,7 @@ def candidate_educations(candidate):
              'degrees': _candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
-             'country': Country.country_name_from_country_id(country_id=education.country_id),
+             'country': get_country_name(education.iso3166_country),
              'added_time': str(education.added_time)
              } for education in educations]
 
@@ -424,7 +425,7 @@ def candidate_military_services(candidate_id):
              'highest_rank': military_info.highest_rank,
              'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
              'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
-             'country': Country.country_name_from_country_id(country_id=military_info.country_id),
+             'country': get_country_name(military_info.iso3166_country),
              'comments': military_info.comments
              } for military_info in military_experiences]
 
@@ -710,6 +711,7 @@ def add_notes(candidate_id, data):
         notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
         db.session.add(CandidateTextComment(**notes_dict))
 
+
 ######################################################
 # Helper Functions For Creating and Updating Candidate
 ######################################################
@@ -808,7 +810,7 @@ def create_or_update_candidate_from_params(
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
     # Get user's domain ID
-    domain_id = domain_id_from_user_id(user_id=user_id)
+    domain_id = domain_id_from_user_id(user_id)
 
     # If candidate_id is not provided, Check if candidate exists
     candidate_id_from_dice_profile = None
@@ -836,7 +838,7 @@ def create_or_update_candidate_from_params(
                                       user_id, dice_profile_id, dice_social_profile_id,
                                       source_id, objective, summary, resume_url)
 
-    candidate = Candidate.get_by_id(candidate_id=candidate_id)
+    candidate = Candidate.get_by_id(candidate_id)
     """
     :type candidate: Candidate
     """
@@ -1084,19 +1086,24 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
         CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
 
     for i, address in enumerate(addresses):
-        address_dict = address.copy()
-        zip_code = sanitize_zip_code(address.get('zip_code'))
-        address_dict.update({
-            'country_id': Country.country_id_from_name_or_code(address.get('country')),
-            'zip_code': zip_code,
-            'coordinates': get_coordinates(zip_code, address.get('city'), address.get('state')),
-            'is_default': i == 0 if address_has_default else address.get('is_default'),
-            'country': None,
-            'candidate_id': candidate_id,
-            'resume_id': candidate_id  # TODO: this is to be removed once all tables have been added & migrated
-        })
 
-        # No fields in particular are required for address, i.e. dict is empty; just continue
+        zip_code = sanitize_zip_code(address.get('zip_code'))
+        city, state = address.get('city'), address.get('state')
+        address_dict = dict(
+            address_line_1=address.get('address_line_1'),
+            address_line_2=address.get('address_line_2'),
+            city=city,
+            state=state,
+            zip_code=zip_code,
+            iso3166_country=address.get('country_code'),
+            po_box=address.get('po_box'),
+            is_default=i == 0 if address_has_default else address.get('is_default'),
+            coordinates=get_coordinates(zipcode=zip_code, city=city, state=state),
+            candidate_id=candidate_id,
+            resume_id=candidate_id   # TODO: remove once all tables have been added & migrated
+        )
+
+        # No fields in particular are required for address, i.e. if dict is empty; just continue
         if not address_dict:
             continue
 
@@ -1110,13 +1117,11 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
             candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
             candidate_address_obj = candidate_address_query.first()
             if not candidate_address_obj:
-                raise InvalidUsage(error_message='Candidate address not found',
-                                   error_code=custom_error.ADDRESS_NOT_FOUND)
+                raise InvalidUsage('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
 
             # CandidateAddress must belong to Candidate
             if candidate_address_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate address",
-                                     error_code=custom_error.ADDRESS_FORBIDDEN)
+                raise ForbiddenError("Unauthorized candidate address", custom_error.ADDRESS_FORBIDDEN)
 
             # Track all updates
             _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time, candidate_address_obj)
@@ -1216,7 +1221,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
             school_type=education.get('school_type'),
             city=education.get('city'),
             state=education.get('state'),
-            country_id=Country.country_id_from_name_or_code(education.get('country')),
+            iso3166_country=education.get('country_code'),
             is_current=education.get('is_current'),
             added_time=added_datetime
         )
@@ -1457,7 +1462,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             state=work_experience.get('state'),
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
-            country_id=Country.country_id_from_name_or_code(work_experience.get('country')),
+            iso3166_country=work_experience.get('country_code'),
             start_month=work_experience.get('start_month') or 1,
             end_year=end_year,
             is_current=is_current
@@ -1655,7 +1660,8 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
             candidate_email_query.update(email_dict)
 
         else:  # Add
-            email = CandidateEmail.get_by_address(email_address=email_address)
+            email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
+                                                CandidateEmail.candidate_id == candidate_id).first()
             # Prevent duplicate entries
             if not email:
                 email_dict.update(dict(candidate_id=candidate_id))
@@ -1744,7 +1750,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
-            country_id=Country.country_id_from_name_or_code(military_service.get('country')),
+            iso3166_country=military_service.get('country_code'),
             service_status=military_service.get('status'),
             highest_rank=military_service.get('highest_rank'),
             highest_grade=military_service.get('highest_grade'),
@@ -1795,7 +1801,8 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
 
         preferred_location_dict = dict(
             address=preferred_location.get('address'),
-            country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
+            # country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
+            iso3166_country=preferred_location.get('country_code'),
             city=preferred_location.get('city'),
             region=preferred_location.get('state'),
             zip_code=sanitize_zip_code(preferred_location.get('zip_code'))

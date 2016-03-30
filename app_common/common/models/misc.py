@@ -144,7 +144,6 @@ class Activity(db.Model):
         return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
 
-
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
     id = db.Column('Id', db.Integer, primary_key=True)
@@ -414,40 +413,6 @@ class CustomField(db.Model):
         :rtype:  list[CustomField]
         """
         return cls.query.filter(CustomField.domain_id==domain_id).all()
-
-
-class UserEmailTemplate(db.Model):
-    __tablename__ = 'user_email_template'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
-    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
-    name = db.Column('Name', db.String(255), nullable=False)
-    email_body_html = db.Column('EmailBodyHtml', db.Text)
-    email_body_text = db.Column('EmailBodyText', db.Text)
-    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    # Relationships
-    email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
-                                                                                    cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
-
-
-class EmailTemplateFolder(db.Model):
-    __tablename__ = 'email_template_folder'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
-                          index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
-    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
-                                                                                       cascade="all, delete-orphan"))
 
 
 class CustomFieldCategory(db.Model):

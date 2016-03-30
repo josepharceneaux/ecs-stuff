@@ -1,35 +1,18 @@
 __author__ = 'ufarooqi'
 
-from flask.ext.cors import CORS
-from spreadsheet_import_service.common.routes import HEALTH_CHECK, GTApis
+from spreadsheet_import_service.common.utils.models_utils import init_talent_app
+from spreadsheet_import_service.common.routes import GTApis
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
 from spreadsheet_import_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from spreadsheet_import_service.common.utils.talent_ec2 import get_ec2_instance_id
 from spreadsheet_import_service.common.talent_flask import TalentFlask
+from spreadsheet_import_service.common.models.db import db
 
-app = TalentFlask(__name__)
-load_gettalent_config(app.config)
-logger = app.config[TalentConfigKeys.LOGGER]
-logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
+app, logger = init_talent_app(__name__)
 
 try:
-
-    from spreadsheet_import_service.common.models.db import db
-    db.init_app(app)
-    db.app = app
-
     import api
     app.register_blueprint(api.mod, url_prefix=SpreadsheetImportApi.URL_PREFIX)
-
-    # wrap the flask app and give a heathcheck url
-    from healthcheck import HealthCheck
-    health = HealthCheck(app, HEALTH_CHECK)
-
-    from spreadsheet_import_service.common.error_handling import register_error_handlers
-    register_error_handlers(app, logger)
-
-    # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources=GTApis.CORS_HEADERS)
 
     logger.info("Starting spreadsheet_import_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

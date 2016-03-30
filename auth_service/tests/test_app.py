@@ -82,11 +82,9 @@ class AuthServiceTestsContext:
         else:
             raise Exception("%s is not a valid action" % action)
 
-        from requests.auth import HTTPBasicAuth
         headers['Origin'] = 'https://app.gettalent.com'  # To verify that CORS headers work
         response = requests.post(AuthApiUrl.TOKEN_REVOKE if action == 'revoke' else
-                                 AuthApiUrl.TOKEN_CREATE, data=urlencode(params), headers=headers,
-                                 auth=HTTPBasicAuth(self.client_id, self.client_secret))
+                                 AuthApiUrl.TOKEN_CREATE, data=urlencode(params), headers=headers)
         db.session.commit()
         if action == 'revoke':
             return response.status_code
@@ -124,12 +122,20 @@ def app_context(request):
 
 def test_auth_service(app_context):
     headers = {'content-type': 'application/x-www-form-urlencoded'}
-    params = {'grant_type': 'password'}
+    params = {'grant_type': 'password', 'client_id': app_context.client_id, 'client_secret': app_context.client_secret}
 
     # Fetch Bearer Token
     app_context.access_token, refresh_token, status_code = app_context.token_handler(params, headers)
     assert status_code == 200 and Token.query.filter(Token.access_token == app_context.access_token
                                                      and Token.refresh_token == refresh_token).first()
+
+    token = Token.query.filter_by(access_token=app_context.access_token).first()
+    token.expires = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    db.session.commit()
+
+    # Authorize an expired Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token()
+    assert status_code == 401
 
     # Refresh Bearer Token
     app_context.access_token, refresh_token, status_code = app_context.token_handler(params, headers,
@@ -143,7 +149,7 @@ def test_auth_service(app_context):
     assert status_code == 200 and authorized_user_id == user_id
 
     # Revoke a Bearer Token
-    assert app_context.token_handler({}, headers, action='revoke') == 200
+    assert app_context.token_handler(params, headers, action='revoke') == 200
 
     # Authorize revoked bearer token
     status_code, authorized_user_id = app_context.authorize_token()

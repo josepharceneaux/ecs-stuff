@@ -23,12 +23,14 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
     else:
         custom_field = 'custom_field.3'
 
-    header_row = ['candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
-                  'candidate_experience.organization', 'candidate_experience.position',
-                  'candidate_education.schoolName', 'student_year', 'candidate_address.city',
-                  'candidate_address.state', 'candidate_education_degree_bullet.concentrationType',
-                  'area_of_interest.description', custom_field, 'area_of_interest.description',
-                  'candidate_experience.organization', 'candidate_experience.position']
+    header_row = [
+        'candidate.formattedName', 'candidate_email.address', 'candidate_phone.value',
+        'candidate_experience.organization', 'candidate_experience.position',
+        'candidate_education.schoolName', 'student_year', 'candidate_address.city',
+        'candidate_address.state', 'candidate_address.zipCode', 'candidate_education_degree_bullet.concentrationType',
+        'area_of_interest.description', custom_field, 'area_of_interest.description',
+        'candidate_experience.organization', 'candidate_experience.position'
+    ]
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
 
