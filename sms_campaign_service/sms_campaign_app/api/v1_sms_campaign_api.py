@@ -335,14 +335,13 @@ class ScheduleSmsCampaign(Resource):
         >>>           }
         >>> schedule_data = {
         >>>                    "frequency_id": 2,
-        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
-        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                    "start_datetime": "2015-11-26T08:00:00.000Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00.000Z"
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
         >>> response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers,
         >>>                         data=data)
-
 
         .. Response::
 
@@ -400,8 +399,8 @@ class ScheduleSmsCampaign(Resource):
         >>>           }
         >>> schedule_data = {
         >>>                    "frequency_id": 2,
-        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
-        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                    "start_datetime": "2015-11-26T08:00:00.000Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00.000Z"
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
@@ -900,7 +899,7 @@ class SmsCampaignBlastById(Resource):
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                       CampaignUtils.SMS)
+                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
         return dict(blast=blast_obj.to_json()), 200
 
