@@ -38,7 +38,7 @@ class Smartlist(db.Model):
             'added_time': str(self.added_time)
         }
         if include_stats and get_stats_function:
-            to_date = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+            to_date = datetime.datetime.utcnow()
             from_date = to_date - datetime.timedelta(days=29)
             smart_list['stats'] = get_stats_function(self, 'SmartList', None, from_date.isoformat(),
                                                      to_date.isoformat(), offset=1)
