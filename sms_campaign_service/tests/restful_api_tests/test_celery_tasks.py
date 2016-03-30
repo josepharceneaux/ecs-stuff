@@ -27,8 +27,7 @@ from sms_campaign_service.common.campaign_services.custom_errors import (Campaig
 from sms_campaign_service.common.error_handling import (ResourceNotFound, InternalServerError,
                                                         InvalidUsage)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.campaign_utils import (to_utc_str,
-                                                                          CampaignUtils)
+from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 
@@ -38,9 +37,10 @@ from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.models.misc import (UrlConversion, Frequency, Activity)
 
 # Service Specific
-from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
+from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
@@ -162,7 +162,7 @@ class TestCampaignSchedule(object):
         in database.
         """
         data = generate_campaign_schedule_data()
-        data['start_datetime'] = to_utc_str(datetime.utcnow() + timedelta(seconds=5))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(data))
@@ -183,7 +183,7 @@ class TestCampaignSchedule(object):
         """
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = Frequency.CUSTOM
-        data['start_datetime'] = to_utc_str(datetime.utcnow())
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
             headers=valid_header, data=json.dumps(data))

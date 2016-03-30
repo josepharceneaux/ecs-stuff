@@ -11,8 +11,8 @@ from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiExcepti
 # Common stuff
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.utils.validators import is_valid_url_format
-from sms_campaign_service.common.utils.handy_functions import (http_request,
-                                                               raise_if_not_instance_of)
+from sms_campaign_service.common.utils.handy_functions import (http_request)
+from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
 
 
 def validate_url_format(url):

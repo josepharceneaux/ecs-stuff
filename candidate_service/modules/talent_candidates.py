@@ -29,7 +29,7 @@ from candidate_service.common.models.candidate_edit import CandidateEdit, Candid
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import (Country, AreaOfInterest)
+from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.user import User
 
 # Modules
@@ -57,9 +57,9 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from candidate_service.common.utils.talent_s3 import get_s3_url
-from candidate_service.common.geo_services.geo_coordinates import get_coordinates
-from candidate_service.common.datetime_utils import utc_isoformat
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.iso_standards import get_country_name
+from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 
 ##################################################
@@ -85,7 +85,7 @@ def fetch_candidate_info(candidate, fields=None):
 
     created_at_datetime = None
     if get_all_fields or 'created_at_datetime' in fields:
-        created_at_datetime = utc_isoformat(candidate.added_time)
+        created_at_datetime = DatetimeUtils.utc_isoformat(candidate.added_time)
 
     emails = None
     if get_all_fields or 'emails' in fields:
