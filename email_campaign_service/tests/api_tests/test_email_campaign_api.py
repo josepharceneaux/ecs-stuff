@@ -284,7 +284,7 @@ class TestSendCampaign(object):
                                                                access_token_first,
                                                                None)
 
-    def test_post_with_one_smartlist_two_candidates_with_no_email(
+    def test_post_with_one_smartlist_one_candidate_with_no_email(
             self, access_token_first, campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one

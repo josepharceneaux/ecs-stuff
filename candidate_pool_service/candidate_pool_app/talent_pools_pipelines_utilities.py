@@ -84,7 +84,7 @@ def get_smartlist_candidates(smartlist, oauth_token=None, request_params=None):
 
     is_successful, response = get_candidates_from_search_api(request_params, generate_jwt_header(oauth_token, smartlist.user_id))
     if not is_successful:
-        raise NotFoundError("Couldn't get candidates for smarlist %s" % smartlist.id)
+        raise NotFoundError("Couldn't get candidates for smartlist %s" % smartlist.id)
     else:
         return response
 

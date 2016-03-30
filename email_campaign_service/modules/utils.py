@@ -15,11 +15,10 @@ from email_campaign_service.email_campaign_app import logger
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
-                                                          ForbiddenError)
 from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
@@ -45,8 +44,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     :param list_id: smartlist id.
     :return:
     """
-
-    params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
+    params = {'fields': 'id'} if candidate_ids_only else {}
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
                             params=params, headers=create_oauth_headers())
     if response.status_code == InvalidUsage.http_status_code():
