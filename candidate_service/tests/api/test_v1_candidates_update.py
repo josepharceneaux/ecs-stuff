@@ -550,6 +550,7 @@ class TestUpdateWorkExperience(object):
         AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -572,7 +573,7 @@ class TestUpdateWorkExperience(object):
         assert can_experiences[0]['organization'] == can_experiences_from_data[0]['organization']
         assert can_experiences[0]['position'] == can_experiences_from_data[0]['position']
         assert can_experiences[0]['city'] == can_experiences_from_data[0]['city']
-        assert can_experiences[0]['state'] == can_experiences_from_data[0]['state']
+        assert can_experiences[0]['subdivision'] == pycountry.subdivisions.get(code=can_experiences_from_data[0]['subdivision_code']).name
         assert len(can_experiences) == candidate_experience_count + 1
 
     def test_multiple_is_current_experiences(self, access_token_first, user_first, talent_pool):

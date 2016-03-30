@@ -268,6 +268,7 @@ def candidate_experiences(candidate_id):
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
              'state': experience.state,
+             'subdivision': get_subdivision_name(experience.iso3166_subdivision) if experience.iso3166_subdivision else None,
              'country': get_country_name(experience.iso3166_country),
              'is_current': experience.is_current,
              'bullets': _candidate_experience_bullets(experience=experience),
@@ -318,6 +319,7 @@ def candidate_preferred_locations(candidate):
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
+             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision) if preferred_location.iso3166_subdivision else None,
              'country': get_country_name(preferred_location.iso3166_country)
              } for preferred_location in preferred_locations]
 
