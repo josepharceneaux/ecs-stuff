@@ -21,7 +21,8 @@ from flask import Response
 from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
-from .handy_functions import JSON_CONTENT_TYPE_HEADER, raise_if_not_instance_of
+from .handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.validators import raise_if_not_instance_of
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10

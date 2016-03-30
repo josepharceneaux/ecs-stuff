@@ -16,7 +16,7 @@ import time
 import pytest
 from faker import Faker
 
-from app_common.common.utils.test_utils import delete_scheduler_task
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task
 from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,

@@ -30,8 +30,8 @@ from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema
 )
-from candidate_service.common.datetime_utils import isoformat_to_mysql_datetime
 from jsonschema import validate, FormatChecker, ValidationError
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
@@ -193,7 +193,7 @@ class CandidatesResource(Resource):
             emails = [{'label': email.get('label'), 'address': email['address'],
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
-            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+            added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
 
             resp_dict = create_or_update_candidate_from_params(
@@ -347,8 +347,8 @@ class CandidatesResource(Resource):
                            'address': email.get('address'), 'is_default': email.get('is_default')}
                           for email in candidate_dict.get('emails')]
 
-            added_datetime = isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
-            if candidate_dict.get('added_datetime') else None
+            added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
+                if candidate_dict.get('added_datetime') else None
 
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
