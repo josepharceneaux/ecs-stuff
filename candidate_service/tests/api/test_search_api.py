@@ -9,11 +9,10 @@ from candidate_service.common.models.candidate import Candidate, CandidateSource
 from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.tests.api.helpers import (
-    response_info, AddUserRoles, request_to_candidate_search_resource
-)
+from candidate_service.common.utils.test_utils import send_request, response_info
+from helpers import AddUserRoles
+
 # Standard libraries
-import random
 import datetime
 import uuid
 import time
@@ -43,10 +42,11 @@ class TestCandidateSearchGet(object):
         # Create candidates for user
         create_resp = self.create_candidates(access_token_first, user_first, talent_pool).json()
         # Retrieve candidates
-        AddUserRoles.get(user=user_first)
+        AddUserRoles.get(user_first)
         data = {'candidate_ids': [candidate['id'] for candidate in create_resp['candidates']]}
-        resp = request_to_candidate_search_resource(access_token_first, 'get', data)
-        print response_info(response=resp)
+        resp = send_request('get', CandidateApiUrl.CANDIDATE_SEARCH_URI, access_token_first, data)
+        # resp = request_to_candidate_search_resource(access_token_first, 'get', data)
+        print response_info(resp)
         assert resp.status_code == 200
         assert len(resp.json()['candidates']) == 3  # Number of candidate IDs sent in
         assert resp.json()['candidates'][0]['talent_pool_ids'][0] == talent_pool.id
@@ -81,7 +81,7 @@ def test_search_user_ids(user_first, access_token_first):
     """
     Test to search all candidates under the user
     """
-    AddUserRoles.add_and_get(user=user_first)
+    AddUserRoles.add_and_get(user_first)
     user_id = user_first.id
     candidate_ids = populate_candidates(count=5, owner_user_id=user_id)
     response = get_response_from_authorized_user(access_token_first, '?user_ids=%d' % user_id)
