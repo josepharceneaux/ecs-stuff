@@ -29,7 +29,7 @@ from candidate_service.common.models.candidate_edit import CandidateEdit, Candid
 from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import (Country, AreaOfInterest)
+from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.user import User
 
 # Modules
@@ -56,6 +56,7 @@ from candidate_service.modules.validators import (
 )
 
 # Common utilities
+from candidate_service.common.utils.talent_s3 import get_s3_url
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.utils.iso_standards import get_country_name
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
@@ -152,8 +153,8 @@ def fetch_candidate_info(candidate, fields=None):
                            TalentPoolCandidate.query.filter_by(candidate_id=candidate.id).all()]
 
     resume_url = None
-    if get_all_fields or 'resume_url' in fields:
-        resume_url = candidate.filename
+    if (get_all_fields or 'resume_url' in fields) and candidate.filename:
+        resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
     return_dict = {
         'id': candidate_id,
