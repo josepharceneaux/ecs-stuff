@@ -1690,47 +1690,46 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
         phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
         # Format phone number
         value = phone.get('value')
-        phone_number_dict = format_phone_number(value) if value else None
+        if value:
+            phone_number_dict = format_phone_number(value) if value else None
 
-        phone_dict = dict(
-            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
-            extension=phone_number_dict.get('extension') if phone_number_dict else None,
-            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
-            is_default=is_default
-        )
+            phone_dict = dict(
+                value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
+                extension=phone_number_dict.get('extension') if phone_number_dict else None,
+                phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
+                is_default=is_default
+            )
 
-        candidate_phone_id = phone.get('id')
-        if candidate_phone_id:  # Update
+            candidate_phone_id = phone.get('id')
+            if candidate_phone_id:  # Update
 
-            # Remove keys with None values
-            phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
+                # Remove keys with None values
+                phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
 
-            # CandidatePhone must be recognized
-            can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
-            can_phone_obj = can_phone_query.first()
-            if not can_phone_obj:
-                raise NotFoundError(error_message='Candidate phone not found',
-                                    error_code=custom_error.PHONE_NOT_FOUND)
+                # CandidatePhone must be recognized
+                can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
+                can_phone_obj = can_phone_query.first()
+                if not can_phone_obj:
+                    raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
 
-            # CandidatePhone must belong to Candidate
-            if can_phone_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message='Unauthorized candidate phone',
-                                     error_code=custom_error.PHONE_FORBIDDEN)
+                # CandidatePhone must belong to Candidate
+                if can_phone_obj.candidate_id != candidate_id:
+                    raise ForbiddenError('Unauthorized candidate phone', custom_error.PHONE_FORBIDDEN)
 
-            # Track all changes
-            _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime, can_phone_obj)
+                # Track all changes
+                _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime, can_phone_obj)
 
-            # Update CandidatePhone
-            can_phone_query.update(phone_dict)
+                # Update CandidatePhone
+                can_phone_query.update(phone_dict)
 
-        else:  # Add
-            phone_dict.update(dict(candidate_id=candidate_id))
-            # Prevent duplicate entries
-            if not does_phone_exist(candidate_phones, phone_dict):
-                db.session.add(CandidatePhone(**phone_dict))
+            else:  # Add
+                phone_dict.update(dict(candidate_id=candidate_id))
+                # Prevent duplicate entries
+                if not does_phone_exist(candidate_phones, phone_dict):
+                    db.session.add(CandidatePhone(**phone_dict))
 
-                if is_updating:  # Track all updates
-                    _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime)
+                    if is_updating:  # Track all updates
+                        _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime)
 
 
 def _add_or_update_military_services(candidate, military_services, user_id, edit_datetime, is_updating):
