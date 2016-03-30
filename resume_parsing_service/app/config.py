@@ -18,7 +18,7 @@ elif GT_ENVIRONMENT == 'jenkins':
 elif GT_ENVIRONMENT == 'qa':
     BG_URL = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@devdb.gettalent.com/talent_staging'
+    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@stage-db.gettallent.com/talent_staging'
 elif GT_ENVIRONMENT == 'prod':
     DEBUG = False
 else:
