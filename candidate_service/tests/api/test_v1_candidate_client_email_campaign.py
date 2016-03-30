@@ -3,7 +3,7 @@ A test for the v1/candidates/client_email_campaign endpoint
 When a recruiter wishes to send a gT Campaign Email to their candidates,
 they hit this endpoint with an email body
 """
-
+import time
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.models.email_campaign import EmailClient
 
@@ -36,6 +36,7 @@ class TestClientEmailCampaign(object):
         # Create a Candidate
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
         create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        time.sleep(15)
         print response_info(create_candidate_response)
 
         # Get Candidate via ID

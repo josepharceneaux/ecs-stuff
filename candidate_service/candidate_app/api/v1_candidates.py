@@ -7,6 +7,7 @@ Notes:
 # Standard libraries
 import logging
 import datetime
+import time as std_time
 from time import time
 
 # Flask specific
@@ -1338,6 +1339,7 @@ class CandidateClientEmailCampaignResource(Resource):
         }
 
         create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
+        std_time.sleep(15)  # added due to new field dumb_list_ids in CS
         if create_smartlist_resp.status_code != 201:
             return create_smartlist_resp.json(), create_smartlist_resp.status_code
 
