@@ -7,7 +7,6 @@ Notes:
 # Standard libraries
 import logging
 import datetime
-import pycountry
 import time as std_time
 from time import time
 

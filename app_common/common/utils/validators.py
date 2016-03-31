@@ -138,7 +138,7 @@ def validate_and_return_immutable_value(is_immutable):
 def is_country_code_valid(country_code):
     """
     Checks to see if country-code is a valid country code per ISO-3166 standards
-    :param country_code: must be ALL CAPS Alpha2 iso3166 country code, e.d. "US"
+    :param country_code: must be ALL CAPS Alpha2 iso3166 country code, e.g. "US"
     """
     try:
         pycountry.countries.get(alpha2=country_code)
