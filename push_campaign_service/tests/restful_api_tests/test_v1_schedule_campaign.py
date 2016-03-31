@@ -104,18 +104,14 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.BAD_REQUEST,))
-        error = response['error']
-        assert 'Invalid DateTime' in error['message']
+        schedule_campaign(campaign_in_db['id'], data, token_first,
+                          expected_status=(HttpStatus.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data()
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.BAD_REQUEST,))
-        error = response['error']
-        assert 'Invalid DateTime' in error['message']
+        schedule_campaign(campaign_in_db['id'], data, token_first,
+                          expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_schedule_a_campaign_with_valid_data(self, token_first, campaign_in_db,
                                                  smartlist_first, candidate_device_first):
@@ -243,18 +239,14 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data()
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
-        response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.BAD_REQUEST,))
-        error = response['error']
-        assert 'Invalid DateTime' in error['message']
+        reschedule_campaign(campaign_in_db['id'], data, token_first,
+                            expected_status=(HttpStatus.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data()
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
-        response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.BAD_REQUEST,))
-        error = response['error']
-        assert 'Invalid DateTime' in error['message']
+        reschedule_campaign(campaign_in_db['id'], data, token_first,
+                            expected_status=(HttpStatus.BAD_REQUEST,))
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, schedule_a_campaign, candidate_device_first):
 
