@@ -41,8 +41,9 @@ class TestSmartlistResource(object):
         def test_create_smartlist_with_candidate_ids(self, access_token_first, user_first, talent_pool, talent_pipeline):
             """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             data = FakeCandidatesData.create(talent_pool=talent_pool, count=5)
-            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+            time.sleep(25)
             name = fake.word()
             data = {'name': name,
                     'candidate_ids': candidate_ids, 'talent_pipeline_id': talent_pipeline.id}
@@ -56,14 +57,16 @@ class TestSmartlistResource(object):
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
 
+            time.sleep(25)
+
             #  Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api(smartlist_id,
-                                                                                  {'fields': 'candidate_ids_only'},
+                                                                                  {'fields': 'id'},
                                                                                   access_token_first)
             smartlist_candidate_ids = [row['id'] for row in response.json()['candidates']]
 
-            assert sorted(candidate_ids) == sorted(smartlist_candidate_ids)
+            assert sorted(candidate_ids) == sorted(map(int, smartlist_candidate_ids))
 
         def test_create_smartlist_with_blank_search_params(self, access_token_first):
             """Test blank search params validation"""
@@ -222,13 +225,19 @@ class TestSmartlistResource(object):
             """
             list_name = fake.name()
             num_of_candidates = 4
+            talent_pipeline.search_params = ''
+            db.session.commit()
+
             data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                                DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+            time.sleep(25)
             smartlist = save_smartlist(user_id=user_first.id, name=list_name,
                                        candidate_ids=candidate_ids, access_token=access_token_first,
                                        talent_pipeline_id=talent_pipeline.id)
+
+            time.sleep(25)
 
             resp = self.call_get_api(access_token_first, smartlist.id)
 
@@ -405,11 +414,13 @@ class TestSmartlistCandidatesApi(object):
     def test_return_candidate_ids_only(self, access_token_first, user_first, talent_pool, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+        time.sleep(25)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
                                    candidate_ids=candidate_ids, access_token=access_token_first)
-        params = {'fields': 'candidate_ids_only'}
+        time.sleep(25)
+        params = {'fields': 'id'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist.id, params, access_token_first)
         assert resp.status_code == 200
@@ -418,15 +429,18 @@ class TestSmartlistCandidatesApi(object):
         assert response['total_found'] == num_of_candidates
 
         output_candidate_ids = [candidate['id'] for candidate in response['candidates']]
-        assert sorted(output_candidate_ids) == sorted(candidate_ids)
+        assert sorted(map(int, output_candidate_ids)) == sorted(candidate_ids)
 
     def test_return_count_only(self, access_token_first, user_first, talent_pool, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+        time.sleep(25)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
                                    candidate_ids=candidate_ids, access_token=access_token_first)
+
+        time.sleep(25)
         params = {'fields': 'count_only'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist.id, params, access_token_first)
@@ -434,23 +448,22 @@ class TestSmartlistCandidatesApi(object):
 
         response = json.loads(resp.content)
         assert response['total_found'] == num_of_candidates
-        assert response['candidates'] == []
 
     def test_return_all_fields(self, access_token_first, user_first, talent_pool, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
+        time.sleep(25)
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
                                    candidate_ids=candidate_ids, access_token=access_token_first)
-        params = {'fields': 'all'}
-
-        resp = self.call_smartlist_candidates_get_api(smartlist.id, params, access_token_first)
+        time.sleep(25)
+        resp = self.call_smartlist_candidates_get_api(smartlist.id, {}, access_token_first)
         assert resp.status_code == 200
 
         response = json.loads(resp.content)
         assert response['total_found'] == num_of_candidates
-        assert 'emails' in response['candidates'][0]
+        assert 'email' in response['candidates'][0]
 
     def test_without_list_id(self, access_token_first):
         params = {'fields': 'candidate_ids_only'}
@@ -481,16 +494,20 @@ class TestSmartlistCandidatesApi(object):
         first_name = 'special'
         data = FakeCandidatesData.create(talent_pool, count=no_of_candidates, first_name=first_name,
                                          address_list=address)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
 
-        # Wait for cloudsearch to upload candidate documents
-        time.sleep(30)
+        time.sleep(25)
+
+        talent_pipeline.search_params = ''
+        db.session.commit()
+
         search_params = json.dumps({"query": "%s" % first_name})
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
 
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
+        time.sleep(25)
+
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
 

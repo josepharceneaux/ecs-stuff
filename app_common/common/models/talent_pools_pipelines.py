@@ -129,7 +129,7 @@ class TalentPipeline(db.Model):
             to_date = datetime.utcnow()
             from_date = to_date - timedelta(days=29)
             talent_pipeline['stats'] = get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(),
-                                                          to_date.isoformat())
+                                                          to_date.isoformat(), offset=0)
 
         return talent_pipeline
 

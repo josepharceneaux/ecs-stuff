@@ -10,12 +10,12 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.event.base import EventBase
-from social_network_service.modules.utilities import get_utc_datetime
 from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.custom_exceptions import EventNotCreated
 from social_network_service.custom_exceptions import TicketsNotCreated
@@ -741,8 +741,8 @@ class Eventbrite(EventBase):
         # Eventbrite assumes that provided start and end DateTime is in UTC
         # So, form given Timezone, (eventTimeZone in our case), it changes the
         # provided DateTime accordingly.
-        start_time = get_utc_datetime(data['start_datetime'], data['timezone'])
-        end_time = get_utc_datetime(data['end_datetime'], data['timezone'])
+        start_time = DatetimeUtils.get_utc_datetime(data['start_datetime'], data['timezone'])
+        end_time = DatetimeUtils.get_utc_datetime(data['end_datetime'], data['timezone'])
         # This dict is used to create an event as a draft on vendor
         self.event_payload = {
             'event.start.utc': start_time,

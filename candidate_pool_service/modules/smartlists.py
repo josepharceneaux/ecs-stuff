@@ -5,59 +5,10 @@ from candidate_pool_service.common.models.smartlist import SmartlistCandidate, S
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.error_handling import InternalServerError
-from candidate_pool_service.common.utils.candidate_service_calls import (search_candidates_from_params,
-                                                                         update_candidates_on_cloudsearch)
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
+from candidate_pool_service.common.utils.candidate_service_calls import update_candidates_on_cloudsearch
 
 __author__ = 'jitesh'
-
-
-def get_candidates(smartlist, candidate_ids_only=False, count_only=False, oauth_token=None, page=1):
-    """
-    Get the candidates of a smart or dumb list.
-    :param smartlist: Smartlist row object
-    :param oauth_token: Authorization Token String
-    :param page: Page Number
-    :return:  candidates and total_found
-    what TalentSearch.search_candidates returns
-    """
-    # If it is a smartlist, perform the dynamic search
-    if smartlist.search_params:
-        # Page Number to be fetched from Amazon CloudSearch
-        request_params = dict(smartlist_ids=smartlist.id)
-        if candidate_ids_only:
-            request_params['fields'] = 'id'
-
-        if count_only:
-            request_params['fields'] = 'count_only'
-            smartlist.oauth_token = oauth_token
-            smartlist.request_params = request_params
-            search_results = search_and_count_candidates_from_params(smartlist)
-        else:
-            request_params['page'] = page
-            search_results = search_candidates_from_params(request_params, oauth_token, smartlist.user_id)
-
-    # If a dumblist & getting count only, just do count
-    elif count_only:
-        count = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter_by(
-            smartlist_id=smartlist.id).count()
-        return dict(candidates=[], total_found=count)
-    else:
-        total_candidates_in_smartlist = SmartlistCandidate.query.with_entities(
-                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).count()
-        smartlist_candidate_rows = SmartlistCandidate.query.with_entities(
-                SmartlistCandidate.candidate_id).filter_by(smartlist_id=smartlist.id).paginate(page, 15, False)
-        smartlist_candidate_rows = smartlist_candidate_rows.items
-
-        candidates = []
-        candidate_ids = []
-        for smartlist_candidate_row in smartlist_candidate_rows:
-            candidates.append({'id': smartlist_candidate_row.candidate_id})
-            candidate_ids.append(smartlist_candidate_row.candidate_id)
-        if candidate_ids_only:
-            return {'candidates': candidates, 'total_found': total_candidates_in_smartlist}
-        search_results = create_candidates_dict(candidate_ids)
-
-    return search_results
 
 
 @cache.memoize(timeout=86400)
@@ -67,7 +18,7 @@ def search_and_count_candidates_from_params(smartlist):
     :param smartlist: SmartList object
     :return:
     """
-    return search_candidates_from_params(smartlist.request_params, smartlist.oauth_token, smartlist.user_id)
+    return get_smartlist_candidates(smartlist, None, {'fields': 'count_only'})
 
 
 def create_candidates_dict(candidate_ids):
@@ -92,7 +43,7 @@ def create_smartlist_dict(smartlist, oauth_token):
     :param smartlist: smartlist row object
     :param oauth_token: oauth token
     """
-    candidate_count = get_candidates(smartlist, count_only=True, oauth_token=oauth_token)['total_found']
+    candidate_count = get_smartlist_candidates(smartlist, oauth_token, {'fields': 'count_only'}).get('total_found')
 
     return {
         "total_found": candidate_count,

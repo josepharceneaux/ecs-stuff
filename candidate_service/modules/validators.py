@@ -3,6 +3,7 @@ Functions related to candidate_service/candidate_app/api validations
 """
 # Flask Specific
 from flask import request
+from dateutil.parser import parse
 import json
 import re
 from candidate_service.common.models.db import db
@@ -205,10 +206,10 @@ def convert_date(key, value):
     """
     if value:
         try:
-            formatted_date = datetime.strptime(value, '%m/%d/%Y')
+            formatted_date = parse(value)
         except ValueError:
             raise InvalidUsage("Field `%s` contains incorrect date format. "
-                               "Date format should be MM/DD/YYYY (eg. 12/31/2015)" % key)
+                               "Date format should be YY-MM-DDTHH:MM:SS (eg. 2009-08-13T10:33:25)" % key)
         return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 

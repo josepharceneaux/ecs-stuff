@@ -75,9 +75,9 @@ def to_json(self, include_fields=None, field_parsers=dict()):
     to JSON serializable dict but we want our datetime object to be converted in
     ISO 8601 format, so we can pass a parser functions like
 
-        >>> from app_common.common.utils.handy_functions import to_utc_str
-        >>> parsers = dict(start_datetime=to_utc_str,
-        >>>                end_datetime=to_utc_str)
+        >>> from app_common.common.utils.datetime_utils import DatetimeUtils
+        >>> parsers = dict(start_datetime=DatetimeUtils.to_utc_str,
+        >>>                end_datetime=DatetimeUtils.to_utc_str)
         >>> event.to_json(field_parsers=parsers)
 
         >>> {
