@@ -620,6 +620,7 @@ class SchedulerApiUrl(object):
 
     VERSION = 'v1'
 
+    # TODO - should not host_name be renamed to relative_version, also it's %= instead of =. Is it ok?
     HOST_NAME %= _get_api_relative_version(VERSION)
 
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
