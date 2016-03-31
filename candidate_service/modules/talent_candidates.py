@@ -1810,7 +1810,7 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
                 phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
 
                 # CandidatePhone must be recognized
-                can_phone_query = CandidatePhone.get_by_id(candidate_phone_id)
+                can_phone_query = CandidatePhone.query.filter_by(id=candidate_phone_id)
                 can_phone_obj = can_phone_query.first()
                 if not can_phone_obj:
                     raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
