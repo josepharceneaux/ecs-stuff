@@ -10,11 +10,10 @@ RUN sed -i -e 's/APP_NAME/candidate_pool_service/g' newrelic.ini /etc/rsyslog.d/
 
 EXPOSE 80
 
-# Set DB connection string
-ENV DB_STRING mysql://talent_web:s!web976892@livedb.gettalent.com/talent_core
-
 # Set PYTHON PATH
 ENV PYTHONPATH ../
+
+ENV C_FORCE_ROOT true
 
 CMD\
     eval "$(pyenv init -)" && \

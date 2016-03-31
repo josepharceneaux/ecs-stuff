@@ -27,12 +27,12 @@ def activities_fixture(user_fixture, candidate_source_fixture, request):
     activities = []
     today = datetime.today()
     first_name, last_name = user_fixture.first_name, user_fixture.last_name
-    activities.append(Activity(added_time=today + timedelta(hours=-2), source_table='user',
+    activities.append(Activity(added_time=today + timedelta(hours=-2), source_table=User.__tablename__,
                                source_id=1, type=12, user_id=user_fixture.id,
                                params=json.dumps({'lastName': last_name, 'firstName': first_name})))
     for i in xrange(3):
         activities.append(
-            Activity(added_time=today, source_table='user', source_id=1,
+            Activity(added_time=today, source_table=User.__tablename__, source_id=1,
                      type=12, user_id=user_fixture.id, params=json.dumps({'lastName': last_name,
                                                                           'firstName': first_name}))
         )

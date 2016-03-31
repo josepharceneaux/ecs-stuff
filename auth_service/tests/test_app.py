@@ -5,11 +5,11 @@ from urllib import urlencode
 
 import pytest
 import requests
-from werkzeug.security import generate_password_hash, gen_salt
+from werkzeug.security import gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
 from auth_service.common.routes import AuthApiUrl
-
+from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
 
 class AuthServiceTestsContext:
     def __init__(self):
@@ -39,7 +39,7 @@ class AuthServiceTestsContext:
 
         test_user = User(
             email=self.email,
-            password=generate_password_hash(self.password, method='pbkdf2:sha512'),
+            password=gettalent_generate_password_hash(self.password),
             domain_id=self.test_domain,
             first_name=first_name,
             last_name=last_name,
@@ -122,12 +122,20 @@ def app_context(request):
 
 def test_auth_service(app_context):
     headers = {'content-type': 'application/x-www-form-urlencoded'}
-    params = {'client_id': app_context.client_id, 'client_secret': app_context.client_secret, 'grant_type': 'password'}
+    params = {'grant_type': 'password', 'client_id': app_context.client_id, 'client_secret': app_context.client_secret}
 
     # Fetch Bearer Token
     app_context.access_token, refresh_token, status_code = app_context.token_handler(params, headers)
     assert status_code == 200 and Token.query.filter(Token.access_token == app_context.access_token
                                                      and Token.refresh_token == refresh_token).first()
+
+    token = Token.query.filter_by(access_token=app_context.access_token).first()
+    token.expires = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    db.session.commit()
+
+    # Authorize an expired Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token()
+    assert status_code == 401
 
     # Refresh Bearer Token
     app_context.access_token, refresh_token, status_code = app_context.token_handler(params, headers,
@@ -151,4 +159,8 @@ def test_auth_service(app_context):
 def test_health_check():
     import requests
     response = requests.get(AuthApiUrl.HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(AuthApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200

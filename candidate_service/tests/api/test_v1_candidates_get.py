@@ -4,196 +4,187 @@ Test cases for CandidateResource/get()
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
-# Models
-from candidate_service.common.models.user import User
-from candidate_service.common.models.candidate import Candidate
-
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource, check_for_id,
-    request_to_candidates_resource, request_to_candidate_resource, AddUserRoles
-)
+from helpers import AddUserRoles
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.routes import CandidateApiUrl
 
-######################## Candidate ########################
-def test_get_candidate_without_authed_user(sample_user, user_auth):
-    """
-    Test:   Attempt to retrieve candidate with no access token
-    Expect: 401
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add(user=sample_user)
+# Candidate sample data
+from candidate_sample_data import generate_single_candidate_data
 
-    # Create Candidate
-    create_resp = post_to_candidate_resource(token)
-    resp_dict = create_resp.json()
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
-
-    # Retrieve Candidate
-    candidate_id = resp_dict['candidates'][0]['id']
-    resp = get_from_candidate_resource(access_token=None, candidate_id=candidate_id)
-    print response_info(resp)
-    assert resp.status_code == 401
-    assert resp.json()['error']['code'] == 11 # Bearer token not found
+# Custom error
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
-def test_get_candidate_without_id_or_email(sample_user, user_auth):
-    """
-    Test:   Attempt to retrieve candidate without providing ID or Email
-    Expect: 400
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
+class TestGetCandidate(object):
+    @staticmethod
+    def create_candidate(access_token_first, user_first, talent_pool, data=None):
+        AddUserRoles.add(user_first)
+        if data is None:
+            data = generate_single_candidate_data([talent_pool.id])
+        return send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
-    # Create Candidate
-    resp = post_to_candidate_resource(token)
-    print response_info(resp)
-    assert resp.status_code == 201
+    def test_create_candidate_with_empty_input(self, access_token_first, user_first):
+        """
+        Test: Retrieve user's candidate(s) by providing empty string for data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user_first)
+        resp = requests.post(url=CandidateApiUrl.CANDIDATES,
+                             headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                                      'content-type': 'application/json'})
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.MISSING_INPUT
 
-    # Retrieve Candidate without providing ID or Email
-    resp = request_to_candidates_resource(token, 'get')
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 1
+    def test_create_candidate_with_non_json_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Send post request with non json data
+        Expect: 400
+        """
+        # Create candidate
+        AddUserRoles.add(user_first)
+        resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': 'Bearer {}'.format(access_token_first),
+                     'content-type': 'application/xml'},
+            data=generate_single_candidate_data([talent_pool.id])
+        )
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
+    def test_get_candidate_without_authed_user(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to retrieve candidate with no access token
+        Expect: 401
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        resp_dict = create_resp.json()
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-def test_get_candidate_from_forbidden_domain(sample_user, user_auth, user_from_diff_domain):
-    """
-    Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
-    Expect: 403 status_code
-    :type sample_user:      User
-    :type user_from_diff_domain:    User
-    :type user_auth:        UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add(user=sample_user)
-    AddUserRoles.get(user=user_from_diff_domain)
+        # Retrieve Candidate
+        candidate_id = resp_dict['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, None)
+        print response_info(get_resp)
+        assert get_resp.status_code == 401
+        assert get_resp.json()['error']['code'] == 11 # Bearer token not found
 
-    # Create Candidate
-    resp = post_to_candidate_resource(token)
-    resp_dict = resp.json()
-    print response_info(resp)
+    def test_get_candidate_without_id_or_email(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Attempt to retrieve candidate without providing ID or Email
+        Expect: 400
+        """
+        # Create Candidate
+        AddUserRoles.add_and_get(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
 
-    # Get access token for sample_user_2
-    token_2 = user_auth.get_auth_token(user_from_diff_domain, True)['access_token']
+        # Retrieve Candidate without providing ID or Email
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % None, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 400
+        assert get_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
-    # Retrieve candidate from a different domain
-    candidate_id = resp_dict['candidates'][0]['id']
-    resp = get_from_candidate_resource(access_token=token_2, candidate_id=candidate_id)
-    print response_info(resp)
-    assert resp.status_code == 403
+    def test_get_candidate_from_forbidden_domain(self, access_token_first, user_first, talent_pool,
+                                                 access_token_second, user_second):
+        """
+        Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
+        Expect: 403 status_code
+        """
+        AddUserRoles.add(user_first)
+        AddUserRoles.get(user_second)
 
+        # Create Candidate
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        resp_dict = create_resp.json()
+        print response_info(create_resp)
 
-def test_get_candidate_via_invalid_email(sample_user, user_auth):
-    """
-    Test:   Retrieve candidate via an invalid email address
-    Expect: 400
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.get(user=sample_user)
+        # Retrieve candidate from a different domain
+        candidate_id = resp_dict['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_second)
+        print response_info(get_resp)
+        assert get_resp.status_code == 403
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    # Retrieve Candidate via candidate's email
-    resp = get_from_candidate_resource(access_token=token, candidate_email='bad_email.com')
-    print response_info(resp)
-    assert resp.status_code == 400
+    def test_get_candidate_via_invalid_email(self, access_token_first, user_first):
+        """
+        Test:   Retrieve candidate via an invalid email address
+        Expect: 400
+        """
+        # Retrieve Candidate via candidate's email
+        AddUserRoles.get(user_first)
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % 'bad_email.com', access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 400
+        assert get_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
+    def test_get_candidate_via_id_and_email(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Retrieve candidate via candidate's ID and candidate's Email address
+        Expect: 200 in both cases
+        """
+        # Create candidate
+        AddUserRoles.add_and_get(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        resp_dict = create_resp.json()
 
-def test_get_can_via_id_and_email(sample_user, user_auth):
-    """
-    Test:   Retrieve candidate via candidate's ID and candidate's Email address
-    Expect: 200 in both cases
-    :type sample_user:    User
-    :type user_auth:      UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
+        # Retrieve candidate
+        candidate_id = resp_dict['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
 
-    # Create candidate
-    resp = post_to_candidate_resource(access_token=token, data=None, domain_id=sample_user.domain_id)
-    resp_dict = resp.json()
-    print response_info(resp)
+        # Candidate Email
+        candidate_email = get_resp.json()['candidate']['emails'][0]['address']
 
-    db.session.commit()
+        # Get candidate via Candidate ID
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        resp_dict = get_resp.json()
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert isinstance(resp_dict, dict)
 
-    # Candidate ID & Email
-    candidate_id = resp_dict['candidates'][0]['id']
-    candidate_email = Candidate.get_by_id(candidate_id).emails[0].address
+        # Get candidate via Candidate Email
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_email, access_token_first)
+        resp_dict = get_resp.json()
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert isinstance(resp_dict, dict)
 
-    # Get candidate via Candidate ID
-    resp = get_from_candidate_resource(access_token=token, candidate_id=candidate_id)
+    def test_get_non_existing_candidate(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
+        """
+        # Retrieve non existing candidate
+        AddUserRoles.all_roles(user_first)
+        last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
+        non_existing_candidate_id = last_candidate.id * 100
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % non_existing_candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_NOT_FOUND
 
-    resp_dict = resp.json()
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert isinstance(resp_dict, dict)
-    assert check_for_id(_dict=resp_dict['candidate']) is not False
+        # Create Candidate and hide it
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
 
-    # Get candidate via Candidate Email
-    resp = get_from_candidate_resource(access_token=token, candidate_email=candidate_email)
-
-    resp_dict = resp.json()
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert isinstance(resp_dict, dict)
-    assert check_for_id(_dict=resp_dict['candidate']) is not False # assert every object has an id-key
-
-
-def test_get_candidates_via_list_of_ids(sample_user, user_auth):
-    """
-    Test:   Retrieve candidates via a list of ids
-    Expect: 200, list of Candidates
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add_and_get(user=sample_user)
-
-    # Create candidates
-    can_id_1 = post_to_candidate_resource(token).json()['candidates'][0]['id']
-    can_id_2 = post_to_candidate_resource(token).json()['candidates'][0]['id']
-
-    # Get all candidates in user's domain
-    data = {'candidate_ids': [can_id_1, can_id_2]}
-    resp = request_to_candidates_resource(token, 'get', data)
-    print response_info(resp)
-    assert resp.status_code == 200
-    assert len(resp.json()['candidates']) == 2
-
-
-def test_get_non_existing_candidate(sample_user, user_auth):
-    """
-    Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.all_roles(user=sample_user)
-
-    # Retrieve non existing candidate
-    last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
-    non_existing_candidate_id = last_candidate.id * 100
-    resp = get_from_candidate_resource(token, non_existing_candidate_id)
-    print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3010 # Not found
-
-    # Create Candidate and hide it
-    candidate_id = post_to_candidate_resource(token).json()['candidates'][0]['id']
-    request_to_candidate_resource(token, 'delete', candidate_id)
-    # Retrieve web-hidden candidate
-    resp = get_from_candidate_resource(token, candidate_id)
-    print response_info(resp)
-    assert resp.status_code == 404 and resp.json()['error']['code'] == 3011 # Hidden
+        # Retrieve web-hidden candidate
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN

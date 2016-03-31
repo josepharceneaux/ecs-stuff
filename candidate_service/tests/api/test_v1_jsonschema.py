@@ -1,49 +1,78 @@
 """
-Test cases for testing jsonschema validations
+Test cases for testing json schema validations
 """
-# Standard library
-import json
-
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
-# Models
-from candidate_service.common.models.user import User
-
 # Conftest
-from candidate_service.common.tests.conftest import UserAuthentication
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import (
-    response_info, post_to_candidate_resource, get_from_candidate_resource,
-    request_to_candidate_preference_resource, AddUserRoles
-)
+from helpers import AddUserRoles
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.routes import CandidateApiUrl
 
-# ***** JSONSCHEMA POST *****
-def test_schema_validation(sample_user, user_auth):
-    """
-    :type sample_user:  User
-    :type user_auth:    UserAuthentication
-    """
-    # Get access token
-    token = user_auth.get_auth_token(sample_user, True)['access_token']
-    AddUserRoles.add(user=sample_user)
-
-    # Create Candidate
-    data = {'candidates': [
-        {
-            'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': True}],
-            'first_name': 'john', 'middle_name': '', 'last_name': '', 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': {},
-            'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
-            'areas_of_interest': [], 'phones': []
-        }
-    ]}
-    create_resp = post_to_candidate_resource(token, data)
-    print response_info(create_resp)
-    assert create_resp.status_code == 201
+# Custom errors
+from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
-# ***** JSONSCHEMA PATCH *****
-# ***** JSONSCHEMA GET *****
+class TestSchemaValidationPost(object):
+    def test_schema_validation(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Schema validations for CandidatesResource/post()
+        Expect: 400 unless if a dict of CandidateObject is provided with at least
+                one talent_pool.id
+        """
+        # Create Candidate
+        AddUserRoles.add(user_first)
+        data = {}
+        resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+        data['candidates'] = []
+        resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+        data['candidates'] = [{}]
+        resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+        assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+        data['candidates'] = [{'talent_pool_ids': {'add': [talent_pool.id]}}]
+        resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 201
+
+
+class TestSchemaValidationPatch(object):
+    def test_data_validations(self, access_token_first, user_first):
+        """
+        Test:   Validate json data
+        Expect: 400
+        """
+        AddUserRoles.edit(user_first)
+        data = {'candidate': [{}]}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': {}}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': [{}]}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+
+        data = {'candidates': [{'id': 5, 'phones': [{}]}]}
+        resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(resp)
+        assert resp.status_code == 400
+

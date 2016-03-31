@@ -9,23 +9,32 @@ python setup_environment/reset_database_and_cloud_search.py
 
 """
 
-from flask import Flask
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from common.talent_flask import TalentFlask
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
-                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group']
+                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
 
-app = Flask(__name__)
+app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
 if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     print "You can reset your database and CloudSearch domain only in 'dev' or 'jenkins' environment"
     raise SystemExit(0)
 
+
+def save_meetup_token_and_flushredis(_redis):
+    if _redis.get('Meetup'):
+        _token = _redis.get('Meetup')
+        # Commenting this out because we need persistence in redis to store parsed resumes to save our
+        # BG transactions.
+        # _redis.flushall()
+        _redis.set('Meetup', _token)
+
 # Flush redis-cache
 from common.redis_cache import redis_store
 redis_store.init_app(app)
-redis_store.flushall()
+save_meetup_token_and_flushredis(redis_store)
 
 from common.models.db import db
 db.init_app(app)

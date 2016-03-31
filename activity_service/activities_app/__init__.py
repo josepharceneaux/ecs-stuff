@@ -1,33 +1,18 @@
 """Initializer for activities_app"""
 __author__ = 'Erik Farmer'
 
-from flask import Flask
-from flask.ext.cors import CORS
-from activity_service.common.routes import HEALTH_CHECK
+from activity_service.common.utils.models_utils import init_talent_app
+from activity_service.common.routes import GTApis
 from activity_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
+from activity_service.common.utils.talent_ec2 import get_ec2_instance_id
+from activity_service.common.talent_flask import TalentFlask
+from activity_service.common.models.db import db
 
-app = Flask(__name__)
-load_gettalent_config(app.config)
-
-logger = app.config[TalentConfigKeys.LOGGER]
+app, logger = init_talent_app(__name__)
 
 try:
-    from activity_service.common.models.db import db
-    db.init_app(app)
-    db.app = app
-
     from views import api
     app.register_blueprint(api.mod)
-
-    # wrap the flask app and give a heathcheck url
-    from healthcheck import HealthCheck
-    health = HealthCheck(app, HEALTH_CHECK)
-
-    from activity_service.common.error_handling import register_error_handlers
-    register_error_handlers(app, logger)
-
-    # Enable CORS for all origins & endpoints
-    CORS(app)
 
     logger.info("Starting activity_service in %s environment", app.config[TalentConfigKeys.ENV_KEY])
 

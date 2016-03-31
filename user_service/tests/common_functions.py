@@ -72,7 +72,9 @@ def user_groups(access_token, group_id, user_ids=[], action='GET'):
 def update_password(access_token, old_password, new_password):
     headers = {'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'}
     data = {"old_password": old_password, "new_password": new_password}
+    print 'Updating password at %s, post data: %s' % (UserServiceApiUrl.UPDATE_PASSWORD_API, json.dumps(data))
     response = requests.put(url=UserServiceApiUrl.UPDATE_PASSWORD_API, headers=headers, data=json.dumps(data))
+    print "Response:\n%s" % response.content
     return response.status_code
 
 
@@ -80,7 +82,9 @@ def forgot_password(email='', action='GET'):
     if action == 'GET':
         return requests.get(UserServiceApiUrl.FORGOT_PASSWORD_API).status_code
     else:
-        response = requests.post(url=UserServiceApiUrl.FORGOT_PASSWORD_API, data={"username": email})
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url=UserServiceApiUrl.FORGOT_PASSWORD_API, headers=headers,
+                                 data=json.dumps({"username": email}))
         return response.status_code
 
 
@@ -88,7 +92,9 @@ def reset_password(token, password='', action='GET'):
     if action == 'GET':
         return requests.get(UserServiceApiUrl.RESET_PASSWORD_API % token).status_code
     else:
-        response = requests.post(url=UserServiceApiUrl.RESET_PASSWORD_API % token, data={"password": password})
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url=UserServiceApiUrl.RESET_PASSWORD_API % token, headers=headers,
+                                 data=json.dumps({"password": password}))
         return response.status_code
 
 

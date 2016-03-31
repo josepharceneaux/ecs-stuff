@@ -32,7 +32,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
                         university_start_month=False, graduation_year=False, graduation_month=False,
                         military_branch=False, military_status=False, military_grade=False, military_to_date=False,
                         military_from_date=False, candidate_skill_dicts=None, custom_fields_dict=None,
-                        candidate_experience_dicts=None, update_now=True):
+                        candidate_experience_dict=None, update_now=True):
     """
     :param count:
     :param owner_user_id:
@@ -87,15 +87,16 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
     :type candidate_skill_dicts: None | list[dict[basestring, basestring | integer | datetime.date]]
     :param custom_fields_dict: custom_field_id -> value
     :type custom_fields_dict: dict[int, str] | None
-    :param candidate_experience_dicts: dicts of organization, position, startMonth, startYear, endMonth, endYear,
+    :param candidate_experience_dict: dicts of organization, position, startMonth, startYear, endMonth, endYear,
     isCurrent
-    :type candidate_experience_dicts: None | list[dict[basestring, int | basestring | list]]
+    :type candidate_experience_dict: None | dict
     :param update_now: Will update immediately after creating all candidates. Set it to False, if willing to create
     different combination of candidates and update at last to save time.
     :return:
     """
     candidate_ids = []
-    work_experiences = {}
+    work_experience = {}
+    work_experiences = [candidate_experience_dict] if candidate_experience_dict else []
     addresses = {}
     educations = {}
     email_address = {}
@@ -134,14 +135,14 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
             'area_of_interest_ids': area_of_interest_ids,
             'candidate_skill_dicts': candidate_skill_dicts,
             'custom_fields_dict': custom_fields_dict,
-            'candidate_experience_dicts': candidate_experience_dicts,
+            'candidate_experience_dict': candidate_experience_dict,
         }
 
         if data['email']:
             email_address['address'] = data['email']
         if data['current_company'] or data['current_title']:
-            work_experiences['organization'] = data['current_company']
-            work_experiences['position'] = data['current_title']
+            work_experience['organization'] = data['current_company']
+            work_experience['position'] = data['current_title']
         if data['city'] or data['state'] or data['zip_code']:
             addresses['city'] = data['city']
             addresses['state'] = data['state']
@@ -164,16 +165,19 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
         if data['custom_fields_dict']:
             custom_fields_list.append(data['custom_fields_dict'])
 
+        if work_experience:
+            work_experiences.append(work_experience)
+
         candidate = create_or_update_candidate_from_params(
             owner_user_id,
             is_creating=True,
             first_name=data['first_name'],
             middle_name=data['middle_name'],
             last_name=data['last_name'],
-            added_time=data['added_time'],
+            added_datetime=data['added_time'],
             objective=data['objective'],
             emails=[email_address],
-            work_experiences=[work_experiences] if work_experiences else None,
+            work_experiences=work_experiences,
             source_id=data['source_id'],
             addresses=[addresses] if addresses else None,
             educations=[educations] if educations else None,
@@ -188,7 +192,7 @@ def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=Fal
 
     if update_now:
         # Update cloud_search
-        upload_candidate_documents(candidate_ids)
+        upload_candidate_documents.delay(candidate_ids)
     return candidate_ids
 
 
@@ -199,7 +203,7 @@ def _update_now(candidate_ids):
     :return:
     """
     # Update cloud_search
-    upload_candidate_documents(candidate_ids)
+    upload_candidate_documents.delay(candidate_ids)
     return
 
 
@@ -216,8 +220,7 @@ def test_upload_candidate_documents_in_domain(sample_user):
     candidate_ids = populate_candidates(count=no_of_candidates, owner_user_id=sample_user.id, update_now=False)
     domain_id = sample_user.domain_id
     _assert_search_results(domain_id, {'query': ''}, [])  # Check no candidate is returned for this domain.
-    no_of_candidates_uploaded = upload_candidate_documents_in_domain(domain_id)
-    assert no_of_candidates == no_of_candidates_uploaded
+    upload_candidate_documents_in_domain(domain_id)
     _assert_search_results(domain_id, {'query': ''}, candidate_ids)
 
 
@@ -227,8 +230,7 @@ def test_upload_candidate_documents_of_user(sample_user, sample_user_2):
     # User 2 creates candidates
     user_2_candidate_ids = populate_candidates(count=5, owner_user_id=sample_user_2.id, update_now=False)
     # Only upload user 2 candidates
-    no_of_candidates_uploaded = upload_candidate_documents_of_user(sample_user_2.id)
-    assert no_of_candidates_uploaded == len(user_2_candidate_ids)
+    upload_candidate_documents_of_user(sample_user_2.id)
     # Assert only user 2's candidates appear in search results
     _assert_search_results(sample_user_2.domain_id, {'query': ''}, user_2_candidate_ids)
 

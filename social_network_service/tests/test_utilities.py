@@ -1,29 +1,33 @@
-from social_network_service.common.routes import SocialNetworkApiUrl
 
+"""
+test_utilities.py: helper methods for testing social network service endpoints
+"""
 __author__ = 'zohaib'
 
 # Standard Library
 from datetime import datetime
-from dateutil.parser import parse
 
 # Third Party
+import requests
 from pytz import timezone
+from dateutil.parser import parse
 
 # Application Specific
-from social_network_service.utilities import unix_time
-from social_network_service.utilities import snake_case_to_camel_case
-from social_network_service.utilities import camel_case_to_title_case
-from social_network_service.utilities import camel_case_to_snake_case
-from social_network_service.utilities import convert_keys_to_snake_case
-from social_network_service.utilities import convert_keys_to_camel_case
-from social_network_service.utilities import get_utc_datetime
-from social_network_service.utilities import import_from_dist_packages
-from social_network_service.utilities import milliseconds_since_epoch
-from social_network_service.utilities import milliseconds_since_epoch_to_dt
-from social_network_service.utilities import milliseconds_since_epoch_local_time
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
+from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.modules.utilities import unix_time
+from social_network_service.modules.utilities import snake_case_to_camel_case
+from social_network_service.modules.utilities import camel_case_to_title_case
+from social_network_service.modules.utilities import camel_case_to_snake_case
+from social_network_service.modules.utilities import convert_keys_to_snake_case
+from social_network_service.modules.utilities import convert_keys_to_camel_case
+from social_network_service.modules.utilities import import_from_dist_packages
+from social_network_service.modules.utilities import milliseconds_since_epoch
+from social_network_service.modules.utilities import milliseconds_since_epoch_to_dt
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
+# TODO Should we not select the time zone of the machine???
 LOCAL_TIMEZONE = timezone('Asia/Karachi')
 UTC_TEST_DATE = UTC_TIMEZONE.localize(TEST_DATE, is_dst=None)
 LOCAL_TEST_DATE = LOCAL_TIMEZONE.localize(TEST_DATE, is_dst=None)
@@ -133,13 +137,13 @@ def test_get_utc_datetime():
     :return:
     """
     now = datetime(2015, 10, 16, 12, 12, 12)
-    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
+    assert DatetimeUtils.get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T07:12:12Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
 
     # now = datetime(2015, 10, 16, 11, 11, 11, tzinfo=timezone('Asia/Karachi'))
     now = parse('2015-10-16T11:11:11Z')
     print now
-    assert get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
+    assert DatetimeUtils.get_utc_datetime(now, 'Asia/Karachi') == '2015-10-16T11:11:11Z', \
         'UTC date time should be 5 hours behind Asia/Karachi timezone datetime'
 
 
@@ -192,25 +196,6 @@ def test_milliseconds_since_epoch():
         assert 'str' in e.message
 
 
-# def test_milliseconds_since_epoch_local_time():
-#     """
-#     - In this test, we will verify the working of
-#         milliseconds_since_epoch_local_time() function defined in
-#         social_network_service/utilities.py
-#     - We give a test date and assert its output to expected value
-#     """
-#     # case 1 - date is datetime.datetime object
-#     result = int(milliseconds_since_epoch_local_time(UTC_TEST_DATE))
-#     assert result == EPOCH_LOCAL_TEST_DATE_IN_MILLISECONDS
-#     # case 2 - date in string format
-#     test_date_str = '2015-1-1'
-#     try:
-#         unix_time(test_date_str)
-#     except TypeError as e:
-#         assert e.message.find('unsupported operand type') == 0
-#         assert 'str' in e.message
-
-
 def test_milliseconds_since_epoch_to_dt():
     """
     - In this test, we will verify the working of
@@ -230,6 +215,9 @@ def test_milliseconds_since_epoch_to_dt():
 
 
 def test_health_check():
-    import requests
     response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK)
+    assert response.status_code == 200
+
+    # Testing Health Check URL with trailing slash
+    response = requests.get(SocialNetworkApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200

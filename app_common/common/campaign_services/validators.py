@@ -1,0 +1,225 @@
+"""
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
+
+    Here we have validators for campaign services.
+
+Functions in this file are
+    - validation_of_data_to_schedule_campaign()
+    - validate_blast_candidate_url_conversion_in_db()
+    - raise_if_dict_values_are_not_int_or_long etc.
+"""
+# Third Party
+from flask import current_app
+
+# Database Models
+from ..models.user import User
+from ..models.candidate import Candidate
+from ..models.smartlist import Smartlist
+from ..models.sms_campaign import SmsCampaignBlast
+from ..models.misc import (Frequency, UrlConversion)
+from ..models.email_campaign import EmailCampaignBlast
+
+# Common utils
+from ..utils.datetime_utils import DatetimeUtils
+from ..talent_config_manager import TalentConfigKeys
+from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
+from ..utils.handy_functions import (find_missing_items,
+                                     validate_required_fields, get_valid_json_data)
+
+
+def validation_of_data_to_schedule_campaign(campaign_obj, request):
+    """
+    This validates the data provided to schedule a campaign.
+    1- Get JSON data from request and raise Invalid Usage exception if no data is found or
+            data is not JSON serializable.
+    2- If start datetime is not provide/given in valid format, we raise Invalid usage
+        error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
+    3- Get number of seconds by validating given frequency_id
+    4- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
+    5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
+    6- Returns data_to_schedule
+
+    This function is used in data_validation_for_campaign_schedule() of CampaignBase class.
+
+    :param campaign_obj: campaign obj
+    :param request: request received on API
+    :return: data_to_schedule
+    :rtype: dict
+    """
+    data_to_schedule_campaign = get_valid_json_data(request)
+    if not data_to_schedule_campaign:
+        raise InvalidUsage('No data provided to schedule %s(id:%s)'
+                           % (campaign_obj.__tablename__, campaign_obj.id))
+    # check if data has start_datetime
+    if not data_to_schedule_campaign.get('start_datetime'):
+        raise InvalidUsage('start_datetime is required field.')
+    # validate format of start_datetime
+    DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['start_datetime'])
+    # get number of seconds from frequency id
+    frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
+    # check if task to be schedule is periodic
+    if frequency and not data_to_schedule_campaign.get('end_datetime'):
+        raise InvalidUsage("end_datetime is required to schedule a periodic task")
+    if frequency:
+        # validate format of end_datetime
+        DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['end_datetime'])
+    data_to_schedule_campaign['frequency'] = frequency
+    # convert end_datetime_str in datetime obj
+    return data_to_schedule_campaign
+
+
+def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
+                                                  url_conversion_obj):
+    """
+    This method is used for the pre-processing of URL redirection
+        It checks if campaign blast object, candidate, campaign and url_conversion object
+        is present in database. If any of them is missing it raise ResourceNotFound.
+
+    :param campaign_blast_obj: campaign blast object
+    :param candidate: candidate object
+    :param url_conversion_obj: url_conversion obj
+    :type campaign_blast_obj: SmsCampaignBlast | EmailCampaignBlast
+    :type candidate: Candidate
+    :type url_conversion_obj: UrlConversion
+    :exception: ResourceNotFound
+
+    **See Also**
+    .. see also:: url_redirect() method of CampaignBase class
+    """
+    # check if candidate exists in database
+    if not candidate or candidate.is_web_hidden:
+        raise ResourceNotFound(
+            'validate_blast_candidate_url_conversion_in_db: Candidate not found.',
+            error_code=ResourceNotFound.http_status_code())
+    # check if campaign_blasts exists in database
+    if not campaign_blast_obj:
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: campaign blast'
+                               ' not found.', error_code=ResourceNotFound.http_status_code())
+    # using relationship
+    if not campaign_blast_obj.campaign:
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
+                               'Campaign not found for %s.' % campaign_blast_obj.__tablename__,
+                               error_code=ResourceNotFound.http_status_code())
+    # check if url_conversion record exists in database
+    if not url_conversion_obj:
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
+                               'Url Conversion obj not found for %s(id:%s).'
+                               % (campaign_blast_obj.campaign.__tablename__,
+                                  campaign_blast_obj.campaign.id),
+                               error_code=ResourceNotFound.http_status_code())
+    return campaign_blast_obj.campaign
+
+
+def validate_smartlist_ids(smartlist_ids, current_user):
+    """
+    This validates smartlist_ids belong to user's domain.
+    Those ids which do not belong to user's domain, are appended in list not_owned_ids.
+    Those ids which are not found in database are appended in list not_found_ids.
+    Those ids which are invalid (e.g. not int | long) are appended in invalid_ids.
+    :param smartlist_ids:
+    :param current_user: logged-in user's object
+    :type smartlist_ids: list
+    :type current_user: User
+    :return: We return dictionary containing not_owned_ids, not_found_ids and invalid_ids.
+    :rtype: dict
+    """
+    if not isinstance(smartlist_ids, list):
+        raise InvalidUsage('Include smartlist id(s) in a list.')
+    logger = current_app.config[TalentConfigKeys.LOGGER]
+    not_found_ids = []
+    invalid_ids = []
+    not_owned_ids = []
+    for smartlist_id in smartlist_ids:
+        try:
+            if not isinstance(smartlist_id, (int, long)):
+                raise InvalidUsage('Include smartlist id as int|long')
+            smartlist = Smartlist.get_by_id(smartlist_id)
+            if not smartlist:
+                raise ResourceNotFound
+            if not smartlist.user.domain_id == current_user.domain_id:
+                raise ForbiddenError
+        except InvalidUsage:
+            invalid_ids.append(smartlist_id)
+            logger.exception('validate_smartlist_ids: Invalid smartlist id')
+        except ResourceNotFound:
+            not_found_ids.append(smartlist_id)
+            logger.exception('validate_smartlist_ids: Smartlist(id:%s) not found in database.'
+                             % str(smartlist_id))
+        except ForbiddenError:
+            not_owned_ids.append(smartlist_id)
+            logger.exception("validate_smartlist_ids: Smartlist(id:%s) do not belong to "
+                             "user's domain'" % str(smartlist_id))
+
+    # If all provided smartlist ids are invalid, raise InvalidUsage
+    if len(smartlist_ids) == len(invalid_ids):
+        raise InvalidUsage('smartlists(id(s):%s are invalid. Valid id must be int|long'
+                           % smartlist_ids)
+    # If all provided smartlist ids do not exist in database, raise ResourceNotFound
+    if len(smartlist_ids) == len(not_found_ids):
+        raise ResourceNotFound('smartlists(id(s):%s not found in database.'
+                               % smartlist_ids)
+    # If all provided smartlist ids do not belong to user's domain, raise ForbiddenError
+    if len(smartlist_ids) == len(invalid_ids):
+        raise ForbiddenError("smartlists(id(s):%s do not belong to user's domain."
+                             % smartlist_ids)
+    return dict(invalid=invalid_ids,
+                not_found=not_found_ids,
+                not_owned=not_owned_ids,
+                count=len(invalid_ids)+len(not_found_ids)+len(not_owned_ids))
+
+
+def validate_form_data(form_data, current_user,
+                       required_fields=('name', 'body_text', 'smartlist_ids')):
+    """
+    This does the validation of the data received to create/update a campaign.
+
+        1- If any key from (name, body_text, smartlist_ids) is missing from form data or
+            has no value we raise Invalid Usage error..
+        2- If smartlist_ids are not present in database, we raise ResourceNotFound exception.
+
+    :param form_data: Data from the UI
+    :param required_fields: Fields which are required and expected in form_data.
+    :type form_data: dict
+    :type required_fields: tuple | list
+    :return: tuple of lists
+                    1)ids of smartlists which were not found in database.
+                    2)ids of unknown smartlist ids (not, int)
+    :rtype: tuple
+    """
+    if not isinstance(form_data, dict):
+        raise InvalidUsage('form_data should be a dictionary.')
+    if not isinstance(required_fields, (tuple, list)):
+        raise InvalidUsage('required_fields should be tuple|list')
+    # find if any required key is missing from data
+    validate_required_fields(form_data, required_fields)
+    # find if any required key has no value
+    missing_field_values = find_missing_items(form_data, required_fields)
+    if missing_field_values:
+        raise InvalidUsage('Required fields not provided to save '
+                           'campaign. Empty fields are %s' % missing_field_values)
+    # validate smartlist ids are in a list
+    smartlist_ids = form_data['smartlist_ids']
+    invalid_smartlist_ids = validate_smartlist_ids(smartlist_ids, current_user)
+    # filter out unknown smartlist ids, and keeping the valid ones
+    form_data['smartlist_ids'] = list(set(smartlist_ids) -
+                                      set(invalid_smartlist_ids['invalid'] +
+                                          invalid_smartlist_ids['not_found'] +
+                                          invalid_smartlist_ids['not_owned']))
+    if not form_data['smartlist_ids']:
+        raise InvalidUsage('No valid smartlist id was provided')
+    return invalid_smartlist_ids
+
+
+def raise_if_dict_values_are_not_int_or_long(data):
+    """
+    This validates if values in given dict are int or long. If not, it raises Invalid usage
+    error.
+    :param data: data to validate
+    :type data: dict
+    :exception: Invalid Usage
+    """
+    if not isinstance(data, dict):
+        raise InvalidUsage('Include data as dictionary.')
+    for key, value in data.iteritems():
+        if not isinstance(value, (int, long)) or not value:
+            raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)

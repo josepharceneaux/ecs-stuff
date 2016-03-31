@@ -39,7 +39,7 @@ def get_user(username, password, *args, **kwargs):
     assert isinstance(username, basestring)
     assert isinstance(password, basestring)
     user = User.query.filter_by(email=username).first()
-    if user:
+    if user and not user.is_disabled:
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user
@@ -71,29 +71,42 @@ def save_token(token, request, *args, **kwargs):
     tokens = Token.query.filter_by(
         client_id=request.client.client_id,
         user_id=request.user.id
-    )
+    ).all()
+    latest_token = tokens.pop() if tokens else None
+
     # make sure that every client has only one token connected to a user
     for t in tokens:
         db.session.delete(t)
 
-    expires_in = token.get('expires_in')
-    expires = datetime.utcnow() + timedelta(seconds=expires_in)
-    token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
-    token['user_id'] = request.user.id
-
-    tok = Token(
-        access_token=token['access_token'],
-        refresh_token=token['refresh_token'],
-        token_type=token['token_type'],
-        _scopes=token['scope'],
-        expires=expires,
-        client_id=request.client.client_id,
-        user_id=request.user.id,
-    )
-    db.session.add(tok)
     db.session.commit()
-    logger.info('Bearer token has been created for user %s', request.user.id)
-    return tok
+
+    token['user_id'] = request.user.id
+    if latest_token and datetime.utcnow() < latest_token.expires:
+        token['expires_at'] = latest_token.expires.strftime("%d/%m/%Y %H:%M:%S")
+        token['access_token'] = latest_token.access_token
+        token['refresh_token'] = latest_token.refresh_token
+        return latest_token
+    else:
+        if latest_token:
+            db.session.delete(latest_token)
+            db.session.flush()
+
+        expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
+        token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
+
+        tok = Token(
+            access_token=token['access_token'],
+            refresh_token=token['refresh_token'],
+            token_type=token['token_type'],
+            _scopes=token['scope'],
+            expires=expires,
+            client_id=request.client.client_id,
+            user_id=request.user.id,
+        )
+        db.session.add(tok)
+        db.session.commit()
+        logger.info('Bearer token has been created for user %s', request.user.id)
+        return tok
 
 
 class GetTalentOauthValidator(OAuth2RequestValidator):
@@ -142,3 +155,20 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
         elif hasattr(tok, 'client_id'):
             request.client = self._clientgetter(tok.client_id)
         return True
+
+    def revoke_token(self, token, token_type_hint, request, *args, **kwargs):
+        """Revoke an access or refresh token.
+        """
+        if token_type_hint:
+            tok = self._tokengetter(**{token_type_hint: token})
+        else:
+            tok = self._tokengetter(access_token=token)
+            if not tok:
+                tok = self._tokengetter(refresh_token=token)
+
+        if tok:
+            tok.delete()
+            return True
+        request.error_message = "Invalid token supplied."
+        return False
+

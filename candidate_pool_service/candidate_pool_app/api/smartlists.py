@@ -4,20 +4,20 @@ from flask_restful import Resource
 from flask import request, Blueprint, jsonify
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.talent_api import TalentApi
-from candidate_pool_service.candidate_pool_app import logger
-from candidate_pool_service.common.models.email_marketing import EmailCampaignSend
-from candidate_pool_service.common.utils.talent_reporting import email_error_to_admins
-from candidate_pool_service.common.models.smartlist import db, Smartlist, SmartlistStats
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_pool_service.common.utils.validators import is_number
+from candidate_pool_service.common.models.user import User
+from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
-from candidate_pool_service.modules.smartlists import (get_candidates, create_smartlist_dict,
-                                                       save_smartlist, get_all_smartlists)
-from candidate_pool_service.modules.validators import (validate_and_parse_request_data,
-                                                       validate_and_format_smartlist_post_data)
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
+from candidate_pool_service.modules.smartlists import create_smartlist_dict, save_smartlist, get_all_smartlists
+from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
 
 __author__ = 'jitesh'
 
 smartlist_blueprint = Blueprint('smartlist_api', __name__)
+
 
 class SmartlistCandidates(Resource):
 
@@ -30,22 +30,28 @@ class SmartlistCandidates(Resource):
             URL Arguments `smartlist_id` (Required): id of smartlist
             Accepts (query string parameters):
                 fields :: comma separated values
-                        `candidate_ids_only` --> returns candidate ids only
-                        `count_only` --> returns only the count of candidates present in list
-                        `all_fields`  --> returns all candidates' fields (all attributes)
-                        'fields' parameter not present --> same as 'all' parameter --> returns all candidate fields
+                sort_by ::  Sort by field
+                limit :: Size of each page
+                page :: Page number or cursor string
         :return : List of candidates present in list (smart list or dumb list)
         :rtype: json
         """
-        smartlist_id = kwargs['smartlist_id']
-        data = validate_and_parse_request_data(request.args)
+        smartlist_id = kwargs.get('smartlist_id')
         smartlist = Smartlist.query.get(smartlist_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists.")
+
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
-        return get_candidates(smartlist, data['candidate_ids_only'], data['count_only'])
+
+        request_params = dict()
+        request_params['fields'] = request.args.get('fields', '')
+        request_params['sort_by'] = request.args.get('sort_by', '')
+        request_params['limit'] = request.args.get('limit', '')
+        request_params['page'] = request.args.get('page', '')
+
+        return get_smartlist_candidates(smartlist, request.oauth_token, request_params)
 
 
 class SmartlistResource(Resource):
@@ -54,8 +60,9 @@ class SmartlistResource(Resource):
     def get(self, **kwargs):
         """Retrieve list information
         List must belong to auth user's domain
-        Call this resource from url: /v1/smartlists :: to retrieve all the smartlists in user's domain
-                                     /v1/smartlists/<int:id> :: to get single smartlist
+        Call this resource from url:
+            /v1/smartlists?page=1&page_size=10 :: to retrieve all the smartlists in user's domain
+            /v1/smartlists/<int:id> :: to get single smartlist
 
         example: http://localhost:8008/v1/smartlists/2
         Returns: List in following json format
@@ -81,7 +88,20 @@ class SmartlistResource(Resource):
             return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
         else:
             # Return all smartlists from user's domain
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token)}
+            page = request.args.get('page', 1)
+            per_page = request.args.get('per_page', 10)
+            total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
+                    User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
+
+            if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+                raise InvalidUsage("page and per_page should be positive integers")
+
+            page = int(page)
+            per_page = int(per_page)
+
+            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                    'page_number': page, 'smartlists_per_page': per_page,
+                    'total_number_of_smartlists': total_number_of_smartlists}
 
     def post(self):
         """
@@ -99,8 +119,10 @@ class SmartlistResource(Resource):
             raise InvalidUsage("Received empty request body")
         # request data must pass through this function, as this will create data in desired format
         data = validate_and_format_smartlist_post_data(data, auth_user)
-        smartlist = save_smartlist(user_id=auth_user.id, name=data.get('name'), search_params=data.get('search_params'),
-                                   candidate_ids=data.get('candidate_ids'), access_token=request.oauth_token)
+        smartlist = save_smartlist(user_id=auth_user.id, name=data.get('name'),
+                                   talent_pipeline_id=data.get('talent_pipeline_id'),
+                                   search_params=data.get('search_params'), candidate_ids=data.get('candidate_ids'),
+                                   access_token=request.oauth_token)
         return {'smartlist': {'id': smartlist.id}}, 201
 
     def delete(self, **kwargs):
@@ -123,101 +145,30 @@ class SmartlistResource(Resource):
         return {'smartlist': {'id': smartlist.id}}
 
 
-@smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_STATS, methods=['POST'])
-@require_oauth(allow_jwt_based_auth=True, allow_null_user=True)
-@require_all_roles('CAN_UPDATE_SMARTLISTS_STATS')
-def update_smartlists_stats():
-    """
-    This method will update the statistics of all smartlists daily.
-    :return: None
-    """
-    smartlists = Smartlist.query.all()
-
-    # 2 hours are added to account for scheduled job run time
-    yesterday_datetime = datetime.utcnow() - timedelta(days=1, hours=2)
-
-    for smartlist in smartlists:
-
-        try:
-            yesterday_stat = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist.id,
-                                                        SmartlistStats.added_datetime > yesterday_datetime).first()
-
-            # Return only candidate_ids
-            response = get_candidates(smartlist, candidate_ids_only=True)
-            total_candidates = response.get('total_found')
-            smartlist_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
-
-            number_of_engaged_candidates = 0
-            if smartlist_candidate_ids:
-                number_of_engaged_candidates = db.session.query(EmailCampaignSend.candidate_id).filter(
-                        EmailCampaignSend.candidate_id.in_(smartlist_candidate_ids)).count()
-
-            percentage_candidates_engagement = int(float(number_of_engaged_candidates)/total_candidates*100) \
-                if int(total_candidates) else 0
-            # TODO: SMS_CAMPAIGNS are not implemented yet so we need to integrate them too here.
-
-            if yesterday_stat:
-                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
-                                                total_candidates=total_candidates,
-                                                number_of_candidates_removed_or_added=
-                                                total_candidates - yesterday_stat.total_candidates,
-                                                candidates_engagement=percentage_candidates_engagement)
-            else:
-                smartlist_stat = SmartlistStats(smartlist_id=smartlist.id,
-                                                total_candidates=total_candidates,
-                                                number_of_candidates_removed_or_added=total_candidates,
-                                                candidates_engagement=percentage_candidates_engagement)
-            db.session.add(smartlist_stat)
-            db.session.commit()
-
-        except Exception as e:
-            db.session.rollback()
-            logger.exception("An exception occured update statistics of SmartLists because: %s" % e.message)
-
-    return '', 204
-
-
 @smartlist_blueprint.route(CandidatePoolApi.SMARTLIST_GET_STATS, methods=['GET'])
-@require_oauth()
+@require_oauth(allow_null_user=True)
 def get_smartlist_stats(smartlist_id):
     """
     This method will return the statistics of a smartlist over a given period of time with time-period = 1 day
     :param smartlist_id: Id of a smartlist
     :return: A list of time-series data
     """
+
     smartlist = Smartlist.query.get(smartlist_id)
-    if not smartlist:
-        raise NotFoundError(error_message="SmartList with id=%s doesn't exist in database" % smartlist_id)
-
-    if smartlist.user_id != request.user.id:
-        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of smartlist %s"
-                                           % (request.user.id, smartlist.id))
-
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
+    interval = request.args.get('interval', '1')
+    offset = request.args.get('offset', '')
 
-    if not from_date_string or not to_date_string:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is missing from request parameters")
+    if not offset:
+        raise InvalidUsage("Valid value of time `offset should be provided`")
 
-    try:
-        from_date = parse(from_date_string)
-        to_date = parse(to_date_string)
-    except Exception as e:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
-
-    smartlist_stats = SmartlistStats.query.filter(SmartlistStats.smartlist_id == smartlist_id,
-                                                  SmartlistStats.added_datetime >= from_date,
-                                                  SmartlistStats.added_datetime <= to_date).all()
-
-    return jsonify({'smartlist_data': [
-        {
-            'total_number_of_candidates': smartlist_stat.total_candidates,
-            'number_of_candidates_removed_or_added': smartlist_stat.number_of_candidates_removed_or_added,
-            'added_datetime': smartlist_stat.added_datetime,
-            'candidates_engagement': smartlist_stat.candidates_engagement
-        }
-        for smartlist_stat in smartlist_stats
-    ]})
+    response = get_stats_generic_function(smartlist, 'SmartList', request.user, from_date_string,
+                                          to_date_string, interval, False, offset)
+    if 'is_update' in request.args:
+        return '', 204
+    else:
+        return jsonify({'smartlist_data': response})
 
 
 api = TalentApi(smartlist_blueprint)

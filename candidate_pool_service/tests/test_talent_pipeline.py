@@ -1,10 +1,10 @@
 __author__ = 'ufarooqi'
 
 from datetime import timedelta
-from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
+from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -262,11 +262,11 @@ def test_talent_pipeline_api_get(access_token_first, access_token_second, user_s
     assert response['talent_pipeline']['id'] == talent_pipeline.id
     assert response['talent_pipeline']['name'] == talent_pipeline.name
     assert response['talent_pipeline']['description'] == talent_pipeline.description
-    assert response['talent_pipeline']['user_id'] == talent_pipeline.owner_user_id
+    assert response['talent_pipeline']['user_id'] == talent_pipeline.user_id
     assert response['talent_pipeline']['positions'] == talent_pipeline.positions
-    assert json.dumps(response['talent_pipeline']['search_params']) == talent_pipeline.search_params
+    # assert json.dumps(response['talent_pipeline']['search_params']) == talent_pipeline.search_params
     assert response['talent_pipeline']['talent_pool_id'] == talent_pipeline.talent_pool_id
-    assert response['talent_pipeline']['date_needed'] == str(talent_pipeline.date_needed)
+    assert response['talent_pipeline']['date_needed'] == talent_pipeline.date_needed.isoformat()
 
     # Logged-in user trying to get talent_pipelines of his domain
     response, status_code = talent_pipeline_api(access_token_second)
@@ -321,7 +321,7 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     db.session.commit()
 
     data = {
-        'smart_list_ids': ['a', test_smart_first.id]
+        'smartlist_ids': ['a', test_smart_first.id]
     }
 
     # Logged-in user trying to add smart_lists to a talent_pipeline
@@ -352,12 +352,12 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     assert status_code == 400
 
     # Logged-in user trying to add smart_lists of different domain to talent_pipeline
-    data['smart_list_ids'][0] = test_smart_second.id
+    data['smartlist_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
     assert status_code == 403
 
     # Logged-in user trying to add smart_lists to talent_pipeline
-    data['smart_list_ids'].pop(0)
+    data['smartlist_ids'].pop(0)
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='POST')
     assert status_code == 200
 
@@ -384,7 +384,7 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     db.session.commit()
 
     data = {
-        'smart_list_ids': ['a', test_smart_first.id]
+        'smartlist_ids': ['a', test_smart_first.id]
     }
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
@@ -415,12 +415,12 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
     assert status_code == 400
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
-    data['smart_list_ids'][0] = test_smart_second.id
+    data['smartlist_ids'][0] = test_smart_second.id
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
     assert status_code == 403
 
     # Logged-in user trying to remove smart_lists from a talent_pipeline
-    data['smart_list_ids'].pop(0)
+    data['smartlist_ids'].pop(0)
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data, action='DELETE')
     assert status_code == 200
 
@@ -460,10 +460,42 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     # Logged-in user trying to get all smart_lists of a talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)
     assert status_code == 200
-    assert len(response['smart_lists']) == 2
+    assert len(response['smartlists']) == 2
 
-    assert response['smart_lists'][0]['name'] == test_smart_first.name
-    assert response['smart_lists'][0]['user_id'] == test_smart_first.user_id
-    assert response['smart_lists'][1]['name'] == test_smart_second.name
-    assert response['smart_lists'][1]['user_id'] == test_smart_second.user_id
+    assert response['smartlists'][0]['name'] == test_smart_first.name
+    assert response['smartlists'][0]['user_id'] == test_smart_first.user_id
+    assert response['smartlists'][1]['name'] == test_smart_second.name
+    assert response['smartlists'][1]['user_id'] == test_smart_second.user_id
 
+
+def test_talent_pipeline_campaigns_api_get(access_token_first, user_first, talent_pipeline):
+
+    # Logged-in user trying to get all campaigns of talent-pipeline
+    response, status_code = talent_pipeline_campaigns_api(access_token_first, talent_pipeline.id)
+    assert status_code == 200
+    assert not response['email_campaigns']
+
+    # Adding a test test_smart_list
+    test_smart_list = Smartlist(name=gen_salt(5), user_id=user_first.id, talent_pipeline_id=talent_pipeline.id)
+    db.session.add(test_smart_list)
+
+    # Adding a test email_campaign
+    test_email_campaign = EmailCampaign(name=gen_salt(5), user_id=user_first.id)
+    db.session.add(test_email_campaign)
+    db.session.commit()
+
+    # Adding test_smart_list to test_email_campaign
+    test_email_campaign_smart_list = EmailCampaignSmartlist(smartlist_id=test_smart_list.id,
+                                                            campaign_id=test_email_campaign.id)
+    db.session.add(test_email_campaign_smart_list)
+    db.session.commit()
+
+    # Logged-in user trying to get all campaigns of talent-pipeline
+    response, status_code = talent_pipeline_campaigns_api(access_token_first, talent_pipeline.id)
+    assert status_code == 200
+    assert len(response['email_campaigns']) == 1
+
+    db.session.delete(test_email_campaign_smart_list)
+    db.session.delete(test_smart_list)
+    db.session.delete(test_email_campaign)
+    db.session.commit()

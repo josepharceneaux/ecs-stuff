@@ -1,10 +1,16 @@
 __author__ = 'ufarooqi'
 from flask import render_template
-from user_service.common.utils.amazon_ses import send_email
+from werkzeug.security import gen_salt
+
 from user_service.common.error_handling import InvalidUsage
-from user_service.common.models.user import db, Domain, User
-from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
-from werkzeug.security import generate_password_hash, gen_salt
+from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
+from user_service.common.models.user import db, Domain, User, UserGroup
+from user_service.common.utils.amazon_ses import send_email
+from user_service.common.utils.auth_utils import gettalent_generate_password_hash
+
+PASSWORD_RECOVERY_JWT_SALT = \
+    'yYut5isN6vLelCW4He0cHIXPSth7gY2OzOZKHS5uXbFvn84raYecMcdF002Br2ciexYfWOFKzZVU8M2rLJXql9vCLEmWlPIys118'
+PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS = 12 * 3600  # Password recovery token expires after 12 hours
 
 
 def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organization_id=1, default_tracking_code=None,
@@ -45,12 +51,12 @@ def get_or_create_domain(logged_in_user_id, name, usage_limitation=-1, organizat
 
 def check_if_user_exists(email):
     # Get user if user exists
-    domain_users = User.query.filter(User.email == email).all()
-    return True if domain_users else False
+    domain_user = User.query.filter(User.email == email).first()
+    return domain_user if domain_user else False
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None, thumbnail_url=''):
+                            dice_user_id=None, thumbnail_url='', user_group_id=None):
 
     from dateutil import parser
     expiration = None
@@ -62,7 +68,8 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
 
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
-                       expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url)
+                       expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
+                       user_group_id=user_group_id)
 
     return user.id
 
@@ -79,7 +86,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         db.session.add(sample_templates_folder)
         db.session.commit()
 
-    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.email_template_folder_id == sample_templates_folder.id)
+    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.template_folder_id == sample_templates_folder.id)
     sample_template_names = [t.name for t in sample_templates]
 
     if ('Announcement' not in sample_template_names) and ('Intro' not in sample_template_names):
@@ -88,12 +95,12 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         get_talent_intro = render_template('getTalentIntro.html')
 
         announcement_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Announcement',
-                                                  email_body_html=get_talent_special_announcement, email_body_text='',
-                                                  email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                                  body_html=get_talent_special_announcement, body_text='',
+                                                  template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         intro_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Intro',
-                                           email_body_html=get_talent_intro, email_body_text='',
-                                           email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                           body_html=get_talent_intro, body_text='',
+                                           template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         db.session.add(announcement_template)
         db.session.add(intro_template)
@@ -102,15 +109,32 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
-def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None, thumbnail_url=''):
+def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
+                thumbnail_url='', user_group_id=None):
 
     temp_password = gen_salt(20)
-    hashed_password = generate_password_hash(temp_password, method='pbkdf2:sha512')
+    hashed_password = gettalent_generate_password_hash(temp_password)
+
+    user_group = None
+
+    # Get user's group ID
+    if not user_group_id:
+        user_groups = UserGroup.all_groups_of_domain(domain_id=domain_id)
+        if user_groups:  # TODO: this shouldn't be necessary since each domain must belong to a user_group
+            user_group = user_groups[0]
+    else:
+        user_group = UserGroup.query.get(user_group_id)
+
+    if not user_group:
+        raise InvalidUsage("Either user_group_id is not provided or no group exists in user's domain")
+
+    if user_group.domain_id != domain_id:
+        raise InvalidUsage("User Group %s belongs to different domain" % user_group.id)
 
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
-                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url)
-
+                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
+                user_group_id=user_group.id)
     db.session.add(user)
     db.session.commit()
 

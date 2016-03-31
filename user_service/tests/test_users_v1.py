@@ -15,10 +15,6 @@ def test_user_service_get(access_token_first, user_first, user_second):
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 401
 
-    # Changing domain of user_second
-    user_second.domain_id = user_first.domain_id
-    db.session.commit()
-
     # Logged-in user trying to get info of user of different domain
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 401
@@ -33,17 +29,22 @@ def test_user_service_get(access_token_first, user_first, user_second):
     assert status_code == 401
 
     # Adding 'CAN_GET_USERS' to user_first
-    add_role_to_test_user(user_first, ['CAN_GET_USERS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_USERS])
 
     # Logged-in user trying to get info of user
     response, status_code = user_api(access_token_first, user_first.id)
     assert status_code == 200
     assert response['user'].get('id') == user_first.id
 
-    # Logged-in user trying to get info of user
+    # Logged-in user trying to get info of user of different domain
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 200
     assert response['user'].get('id') == user_second.id
+
+    # Changing domain of user_second
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
 
     # Logged-in user trying to get all users of a domain
     response, status_code = user_api(access_token_first)
@@ -51,53 +52,8 @@ def test_user_service_get(access_token_first, user_first, user_second):
     assert len(response['users']) == 2
 
 
-# Test DELETE operation of user API
-def test_user_service_delete(access_token_first, user_first, user_second):
-
-    # User trying to delete user
-    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
-    assert status_code == 401
-
-    # Adding 'CAN_DELETE_USERS' to user_first
-    add_role_to_test_user(user_first, ['CAN_DELETE_USERS'])
-
-    # User trying to delete non-existing user
-    response, status_code = user_api(access_token_first, user_first.id + 1000, action='DELETE')
-    assert status_code == 404
-
-    # User trying to delete user of different domain
-    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
-    assert status_code == 401
-
-    # User trying to delete itself
-    response, status_code = user_api(access_token_first, user_first.id, action='DELETE')
-    assert status_code == 401
-
-    # Changing domain of user_second
-    user_second.domain_id = user_first.domain_id
-    db.session.commit()
-
-    # User trying to delete user but as there are only two users in Domain so this user cannot be deleted
-    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
-    assert status_code == 400
-
-    temp_user = User(domain_id=user_first.domain_id, email='%s@gettalent.com' % gen_salt(20))
-    db.session.add(temp_user)
-    db.session.commit()
-
-    # User trying to delete user
-    response, status_code = user_api(access_token_first, user_second.id, action='DELETE')
-    assert status_code == 200
-    db.session.refresh(user_second)
-    db.session.commit()
-    assert user_second.is_disabled == 1
-
-    db.session.delete(temp_user)
-    db.session.commit()
-
-
 # Test PUT operation of user API
-def test_user_service_put(access_token_first, user_first, user_second):
+def test_user_service_put(access_token_first, access_token_second, user_first, user_second):
 
     data = {'first_name': gen_salt(6), 'last_name': gen_salt(6), 'phone': '+1 226-581-1027', 'email': '',
             'last_read_datetime': datetime.utcnow().replace(microsecond=0).isoformat()}
@@ -140,7 +96,8 @@ def test_user_service_put(access_token_first, user_first, user_second):
 
     # Logged-in user trying to update user
     data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
-    response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = user_api(access_token_second, user_first.id, data=data, action='PUT')
     assert status_code == 200
 
     # Refresh user
@@ -155,7 +112,7 @@ def test_user_service_put(access_token_first, user_first, user_second):
     assert user_first.last_read_datetime.isoformat() == data['last_read_datetime']
 
     # Adding 'CAN_EDIT_USERS' in user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_USERS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_USERS])
 
     # Logged-in user trying to update a different user
     data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
@@ -164,12 +121,13 @@ def test_user_service_put(access_token_first, user_first, user_second):
 
 
 # Test POST operation of user API
-def test_user_service_post(access_token_first, user_first):
+def test_user_service_post(access_token_first, access_token_second, user_first, user_second):
 
     first_user = {
         'first_name': '',
         'last_name': gen_salt(6),
-        'phone': '+1 226-581-1027'
+        'phone': '+1 226-581-1027',
+        'domain_id': user_first.domain_id,
     }
     second_user = {
         'first_name': gen_salt(6),
@@ -184,7 +142,7 @@ def test_user_service_post(access_token_first, user_first):
     assert status_code == 401
 
     # Adding 'CAN_ADD_USERS' role to user_first
-    add_role_to_test_user(user_first, ['CAN_ADD_USERS'])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_USERS])
 
     # Logged-in user trying to add new users with empty request body
     response, status_code = user_api(access_token_first, action='POST')
@@ -212,8 +170,9 @@ def test_user_service_post(access_token_first, user_first):
 
     data['users'][1]['email'] = '%s.sample@example.com' % gen_salt(15)
 
-    # Logged-in user trying to add new users
-    response, status_code = user_api(access_token_first, data=data, action='POST')
+    # Logged-in user trying to add new users into different domain
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = user_api(access_token_second, data=data, action='POST')
     assert status_code == 200
 
     user_ids = response['users']

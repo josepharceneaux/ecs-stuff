@@ -6,25 +6,29 @@ from _mysql_exceptions import IntegrityError
 import pytest
 # Module Specific
 from resume_parsing_service.common.models.candidate import EmailLabel
+from resume_parsing_service.common.models.candidate_edit import CandidateView
 from resume_parsing_service.common.models.misc import Country
 from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
 from resume_parsing_service.common.models.misc import Product
 from resume_parsing_service.common.models.candidate import PhoneLabel
+from resume_parsing_service.common.models.talent_pools_pipelines import TalentPool
+from resume_parsing_service.common.models.talent_pools_pipelines import TalentPoolGroup
 from resume_parsing_service.common.models.user import Client
 from resume_parsing_service.common.models.user import Domain
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.models.user import User
+from resume_parsing_service.common.models.user import UserGroup
 from resume_parsing_service.common.utils.db_utils import get_or_create
 from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.resume_parsing_app import db
+from resume_parsing_service.app import db
 
 
 def require_integrity(func):
     def wrapped(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except IntegrityError:
+        except Exception:
             db.session.rollback()
     return wrapped
 
@@ -58,12 +62,12 @@ def culture_fixture(request):
 @pytest.fixture(autouse=True)
 def domain_fixture(culture_fixture, org_fixture, request):
     domain = Domain(name=random_word(40), usage_limitation=0,
-                         expiration=datetime.datetime(2050, 4, 26),
-                         added_time=datetime.datetime(2050, 4, 26),
-                         organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
-                         default_tracking_code=1, default_from_name=(random_word(100)),
-                         default_culture_id=culture_fixture.id,
-                         settings_json=random_word(55), updated_time=datetime.datetime.now())
+                    expiration='0000-00-00 00:00:00',
+                    added_time=datetime.datetime(2050, 4, 26),
+                    organization_id=org_fixture.id, is_fair_check_on=False, is_active=1,
+                    default_tracking_code=1, default_from_name=(random_word(100)),
+                    default_culture_id=culture_fixture.id,
+                    settings_json=random_word(55), updated_time=datetime.datetime.now())
 
     db.session.add(domain)
     db.session.commit()
@@ -76,18 +80,66 @@ def domain_fixture(culture_fixture, org_fixture, request):
 
 
 @pytest.fixture(autouse=True)
-def user_fixture(domain_fixture, request):
-    user = User(domain_id=domain_fixture.id, first_name='Jamtry', last_name='Jonas',
-                     password='password', email='jamtry@{}.com'.format(random_word(8)),
-                     added_time=datetime.datetime(2050, 4, 26))
-    db.session.add(user)
+def user_group_fixture(domain_fixture, request):
+    user_group = UserGroup(name=random_word(4), description=random_word(4),
+                           domain_id=domain_fixture.id)
+    db.session.add(user_group)
     db.session.commit()
     @require_integrity
     def fin():
-        db.session.delete(user)
+        db.session.delete(user_group)
         db.session.commit()
     request.addfinalizer(fin)
+    return user_group
+
+
+@pytest.fixture(autouse=True)
+def talent_pool_group_fixture(talent_pool_fixture, user_group_fixture, request):
+    talent_pool_group = TalentPoolGroup(talent_pool_id=talent_pool_fixture.id,
+                                        user_group_id=user_group_fixture.id)
+    db.session.add(talent_pool_group)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(talent_pool_group)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return talent_pool_group
+
+
+@pytest.fixture(autouse=True)
+def user_fixture(domain_fixture, user_group_fixture, request):
+    user = User(domain_id=domain_fixture.id, first_name='Jamtry', last_name='Jonas',
+                password='password', email='jamtry@{}.com'.format(random_word(8)),
+                user_group_id=user_group_fixture.id,
+                added_time=datetime.datetime(2050, 4, 26))
+    db.session.add(user)
+    db.session.commit()
+    # Cannot currently delete users because of constraints on Candidate.OwnerUserId
+    # Cannot delete Candidates after search by this term due to un-implemented or not working
+    # delete cascades.
+    # @require_integrity
+    # def fin():
+    #     db.session.delete(user)
+    #     db.session.commit()
+    # request.addfinalizer(fin)
     return user
+
+
+@pytest.fixture(autouse=True)
+def talent_pool_fixture(domain_fixture, user_fixture, request):
+    talent_pool = TalentPool(domain_id=domain_fixture.id, user_id=user_fixture.id,
+                             name=random_word(5), description=random_word(5),
+                             added_time=datetime.datetime(2050, 4, 26),
+                             updated_time=datetime.datetime(2050, 4, 26))
+    db.session.add(talent_pool)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(talent_pool)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return talent_pool
 
 
 @pytest.fixture(autouse=True)

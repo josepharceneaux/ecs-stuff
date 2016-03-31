@@ -10,7 +10,7 @@ from datetime import timedelta
 import requests
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture
+    test_org, test_culture, first_group, domain_first
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -21,14 +21,14 @@ def job_config_periodic(request):
     return {
         "frequency": 3600,
         'task_type': SchedulerUtils.PERIODIC,
-        "content_type": "application/json",
+        "content-type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "start_datetime": "2015-12-05T08:00:00",
         "end_datetime": "2017-01-05T08:00:00",
         "post_data": {
             "campaign_name": "SMS Campaign",
             "phone_number": "09230862348",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "text to be sent as sms",
         }
     }
@@ -38,13 +38,13 @@ def job_config_periodic(request):
 def job_config_one_time(request):
     return {
         'task_type': SchedulerUtils.ONE_TIME,
-        "content_type": "application/json",
+        "content-type": "application/json",
         "url": "http://getTalent.com/sms/send/",
         "run_datetime": "2017-05-05T08:00:00",
         "post_data": {
             "campaign_name": "Email Campaign",
             "email_id": "abc@hotmail.com",
-            "smart_list_id": 123456,
+            "smartlist_id": 123456,
             "content": "content to be sent as email",
         }
     }
@@ -96,37 +96,12 @@ def job_config(request, job_config_periodic):
     :return:
     """
     temp_job_config = job_config_periodic.copy()
-    start_date = datetime.utcnow() + timedelta(seconds=20)
+    start_date = datetime.utcnow() + timedelta(minutes=20)
     end_date = start_date + timedelta(days=2)
     temp_job_config['post_data'] = job_config_periodic['post_data']
-    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
-    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
+    temp_job_config['start_datetime'] = start_date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    temp_job_config['end_datetime'] = end_date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     return temp_job_config
-
-
-@pytest.fixture(scope="session")
-def finalizer():
-    return Finalizer()
-
-
-class Finalizer(object):
-
-    def __init__(self):
-        self.cleanup_methods = []
-
-    def add_cleanup_method(self, method):
-        self.cleanup_methods.append(method)
-
-    def remove_cleanup_method(self, method):
-        try:
-            self.cleanup_methods.remove(method)
-        except:
-            pass
-
-    def execute(self):
-        for method in reversed(self.cleanup_methods):
-            method()
-        self.cleanup_methods = []
 
 
 @pytest.fixture(scope='function')
@@ -138,19 +113,18 @@ def job_config_one_time_task(request, job_config_one_time):
     :return:
     """
     temp_job_config = job_config_one_time.copy()
-    run_datetime = datetime.utcnow() + timedelta(seconds=10)
+    run_datetime = datetime.utcnow() + timedelta(minutes=10)
     temp_job_config['url'] = SchedulerApiUrl.TEST_TASK
     temp_job_config['post_data'] = job_config_one_time['post_data']
-    temp_job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+    temp_job_config['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
     return temp_job_config
 
 
 @pytest.fixture(scope='function')
 def job_cleanup(request):
     """
-    Cleanup fixture to delete single or multiple jobs
+    Cleanup fixture to delete single or multiple jobs using delete request to scheduler service
     :param request:
-    :param job_ids:
     :return:
     """
     data = dict(job_ids=[], header={})
@@ -160,7 +134,7 @@ def job_cleanup(request):
         Finalizer method to delete jobs
         :return:
         """
-        # If more than 1 job then delete using id list
+        # If more than 1 job then delete using job id list
         if len(data.get('job_ids')) > 1:
             response_remove_jobs = requests.delete(SchedulerApiUrl.TASKS,
                                                    data=json.dumps(dict(ids=data['job_ids'])),
@@ -176,3 +150,41 @@ def job_cleanup(request):
     request.addfinalizer(fin)
 
     return data
+
+
+@pytest.fixture(scope='function')
+def post_ten_jobs(request, job_config_one_time_task, auth_header):
+    """
+    Fixture post ten jobs to schedule ten jobs and return their job ids
+    :param request:
+    :param job_config_one_time_task: fixture for one time job
+    :return:
+    """
+    jobs_id = []
+
+    for idx in range(10):
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=auth_header.copy())
+        assert response.status_code == 201
+        jobs_id.append(response.json()['id'])
+
+    return jobs_id
+
+
+@pytest.fixture(scope='function')
+def post_hundred_jobs(request, job_config_one_time_task, auth_header):
+    """
+    Fixture post ten jobs to schedule ten jobs and return their job ids
+    :param request:
+    :param job_config_one_time_task: fixture for one time job
+    :return:
+    """
+    jobs_id = []
+
+    for idx in range(100):
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=auth_header.copy())
+        assert response.status_code == 201
+        jobs_id.append(response.json()['id'])
+
+    return jobs_id

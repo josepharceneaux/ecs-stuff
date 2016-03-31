@@ -1,27 +1,18 @@
-from flask import Flask
 from flask.ext.cors import CORS
+
+from candidate_service.common.utils.models_utils import init_talent_app
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, HEALTH_CHECK
+from candidate_service.common.routes import CandidateApi, GTApis
+from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
+from candidate_service.common.talent_flask import TalentFlask
+from candidate_service.common.talent_celery import init_celery_app
+from candidate_service.common.models.db import db
 
-app = Flask(__name__)
-load_gettalent_config(app.config)
-
-logger = app.config[TalentConfigKeys.LOGGER]
+app, logger = init_talent_app(__name__)
 
 try:
-    from candidate_service.common.error_handling import register_error_handlers
-    register_error_handlers(app=app, logger=logger)
-
-    from candidate_service.common.models.db import db
-    db.init_app(app=app)
-    db.app = app
-
-    from candidate_service.common.redis_cache import redis_store
-    redis_store.init_app(app)
-
-    # Wrap the flask app and give a healthcheck url
-    from healthcheck import HealthCheck
-    health = HealthCheck(app, HEALTH_CHECK)
+    # Instantiate Celery
+    celery_app = init_celery_app(app, 'celery_candidate_documents_scheduler')
 
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
@@ -30,14 +21,13 @@ try:
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource)
+        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource
+    )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-
-    # Enable CORS for all origins & endpoints
-    CORS(app)
 
     # API RESOURCES
     # ****** CandidateResource ******
@@ -226,21 +216,25 @@ try:
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(
         CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference/<int:id>',
+        '/v1/candidates/<int:candidate_id>/work_preference',
         endpoint='candidate_work_preference'
     )
 
     # ****** CandidateEditResource ******
+    api.add_resource(CandidateEditResource, '/v1/candidates/<int:id>/edits', endpoint='candidate_edit')
+
+    # ****** CandidateViewResource ******
+    api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
+
+    # ****** CandidateDeviceResource ******
     api.add_resource(
-        CandidateEditResource,
-        '/v1/candidates/<int:id>/edits',
-        endpoint='candidate_edit'
+        CandidateDeviceResource, CandidateApi.DEVICES,
+        endpoint='candidate_devices'
     )
 
-    ######################## CandidateViewResource ########################
-    api.add_resource(CandidateViewResource,
-                     CandidateApi.CANDIDATE_VIEWS,
-                     endpoint='candidate_views')
+    # ****** CandidatePhotosResource ******
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
+    api.add_resource(CandidatePhotosResource, CandidateApi.PHOTO, endpoint='candidate_photo')
 
     # ****** Candidate Search *******
     api.add_resource(CandidateSearch, CandidateApi.CANDIDATE_SEARCH)
@@ -251,15 +245,22 @@ try:
     # ****** OPENWEB Request *******
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
+    # ************************************************************************************** #
+    #                           Client email campaign                                        #
+    # ************************************************************************************** #
+    api.add_resource(CandidateClientEmailCampaignResource, CandidateApi.CANDIDATE_CLIENT_CAMPAIGN)
+
     # ****** CandidatePreferenceResource *******
-    api.add_resource(CandidatePreferenceResource,
-                     CandidateApi.CANDIDATE_PREFERENCES,
-                     endpoint='candidate_preference')
+    api.add_resource(CandidatePreferenceResource, CandidateApi.CANDIDATE_PREFERENCES, endpoint='candidate_preference')
+
+    # ****** CandidatePreferenceResource *******
+    api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
 
     db.create_all()
     db.session.commit()
 
     logger.info('Starting candidate_service in %s environment', app.config[TalentConfigKeys.ENV_KEY])
+
 
 except Exception as e:
     logger.exception("Couldn't start candidate_service in %s environment because: %s"

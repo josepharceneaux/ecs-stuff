@@ -17,8 +17,7 @@ RUN apt-get install -y curl git nano wget build-essential libssl-dev gcc make zl
 # Install Nginx
 RUN apt-get install -y software-properties-common python-software-properties
 RUN add-apt-repository -y ppa:nginx/stable
-RUN apt-get update
-RUN apt-get install -y nginx
+RUN apt-get update && apt-get install -y nginx
 
 # Install syslog-ng
 RUN apt-get -y install rsyslog
@@ -26,6 +25,13 @@ RUN apt-get -y install rsyslog
 # Uncomment UDP related variables
 RUN sed -i '/$UDPServerRun/s/^#//g' /etc/rsyslog.conf
 RUN sed -i '/$ModLoad imudp/s/^#//g' /etc/rsyslog.conf
+
+# Disable kernel level logs
+RUN sed -i '/$ModLoad imklog/s/^/#/g' /etc/rsyslog.conf
+RUN sed -i '/$KLogPermitNonKernelFacility/s/^/#/g' /etc/rsyslog.conf
+
+# Disable xconsole in syslog
+RUN sed -i "65,68 s/^/#/" /etc/rsyslog.d/50-default.conf
 
 RUN touch /etc/rsyslog.d/22-loggly.conf
 ADD python_loggly.conf /etc/rsyslog.d/22-loggly.conf
@@ -43,6 +49,8 @@ RUN pyenv global 2.7.9
 CMD eval "$(pyenv init -)"
 CMD ["pyenv", "shell", "2.7.9"]
 CMD ["pyenv", "local", "2.7.9"]
+
+RUN pip install -U pip
 
 # Install Python requirements common to all services
 RUN pip install -r /root/base_service_container/requirements.txt
