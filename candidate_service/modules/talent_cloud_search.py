@@ -100,6 +100,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'candidate_rating_id_and_value': dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'area_of_interest_id':           dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'added_time':                    dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False}),
+    'added_time_hour':               dict(IndexFieldType='int',             DateOptions={'FacetEnabled': True}),
 
     # Location
     'city':                          dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -255,8 +256,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
-                candidate.totalMonthsExperience AS `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
+                HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
+                candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
+                `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
@@ -408,18 +410,17 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
 
 @celery_app.task()
-def upload_candidate_documents(candidate_ids, domain_id=None):
+def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_candidate=10):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
     :param domain_id: Domain Id
+    :param max_number_of_candidate: Default value is 10
     :return:
     """
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
 
-    # We'll not upload all candidate documents at once rather 10 candidate documents at once
-    max_number_of_candidate = 10
     for i in xrange(0, len(candidate_ids), max_number_of_candidate):
         logger.info("Uploading %s candidate documents. Generating action dicts...",
                     len(candidate_ids[i:i + max_number_of_candidate]))
@@ -446,7 +447,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents.delay(candidate_ids, domain_id)
+    return upload_candidate_documents.delay(candidate_ids, domain_id, 50)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -458,7 +459,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents.delay(candidate_ids)
+    return upload_candidate_documents.delay(candidate_ids, None, 50)
 
 
 def upload_all_candidate_documents():
@@ -533,7 +534,8 @@ def _send_batch_request(action_dicts):
     # If the batch request size > 5MB, split it up
     for i, action_dict in enumerate(action_dicts):
         try:
-            action_dict_json = simplejson.dumps(action_dict)
+            action_dict_json = simplejson.dumps(action_dict, encoding='ISO-8859-1')
+            action_dict = simplejson.loads(action_dict_json)
         except UnicodeDecodeError:
             logger.exception("talent_cloud_search._send_batch_request(): Couldn't encode action_dict to JSON: %s",
                              action_dict)
@@ -717,6 +719,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
                           "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
+    else:
+        params['facet'] = "{added_time_hour:{size:24}}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())
@@ -760,7 +764,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     total_found = results['hits']['found']
 
     if count_only:
-        return dict(total_found=total_found, candidate_ids=[])
+        return dict(total_found=total_found, candidate_ids=[], facets={
+            'added_time_hour': get_added_time_hour_facet_count(results.get('facets').get('added_time_hour').get('buckets'))})
 
     facets = get_faceting_information(results.get('facets'))
 
@@ -919,6 +924,13 @@ def get_bucket_facet_value_count(facet):
         tmp_dict["value"] = bucket['value']
         tmp_dict["count"] = bucket['count']
         facet_bucket.append(tmp_dict)
+    return facet_bucket
+
+
+def get_added_time_hour_facet_count(facet):
+    facet_bucket = [0] * 24
+    for bucket in facet:
+        facet_bucket[int(bucket['value'])] = bucket['count']
     return facet_bucket
 
 

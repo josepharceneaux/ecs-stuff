@@ -261,6 +261,7 @@ try:
 
     logger.info('Starting candidate_service in %s environment', app.config[TalentConfigKeys.ENV_KEY])
 
+
 except Exception as e:
     logger.exception("Couldn't start candidate_service in %s environment because: %s"
                      % (app.config[TalentConfigKeys.ENV_KEY], e.message))

@@ -8,18 +8,6 @@ from candidate_pool_service.common.error_handling import InvalidUsage, Forbidden
 __author__ = 'jitesh'
 
 
-def validate_and_parse_request_data(data):
-    return_fields = data.get('fields').split(',') if data.get('fields') else []
-    candidate_ids_only = False
-    count_only = False
-    if 'candidate_ids_only' in return_fields:
-        candidate_ids_only = True
-    if 'count_only' in return_fields:
-        count_only = True
-
-    return candidate_ids_only, count_only, data.get('page', 1)
-
-
 def validate_and_format_smartlist_post_data(data, user):
     """Validates request.form data against required parameters
     strips unwanted whitespaces (if present)

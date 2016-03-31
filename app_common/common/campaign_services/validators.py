@@ -4,22 +4,12 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
     Here we have validators for campaign services.
 
 Functions in this file are
-    - validate_headers()
-    - validate_datetime_format()
-    - is_datetime_in_future()
     - validation_of_data_to_schedule_campaign()
-    - get_valid_json_data()
-    - validate_blast_candidate_url_conversion_in_db() etc.
+    - validate_blast_candidate_url_conversion_in_db()
+    - raise_if_dict_values_are_not_int_or_long etc.
 """
-
-# Standard Imports
-import re
-from datetime import datetime
-
 # Third Party
-from dateutil.tz import tzutc
 from flask import current_app
-from dateutil.parser import parse
 
 # Database Models
 from ..models.user import User
@@ -30,77 +20,11 @@ from ..models.misc import (Frequency, UrlConversion)
 from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
+from ..utils.datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items,
                                      validate_required_fields, get_valid_json_data)
-
-
-def validate_datetime_format(str_datetime):
-    """
-    This validates the given datetime is in ISO UTC format or not. Proper format should be like
-    '2015-10-08T06:16:55Z'.
-
-    :param str_datetime: str
-    :type str_datetime: str
-    :exception: Invalid Usage
-    :return: True if given datetime is valid, False otherwise.
-    :rtype: bool
-    """
-    if not isinstance(str_datetime, basestring):
-        raise InvalidUsage('datetime should be provided in str format as 2015-10-08T06:16:55Z')
-    utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
-    if re.match(utc_pattern, str_datetime):
-        return True
-    else:
-        raise InvalidUsage('Invalid DateTime: Kindly specify UTC datetime in ISO-8601 format '
-                           'like 2015-10-08T06:16:55Z. Given Date is %s' % str_datetime)
-
-
-def is_datetime_in_future(dt):
-    """
-    This function validates that given datetime obj has date and time in future by comparing
-    with current UTC datetime object.
-    :param dt: datetime obj
-    :type dt: datetime
-    :exception: Invalid usage
-    :return: True if given datetime is ahead of current datetime
-    :rtype: bool
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('param should be a datetime object')
-    return dt > datetime.utcnow().replace(tzinfo=tzutc())
-
-
-def is_datetime_in_valid_format_and_in_future(datetime_str):
-    """
-    Here we check given string datetime is in valid format, then we convert it
-    into datetime obj. Finally we check if it is in future.
-    This uses get_datetime_obj_if_str_datetime_in_valid_format()
-    and is_datetime_in_future() functions.
-    :param datetime_str:
-    :type datetime_str: str
-    :return:
-    """
-    logger = current_app.config[TalentConfigKeys.LOGGER]
-    if not is_datetime_in_future(get_datetime_obj_if_str_datetime_in_valid_format(datetime_str)):
-        logger.error('Datetime str should be in future. %s' % datetime_str)
-        raise InvalidUsage("Given datetime(%s) should be in future" % datetime_str)
-
-
-def get_datetime_obj_if_str_datetime_in_valid_format(str_datetime):
-    """
-    This converts given string datetime into UTC datetime obj.
-    This uses validate_datetime_format() to validate the format of given str.
-    Valid format should be like 2015-10-08T06:16:55Z
-    :param str_datetime:
-    :return: datetime obj
-    :rtype: datetime
-    """
-    if not isinstance(str_datetime, basestring):
-        raise InvalidUsage('param should be a string of datetime')
-    validate_datetime_format(str_datetime)
-    return parse(str_datetime).replace(tzinfo=tzutc())
 
 
 def validation_of_data_to_schedule_campaign(campaign_obj, request):
@@ -130,7 +54,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     if not data_to_schedule_campaign.get('start_datetime'):
         raise InvalidUsage('start_datetime is required field.')
     # validate format of start_datetime
-    validate_datetime_format(data_to_schedule_campaign['start_datetime'])
+    DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['start_datetime'])
     # get number of seconds from frequency id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
@@ -138,7 +62,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
     if frequency:
         # validate format of end_datetime
-        validate_datetime_format(data_to_schedule_campaign['end_datetime'])
+        DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['end_datetime'])
     data_to_schedule_campaign['frequency'] = frequency
     # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
