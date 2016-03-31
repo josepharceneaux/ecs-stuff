@@ -14,17 +14,18 @@ In this module, we have tests for following endpoints
 
 # Packages
 import re
+import time
 import requests
 from datetime import datetime, timedelta
 
 # Application Specific
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, \
-    ForbiddenError
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
+                                                          ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers

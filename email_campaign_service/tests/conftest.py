@@ -1,19 +1,16 @@
-from email_campaign_service.common.models.misc import Frequency
-
 __author__ = 'basit'
 
 import re
 
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
-
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign, send_campaign,
-                                                                  create_smartlist_with_candidate)
+                                                                  delete_campaign, send_campaign)
 
 
 @pytest.fixture()
