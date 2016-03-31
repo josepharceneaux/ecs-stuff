@@ -1,9 +1,7 @@
-import time
-import re
-
-
 __author__ = 'basit'
 
+import time
+import re
 
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -15,7 +13,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
-                                                                  create_smartlist_with_diff_email_candidate)
+                                                                  create_smartlist_with_given_email_candidate)
 
 
 @pytest.fixture()
@@ -121,10 +119,10 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
                {'label': 'home', 'address': 'home' + fake.safe_email()}],
                ]
 
-    campaign = create_smartlist_with_diff_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
-                                                          talent_pipeline=talent_pipeline,
-                                                          emails=_emails,
-                                                          count=2)
+    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+                                                           talent_pipeline=talent_pipeline,
+                                                           emails=_emails,
+                                                           count=2)
 
     def fin():
         delete_campaign(campaign)
@@ -225,7 +223,7 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
 
 
 @pytest.fixture()
-def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email, access_token_first):
+def sent_campaign_multiple_email(campaign_with_multiple_candidates_email, access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """

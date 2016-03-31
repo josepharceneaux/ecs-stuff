@@ -92,10 +92,10 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     return smartlist_id, candidate_ids
 
 
-def create_smartlist_with_diff_email_candidate(access_token,campaign,
-                                               talent_pipeline, emails_list=True, count=1, emails=None):
+def create_smartlist_with_given_email_candidate(access_token, campaign,
+                                                talent_pipeline, emails_list=True, count=1, emails=None):
     """
-    This creates candidate(s) as specified by the count,  and assign it to a smartlist.
+    This creates candidate(s) as specified by the count, using the email list provided by the user, and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
     :param _emails: Will be a list of list of emails
     """

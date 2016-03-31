@@ -400,15 +400,15 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
 
     # id_email_label: (id, email, label)
-    # After running groupby clause, the data will look like
     """
-    group_id_and_email_labels = [(candidate_id, email_address, email_label), )]
+    After running groupby clause, the data will look like
+    group_id_and_email_labels = [[(candidate_id1, email_address1, email_label1), (candidate_id2, email_address2, email_label2)],... ]
     """
     for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
         group_id_and_email_and_labels.append(list(group_id_email_label))
     filtered_email_rows = []
 
-    # We dont know email_label id of primary email. So, get that from db
+    # We don't know email_label id of primary email. So, get that from db
     email_labels = EmailLabel.query.all()
     email_labels = [(email_label.id, email_label.description) for email_label in email_labels]
 
@@ -433,7 +433,6 @@ def get_candidate_id_email_by_priority(emails_obj, email_labels):
     """
     Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
     If found then simply return candidate_id and primary email_address otherwise return first email address.
-    For now, just return Primary email if exist, otherwise just even
     :param emails_obj: (candidate_id, email_address, email_label_id)
     :param email_labels: Tuple containing structure ( email_label_id, email_label_description )
     :return: candidate_id, email_address
