@@ -210,7 +210,6 @@ def assert_mail(subject):
     :param subject:       Email subject
     :return:
     """
-    time.sleep(30)
     abort_after = 60
     start = time.time()
     mail_found = False
@@ -259,7 +258,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    time.sleep(30)
+    time.sleep(40)
     db.session.commit()
     assert len(campaign.blasts.all()) == 1
     campaign_blast = campaign.blasts[0]

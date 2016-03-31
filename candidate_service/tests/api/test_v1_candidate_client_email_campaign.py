@@ -36,7 +36,7 @@ class TestClientEmailCampaign(object):
         # Create a Candidate
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
         create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        time.sleep(10)
+        time.sleep(25)
         print response_info(create_candidate_response)
 
         # Get Candidate via ID
