@@ -535,6 +535,7 @@ def _send_batch_request(action_dicts):
     for i, action_dict in enumerate(action_dicts):
         try:
             action_dict_json = simplejson.dumps(action_dict, encoding='ISO-8859-1')
+            action_dict = simplejson.loads(action_dict_json)
         except UnicodeDecodeError:
             logger.exception("talent_cloud_search._send_batch_request(): Couldn't encode action_dict to JSON: %s",
                              action_dict)
