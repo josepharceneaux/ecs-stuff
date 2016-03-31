@@ -931,7 +931,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's address(es)
     if addresses:
-        _add_or_update_candidate_addresses(candidate, addresses, user_id, edit_datetime, is_updating)
+        _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating)
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
@@ -940,45 +940,43 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id,
-                                                  edit_datetime, is_updating)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's education(s)
     if educations:
-        _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_datetime, is_updating)
+        _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id,
-                                        edit_datetime, is_updating)
+        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
-        _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_datetime)
+        _add_or_update_work_preference(candidate_id, work_preference, user_id)
 
     # Add or update Candidate's email(s)
     if emails:
-        _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updating)
+        _add_or_update_emails(candidate_id, emails, user_id, is_updating)
 
     # Add or update Candidate's phone(s)
     if phones:
-        _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating)
+        _add_or_update_phones(candidate, phones, user_id, is_updating)
 
     # Add or update Candidate's military service(s)
     if military_services:
-        _add_or_update_military_services(candidate, military_services, user_id, edit_datetime, is_updating)
+        _add_or_update_military_services(candidate, military_services, user_id, is_updating)
 
     # Add or update Candidate's preferred location(s)
     if preferred_locations:
-        _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_datetime, is_updating)
+        _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating)
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate, skills, added_datetime, user_id, edit_datetime, is_updating)
+        _add_or_update_skills(candidate, skills, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate, social_networks, user_id, edit_datetime, is_updating)
+        _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -1122,8 +1120,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         return candidate_id
 
     # Candidate ID must be recognized
-    candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
-    candidate_object = candidate_query.first()
+    candidate_object = Candidate.get_by_id(candidate_id)
     if not candidate_object:
         raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
@@ -1132,7 +1129,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
                 user_id=user_id, query_obj=candidate_object)
 
     # Update
-    candidate_query.update(update_dict)
+    candidate_object.update(**update_dict)
 
     return candidate_id
 
@@ -1157,7 +1154,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_time, is_updating):
+def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
     :type addresses: list[dict[str, T]]
@@ -1199,8 +1196,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
         if address_id:  # Update
 
             # CandidateAddress must be recognized before updating
-            candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
-            candidate_address_obj = candidate_address_query.first()
+            candidate_address_obj = CandidateAddress.get_by_id(address_id)
             if not candidate_address_obj:
                 raise InvalidUsage('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
 
@@ -1213,7 +1209,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
                         user_id=user_id, query_obj=candidate_address_obj)
 
             # Update
-            candidate_address_query.update(address_dict)
+            candidate_address_obj.update(**address_dict)
 
         else:  # Create if not an update
             # Prevent duplicate insertions
@@ -1243,8 +1239,7 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, 
             track_areas_of_interest_edits(aoi_id, candidate_id, user_id, edit_datetime)
 
 
-def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time,
-                                              user_id, edit_datetime, is_updating):
+def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, is_updating):
     """
     Function will update CandidateCustomField or create a new one.
     """
@@ -1262,8 +1257,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
-            can_custom_field_obj = can_custom_field_query.first()
+            can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
             if not can_custom_field_obj:
                 error_message = 'Candidate custom field you are requesting to update does not exist'
                 raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
@@ -1278,7 +1272,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_custom_field_obj)
 
             # Update CandidateCustomField
-            can_custom_field_query.update(custom_field_dict)
+            can_custom_field_obj.update(**custom_field_dict)
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
@@ -1291,7 +1285,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                                 candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_datetime, is_updating):
+def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):
     """
     Function will update CandidateEducation, CandidateEducationDegree, and
     CandidateEducationDegreeBullet or create new ones.
@@ -1323,8 +1317,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
             education_dict = dict((k, v) for k, v in education_dict.iteritems() if v is not None)
 
             # CandidateEducation must be recognized
-            can_education_query = db.session.query(CandidateEducation).filter_by(id=education_id)
-            can_education_obj = can_education_query.first()
+            can_education_obj = CandidateEducation.get(education_id)
             if not can_education_obj:
                 raise NotFoundError('Candidate education you are requesting does not exist',
                                     error_code=custom_error.EDUCATION_NOT_FOUND)
@@ -1338,7 +1331,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_education_obj)
 
             # Update CandidateEducation
-            db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
+            can_education_obj.update(**education_dict)
 
             # CandidateEducationDegree
             education_degrees = education.get('degrees') or []
@@ -1365,9 +1358,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                 if education_degree_id:  # Update CandidateEducationDegree
 
                     # CandidateEducationDegree must be recognized
-                    can_edu_degree_query = db.session.query(CandidateEducationDegree). \
-                        filter_by(id=education_degree_id)
-                    can_edu_degree_obj = can_edu_degree_query.first()
+                    can_edu_degree_obj = CandidateEducationDegree.get(education_degree_id)
                     if not can_edu_degree_obj:
                         raise NotFoundError('Candidate education degree not found', custom_error.DEGREE_NOT_FOUND)
 
@@ -1379,7 +1370,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                     track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
                                 candidate_id=candidate_id, user_id=user_id, query_obj=can_edu_degree_obj)
 
-                    can_edu_degree_query.update(education_degree_dict)
+                    can_edu_degree_obj.update(**education_degree_dict)
 
                     # CandidateEducationDegreeBullet
                     education_degree_bullets = education_degree.get('bullets') or []
@@ -1397,9 +1388,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                         if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
 
                             # CandidateEducationDegreeBullet must be recognized
-                            can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet). \
-                                filter_by(id=education_degree_bullet_id)
-                            can_edu_degree_bullet_obj = can_edu_degree_bullet_query.first()
+                            can_edu_degree_bullet_obj = CandidateEducationDegreeBullet.get(education_degree_bullet_id)
                             if not can_edu_degree_bullet_obj:
                                 raise NotFoundError('Candidate education degree bullet not found',
                                                     error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
@@ -1416,7 +1405,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                                         candidate_id=candidate_id, user_id=user_id,
                                         query_obj=can_edu_degree_bullet_obj)
 
-                            can_edu_degree_bullet_query.update(education_degree_bullet_dict) # Update
+                            can_edu_degree_bullet_obj.update(**education_degree_bullet_dict) # Update
                         else:   # Add CandidateEducationDegreeBullet
                             education_degree_bullet_dict.update(dict(added_time=added_datetime))
                             # Prevent duplicate entries
@@ -1521,7 +1510,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                                         candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_datetime, is_updating):
+def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, is_updating):
     """
     Function will update CandidateExperience and CandidateExperienceBullet
     or create new ones.
@@ -1574,8 +1563,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             experience_dict = dict((k, v) for k, v in experience_dict.iteritems() if v is not None)
 
             # CandidateExperience must be recognized
-            can_exp_query = db.session.query(CandidateExperience).filter_by(id=experience_id)
-            can_exp_obj = can_exp_query.first()
+            can_exp_obj = CandidateExperience.get(experience_id)
             if not can_exp_obj:
                 raise InvalidUsage('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
@@ -1591,7 +1579,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_exp_obj)
 
             # Update CandidateExperience
-            can_exp_query.update(experience_dict)
+            can_exp_obj.update(**experience_dict)
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
@@ -1609,9 +1597,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 if experience_bullet_id:  # Update
 
                     # CandidateExperienceBullet must be recognized
-                    can_exp_bullet_query = db.session.query(CandidateExperienceBullet).\
-                        filter_by(id=experience_bullet_id)
-                    can_exp_bullet_obj = can_exp_bullet_query.first()
+                    can_exp_bullet_obj = CandidateExperienceBullet.get(experience_bullet_id)
                     if not can_exp_bullet_obj:
                         raise InvalidUsage('Candidate experience bullet not found',
                                            error_code=custom_error.EXPERIENCE_BULLET_NOT_FOUND)
@@ -1625,7 +1611,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                     track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
                                 candidate_id=candidate_id, user_id=user_id, query_obj=can_exp_bullet_obj)
 
-                    can_exp_bullet_query.update(experience_bullet_dict)
+                    can_exp_bullet_obj.update(**experience_bullet_dict)
                 else:  # Add
                     experience_bullet_dict.update(dict(candidate_experience_id=experience_id))
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
@@ -1668,7 +1654,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                                     candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_datetime):
+def _add_or_update_work_preference(candidate_id, work_preference, user_id):
     """
     Function will update CandidateWorkPreference or create a new one.
     """
@@ -1691,8 +1677,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
     if work_preference_id:  # Update
 
         # CandidateWorkPreference must be recognized
-        can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(id=work_preference_id)
-        can_work_pref_obj = can_work_pref_query.first()
+        can_work_pref_obj = CandidateWorkPreference.get(work_preference_id)
         if not can_work_pref_obj:
             raise NotFoundError('Candidate work preference not found', custom_error.WORK_PREF_NOT_FOUND)
 
@@ -1705,7 +1690,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
                     candidate_id=candidate_id, user_id=user_id, query_obj=can_work_pref_obj)
 
         # Update
-        can_work_pref_query.update(work_preference_dict)
+        can_work_pref_obj.update(**work_preference_dict)
 
     else:  # Add
         # Only 1 CandidateWorkPreference is permitted for each Candidate
@@ -1716,7 +1701,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
         db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
-def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updating):
+def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
     """
     Function will update CandidateEmail or create new one(s).
     """
@@ -1745,8 +1730,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
             email_dict = dict((k, v) for k, v in email_dict.iteritems() if v is not None)
 
             # CandidateEmail must be recognized
-            candidate_email_query = db.session.query(CandidateEmail).filter_by(id=email_id)
-            candidate_email_obj = candidate_email_query.first()
+            candidate_email_obj = CandidateEmail.get(email_id)
             if not candidate_email_obj:
                 raise NotFoundError('Candidate email not found', custom_error.EMAIL_NOT_FOUND)
 
@@ -1759,7 +1743,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
                         candidate_id=candidate_id, user_id=user_id, query_obj=candidate_email_obj)
 
             # Update CandidateEmail
-            candidate_email_query.update(email_dict)
+            candidate_email_obj.update(**email_dict)
 
         else:  # Add
             email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
@@ -1774,7 +1758,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
                                 candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating):
+def _add_or_update_phones(candidate, phones, user_id, is_updating):
     """
     Function will update CandidatePhone or create new one(s).
     """
@@ -1810,8 +1794,7 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
                 phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
 
                 # CandidatePhone must be recognized
-                can_phone_query = CandidatePhone.query.filter_by(id=candidate_phone_id)
-                can_phone_obj = can_phone_query.first()
+                can_phone_obj = CandidatePhone.get(candidate_phone_id)
                 if not can_phone_obj:
                     raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
 
@@ -1824,7 +1807,7 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
                             candidate_id=candidate_id, user_id=user_id, query_obj=can_phone_obj)
 
                 # Update CandidatePhone
-                can_phone_query.update(phone_dict)
+                can_phone_obj.update(**phone_dict)
 
             else:  # Add
                 phone_dict.update(dict(candidate_id=candidate_id))
@@ -1837,7 +1820,7 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
                                     candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_military_services(candidate, military_services, user_id, edit_datetime, is_updating):
+def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
@@ -1871,8 +1854,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
             military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v is not None)
 
             # CandidateMilitaryService must be recognized
-            can_military_service_query = db.session.query(CandidateMilitaryService).filter_by(id=military_service_id)
-            can_military_service_obj = can_military_service_query.first()
+            can_military_service_obj = CandidateMilitaryService.get(military_service_id)
             if not can_military_service_obj:
                 raise NotFoundError('Candidate military service not found', custom_error.MILITARY_NOT_FOUND)
 
@@ -1885,7 +1867,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_military_service_obj)
 
             # Update CandidateMilitaryService
-            can_military_service_query.update(military_service_dict)
+            can_military_service_obj.update(**military_service_dict)
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
@@ -1897,7 +1879,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                                 candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_datetime, is_updating):
+def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating):
     """
     Function will update CandidatePreferredLocation or create a new one.
     """
@@ -1924,9 +1906,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
             preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v is not None)
 
             # CandidatePreferredLocation must be recognized
-            can_preferred_location_query = db.session.query(CandidatePreferredLocation).\
-                filter_by(id=preferred_location_id)
-            can_preferred_location_obj = can_preferred_location_query.first()
+            can_preferred_location_obj = CandidatePreferredLocation.get(preferred_location_id)
             if not can_preferred_location_obj:
                 raise NotFoundError('Candidate preferred location not found', custom_error.PREFERRED_LOCATION_NOT_FOUND)
 
@@ -1940,7 +1920,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_preferred_location_obj)
 
             # Update CandidatePreferredLocation
-            can_preferred_location_query.update(preferred_location_dict)
+            can_preferred_location_obj.update(**preferred_location_dict)
 
         else:  # Add
             preferred_location_dict.update(dict(candidate_id=candidate_id))
@@ -1953,7 +1933,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
                                 candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime, is_updating):
+def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
     """
     Function will update CandidateSkill or create new one(s).
     """
@@ -1979,8 +1959,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime,
             skill_dict = dict((k, v) for k, v in skill_dict.iteritems() if v is not None)
 
             # CandidateSkill must be recognized
-            can_skill_query = db.session.query(CandidateSkill).filter_by(id=skill_id)
-            can_skill_obj = can_skill_query.first()
+            can_skill_obj = CandidateSkill.get(skill_id)
             if not can_skill_obj:
                 raise NotFoundError('Candidate skill not found', custom_error.SKILL_NOT_FOUND)
 
@@ -1993,7 +1972,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime,
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_skill_obj)
 
             # Update CandidateSkill
-            can_skill_query.update(skill_dict)
+            can_skill_obj.update(**skill_dict)
 
         else:  # Add
             skill_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
@@ -2006,7 +1985,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime,
                                 candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_social_networks(candidate, social_networks, user_id, edit_datetime, is_updating):
+def _add_or_update_social_networks(candidate, social_networks, user_id, is_updating):
     """
     Function will update CandidateSocialNetwork or create new one(s).
     """
@@ -2026,8 +2005,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, edit_dat
         if social_network_id:  # Update
 
             # CandidateSocialNetwork must be recognized
-            can_sn_query = db.session.query(CandidateSocialNetwork).filter_by(id=social_network_id)
-            can_sn_obj = can_sn_query.first()
+            can_sn_obj = CandidateSocialNetwork.get(social_network_id)
             if not can_sn_obj:
                 raise NotFoundError(error_message='Candidate social network not found',
                                     error_code=custom_error.SOCIAL_NETWORK_NOT_FOUND)
@@ -2041,7 +2019,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, edit_dat
             track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
                         candidate_id=candidate_id, user_id=user_id, query_obj=can_sn_obj)
 
-            can_sn_query.update(social_network_dict)
+            can_sn_obj.update(**social_network_dict)
 
         else:  # Add
             social_network_dict.update(dict(candidate_id=candidate_id))
