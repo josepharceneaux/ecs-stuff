@@ -188,6 +188,8 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
+        # Wait for 10 seconds for scheduler to execute it and then assert mail.
+        time.sleep(10)
         # Check for email received.
         assert_mail(subject)
         delete_campaign(resp_object['campaign'])
