@@ -621,6 +621,8 @@ class SchedulerApiUrl(object):
     VERSION = 'v1'
 
     HOST_NAME %= _get_api_relative_version(VERSION)
+
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     # URLs, in case of test cases
     TASKS = HOST_NAME % "tasks"
     TASK = HOST_NAME % 'tasks/id/%s'

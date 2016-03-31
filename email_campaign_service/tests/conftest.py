@@ -229,10 +229,7 @@ def sent_campaign_multiple_email(campaign_with_multiple_candidates_email, access
     """
     sleep_time = 30
     # send campaign
-    response = requests.post(EmailCampaignUrl.SEND % campaign_with_multiple_candidates_email.id,
-                             headers=dict(Authorization='Bearer %s' % access_token_first))
-
-    assert response.status_code == 200
+    send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=sleep_time)
     # Wait 30 seconds while email being sent
     time.sleep(sleep_time)
     return campaign_with_multiple_candidates_email

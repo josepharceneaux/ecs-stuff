@@ -456,7 +456,7 @@ def get_candidate_id_email_by_priority(emails_obj, email_labels):
     if candidate_id_and_email_address:
         return candidate_id_and_email_address
 
-    # If primary email not found, then return first email
+    # If primary email not found, then return first email which is last added email
     # Get first tuple from a list of emails_obj and return candidate_id and email_address
     candidate_id, email_address, _ = emails_obj[0]
     return candidate_id, email_address

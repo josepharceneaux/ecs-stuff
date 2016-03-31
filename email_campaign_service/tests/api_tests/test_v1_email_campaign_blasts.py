@@ -62,8 +62,8 @@ class TestEmailCampaignBlasts(object):
 
     def test_get_sends(self, access_token_first, sent_campaign_multiple_email):
         """
-        Here we use `sent_campaign` fixture to send campaign with two emails. But email should be sent to only primary
-        or latest email.
+        Here we use `sent_campaign_multiple_email` fixture to send campaign with two emails. But email should be sent to
+        only primary or latest email.
 
         """
         response = requests.get(
