@@ -79,6 +79,7 @@ def process_resume(parse_params):
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
     try:
+        resume_bin.seek(0)
         s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
         parsed_resume['candidate']['resume_url'] = filename_str
     except Exception as e:
