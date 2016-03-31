@@ -4,6 +4,8 @@ Test cases for CandidateResource/post()
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
+import pycountry
+
 # Conftest
 from candidate_service.common.tests.conftest import *
 
@@ -204,7 +206,6 @@ class TestCreateCandidate(object):
         print response_info(create_resp)
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
-
 
     def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
         """
@@ -566,7 +567,7 @@ class TestCreateCandidateEducation(object):
         data_educations = data['candidates'][0]['educations'][0]
         assert isinstance(can_educations, list)
         assert can_educations[0]['country'] == 'United States'
-        assert can_educations[0]['state'] == data_educations['state']
+        assert can_educations[0]['subdivision'] == pycountry.subdivisions.get(code=data_educations['subdivision_code']).name
         assert can_educations[0]['city'] == data_educations['city']
         assert can_educations[0]['school_name'] == data_educations['school_name']
         assert can_educations[0]['school_type'] == data_educations['school_type']
@@ -1013,7 +1014,7 @@ class TestCreateSocialNetworks(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user=user_first)
+        AddUserRoles.add_and_get(user_first)
         data = candidate_social_network(talent_pool)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)

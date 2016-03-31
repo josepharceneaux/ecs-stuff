@@ -219,11 +219,13 @@ class TestUpdateCandidateAddress(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         updated_candidate_dict = get_resp.json()['candidate']
         candidate_address = updated_candidate_dict['addresses'][-1]
+        print "\ncandidate_address = {}".format(candidate_address)
         assert updated_candidate_dict['id'] == candidate_id
         assert isinstance(candidate_address, dict)
         assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][-1]['address_line_1']
         assert candidate_address['city'] == data['candidates'][0]['addresses'][-1]['city']
-        assert candidate_address['state'] == data['candidates'][0]['addresses'][-1]['state']
+        assert candidate_address['subdivision'] == \
+               pycountry.subdivisions.get(code=data['candidates'][0]['addresses'][-1]['subdivision_code']).name
         assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][-1]['zip_code']
 
     def test_multiple_is_default_addresses(self, access_token_first, user_first, talent_pool):
@@ -277,7 +279,8 @@ class TestUpdateCandidateAddress(object):
         assert updated_candidate_dict['id'] == candidate_id
         assert updated_address['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1']
         assert updated_address['city'] == data['candidates'][0]['addresses'][0]['city']
-        assert updated_address['state'] == data['candidates'][0]['addresses'][0]['state']
+        assert updated_address['subdivision'] == \
+               pycountry.subdivisions.get(code=data['candidates'][0]['addresses'][0]['subdivision_code']).name
         assert updated_address['zip_code'] == data['candidates'][0]['addresses'][0]['zip_code']
 
     def test_update_candidate_current_address(self, access_token_first, user_first, talent_pool):
@@ -451,7 +454,7 @@ class TestUpdateCandidateEducation(object):
 
         can_ed_from_data = data['candidates'][0]['educations'][0]
         assert education_dict['city'] == can_ed_from_data['city']
-        assert education_dict['state'] == can_ed_from_data['state']
+        assert education_dict['subdivision'] == pycountry.subdivisions.get(code=can_ed_from_data['subdivision_code']).name
         assert education_dict['school_name'] == can_ed_from_data['school_name']
         assert education_dict['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
         assert len(updated_resp.json()['candidate']['educations']) == candidate_education_count
@@ -547,6 +550,7 @@ class TestUpdateWorkExperience(object):
         AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -569,7 +573,7 @@ class TestUpdateWorkExperience(object):
         assert can_experiences[0]['organization'] == can_experiences_from_data[0]['organization']
         assert can_experiences[0]['position'] == can_experiences_from_data[0]['position']
         assert can_experiences[0]['city'] == can_experiences_from_data[0]['city']
-        assert can_experiences[0]['state'] == can_experiences_from_data[0]['state']
+        assert can_experiences[0]['subdivision'] == pycountry.subdivisions.get(code=can_experiences_from_data[0]['subdivision_code']).name
         assert len(can_experiences) == candidate_experience_count + 1
 
     def test_multiple_is_current_experiences(self, access_token_first, user_first, talent_pool):
