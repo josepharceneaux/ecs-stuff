@@ -284,7 +284,7 @@ def _candidate_experience_bullets(experience):
     experience_bullets = experience.bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
-             'added_time': str(experience_bullet.added_time)
+             'added_time': DatetimeUtils.to_utc_str(experience_bullet.added_time) if experience_bullet.added_time else None
              } for experience_bullet in experience_bullets]
 
 
@@ -305,7 +305,7 @@ def candidate_work_preference(candidate):
             'salary': work_preference[0].salary,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].bool_third_party
-            } if work_preference else dict()
+            } if work_preference else {}
 
 
 def candidate_preferred_locations(candidate):
@@ -314,14 +314,14 @@ def candidate_preferred_locations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    preferred_locations = candidate.preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
-             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision) if preferred_location.iso3166_subdivision else None,
+             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision)
+             if preferred_location.iso3166_subdivision else None,
              'country': get_country_name(preferred_location.iso3166_country)
-             } for preferred_location in preferred_locations]
+             } for preferred_location in candidate.preferred_locations]
 
 
 def candidate_educations(candidate):
@@ -386,8 +386,7 @@ def candidate_skills(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     # Query CandidateSkill in descending order based on last_used
-    skills = db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).\
-        order_by(CandidateSkill.last_used.desc())
+    skills = CandidateSkill.query.filter_by(candidate_id=candidate_id).order_by(CandidateSkill.last_used.desc())
     return [{'id': skill.id,
              'name': skill.description,
              'months_used': skill.total_months,
@@ -414,7 +413,7 @@ def candidate_military_services(candidate_id):
     :rtype              [dict]
     """
     assert isinstance(candidate_id, (int, long))
-    military_experiences = db.session.query(CandidateMilitaryService).\
+    military_experiences = CandidateMilitaryService.query.\
         filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
     return [{'id': military_info.id,
              'branch': military_info.branch,
@@ -434,11 +433,10 @@ def candidate_custom_fields(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
     return [{'id': custom_field.id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in custom_fields]
+             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
@@ -545,7 +543,7 @@ def fetch_candidate_views(candidate_id):
              'candidate_id': view.candidate_id,
              'user_id': view.user_id,
              'view_type': view.view_type,
-             'view_datetime': str(view.view_datetime)
+             'view_datetime': DatetimeUtils.to_utc_str(view.view_datetime)
              } for view in candidate_views]
 
 
@@ -569,7 +567,7 @@ def fetch_aggregated_candidate_views(domain_id, candidate_id):
             return_obj.append(
                 {
                     'user_id': user.id,
-                    'last_view_datetime': str(views[-1].view_datetime),
+                    'last_view_datetime': DatetimeUtils.to_utc_str(views[-1].view_datetime),
                     'view_count': len(views)
                 }
             )
@@ -620,16 +618,14 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
     if is_update:  # Update
         can_subs_pref_query.update(dict(frequency_id=frequency_id))
     else:  # Add
-        db.session.add(CandidateSubscriptionPreference(
-            candidate_id=candidate_id, frequency_id=frequency_id
-        ))
+        db.session.add(CandidateSubscriptionPreference(candidate_id=candidate_id, frequency_id=frequency_id))
     db.session.commit()
 
 
 #######################################
 # Helper Functions For Candidate Photos
 #######################################
-def add_photos(candidate_id, photos, added_time=None):
+def add_photos(candidate_id, photos):
     """
     Function will add a new entry into CandidatePhoto
     :type candidate_id: int|long
