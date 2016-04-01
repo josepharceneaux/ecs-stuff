@@ -285,10 +285,12 @@ class CampaignsTestsHelpers(object):
                                          emails_list=emails_list, count=count)
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
+        time.sleep(5)  # added due to uploading candidates on CS
         smartlist_data = {'name': fake.word(),
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
+        time.sleep(5)  # added due to new field dumb_list_ids in
         smartlist_id = smartlists['smartlist']['id']
         return smartlist_id, candidate_ids
 

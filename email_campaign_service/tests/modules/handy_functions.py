@@ -4,11 +4,7 @@ import time
 import email
 import imaplib
 import datetime
-
 import requests
-
-
-
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -238,6 +234,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         assert str(
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+
 
 def post_to_email_template_resource(access_token, data):
     """

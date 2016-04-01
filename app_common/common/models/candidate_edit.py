@@ -145,6 +145,12 @@ class CandidateEdit(db.Model):
         'candidate_photo': {
             'image_url': 1601,
             'is_default': 1602
+        },
+        'candidate_language': {
+            'iso639_language': 1701,
+            'read': 1702,
+            'write': 1703,
+            'speak': 1704
         }
     }
 

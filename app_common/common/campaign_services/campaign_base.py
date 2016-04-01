@@ -1167,7 +1167,7 @@ class CampaignBase(object):
         try:
             # other campaigns need to update this
             raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            params = {'fields': 'candidate_ids_only'}
+            params = {'fields': 'id'}
             # HTTP GET call to candidate_service to get candidates associated with given
             # smartlist_id.
             response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
