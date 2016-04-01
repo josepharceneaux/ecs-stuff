@@ -380,49 +380,45 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
         # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
         subscribed_candidate_ids = new_candidate_ids
+
     # Get candidate emails sorted by updated time and then by candidate_id
-    # TODO--which data? Can we kindly reference variable name so reader knows this belong to what?
-    """
-        Data will be
-        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
-        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
-        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
-        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
-    """
-    # TODO--comment in a line or two saying what this query does
     candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
                                                               CandidateEmail.address,
                                                               CandidateEmail.updated_time,
                                                               CandidateEmail.email_label_id) \
         .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
         .order_by(desc(CandidateEmail.updated_time), CandidateEmail.candidate_id)
+    """
+        candidate_email_rows data will be
+        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+    """
+
     # list of tuples (candidate id, email address)
     group_id_and_email_and_labels = []
 
-    # can we name the following as 'candidate_id'
+    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
+    # id_email_label: (id, email, label)
     ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
 
-    # id_email_label: (id, email, label)
-    # TODO --I think the var name in comment below needs to be corrected may be
-    # TODO -- also comments that start with """ are ok in middle of the code? please check with pep 8
-    # TODO--Also, it will be great if we can show in a comment how data looks like before the groupby and
-    # after the groupby
     """
     After running groupby clause, the data will look like
-    group_id_and_email_labels = [[(candidate_id1, email_address1, email_label1),
+    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
         (candidate_id2, email_address2, email_label2)],... ]
     """
-    # TODO-- it's great that we now have a comment saying how data looks like but also address the
-    # TODO-- 'why part i.e. so the reader knows why are we doing the following
+
     for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
         group_id_and_email_and_labels.append(list(group_id_email_label))
     filtered_email_rows = []
 
-    # TODO--I think we can take following two lines in the get_candidate_id_email_by_priority() method
     # We don't know email_label id of primary email. So, get that from db
     email_labels = EmailLabel.query.all()
     email_labels = [(email_label.id, email_label.description) for email_label in email_labels]
 
+    # If there are mutliple emails of a single candidate, then get the primary email if it exist, otherwise get any
+    # other email
     for id_and_email_and_label in group_id_and_email_and_labels:
         _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_labels)
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
@@ -452,7 +448,7 @@ def get_candidate_id_email_by_priority(emails_obj, email_labels):
         raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
 
     # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
-    # TODO--can we somehow explain the role of next() here in a short comment
+    # python next method will return the first object from email_labels where primary label matches
     primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
                                 if email_label_desc.lower() == 'primary'))
 

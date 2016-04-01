@@ -45,7 +45,8 @@ one_time_task_job_schema = {
             "type": "string"
         },
         "post_data": {
-            "type": "object"
+            "type": "object",
+            "default": {}
         },
         "is_jwt_request": {
             "type": "boolean",
@@ -90,7 +91,8 @@ periodic_task_job_schema = {
             "type": "string"
         },
         "post_data": {
-            "type": "object"
+            "type": "object",
+            "default": {}
         },
         "is_jwt_request": {
             "type": "boolean",
