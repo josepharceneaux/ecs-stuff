@@ -386,7 +386,8 @@ def candidate_skills(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     # Query CandidateSkill in descending order based on last_used
-    skills = CandidateSkill.query.filter_by(candidate_id=candidate_id).order_by(CandidateSkill.last_used.desc())
+    skills = db.session.query(CandidateSkill).filter_by(candidate_id=candidate_id).\
+        order_by(CandidateSkill.last_used.desc())
     return [{'id': skill.id,
              'name': skill.description,
              'months_used': skill.total_months,
@@ -413,7 +414,7 @@ def candidate_military_services(candidate_id):
     :rtype              [dict]
     """
     assert isinstance(candidate_id, (int, long))
-    military_experiences = CandidateMilitaryService.query.\
+    military_experiences = db.session.query(CandidateMilitaryService).\
         filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
     return [{'id': military_info.id,
              'branch': military_info.branch,
@@ -436,7 +437,7 @@ def candidate_custom_fields(candidate):
     return [{'id': custom_field.id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
+             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
