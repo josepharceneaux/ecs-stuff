@@ -277,6 +277,7 @@ def google_vision_ocr(file_string_io):
             google_request.headers, google_request.content))
         raise InternalServerError('Error in response from candidate service during creation')
     ocr_results = json.loads(google_request.content)
+    logger.info("Google API response JSON: %s", ocr_results)
     return ocr_results['responses'][0]['textAnnotations'][0]['description']
 
 
