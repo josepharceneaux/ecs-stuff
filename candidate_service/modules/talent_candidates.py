@@ -188,15 +188,7 @@ def format_candidate_full_name(candidate):
     """
     assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
-
-    return full_name
+    return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
 
 
 def candidate_emails(candidate):
