@@ -70,6 +70,7 @@ def process_resume(parse_params):
     cached_resume = redis_store.get(hashed_file_name)
     if cached_resume:
         parsed_resume = json.loads(cached_resume)
+        logger.info('Resume %s has been loaded from cache and its hashed_key is %s' % (filename_str, hashed_file_name))
     else:
         parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
         redis_store.set(hashed_file_name, json.dumps(parsed_resume))
