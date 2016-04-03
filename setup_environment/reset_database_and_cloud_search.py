@@ -15,6 +15,8 @@ from common.talent_flask import TalentFlask
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
                  'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
 
+flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times']
+
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
@@ -31,10 +33,19 @@ def save_meetup_token_and_flushredis(_redis):
         # _redis.flushall()
         _redis.set('Meetup', _token)
 
+
+def delete_entries(_redis, entries):
+    for entry in entries:
+        try:
+            _redis.delete(entry)
+        except Exception:
+            pass
+
 # Flush redis-cache
 from common.redis_cache import redis_store
 redis_store.init_app(app)
-save_meetup_token_and_flushredis(redis_store)
+# save_meetup_token_and_flushredis(redis_store)
+delete_entries(redis_store, flush_redis_entries)
 
 from common.models.db import db
 db.init_app(app)
