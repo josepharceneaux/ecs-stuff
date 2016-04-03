@@ -32,7 +32,6 @@ def get_geocoordinates(location):
 
 def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, location=None):
     """
-
     :param location: if provided, overrides all other inputs
     :param city
     :param state
