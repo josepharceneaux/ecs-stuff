@@ -2,6 +2,7 @@
 Helper functions for candidate CRUD operations and tracking edits made to the Candidate
 """
 # Standard libraries
+import re
 import datetime
 import urlparse
 import dateutil.parser
@@ -887,7 +888,7 @@ def create_or_update_candidate_from_params(
     if first_name or last_name or middle_name or formatted_name:
         if (first_name or last_name) and not formatted_name:
             # If first_name and last_name given but not formatted_name, guess it
-            formatted_name = get_fullname_from_name_fields(first_name, middle_name, last_name)
+            formatted_name = get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
         elif formatted_name and (not first_name or not last_name):
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
@@ -988,15 +989,8 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     Function will concatenate names if any, otherwise will return empty string
     :rtype: str
     """
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
+    return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
 
-    return full_name
 
 
 def get_name_fields_from_name(formatted_name):
