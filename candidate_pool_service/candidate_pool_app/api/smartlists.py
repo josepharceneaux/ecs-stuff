@@ -158,10 +158,7 @@ def get_smartlist_stats(smartlist_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
-    offset = request.args.get('offset', '')
-
-    if not offset:
-        raise InvalidUsage("Valid value of time `offset should be provided`")
+    offset = request.args.get('offset', 0)
 
     response = get_stats_generic_function(smartlist, 'SmartList', request.user, from_date_string,
                                           to_date_string, interval, False, offset)
