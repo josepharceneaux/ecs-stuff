@@ -642,10 +642,7 @@ def get_talent_pool_stats(talent_pool_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
-    offset = request.args.get('offset', '')
-
-    if not offset:
-        raise InvalidUsage("Valid value of time `offset should be provided`")
+    offset = request.args.get('offset', 0)
 
     response = get_stats_generic_function(talent_pool, 'TalentPool', request.user, from_date_string,
                                           to_date_string, interval, False, offset)

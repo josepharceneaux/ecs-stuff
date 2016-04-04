@@ -538,10 +538,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-    offset = request.args.get('offset', '')
-
-    if not offset:
-        raise InvalidUsage("Valid value of time `offset should be provided`")
+    offset = request.args.get('offset', 0)
 
     response = get_stats_generic_function(talent_pipeline, 'TalentPipeline', request.user, from_date_string,
                                           to_date_string, interval, False, offset)
