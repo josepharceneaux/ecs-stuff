@@ -167,11 +167,23 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
+    # TODO: A hack to support Candidate Search for TOM Recruiting
+    if key == 'skills':
+        return validate_skill_list(values)
+    else:
+        if ',' in values or isinstance(values, list):
+            values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
+            return values[0] if values.__len__() == 1 else values
+        else:
+            return values.strip()
+
+
+def validate_skill_list(values):
     if ',' in values or isinstance(values, list):
-        values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
+        values = [value for value in values.split(',') if value.strip()] if ',' in values else values
         return values[0] if values.__len__() == 1 else values
     else:
-        return values.strip()
+        return values
 
 
 def validate_sort_by(key, value):
