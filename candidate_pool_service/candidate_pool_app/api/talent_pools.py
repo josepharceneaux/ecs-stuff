@@ -18,9 +18,8 @@ from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_stats_generic_function, get_talent_pipeline_stat_for_given_day, update_smartlist_stats,
-    update_talent_pipeline_stats, update_talent_pool_stats)
+    update_talent_pipeline_stats, update_talent_pool_stats, get_candidates_of_talent_pool)
 from candidate_pool_service.common.models.user import DomainRole
-from candidate_pool_service.common.utils.candidate_service_calls import search_candidates_from_params
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
 
@@ -424,11 +423,8 @@ class TalentPoolCandidateApi(Resource):
         request_params['sort_by'] = request.args.get('sort_by', '')
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
-        request_params['talent_pool_id'] = talent_pool_id
 
-        request_params = dict((k, v) for k, v in request_params.iteritems() if v)
-
-        search_candidates_response = search_candidates_from_params(request_params, access_token=request.oauth_token)
+        search_candidates_response = get_candidates_of_talent_pool(talent_pool, request.oauth_token, request_params)
 
         #  To be backwards-compatible, for now, we add talent_pool_candidates to top level dict
         search_candidates_response['talent_pool_candidates'] = {'name': talent_pool.name, 'total_found':
@@ -647,79 +643,81 @@ def get_talent_pool_stats(talent_pool_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
+    offset = request.args.get('offset', 0)
+
     response = get_stats_generic_function(talent_pool, 'TalentPool', request.user, from_date_string,
-                                          to_date_string, interval)
+                                          to_date_string, interval, False, offset)
     if 'is_update' in request.args:
         return '', 204
     else:
         return jsonify({'talent_pool_data': response})
 
 
-@talent_pool_blueprint.route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS, methods=['GET'])
-@require_oauth()
-def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
-    """
-    This method will return the statistics of all talent-pipelines in a talent_pool over a given period of time
-    with time-period = 1 day
-    :param talent_pool_id: Id of a talent-pool
-    :return: A list of time-series data
-    """
-    talent_pool = TalentPool.query.get(talent_pool_id)
-    if not talent_pool:
-        raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
-
-    if talent_pool.user.domain_id != request.user.domain_id:
-        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
-                                           % (request.user.id, talent_pool.id))
-
-    from_date_string = request.args.get('from_date', '')
-    to_date_string = request.args.get('to_date', '')
-    interval = request.args.get('interval', '1')
-
-    try:
-        from_date = parse(from_date_string).date() if from_date_string else talent_pool.added_time.date()
-        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
-    except Exception as e:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
-
-    if from_date < talent_pool.added_time.date():
-        from_date = talent_pool.added_time.date()
-
-    if from_date > to_date:
-        raise InvalidUsage("`to_date` cannot come before `from_date`")
-
-    if to_date > datetime.utcnow().date():
-        raise InvalidUsage("`to_date` cannot be in future")
-
-    if not is_number(interval):
-        raise InvalidUsage("Interval '%s' should be integer" % interval)
-
-    interval = int(interval)
-    if interval < 1:
-        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
-
-    talent_pipelines_of_talent_pool = TalentPipeline.query.filter(TalentPipeline.talent_pool_id == talent_pool_id).all()
-    talent_pool_stats = []
-
-    from_date -= timedelta(days=interval)
-    while to_date >= from_date:
-        total_number_of_candidates = 0
-        for talent_pipeline in talent_pipelines_of_talent_pool:
-            total_number_of_candidates += get_talent_pipeline_stat_for_given_day(talent_pipeline, to_date)
-
-        talent_pool_stats.append({
-            'total_number_of_candidates': total_number_of_candidates,
-            'added_datetime': to_date.isoformat(),
-        })
-        to_date -= timedelta(days=interval)
-
-    reference_talent_pool_stat = talent_pool_stats.pop()
-    for index, talent_pool_stat in enumerate(talent_pool_stats):
-        talent_pool_stat['number_of_candidates_added'] = talent_pool_stat['total_number_of_candidates'] - (
-                talent_pool_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pool_stats) else reference_talent_pool_stat['total_number_of_candidates'])
-
-    return jsonify({'talent_pool_data': talent_pool_stats})
+# @talent_pool_blueprint.route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS, methods=['GET'])
+# @require_oauth()
+# def get_talent_pipelines_in_talent_pool_stats(talent_pool_id):
+#     """
+#     This method will return the statistics of all talent-pipelines in a talent_pool over a given period of time
+#     with time-period = 1 day
+#     :param talent_pool_id: Id of a talent-pool
+#     :return: A list of time-series data
+#     """
+#     talent_pool = TalentPool.query.get(talent_pool_id)
+#     if not talent_pool:
+#         raise NotFoundError(error_message="TalentPool with id=%s doesn't exist in database" % talent_pool_id)
+#
+#     if talent_pool.user.domain_id != request.user.domain_id:
+#         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pool %s"
+#                                            % (request.user.id, talent_pool.id))
+#
+#     from_date_string = request.args.get('from_date', '')
+#     to_date_string = request.args.get('to_date', '')
+#     interval = request.args.get('interval', '1')
+#
+#     try:
+#         from_date = parse(from_date_string).date() if from_date_string else talent_pool.added_time.date()
+#         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
+#     except Exception as e:
+#         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+#
+#     if from_date < talent_pool.added_time.date():
+#         from_date = talent_pool.added_time.date()
+#
+#     if from_date > to_date:
+#         raise InvalidUsage("`to_date` cannot come before `from_date`")
+#
+#     if to_date > datetime.utcnow().date():
+#         raise InvalidUsage("`to_date` cannot be in future")
+#
+#     if not is_number(interval):
+#         raise InvalidUsage("Interval '%s' should be integer" % interval)
+#
+#     interval = int(interval)
+#     if interval < 1:
+#         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+#
+#     talent_pipelines_of_talent_pool = TalentPipeline.query.filter(TalentPipeline.talent_pool_id == talent_pool_id).all()
+#     talent_pool_stats = []
+#
+#     from_date -= timedelta(days=interval)
+#     while to_date >= from_date:
+#         total_number_of_candidates = 0
+#         for talent_pipeline in talent_pipelines_of_talent_pool:
+#             total_number_of_candidates += get_talent_pipeline_stat_for_given_day(talent_pipeline, to_date)
+#
+#         talent_pool_stats.append({
+#             'total_number_of_candidates': total_number_of_candidates,
+#             'added_datetime': to_date.isoformat(),
+#         })
+#         to_date -= timedelta(days=interval)
+#
+#     reference_talent_pool_stat = talent_pool_stats.pop()
+#     for index, talent_pool_stat in enumerate(talent_pool_stats):
+#         talent_pool_stat['number_of_candidates_added'] = talent_pool_stat['total_number_of_candidates'] - (
+#                 talent_pool_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
+#                         talent_pool_stats) else reference_talent_pool_stat['total_number_of_candidates'])
+#
+#     return jsonify({'talent_pool_data': talent_pool_stats})
 
 
 @talent_pool_blueprint.route('statistics-update', methods=['GET'])

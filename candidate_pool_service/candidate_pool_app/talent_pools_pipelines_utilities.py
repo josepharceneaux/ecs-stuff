@@ -2,16 +2,15 @@ __author__ = 'ufarooqi'
 import json
 import decimal
 import requests
-from sqlalchemy import Date, cast
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
+from candidate_pool_service.common.routes import CandidateApiUrl
+from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User, TalentPoolCandidate
-from candidate_pool_service.common.routes import CandidatePoolApiUrl, CandidateApiUrl
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
     "query",
@@ -58,33 +57,36 @@ def generate_jwt_header(oauth_token=None, user_id=None):
     return headers
 
 
-def get_smartlist_candidates_for_given_date(smartlist, from_date, to_date):
+def get_smartlist_candidates(smartlist, oauth_token=None, request_params=None):
     """
     This endpoint will be used to get smartlist candidates for given duration
-    :param smartlist: Smartlist Object
-    :param from_date: From Date
-    :param to_date: To Date
+    :param search_params: search parameters dict
+    :param oauth_token: OAuth Token value
     :return:
     """
+    if request_params is None:
+        request_params = dict()
+    if smartlist.talent_pipeline_id:
+        if smartlist.talent_pipeline.search_params:
+            try:
+                request_params.update(json.loads(smartlist.talent_pipeline.search_params))
+            except Exception as e:
+                raise InvalidUsage("Search params of talent pipeline are in bad format because: %s" % e.message)
+
+        request_params['talent_pool_id'] = smartlist.talent_pipeline.talent_pool_id
+
     if smartlist.search_params:
-        try:
-            search_params = json.loads(smartlist.search_params)
-        except ValueError:
-            raise InvalidUsage('search_params(%s) are not JSON serializable for smartlist(id:%s). '
-                               'User(id:%s)' % (smartlist.search_params, smartlist.id, smartlist.user_id))
-
-        search_params['date_from'] = from_date
-        search_params['date_to'] = to_date
-        search_params['fields'] = 'count_only'
-
-        is_successful, response = get_candidates_from_search_api(search_params, generate_jwt_header(user_id=smartlist.user_id))
-        if not is_successful:
-            raise NotFoundError("Couldn't get statistics for smarlist %s for date %s" % (smartlist.id, to_date))
-        else:
-            return response.get('total_found')
+        request_params['smartlist_ids'] = smartlist.id
     else:
-        return SmartlistCandidate.query.filter(SmartlistCandidate.smartlist_id == smartlist.id,
-                                               cast(SmartlistCandidate.added_time, Date) <= datetime.strptime(to_date, '%m/%d/%Y').date()).count()
+        request_params['dumb_list_ids'] = smartlist.id
+
+    request_params = dict((k, v) for k, v in request_params.iteritems() if v)
+
+    is_successful, response = get_candidates_from_search_api(request_params, generate_jwt_header(oauth_token, smartlist.user_id))
+    if not is_successful:
+        raise NotFoundError("Couldn't get candidates for smartlist %s" % smartlist.id)
+    else:
+        return response
 
 
 def get_candidates_from_search_api(query_string, headers):
@@ -110,8 +112,8 @@ def get_pipeline_growth(talent_pipeline, interval):
     :return:
     """
     from_date = datetime.utcnow() - timedelta(days=interval)
-    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow().date()) - \
-           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date.date())
+    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow()) - \
+           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date)
 
 
 def get_smartlist_stat_for_a_given_day(smartlist, date_object):
@@ -121,18 +123,27 @@ def get_smartlist_stat_for_a_given_day(smartlist, date_object):
     :param date_object: DateTime Object
     :return:
     """
-    epoch_time_string = '12/31/1969'
-    smartlists_growth_stats_dict = redis_dict(redis_store, 'smartlists_growth_stat_%s' % smartlist.id)
-    if date_object < smartlist.added_time.date():
+    epoch_time_string = '1969-12-31'
+    current_date_time = datetime.utcnow()
+    date_string = date_object.strftime('%m/%d/%Y')
+    smartlists_growth_stats_dict = redis_dict(redis_store, 'smartlists_growth_stat_v2_%s' % smartlist.id)
+    if date_object < smartlist.added_time:
         return 0
-    else:
-        date_string = date_object.strftime('%m/%d/%Y')
-        if date_string not in smartlists_growth_stats_dict:
-            # Get SmartList Candidates Using Search API
-            smartlists_growth_stats_dict[date_string] = get_smartlist_candidates_for_given_date(
-                    smartlist, epoch_time_string, date_string)
 
-        return smartlists_growth_stats_dict[date_string]
+    if date_string not in smartlists_growth_stats_dict:
+        smartlists_growth_stats_dict[date_string] = redis_dict(redis_store).key
+
+    if date_object.date() >= current_date_time.date():
+        response = get_smartlist_candidates(smartlist, request_params={
+            'date_from': epoch_time_string, 'date_to': date_object.strftime('%Y-%m-%dT%H:%M:%S'),
+            'fields': 'count_only'})
+        return response.get('total_found')
+
+    else:
+        redis_dictionary_for_hours = redis_dict(redis_store, smartlists_growth_stats_dict[date_string])
+        populate_stats_dictionary(redis_dictionary_for_hours, get_smartlist_candidates, smartlist, date_object)
+
+        return redis_dictionary_for_hours[date_object.hour]
 
 
 def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
@@ -140,22 +151,31 @@ def get_talent_pipeline_stat_for_given_day(talent_pipeline, date_object):
     This method will get and update talent-pipeline stats for a given day
     :param talent_pipeline: TalentPipeline Object
     :param date_object: DateTime Object
+    :param is_update: Either we are in between daily stats update process
     :return:
     """
-    epoch_time_string = '12/31/1969'
-    pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_%s' % talent_pipeline.id)
-    if date_object < talent_pipeline.added_time.date():
+    epoch_time_string = '1969-12-31'
+    current_date_time = datetime.utcnow()
+    date_string = date_object.strftime('%m/%d/%Y')
+    pipelines_growth_stats_dict = redis_dict(redis_store, 'pipelines_growth_stat_v2_%s' % talent_pipeline.id)
+    if date_object < talent_pipeline.added_time:
         return 0
+
+    if date_string not in pipelines_growth_stats_dict:
+        pipelines_growth_stats_dict[date_string] = redis_dict(redis_store).key
+
+    if date_object.date() >= current_date_time.date():
+        response = get_candidates_of_talent_pipeline(talent_pipeline, request_params={
+            'date_from': epoch_time_string, 'date_to': date_object.strftime('%Y-%m-%dT%H:%M:%S'),
+            'fields': 'count_only'})
+        return response.get('total_found')
+
     else:
-        date_string = date_object.strftime('%m/%d/%Y')
-        if date_string not in pipelines_growth_stats_dict:
-            # Get Talent Pipeline Candidates Using Search API
+        redis_dictionary_for_hours = redis_dict(redis_store, pipelines_growth_stats_dict[date_string])
+        populate_stats_dictionary(redis_dictionary_for_hours, get_candidates_of_talent_pipeline,
+                                  talent_pipeline, date_object)
 
-            response = get_candidates_of_talent_pipeline(talent_pipeline, request_params={
-                'date_from': epoch_time_string, 'date_to': date_string, 'fields': 'count_only'})
-            pipelines_growth_stats_dict[date_string] = response.get('total_found')
-
-        return pipelines_growth_stats_dict[date_string]
+        return redis_dictionary_for_hours[date_object.hour]
 
 
 def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
@@ -165,35 +185,91 @@ def get_talent_pool_stat_for_a_given_day(talent_pool, date_object):
     :param date_object: DateTime Object
     :return:
     """
-    pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_%s' % talent_pool.id)
-
-    # If date_object is before talent-pool creation date then we don't need to store statistics information in Database
-    if date_object < talent_pool.added_time.date():
+    epoch_time_string = '1969-12-31'
+    current_date_time = datetime.utcnow()
+    date_string = date_object.strftime('%m/%d/%Y')
+    pools_growth_stats_dict = redis_dict(redis_store, 'pools_growth_stat_v2_%s' % talent_pool.id)
+    if date_object < talent_pool.added_time:
         return 0
-    else:
-        date_string = date_object.strftime('%m/%d/%Y')
-        if date_string not in pools_growth_stats_dict:
-            b = TalentPoolCandidate.query.filter(
-                    TalentPoolCandidate.talent_pool_id == talent_pool.id,
-                    cast(TalentPoolCandidate.added_time, Date) <= date_object).all()
-            pools_growth_stats_dict[date_string] = len(b)
 
-        return pools_growth_stats_dict[date_string]
+    if date_string not in pools_growth_stats_dict:
+        pools_growth_stats_dict[date_string] = redis_dict(redis_store).key
+
+    if date_object.date() >= current_date_time.date():
+        response = get_candidates_of_talent_pool(talent_pool, request_params={
+            'date_from': epoch_time_string, 'date_to': date_object.strftime('%Y-%m-%dT%H:%M:%S'),
+            'fields': 'count_only'})
+        return response.get('total_found')
+
+    else:
+        redis_dictionary_for_hours = redis_dict(redis_store, pools_growth_stats_dict[date_string])
+        populate_stats_dictionary(redis_dictionary_for_hours, get_candidates_of_talent_pool, talent_pool, date_object)
+
+        return redis_dictionary_for_hours[date_object.hour]
+
+
+def populate_stats_dictionary(stats_redis_object, get_candidates_function, container_object, date_object):
+    """
+    This method will populate stats_redis_object using get_candidates_function
+    :param stats_redis_object: Redis Collection object
+    :param get_candidates_function: function to get candidates from cloud search
+    :param container_object: Container object like talent_pipeline or talent_pool
+    :param date_object: DateTime object
+    :return:
+    """
+    if len(stats_redis_object.keys()) != 24:
+        response = get_candidates_function(container_object, request_params={
+            'date_from': '12/31/1969',
+            'date_to': (date_object - timedelta(days=1)).replace(hour=23, minute=59, second=59).strftime('%Y-%m-%dT%H:%M:%S'),
+            'fields': 'count_only'
+        })
+        total_number_of_candidates_on_last_day = response.get('total_found')
+        response = get_candidates_function(container_object, request_params={
+            'date_from': date_object.replace(hour=0, minute=0, second=0, microsecond=0).strftime('%Y-%m-%dT%H:%M:%S'),
+            'date_to': date_object.replace(hour=23, minute=59, second=59).strftime('%Y-%m-%dT%H:%M:%S'),
+            'fields': 'count_only'
+        })
+        added_time_hour_facet = response.get('facets').get('added_time_hour')
+        for index, count in enumerate(added_time_hour_facet):
+            if index - 1 >= 0:
+                stats_redis_object[index] = count + stats_redis_object[index - 1]
+            else:
+                stats_redis_object[index] = total_number_of_candidates_on_last_day
+
+
+def get_candidates_of_talent_pool(talent_pool, oauth_token=None, request_params=None):
+    """
+    Fetch all candidates of a talent-pool
+    :param talent_pool: TalentPool Object
+    :param oauth_token: Authorization Token
+    :param request_params: Request parameters
+    :return: A dict containing info of all candidates according to query parameters
+    """
+    if request_params is None:
+        request_params = dict()
+    else:
+        request_params['talent_pool_id'] = talent_pool.id
+
+    request_params = dict((k, v) for k, v in request_params.iteritems() if v)
+
+    # Query Candidate Search API to get all candidates of a given talent-pipeline
+    is_successful, response = get_candidates_from_search_api(request_params,
+                                                             generate_jwt_header(oauth_token, talent_pool.user_id))
+
+    if not is_successful:
+        raise NotFoundError("Couldn't get candidates from candidates search service because: %s" % response)
+    else:
+        return response
 
 
 def get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=None, request_params=None):
     """
-        Fetch all candidates of a talent-pipeline
-        :param talent_pipeline: TalentPipeline Object
-        :param oauth_token: Authorization Token
-        :param request_params: Request parameters
-        :return: A dict containing info of all candidates according to query parameters
-        """
-
-    # Get all smartlists and dumblists of a talent-pipeline
-    smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline.id).all()
-
-    smartlist_ids, dumblist_ids = [], []
+    Fetch all candidates of a talent-pipeline
+    :param talent_pipeline: TalentPipeline Object
+    :param oauth_token: Authorization Token
+    :param request_params: Request parameters
+    :return: A dict containing info of all candidates according to query parameters
+    """
 
     if request_params is None:
         request_params = dict()
@@ -202,19 +278,11 @@ def get_candidates_of_talent_pipeline(talent_pipeline, oauth_token=None, request
         if talent_pipeline.search_params:
             request_params.update(json.loads(talent_pipeline.search_params))
 
-        for smartlist in smartlists:
-            if smartlist.search_params and json.loads(smartlist.search_params):
-                smartlist_ids.append(str(smartlist.id))
-            else:
-                dumblist_ids.append(str(smartlist.id))
-
     except Exception as e:
         raise InvalidUsage(error_message="Search params of talent pipeline or its smartlists are in bad format "
                                          "because: %s" % e.message)
 
     request_params['talent_pool_id'] = talent_pipeline.talent_pool_id
-    request_params['dumb_list_ids'] = ','.join(dumblist_ids) if dumblist_ids else None
-    request_params['smartlist_ids'] = ','.join(smartlist_ids) if smartlist_ids else None
 
     request_params = dict((k, v) for k, v in request_params.iteritems() if v)
 
@@ -244,7 +312,8 @@ def update_talent_pool_stats():
         talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
         for talent_pool_tuple in talent_pools:
             try:
-                get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool')
+                get_stats_generic_function(TalentPool.query.get(talent_pool_tuple[0]), 'TalentPool',
+                                           is_update=True, offset=0)
                 logger.info("Statistics for TalentPool %s have been updated successfully" % talent_pool_tuple[0])
             except Exception as e:
                 db.session.rollback()
@@ -259,11 +328,12 @@ def update_talent_pool_stats():
 def update_talent_pipeline_stats():
     with app.app_context():
         # Updating TalentPipeline Statistics
-        logger.info("TalentPipeline statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
+        logger.info("TalentPipeline statistics update process has been started at %s" % datetime.utcnow().isoformat())
         talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
         for talent_pipeline_tuple in talent_pipelines:
             try:
-                get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]), 'TalentPipeline')
+                get_stats_generic_function(TalentPipeline.query.get(talent_pipeline_tuple[0]),
+                                           'TalentPipeline', is_update=True, offset=0)
                 logger.info("Statistics for TalentPipeline %s have been updated successfully" % talent_pipeline_tuple[0])
             except Exception as e:
                 db.session.rollback()
@@ -282,7 +352,8 @@ def update_smartlist_stats():
         smartlists = Smartlist.query.with_entities(Smartlist.id).all()
         for smartlist_tuple in smartlists:
             try:
-                get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList')
+                get_stats_generic_function(Smartlist.query.get(smartlist_tuple[0]), 'SmartList',
+                                           is_update=True, offset=0)
                 logger.info("Statistics for Smartlist %s have been updated successfully" % smartlist_tuple[0])
             except Exception as e:
                 db.session.rollback()
@@ -301,31 +372,41 @@ def delete_dangling_stats(id_list, container):
     :return:
     """
     if container == 'smartlist':
-        redist_key = 'smartlists_growth_stat_'
+        redist_key = 'smartlists_growth_stat_v2_'
     elif container == 'talent-pool':
-        redist_key = 'pools_growth_stat_'
+        redist_key = 'pools_growth_stat_v2_'
     elif container == 'talent-pipeline':
-        redist_key = 'pipelines_growth_stat_'
+        redist_key = 'pipelines_growth_stat_v2_'
     else:
         raise Exception("Container %s is not supported" % container)
 
     for key in redis_store.keys(redist_key + '*'):
+        hashed_key = redis_store.get(key)
         if int(key.replace(redist_key, '')) not in id_list:
-            redis_store.delete(redis_store.get(key))
+            redis_store.delete(hashed_key)
             redis_store.delete(key)
+        else:
+            # Delete all stats which are older than 90 days
+            for date_time_key in redis_store.hkeys(hashed_key):
+                if datetime.strptime(date_time_key, '%m/%d/%Y') < datetime.utcnow() - timedelta(days=90):
+                    redis_store.delete(redis_store.hget(hashed_key, date_time_key))
+                    redis_store.hdel(hashed_key, date_time_key)
 
     logger.info("Dangling Statistics have been deleted for %s" % container)
 
 
-def get_stats_generic_function(container_object, container_name, user=None, from_date_string='', to_date_string='', interval=1):
+def get_stats_generic_function(container_object, container_name, user=None, from_date_string='',
+                               to_date_string='', interval=1, is_update=False, offset=0):
     """
     This method will be used to get stats for talent-pools, talent-pipelines or smartlists.
     :param container_object: TalentPipeline, TalentPool or SmartList Object
     :param container_name:
     :param user: Logged-in user
-    :param from_date_string: From Date String
-    :param to_date_string: To Date String
+    :param from_date_string: From Date String (In Client's Local TimeZone)
+    :param to_date_string: To Date String (In Client's Local TimeZone)
     :param interval: Interval in days
+    :param is_update: Either stats update process is in progress
+    :param offset: Timezone offset from utc i.e. if client's lagging 4 hours behind utc, offset value should be -4
     :return:
     """
     if not container_object:
@@ -335,19 +416,34 @@ def get_stats_generic_function(container_object, container_name, user=None, from
         raise ForbiddenError("Logged-in user %s is unauthorized to get stats of %s: %s" % (user.id, container_name,
                                                                                            container_object.id))
 
+    if not is_number(offset) or abs(int(offset)) > 12:
+        raise InvalidUsage("Value of offset should be an integer and less than or equal to 12")
+
+    offset = int(offset)
+
+    current_date_time = datetime.utcnow()
+
+    ninety_days_old_date_time = current_date_time - timedelta(days=90)
+
     try:
-        from_date = parse(from_date_string).date() if from_date_string else container_object.added_time.date()
-        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
+        # To convert UTC time to any other time zone we can use `offset_date_time` with inverted value of offset
+        from_date = parse(from_date_string).replace(tzinfo=None) if from_date_string \
+            else offset_date_time(ninety_days_old_date_time, -1 * offset)
+        to_date = parse(to_date_string).replace(tzinfo=None) if to_date_string else \
+            offset_date_time(current_date_time, -1 * offset)
     except Exception as e:
         raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
-    if from_date < container_object.added_time.date():
-        from_date = container_object.added_time.date()
+    if offset_date_time(from_date, offset) < container_object.added_time:
+        from_date = offset_date_time(container_object.added_time, -1 * offset)
+
+    if offset_date_time(from_date, offset) < ninety_days_old_date_time:
+        raise InvalidUsage("`Stats data older than 90 days cannot be retrieved`")
 
     if from_date > to_date:
         raise InvalidUsage("`to_date` cannot come before `from_date`")
 
-    if to_date > datetime.utcnow().date():
+    if offset_date_time(to_date, offset) > current_date_time:
         raise InvalidUsage("`to_date` cannot be in future")
 
     if not is_number(interval):
@@ -367,17 +463,35 @@ def get_stats_generic_function(container_object, container_name, user=None, from
         raise Exception("Container %s is not supported for this method" % container_name)
 
     list_of_stats_dicts = []
-    while to_date >= from_date:
+
+    to_date = to_date.replace(hour=23, minute=59, second=59)
+    from_date = from_date.replace(hour=23, minute=59, second=59)
+
+    if is_update:
+        to_date -= timedelta(days=interval)
+
+    while to_date.date() >= from_date.date():
         list_of_stats_dicts.append({
-            'total_number_of_candidates': get_stats_for_given_day(container_object, to_date),
-            'added_datetime': to_date.isoformat(),
+            'total_number_of_candidates': get_stats_for_given_day(
+                    container_object, offset_date_time(to_date, offset)),
+            'added_datetime': to_date.date().isoformat(),
         })
         to_date -= timedelta(days=interval)
 
-    reference_stat = get_stats_for_given_day(container_object, to_date)
+    reference_stat = get_stats_for_given_day(container_object, offset_date_time(to_date, offset))
     for index, stat_dict in enumerate(list_of_stats_dicts):
         stat_dict['number_of_candidates_added'] = stat_dict['total_number_of_candidates'] - (
             list_of_stats_dicts[index + 1]['total_number_of_candidates'] if index + 1 < len(
                     list_of_stats_dicts) else reference_stat)
 
     return list_of_stats_dicts
+
+
+def offset_date_time(date_object, offset):
+    """
+    This method will return new datetime after applying offset
+    :param date_object: DateTime Object
+    :param offset: Integer in range [-12:12]
+    :return:
+    """
+    return date_object + ((1 if offset < 0 else -1) * timedelta(hours=abs(offset)))

@@ -20,8 +20,10 @@ import magic
 import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
-from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+# from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+# from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.app.views.sovren_parse_lib import fetch_sovren_response
+from resume_parsing_service.app.views.sovren_parse_lib import parse_sovren_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
@@ -68,7 +70,9 @@ def process_resume(parse_params):
     cached_resume = redis_store.get(hashed_file_name)
     if cached_resume:
         parsed_resume = json.loads(cached_resume)
+        logger.info('Resume %s has been loaded from cache and its hashed_key is %s' % (filename_str, hashed_file_name))
     else:
+        logger.info("Couldn't find Resume %s in cache with hashed_key: %s" % (filename_str, hashed_file_name))
         parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
         redis_store.set(hashed_file_name, json.dumps(parsed_resume))
         redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
@@ -77,8 +81,9 @@ def process_resume(parse_params):
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
     try:
+        resume_bin.seek(0)
         s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
-        parsed_resume['candidate']['resume_url'] = key.name
+        parsed_resume['candidate']['resume_url'] = filename_str
     except Exception as e:
         logger.exception('Failure during s3 upload')
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
@@ -146,11 +151,14 @@ def parse_resume(file_obj, filename_str):
     if is_resume_image:
         # If file is an image, OCR it
         start_time = time()
-        doc_content = google_vision_ocr(file_obj)
-        logger.info(
-            "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
-                                                                         time() - start_time)
-        )
+        # TODO Temporarily commenting out GAPI, mobile app is sending images embedded in PDFs so still need to use Abby.
+        # doc_content = google_vision_ocr(file_obj)
+        # logger.info(
+        #     "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
+        #                                                                  time() - start_time)
+        # )
+        doc_content = ocr_image(file_obj)
+        logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         start_time = time()
         doc_content = file_obj.read()
@@ -166,13 +174,13 @@ def parse_resume(file_obj, filename_str):
 
     encoded_resume = base64.b64encode(doc_content)
     start_time = time()
-    optic_response = fetch_optic_response(encoded_resume)
+    optic_response = fetch_sovren_response(encoded_resume)
     logger.info(
         "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str + final_file_ext,
                                                               time() - start_time)
     )
     if optic_response:
-        candidate_data = parse_optic_xml(optic_response)
+        candidate_data = parse_sovren_xml(optic_response)
         # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
@@ -270,10 +278,11 @@ def google_vision_ocr(file_string_io):
         logger.exception("google_vision_ocr: Could not reach Google API")
         raise InternalServerError("Unable to reach Google API in resume OCR")
     if google_request.status_code is not requests.codes.ok:
-        logger.info('Google API response error with headers: {} content{}'.format(
+        logger.info('google_vision_ocr: Google API response error with headers: {} content{}'.format(
             google_request.headers, google_request.content))
         raise InternalServerError('Error in response from candidate service during creation')
     ocr_results = json.loads(google_request.content)
+    logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
     return ocr_results['responses'][0]['textAnnotations'][0]['description']
 
 

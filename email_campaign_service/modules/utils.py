@@ -17,10 +17,10 @@ from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.utils.api_utils import DEFAULT_PAGE
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
+from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import InternalServerError
-from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
+from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
                                                                  http_request)
@@ -47,8 +47,9 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     :return:
     """
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
-    params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE, params, campaign)
+    params = {'fields': 'id'} if candidate_ids_only else {}
+    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
+                                                              params, campaign)
     response_headers = response.headers
     if not response_headers:
         raise InternalServerError("Invalid pagination response from candidate pool service. "

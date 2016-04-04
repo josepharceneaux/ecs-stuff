@@ -1,7 +1,12 @@
 """Various misc validators"""
+# Standard Imports
 import re
+
+# Third Party
 import phonenumbers
 import pycountry
+
+# Application Specific
 from ..error_handling import InvalidUsage
 
 
@@ -133,9 +138,32 @@ def validate_and_return_immutable_value(is_immutable):
 def is_country_code_valid(country_code):
     """
     Checks to see if country-code is a valid country code per ISO-3166 standards
+    :param country_code: must be ALL CAPS Alpha2 iso3166 country code, e.g. "US"
     """
     try:
-        pycountry.countries.get(alpha2=country_code.upper())
+        pycountry.countries.get(alpha2=country_code)
     except KeyError:
         return False
     return True
+
+
+def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
+    """
+    This validates that given object is an instance of given instance. If it is not, it raises
+    the given exception.
+    :param obj: obj e,g. User object
+    :param instances: Class for which given object is expected to be an instance.
+    :param exception: Exception to be raised
+    :type obj: object
+    :type instances: class
+    :type exception: Exception
+    :exception: Invalid Usage
+    """
+    if not isinstance(obj, instances):
+        given_obj_name = dict(obj=obj).keys()[0]
+        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
+        if isinstance(instances, (list, tuple)):
+            raise exception(error_message % ", ".join([instance.__name__
+                                                       for instance in instances]))
+        else:
+            raise exception(error_message % instances.__name__)

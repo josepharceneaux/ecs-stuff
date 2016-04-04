@@ -495,7 +495,7 @@ class TalentPipelineCandidates(Resource):
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
 
-        return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params=request_params)
+        return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params)
 
 
 class TalentPipelineCampaigns(Resource):
@@ -541,79 +541,81 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+    offset = request.args.get('offset', 0)
+
     response = get_stats_generic_function(talent_pipeline, 'TalentPipeline', request.user, from_date_string,
-                                          to_date_string, interval)
+                                          to_date_string, interval, False, offset)
     if 'is_update' in request.args:
         return '', 204
     else:
         return jsonify({'talent_pipeline_data': response})
 
 
-@talent_pipeline_blueprint.route(CandidatePoolApi.SMARTLIST_IN_TALENT_PIPELINE_GET_STATS, methods=['GET'])
-@require_oauth()
-def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
-    """
-    This method will return the statistics of all smartlists in a talent_pipeline over a given period of time
-    with time-period = 1 day
-    :param talent_pipeline_id: Id of a talent-pipeline
-    :return: A list of time-series data
-    """
-    talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-    if not talent_pipeline:
-        raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
-
-    if talent_pipeline.user.domain_id != request.user.domain_id:
-        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
-                                           % (request.user.id, talent_pipeline_id))
-
-    from_date_string = request.args.get('from_date', '')
-    to_date_string = request.args.get('to_date', '')
-    interval = request.args.get('interval', '1')
-
-    try:
-        from_date = parse(from_date_string).date() if from_date_string else talent_pipeline.added_time.date()
-        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
-    except Exception as e:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
-
-    if from_date < talent_pipeline.added_time.date():
-        from_date = talent_pipeline.added_time.date()
-
-    if from_date > to_date:
-        raise InvalidUsage("`to_date` cannot come before `from_date`")
-
-    if to_date > datetime.utcnow().date():
-        raise InvalidUsage("`to_date` cannot be in future")
-
-    if not is_number(interval):
-        raise InvalidUsage("Interval '%s' should be integer" % interval)
-
-    interval = int(interval)
-    if interval < 1:
-        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
-
-    smartlists_of_talent_pipeline = Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id).all()
-    talent_pipeline_stats = []
-
-    from_date -= timedelta(days=interval)
-    while to_date >= from_date:
-        total_number_of_candidates = 0
-        for smartlist in smartlists_of_talent_pipeline:
-            total_number_of_candidates += get_smartlist_stat_for_a_given_day(smartlist, to_date)
-
-        talent_pipeline_stats.append({
-            'total_number_of_candidates': total_number_of_candidates,
-            'added_datetime': to_date.isoformat(),
-        })
-        to_date -= timedelta(days=interval)
-
-    reference_talent_pipeline_stat = talent_pipeline_stats.pop()
-    for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
-        talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
-                talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
-
-    return jsonify({'talent_pipeline_data': talent_pipeline_stats})
+# @talent_pipeline_blueprint.route(CandidatePoolApi.SMARTLIST_IN_TALENT_PIPELINE_GET_STATS, methods=['GET'])
+# @require_oauth()
+# def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
+#     """
+#     This method will return the statistics of all smartlists in a talent_pipeline over a given period of time
+#     with time-period = 1 day
+#     :param talent_pipeline_id: Id of a talent-pipeline
+#     :return: A list of time-series data
+#     """
+#     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+#     if not talent_pipeline:
+#         raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
+#
+#     if talent_pipeline.user.domain_id != request.user.domain_id:
+#         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
+#                                            % (request.user.id, talent_pipeline_id))
+#
+#     from_date_string = request.args.get('from_date', '')
+#     to_date_string = request.args.get('to_date', '')
+#     interval = request.args.get('interval', '1')
+#
+#     try:
+#         from_date = parse(from_date_string).date() if from_date_string else talent_pipeline.added_time.date()
+#         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
+#     except Exception as e:
+#         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+#
+#     if from_date < talent_pipeline.added_time.date():
+#         from_date = talent_pipeline.added_time.date()
+#
+#     if from_date > to_date:
+#         raise InvalidUsage("`to_date` cannot come before `from_date`")
+#
+#     if to_date > datetime.utcnow().date():
+#         raise InvalidUsage("`to_date` cannot be in future")
+#
+#     if not is_number(interval):
+#         raise InvalidUsage("Interval '%s' should be integer" % interval)
+#
+#     interval = int(interval)
+#     if interval < 1:
+#         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+#
+#     smartlists_of_talent_pipeline = Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id).all()
+#     talent_pipeline_stats = []
+#
+#     from_date -= timedelta(days=interval)
+#     while to_date >= from_date:
+#         total_number_of_candidates = 0
+#         for smartlist in smartlists_of_talent_pipeline:
+#             total_number_of_candidates += get_smartlist_stat_for_a_given_day(smartlist, to_date)
+#
+#         talent_pipeline_stats.append({
+#             'total_number_of_candidates': total_number_of_candidates,
+#             'added_datetime': to_date.isoformat(),
+#         })
+#         to_date -= timedelta(days=interval)
+#
+#     reference_talent_pipeline_stat = talent_pipeline_stats.pop()
+#     for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
+#         talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
+#                 talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
+#                         talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
+#
+#     return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
 
 api = TalentApi(talent_pipeline_blueprint)

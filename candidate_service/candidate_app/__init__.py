@@ -22,7 +22,7 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
         CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -256,10 +256,15 @@ try:
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
 
+    # ****** CandidateLanguageResource *******
+    api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGES, endpoint='candidate_languages')
+    api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGE, endpoint='candidate_language')
+
     db.create_all()
     db.session.commit()
 
     logger.info('Starting candidate_service in %s environment', app.config[TalentConfigKeys.ENV_KEY])
+
 
 except Exception as e:
     logger.exception("Couldn't start candidate_service in %s environment because: %s"

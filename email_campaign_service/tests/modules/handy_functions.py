@@ -1,19 +1,24 @@
 # Standard Imports
+import email
+import imaplib
 import json
 import time
 import datetime
 import requests
 
 # Application Specific
+from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
+from email_campaign_service.common.models.misc import (Activity,
+                                                       UrlConversion, Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 raise_if_not_instance_of,
                                                                  define_and_send_request)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
@@ -21,7 +26,7 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
     create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
-from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
 
@@ -62,10 +67,9 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline,
-                                                                  emails_list=emails_list,
-                                                                  count=count)
+    smartlist_id = create_smartlist_with_candidate(access_token, talent_pipeline,
+                                                   emails_list=emails_list,
+                                                   count=count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
@@ -82,10 +86,12 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
                                      emails_list=emails_list, count=count)
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
+    time.sleep(25)  # added due to uploading candidates on CS
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
+    time.sleep(25)  # added due to new field dumb_list_ids in CS
     smartlist_id = smartlists['smartlist']['id']
     return smartlist_id
 
@@ -196,6 +202,91 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
         assert expected_email_campaign_fields_set == actual_email_campaign_fields_set, \
             "Response's email campaign fields should match the expected email campaign fields"
 
+
+def assert_mail(subject):
+    """
+    Asserts that the user received the email in his inbox which has the subject as subject
+    :param subject:       Email subject
+    :return:
+    """
+    abort_after = 60
+    start = time.time()
+    mail_found = False
+    mail = imaplib.IMAP4_SSL('imap.gmail.com')
+    mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+    # mail.list()  # Out: list of "folders" aka labels in gmail.
+    print "Check for mail with subject: %s" % subject
+    header_subject = '(HEADER Subject "%s")' % subject
+    # Wait for 10 seconds then start the loop for 60 seconds
+    time.sleep(10)
+    while True:
+        delta = time.time() - start
+        mail.select("inbox")  # connect to inbox.
+        result, data = mail.uid('search', None, header_subject)
+
+        for latest_email_uid in data[0].split():
+            result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+            raw_email = data[0][1]
+
+            email_message = email.message_from_string(raw_email)
+
+            raw_mail_subject_ = ''.join(email_message['Subject'].split())
+            test_subject = ''.join(subject.split())
+            if raw_mail_subject_ == test_subject:
+                mail_found = True
+                break
+
+        if mail_found:
+            break
+
+        if delta >= abort_after:
+            break
+
+    assert mail_found, "Mail with subject %s was not found." % subject
+
+
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):
+    """
+    This assert that campaign has successfully been sent to candidates and campaign blasts and
+    sends have been updated as expected. It then checks the source URL is correctly formed or
+    in database table "url_conversion".
+    """
+    assert response.status_code == 200
+    assert response.json()
+    if not email_client:
+        json_resp = response.json()
+        assert str(campaign.id) in json_resp['message']
+    # Need to add this as processing of POST request runs on Celery
+    time.sleep(40)
+    db.session.commit()
+    assert len(campaign.blasts.all()) == 1
+    campaign_blast = campaign.blasts[0]
+    assert campaign_blast.sends == expected_count
+    # assert on sends
+    campaign_sends = campaign.sends.all()
+    assert len(campaign_sends) == expected_count
+    sends_url_conversions = []
+    # assert on activity of individual campaign sends
+    for campaign_send in campaign_sends:
+        # Get "email_campaign_send_url_conversion" records
+        sends_url_conversions.extend(campaign_send.url_conversions)
+        if not email_client:
+            CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                      Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                                      campaign_send.id)
+    if campaign_sends:
+        # assert on activity for whole campaign send
+        CampaignsTestsHelpers.assert_for_activity(user.id,
+                                                  Activity.MessageIds.CAMPAIGN_SEND,
+                                                  campaign.id)
+
+    # For each url_conversion record we assert that source_url is saved correctly
+    for send_url_conversion in sends_url_conversions:
+        # get URL conversion record from database table 'url_conversion' and delete it
+        # delete url_conversion record
+        assert str(
+            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        UrlConversion.delete(send_url_conversion.url_conversion)
 
 def post_to_email_template_resource(access_token, data):
     """
@@ -329,3 +420,49 @@ def template_body():
            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
            '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
            '\r\n</body>\r\n</html>\r\n'
+
+
+def create_email_campaign_via_api(access_token, data, is_json=True):
+    """
+    This function makes HTTP POST call on /v1/email-campaigns to create
+    an email-campaign. It then returns the response from email-campaigns API.
+    :param access_token: access token of user
+    :param data: data required for creation of campaign
+    :param is_json: If True, it will take dumps of data to be sent in POST call. Otherwise it
+                    will send data as it is.
+    :return: response of API call
+    """
+    if is_json:
+        data = json.dumps(data)
+    response = requests.post(
+        url=EmailCampaignUrl.CAMPAIGNS,
+        data=data,
+        headers={'Authorization': 'Bearer %s' % access_token,
+                 'content-type': 'application/json'}
+    )
+    return response
+
+
+def create_data_for_campaign_creation(access_token, talent_pipeline, subject, campaign_name=fake.name()):
+    """
+    This function returns the required data to create an email campaign
+    :param access_token: access token of user
+    :param talent_pipeline: talent_pipeline of user
+    :param subject: Subject of campaign
+    :param campaign_name: Name of campaign
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
+                                                                  talent_pipeline)
+    return {'name': campaign_name,
+            'subject': subject,
+            'from': email_from,
+            'reply_to': reply_to,
+            'body_html': body_html,
+            'body_text': body_text,
+            'frequency_id': Frequency.ONCE,
+            'list_ids': [smartlist_id]
+            }
