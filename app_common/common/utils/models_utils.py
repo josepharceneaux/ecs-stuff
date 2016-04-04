@@ -42,6 +42,7 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
+
 # Standard Imports
 from types import MethodType
 
@@ -55,6 +56,7 @@ from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
 from ..models.db import db
+from ..models import migrations
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
@@ -388,7 +390,15 @@ def init_talent_app(app_name):
         logger.info("Starting %s in %s environment in EC2 instance %s"
                     % (flask_app.import_name, flask_app.config[TalentConfigKeys.ENV_KEY],
                        get_ec2_instance_id()))
+
+        # If there's a problem running migrations, let's try and work anyway.
+        try:
+            migrations.run_migrations(logger, db)
+        except Exception as e:
+            logger.error("Couldn't run migrations due to: %s" % e.message)
+
         return flask_app, logger
+
     except Exception as error:
         logger.exception("Couldn't start %s in %s environment because: %s"
                      % (flask_app.name, flask_app.config[TalentConfigKeys.ENV_KEY],
