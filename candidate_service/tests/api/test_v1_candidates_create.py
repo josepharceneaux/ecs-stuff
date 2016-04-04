@@ -1007,6 +1007,35 @@ class TestCreateSkills(object):
         assert can_skills[0]['name'] == can_skills_data['name']
         assert can_skills[0]['months_used'] == can_skills_data['months_used']
 
+    def test_poorly_formatted_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create CandidateSkill with poorly formatted values
+        Expect: 201, server should clean up data automatically
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'skills': [
+                {'name': 'Payroll ', 'months_used': 80}, {'name': ' NoSQL', 'months_used': 060},
+                {'name': ' Credit', 'months_used': 120}, {'name': ' ', 'months_used': 120},
+                {'name': None, 'months_used': None}, {'name': None, 'months_used': 1}
+            ]}
+        ]}
+        # Create candidate + candidate's skill
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_skills = get_resp.json()['candidate']['skills']
+        assert len(candidate_skills) == 3, "Of the six records provided, 3 of them should not be " \
+                                           "inserted into db because they do not have a 'name' value"
+        print "\nskills = {}".format(candidate_skills)
+        assert candidate_skills[0]['name'] == data['candidates'][0]['skills'][0]['name'].strip()
+        assert candidate_skills[1]['name'] == data['candidates'][0]['skills'][1]['name'].strip()
+        assert candidate_skills[2]['name'] == data['candidates'][0]['skills'][2]['name'].strip()
+
 
 class TestCreateSocialNetworks(object):
     def test_create_candidate_social_networks(self, access_token_first, user_first, talent_pool):

@@ -1923,7 +1923,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
     """
     Function will update CandidateSkill or create new one(s).
     """
-    candidate_id, candidate_skills = candidate.id, candidate.skills
+    candidate_id = candidate.id
     for skill in skills:
 
         # Convert ISO 8601 date format to datetime object
@@ -1931,12 +1931,18 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
         if last_used_date:
             last_used_date = dateutil.parser.parse(skill.get('last_used_date'))
 
+        description = skill['name'].strip() if skill.get('name') else None
         skill_dict = dict(
             list_order=skill.get('list_order'),
-            description=skill.get('name'),
-            total_months=skill.get('months_used'),
-            last_used=last_used_date
+            description=description,
+            total_months=skill.get('months_used') if description else None,
+            last_used=last_used_date if description else None
         )
+        # Remove keys with None values
+        skill_dict = {k: v for k, v in skill_dict.items() if v}
+        # Prevent adding records if empty dict
+        if not skill_dict:
+            continue
 
         skill_id = skill.get('id')
         if skill_id:  # Update
@@ -1963,7 +1969,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
         else:  # Add
             skill_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
             # Prevent duplicate entries
-            if not does_skill_exist(candidate_skills, skill_dict):
+            if not does_skill_exist(candidate.skills, skill_dict):
                 db.session.add(CandidateSkill(**skill_dict))
 
                 if is_updating:  # Track all updates
