@@ -432,7 +432,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        # TODO Commenting out assert_mail() so build passes. -basit
+        # TODO: commenting for now to pass the Jenkins- basit
         # assert_mail(campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
@@ -462,7 +462,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        # TODO Commenting out assert_mail() so build passes. -basit
+        # TODO: commenting for now to pass the Jenkins- basit
         # assert_mail(campaign.subject)
 
     def test_campaign_send_with_email_client_id(

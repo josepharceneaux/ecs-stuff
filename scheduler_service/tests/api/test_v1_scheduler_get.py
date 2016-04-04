@@ -57,46 +57,43 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.TASK % data['id'], headers=auth_header)
         assert response.status_code == 404
 
-    # TODO This is a randomly failing test (http://jenkins.gettalent.com:8080/job/talent-flask-services/2086/console)
-    # so I'm commenting this out. -OM
+    def test_single_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
+        """
+        Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
+        response.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        # Assign task_name in job post data (general task)
+        job_config['task_name'] = 'General_Named_Task'
 
-    # def test_single_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
-    #     """
-    #     Create a job by hitting the endpoint with secret_key (no authenticated user) and make sure we get job_id in
-    #     response.
-    #     Args:
-    #         auth_data: Fixture that contains token.
-    #         job_config (dict): Fixture that contains job config to be used as
-    #         POST data while hitting the endpoint.
-    #     :return:
-    #     """
-    #     # Assign task_name in job post data (general task)
-    #     job_config['task_name'] = 'General_Named_Task'
-    #
-    #     # Get the job using correct task name
-    #     response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-    #                                 headers=auth_header_no_user)
-    #
-    #     # If task with the same name already exist
-    #     if response_get.status_code == 200:
-    #         response_delete = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
-    #                                           headers=auth_header_no_user)
-    #         assert response_delete.status_code == 200
-    #
-    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-    #                              headers=auth_header_no_user)
-    #     assert response.status_code == 201
-    #     data = response.json()
-    #     assert data['id']
-    #
-    #     # Now get the job
-    #     response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
-    #                                 headers=auth_header_no_user)
-    #     assert response_get.status_code == 200
-    #
-    #     # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
-    #     job_cleanup['header'] = auth_header_no_user
-    #     job_cleanup['job_ids'] = [data['id']]
+        # Get the job using correct task name
+        response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                    headers=auth_header_no_user)
+
+        # If task with the same name already exist
+        if response_get.status_code == 200:
+            response_delete = requests.delete(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
+                                              headers=auth_header_no_user)
+            assert response_delete.status_code == 200
+
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header_no_user)
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        # Now get the job
+        response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                    headers=auth_header_no_user)
+        assert response_get.status_code == 200
+
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
+        job_cleanup['header'] = auth_header_no_user
+        job_cleanup['job_ids'] = [data['id']]
 
     def test_job_without_user(self, auth_header_no_user, job_config, job_cleanup):
         """
