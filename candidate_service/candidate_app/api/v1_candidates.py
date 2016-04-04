@@ -1359,6 +1359,7 @@ class CandidateClientEmailCampaignResource(Resource):
             "body_html": body_html,
             "body_text": body_text,
             "email_client_id": email_client_id,
+            "frequency_id": Frequency.ONCE,
             "list_ids": [int(created_smartlist_id)]
         }
         email_campaign_created = create_campaign(email_campaign_object, request.headers.get('authorization'))
