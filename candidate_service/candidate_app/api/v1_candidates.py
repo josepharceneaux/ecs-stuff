@@ -171,10 +171,10 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
-                country_code = military_service.get('country_code').upper() \
-                    if military_service.get('country_code') else "US"
-                if not is_country_code_valid(country_code):
-                    raise InvalidUsage("Country code not recognized: {}".format(country_code))
+                country_code = military_service['country_code'].upper() if military_service.get('country_code') else None
+                if country_code:
+                    if not is_country_code_valid(country_code):
+                        raise InvalidUsage("Country code not recognized: {}".format(country_code))
 
         # Custom fields must belong to user's domain
         if all_cf_ids:

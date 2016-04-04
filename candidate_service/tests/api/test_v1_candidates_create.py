@@ -451,6 +451,32 @@ class TestCreateCandidateAddress(object):
         candidate_dict = get_resp.json()['candidate']
         assert candidate_dict['addresses'][0]['zip_code'] is None
 
+    def test_with_poorly_formatted_data(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate address with whitespaces, None values, etc.
+        Expect: 201; server should clean up data before adding to db
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'addresses': [
+                {'address_line_1': ' 255 west santa clara st.   ', 'address_line_2': '  ', 'city': ' San Jose '},
+                {'address_line_1': ' ', 'address_line_2': '  ', 'city': None},
+                {'address_line_1': None, 'address_line_2': None, 'city': '\n'},
+            ]}
+        ]}
+        # Create candidate + candidate address
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_addresses = get_resp.json()['candidate']['addresses']
+        assert len(candidate_addresses) == 1, "Only 1 of the addresses should be inserted into db, because" \
+                                              "the rest had empty/None values"
+        assert candidate_addresses[0]['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1'].strip()
+        assert candidate_addresses[0]['city'] == data['candidates'][0]['addresses'][0]['city'].strip()
+
 
 class TestCreateAOI(object):
     def test_create_candidate_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
@@ -525,6 +551,30 @@ class TestCreateCandidateCustomField(object):
         assert create_resp.status_code == 403
         assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
+    def test_with_empty_values(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+        """
+        Test: Create candidate custom field with empty/None values
+        Expect: 201, but empty custom fields should not be in db
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [{
+            'talent_pool_ids': {'add': [talent_pool.id]}, 'custom_fields': [
+                {'custom_field_id': domain_custom_fields[0].id, 'value': ' comedy '},
+                {'custom_field_id': domain_custom_fields[0].id, 'value': ''},
+                {'custom_field_id': domain_custom_fields[0].id, 'value': None},
+            ]
+        }]}
+        # Create candidate custom field
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        candidate_id = create_resp.json()['candidates'][0]['id']
+
+        # Retrieve candidate
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        candidate_custom_fields = get_resp.json()['candidate']['custom_fields']
+        assert len(candidate_custom_fields) == 1, "Candidate custom fields with empty values should not be added to db"
+        assert candidate_custom_fields[0]['value'] == data['candidates'][0]['custom_fields'][0]['value'].strip()
+
 
 class TestCreateCandidateEducation(object):
     def test_create_successfully(self, access_token_first, user_first, talent_pool):
@@ -546,6 +596,43 @@ class TestCreateCandidateEducation(object):
         print response_info(get_resp)
         assert get_resp.status_code == 200
         assert get_country_code_from_name(get_resp.json()['candidate']['educations'][0]['country']) == country_code
+
+    def test_create_education_with_empty_values(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate education with some or all empty values and some with whitespaces
+        Expect:  201; all-empty data should not be inserted into db & whitespaces must be stripped
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
+                {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
+            ]}
+        ]}
+        # Create candidate education with empty values
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert create_resp.status_code == 201
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_educations = get_resp.json()['candidate']['educations']
+        assert not candidate_educations, "Candidate education record not added to db because data was empty"
+
+        # Create candidate education with some whitespaces and some empty values
+        data['candidates'][0]['educations'][0]['school_name'] = ' UC Davis      '
+        data['candidates'][0]['educations'][0]['school_type'] = 'University  '
+
+        # Create candidate education with updated data
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert create_resp.status_code == 201
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_educations = get_resp.json()['candidate']['educations']
+        assert len(candidate_educations) == 1
+        assert candidate_educations[0]['school_name'] == data['candidates'][0]['educations'][0]['school_name'].strip()
+        assert candidate_educations[0]['school_type'] == data['candidates'][0]['educations'][0]['school_type'].strip()
 
     # TODO Commenting out test case so builds can pass, failing most of the time.  -OM
     # def test_create_candidate_educations(self, access_token_first, user_first, talent_pool):
@@ -608,6 +695,29 @@ class TestCreateCandidateEducation(object):
 
         can_edu_degrees = can_educations[0]['degrees']
         assert isinstance(can_edu_degrees, list)
+
+
+class TestCreateCandidateEducationDegree(object):
+    def test_with_empty_values(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create candidate education degree with some whitespaces and empty values
+        Expect: 201
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
+                {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
+            ]}
+        ]}
+        # Create candidate education with empty values
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        assert create_resp.status_code == 201
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_educations = get_resp.json()['candidate']['educations']
+        assert not candidate_educations, "Candidate education record not added to db because data was empty"
 
 
 class TestCreateWorkExperience(object):
