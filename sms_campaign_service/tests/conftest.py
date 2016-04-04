@@ -4,6 +4,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
+import time
 import json
 from datetime import (datetime, timedelta)
 
@@ -13,6 +14,8 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 # common conftest
+from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
+    create_smartlist_from_api
 from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
@@ -21,11 +24,15 @@ from sms_campaign_service.common.tests.conftest import \
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
+from sms_campaign_service.common.utils.candidate_service_calls import \
+    create_candidates_from_candidate_api
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
-                                                                 delete_test_scheduled_task)
+                                                                 delete_test_scheduled_task,
+                                                                 assert_campaign_creation)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER)
@@ -41,7 +48,6 @@ from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCam
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-
 
 SLEEP_TIME = 20  # needed to add this because tasks run on Celery
 
@@ -252,14 +258,74 @@ def campaign_data_unknown_key_text():
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user(request, campaign_valid_data, user_phone_1):
+def sms_campaign_of_current_user(request, campaign_valid_data,
+                                 access_token_first, talent_pipeline,
+                                 valid_header, user_phone_1):
     """
-    This creates the SMS campaign for sammple_user using valid data.
-    :param campaign_valid_data:
-    :param user_phone_1:
-    :return:
+    This creates the SMS campaign for user_first using valid data.
     """
-    test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_1)
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, count=2)
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
+                                                    talent_pipeline.user.id)
+
+    def fin():
+        _delete_campaign(test_sms_campaign)
+
+    request.addfinalizer(fin)
+    return test_sms_campaign
+
+
+@pytest.fixture()
+def sms_campaign_with_two_smartlists(request, campaign_valid_data,
+                                     access_token_first, talent_pipeline,
+                                     valid_header):
+    """
+    This creates the SMS campaign for user_first using valid data and two smartlists.
+    """
+    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, count=1)
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, count=1, assign_role=False)
+    campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
+                                                    talent_pipeline.user.id)
+
+    def fin():
+        _delete_campaign(test_sms_campaign)
+
+    request.addfinalizer(fin)
+    return test_sms_campaign
+
+
+@pytest.fixture()
+def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
+                                 access_token_first, talent_pipeline,
+                                 valid_header):
+    """
+    This fixture creates an SMS campaign with two candidates. Only one candidates has phone number
+    associated with it.
+    """
+    CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
+    # create candidate
+    candidates_data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool)
+    candidate_2_data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                                 create_phone=False)
+    candidates_data['candidates'].append(candidate_2_data['candidates'][0])
+
+    candidate_ids = create_candidates_from_candidate_api(access_token_first, candidates_data,
+                                                         return_candidate_ids_only=True)
+    time.sleep(5)  # added due to uploading candidates on CS
+    smartlist_data = {'name': fake.word(),
+                      'candidate_ids': candidate_ids,
+                      'talent_pipeline_id': talent_pipeline.id}
+    smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token_first)
+    time.sleep(5)  # added due to new field dumb_list_ids in
+    smartlist_id = smartlists['smartlist']['id']
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
+                                                    talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign)
@@ -604,20 +670,15 @@ def users_with_same_phone(request, user_first, user_same_domain):
 
 
 @pytest.fixture()
-def sent_campaign(access_token_first,
-                  sms_campaign_of_current_user,
-                  sample_sms_campaign_candidates,
-                  smartlist_for_not_scheduled_campaign,
-                  candidate_phone_1, candidate_phone_2
-                  ):
+def sent_campaign(access_token_first, sms_campaign_of_current_user):
     """
     This function serves the sending part of SMS campaign.
     This sends campaign to two candidates.
     """
-    response_post = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
-                                                        sms_campaign_of_current_user,
-                                                        access_token_first, sleep_time=0)
-    assert_api_send_response(sms_campaign_of_current_user, response_post, 200)
+    response_post = CampaignsTestsHelpers.send_campaign(
+        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user['id'],
+        access_token_first, sleep_time=0)
+    assert_api_send_response(sms_campaign_of_current_user, response_post, requests.codes.OK)
     # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     return sms_campaign_of_current_user
 
@@ -646,9 +707,9 @@ def sent_campaign_bulk(campaign_with_ten_candidates, access_token_first):
     """
     # send campaign
     with app.app_context():
-        response_post = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
-                                                            campaign_with_ten_candidates[0],
-                                                            access_token_first, sleep_time=40)
+        response_post = CampaignsTestsHelpers.send_campaign(
+            SmsCampaignApiUrl.SEND % campaign_with_ten_candidates[0]['id'],
+            access_token_first, sleep_time=40)
         assert_api_send_response(campaign_with_ten_candidates[0], response_post, 200)
         return campaign_with_ten_candidates
 
@@ -662,8 +723,9 @@ def url_conversion_by_send_test_sms_campaign(request, sent_campaign):
     # Need to commit the session because Celery has its own session and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
+    campaign_in_db = SmsCampaign.get_by_id(sent_campaign['id'])
     # get campaign blast
-    sms_campaign_blast = sent_campaign.blasts[0]
+    sms_campaign_blast = campaign_in_db.blasts[0]
     # get URL conversion record from relationship
     url_conversion = \
         sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion
@@ -690,6 +752,24 @@ def _create_sms_campaign(campaign_data, user_phone):
     # We put it back again
     campaign_data['smartlist_ids'] = smartlist_ids
     return sms_campaign
+
+
+def create_sms_campaign_via_api(campaign_data, headers, user_id):
+    """
+    This creates an SMS campaign in database table "sms_campaign"
+    :param campaign_data: data to create campaign
+    :param headers: auth headers to make HTTP request
+    :param user_id: if of User object
+    :return:
+    """
+    response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
+                             headers=headers,
+                             data=json.dumps(campaign_data))
+    campaign_id = assert_campaign_creation(response, user_id, requests.codes.CREATED)
+    response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
+                            headers=headers)
+    assert response.status_code == 200, 'Response should be ok (200)'
+    return response.json()['campaign']
 
 
 def _create_user_twilio_phone(user, phone_value):
@@ -744,9 +824,9 @@ def _get_scheduled_campaign(user, campaign, auth_header):
     :return:
     """
     response = requests.post(
-        SmsCampaignApiUrl.SCHEDULE % campaign.id, headers=auth_header,
+        SmsCampaignApiUrl.SCHEDULE % campaign['id'], headers=auth_header,
         data=json.dumps(generate_campaign_schedule_data()))
-    assert_campaign_schedule(response, user.id, campaign.id)
+    assert_campaign_schedule(response, user.id, campaign['id'])
     return campaign
 
 

@@ -30,6 +30,8 @@ from sms_campaign_service.common.campaign_services.campaign_base import Campaign
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
 
 # Database Models
 from sms_campaign_service.common.models.db import db
@@ -55,95 +57,84 @@ class TestCeleryTasks(object):
     """
 
     def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
-            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
+            self, access_token_first, user_first, sms_campaign_of_current_user):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have different phone numbers associated. SMS Campaign
         should be sent to both of the candidates. Body text of SMS campaign has multiple URLs
         present.
-        :return:
         """
-        campaign = SmsCampaign.get_by_id(str(scheduled_sms_campaign_of_current_user.id))
+        campaign_id = sms_campaign_of_current_user['id']
+        campaign = SmsCampaign.get_by_id(str(campaign_id))
         campaign.update(body_text='Hi all, please visit http://www.abc.com or '
                                   'http://www.123.com or http://www.xyz.com')
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 2, scheduled_sms_campaign_of_current_user)
+        response_send = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND % campaign_id,
+                                                            access_token_first,
+                                                            sleep_time=0)
+        assert_api_send_response(campaign, response_send, requests.codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
-            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sample_sms_campaign_candidates, candidate_phone_1):
+            self, access_token_first, user_first, sms_campaign_with_one_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. One candidate have no phone number associated. So, total sends should be 1.
-        :return:
+        candidates. One candidate has no phone number associated. So, total sends should be 1.
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+        response_send = CampaignsTestsHelpers.send_campaign(
+            SmsCampaignApiUrl.SEND % sms_campaign_with_one_valid_candidate['id'],
+            access_token_first, sleep_time=0)
+        assert_api_send_response(sms_campaign_with_one_valid_candidate,
+                                 response_send, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 1, scheduled_sms_campaign_of_current_user)
+            user_first.id, 1, sms_campaign_with_one_valid_candidate['id'])
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
-            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
+            self, access_token_first, user_first, sms_campaign_of_current_user):
         """
         User auth token is valid, campaign has one smartlist associated. Smartlist has two
         candidates. Both candidates have different phone numbers associated. SMS Campaign
         should be sent to both of the candidates.
-        :return:
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 2, scheduled_sms_campaign_of_current_user)
+        campaign_id = sms_campaign_of_current_user['id']
+        response_send = CampaignsTestsHelpers.send_campaign(
+            SmsCampaignApiUrl.SEND % campaign_id,
+            access_token_first, sleep_time=0)
+        assert_api_send_response(sms_campaign_of_current_user, response_send, requests.codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
-            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist,
-            sample_sms_campaign_candidates, candidate_phone_1, candidate_phone_2):
+            self, access_token_first, user_first, sms_campaign_of_current_user):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have different phone numbers associated. SMS Campaign
         should be sent to both of the candidates. Body text of SMS campaign has no URL link
         present.
-        :return:
         """
-        campaign = SmsCampaign.get_by_id(str(scheduled_sms_campaign_of_current_user.id))
+        campaign_id = sms_campaign_of_current_user['id']
+        campaign = SmsCampaign.get_by_id(str(campaign_id))
         campaign.update(body_text='Hi,all')
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+        response_post = CampaignsTestsHelpers.send_campaign(
+            SmsCampaignApiUrl.SEND % campaign_id,
+            access_token_first, sleep_time=0)
+        assert_api_send_response(campaign, response_post, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 2, scheduled_sms_campaign_of_current_user)
+            user_first.id, 2, campaign_id)
 
     def test_campaign_send_with_multiple_smartlists(
-            self, access_token_first, user_first, scheduled_sms_campaign_of_current_user,
-            sms_campaign_smartlist, sms_campaign_smartlist_2, sample_sms_campaign_candidates,
-            candidate_phone_1):
+            self, access_token_first, user_first, sms_campaign_with_two_smartlists):
         """
         - This tests the endpoint /v1/sms-campaigns/:id/send
 
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. One candidate have no phone number associated. So, total sends should be 1.
-        :return:
+        User auth token is valid, campaign has one smart list associated. Both smartlists have one
+        candidate associated. Total number of sends should be 2.
         """
-        response_post = requests.post(
-            SmsCampaignApiUrl.SEND % scheduled_sms_campaign_of_current_user.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_api_send_response(scheduled_sms_campaign_of_current_user, response_post, 200)
+        campaign_id = sms_campaign_with_two_smartlists['id']
+        response_post = CampaignsTestsHelpers.send_campaign(
+            SmsCampaignApiUrl.SEND % campaign_id,
+            access_token_first, sleep_time=0)
+        assert_api_send_response(sms_campaign_with_two_smartlists, response_post, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 1, scheduled_sms_campaign_of_current_user)
+            user_first.id, 2, campaign_id)
 
 
 class TestCampaignSchedule(object):
@@ -153,9 +144,7 @@ class TestCampaignSchedule(object):
     """
 
     def test_one_time_campaign_schedule_and_validate_task_run(
-            self, valid_header, user_first, sms_campaign_of_current_user,
-            smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
-            candidate_phone_1):
+            self, valid_header, user_first, sms_campaign_of_current_user):
         """
         Here we schedule SMS campaign one time with all valid parameters. Then we check
         that task is run fine and assert the blast, sends and activity have been created
@@ -164,37 +153,36 @@ class TestCampaignSchedule(object):
         data = generate_campaign_schedule_data()
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user['id'],
             headers=valid_header, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id,
-                                           sms_campaign_of_current_user.id)
+                                           sms_campaign_of_current_user['id'])
         time.sleep(2 * SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
-                                                           sms_campaign_of_current_user)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
+                                                           sms_campaign_of_current_user['id'])
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_periodic_campaign_schedule_and_validate_run(
-            self, valid_header, user_first, sms_campaign_of_current_user,
-            smartlist_for_not_scheduled_campaign, sample_sms_campaign_candidates,
-            candidate_phone_1):
+            self, valid_header, user_first, sms_campaign_of_current_user):
         """
         This is test to schedule SMS campaign with all valid parameters. This should get OK
-         response
+        response
         """
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = Frequency.CUSTOM
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
         response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user.id,
+            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user['id'],
             headers=valid_header, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id,
-                                           sms_campaign_of_current_user.id)
+                                           sms_campaign_of_current_user['id'])
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
-                                                           sms_campaign_of_current_user)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
+                                                           sms_campaign_of_current_user['id'])
         time.sleep(SLEEP_TIME)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 1,
-                                                           sms_campaign_of_current_user)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
+                                                           sms_campaign_of_current_user['id'],
+                                                           blast_index=1)
         delete_test_scheduled_task(task_id, valid_header)
 
 
@@ -207,32 +195,31 @@ class TestURLRedirectionApi(object):
 
     def test_for_get(self, user_first,
                      url_conversion_by_send_test_sms_campaign,
-                     scheduled_sms_campaign_of_current_user):
+                     sms_campaign_of_current_user):
         """
         GET method should give OK response. We check the "hit_count" and "clicks" before
         hitting the endpoint and after hitting the endpoint. Then we assert that both
         "hit_count" and "clicks" have been successfully updated by '1' in database.
-        :return:
         """
         # stats before making HTTP GET request to source URL
+        campaign_in_db = SmsCampaign.get_by_id(sms_campaign_of_current_user['id'])
         hit_count, clicks = _get_hit_count_and_clicks(url_conversion_by_send_test_sms_campaign,
-                                                      scheduled_sms_campaign_of_current_user)
+                                                      campaign_in_db)
         response_get = _use_ngrok_or_local_address(
             'get', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response_get.status_code == 200, 'Response should be ok'
+        assert response_get.status_code == requests.codes.OK, 'Response should be ok'
         # stats after making HTTP GET request to source URL
         hit_count_after, clicks_after = _get_hit_count_and_clicks(
             url_conversion_by_send_test_sms_campaign,
-            scheduled_sms_campaign_of_current_user)
+            campaign_in_db)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
-                            scheduled_sms_campaign_of_current_user.id)
+                            campaign_in_db.id)
 
     def test_get_with_no_signature(self, url_conversion_by_send_test_sms_campaign):
         """
         Removing signature of signed redirect URL. It should get internal server error.
-        :return:
         """
         url_excluding_signature = \
             url_conversion_by_send_test_sms_campaign.source_url.split('?')[0]
@@ -241,7 +228,6 @@ class TestURLRedirectionApi(object):
     def test_get_with_empty_destination_url(self, url_conversion_by_send_test_sms_campaign):
         """
         Making destination URL an empty string here, it should get internal server error.
-        :return:
         """
         # forcing destination URL to be empty
         _make_destination_url_empty(url_conversion_by_send_test_sms_campaign)
@@ -299,7 +285,6 @@ class TestURLRedirectionMethods(object):
         Here we are testing the functionality of url_redirect() class method of
         CampaignBase by setting destination URL an empty string. It should get custom exception
         EmptyDestinationUrl.
-        :return:
         """
         _make_destination_url_empty(url_conversion_by_send_test_sms_campaign)
         try:
@@ -379,7 +364,6 @@ class TestURLRedirectionMethods(object):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         All parameters passed are None, So, it should raise Invalid Usage Error.
-        :return:
         """
         try:
             CampaignBase.pre_process_url_redirect({}, None)
@@ -391,8 +375,6 @@ class TestURLRedirectionMethods(object):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         All parameters passed are valid, So, it should not get any error.
-        :param url_conversion_by_send_test_sms_campaign:
-        :return:
         """
         request_args = _get_args_from_url(url_conversion_by_send_test_sms_campaign.source_url)
         _call_pre_process_url_redirect(request_args,
@@ -403,8 +385,6 @@ class TestURLRedirectionMethods(object):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
         signature is missing from request_arg.So, it should get Invalid Usage Error.
-        :param url_conversion_by_send_test_sms_campaign:
-        :return:
         """
         try:
             request_args = _get_args_from_url(url_conversion_by_send_test_sms_campaign.source_url)
@@ -497,7 +477,6 @@ def _get_args_from_url(url):
     """
     This gets the args from the signed URL
     :param url:
-    :return:
     """
     args = url.split('?')[1].split('&')
     request_args = dict()
@@ -512,7 +491,6 @@ def _call_process_url_redirect(url_conversion_obj):
     """
     This directly calls the url_redirect() class method of CampaignBase
     :param url_conversion_obj:
-    :return:
     """
     with app.app_context():
         CampaignBase.url_redirect(url_conversion_obj.id, CampaignUtils.SMS)
@@ -521,7 +499,6 @@ def _call_process_url_redirect(url_conversion_obj):
 def _call_pre_process_url_redirect(request_args, url):
     """
     This directly calls the pre_process_url_redirect() class method of CampaignBase
-    :return:
     """
     with app.app_context():
         SmsCampaignBase.pre_process_url_redirect(request_args, url)
@@ -530,8 +507,6 @@ def _call_pre_process_url_redirect(request_args, url):
 def _make_destination_url_empty(url_conversion_obj):
     """
     Here we make the destination URL an empty string.
-    :param url_conversion_obj:
-    :return:
     """
     url_conversion_obj.update(destination_url='')
 
@@ -540,8 +515,6 @@ def _assert_for_no_campaign_send_obj(url_conversion_obj):
     """
     This asserts the functionality of url_redirect() by deleting campaign from
     database.
-    :param url_conversion_obj:
-    :return:
     """
     try:
         _call_process_url_redirect(url_conversion_obj)

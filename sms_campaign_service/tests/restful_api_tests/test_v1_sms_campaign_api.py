@@ -16,7 +16,8 @@ from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
-                                                                 assert_campaign_delete)
+                                                                 assert_campaign_delete,
+                                                                 assert_campaign_creation)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -132,7 +133,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        _assert_campaign_creation(response, user_first.id, 201)
+        assert_campaign_creation(response, user_first.id, 201)
         _delete_created_number_of_user(user_first)
 
     def test_campaign_creation_with_no_data(self,
@@ -245,7 +246,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        _assert_campaign_creation(response, user_first.id, 207)
+        assert_campaign_creation(response, user_first.id, 207)
 
     def test_campaign_creation_with_one_user_phone_and_valid_data(self,
                                                                   user_first,
@@ -263,7 +264,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(campaign_valid_data))
-        _assert_campaign_creation(response, user_first.id, 201)
+        assert_campaign_creation(response, user_first.id, 201)
 
     def test_campaign_creation_with_multiple_user_phone_and_valid_data(self,
                                                                        valid_header,
@@ -299,7 +300,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(data))
-        _assert_campaign_creation(response, user_first.id, 207)
+        assert_campaign_creation(response, user_first.id, 207)
 
     def test_campaign_create_with_invalid_smartlist_ids(self, valid_header,
                                                         campaign_valid_data,
@@ -531,22 +532,6 @@ def _assert_counts_and_campaigns(response, count=0, campaigns=list()):
     assert 'campaigns' in resp
     assert resp['count'] == count
     assert resp['campaigns'] == campaigns
-
-
-def _assert_campaign_creation(response, user_id, expected_status_code):
-    """
-    Here are asserts that make sure that campaign has been created successfully.
-    :param response:
-    :param user_id:
-    :return:
-    """
-    assert response.status_code == expected_status_code, \
-        'It should get status code' + str(expected_status_code)
-    assert response.json()
-    resp = response.json()
-    assert 'location' in response.headers
-    assert 'id' in resp
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, resp['id'])
 
 
 def _delete_created_number_of_user(user):

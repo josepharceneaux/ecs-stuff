@@ -254,35 +254,40 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    def send_campaign(url, campaign, access_token, sleep_time=20):
+    def send_campaign(url, access_token, sleep_time=20, campaign=None):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
         sleep_time is set to be 20s here. One can modify this by passing required value.
         :param url: URL to hit for sending given campaign
-        :param campaign: Email campaign obj
+        :param campaign: Email or SMS campaign obj | None
         :param access_token: Auth token to make HTTP request
         :param sleep_time: time in seconds to wait for the task to be run on Celery.
         """
-        assert campaign, 'Invalid campaign object'
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(url, basestring)
         # send campaign
-        response = send_request('post', url % campaign.id, access_token)
+        if campaign:
+            url = url % campaign.id
+        response = send_request('post', url, access_token)
         assert response.ok
         time.sleep(sleep_time)
         db.session.commit()
         return response
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True,
+                                        create_phone=True, count=1, assign_role=True):
         """
-        This creates candidate(s) as specified by the count,  and assign it to a smartlist.
+        This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         """
+        if assign_role:
+            CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
         # create candidate
         data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                         emails_list=emails_list, count=count)
+                                         emails_list=emails_list, create_phone=create_phone,
+                                         count=count)
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
         time.sleep(5)  # added due to uploading candidates on CS

@@ -9,8 +9,9 @@ import time
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.sms_campaign_app import app
-from sms_campaign_service.common.models.sms_campaign import SmsCampaignReply
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
+                                                             SmsCampaign)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -28,9 +29,6 @@ def assert_url_conversion(sms_campaign_sends):
                 &signature=cWQ43J%2BkYetfmE2KmR85%2BLmvuIw%3D)
 
     So we will verify whether source_url has url_conversion id in it.
-
-    :param sms_campaign_sends: sends of campaign
-    :return:
     """
     sends_url_conversions = []
     # Get "sms_campaign_send_url_conversion" records
@@ -44,18 +42,19 @@ def assert_url_conversion(sms_campaign_sends):
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign):
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign_id,
+                                                       blast_index=0):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
-    :param expected_count: Expected number of sends
-    :return:
     """
+    # TODO: This will be removed when working on removing DB connections
+    campaign = SmsCampaign.get_by_id(campaign_id)
     # assert on blasts
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    sms_campaign_blast = campaign.blasts[0]
+    sms_campaign_blast = campaign.blasts[blast_index]
     assert sms_campaign_blast.sends == expected_count
     # assert on sends
     sms_campaign_sends = sms_campaign_blast.blast_sends.all()
@@ -72,10 +71,6 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
 def assert_for_activity(user_id, type_, source_id):
     """
     This verifies that activity has been created for given action
-    :param user_id:
-    :param type_:
-    :param source_id:
-    :return:
     """
     CampaignsTestsHelpers.assert_for_activity(user_id, type_, source_id)
 
@@ -83,8 +78,6 @@ def assert_for_activity(user_id, type_, source_id):
 def get_reply_text(candidate_phone):
     """
     This asserts that exact reply of candidate has been saved in database table "sms_campaign_reply"
-    :param candidate_phone:
-    :return:
     """
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
@@ -105,7 +98,10 @@ def assert_api_send_response(campaign, response, expected_status_code):
         'Response should be ' + str(expected_status_code)
     assert response.json()
     json_resp = response.json()
-    assert str(campaign.id) in json_resp['message']
+    if hasattr(campaign, 'id'):
+        assert str(campaign.id) in json_resp['message']
+    else:
+        assert str(campaign['id']) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
     time.sleep(2*SLEEP_TIME)
 
@@ -113,8 +109,6 @@ def assert_api_send_response(campaign, response, expected_status_code):
 def assert_campaign_schedule(response, user_id, campaign_id):
     """
     This asserts that campaign has scheduled successfully and we get 'task_id' in response
-    :param response:
-    :return:
     """
     assert response.status_code == 200, response.json()['error']['message']
     assert 'task_id' in response.json()
@@ -126,7 +120,6 @@ def assert_campaign_delete(response, user_id, campaign_id):
     """
     This asserts the response of campaign deletion and asserts that activity has been
     created successfully.
-    :return:
     """
     assert response.status_code == 200, 'should get ok response(200)'
     assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
@@ -135,9 +128,21 @@ def assert_campaign_delete(response, user_id, campaign_id):
 def delete_test_scheduled_task(task_id, headers):
     """
     This deletes the scheduled task from scheduler_service
-    :param task_id:
-    :param headers:
-    :return:
     """
     with app.app_context():
         CampaignUtils.delete_scheduled_task(task_id, headers)
+
+
+def assert_campaign_creation(response, user_id, expected_status_code):
+    """
+    Here are asserts that make sure that campaign has been created successfully.
+    It returns id of created SMS campaign.
+    """
+    assert response.status_code == expected_status_code, \
+        'It should get status code' + str(expected_status_code)
+    assert response.json()
+    json_response = response.json()
+    assert 'location' in response.headers
+    assert 'id' in json_response
+    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
+    return json_response['id']

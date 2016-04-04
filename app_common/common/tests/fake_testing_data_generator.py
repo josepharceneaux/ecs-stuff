@@ -8,7 +8,7 @@ __author__ = 'jitesh'
 class FakeCandidatesData(object):
     @classmethod
     def create(cls, talent_pool, count=1, first_name=True, middle_name=False, last_name=True,
-               added_time=True, emails_list=True, address_list=None):
+               added_time=True, emails_list=True, address_list=None, create_phone= True):
 
         """
         Generates candidate data dictionary as required by candidate_service API.
@@ -28,6 +28,8 @@ class FakeCandidatesData(object):
         :type emails_list: bool | list[dict]
         :param address_list:
         :type address_list: bool | list[dict]
+        :param create_phone:
+        :type create_phone: bool
         """
         candidates = []
         for iteration in range(0, count):
@@ -39,7 +41,7 @@ class FakeCandidatesData(object):
                 # 'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
                 'emails': {True: cls.create_emails_list(), False: None}.get(emails_list, emails_list),
                 'addresses': cls.create_address_list() if address_list is True else address_list,
-                'phones': [{"label": "mobile", "value": fake.phone_number(), "is_default": True}]}
+                'phones': [{"label": "mobile", "value": fake.phone_number(), "is_default": True}] if create_phone else []}
             candidates.append(candidate)
         return {'candidates': candidates}
 

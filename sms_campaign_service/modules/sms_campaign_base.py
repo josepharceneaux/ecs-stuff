@@ -340,7 +340,7 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
-        logger.debug("user_phone_id has been added in form data for user %s() %s"
+        logger.debug("user_phone_id has been added in form data for user %s(id:%s)"
                      % (self.user.name, self.user.id))
         return super(SmsCampaignBase, self).save(form_data)
 
