@@ -1,20 +1,33 @@
 '''
 Package for performing database migrations.
+
+Files located in the 'migrations' directory under each micro service may contain database migration code. The files must be named in
+the format: YYYY-MM-DD-HH-MM-SS  So, for example, 2016-04-19-14-13-00
+
+Files are run in order, according to the timestamp represented by the file name, and then recorded in the database so that the same
+file is not run again.
 '''
 
 import importlib
 import os
 from datetime import datetime
 
+from migration import Migration
 from ..error_handling import *
 
+# Format of a migration filename
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 
-MIGRATIONS_TABLE = 'migration'
+# Name of the migrations directory
+MIGRATIONS_DIRECTORY = 'migrations'
 
 def invalid_migration_filename(filename):
     '''
-    Expect filenames to be in the form of: 2016-03-15-12-30-10
+    We expect migration filenames to be in the form of: 2016-03-15-12-30-10
+    Validate whether they are or not.
+
+    :param filename: The filename to be validated.
+    :return: True or False
     '''
 
     try:
@@ -26,15 +39,20 @@ def invalid_migration_filename(filename):
 
 def run_migrations(logger, db):
     '''
+    Run the database migration files in the MIGRATIONS directory of a service.
+
+    :param logger: The logger object for the system.
+    :param db: The SQLAlchemy database object.
+    :return: None or raises an exception
     '''
 
-    current_directory = os.getcwd()
-    logger.info("Running migrations for {}".format(current_directory))
-    migrations_directory = current_directory + "/migrations"
-
+    service_name = os.path.basename(os.getcwd())
+    logger.info("Running migrations for {}".format(service_name))
+    migrations_directory = "./" + MIGRATIONS_DIRECTORY
     if not os.path.isdir(migrations_directory):
         # raise NotFoundError(error_message="No migrations directory found")
-        logger.info("No migrations to process (non-existant directory {})".format(current_directory))
+        logger.info("No migrations to process (non-existant directory {})".format(migrations_directory))
+        return
 
     # Ensure that all migration files appear valid before using them
     files = []
@@ -51,28 +69,42 @@ def run_migrations(logger, db):
         logger.info("No migrations to process.")
         return
 
-    # Now lets's get a list of migrations already run and cull the list of them
-    # try:
-    #     results = db.engine.execute('select * from talent_pool_candidate')
-    #     logger.info("query results: {}".format(results))
-    # except Exception as e:
-    #     logger.error("DB Exception: {}".format(e.message))
-    # logger.info("Table Names:")
-
-    if MIGRATIONS_TABLE not in db.engine.table_names():
-        logger.info("Creating migrations table")
-    else:
-        logger.info("Migrations table exists")
-
-    # Now we have a list of files not in the DB - run them in order and then record them
+    # Now sort the files, and if not recorded in the DB, run the file and record it
     files.sort()
+    migrated_count = 0
     for f in files:
-        # Load and run file
-        logger.info("Migrating {}".format(f))
-        execfile(f)
-        # Record file in DB
+        name = service_name + "/" + MIGRATIONS_DIRECTORY + "/" + os.path.basename(f)
 
-    logger.info("{} migrations completed".format(len(files)))
+        migrations_found = []
+        # Check manually for the table - some exceptions are not caught
+        if Migration.__tablename__ in db.engine.table_names():
+            try:
+                migrations_found = db.session.query(Migration).filter(Migration.name == name).all()
+            except Exception as e:
+                logger.error("DB Query Exception: {}".format(e.message))
+        else:
+            Migration.__table__.create(db.engine)
+
+        if len(migrations_found) == 0:
+            # Load and run file
+            logger.info("Migrating {}".format(f))
+            try:
+                execfile(f)
+            except Exception as e:
+                raise UnprocessableEntity(error_message="Can't execute migration: {}".format(f))
+
+            # Record migration processed
+            logger.info("Recording {}".format(name))
+            m = Migration(name=name, run_at_timestamp=datetime.now())
+            db.session.add(m)
+            db.session.commit()
+            migrated_count += 1
+        else:
+            if len(migrations_found) > 1:
+                logger.error("Multiple records for migration: ".format(migrations_found[0]))
+            logger.info("Skipping recorded migration".format(migrations_found[0]))
+
+    logger.info("{} migrations performed".format(migrated_count))
 
 # When run as a script, we have a differrent namespace. Look for all migrations directories
 # and run anything found.
