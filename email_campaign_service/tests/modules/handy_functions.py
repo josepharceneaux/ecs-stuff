@@ -288,6 +288,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
+
 def post_to_email_template_resource(access_token, data):
     """
     Function sends a post request to email-templates,
@@ -455,7 +456,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject, ca
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
+    smartlist_id, _ = create_smartlist_with_candidate(access_token,
                                                                   talent_pipeline)
     return {'name': campaign_name,
             'subject': subject,

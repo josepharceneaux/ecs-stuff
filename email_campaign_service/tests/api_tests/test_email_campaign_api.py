@@ -544,20 +544,21 @@ class TestSendCampaign(object):
         :param email_campaign_of_user_first: email campaign associated with user first
         :param assign_roles_to_user_first: Assign required roles to user of first domain.
         """
-        smartlist_id1 = create_smartlist_with_candidate(access_token_first,
-                                                        talent_pipeline,
-                                                        emails_list=True,
-                                                        count=20)
-        smartlist_id2 = create_smartlist_with_candidate(access_token_first,
-                                                        talent_pipeline,
-                                                        emails_list=True,
-                                                        count=20)
+        smartlist_id1, _ = create_smartlist_with_candidate(access_token_first,
+                                                           talent_pipeline,
+                                                           emails_list=True,
+                                                           count=20)
+        smartlist_id2, _ = create_smartlist_with_candidate(access_token_first,
+                                                           talent_pipeline,
+                                                           emails_list=True,
+                                                           count=20)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)
+        time.sleep(25)  # for creating smartlist
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        time.sleep(30)
+        time.sleep(40)  # for sending campaign
         assert_campaign_send(response, campaign, user_first, 40)
         assert_mail(campaign.subject)
 

@@ -23,6 +23,8 @@ from candidate_service.modules.talent_cloud_search import (
 from candidate_service.modules.talent_candidates import fetch_candidate_info, get_search_params_of_smartlists
 # Models
 from candidate_service.common.models.user import DomainRole
+# Default Page Size
+from candidate_service.common.utils.api_utils import DEFAULT_PAGE_SIZE
 
 
 class CandidateSearch(Resource):
@@ -70,7 +72,7 @@ class CandidateSearch(Resource):
             # Get domain_id from auth_user
             domain_id = request.user.domain_id
             limit = request_vars.get('limit')
-            search_limit = int(limit) if limit else 15
+            search_limit = int(limit) if limit else DEFAULT_PAGE_SIZE
             count_only = True if 'count_only' in request.args.get('fields', '') else False
 
             # If limit is not requested then the Search limit would be taken as 15, the default value
