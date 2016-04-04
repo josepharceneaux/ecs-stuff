@@ -50,21 +50,15 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
                                                               params, campaign)
-    response_headers = response.headers
-    if not response_headers:
-        raise InternalServerError("Invalid pagination response from candidate pool service. "
-                                  "Missing Headers.")
-    no_of_pages = response_headers['X-Page-Count']
-    if not no_of_pages:
-        raise InternalServerError("Invalid pagination response headers from candidate pool service. "
-                                  "Missing value X-Page-Count.")
-    response_body = json.loads(response.content)
+    response_body = response.json()
     candidates = response_body['candidates']
+    no_of_pages = response_body['max_pages']
     if int(no_of_pages) > DEFAULT_PAGE:
         for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
             next_page = current_page + DEFAULT_PAGE
-            response = get_candidates_from_smartlist_with_page_params(list_id, per_page, next_page, params, campaign)
-            response_body = json.loads(response.content)
+            response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
+                                                                      next_page, params, campaign)
+            response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
         return [long(candidate['id']) for candidate in candidates]
@@ -89,8 +83,9 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
                                   "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
     if not params:
         params = {}
-    pagination_query = '?per_page=%d&page=%d' % (per_page, page)
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id + pagination_query,
+    params.update({'page': page}) if page else None
+    params.update({'limit': per_page}) if per_page else None
+    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
                             params=params, headers=create_oauth_headers())
     return response
 

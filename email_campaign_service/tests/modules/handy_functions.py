@@ -67,9 +67,9 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id = create_smartlist_with_candidate(access_token, talent_pipeline,
-                                                   emails_list=emails_list,
-                                                   count=count)
+    smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline,
+                                                      emails_list=emails_list,
+                                                      count=count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
@@ -93,7 +93,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     time.sleep(25)  # added due to new field dumb_list_ids in CS
     smartlist_id = smartlists['smartlist']['id']
-    return smartlist_id
+    return smartlist_id, candidate_ids
 
 
 def delete_campaign(campaign):

@@ -423,7 +423,6 @@ class TestSendCampaign(object):
             self.URL % campaign_with_candidate_having_no_email.id,
             access_token_first, campaign_with_candidate_having_no_email.id)
 
-
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
