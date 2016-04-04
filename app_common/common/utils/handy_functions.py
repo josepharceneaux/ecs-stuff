@@ -197,8 +197,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
-        log_error('http_request: Error: %s, user_id: %s'
-                  % (error_message, user_id), app=app)
+        log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
+                  % (error_message, user_id, url, headers, data), app=app)
         raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
@@ -237,28 +237,36 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             else:
                 # raise any Server error
                 log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running." % (url, method_type))
+                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
+                                                                                                data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
             log_exception(
                             "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url), app=app)
+                            "Make sure requested server is running. Headers: %s, Data: %s" % (method_type, url, headers,
+                                                                                              data), app=app)
             raise
         except requests.Timeout as e:
-            log_exception('http_request: HTTP request timeout, %s' % e.message)
+            log_exception('http_request: HTTP request timeout, %s. URL: %s, Headers: %s, Data: %s' %
+                          (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s' % e.message)
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
+                                                                                                     url, headers,
+                                                                                                     data))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
-                          'user_id: %s' % (error_message, user_id), app=app)
+                          'user_id: %s, URL: %s, Headers: %s, Data: %s' % (error_message, user_id, url,
+                                                                           headers, data), app=app)
         return response
     else:
-        log_error('http_request: Unknown Method type %s ' % method_type, app=app)
-        raise InvalidUsage('Unknown method type(%s) provided' % method_type)
+        log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
+                                                                                           data), app=app)
+        raise InvalidUsage('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
+                                                                                                headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):
