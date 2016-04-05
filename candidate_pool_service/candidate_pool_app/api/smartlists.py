@@ -1,17 +1,17 @@
-from dateutil.parser import parse
-from datetime import datetime, timedelta
-from flask_restful import Resource
 from flask import request, Blueprint, jsonify
-from candidate_pool_service.common.routes import CandidatePoolApi
-from candidate_pool_service.common.talent_api import TalentApi
-from candidate_pool_service.common.utils.validators import is_number
+from flask_restful import Resource
+
 from candidate_pool_service.common.models.user import User
+from candidate_pool_service.common.talent_api import TalentApi
+from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.utils.auth_utils import require_oauth
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
 from candidate_pool_service.modules.smartlists import create_smartlist_dict, save_smartlist, get_all_smartlists
-from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
 
 __author__ = 'jitesh'
@@ -88,8 +88,8 @@ class SmartlistResource(Resource):
             return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
         else:
             # Return all smartlists from user's domain
-            page = request.args.get('page', 1)
-            per_page = request.args.get('per_page', 10)
+            page = request.args.get('page', DEFAULT_PAGE)
+            per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
             total_number_of_smartlists = Smartlist.query.join(Smartlist.user).filter(
                     User.domain_id == auth_user.domain_id, Smartlist.is_hidden == 0).count()
 

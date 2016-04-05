@@ -53,8 +53,7 @@ def email_campaign_in_other_domain(request,
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
-    create_email_campaign_smartlist(access_token_other, talent_pipeline_other,
-                                    campaign)
+    create_email_campaign_smartlist(access_token_other, talent_pipeline_other, campaign)
 
     def fin():
         delete_campaign(campaign)

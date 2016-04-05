@@ -21,14 +21,16 @@ from datetime import datetime, timedelta
 # Application Specific
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
+from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
+                                                                  create_email_campaign_smartlists)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (delete_campaign,
@@ -529,6 +531,36 @@ class TestSendCampaign(object):
         assert opens_count_after == opens_count_before + 1
         assert hit_count_after == hit_count_before + 1
         UrlConversion.delete(url_conversion)
+
+    def test_send_campaign_with_two_smartlists(
+            self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first,
+            assign_roles_to_user_first):
+        """
+        This function creates two smartlists with 20 candidates each and associates them
+        with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
+        :param access_token_first: Access token of user_first
+        :param user_first: Valid user from fist domain
+        :param talent_pipeline: valid talent pipeline
+        :param email_campaign_of_user_first: email campaign associated with user first
+        :param assign_roles_to_user_first: Assign required roles to user of first domain.
+        """
+        smartlist_id1, _ = create_smartlist_with_candidate(access_token_first,
+                                                           talent_pipeline,
+                                                           emails_list=True,
+                                                           count=20)
+        smartlist_id2, _ = create_smartlist_with_candidate(access_token_first,
+                                                           talent_pipeline,
+                                                           emails_list=True,
+                                                           count=20)
+        campaign = email_campaign_of_user_first
+        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
+                                         email_campaign_id=campaign.id)
+        time.sleep(25)  # for creating smartlist
+        response = requests.post(
+            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        time.sleep(40)  # for sending campaign
+        assert_campaign_send(response, campaign, user_first, 40)
+        assert_mail(campaign.subject)
 
 
 # Test for healthcheck
