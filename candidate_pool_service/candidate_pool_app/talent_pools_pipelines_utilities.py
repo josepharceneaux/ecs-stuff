@@ -97,7 +97,8 @@ def get_candidates_from_search_api(query_string, headers):
     :return:
     """
 
-    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=query_string)
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
+                            headers=headers, params=query_string)
     if response.ok:
         return True, response.json()
     else:

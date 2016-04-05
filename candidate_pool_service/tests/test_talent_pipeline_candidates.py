@@ -1,3 +1,5 @@
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
+
 __author__ = 'ufarooqi'
 from time import sleep
 from datetime import timedelta
@@ -62,7 +64,8 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
 
     # Logged-in user trying to get all candidates of talent-pipeline without search_params
     # so all candidates of corresponding talent_pool will be returned
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id,
+                                                          params={'limit': 13})
     assert_results(candidate_ids + sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids,  response)
 
     talent_pipeline.search_params = json.dumps({'job_title': 'Software Engineer'})
@@ -70,12 +73,13 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     db.session.commit()
 
     # Logged-in user trying to get all candidates of talent-pipeline with search_params
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id,
+                                                          params={'limit': 13})
     assert_results(sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids,  response)
 
     # Logged-in user trying to get all candidates of smartlist with search_params
     response = requests.get(
             url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % test_smart_list.id,
-            params={'fields': 'id'}, headers={'Authorization': 'Bearer %s' % access_token_first})
+            params={'fields': 'id', 'limit': 13}, headers={'Authorization': 'Bearer %s' % access_token_first})
     assert response.status_code == 200
     assert_results(cs_sw_engineers_candidate_ids,  response.json())
