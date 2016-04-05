@@ -10,7 +10,7 @@ from ..error_handling import *
 
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 
-MIGRATIONS_TABLE = 'migrations'
+MIGRATIONS_TABLE = 'migration'
 
 def invalid_migration_filename(filename):
     '''
@@ -78,3 +78,4 @@ def run_migrations(logger, db):
 # and run anything found.
 if __name__ == "__main__":
     print "Running all migrations from {}".format(os.getcwd())
+    # TODO
