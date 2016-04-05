@@ -12,6 +12,8 @@ import importlib
 import os
 from datetime import datetime
 
+# from sqlalchemy import exc
+
 from migration import Migration
 from ..error_handling import *
 
