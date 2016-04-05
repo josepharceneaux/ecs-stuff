@@ -6,16 +6,24 @@ import importlib
 import os
 from datetime import datetime
 
+# from sqlalchemy import exc
+
 from migration import Migration
 from ..error_handling import *
 
+# Format of a migration filename
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 
-MIGRATIONS_TABLE = 'migration'
+# Name of the migrations directory
+MIGRATIONS_DIRECTORY = 'migrations'
 
 def invalid_migration_filename(filename):
     '''
-    Expect filenames to be in the form of: 2016-03-15-12-30-10
+    We expect migration filenames to be in the form of: 2016-03-15-12-30-10
+    Validate whether they are or not.
+
+    :param filename: The filename to be validated.
+    :return: True or False
     '''
 
     try:
@@ -27,11 +35,16 @@ def invalid_migration_filename(filename):
 
 def run_migrations(logger, db):
     '''
+    Run the database migration files in the MIGRATIONS directory of a service.
+
+    :param logger: The logger object for the system.
+    :param db: The SQLAlchemy database object.
+    :return: None or raises an exception
     '''
 
     service_name = os.path.basename(os.getcwd())
     logger.info("Running migrations for {}".format(service_name))
-    migrations_directory = "./migrations"
+    migrations_directory = "./" + MIGRATIONS_DIRECTORY
     if not os.path.isdir(migrations_directory):
         # raise NotFoundError(error_message="No migrations directory found")
         logger.info("No migrations to process (non-existant directory {})".format(migrations_directory))
@@ -55,18 +68,28 @@ def run_migrations(logger, db):
     files.sort()
     migrated_count = 0
     for f in files:
-        name = service_name + "/migrations/" + os.path.basename(f)
-        result = db.session.query(Migration).filter_by(name=name)
-        migrations_found = result.all()
-        logger.info("DB Query len: {}".format(len(migrations_found)))
-        logger.info("DB Query: {}".format(migrations_found))
+        name = service_name + "/" + MIGRATIONS_DIRECTORY + "/" + os.path.basename(f)
+
+        migrations_found = []
+        # Check manually for the table - some exceptions are not caught
+        if Migration.__tablename__ in db.engine.table_names():
+            try:
+                migrations_found = db.session.query(Migration).filter_by(name=name).one_or_none()
+            except Exception as e:
+                logger.info("DB Query Exception: {}".format(e.message))
+
         if len(migrations_found) > 1:
             raise UnprocessableEntity(error_message="Multiple records of migration: {}".format(name))
 
         if len(migrations_found) == 0:
             # Load and run file
             logger.info("Migrating {}".format(f))
-            execfile(f)
+            try:
+                execfile(f)
+            except Exception as e:
+                raise UnprocessableEntity(error_message="Can't execute migration: {}".format(f))
+
+            # Record migration processed
             logger.info("Recording {}".format(name))
             m = Migration(name=name, run_at_timestamp=datetime.now())
             db.session.add(m)
