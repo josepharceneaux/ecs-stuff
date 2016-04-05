@@ -344,6 +344,7 @@ class TestTrackCandidateWorkPreferenceEdits(object):
         AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -356,7 +357,8 @@ class TestTrackCandidateWorkPreferenceEdits(object):
                 'id': old_work_pref_dict['id'], 'salary': '150000', 'hourly_rate': '75'
             }}
         ]}
-        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
 
         # Retrieve Candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
@@ -369,9 +371,9 @@ class TestTrackCandidateWorkPreferenceEdits(object):
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
         assert int(float(candidate_edits[0]['old_value'])) == int(float(old_work_pref_dict['salary']))
-        assert int(float(candidate_edits[5]['old_value'])) == int(float(old_work_pref_dict['hourly_rate']))
+        assert int(float(candidate_edits[1]['old_value'])) == int(float(old_work_pref_dict['hourly_rate']))
         assert int(float(candidate_edits[0]['new_value'])) == int(float(new_work_pref_dict['salary']))
-        assert int(float(candidate_edits[5]['new_value'])) == int(float(new_work_pref_dict['hourly_rate']))
+        assert int(float(candidate_edits[1]['new_value'])) == int(float(new_work_pref_dict['hourly_rate']))
 
 
 class TestTrackCandidateEmailEdits(object):
