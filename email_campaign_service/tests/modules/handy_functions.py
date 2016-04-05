@@ -203,49 +203,26 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def assert_mail(subject):
+def assert_and_delete_email(subject):
     """
-    Asserts that the user received the email in his inbox which has the subject as subject
+    Asserts that the user received the email in his inbox which has the given subject.
+    It then deletes the email from the inbox.
     :param subject:       Email subject
     """
-    # abort_after = 60
-    start = time.time()
-    # mail_found = False
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
     mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     print "Check for mail with subject: %s" % subject
-    # mail.list()  # Out: list of "folders" aka labels in gmail.
     mail.select("inbox")  # connect to inbox.
-    result, msg_ids = mail.search(None, '(SUBJECT "%s")' % subject)
-    assert msg_ids, "Mail with subject %s was not found." % subject
-
-    # header_subject = '(HEADER Subject "%s")' % subject
-    # # Wait for 10 seconds then start the loop for 60 seconds
-    # time.sleep(10)
-    # while True:
-    #     delta = time.time() - start
-    #     mail.select("inbox")  # connect to inbox.
-    #     result, data = mail.uid('search', None, header_subject)
-    #
-    #     for latest_email_uid in data[0].split():
-    #         result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
-    #         raw_email = data[0][1]
-    #
-    #         email_message = email.message_from_string(raw_email)
-    #
-    #         raw_mail_subject_ = ''.join(email_message['Subject'].split())
-    #         test_subject = ''.join(subject.split())
-    #         if raw_mail_subject_ == test_subject:
-    #             mail_found = True
-    #             break
-    #
-    #     if mail_found:
-    #         break
-    #
-    #     if delta >= abort_after:
-    #         break
-    #
-    # assert mail_found, "Mail with subject %s was not found." % subject
+    # search the inbox for given email-subject
+    result, [msg_ids] = mail.search(None, '(SUBJECT "%s")' % subject)
+    assert [msg_ids], "Mail with subject %s was not found." % subject
+    print "Email(s) found with subject: %s" % subject
+    msg_ids = ','.join(msg_ids.split(' '))
+    # Change the Deleted flag to delete the email from Inbox
+    mail.store(msg_ids, '+FLAGS', r'(\Deleted)')
+    status, response = mail.expunge()
+    assert status == 'OK'
+    print "Email(s) deleted with subject: %s" % subject
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):
