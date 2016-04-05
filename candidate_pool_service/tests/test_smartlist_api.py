@@ -74,7 +74,7 @@ class TestSmartlistResource(object):
             """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
                 access_token_first, user_first, talent_pool, talent_pipeline,
-                count=DEFAULT_PAGE_SIZE+5)
+                count=20)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
@@ -82,10 +82,10 @@ class TestSmartlistResource(object):
                                                                                   {'fields': 'id'},
                                                                                   access_token_first)
             candidates = response.json()['candidates']
-            assert len(candidates) == DEFAULT_PAGE_SIZE
+            assert len(candidates) == 15
 
             total_found = response.json()['total_found']
-            assert total_found == DEFAULT_PAGE_SIZE + 5
+            assert total_found == 20
 
         def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first,
                                                                              user_first, talent_pool, talent_pipeline):
