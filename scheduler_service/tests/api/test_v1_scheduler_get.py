@@ -69,7 +69,7 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'General_Named_Task' +  uuid.uuid4().__str__()[0:8]
+        job_config['task_name'] = 'General_Named_Task' + '-' + uuid.uuid4().__str__()[0:8]
 
         # Get the job using correct task name
         response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
@@ -108,7 +108,7 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'General_Named_Task' + uuid.uuid4().__str__()[0:8]
+        job_config['task_name'] = 'General_Named_Task' + '-' + uuid.uuid4().__str__()[0:8]
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
