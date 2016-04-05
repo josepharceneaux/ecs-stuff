@@ -6,20 +6,14 @@ import importlib
 import os
 from datetime import datetime
 
-# from sqlalchemy import exc
-
 from migration import Migration
 from ..error_handling import *
 
 # Format of a migration filename
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 
-<<<<<<< HEAD
 # Name of the migrations directory
 MIGRATIONS_DIRECTORY = 'migrations'
-=======
-MIGRATIONS_TABLE = 'migration'
->>>>>>> Actually run a migration file.
 
 def invalid_migration_filename(filename):
     '''
