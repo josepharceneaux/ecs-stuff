@@ -190,12 +190,7 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
-        # Wait for 20 seconds for scheduler to execute it and then assert mail.
-        time.sleep(20)
-        # Check for email received.
-        assert_and_delete_email(subject)
-        # Delete campaign from getTalent database
-        delete_campaign(resp_object['campaign'])
+        assert resp_object['campaign']['id']
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):

@@ -225,13 +225,14 @@ def assert_and_delete_email(subject):
     print "Email(s) deleted with subject: %s" % subject
 
 
-def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
+                         expected_status=200):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
     """
-    assert response.status_code == 200
+    assert response.status_code == expected_status
     assert response.json()
     if not email_client:
         json_resp = response.json()
@@ -436,8 +437,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject, ca
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline)
+    smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline)
     return {'name': campaign_name,
             'subject': subject,
             'from': email_from,
