@@ -6,6 +6,7 @@ import importlib
 import os
 from datetime import datetime
 
+from migration import Migration
 from ..error_handling import *
 
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
@@ -28,13 +29,12 @@ def run_migrations(logger, db):
     '''
     '''
 
-    current_directory = os.getcwd()
-    logger.info("Running migrations for {}".format(current_directory))
-    migrations_directory = current_directory + "/migrations"
-
+    service_name = os.path.basename(os.getcwd())
+    logger.info("Running migrations for {}".format(service_name))
+    migrations_directory = "./migrations"
     if not os.path.isdir(migrations_directory):
         # raise NotFoundError(error_message="No migrations directory found")
-        logger.info("No migrations to process (non-existant directory {})".format(current_directory))
+        logger.info("No migrations to process (non-existant directory {})".format(migrations_directory))
 
     # Ensure that all migration files appear valid before using them
     files = []
@@ -51,28 +51,31 @@ def run_migrations(logger, db):
         logger.info("No migrations to process.")
         return
 
-    # Now lets's get a list of migrations already run and cull the list of them
-    # try:
-    #     results = db.engine.execute('select * from talent_pool_candidate')
-    #     logger.info("query results: {}".format(results))
-    # except Exception as e:
-    #     logger.error("DB Exception: {}".format(e.message))
-    # logger.info("Table Names:")
-
-    if MIGRATIONS_TABLE not in db.engine.table_names():
-        logger.info("Creating migrations table")
-    else:
-        logger.info("Migrations table exists")
-
-    # Now we have a list of files not in the DB - run them in order and then record them
+    # Now sort the files, and if not recorded in the DB, run the file and record it
     files.sort()
+    migrated_count = 0
     for f in files:
-        # Load and run file
-        logger.info("Migrating {}".format(f))
-        execfile(f)
-        # Record file in DB
+        name = service_name + "/migrations/" + os.path.basename(f)
+        result = db.session.query(Migration).filter_by(name=name)
+        migrations_found = result.all()
+        logger.info("DB Query len: {}".format(len(migrations_found)))
+        logger.info("DB Query: {}".format(migrations_found))
+        if len(migrations_found) > 1:
+            raise UnprocessableEntity(error_message="Multiple records of migration: {}".format(name))
 
-    logger.info("{} migrations completed".format(len(files)))
+        if len(migrations_found) == 0:
+            # Load and run file
+            logger.info("Migrating {}".format(f))
+            execfile(f)
+            logger.info("Recording {}".format(name))
+            m = Migration(name=name, run_at_timestamp=datetime.now())
+            db.session.add(m)
+            db.session.commit()
+            migrated_count += 1
+        else:
+            logger.info("Skipping recorded migration".format(migrations_found[0]))
+
+    logger.info("{} migrations performed".format(migrated_count))
 
 # When run as a script, we have a differrent namespace. Look for all migrations directories
 # and run anything found.
