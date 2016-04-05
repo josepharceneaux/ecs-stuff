@@ -207,42 +207,45 @@ def assert_mail(subject):
     """
     Asserts that the user received the email in his inbox which has the subject as subject
     :param subject:       Email subject
-    :return:
     """
-    abort_after = 60
+    # abort_after = 60
     start = time.time()
-    mail_found = False
+    # mail_found = False
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
     mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-    # mail.list()  # Out: list of "folders" aka labels in gmail.
     print "Check for mail with subject: %s" % subject
-    header_subject = '(HEADER Subject "%s")' % subject
-    # Wait for 10 seconds then start the loop for 60 seconds
-    time.sleep(10)
-    while True:
-        delta = time.time() - start
-        mail.select("inbox")  # connect to inbox.
-        result, data = mail.uid('search', None, header_subject)
+    # mail.list()  # Out: list of "folders" aka labels in gmail.
+    mail.select("inbox")  # connect to inbox.
+    result, msg_ids = mail.search(None, '(SUBJECT "%s")' % subject)
+    assert msg_ids, "Mail with subject %s was not found." % subject
 
-        for latest_email_uid in data[0].split():
-            result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
-            raw_email = data[0][1]
-
-            email_message = email.message_from_string(raw_email)
-
-            raw_mail_subject_ = ''.join(email_message['Subject'].split())
-            test_subject = ''.join(subject.split())
-            if raw_mail_subject_ == test_subject:
-                mail_found = True
-                break
-
-        if mail_found:
-            break
-
-        if delta >= abort_after:
-            break
-
-    assert mail_found, "Mail with subject %s was not found." % subject
+    # header_subject = '(HEADER Subject "%s")' % subject
+    # # Wait for 10 seconds then start the loop for 60 seconds
+    # time.sleep(10)
+    # while True:
+    #     delta = time.time() - start
+    #     mail.select("inbox")  # connect to inbox.
+    #     result, data = mail.uid('search', None, header_subject)
+    #
+    #     for latest_email_uid in data[0].split():
+    #         result, data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+    #         raw_email = data[0][1]
+    #
+    #         email_message = email.message_from_string(raw_email)
+    #
+    #         raw_mail_subject_ = ''.join(email_message['Subject'].split())
+    #         test_subject = ''.join(subject.split())
+    #         if raw_mail_subject_ == test_subject:
+    #             mail_found = True
+    #             break
+    #
+    #     if mail_found:
+    #         break
+    #
+    #     if delta >= abort_after:
+    #         break
+    #
+    # assert mail_found, "Mail with subject %s was not found." % subject
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False):

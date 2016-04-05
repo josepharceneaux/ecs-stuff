@@ -194,7 +194,7 @@ class TestCreateCampaign(object):
         time.sleep(20)
         # Check for email received.
         # TODO Commenting out assert_mail() so build passes. -basit
-        # assert_mail(subject)
+        assert_mail(subject)
         delete_campaign(resp_object['campaign'])
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
@@ -435,7 +435,7 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
         # TODO: commenting for now to pass the Jenkins- basit
-        # assert_mail(campaign.subject)
+        assert_mail(campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -465,7 +465,7 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
         # TODO: commenting for now to pass the Jenkins- basit
-        # assert_mail(campaign.subject)
+        assert_mail(campaign.subject)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
