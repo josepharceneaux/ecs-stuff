@@ -7,6 +7,9 @@ using bearer token
 import json
 
 # Third party imports
+import random
+import string
+
 import requests
 
 # Application imports
@@ -68,7 +71,8 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'General_Named_Task'
+        job_config['task_name'] = 'General_Named_Task' + ''.join([random.choice(string.ascii_letters + string.digits)
+                                                                  for _ in xrange(16)])
 
         # Get the job using correct task name
         response_get = requests.get(SchedulerApiUrl.TASK_NAME % job_config['task_name'],
@@ -107,7 +111,8 @@ class TestSchedulerGet(object):
         :return:
         """
         # Assign task_name in job post data (general task)
-        job_config['task_name'] = 'General_Named_Task'
+        job_config['task_name'] = 'General_Named_Task' + ''.join([random.choice(string.ascii_letters + string.digits)
+                                                                  for _ in xrange(16)])
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header_no_user)
         assert response.status_code == 201
