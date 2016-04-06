@@ -10,8 +10,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
-                                                                  create_smartlist_with_given_email_candidate,
-                                                                  assert_and_delete_email)
+                                                                  create_smartlist_with_given_email_candidate)
 
 
 @pytest.fixture()
@@ -215,9 +214,6 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     else:
         sleep_time = 30
 
-        def fin():
-            assert_and_delete_email(campaign_with_valid_candidate.subject)
-        request.addfinalizer(fin)
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
 
@@ -225,7 +221,7 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
 
 
 @pytest.fixture()
-def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
+def sent_campaign_multiple_email(campaign_with_multiple_candidates_email,
                                  access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
@@ -233,11 +229,6 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
     """
     # send campaign
     send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=30)
-
-    def fin():
-        assert_and_delete_email(campaign_with_multiple_candidates_email.subject)
-    request.addfinalizer(fin)
-
     return campaign_with_multiple_candidates_email
 
 
@@ -252,11 +243,6 @@ def sent_campaign_bulk(request, campaign_with_ten_candidates, access_token_first
         sleep_time = 5
     else:
         sleep_time = 15
-
-        def fin():
-            assert_and_delete_email(campaign_with_ten_candidates.subject)
-        request.addfinalizer(fin)
-
     # send campaign
     send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
     return campaign_with_ten_candidates
