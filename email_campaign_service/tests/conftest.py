@@ -1,7 +1,6 @@
 __author__ = 'basit'
 
 import re
-import imaplib
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
@@ -205,7 +204,7 @@ def candidate_in_other_domain(request, user_from_diff_domain):
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign(request, mail_connection, campaign_with_valid_candidate, access_token_first):
+def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     """
     This fixture sends the campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
@@ -217,7 +216,7 @@ def sent_campaign(request, mail_connection, campaign_with_valid_candidate, acces
         sleep_time = 30
 
         def fin():
-            assert_and_delete_email(mail_connection, campaign_with_valid_candidate.subject)
+            assert_and_delete_email(campaign_with_valid_candidate.subject)
         request.addfinalizer(fin)
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
@@ -226,7 +225,7 @@ def sent_campaign(request, mail_connection, campaign_with_valid_candidate, acces
 
 
 @pytest.fixture()
-def sent_campaign_multiple_email(request, mail_connection, campaign_with_multiple_candidates_email,
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
                                  access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
@@ -236,15 +235,14 @@ def sent_campaign_multiple_email(request, mail_connection, campaign_with_multipl
     send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=30)
 
     def fin():
-        assert_and_delete_email(mail_connection, campaign_with_multiple_candidates_email.subject)
+        assert_and_delete_email(campaign_with_multiple_candidates_email.subject)
     request.addfinalizer(fin)
 
     return campaign_with_multiple_candidates_email
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_bulk(request, campaign_with_ten_candidates, mail_connection,
-                       access_token_first):
+def sent_campaign_bulk(request, campaign_with_ten_candidates, access_token_first):
     """
     This fixture sends the campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
@@ -256,7 +254,7 @@ def sent_campaign_bulk(request, campaign_with_ten_candidates, mail_connection,
         sleep_time = 15
 
         def fin():
-            assert_and_delete_email(mail_connection, campaign_with_ten_candidates.subject)
+            assert_and_delete_email(campaign_with_ten_candidates.subject)
         request.addfinalizer(fin)
 
     # send campaign
@@ -330,17 +328,3 @@ def invalid_data_for_campaign_creation(request):
                      }
     del campaign_data[request.param]
     return campaign_data, request.param
-
-
-@pytest.fixture()
-def mail_connection():
-    """
-    Here we create a connection to gettalentmailtest@gmail.com account to assert we have
-    received the email
-    """
-    mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
-    try:
-        mail_connection.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-    except Exception:
-        pass
-    return mail_connection

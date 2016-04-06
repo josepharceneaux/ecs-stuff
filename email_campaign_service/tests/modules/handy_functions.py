@@ -2,6 +2,7 @@
 import json
 import time
 import uuid
+import imaplib
 import datetime
 
 # Third Party
@@ -227,12 +228,17 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def assert_and_delete_email(mail_connection, subject):
+def assert_and_delete_email(subject):
     """
     Asserts that the user received the email in his inbox which has the given subject.
     It then deletes the email from the inbox.
     :param subject:       Email subject
     """
+    mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
+    try:
+        mail_connection.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+    except Exception:
+        pass # Maybe already login when running on Jenkins on multiple cores
     print "Checking for Email with subject: %s" % subject
     mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
