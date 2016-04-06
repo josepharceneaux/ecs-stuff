@@ -1332,7 +1332,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_month=education_degree.get('start_month'),
                     end_year=education_degree.get('end_year'),
                     end_month=education_degree.get('end_month'),
-                    gpa_num=education_degree['gpa'].strip() if education_degree.get('gpa') else None,
+                    gpa_num=education_degree.get('gpa'),
                     added_time=added_datetime,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time'),
@@ -1471,8 +1471,6 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             for education_degree in education_degrees:
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
-                gpa_num=education_degree['gpa'].strip() \
-                    if (education_degree.get('gpa') and (degree_title or degree_type)) else None
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=degree_type,
@@ -1481,7 +1479,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
                     end_year=education_degree.get('end_year') if degree_title or degree_type else None,
                     end_month=education_degree.get('end_month') if degree_title or degree_type else None,
-                    gpa_num=gpa_num,
+                    gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time') if degree_title or degree_type else None,
                     end_time=education_degree.get('end_time') if degree_title or degree_type else None
