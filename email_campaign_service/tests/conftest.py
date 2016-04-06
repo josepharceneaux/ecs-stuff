@@ -215,12 +215,13 @@ def sent_campaign(request, mail_connection, campaign_with_valid_candidate, acces
         sleep_time = 15
     else:
         sleep_time = 30
+
+        def fin():
+            assert_and_delete_email(mail_connection, campaign_with_valid_candidate.subject)
+        request.addfinalizer(fin)
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
 
-    def fin():
-        assert_and_delete_email(mail_connection, campaign_with_valid_candidate.subject)
-    request.addfinalizer(fin)
     return campaign_with_valid_candidate
 
 
@@ -253,13 +254,13 @@ def sent_campaign_bulk(request, campaign_with_ten_candidates, mail_connection,
         sleep_time = 5
     else:
         sleep_time = 15
+
+        def fin():
+            assert_and_delete_email(mail_connection, campaign_with_ten_candidates.subject)
+        request.addfinalizer(fin)
+
     # send campaign
     send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
-
-    def fin():
-        assert_and_delete_email(mail_connection, campaign_with_ten_candidates.subject)
-    request.addfinalizer(fin)
-
     return campaign_with_ten_candidates
 
 
@@ -331,7 +332,7 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture()
 def mail_connection():
     """
     Here we create a connection to gettalentmailtest@gmail.com account to assert we have

@@ -1,6 +1,7 @@
 # Standard Imports
 import json
 import time
+import uuid
 import datetime
 
 # Third Party
@@ -35,14 +36,13 @@ def create_email_campaign(user):
     """
     This creates an email campaign for given user
     """
-    campaign_body_html = "<html><body>Email campaign test</body></html>"
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=fake.sentence(),
+                                   subject=uuid.uuid4().__str__()[0:8] + '-test-e-campaign',
                                    _from=fake.safe_email(),
                                    reply_to=fake.email(),
-                                   body_html=campaign_body_html,
+                                   body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
     EmailCampaign.save(email_campaign)
@@ -233,11 +233,11 @@ def assert_and_delete_email(mail_connection, subject):
     It then deletes the email from the inbox.
     :param subject:       Email subject
     """
-    print "Check for mail with subject: %s" % subject
+    print "Checking for Email with subject: %s" % subject
     mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
     result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
-    assert msg_ids, "Mail with subject %s was not found." % subject
+    assert msg_ids, "Email with subject %s was not found." % subject
     print "Email(s) found with subject: %s" % subject
     msg_ids = ','.join(msg_ids.split(' '))
     # Change the Deleted flag to delete the email from Inbox
