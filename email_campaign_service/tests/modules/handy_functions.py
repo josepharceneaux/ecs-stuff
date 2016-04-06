@@ -210,6 +210,8 @@ def assert_and_delete_email(subject):
     :param subject:       Email subject
     """
     mail = imaplib.IMAP4_SSL('imap.gmail.com')
+    # TODO--w: Put following in constants somewhere and also log instead of print.
+
     mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     print "Check for mail with subject: %s" % subject
     mail.select("inbox")  # connect to inbox.
