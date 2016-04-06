@@ -1,10 +1,6 @@
 __author__ = 'basit'
 
-import time
 import re
-
-from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
@@ -14,7 +10,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
-                                                                  create_smartlist_with_given_email_candidate)
+                                                                  create_smartlist_with_given_email_candidate,
+                                                                  assert_and_delete_email)
 
 
 @pytest.fixture()
@@ -103,11 +100,11 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
 
 @pytest.fixture()
 def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
-                                  assign_roles_to_user_first,
-                                  access_token_first, talent_pipeline):
+                                            assign_roles_to_user_first,
+                                            access_token_first, talent_pipeline):
     """
-    This returns a campaign which has 2 candidates associated and have 2 email address. Email should be send to only one
-    address of both candidates
+    This returns a campaign which has 2 candidates associated and have 2 email address.
+    Email should be send to only one address of both candidates
     """
 
     _emails = [
@@ -219,19 +216,25 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
         sleep_time = 30
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
+
+    def fin():
+        assert_and_delete_email(campaign_with_valid_candidate.subject)
+    request.addfinalizer(fin)
     return campaign_with_valid_candidate
 
 
 @pytest.fixture()
-def sent_campaign_multiple_email(campaign_with_multiple_candidates_email, access_token_first):
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email, access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    sleep_time = 30
     # send campaign
-    send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=sleep_time)
-    # Wait 30 seconds while email being sent
-    time.sleep(sleep_time)
+    send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=30)
+
+    def fin():
+        assert_and_delete_email(campaign_with_multiple_candidates_email.subject)
+    request.addfinalizer(fin)
+
     return campaign_with_multiple_candidates_email
 
 
@@ -249,11 +252,16 @@ def sent_campaign_bulk(request, campaign_with_ten_candidates,
         sleep_time = 15
     # send campaign
     send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
+
+    def fin():
+        assert_and_delete_email(campaign_with_ten_candidates.subject)
+    request.addfinalizer(fin)
+
     return campaign_with_ten_candidates
 
 
 @pytest.fixture()
-def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
+def send_email_campaign_by_client_id_response(request, access_token_first, campaign_with_valid_candidate):
     """
     This fixture is used to get the response of sending campaign emails with client id
     for a particular campaign. It also ensures that response is in proper format. Used in
@@ -278,6 +286,11 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign
+
+    def fin():
+        assert_and_delete_email(campaign_with_valid_candidate.subject)
+    request.addfinalizer(fin)
+
     return return_value
 
 

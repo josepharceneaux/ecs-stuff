@@ -60,11 +60,11 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == 2
 
-    def test_get_sends(self, access_token_first, sent_campaign_multiple_email):
+    def test_get_blasts_for_primary_candidate_emails(self, access_token_first,
+                                                     sent_campaign_multiple_email):
         """
-        Here we use `sent_campaign_multiple_email` fixture to send campaign with two emails. But email should be sent to
-        only primary or latest email.
-
+        Here we use `sent_campaign_multiple_email` fixture to send campaign with two emails.
+        But email should be sent to only primary or latest email.
         """
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,
