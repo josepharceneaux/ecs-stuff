@@ -393,7 +393,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         # otherwise log and raise the invalid error.
         if len(search_result) == 1:
             if CandidateEmail.is_bounced_email(email):
-                logger.warn('Skipping this email because this email address is marked as bounced.'
+                logger.info('Skipping this email because this email address is marked as bounced.'
                             'CandidateId : %s, Email: %s, EmailCampaignId: %s' % (_id, email, campaign.id))
                 continue
             filtered_email_rows.append((_id, email))
@@ -751,3 +751,30 @@ def _update_blast_sends(blast_obj, new_sends, campaign, user, new_candidates_onl
     logger.info("Marketing email batch completed, emails sent=%s, "
                 "campaign=%s, user=%s, new_candidates_only=%s",
                 new_sends, campaign.name, user.email, new_candidates_only)
+
+
+def handle_email_bounce(request, message):
+    """
+    This function handles email bounces. When an email is bounced, email address is marked as bounced so
+    no further emails will be sent to this email address.
+    It also updates email campaign bounces in respective blast.
+    :param request: http request
+    :param message: JSON bounce message body
+    """
+    logger.info('Bounce Detected: %s' % message)
+    message_id = message['mail']['messageId']
+    bounce = message['bounce']
+    emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
+    db.session.commit()
+    send_obj = EmailCampaignSend.get_by_ses_message_id(message_id)
+    if not send_obj:
+        logger.error('Unable to find email campaign for this email bounce: %s' % request.data)
+        return None
+        # raise InternalServerError('Unable to find email campaign for this email bounce: %s' % request.data)
+    send_obj.update(is_ses_bounce=True)
+    blast = send_obj.blast
+    blast.update(bounces=(blast.bounces + 1))
+    query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
+    query.update(dict(is_bounced=1), synchronize_session=False)
+    db.session.commit()
+    logger.info('Marked %s email addresses as bounced' % emails)
