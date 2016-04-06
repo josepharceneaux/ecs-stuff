@@ -29,6 +29,9 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 __author__ = 'basit'
 
+MAIL_CONNECTION = imaplib.IMAP4_SSL('imap.gmail.com')
+MAIL_CONNECTION.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+
 
 def create_email_campaign(user):
     """
@@ -234,18 +237,16 @@ def assert_and_delete_email(subject):
     It then deletes the email from the inbox.
     :param subject:       Email subject
     """
-    mail = imaplib.IMAP4_SSL('imap.gmail.com')
-    mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
     print "Check for mail with subject: %s" % subject
-    mail.select("inbox")  # connect to inbox.
+    MAIL_CONNECTION.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
-    result, [msg_ids] = mail.search(None, '(SUBJECT "%s")' % subject)
-    assert [msg_ids], "Mail with subject %s was not found." % subject
+    result, [msg_ids] = MAIL_CONNECTION.search(None, '(SUBJECT "%s")' % subject)
+    assert msg_ids, "Mail with subject %s was not found." % subject
     print "Email(s) found with subject: %s" % subject
     msg_ids = ','.join(msg_ids.split(' '))
     # Change the Deleted flag to delete the email from Inbox
-    mail.store(msg_ids, '+FLAGS', r'(\Deleted)')
-    status, response = mail.expunge()
+    MAIL_CONNECTION.store(msg_ids, '+FLAGS', r'(\Deleted)')
+    status, response = MAIL_CONNECTION.expunge()
     assert status == 'OK'
     print "Email(s) deleted with subject: %s" % subject
 

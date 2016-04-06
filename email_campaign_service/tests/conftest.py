@@ -1,6 +1,7 @@
 __author__ = 'basit'
 
 import re
+import imaplib
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
