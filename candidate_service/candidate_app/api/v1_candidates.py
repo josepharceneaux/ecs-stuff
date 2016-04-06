@@ -116,8 +116,8 @@ class CandidatesResource(Resource):
 
             # Email addresses must be properly formatted
             for email in _candidate_dict.get('emails') or []:
-                email_address = email['address'].strip()
-                if not email_address:
+                email_address = email['address'].strip()  # email address is required within the email dict
+                if not email_address:  # in case just a whitespace is provided, e.g. "  "
                     raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
 
                 if not is_valid_email(email_address):

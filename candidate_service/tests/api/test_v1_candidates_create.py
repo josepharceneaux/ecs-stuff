@@ -708,6 +708,33 @@ class TestCreateCandidateEducationDegree(object):
         candidate_educations = get_resp.json()['candidate']['educations']
         assert not candidate_educations, "Candidate education record not added to db because data was empty"
 
+    def test_candidate_education_degree_with_no_degree_title_or_degree_type(self, access_token_first,
+                                                                            user_first, talent_pool):
+        """
+        Test:  Degree title or degree type must be provided for other fields to count. e.g.
+          If gpa & start year of education degree are provided but not the degree title or degree type
+          then nothing gets added to db.
+        Expect: 201, but education degree should not be added to db
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
+                {'school_name': 'uc berkeley', 'city': 'berkeley', 'degrees': [
+                {'title': ' ', 'gpa': 3.50, 'start_year': 2012, 'end_year': 2016}]}
+            ]}
+        ]}
+        # Create candidate education with empty values
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_educations = get_resp.json()['candidate']['educations']
+        assert get_resp.status_code == 200
+        assert len(candidate_educations[0]['degrees']) == 0
+
 
 class TestCreateWorkExperience(object):
     def test_create_work_experience_successfully(self, access_token_first, user_first, talent_pool):

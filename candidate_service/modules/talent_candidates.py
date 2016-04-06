@@ -1324,21 +1324,19 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
-                degree_type=education_degree['type'].strip() if education_degree.get('type') else None
-                degree_title=education_degree['title'].strip() if education_degree.get('title') else None
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
-                    degree_type=degree_type,
-                    degree_title=degree_title,
-                    start_year=education_degree.get('start_year') if degree_title or degree_type else None,
-                    start_month=education_degree.get('start_month') if degree_title or degree_type else None,
-                    end_year=education_degree.get('end_year') if degree_title or degree_type else None,
-                    end_month=education_degree.get('end_month') if degree_title or degree_type else None,
-                    gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
+                    degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
+                    degree_title=education_degree['title'].strip() if education_degree.get('title') else None,
+                    start_year=education_degree.get('start_year'),
+                    start_month=education_degree.get('start_month'),
+                    end_year=education_degree.get('end_year'),
+                    end_month=education_degree.get('end_month'),
+                    gpa_num=education_degree['gpa'].strip() if education_degree.get('gpa') else None,
                     added_time=added_datetime,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
-                    start_time=education_degree.get('start_time') if degree_title or degree_type else None,
-                    end_time=education_degree.get('end_time') if degree_title or degree_type else None
+                    start_time=education_degree.get('start_time'),
+                    end_time=education_degree.get('end_time')
                 )
                 # Remove keys with None values
                 education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
@@ -1473,6 +1471,8 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             for education_degree in education_degrees:
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
+                gpa_num=education_degree['gpa'].strip() \
+                    if (education_degree.get('gpa') and (degree_title or degree_type)) else None
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=degree_type,
@@ -1481,8 +1481,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
                     end_year=education_degree.get('end_year') if degree_title or degree_type else None,
                     end_month=education_degree.get('end_month') if degree_title or degree_type else None,
-                    gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
-                    added_time=added_datetime,
+                    gpa_num=gpa_num,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
                     start_time=education_degree.get('start_time') if degree_title or degree_type else None,
                     end_time=education_degree.get('end_time') if degree_title or degree_type else None
@@ -1494,6 +1493,9 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                 education_degree_bullets = education_degree.get('bullets') or []
                 if not education_degree_dict and not education_degree_bullets:
                     continue
+
+                # Update education_degree_dict with added_time
+                education_degree_dict['added_time'] = added_datetime
 
                 # Prevent duplicate entries
                 candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
@@ -1885,7 +1887,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
                 to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
-            iso3166_country=military_service['country_code'].strip() if military_service.get('country_code') else None,
+            iso3166_country=military_service['country_code'].upper() if military_service.get('country_code') else None,
             service_status=military_service['status'].strip() if military_service.get('status') else None,
             highest_rank=military_service['highest_rank'] if military_service.get('highest_rank') else None,
             highest_grade=military_service['highest_grade'].strip() if military_service.get('highest_grade') else None,
