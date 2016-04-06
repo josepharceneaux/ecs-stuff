@@ -98,7 +98,7 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Authenticated user
+        # Get authenticated user
         authed_user, body_dict = request.user, get_json_if_exist(request)
 
         # Validate json data
@@ -254,7 +254,7 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Authenticated user and request body
+        # Get authenticated user and request body
         authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
         # Validate json data
@@ -407,7 +407,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
         """
         start_time = time()
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Either candidate_id or candidate_email must be provided
@@ -442,7 +442,7 @@ class CandidateResource(Resource):
                 OR
                 II. DELETE /v1/candidates/:email
         """
-        # Authenticate user
+        # Get authenticated user
         authed_user = request.user
         candidate_id, candidate_email = kwargs.get('id'), kwargs.get('email')
 
@@ -482,7 +482,7 @@ class CandidateAddressResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         addresses or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and address_id
@@ -528,7 +528,7 @@ class CandidateAreaOfInterestResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         areas of interest or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and area_of_interest_id
@@ -581,7 +581,7 @@ class CandidateCustomFieldResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         custom fields or just a single one.
         """
-        # Authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
+        # Get authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
         authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
@@ -627,7 +627,7 @@ class CandidateEducationResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         educations or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and education_id
@@ -673,7 +673,7 @@ class CandidateEducationDegreeResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         education-degrees or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id, education_id, and degree_id
@@ -727,7 +727,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         education-degree-bullets or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get required IDs
@@ -795,7 +795,7 @@ class CandidateExperienceResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         work_experiences or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and experience_id
@@ -845,7 +845,7 @@ class CandidateExperienceBulletResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         work_experience-bullets or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get required IDs
@@ -906,7 +906,7 @@ class CandidateEmailResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         emails or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and email_id
@@ -952,7 +952,7 @@ class CandidateMilitaryServiceResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         military_services or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and military_service_id
@@ -998,7 +998,7 @@ class CandidatePhoneResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         phones or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and phone_id
@@ -1044,7 +1044,7 @@ class CandidatePreferredLocationResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         preferred_locations or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and preferred_location_id
@@ -1091,7 +1091,7 @@ class CandidateSkillResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         skills or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and work_preference_id
@@ -1138,7 +1138,7 @@ class CandidateSocialNetworkResource(Resource):
         Depending on the endpoint requested, function will delete all of Candidate's
         social_networks or just a single one.
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
 
         # Get candidate_id and work_preference_id
@@ -1184,7 +1184,7 @@ class CandidateWorkPreferenceResource(Resource):
         Endpoint: DELETE /v1/candidates/:candidate_id/work_preference
         Function will delete Candidate's work_preference
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check for candidate's existence and web-hidden status
@@ -1219,7 +1219,7 @@ class CandidateEditResource(Resource):
         Endpoint: GET /v1/candidates/:id/edits
         Function will return requested Candidate with all of its edits.
         """
-        # Authenticated user & candidate_id
+        # Get authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
@@ -1243,7 +1243,7 @@ class CandidateOpenWebResource(Resource):
         Endpoint: GET /v1/candidates/openweb?url=http://...
         Function will return requested Candidate url, email from openweb endpoint
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user = request.user
         url = request.args.get('url')
         email = request.args.get('email')
@@ -1426,7 +1426,7 @@ class CandidateViewResource(Resource):
         Endpoint:  GET /v1/candidates/:candidate_id/views
         Function will retrieve all view information pertaining to the requested Candidate
         """
-        # Authenticated user & candidate_id
+        # Get authenticated user & candidate_id
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence and web-hidden status
@@ -1443,7 +1443,7 @@ class CandidateViewResource(Resource):
                 views = fetch_aggregated_candidate_views(authed_user.domain_id, candidate_id)
                 return {'aggregated_views': views}
 
-        candidate_views = fetch_candidate_views(candidate_id=candidate_id)
+        candidate_views = fetch_candidate_views(candidate_id)
         return {'candidate_views': [candidate_view for candidate_view in candidate_views]}
 
 
@@ -1456,7 +1456,7 @@ class CandidatePreferenceResource(Resource):
         Endpoint: GET /v1/candidates/:id/preferences
         Function will return requested candidate's preference(s)
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure Candidate exists & is not web-hidden
@@ -1476,7 +1476,7 @@ class CandidatePreferenceResource(Resource):
         Function will create candidate's preference(s)
         input: {'frequency_id': 1}
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
@@ -1516,7 +1516,7 @@ class CandidatePreferenceResource(Resource):
         Function will update candidate's subscription preference
         Input: {'frequency_id': 1}
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
@@ -1556,7 +1556,7 @@ class CandidatePreferenceResource(Resource):
         Endpoint:  DELETE /v1/candidates/:id/preferences
         Function will delete candidate's subscription preference
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
@@ -1594,7 +1594,7 @@ class CandidateDeviceResource(Resource):
             >>> response = requests.get(CandidateApiUrl.DEVICES % candidate_id,
             >>>                          headers=headers)
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure Candidate exists & is not web-hidden
@@ -1643,7 +1643,7 @@ class CandidateDeviceResource(Resource):
                     404 (ResourceNotFound)
                     500 (Internal Server Error)
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
@@ -1707,7 +1707,7 @@ class CandidateDeviceResource(Resource):
                     "message": "device (id: sad3232fedsagfewrq32323423dasdasd) has been deleted for candidate (id: 10)"
                 }
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
@@ -1741,7 +1741,7 @@ class CandidatePhotosResource(Resource):
         Endpoint:  POST /v1/candidates/:id/photos
         Function will add candidate photo to db
         """
-        # Authenticated user
+        # Get authenticated user
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is not web-hidden
@@ -1773,7 +1773,7 @@ class CandidatePhotosResource(Resource):
           ii.  GET /v1/candidates/:candidate_id/photos/:id
         Function will return candidate photo(s) information
         """
-        # Authenticated user, candidate ID, and photo ID
+        # Get authenticated user, candidate ID, and photo ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
         photo_id = kwargs.get('id')
 
@@ -1813,7 +1813,7 @@ class CandidatePhotosResource(Resource):
         Endpoint: PATCH /v1/candidates/:candidate_id/photos
         Function will update candidate's photos' information
         """
-        # Authenticated user, candidate ID, and photo ID
+        # Get authenticated user, candidate ID, and photo ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
@@ -1850,7 +1850,7 @@ class CandidatePhotosResource(Resource):
             ii.  DELETE /v1/candidates/:candidate_id/photos/:id
         Function will delete candidate's photo(s) from database
         """
-        # Authenticated user, Candidate ID, and photo ID
+        # Get authenticated user, Candidate ID, and photo ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
         photo_id = kwargs.get('id')
 
@@ -1895,7 +1895,7 @@ class CandidateNotesResource(Resource):
         Endpoint:  POST /v1/candidates/:candidate_id/notes
         Function will add candidate's note(s) to database
         """
-        # Authenticated user & Candidate ID
+        # Get authenticated user & Candidate ID
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check if candidate exists & is web-hidden
@@ -1924,7 +1924,7 @@ class CandidateNotesResource(Resource):
         Endpoints:  GET /v1/candidates/:candidate_id/notes
         Function will retrieve all of candidate's notes
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check if candidate exists & is web-hidden
@@ -1949,7 +1949,7 @@ class CandidateLanguageResource(Resource):
         Endpoint:  POST /v1/candidates/:candidate_id/languages
         Function will create language(s) for requested candidate
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
@@ -1977,7 +1977,7 @@ class CandidateLanguageResource(Resource):
             ii. GET /v1/candidates/:candidate_id/languages/:id
         Function will retrieve all of candidate's languages
         """
-        # Authenticated user & candidate ID
+        # Get authenticated user & candidate ID
         authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
@@ -2007,7 +2007,7 @@ class CandidateLanguageResource(Resource):
         Endpoint:  PATCH /v1/candidates/:candidate_id/languages
         Function will update candidate's languages
         """
-        # Authenticate user & Candidate ID
+        # Get authenticated user & Candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
@@ -2037,7 +2037,7 @@ class CandidateLanguageResource(Resource):
             - status code: 200
             - json body: {'language_ids': [int, int, ...]}
         """
-        # Authenticated user, Candidate ID, and Language ID
+        # Get authenticated user, Candidate ID, and Language ID
         authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
