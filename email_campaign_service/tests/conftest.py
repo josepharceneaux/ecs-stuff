@@ -339,5 +339,8 @@ def mail_connection():
     received the email
     """
     mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
-    mail_connection.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+    try:
+        mail_connection.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
+    except Exception:
+        pass
     return mail_connection
