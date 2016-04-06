@@ -177,7 +177,7 @@ class TestCreateCampaign(object):
                                                          None)
 
     def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline,
-                                                     assign_roles_to_user_first):
+                                                     assign_roles_to_user_first, mail_connection):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
@@ -190,6 +190,8 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
+        time.sleep(30)
+        assert_and_delete_email(mail_connection, subject)
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):
@@ -418,7 +420,7 @@ class TestSendCampaign(object):
             access_token_first, campaign_with_candidate_having_no_email.id)
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
-            self, access_token_first, user_first, campaign_with_valid_candidate):
+            self, access_token_first, user_first, campaign_with_valid_candidate, mail_connection):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with distinct email addresses). Email Campaign should be sent to
@@ -428,7 +430,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_and_delete_email(campaign.subject)
+        assert_and_delete_email(mail_connection, campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -446,7 +448,7 @@ class TestSendCampaign(object):
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
-            self, access_token_first, user_first,
+            self, access_token_first, user_first, mail_connection,
             campaign_with_candidates_having_same_email_in_diff_domain):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -457,7 +459,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_and_delete_email(campaign.subject)
+        assert_and_delete_email(mail_connection, campaign.subject)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -526,7 +528,7 @@ class TestSendCampaign(object):
 
     def test_send_campaign_with_two_smartlists(
             self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first,
-            assign_roles_to_user_first):
+            assign_roles_to_user_first, mail_connection):
         """
         This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
@@ -552,7 +554,7 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         time.sleep(40)  # for sending campaign
         assert_campaign_send(response, campaign, user_first, 40)
-        assert_and_delete_email(campaign.subject)
+        assert_and_delete_email(mail_connection, campaign.subject)
 
 
 # Test for healthcheck

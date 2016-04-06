@@ -1,8 +1,9 @@
 # Standard Imports
-import imaplib
 import json
 import time
 import datetime
+
+# Third Party
 import requests
 
 # Application Specific
@@ -29,21 +30,16 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 __author__ = 'basit'
 
-MAIL_CONNECTION = imaplib.IMAP4_SSL('imap.gmail.com')
-MAIL_CONNECTION.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-
 
 def create_email_campaign(user):
     """
     This creates an email campaign for given user
     """
-    email_campaign_name = fake.name()
-    email_campaign_subject = fake.sentence()
     campaign_body_html = "<html><body>Email campaign test</body></html>"
-    email_campaign = EmailCampaign(name=email_campaign_name,
+    email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=email_campaign_subject,
+                                   subject=fake.sentence(),
                                    _from=fake.safe_email(),
                                    reply_to=fake.email(),
                                    body_html=campaign_body_html,
@@ -231,22 +227,22 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def assert_and_delete_email(subject):
+def assert_and_delete_email(mail_connection, subject):
     """
     Asserts that the user received the email in his inbox which has the given subject.
     It then deletes the email from the inbox.
     :param subject:       Email subject
     """
     print "Check for mail with subject: %s" % subject
-    MAIL_CONNECTION.select("inbox")  # connect to inbox.
+    mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
-    result, [msg_ids] = MAIL_CONNECTION.search(None, '(SUBJECT "%s")' % subject)
+    result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
     assert msg_ids, "Mail with subject %s was not found." % subject
     print "Email(s) found with subject: %s" % subject
     msg_ids = ','.join(msg_ids.split(' '))
     # Change the Deleted flag to delete the email from Inbox
-    MAIL_CONNECTION.store(msg_ids, '+FLAGS', r'(\Deleted)')
-    status, response = MAIL_CONNECTION.expunge()
+    mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
+    status, response = mail_connection.expunge()
     assert status == 'OK'
     print "Email(s) deleted with subject: %s" % subject
 
@@ -301,11 +297,11 @@ def post_to_email_template_resource(access_token, data):
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
     """
-    response = requests.post(
-            url=EmailCampaignUrl.TEMPLATES, data=json.dumps(data),
-            headers={'Authorization': 'Bearer %s' % access_token,
-                     'Content-type': 'application/json'}
-    )
+    response = requests.post(url=EmailCampaignUrl.TEMPLATES,
+                             data=json.dumps(data),
+                             headers={'Authorization': 'Bearer %s' % access_token,
+                                      'Content-type': 'application/json'}
+                             )
     return response
 
 
