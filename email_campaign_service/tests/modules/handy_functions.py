@@ -13,7 +13,7 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
-                                                       UrlConversion)
+                                                       UrlConversion, Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
@@ -67,10 +67,9 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline,
-                                                                  emails_list=emails_list,
-                                                                  count=count)
+    smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline,
+                                                      emails_list=emails_list,
+                                                      count=count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
@@ -238,13 +237,10 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
 
 def assert_mail(subject):
     """
-    Asserts that the user received the email in his inbox which has the subject as subject,
-
-
+    Asserts that the user received the email in his inbox which has the subject as subject
     :param subject:       Email subject
     :return:
     """
-    time.sleep(30)
     abort_after = 60
     start = time.time()
     mail_found = False
@@ -293,7 +289,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    time.sleep(30)
+    time.sleep(40)
     db.session.commit()
     assert len(campaign.blasts.all()) == 1
     campaign_blast = campaign.blasts[0]
@@ -323,6 +319,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         assert str(
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+
 
 def post_to_email_template_resource(access_token, data):
     """
@@ -456,3 +453,49 @@ def template_body():
            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
            '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
            '\r\n</body>\r\n</html>\r\n'
+
+
+def create_email_campaign_via_api(access_token, data, is_json=True):
+    """
+    This function makes HTTP POST call on /v1/email-campaigns to create
+    an email-campaign. It then returns the response from email-campaigns API.
+    :param access_token: access token of user
+    :param data: data required for creation of campaign
+    :param is_json: If True, it will take dumps of data to be sent in POST call. Otherwise it
+                    will send data as it is.
+    :return: response of API call
+    """
+    if is_json:
+        data = json.dumps(data)
+    response = requests.post(
+        url=EmailCampaignUrl.CAMPAIGNS,
+        data=data,
+        headers={'Authorization': 'Bearer %s' % access_token,
+                 'content-type': 'application/json'}
+    )
+    return response
+
+
+def create_data_for_campaign_creation(access_token, talent_pipeline, subject, campaign_name=fake.name()):
+    """
+    This function returns the required data to create an email campaign
+    :param access_token: access token of user
+    :param talent_pipeline: talent_pipeline of user
+    :param subject: Subject of campaign
+    :param campaign_name: Name of campaign
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    smartlist_id, _ = create_smartlist_with_candidate(access_token,
+                                                                  talent_pipeline)
+    return {'name': campaign_name,
+            'subject': subject,
+            'from': email_from,
+            'reply_to': reply_to,
+            'body_html': body_html,
+            'body_text': body_text,
+            'frequency_id': Frequency.ONCE,
+            'list_ids': [smartlist_id]
+            }

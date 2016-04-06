@@ -23,6 +23,8 @@ from candidate_service.modules.talent_cloud_search import (
 from candidate_service.modules.talent_candidates import fetch_candidate_info, get_search_params_of_smartlists
 # Models
 from candidate_service.common.models.user import DomainRole
+# Default Page Size
+from candidate_service.common.utils.api_utils import DEFAULT_PAGE_SIZE
 
 
 class CandidateSearch(Resource):

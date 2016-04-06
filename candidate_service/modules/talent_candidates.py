@@ -2,6 +2,7 @@
 Helper functions for candidate CRUD operations and tracking edits made to the Candidate
 """
 # Standard libraries
+import re
 import datetime
 import urlparse
 import dateutil.parser
@@ -187,15 +188,7 @@ def format_candidate_full_name(candidate):
     """
     assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
-
-    return full_name
+    return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
 
 
 def candidate_emails(candidate):
@@ -284,7 +277,7 @@ def _candidate_experience_bullets(experience):
     experience_bullets = experience.bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
-             'added_time': str(experience_bullet.added_time)
+             'added_time': DatetimeUtils.to_utc_str(experience_bullet.added_time) if experience_bullet.added_time else None
              } for experience_bullet in experience_bullets]
 
 
@@ -305,7 +298,7 @@ def candidate_work_preference(candidate):
             'salary': work_preference[0].salary,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].bool_third_party
-            } if work_preference else dict()
+            } if work_preference else {}
 
 
 def candidate_preferred_locations(candidate):
@@ -314,14 +307,14 @@ def candidate_preferred_locations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    preferred_locations = candidate.preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
-             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision) if preferred_location.iso3166_subdivision else None,
+             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision)
+             if preferred_location.iso3166_subdivision else None,
              'country': get_country_name(preferred_location.iso3166_country)
-             } for preferred_location in preferred_locations]
+             } for preferred_location in candidate.preferred_locations]
 
 
 def candidate_educations(candidate):
@@ -434,11 +427,10 @@ def candidate_custom_fields(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
     return [{'id': custom_field.id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in custom_fields]
+             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
@@ -545,7 +537,7 @@ def fetch_candidate_views(candidate_id):
              'candidate_id': view.candidate_id,
              'user_id': view.user_id,
              'view_type': view.view_type,
-             'view_datetime': str(view.view_datetime)
+             'view_datetime': DatetimeUtils.to_utc_str(view.view_datetime)
              } for view in candidate_views]
 
 
@@ -569,7 +561,7 @@ def fetch_aggregated_candidate_views(domain_id, candidate_id):
             return_obj.append(
                 {
                     'user_id': user.id,
-                    'last_view_datetime': str(views[-1].view_datetime),
+                    'last_view_datetime': DatetimeUtils.to_utc_str(views[-1].view_datetime),
                     'view_count': len(views)
                 }
             )
@@ -620,16 +612,14 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
     if is_update:  # Update
         can_subs_pref_query.update(dict(frequency_id=frequency_id))
     else:  # Add
-        db.session.add(CandidateSubscriptionPreference(
-            candidate_id=candidate_id, frequency_id=frequency_id
-        ))
+        db.session.add(CandidateSubscriptionPreference(candidate_id=candidate_id, frequency_id=frequency_id))
     db.session.commit()
 
 
 #######################################
 # Helper Functions For Candidate Photos
 #######################################
-def add_photos(candidate_id, photos, added_time=None):
+def add_photos(candidate_id, photos):
     """
     Function will add a new entry into CandidatePhoto
     :type candidate_id: int|long
@@ -887,7 +877,7 @@ def create_or_update_candidate_from_params(
     if first_name or last_name or middle_name or formatted_name:
         if (first_name or last_name) and not formatted_name:
             # If first_name and last_name given but not formatted_name, guess it
-            formatted_name = get_fullname_from_name_fields(first_name, middle_name, last_name)
+            formatted_name = get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
         elif formatted_name and (not first_name or not last_name):
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
@@ -988,15 +978,8 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     Function will concatenate names if any, otherwise will return empty string
     :rtype: str
     """
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
+    return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
 
-    return full_name
 
 
 def get_name_fields_from_name(formatted_name):

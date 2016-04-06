@@ -2,9 +2,9 @@ import json
 from sqlalchemy import and_
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.models.candidate import Candidate
-from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_pool_service.common.error_handling import InvalidUsage, ForbiddenError
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
+
 __author__ = 'jitesh'
 
 

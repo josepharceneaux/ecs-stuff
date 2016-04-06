@@ -87,9 +87,6 @@ def name_tags_to_name(tag):
     middle_name = tag_text(tag, 'middlename', capwords=True)
     first_name = tag_text(tag, 'givenname', capwords=True)
     last_name = tag_text(tag, 'familyname', capwords=True)
-    # TODO Adding this here for the purpose of demo on 4/4/2016. Current app store build crashes if last_name is "".
-    if not last_name:
-        last_name = "."
     formatted_name = tag_text(tag, 'formattedname', capwords=True)
     if formatted_name and not first_name and not last_name: # if formatted_name but not first + last
         split_name = formatted_name.split(' ')

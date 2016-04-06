@@ -6,6 +6,7 @@ import re
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
@@ -56,8 +57,7 @@ def email_campaign_in_other_domain(request,
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
-    create_email_campaign_smartlist(access_token_other, talent_pipeline_other,
-                                    campaign)
+    create_email_campaign_smartlist(access_token_other, talent_pipeline_other, campaign)
 
     def fin():
         delete_campaign(campaign)
@@ -293,3 +293,27 @@ def template_id(domain_id):
     template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=template_folder_id)
 
     return template['id']
+
+
+@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
+def invalid_data_for_campaign_creation(request):
+    """
+    This function returns the data to create an email campaign. It also removes a required
+    field from data to make it invalid.
+    Required fields are 'name', 'subject', 'body_html', 'frequency_id', 'list_ids'
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    campaign_data = {'name': fake.name(),
+                     'subject': fake.sentence(),
+                     'from': email_from,
+                     'reply_to': reply_to,
+                     'body_html': body_html,
+                     'body_text': body_text,
+                     'frequency_id': Frequency.ONCE,
+                     'list_ids': [fake.random_number()]
+                     }
+    del campaign_data[request.param]
+    return campaign_data, request.param
