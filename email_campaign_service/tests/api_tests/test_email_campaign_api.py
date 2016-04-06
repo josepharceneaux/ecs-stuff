@@ -37,7 +37,7 @@ from email_campaign_service.tests.modules.handy_functions import (delete_campaig
                                                                   assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
-                                                                  assert_mail, assert_campaign_send,
+                                                                  assert_and_delete_email, assert_campaign_send,
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation)
 
@@ -190,12 +190,7 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
-        # Wait for 20 seconds for scheduler to execute it and then assert mail.
-        time.sleep(20)
-        # Check for email received.
-        # TODO Commenting out assert_mail() so build passes. -basit
-        # assert_mail(subject)
-        delete_campaign(resp_object['campaign'])
+        assert resp_object['campaign']['id']
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):
@@ -434,8 +429,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        # TODO: commenting for now to pass the Jenkins- basit
-        # assert_mail(campaign.subject)
+        assert_and_delete_email(campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -464,8 +458,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        # TODO: commenting for now to pass the Jenkins- basit
-        # assert_mail(campaign.subject)
+        assert_and_delete_email(campaign.subject)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -560,7 +553,7 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         time.sleep(40)  # for sending campaign
         assert_campaign_send(response, campaign, user_first, 40)
-        assert_mail(campaign.subject)
+        assert_and_delete_email(campaign.subject)
 
 
 # Test for healthcheck
