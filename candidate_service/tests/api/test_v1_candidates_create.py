@@ -129,6 +129,17 @@ class TestCreateCandidate(object):
         print response_info(create_resp)
         assert create_resp.status_code == 201
 
+    def test_add_candidate_without_name(self, access_token_first, user_first, talent_pool):
+        """
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}}
+        ]}
+        # Create candidate with missing name
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+
     def test_create_candidate_and_retrieve_it(self, access_token_first, user_first, talent_pool):
         """
         Test:   Create a Candidate and retrieve it. Ensure that the data sent in for creating the
