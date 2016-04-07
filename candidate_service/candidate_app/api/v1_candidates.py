@@ -584,6 +584,7 @@ class CandidateCustomFieldResource(Resource):
 
     @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
+<<<<<<< 932dacb603f587112064245beafae26e3534ea8c
         """
         Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
         :return  {'candidate_custom_fields': [{'id': int}, {'id': int}, ...]}
@@ -627,14 +628,23 @@ class CandidateCustomFieldResource(Resource):
                 created_ccf_ids.append(candidate_custom_field.id)
 
         return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+=======
+        pass
+>>>>>>> GET-1202 API for Custom Fields
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
+<<<<<<< 932dacb603f587112064245beafae26e3534ea8c
              i. GET /v1/candidates/:candidate_id/custom_fields
             ii. GET /v1/candidates/:candidate_id/custom_fields/:id
         Depending on the endpoint requested, function will return all of Candidate's
+=======
+             i. DELETE /v1/candidates/:candidate_id/custom_fields
+            ii. DELETE /v1/candidates/:candidate_id/custom_fields/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+>>>>>>> GET-1202 API for Custom Fields
         custom fields or just a single one.
         """
         # Get authenticated user, candidate_id, and can_cf_id
@@ -653,7 +663,7 @@ class CandidateCustomFieldResource(Resource):
                 raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
 
-            # Custom field must belong to user's domain
+            # Custom fields must belong to user's domain
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
@@ -666,8 +676,7 @@ class CandidateCustomFieldResource(Resource):
                 }
             }
 
-        else:
-            # Custom fields must belong user's domain
+        else:  # Retrieve all of Candidate's custom fields
             return {'candidate_custom_fields': [
                 {
                     'id': ccf.id,
