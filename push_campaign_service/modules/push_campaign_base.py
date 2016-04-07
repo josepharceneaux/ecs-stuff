@@ -36,6 +36,7 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
+from push_campaign_service.common.error_handling import InvalidUsage
 from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
@@ -124,10 +125,17 @@ class PushCampaignBase(CampaignBase):
         :type candidates: list
         :return: generator
         """
-        return (candidate.id for candidate in candidates)
+        candidate_and_device_ids = []
+        for candidate in candidates:
+            devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
+            device_ids = [device.one_signal_device_id for device in devices]
+            if not device_ids:
+                raise InvalidUsage('There is no device associated Candidate (id: %s)' % candidate.id)
+            candidate_and_device_ids.append((candidate.id, device_ids))
+        return candidate_and_device_ids
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, candidate_id):
+    def send_campaign_to_candidate(self, candidate_and_device_ids):
         """
         This method sends campaign to a single candidate. It gets the devices associated with
         the candidate and sends this campaign to all devices using OneSignal's RESTful API.
@@ -139,10 +147,12 @@ class PushCampaignBase(CampaignBase):
         This URL is sent to candidate in push notification and when user clicks on notification
         he is redirected to our url redirection endpoint, which after updating campaign stats,
         redirected to original url given for campaign owner.
-        :param candidate_id: id of candidate in candidate table in getTalent database
+        :param candidate_and_device_ids: list of tuple and each tuple contains id of candidate and
+               list of candidate device ids
         :return: True | None
         """
         with app.app_context():
+            candidate_id, device_ids = candidate_and_device_ids
             candidate = Candidate.get_by_id(candidate_id)
             self.campaign = PushCampaign.get_by_id(self.campaign_id)
             assert isinstance(candidate, Candidate), \
@@ -150,8 +160,6 @@ class PushCampaignBase(CampaignBase):
             logger.info('Going to send campaign to candidate (id = %s)' % candidate.id)
             # A device is actually candidate's desktop, android or iOS machine where
             # candidate will receive push notifications. Device id is given by OneSignal.
-            devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
-            device_ids = [device.one_signal_device_id for device in devices]
             if not device_ids:
                 logger.error('Candidate has not subscribed for push notification. candidate_id: %s,'
                              'campaign_id: %s' % (candidate_id, self.campaign_id))

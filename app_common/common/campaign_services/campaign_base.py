@@ -1181,14 +1181,14 @@ class CampaignBase(object):
             # get candidate objects
             candidates = [Candidate.get_by_id(candidate['id'])
                           for candidate in response.json()['candidates']]
-            page_count = response.headers['X-Page-Count']
-            for page_no in xrange(2, page_count):
-                response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-                                        % campaign_smartlist.smartlist_id + 'page=%s' % page_no,
-                                        headers=self.oauth_header, params=params, user_id=self.user.id)
-                # get candidate objects
-                candidates = [Candidate.get_by_id(candidate['id'])
-                              for candidate in response.json()['candidates']]
+            # page_count = response.headers['X-Page-Count']
+            # for page_no in xrange(2, page_count):
+            #     response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
+            #                             % campaign_smartlist.smartlist_id + 'page=%s' % page_no,
+            #                             headers=self.oauth_header, params=params, user_id=self.user.id)
+            #     # get candidate objects
+            #     candidates = [Candidate.get_by_id(candidate['id'])
+            #                   for candidate in response.json()['candidates']]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)

@@ -13,6 +13,7 @@ but user is different.
 
 """
 import pytest
+import time
 from requests import codes as HttpStatus
 
 from ..test_config_manager import load_test_config
@@ -128,6 +129,7 @@ def candidate_first(request, talent_pool, token_first, user_first):
     :param talent_pool: talent pool dict object associated to user_first
     """
     response = create_candidate(talent_pool['id'], token_first)
+    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_first)['candidate']
 
@@ -149,6 +151,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     :param token_same_domain: authentication token
     """
     response = create_candidate(talent_pool['id'], token_same_domain)
+    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_same_domain)['candidate']
 
@@ -170,6 +173,7 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     :param talent_pool_second: talent pool dict object from domain second
     """
     response = create_candidate(talent_pool_second['id'], token_second)
+    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
     candidate = get_candidate(candidate_id, token_second)['candidate']
 
@@ -217,6 +221,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
+    time.sleep(25)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
@@ -240,6 +245,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
+    time.sleep(25)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
@@ -263,6 +269,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
+    time.sleep(25)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_same_domain,
