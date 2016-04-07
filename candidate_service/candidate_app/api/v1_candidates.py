@@ -579,6 +579,56 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        pass
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/custom_fields
+            ii. DELETE /v1/candidates/:candidate_id/custom_fields/:id
+        Depending on the endpoint requested, function will delete all of Candidate's
+        custom fields or just a single one.
+        """
+        # Get authenticated user, candidate_id, and can_cf_id
+        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if can_cf_id:  # Retrieve specified custom field
+            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
+            if not candidate_custom_field:
+                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom fields must belong to user's domain
+            custom_field_id = candidate_custom_field.custom_field_id
+            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            return {
+                'candidate_custom_field': {
+                    'custom_field_id': custom_field_id,
+                    'value': candidate_custom_field.value,
+                    'created_at_datetime': candidate_custom_field.added_time.isoformat()
+                }
+            }
+
+        else:  # Retrieve all of Candidate's custom fields
+            return {'candidate_custom_fields': [
+                {
+                    'id': ccf.id,
+                    'custom_field_id': ccf.custom_field_id,
+                    'value': ccf.value, 'created_at_datetime': ccf.added_time.isoformat()
+                } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
+
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
