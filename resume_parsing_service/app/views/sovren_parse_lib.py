@@ -59,7 +59,7 @@ def fetch_sovren_response(resume):
 def parse_sovren_xml(raw_xml):
     resume_soup = bs4(raw_xml, 'lxml')
     contact_soup = resume_soup.find('contactinfo')
-    names = name_tags_to_name(contact_soup.find('personname')) if contact_soup.find('personname') else None
+    names = name_tags_to_name(contact_soup.find('personname'))
     addresses = contact_tag_to_addresses(contact_soup)
     emails = contact_tag_to_emails(contact_soup)
     phones = contact_tag_to_phones(contact_soup)
@@ -68,9 +68,9 @@ def parse_sovren_xml(raw_xml):
     skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
 
     candidate = dict(
-        first_name=names.first if names else None,
-        last_name=names.last if names else None,
-        middle_name=names.middle if names else None,
+        first_name=names.first,
+        last_name=names.last,
+        middle_name=names.middle,
         emails=emails,
         phones=phones,
         work_experiences=work_experiences,
@@ -83,7 +83,12 @@ def parse_sovren_xml(raw_xml):
 
 
 def name_tags_to_name(tag):
-    if not tag or not tag.findAll(): return None, None, None, None
+    """
+    :rtype: NameCollection
+    """
+    if not tag or not tag.findAll():
+        return NameCollection(None, None, None)
+
     middle_name = tag_text(tag, 'middlename', capwords=True)
     first_name = tag_text(tag, 'givenname', capwords=True)
     last_name = tag_text(tag, 'familyname', capwords=True)
