@@ -93,7 +93,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
                                                          return_candidate_ids_only=True)
     if assert_candidates:
         # TODO: need to improve this
-        time.sleep(8)  # added due to uploading candidates on CS
+        time.sleep(15)  # added due to uploading candidates on CS
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
@@ -102,7 +102,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     if assert_candidates:
         if get_polled_result(assert_candidates_upload, [smartlist_id, len(candidate_ids),
                                                         access_token],
-                             abort_after=15, default_result=False):
+                             abort_after=25, default_result=False):
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         else:
             raise InternalServerError('Candidates could not be found on cloud.')
