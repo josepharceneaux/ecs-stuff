@@ -1,12 +1,11 @@
-import json
-from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.models.db import db
-from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
-from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.models.user import User
+from candidate_pool_service.candidate_pool_app import cache
+from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.error_handling import InternalServerError
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
+from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
 from candidate_pool_service.common.utils.candidate_service_calls import update_candidates_on_cloudsearch
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
 
 __author__ = 'jitesh'
 
@@ -22,7 +21,9 @@ def search_and_count_candidates_from_params(smartlist):
 
 
 def create_candidates_dict(candidate_ids):
-    """Given candidate ids, function will return respective candidates in formatted dict"""
+    """Given candidate ids, function will return respective candidates in formatted dict
+    :param candidate_ids: Ids of candidates.
+    """
     candidates = Candidate.query.filter(Candidate.id.in_(candidate_ids)).all()
     candidates_dict = {"candidates": [], "total_found": 0}
     for candidate in candidates:
@@ -58,6 +59,7 @@ def create_smartlist_dict(smartlist, oauth_token):
 def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
     """
     Get all smartlists from user's domain.
+    :param oauth_token: Token for authentication.
     :param auth_user: User object
     :param page: Index of Page
     :param page_size: Size of a single page
@@ -87,8 +89,10 @@ def save_smartlist(user_id, name, talent_pipeline_id, search_params=None, candid
     :param talent_pipeline_id:
     :param candidate_ids: only set if you want to create a dumb list
     :type candidate_ids: list[long|int] | None
-    * only one parameter should be present: either `search_params` or `candidate_ids` (Should be validated by 'calling' function)
-    :param access_token: oauth token required only in case of candidate_ids, it is required by search service to upload candidates to cloudsearch
+                         * only one parameter should be present: either `search_params` or `candidate_ids`
+                         (Should be validated by 'calling' function)
+    :param access_token: oauth token required only in case of candidate_ids, it is required by search service
+                         to upload candidates to cloudsearch
     :type access_token: basestring
     :return: Newly created smartlist row object
     """
@@ -113,4 +117,3 @@ def save_smartlist(user_id, name, talent_pipeline_id, search_params=None, candid
 
     # TODO Add activity
     return smartlist
-

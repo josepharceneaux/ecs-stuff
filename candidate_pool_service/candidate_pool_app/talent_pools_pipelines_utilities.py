@@ -97,7 +97,8 @@ def get_candidates_from_search_api(query_string, headers):
     :return:
     """
 
-    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=query_string)
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
+                            headers=headers, params=query_string)
     if response.ok:
         return True, response.json()
     else:
@@ -427,8 +428,10 @@ def get_stats_generic_function(container_object, container_name, user=None, from
 
     try:
         # To convert UTC time to any other time zone we can use `offset_date_time` with inverted value of offset
-        from_date = parse(from_date_string) if from_date_string else offset_date_time(ninety_days_old_date_time, -1 * offset)
-        to_date = parse(to_date_string) if to_date_string else offset_date_time(current_date_time, -1 * offset)
+        from_date = parse(from_date_string).replace(tzinfo=None) if from_date_string \
+            else offset_date_time(ninety_days_old_date_time, -1 * offset)
+        to_date = parse(to_date_string).replace(tzinfo=None) if to_date_string else \
+            offset_date_time(current_date_time, -1 * offset)
     except Exception as e:
         raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 

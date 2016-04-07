@@ -94,6 +94,9 @@ def name_tags_to_name(tag):
         # all the middle names joined together
         middle_name = ' '.join(split_name[1:-1]) if len(split_name) > 2 else None
         last_name = split_name[-1]
+    first_name = first_name.strip()
+    middle_name = middle_name.strip()
+    last_name = last_name.strip()
     return NameCollection(first_name, last_name, middle_name)
 
 

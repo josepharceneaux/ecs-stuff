@@ -219,7 +219,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                 list_of_new_email_html_or_text.append(resp_dict)
             db.session.commit()
 
-            # This will be needed later
+            # TODO: This will be needed later
             # update_candidate_document_on_cloud(user, candidate_ids_and_emails,
             #                                    new_candidates_only, campaign,
             #                                    len(list_of_new_email_html_or_text))
@@ -314,7 +314,6 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
 def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
     """
     :param campaign:    email campaign row
-    :param user:        user row
     :return:            Returns array of candidate IDs in the campaign's smartlists.
                         Is unique.
     """
@@ -330,7 +329,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     for list_id in list_ids:
         # Get candidates present in smartlist
         try:
-            smartlist_candidate_ids = get_candidates_of_smartlist(list_id,
+            smartlist_candidate_ids = get_candidates_of_smartlist(list_id, campaign,
                                                                   candidate_ids_only=True)
             all_candidate_ids.extend(smartlist_candidate_ids)
         except Exception as error:
