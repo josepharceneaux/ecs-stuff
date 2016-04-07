@@ -57,29 +57,26 @@ def fetch_sovren_response(resume):
 
 
 def parse_sovren_xml(raw_xml):
+    """
+    :rtype:  dict
+    """
     resume_soup = bs4(raw_xml, 'lxml')
     contact_soup = resume_soup.find('contactinfo')
-    names = name_tags_to_name(contact_soup.find('personname'))
-    addresses = contact_tag_to_addresses(contact_soup)
-    emails = contact_tag_to_emails(contact_soup)
-    phones = contact_tag_to_phones(contact_soup)
-    work_experiences = employment_tags_to_experiences(resume_soup.findAll('employmenthistory'))
-    educations = education_tags_to_educations(resume_soup.findAll('schoolorinstitution'))
-    skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
-
-    candidate = dict(
-        first_name=names.first,
-        last_name=names.last,
-        middle_name=names.middle,
-        emails=emails,
-        phones=phones,
-        work_experiences=work_experiences,
-        educations=educations,
-        skills=skills,
-        addresses=addresses,
-        talent_pool_ids={'add': None}
-    )
-    return candidate
+    candidate_dict = {'talent_pool_ids': {'add': None}}
+    if contact_soup:
+        names = name_tags_to_name(contact_soup.find('personname'))
+        addresses = contact_tag_to_addresses(contact_soup)
+        emails = contact_tag_to_emails(contact_soup)
+        phones = contact_tag_to_phones(contact_soup)
+        candidate_dict.update(first_name=names.first, last_name=names.last, middle_name=names.middle,
+                              addresses=addresses, emails=emails, phones=phones)
+    if resume_soup:
+        work_experiences = employment_tags_to_experiences(resume_soup.findAll('employmenthistory'))
+        educations = education_tags_to_educations(resume_soup.findAll('schoolorinstitution'))
+        skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
+        candidate_dict.update(work_experiences=work_experiences, educations=educations,
+                              skills=skills)
+    return candidate_dict
 
 
 def name_tags_to_name(tag):
