@@ -1,7 +1,6 @@
 __author__ = 'basit'
 
 import re
-
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.candidate import CandidateEmail
@@ -10,7 +9,8 @@ from email_campaign_service.common.models.email_campaign import (EmailClient, Us
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign, send_campaign)
+                                                                  delete_campaign, send_campaign,
+                                                                  assert_and_delete_email)
 
 
 @pytest.fixture()
@@ -183,23 +183,49 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
         sleep_time = 15
     else:
         sleep_time = 30
+
+        def fin():
+            assert_and_delete_email(campaign_with_valid_candidate.subject)
+        request.addfinalizer(fin)
     # send campaign
     send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
+
     return campaign_with_valid_candidate
 
 
-@pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_bulk(request, campaign_with_ten_candidates,
-                       access_token_first):
+@pytest.fixture()
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
+                                 access_token_first):
     """
-    This fixture sends the campaign 1) with client_id and 2) without client id
+    This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
+    email-campaign obj.
+    """
+    # send campaign
+    send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=30)
+
+    def fin():
+        assert_and_delete_email(campaign_with_multiple_candidates_email.subject)
+    request.addfinalizer(fin)
+
+    return campaign_with_multiple_candidates_email
+
+
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_bulk(request, campaign_with_ten_candidates, access_token_first):
+    """
+    This fixture sends the given campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
     if request.param == 'with_client':
         campaign_with_ten_candidates.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 5
-    else:
         sleep_time = 15
+    else:
+        sleep_time = 40
+
+        def fin():
+            assert_and_delete_email(campaign_with_ten_candidates.subject)
+        request.addfinalizer(fin)
+
     # send campaign
     send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
     return campaign_with_ten_candidates
@@ -231,6 +257,7 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign
+
     return return_value
 
 

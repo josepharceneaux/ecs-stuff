@@ -1,9 +1,11 @@
 # Standard Imports
-import email
-import imaplib
 import json
 import time
+import uuid
+import imaplib
 import datetime
+
+# Third Party
 import requests
 
 # Application Specific
@@ -13,10 +15,12 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
-                                                       UrlConversion, Frequency)
+                                                       UrlConversion,
+                                                       Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
                                                                  define_and_send_request)
@@ -35,16 +39,13 @@ def create_email_campaign(user):
     """
     This creates an email campaign for given user
     """
-    email_campaign_name = fake.name()
-    email_campaign_subject = fake.sentence()
-    campaign_body_html = "<html><body>Email campaign test</body></html>"
-    email_campaign = EmailCampaign(name=email_campaign_name,
+    email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=email_campaign_subject,
+                                   subject=uuid.uuid4().__str__()[0:8] + '-test-e-campaign',
                                    _from=fake.safe_email(),
                                    reply_to=fake.email(),
-                                   body_html=campaign_body_html,
+                                   body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
     EmailCampaign.save(email_campaign)
@@ -55,7 +56,6 @@ def assign_roles(user):
     """
     This assign required permission to given user
     :param user:
-    :return:
     """
     add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                  DomainRole.Roles.CAN_GET_CANDIDATES])
@@ -209,18 +209,22 @@ def assert_and_delete_email(subject):
     It then deletes the email from the inbox.
     :param subject:       Email subject
     """
-    mail = imaplib.IMAP4_SSL('imap.gmail.com')
-    mail.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-    print "Check for mail with subject: %s" % subject
-    mail.select("inbox")  # connect to inbox.
+    mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
+    try:
+        mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+    except Exception:
+        pass # Maybe already login when running on Jenkins on multiple cores
+    print "Checking for Email with subject: %s" % subject
+    mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
-    result, [msg_ids] = mail.search(None, '(SUBJECT "%s")' % subject)
-    assert [msg_ids], "Mail with subject %s was not found." % subject
+    result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
+    assert msg_ids, "Email with subject %s was not found." % subject
     print "Email(s) found with subject: %s" % subject
     msg_ids = ','.join(msg_ids.split(' '))
     # Change the Deleted flag to delete the email from Inbox
-    mail.store(msg_ids, '+FLAGS', r'(\Deleted)')
-    status, response = mail.expunge()
+    mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
+    status, response = mail_connection.expunge()
     assert status == 'OK'
     print "Email(s) deleted with subject: %s" % subject
 
