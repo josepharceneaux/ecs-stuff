@@ -49,12 +49,12 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
                         'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country_code(),
-                        'is_default': True, 'po_box': None, 'subdivision_code': 'US-' + fake.state_abbr()
+                        'is_default': True, 'po_box': None, 'subdivision_code': 'US-CA'
                     },
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
                         'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country_code(),
-                        'is_default': False, 'po_box': '', 'subdivision_code': 'US-' + fake.state_abbr()
+                        'is_default': False, 'po_box': '', 'subdivision_code': 'US-CA'
                     }
                 ],
                 'work_preference': {
@@ -69,7 +69,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'work_experiences': [
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-                        'subdivision_code': 'US-' + fake.state_abbr(),
+                        'subdivision_code': 'US-CA',
                         'state': fake.state(), 'start_month': 11, 'start_year': 2005, 'is_current': True,
                         'end_month': 10, 'end_year': 2007, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
@@ -77,7 +77,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     },
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-                        'subdivision_code': 'US-' + fake.state_abbr(),
+                        'subdivision_code': 'US-CA',
                         'state': fake.state(), 'start_month': 1, 'start_year': 2008, 'is_current': None,
                         'end_month': 5, 'end_year': 2012, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
@@ -87,7 +87,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'educations': [
                     {
                         'school_name': 'SJSU', 'city': 'San Jose', 'state': 'CA', 'country': 'USA',
-                        'subdivision_code': 'US-' + fake.state_abbr(),
+                        'subdivision_code': 'US-CA',
                         'school_type': 'university', 'is_current': False, 'degrees': [
                         {
                             'type': 'BS', 'title': 'Bachelors', 'start_year': 2008, 'start_month': 9,
@@ -98,7 +98,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     },
                     {
                         'school_name': 'De Anza', 'school_type': 'college', 'city': 'cupertino', 'state': 'california',
-                        'subdivision_code': 'US-' + fake.state_abbr(),
+                        'subdivision_code': 'US-CA',
                         'country': 'america', 'is_current': True, 'degrees': [
                         {
                             'type': 'AA', 'title': 'Associate', 'start_year': 2006, 'start_month': 9,
@@ -123,11 +123,11 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'preferred_locations': [
                     {
                         'city': fake.city(), 'state': fake.state(), 'country': fake.country_code(),
-                        'subdivision_code': 'US-' + fake.state_abbr()
+                        'subdivision_code': 'US-CA'
                     },
                     {
                         'city': fake.city(), 'state': fake.state(), 'country': fake.country_code(),
-                        'subdivision_code': 'US-' + fake.state_abbr()
+                        'subdivision_code': 'US-CA'
                     }
                 ],
                 'skills': [
@@ -165,7 +165,7 @@ class GenerateCandidateDate(object):
                 [
                     {
                         'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-                        'subdivision_code': 'US-' + fake.state_abbr(), 'zip_code': fake.zipcode(),
+                        'subdivision_code': 'US-CA', 'zip_code': fake.zipcode(),
                         'country_code': fake.country_code(), 'is_default': is_default
                     }
                 ]
@@ -239,7 +239,7 @@ class GenerateCandidateDate(object):
                 {
                     'id': education_id,
                     'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
-                    'subdivision_code': 'US-' + fake.state_abbr(), 'state': fake.state(),
+                    'subdivision_code': 'US-CA', 'state': fake.state(),
                     'country_code': fake.country_code(), 'is_current': fake.boolean(),
                     'degrees': [
                         {
@@ -291,7 +291,7 @@ class GenerateCandidateDate(object):
                     'id': experience_id, 'organization': fake.company(), 'position': fake.job(),
                     'city': fake.city(), 'state': fake.state(), 'country_code': fake.country_code(),
                     'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
-                    'is_current': True, 'subdivision_code': 'US-' + fake.state_abbr(), 'bullets':
+                    'is_current': True, 'subdivision_code': 'US-CA', 'bullets':
                     [
                         {'id': bullet_id, 'description': fake.bs()}
                     ]
@@ -313,7 +313,7 @@ class GenerateCandidateDate(object):
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'preferred_locations': [
                 {
                     'id': preferred_location_id, 'city': fake.city(), 'state': fake.state(),
-                    'country_code': fake.country_code(), 'subdivision_code': 'US-' + fake.state_abbr()
+                    'country_code': fake.country_code(), 'subdivision_code': 'US-CA'
                 }
             ]}
         ]}
