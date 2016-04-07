@@ -611,3 +611,4 @@ def does_military_service_exist(military_services, military_service_dict):
         if military_service.from_date == from_date or military_service.to_date == to_date:
             return True
     return False
+
