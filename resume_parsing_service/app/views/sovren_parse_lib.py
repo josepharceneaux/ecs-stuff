@@ -59,7 +59,7 @@ def fetch_sovren_response(resume):
 def parse_sovren_xml(raw_xml):
     resume_soup = bs4(raw_xml, 'lxml')
     contact_soup = resume_soup.find('contactinfo')
-    names = name_tags_to_name(contact_soup.find('personname'))
+    names = name_tags_to_name(contact_soup.find('personname')) if contact_soup.find('personname') else None
     addresses = contact_tag_to_addresses(contact_soup)
     emails = contact_tag_to_emails(contact_soup)
     phones = contact_tag_to_phones(contact_soup)
@@ -68,9 +68,9 @@ def parse_sovren_xml(raw_xml):
     skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
 
     candidate = dict(
-        first_name=names.first,
-        last_name=names.last,
-        middle_name=names.middle,
+        first_name=names.first if names else None,
+        last_name=names.last if names else None,
+        middle_name=names.middle if names else None,
         emails=emails,
         phones=phones,
         work_experiences=work_experiences,
@@ -97,7 +97,7 @@ def name_tags_to_name(tag):
     first_name = first_name.strip()
     middle_name = middle_name.strip()
     last_name = last_name.strip()
-    return NameCollection(first_name, last_name, middle_name)
+    return NameCollection(first_name, middle_name, last_name)
 
 
 def contact_tag_to_emails(contact_tag):
