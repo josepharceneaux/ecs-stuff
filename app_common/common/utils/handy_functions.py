@@ -1,4 +1,5 @@
 """Misc functions that have no logical grouping to a module."""
+import time
 
 __author__ = 'erikfarmer'
 
@@ -348,13 +349,12 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers():
+def create_oauth_headers(oauth_token=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
-    :return:
     """
-    oauth_token = request.oauth_token
+    oauth_token = oauth_token if oauth_token else request.oauth_token
     if not oauth_token:
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
@@ -415,3 +415,27 @@ def define_and_send_request(access_token, request, url, data=None):
         return method(url=url,
                       headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
                       data=json.dumps(data))
+
+
+def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_result=None):
+    """
+    This function calls the given function with given parameters for given number of seconds until
+    we find the result.
+    :param func: Function to be called
+    :param (list) params: Parameters to be passed in given function
+    :param abort_after: Number of seconds after which it should break the loop
+    :param retry_after: Number of seconds after which it should retry
+    """
+    start = time.time()
+    while True:
+        db.session.commit()
+        delta = time.time() - start
+        result = func(*params)
+        if result:
+            return result
+
+        if delta >= abort_after:
+            break
+        if retry_after:
+            time.sleep(retry_after)
+    return default_result

@@ -14,10 +14,10 @@ from celery import chord
 from sqlalchemy import and_
 
 # Service Specific
+from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   do_mergetag_replacements,
-                                                  get_candidates_of_smartlist,
                                                   create_email_campaign_url_conversions)
 
 # Common Utils
@@ -37,14 +37,14 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.handy_functions import (http_request,
-                                                                 JSON_CONTENT_TYPE_HEADER)
+                                                                 JSON_CONTENT_TYPE_HEADER, get_polled_result)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.utils.candidate_service_calls import \
     get_candidate_subscription_preference
-from email_campaign_service.modules.validations import get_or_set_valid_value
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):

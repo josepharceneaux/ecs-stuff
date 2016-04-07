@@ -33,7 +33,7 @@
       typeahead: false,
       typeaheadAjaxMethod: "POST",
       typeaheadAjaxSource: null,
-      typeaheadAjaxPolling: false,
+      typeaheadAjaxget_polled_result: false,
       typeaheadOverrides: null,
       typeaheadDelegate: {},
       typeaheadSource: null,
@@ -114,7 +114,7 @@
         obj.typeahead(taOpts);
         setTypeaheadSource(tagManagerOptions.typeaheadSource);
       } else if (tagManagerOptions.typeaheadAjaxSource != null) {
-        if (!tagManagerOptions.typeaheadAjaxPolling) {
+        if (!tagManagerOptions.typeaheadAjaxget_polled_result) {
           obj.typeahead(taOpts);
 
           if (typeof (tagManagerOptions.typeaheadAjaxSource) == "string") {
@@ -128,8 +128,8 @@
               success: function (data) { onTypeaheadAjaxSuccess(data, true); }
             });
           }
-        } else if (tagManagerOptions.typeaheadAjaxPolling) {
-          $.extend(taOpts, { source: ajaxPolling });
+        } else if (tagManagerOptions.typeaheadAjaxget_polled_result) {
+          $.extend(taOpts, { source: ajaxget_polled_result });
           obj.typeahead(taOpts);
         }
       }
@@ -182,7 +182,7 @@
       return $('.typeahead:visible')[0];
     };
 
-    var ajaxPolling = function (query, process) {
+    var ajaxget_polled_result = function (query, process) {
       if (typeof (tagManagerOptions.typeaheadAjaxSource) == "string") {
         $.ajax({
           cache: false,

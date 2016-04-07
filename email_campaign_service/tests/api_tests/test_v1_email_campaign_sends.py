@@ -9,6 +9,7 @@ import requests
 # Common Utils
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.tests.modules.handy_functions import get_polled_sends
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -37,13 +38,14 @@ class TestEmailCampaignSends(object):
             headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
-    def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
+    def test_get_sends_by_sending_campaign(self, access_token_first, sent_campaign):
         """
 
         Here we first send the campaign to 2 candidates (with and without email-client-id).
         We then assert that sends has been created by making HTTP GET call on
         endpoint /v1/email-campaigns/:id/sends
         """
+        get_polled_sends(sent_campaign, 2)
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
@@ -55,6 +57,7 @@ class TestEmailCampaignSends(object):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/sends
         """
+        get_polled_sends(sent_campaign_bulk, 4)
         #  Test GET sends of email campaign with 4 results per_page. It should get 4 blast objects
         url = self.URL % sent_campaign_bulk.id
         response = requests.get(url + '?per_page=4',
@@ -65,16 +68,18 @@ class TestEmailCampaignSends(object):
         assert received_send_obj['campaign_id'] == sent_campaign_bulk.id
         assert received_send_obj['candidate_id'] == sent_campaign_bulk.sends[0].candidate_id
 
+        get_polled_sends(sent_campaign_bulk, 8)
         #  Test GET sends of email campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
-        # pick second blast object from the response. it will be 6th blast object
+        # pick second blast object from the response. it will be 6th send object
         received_send_obj = json_resp[1]
         assert received_send_obj['campaign_id'] == sent_campaign_bulk.id
         assert received_send_obj['candidate_id'] == sent_campaign_bulk.sends[5].candidate_id
 
+        get_polled_sends(sent_campaign_bulk, 9)
         response = requests.get(url + '?per_page=4&page=3',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
