@@ -113,11 +113,5 @@ class TestSendCampaign(object):
         zero blasts or sends.
         """
         campaign_id = campaign_in_db['id']
-        send_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK,))
-        time.sleep(SLEEP_TIME)
-        # There should be only one blast for this campaign
-        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
-        blasts = response['blasts']
-        assert len(blasts) == 1
-        assert blasts[0]['sends'] == 0
+        send_campaign(campaign_id, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
 
