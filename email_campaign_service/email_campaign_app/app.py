@@ -1,27 +1,29 @@
 """
 Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
         Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
+
+This module contains code to register api blueprints and there is one endpoint to subscribe
+Amazon Simple Notification Service topic for email campaign bounces and complaints.
 """
-# TODO--In the top comment kindly explain what this file is and what it contains briefly
 # Standard imports
 import json
 
 # 3rd party imports
 import requests
 from flask import request
-from boto.exception import BotoServerError
 
 # App specific imports
 from apis.email_campaigns import email_campaign_blueprint
 from apis.email_templates import template_blueprint
 from email_campaign_service.email_campaign_app import app, logger
+from email_campaign_service.modules.utils import AWS_SNS_TERMS
 from email_campaign_service.modules.email_marketing import handle_email_bounce
 
 # Register API endpoints
 app.register_blueprint(email_campaign_blueprint)
 app.register_blueprint(template_blueprint)
 
-# TODO--rename the method to amazon_ses_bounces()
+
 @app.route('/amazon_sns_endpoint', methods=['POST'])
 def ses_bounces():
     """
@@ -40,27 +42,21 @@ def ses_bounces():
     """
     # TODO--Make a wiki article and point that here in the comment
     data = json.loads(request.data)
-    # TODO--make "SubscriptionConfirmation" a constant instead of a magic constant
-    if request.headers['X_AMZ_SNS_MESSAGE_TYPE'] == 'SubscriptionConfirmation':
-        try:
-            response = requests.get(data['SubscribeURL'])
-            # TODO--I heard we don't need to do asserts in our code?
-            assert data['TopicArn'] in response.text, 'Could not verify topic subscription'
-        # TODO--How will the above code throw a BotoServerError--kindly double check
-        except BotoServerError as e:
-            logger.error('ses_bounces: Error occurred while verifying SNS subscription. Error: %s' % str(e))
-    # TODO--make 'Notification' a constant. Also, please comment why do we have both SubscriptionConfirmation and 'Notification'
-    elif request.headers['X_AMZ_SNS_MESSAGE_TYPE'] == 'Notification':
+
+    # SNS first sends a confirmation request to this endpoint, we then confirm our subscription by sending a
+    # GET request to given url in subscription request body.
+    if request.headers['X_AMZ_SNS_MESSAGE_TYPE'] == AWS_SNS_TERMS.SUBSCRIPTION:
+        response = requests.get(data['SubscribeURL'])
+        if not data['TopicArn'] in response.text:
+            logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s' % (data['TopicArn'],
+                                                                                                request.data))
+    elif request.headers[AWS_SNS_TERMS.HEADER_KEY] == AWS_SNS_TERMS.NOTIFICATION:
         data = json.loads(request.data)
         message = data['Message']
         message = json.loads(message)
-        # TODO--remove the print please
-        print(message)
-        # TODO -- please put 'Bounce' in a constant somewhere, may be in some place central
-        if message['notificationType'] == 'Bounce':
+        if message['notificationType'] == AWS_SNS_TERMS.BOUNCE:
             handle_email_bounce(request, message)
-            # TODO--Put 'Compliant' in some place central
-        elif message['notificationType'] == 'Complaint':
+        elif message['notificationType'] == AWS_SNS_TERMS.COMPLAINT:
             pass   # TODO: Add implementation for complaints
 
     return 'Thanks SNS for notification'

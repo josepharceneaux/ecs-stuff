@@ -41,7 +41,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email.update(address=invalid_email)
         db.session.commit()
         send_email_campaign(campaign, email, candidate_ids[0], email_campaign_blast.id)
-        # TODO--We are removing sleeps from the code, so need polling here
+        # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
         time.sleep(30)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
@@ -51,9 +51,8 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
-        # Now send this campaign through API, and there should be two blasts and only one send associated with
-        # this campaign because email has been marked as bounced.
-        # TODO--assuming from comment above we didn't assert 2 blasts and 1 send, we can though.
+        # Since there is no candidate associated with campaign with valid email, so we will get 400 status while
+        # sending this campaign
         response = requests.post(
             EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 400
@@ -93,7 +92,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
             email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
             send_email_campaign(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
-        # TODO--gotta find a way to avoid sleeps (Nice comments below, btw--great job)
+        # TODO: Add polling when Basit's  code for polling is in develop
         time.sleep(30)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()

@@ -188,14 +188,13 @@ class EmailCampaignSend(db.Model):
         return send_obj
 
     @classmethod
-    def get_by_ses_message_id(cls, message_id):
+    def get_by_amazon_ses_message_id(cls, message_id):
         """
         Get send email object from given SES message id.
-        :param message_id: SES unique message id
+        :param message_id: Simple Email Service (SES) unique message id
         :return: EmailCampaignSend object
         """
-        # TODO--assert message_id or somehow verify the params. Also, can we define what SES is? And may be the method
-        # TODO--name should be get_by_amazon_ses_message_id()
+        assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'
         return cls.query.filter_by(ses_message_id=message_id).first()
 
 

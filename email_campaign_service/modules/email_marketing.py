@@ -765,19 +765,12 @@ def handle_email_bounce(request, message):
     message_id = message['mail']['messageId']
     bounce = message['bounce']
     emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
-    # TODO--comment why committing here?
-    db.session.commit()
-    send_obj = EmailCampaignSend.get_by_ses_message_id(message_id)
+    send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
     if not send_obj:
         logger.error('Unable to find email campaign for this email bounce: %s' % request.data)
-        # TODO---should we not raise here? Because we are not checking for None in the calling code?
         return None
-        # raise InternalServerError('Unable to find email campaign for this email bounce: %s' % request.data)
     send_obj.update(is_ses_bounce=True)
     blast = send_obj.blast
     blast.update(bounces=(blast.bounces + 1))
-    query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
-    # TODO--kindly double check if above query is correct? And we can put it in a Model
-    query.update(dict(is_bounced=1), synchronize_session=False)
-    db.session.commit()
+    CandidateEmail.mark_emails_bounced(emails)
     logger.info('Marked %s email addresses as bounced' % emails)

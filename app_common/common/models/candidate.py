@@ -304,9 +304,21 @@ class CandidateEmail(db.Model):
         :param email_address: email address
         :return: True | False
         """
-        #TODO- kindly assert all params in all methods
+        assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
         bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
         return True if bounced_email else False
+
+    @classmethod
+    def mark_emails_bounced(cls, emails):
+        """
+        This method takes list of email addresses and then mark them bounced by setting is_bounced property as True.
+        :param list[str]  emails: list of email addresses
+        """
+        assert isinstance(emails, list) and emails, 'emails should be a non-empty list of email addresses'
+        assert all([email for email in emails]), 'all email addresses should have non-empty value.'
+        query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
+        query.update(dict(is_bounced=1), synchronize_session=False)
+        db.session.commit()
 
 
 class CandidatePhoto(db.Model):

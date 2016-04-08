@@ -37,6 +37,14 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
+class AWS_SNS_TERMS():
+    HEADER_KEY = 'X_AMZ_SNS_MESSAGE_TYPE'
+    SUBSCRIPTION = 'SubscriptionConfirmation'
+    NOTIFICATION = 'Notification'
+    BOUNCE = 'Bounce'
+    COMPLAINT = 'Complaint'
+
+
 def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
