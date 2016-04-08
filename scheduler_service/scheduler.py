@@ -244,6 +244,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
+                                    max_instances=1,
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request')]
