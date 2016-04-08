@@ -79,8 +79,7 @@ class TestEmailCampaignBlastsWithId(object):
             self.URL % (sent_campaign_in_other_domain.id, blast_id),
             access_token_first)
 
-    def test_get_with_invalid_campaign_id(self, access_token_first,
-                                          sent_campaign):
+    def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign):
         """
         This is a test to get blasts of a campaign which does not exist in database.
         """
@@ -90,8 +89,7 @@ class TestEmailCampaignBlastsWithId(object):
             access_token_first,
             None)
 
-    def test_get_with_invalid_blast_id(self, access_token_first,
-                                       sent_campaign):
+    def test_get_with_invalid_blast_id(self, access_token_first, sent_campaign):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
         """

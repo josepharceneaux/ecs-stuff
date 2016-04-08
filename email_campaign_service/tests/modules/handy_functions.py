@@ -19,9 +19,11 @@ from email_campaign_service.common.models.misc import (Activity,
                                                        Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.error_handling import ResourceNotFound, InternalServerError, \
-    UnprocessableEntity
-from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailClient
+from email_campaign_service.common.error_handling import (ResourceNotFound,
+                                                          InternalServerError,
+                                                          UnprocessableEntity)
+from email_campaign_service.common.models.email_campaign import (EmailCampaign,
+                                                                 EmailClient)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.handy_functions import get_polled_result
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
@@ -157,10 +159,6 @@ def send_campaign(campaign, access_token, sleep_time=20):
                                default_result=[], abort_after=sleep_time)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
-
-    if not campaign.email_client_id:
-        assert get_polled_result(assert_and_delete_email, [campaign.subject], abort_after=60), \
-            "Email with subject %s was not found." % campaign.subject
     return response
 
 
@@ -323,6 +321,7 @@ def get_polled_sends(campaign, expected_count, blast_index=0, abort_time_for_sen
                               default_result=0, abort_after=abort_time_for_sends)
     assert sends >= expected_count
     return sends
+
 
 def post_to_email_template_resource(access_token, data):
     """
@@ -507,17 +506,14 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
 
 
 def send_campaign_helper(request, email_campaign, access_token):
+    """
+    This is a helper function to send campaign with and without email_client_id
+    """
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
         sleep_time = 15
     else:
         sleep_time = 30
-
-        # def fin():
-        #     subject = email_campaign.subject
-        #     assert get_polled_result(assert_and_delete_email, [subject]), \
-        #         "Email with subject %s was not found." % subject
-        # request.addfinalizer(fin)
     # send campaign
     send_campaign(email_campaign, access_token, sleep_time=sleep_time)
     return email_campaign

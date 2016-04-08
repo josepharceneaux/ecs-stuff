@@ -38,7 +38,7 @@ class TestEmailCampaignSends(object):
             headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
-    def test_get_sends_by_sending_campaign(self, access_token_first, sent_campaign):
+    def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
         """
 
         Here we first send the campaign to 2 candidates (with and without email-client-id).

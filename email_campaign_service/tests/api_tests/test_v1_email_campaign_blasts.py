@@ -11,8 +11,8 @@ import requests
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.tests.modules.handy_functions import send_campaign, get_polled_sends
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules.handy_functions import send_campaign, get_polled_sends
 
 
 class TestEmailCampaignBlasts(object):
