@@ -44,7 +44,7 @@ class TestSmartlistResource(object):
             """
             data = FakeCandidatesData.create(talent_pool=talent_pool, count=count)
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                               ])
+                                               DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             time.sleep(10)  # added due to uploading candidates on CS
             name = fake.word()
@@ -59,7 +59,7 @@ class TestSmartlistResource(object):
             smartlist_id = response['smartlist']['id']
             if get_polled_result(assert_candidates_upload, [smartlist_id, len(candidate_ids),
                                                             access_token_first],
-                                 abort_after=25, default_result=False):
+                                 abort_after=25, default_result=False, commit_session=False):
                 print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids),
                                                                       smartlist_id)
             else:
@@ -88,7 +88,6 @@ class TestSmartlistResource(object):
                 count=20)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
-            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             response = smartlist_candidates_api.call_smartlist_candidates_get_api(smartlist_id,
                                                                                   {'fields': 'id'},
                                                                                   access_token_first)
@@ -111,7 +110,6 @@ class TestSmartlistResource(object):
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(access_token_first,
                                                                                            user_first, talent_pool,
                                                                                            talent_pipeline, count=20)
-            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
@@ -128,8 +126,8 @@ class TestSmartlistResource(object):
                 for current_page in range(1, int(no_of_pages)):
                     next_page = current_page + 1
                     response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
-                               smartlist_id, {'fields': 'id'}, access_token_first, page=next_page,
-                               per_page=2)
+                        smartlist_id, {'fields': 'id'}, access_token_first, page=next_page,
+                        per_page=2)
                     response_body = json.loads(response.content)
                     candidates.extend(response_body['candidates'])
             assert len(candidates) == 20
@@ -316,7 +314,7 @@ class TestSmartlistResource(object):
                                        candidate_ids=candidate_ids, access_token=access_token_first,
                                        talent_pipeline_id=talent_pipeline.id)
             assert get_polled_result(assert_candidates_upload, [smartlist.id, len(candidate_ids),
-                                                    access_token_first],
+                                                                access_token_first],
                                      abort_after=30, default_result=False), \
                 'candidates not found for smartlist'
             resp = self.call_get_api(access_token_first, smartlist.id)

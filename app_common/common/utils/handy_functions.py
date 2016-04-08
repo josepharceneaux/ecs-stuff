@@ -415,7 +415,8 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_result=None):
+def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_result=None,
+                      commit_session=True):
     """
     This function calls the given function with given parameters for given number of seconds until
     we find the result.
@@ -423,10 +424,12 @@ def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_
     :param (list) params: Parameters to be passed in given function
     :param abort_after: Number of seconds after which it should break the loop
     :param retry_after: Number of seconds after which it should retry
+    :param commit_session: True if we want to commit the session
     """
     start = time.time()
     while True:
-        db.session.commit()
+        if commit_session:
+            db.session.commit()
         delta = time.time() - start
         result = func(*params)
         if result:
