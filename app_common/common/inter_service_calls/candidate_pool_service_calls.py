@@ -2,6 +2,7 @@ import json
 import requests
 from ..utils.api_utils import DEFAULT_PAGE
 from ..error_handling import InternalServerError
+from ..models.email_campaign import EmailCampaign
 from ..routes import CandidatePoolApiUrl, EmailCampaignUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
 
@@ -94,3 +95,18 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
                             params=params, headers=create_oauth_headers(access_token))
     return response
+
+
+def assert_candidates_upload(smartlist_id, expected_count, access_token):
+    """
+    This gets the candidates for given smartlist ids.
+    If number of candidates is same as expected_count, it returns True. Otherwise it returns False.
+    :param smartlist_id: id of smartlist
+    :param expected_count: expected number of candidates
+    :param access_token: access token of user to make HTTP request on smartlist API
+    :rtype: bool
+    """
+    candidates = get_candidates_of_smartlist(smartlist_id, EmailCampaign(), True, access_token)
+    if len(candidates) == expected_count:
+        return True
+    return False

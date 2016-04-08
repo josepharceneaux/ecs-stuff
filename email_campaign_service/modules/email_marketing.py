@@ -100,7 +100,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
                                      dict(id=email_campaign.id,
                                           name=name))
     except Exception:
-        logger.exception('Error occurred while creating activity for'
+        logger.exception('Error occurred while creating activity for '
                          'email-campaign creation. User(id:%s)' % user_id)
     # create email_campaign_smartlist record
     create_email_campaign_smartlists(smartlist_ids=list_ids,

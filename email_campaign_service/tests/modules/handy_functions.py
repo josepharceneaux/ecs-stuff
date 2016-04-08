@@ -25,17 +25,19 @@ from email_campaign_service.common.error_handling import (ResourceNotFound,
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.handy_functions import get_polled_result
+from email_campaign_service.common.utils.handy_functions import (get_polled_result)
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
                                                                  define_and_send_request)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    create_smartlist_from_api, get_candidates_of_smartlist
+    create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
+    assert_candidates_upload
 
 __author__ = 'basit'
 
@@ -109,21 +111,6 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
         else:
             raise InternalServerError('Candidates could not be found on cloud.')
     return smartlist_id, candidate_ids
-
-
-def assert_candidates_upload(smartlist_id, expected_count, access_token):
-    """
-    This gets the candidates for given smartlist ids.
-    If number of candidates is same as expected_count, it returns True. Otherwise it returns False.
-    :param smartlist_id: id of smartlist
-    :param expected_count: expected number of candidates
-    :param access_token: access token of user to make HTTP request on smartlist API
-    :rtype: bool
-    """
-    candidates = get_candidates_of_smartlist(smartlist_id, EmailCampaign(), True, access_token)
-    if len(candidates) == expected_count:
-        return True
-    return False
 
 
 def delete_campaign(campaign):

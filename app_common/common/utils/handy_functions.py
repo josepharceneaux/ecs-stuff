@@ -1,10 +1,9 @@
 """Misc functions that have no logical grouping to a module."""
-import time
-
 __author__ = 'erikfarmer'
 
 # Standard Imports
 import re
+import time
 import json
 import random
 import string
@@ -20,8 +19,8 @@ from flask import current_app, request
 
 # Application Specific
 from ..models.db import db
-from ..talent_config_manager import TalentConfigKeys
 from werkzeug.exceptions import BadRequest
+from ..talent_config_manager import TalentConfigKeys
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
@@ -405,7 +404,6 @@ def define_and_send_request(access_token, request, url, data=None):
     :param access_token: token for authentication
     :param data: data in form of dictionary
     """
-
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
