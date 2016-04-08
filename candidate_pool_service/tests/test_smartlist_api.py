@@ -108,10 +108,9 @@ class TestSmartlistResource(object):
             :param talent_pool: valid talent pool object.
             :param talent_pipeline: valid talent pipeline
             """
-            smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(access_token_first,
-                                                                                           user_first, talent_pool,
-                                                                                           talent_pipeline, count=20,
-                                                                                           abort_after=50)
+            smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
+                access_token_first, user_first, talent_pool, talent_pipeline, count=20,
+                abort_after=60)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
