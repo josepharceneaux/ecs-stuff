@@ -9,7 +9,7 @@ from candidate_pool_service.common.utils.handy_functions import (add_role_to_tes
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_candidates_upload
+    assert_smartlist_candidates
 
 import json
 import random
@@ -29,7 +29,7 @@ class TestSmartlistResource(object):
                          'content-type': 'application/json'}
             )
 
-        # TODO: move this function to common
+        # TODO: move this function to common as one copy is also there in email-campaign-service
         @classmethod
         def create_and_return_smartlist_with_candidates(cls, access_token_first, user_first,
                                                         talent_pool, talent_pipeline, count,
@@ -57,9 +57,9 @@ class TestSmartlistResource(object):
             assert 'smartlist' in response
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
-            assert get_polled_result(assert_candidates_upload, [smartlist_id,
-                                                                len(candidate_ids),
-                                                                access_token_first],
+            assert get_polled_result(assert_smartlist_candidates, [smartlist_id,
+                                                                   len(candidate_ids),
+                                                                   access_token_first],
                                      abort_after=abort_after,
                                      default_result=False), 'Candidates not found for smartlist'
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
@@ -572,7 +572,7 @@ class TestSmartlistCandidatesApi(object):
         search_params = json.dumps({"query": "%s" % first_name})
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
-        assert get_polled_result(assert_candidates_upload, [smartlist.id, len(candidate_ids),
+        assert get_polled_result(assert_smartlist_candidates, [smartlist.id, len(candidate_ids),
                                                             access_token_first],
                                  default_result=False), 'candidates not found for smartlist'
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)

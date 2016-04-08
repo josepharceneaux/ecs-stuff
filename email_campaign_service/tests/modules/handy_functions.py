@@ -37,7 +37,7 @@ from email_campaign_service.common.utils.candidate_service_calls import \
     create_candidates_from_candidate_api
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_candidates_upload
+    assert_smartlist_candidates
 
 __author__ = 'basit'
 
@@ -103,7 +103,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        if get_polled_result(assert_candidates_upload, [smartlist_id, len(candidate_ids),
+        if get_polled_result(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
                                                         access_token],
                              abort_after=abort_after, default_result=False):
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
