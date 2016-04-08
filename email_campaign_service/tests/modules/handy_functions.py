@@ -292,7 +292,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
     if not email_client:
-        assert get_polled_result(assert_and_delete_email, [campaign.subject],abort_after=40), \
+        assert get_polled_result(assert_and_delete_email, [campaign.subject], abort_after=60), \
             "Email with subject %s was not found." % campaign.subject
 
 

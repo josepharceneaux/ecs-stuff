@@ -498,7 +498,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=50)
+            count=num_of_candidates, abort_after=60)
         params = {'fields': 'id'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -514,7 +514,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=50)
+            count=num_of_candidates, abort_after=60)
         params = {'fields': 'count_only'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -525,17 +525,11 @@ class TestSmartlistCandidatesApi(object):
 
     def test_return_all_fields(self, access_token_first, user_first, talent_pool, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
-        data = FakeCandidatesData.create(talent_pool, count=num_of_candidates)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                           DomainRole.Roles.CAN_GET_CANDIDATES])
-        candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
-        smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
-                                   talent_pipeline_id=talent_pipeline.id,
-                                   candidate_ids=candidate_ids, access_token=access_token_first)
-        assert get_polled_result(assert_candidates_upload, [smartlist.id, len(candidate_ids),
-                                                            access_token_first],
-                                 default_result=False), 'candidates not found for smartlist'
-        resp = self.call_smartlist_candidates_get_api(smartlist.id, {}, access_token_first)
+        smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
+            access_token_first, user_first, talent_pool, talent_pipeline,
+            count=num_of_candidates, abort_after=60)
+
+        resp = self.call_smartlist_candidates_get_api(smartlist_id, {}, access_token_first)
         assert resp.status_code == 200
 
         response = json.loads(resp.content)
@@ -571,7 +565,8 @@ class TestSmartlistCandidatesApi(object):
         first_name = 'special'
         data = FakeCandidatesData.create(talent_pool, count=no_of_candidates, first_name=first_name,
                                          address_list=address)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                           DomainRole.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
 
         talent_pipeline.search_params = ''
