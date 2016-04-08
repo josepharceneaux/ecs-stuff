@@ -47,7 +47,7 @@ class TestSmartlistResource(object):
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                                DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
-            time.sleep(10) #TODO: remove this
+            time.sleep(10)  # TODO: remove this
             data = {'name': smartlist_name,
                     'candidate_ids': candidate_ids,
                     'talent_pipeline_id': talent_pipeline.id}
@@ -61,8 +61,7 @@ class TestSmartlistResource(object):
                                                                 len(candidate_ids),
                                                                 access_token_first],
                                      abort_after=abort_after,
-                                     default_result=False, commit_session=False), \
-                'Candidates not found for smartlist'
+                                     default_result=False), 'Candidates not found for smartlist'
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
             return smartlist_id, candidate_ids
 

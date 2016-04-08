@@ -1,6 +1,8 @@
 import json
 import requests
 from ..utils.api_utils import DEFAULT_PAGE
+from ..models.sms_campaign import SmsCampaign
+from ..models.push_campaign import PushCampaign
 from ..error_handling import InternalServerError
 from ..models.email_campaign import EmailCampaign
 from ..routes import CandidatePoolApiUrl, EmailCampaignUrl
@@ -45,9 +47,9 @@ def create_campaign_send_from_api(campaign_id, access_token):
 def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False, access_token=None):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
-    :param list_id: smartlist id.
-    :param campaign: email campaign object
-    :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param (int, long) list_id: smartlist id.
+    :param (EmailCampaign, SmsCampaign, PushCampaign) campaign: campaign object
+    :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
     :return:
     """
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
@@ -74,12 +76,12 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
                                                    campaign, access_token=None):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
-    :param list_id: Id of smartlist.
-    :param per_page: Number of results per page
-    :param page: Number of page to fetch in response
-    :param params: Specific params to include in request. e.g. candidates_ids_only etc
-    :param campaign: Email Campaign object
-    :param access_token: access token of user
+    :param (int, long) list_id: Id of smartlist.
+    :param (int) per_page: Number of results per page
+    :param (int) page: Number of page to fetch in response
+    :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
+    :param (EmailCampaign, SmsCampaign, PushCampaign) campaign: campaign object
+    :param (str | None) access_token: access token of user
     :return:
     """
     if not list_id:

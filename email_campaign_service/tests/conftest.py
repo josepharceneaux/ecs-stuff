@@ -1,5 +1,3 @@
-from email_campaign_service.common.utils.handy_functions import get_polled_result
-
 __author__ = 'basit'
 
 import re
@@ -12,7 +10,6 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
-                                                                  assert_and_delete_email,
                                                                   send_campaign_helper)
 
 
@@ -200,7 +197,8 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
     email-campaign obj.
     """
-    return send_campaign_helper(request, campaign_with_multiple_candidates_email, access_token_first)
+    return send_campaign_helper(request, campaign_with_multiple_candidates_email,
+                                access_token_first)
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
