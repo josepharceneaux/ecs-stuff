@@ -153,11 +153,14 @@ def send_campaign(campaign, access_token, sleep_time=20):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    # time.sleep(sleep_time)
     blasts = get_polled_result(lambda email_campaign: email_campaign.blasts.all(), [campaign],
                                default_result=[], abort_after=sleep_time)
     if not blasts:
-        raise UnprocessableEntity('blasts not found in given time range')
+        raise UnprocessableEntity('blasts not found in given time range.')
+
+    if not campaign.email_client_id:
+        assert get_polled_result(assert_and_delete_email, [campaign.subject], abort_after=60), \
+            "Email with subject %s was not found." % campaign.subject
     return response
 
 
@@ -510,11 +513,11 @@ def send_campaign_helper(request, email_campaign, access_token):
     else:
         sleep_time = 30
 
-        def fin():
-            subject = email_campaign.subject
-            assert get_polled_result(assert_and_delete_email, [subject]), \
-                "Email with subject %s was not found." % subject
-        request.addfinalizer(fin)
+        # def fin():
+        #     subject = email_campaign.subject
+        #     assert get_polled_result(assert_and_delete_email, [subject]), \
+        #         "Email with subject %s was not found." % subject
+        # request.addfinalizer(fin)
     # send campaign
     send_campaign(email_campaign, access_token, sleep_time=sleep_time)
     return email_campaign
