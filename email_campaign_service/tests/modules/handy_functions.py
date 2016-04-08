@@ -244,6 +244,8 @@ def assert_and_delete_email(subject):
         status, response = mail_connection.expunge()
         assert status == 'OK'
         print "Email(s) deleted with subject: %s" % subject
+        mail_connection.close()
+        mail_connection.logout()
     return msg_ids
 
 
