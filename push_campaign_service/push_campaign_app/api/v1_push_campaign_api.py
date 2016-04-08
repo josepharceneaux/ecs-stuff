@@ -541,7 +541,7 @@ class SchedulePushCampaignResource(Resource):
         PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user, CampaignUtils.PUSH)
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
-        message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        message = 'Campaign(id:%s) has been scheduled.' % campaign_id
         return dict(message=message, task_id=task_id), 200
 
     def put(self, campaign_id):
