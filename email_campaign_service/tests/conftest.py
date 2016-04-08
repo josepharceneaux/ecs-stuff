@@ -98,9 +98,9 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
 
 
 @pytest.fixture()
-def campaign_with_ten_candidates(request, email_campaign_of_user_first,
-                                 assign_roles_to_user_first,
-                                 access_token_first, talent_pipeline):
+def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
+                                        assign_roles_to_user_first,
+                                        access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
@@ -202,12 +202,12 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_bulk(request, campaign_with_ten_candidates, access_token_first):
+def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent, access_token_first):
     """
     This fixture sends the given campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    return send_campaign_helper(request, campaign_with_ten_candidates, access_token_first)
+    return send_campaign_helper(request, campaign_to_ten_candidates_not_sent, access_token_first)
 
 
 @pytest.fixture()

@@ -107,3 +107,19 @@ def get_candidate_subscription_preference(candidate_id):
     response = resp.json()
     # return candidate's subscription_preference
     return response['candidate']['subscription_preference']
+
+
+def get_candidates_from_search_api(params, access_token):
+    """
+    This function will get candidates information based on query_string from Search API
+    :param (dict) params: Params to be passed to search_service
+    :param (str) access_token: Access Token
+    :return:
+    """
+
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
+                            headers=create_oauth_headers(access_token), params=params)
+    if response.ok:
+        return True, response.json()
+    else:
+        return False, response

@@ -127,13 +127,13 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token, sleep_time=20):
+def send_campaign(campaign, access_token, abort_after=20):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
-    sleep_time is set to be 20s here. One can modify this by passing required value.
-    :param campaign: Email campaign obj
-    :param access_token: Auth token to make HTTP request
-    :param sleep_time: time in seconds to wait for the task to be run on Celery.
+    abort_after is set to be 20s here. One can modify this by passing required value.
+    :param (EmailCampaign) campaign: Email campaign obj
+    :param (str) access_token: Auth token to make HTTP request
+    :param (int) abort_after: time in seconds to poll the server before aborting
     """
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_instance_of(access_token, basestring)
@@ -142,7 +142,7 @@ def send_campaign(campaign, access_token, sleep_time=20):
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
     blasts = get_polled_result(lambda email_campaign: email_campaign.blasts.all(), [campaign],
-                               default_result=[], abort_after=sleep_time)
+                               default_result=[], abort_after=abort_after)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -501,9 +501,9 @@ def send_campaign_helper(request, email_campaign, access_token):
     """
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 15
+        abort_after = 15
     else:
-        sleep_time = 30
+        abort_after = 30
     # send campaign
-    send_campaign(email_campaign, access_token, sleep_time=sleep_time)
+    send_campaign(email_campaign, access_token, abort_after=abort_after)
     return email_campaign
