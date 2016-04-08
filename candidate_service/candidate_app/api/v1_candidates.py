@@ -653,7 +653,7 @@ class CandidateCustomFieldResource(Resource):
                 raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
 
-            # Custom fields must belong to user's domain
+            # Custom field must belong to user's domain
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
@@ -666,7 +666,8 @@ class CandidateCustomFieldResource(Resource):
                 }
             }
 
-        else:  # Retrieve all of Candidate's custom fields
+        else:
+            # Custom fields must belong user's domain
             return {'candidate_custom_fields': [
                 {
                     'id': ccf.id,
