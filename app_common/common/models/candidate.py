@@ -304,6 +304,7 @@ class CandidateEmail(db.Model):
         :param email_address: email address
         :return: True | False
         """
+        #TODO- kindly assert all params in all methods
         bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
         return True if bounced_email else False
 

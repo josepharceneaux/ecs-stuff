@@ -194,6 +194,8 @@ class EmailCampaignSend(db.Model):
         :param message_id: SES unique message id
         :return: EmailCampaignSend object
         """
+        # TODO--assert message_id or somehow verify the params. Also, can we define what SES is? And may be the method
+        # TODO--name should be get_by_amazon_ses_message_id()
         return cls.query.filter_by(ses_message_id=message_id).first()
 
 

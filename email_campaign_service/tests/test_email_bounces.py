@@ -18,7 +18,7 @@ from email_campaign_service.modules.email_marketing import create_email_campaign
 from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate
 
 
-def test_send_campaign_to_invalid_emial_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
+def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
                                                 candidate_first, user_first, talent_pipeline):
     """
     In this test, we will send an email campaign to one candidate with invalid email address.
@@ -41,7 +41,7 @@ def test_send_campaign_to_invalid_emial_address(access_token_first, assign_roles
         email.update(address=invalid_email)
         db.session.commit()
         send_email_campaign(campaign, email, candidate_ids[0], email_campaign_blast.id)
-
+        # TODO--We are removing sleeps from the code, so need polling here
         time.sleep(30)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
@@ -51,8 +51,9 @@ def test_send_campaign_to_invalid_emial_address(access_token_first, assign_roles
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
-        # Now send this campaign through API, and there should be two blasts and Only one send associated with
+        # Now send this campaign through API, and there should be two blasts and only one send associated with
         # this campaign because email has been marked as bounced.
+        # TODO--assuming from comment above we didn't assert 2 blasts and 1 send, we can though.
         response = requests.post(
             EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 400
@@ -60,7 +61,7 @@ def test_send_campaign_to_invalid_emial_address(access_token_first, assign_roles
         assert response['error']['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
 
 
-def test_send_campaign_to_one_invalid_emial_and_one_valid_email_address(access_token_first, assign_roles_to_user_first,
+def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
                                                                         email_campaign_of_user_first,candidate_first,
                                                                         user_first, talent_pipeline):
     """
@@ -68,8 +69,8 @@ def test_send_campaign_to_one_invalid_emial_and_one_valid_email_address(access_t
     After sending emails, we will confirm that invalid email has been marked `bounced` and will assert
     email campaign blasts and send accordingly.
 
-    We will then send this campaign throgh API and we will confirm that email was sent to only one candidate
-    with valid candidate , so there will be only one campaign send while there are two candidates are
+    We will then send this campaign through API and we will confirm that email was sent to only one candidate
+    with valid candidate, so there will be only one campaign send while there are two candidates are
     associated with this campaign.
     """
     with app.app_context():
@@ -92,6 +93,7 @@ def test_send_campaign_to_one_invalid_emial_and_one_valid_email_address(access_t
             email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
             send_email_campaign(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
+        # TODO--gotta find a way to avoid sleeps (Nice comments below, btw--great job)
         time.sleep(30)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
