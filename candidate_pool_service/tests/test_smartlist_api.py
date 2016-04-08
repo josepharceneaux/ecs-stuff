@@ -499,7 +499,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=40)
+            count=num_of_candidates, abort_after=50)
         params = {'fields': 'id'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -515,7 +515,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=40)
+            count=num_of_candidates, abort_after=50)
         params = {'fields': 'count_only'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)

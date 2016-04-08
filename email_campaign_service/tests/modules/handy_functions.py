@@ -85,9 +85,9 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
 
 
 def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
-                                    assert_candidates=True):
+                                    assert_candidates=True, abort_after=40):
     """
-    This creates candidate(s) as specified by the count,  and assign it to a smartlist.
+    This creates candidate(s) as specified by the count and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
     """
     # create candidate
@@ -95,9 +95,6 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
                                      emails_list=emails_list, count=count)
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
-    if assert_candidates:
-        # TODO: need to improve this
-        time.sleep(15)  # added due to uploading candidates on CS
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
@@ -106,7 +103,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     if assert_candidates:
         if get_polled_result(assert_candidates_upload, [smartlist_id, len(candidate_ids),
                                                         access_token],
-                             abort_after=25, default_result=False):
+                             abort_after=abort_after, default_result=False):
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         else:
             raise InternalServerError('Candidates could not be found on cloud.')
@@ -295,7 +292,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
     if not email_client:
-        assert get_polled_result(assert_and_delete_email, [campaign.subject]), \
+        assert get_polled_result(assert_and_delete_email, [campaign.subject],abort_after=40), \
             "Email with subject %s was not found." % campaign.subject
 
 

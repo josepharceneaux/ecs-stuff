@@ -538,11 +538,11 @@ class TestSendCampaign(object):
         smartlist_id1, _ = create_smartlist_with_candidate(access_token_first,
                                                            talent_pipeline,
                                                            emails_list=True,
-                                                           count=20)
+                                                           count=20, abort_after=50)
         smartlist_id2, _ = create_smartlist_with_candidate(access_token_first,
                                                            talent_pipeline,
                                                            emails_list=True,
-                                                           count=20)
+                                                           count=20, abort_after=50)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)
