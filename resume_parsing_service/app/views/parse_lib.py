@@ -85,7 +85,7 @@ def process_resume(parse_params):
         s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
         parsed_resume['candidate']['resume_url'] = filename_str
     except Exception as e:
-        logger.exception('Failure during s3 upload')
+        logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                              oauth_string)
     response_dict = json.loads(candidate_post_response.content)
