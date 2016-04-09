@@ -113,9 +113,13 @@ def get_pipeline_growth(talent_pipeline, interval):
     :param interval: Interval in days
     :return:
     """
-    from_date = datetime.utcnow() - timedelta(days=interval)
-    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow()) - \
-           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date)
+    if talent_pipeline.added_time.date() == datetime.utcnow().date():
+        return 0
+    else:
+        to_date = datetime.utcnow() - timedelta(days=1)
+        from_date = to_date - timedelta(days=interval)
+        return get_talent_pipeline_stat_for_given_day(talent_pipeline, to_date) - \
+               get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date)
 
 
 def get_smartlist_stat_for_a_given_day(smartlist, date_object):
