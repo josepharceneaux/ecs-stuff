@@ -1,4 +1,5 @@
 __author__ = 'ufarooqi'
+import math
 import json
 import decimal
 import requests
@@ -417,10 +418,10 @@ def get_stats_generic_function(container_object, container_name, user=None, from
         raise ForbiddenError("Logged-in user %s is unauthorized to get stats of %s: %s" % (user.id, container_name,
                                                                                            container_object.id))
 
-    if not is_number(offset) or abs(int(offset)) > 12:
+    if not is_number(offset) or math.ceil(abs(float(offset))) > 12:
         raise InvalidUsage("Value of offset should be an integer and less than or equal to 12")
 
-    offset = int(offset)
+    offset = int(math.ceil(float(offset)))
 
     current_date_time = datetime.utcnow()
 

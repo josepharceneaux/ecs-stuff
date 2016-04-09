@@ -126,10 +126,10 @@ class TalentPipeline(db.Model):
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:
             # Include Last 30 days stats in response body
-            to_date = datetime.utcnow()
+            to_date = datetime.utcnow() - timedelta(days=1)
             from_date = to_date - timedelta(days=29)
-            talent_pipeline['stats'] = get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(),
-                                                          to_date.isoformat(), offset=0)
+            talent_pipeline['stats'] = [] if self.added_time.date() == datetime.datetime.utcnow().date() else \
+                get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(), to_date.isoformat(), offset=0)
 
         return talent_pipeline
 
