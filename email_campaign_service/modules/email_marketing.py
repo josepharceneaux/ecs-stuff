@@ -412,14 +412,15 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         group_id_and_email_and_labels.append(list(group_id_email_label))
     filtered_email_rows = []
 
-    # We don't know email_label id of primary email. So, get that from db
-    email_labels = EmailLabel.query.all()
-    email_labels = [(email_label.id, email_label.description) for email_label in email_labels]
+    primary_email_label = EmailLabel.get_primary_label_description()
 
-    # If there are mutliple emails of a single candidate, then get the primary email if it exist, otherwise get any
+    # We don't know email_label id of primary email. So, get that from db
+    email_label_id_desc_tuples = [(email_label.id, email_label.description) for email_label in EmailLabel.query.all()]
+
+    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
     # other email
     for id_and_email_and_label in group_id_and_email_and_labels:
-        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_labels)
+        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
         # If there is only one candidate for an email-address in user's domain, we are good to go,
         # otherwise log and raise the invalid error.
@@ -435,24 +436,25 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     return filtered_email_rows
 
 
-def get_candidate_id_email_by_priority(emails_obj, email_labels):
+def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     """
     Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
     If found then simply return candidate_id and primary email_address otherwise return first email address.
-    :param emails_obj: (candidate_id, email_address, email_label_id)
-    :param email_labels: Tuple containing structure ( email_label_id, email_label_description )
+    :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
+    :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
     :return: candidate_id, email_address
+    :rtype: (int, str)
     """
-    if not(isinstance(emails_obj, list) and len(emails_obj) > 0):
+    if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
         raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
 
     # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
     # python next method will return the first object from email_labels where primary label matches
     primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
-                                if email_label_desc.lower() == 'primary'))
+                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION))
 
     # Find primary email address using email label id
-    email_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in emails_obj
+    email_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in email_info_tuple
                       if email_label_id == primary_email_id)
 
     candidate_id_and_email_address = next(
@@ -465,7 +467,7 @@ def get_candidate_id_email_by_priority(emails_obj, email_labels):
 
     # If primary email not found, then return first email which is last added email
     # Get first tuple from a list of emails_obj and return candidate_id and email_address
-    candidate_id, email_address, _ = emails_obj[0]
+    candidate_id, email_address, _ = email_info_tuple[0]
     return candidate_id, email_address
 
 

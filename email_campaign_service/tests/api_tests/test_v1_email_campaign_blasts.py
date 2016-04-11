@@ -63,8 +63,9 @@ class TestEmailCampaignBlasts(object):
     def test_get_blasts_for_primary_candidate_emails(self, access_token_first,
                                                      sent_campaign_multiple_email):
         """
-        Here we use `sent_campaign_multiple_email` fixture to send campaign with two emails.
-        But email should be sent to only primary or latest email.
+        The test sends email to two candidates each having two emails.
+        But email should be sent to only primary if primary email is not found, then email will be sent to
+        latest added. Then verifies that only two emails are sent.
         """
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,

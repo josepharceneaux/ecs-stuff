@@ -40,7 +40,7 @@ def create_email_campaign(user):
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + '-test-e-campaign',
+                                   subject=uuid.uuid4().__str__()[0:8] + ' Its a test campaign',
                                    _from=fake.safe_email(),
                                    reply_to=fake.email(),
                                    body_html="<html><body>Email campaign test</body></html>",
@@ -104,7 +104,7 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
     """
     This creates candidate(s) as specified by the count, using the email list provided by the user
     and assign it to a smartlist.
-    Finally it returns smartlist_id and candidate_ids.
+    Finally it returns campaign object
     """
     # create candidates data
     data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
