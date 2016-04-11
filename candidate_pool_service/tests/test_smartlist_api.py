@@ -47,7 +47,8 @@ class TestSmartlistResource(object):
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             assert get_polled_result(assert_candidate_upload, [{'candidate_ids': candidate_ids},
                                                                access_token_first],
-                                     abort_after=10, default_result=False), 'Candidates not found on cloud.'
+                                     abort_after=abort_after, default_result=False),\
+                'Candidates not found on cloud.'
             logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
             data = {'name': smartlist_name,
                     'candidate_ids': candidate_ids,
