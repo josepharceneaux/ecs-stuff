@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
 
 from datetime import timedelta
+from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline

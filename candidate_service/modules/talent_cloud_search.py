@@ -94,13 +94,13 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
-    'resume_text':                   dict(IndexFieldType='text',            TextArrayOptions={'ReturnEnabled': False}),
+    'resume_text':                   dict(IndexFieldType='text',            TextOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'custom_field_id_and_value':     dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'candidate_rating_id_and_value': dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'area_of_interest_id':           dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'added_time':                    dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False}),
-    'added_time_hour':               dict(IndexFieldType='int',             DateOptions={'FacetEnabled': True}),
+    'added_time_hour':               dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True}),
 
     # Location
     'city':                          dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),

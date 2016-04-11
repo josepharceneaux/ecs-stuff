@@ -14,9 +14,8 @@ class TalentPool(db.Model):
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.TEXT)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.DateTime, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+    added_time = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False)
 
     # Relationships
     domain = db.relationship('Domain', backref=db.backref('talent_pool', cascade="all, delete-orphan"))
@@ -38,9 +37,8 @@ class TalentPoolCandidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'), nullable=False)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.DateTime, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+    added_time = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False)
 
     # Relationships
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
@@ -86,8 +84,8 @@ class TalentPipeline(db.Model):
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'),  nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
     search_params = db.Column(db.String(1023))
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.TIMESTAMP, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    added_time = db.Column(db.DateTime, default=datetime.utcnow(), nullable=False)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow(), onupdate=datetime.utcnow(),
                              nullable=False)
 
     # Relationships
@@ -126,10 +124,10 @@ class TalentPipeline(db.Model):
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:
             # Include Last 30 days stats in response body
-            to_date = datetime.utcnow()
+            to_date = datetime.utcnow() - timedelta(days=1)
             from_date = to_date - timedelta(days=29)
-            talent_pipeline['stats'] = get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(),
-                                                          to_date.isoformat(), offset=0)
+            talent_pipeline['stats'] = [] if self.added_time.date() == datetime.utcnow().date() else \
+                get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(), to_date.isoformat(), offset=0)
 
         return talent_pipeline
 

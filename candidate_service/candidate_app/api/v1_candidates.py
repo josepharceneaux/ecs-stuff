@@ -117,33 +117,35 @@ class CandidatesResource(Resource):
 
             # Email addresses must be properly formatted
             for email in _candidate_dict.get('emails') or []:
-                email_address = email.get('address')
-                if email_address:
-                    if not is_valid_email(email=email_address):
-                        raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
-                                           error_code=custom_error.INVALID_EMAIL)
+                email_address = email['address'].strip()  # email address is required within the email dict
+                if not email_address:  # in case just a whitespace is provided, e.g. "  "
+                    raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
 
-                    # Check for candidate's email in authed_user's domain
-                    candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
-                        .filter(User.domain_id == authed_user.domain_id) \
-                        .filter(CandidateEmail.address == email_address).first()
+                if not is_valid_email(email_address):
+                    raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
+                                       error_code=custom_error.INVALID_EMAIL)
 
-                    # If candidate's email is found, check if it's web-hidden
-                    if candidate_email_obj:
-                        candidate_id = candidate_email_obj.candidate_id
-                        # We need to prevent duplicate creation in case candidate has multiple email addresses in db
-                        candidate_ids_from_candidate_email_obj.append(candidate_id)
-                        candidate = Candidate.get_by_id(candidate_id)
-                        if candidate.is_web_hidden:  # Un-hide candidate from web, if found
-                            candidate.is_web_hidden = 0
-                            # If candidate's web-hidden is set to false, it will be treated as an update
-                            is_creating, is_updating = False, True
-                        elif candidate_id in candidate_ids_from_candidate_email_obj:
-                            continue
-                        else:
-                            raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
-                                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                                               additional_error_info={'id': candidate_id})
+                # Check for candidate's email in authed_user's domain
+                candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
+                    .filter(User.domain_id == authed_user.domain_id) \
+                    .filter(CandidateEmail.address == email_address).first()
+
+                # If candidate's email is found, check if it's web-hidden
+                if candidate_email_obj:
+                    candidate_id = candidate_email_obj.candidate_id
+                    # We need to prevent duplicate creation in case candidate has multiple email addresses in db
+                    candidate_ids_from_candidate_email_obj.append(candidate_id)
+                    candidate = Candidate.get_by_id(candidate_id)
+                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
+                        candidate.is_web_hidden = 0
+                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        is_creating, is_updating = False, True
+                    elif candidate_id in candidate_ids_from_candidate_email_obj:
+                        continue
+                    else:
+                        raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
+                                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                                           additional_error_info={'id': candidate_id})
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
                 custom_field_id = custom_field.get('custom_field_id')
@@ -172,10 +174,10 @@ class CandidatesResource(Resource):
                     if not is_date_valid(date=to_date):
                         raise InvalidUsage("Military service's date must be in a date format",
                                            error_code=custom_error.MILITARY_INVALID_DATE)
-                country_code = military_service.get('country_code').upper() \
-                    if military_service.get('country_code') else "US"
-                if not is_country_code_valid(country_code):
-                    raise InvalidUsage("Country code not recognized: {}".format(country_code))
+                country_code = military_service['country_code'].upper() if military_service.get('country_code') else None
+                if country_code:
+                    if not is_country_code_valid(country_code):
+                        raise InvalidUsage("Country code not recognized: {}".format(country_code))
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -192,7 +194,7 @@ class CandidatesResource(Resource):
         for candidate_dict in candidates:
 
             user_id = authed_user.id
-            emails = [{'label': email.get('label'), 'address': email['address'],
+            emails = [{'label': (email.get('label') or '').strip(), 'address': email['address'].strip(),
                        'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
 
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
