@@ -457,11 +457,11 @@ def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
                                 if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION.lower()))
 
     # Find primary email address using email label id
-    email_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in email_info_tuple
-                      if email_label_id == primary_email_id)
+    candidate_email_tuple_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in email_info_tuple
+                                      if email_label_id == primary_email_id)
 
     candidate_id_and_email_address = next(
-        email_iterator,
+        candidate_email_tuple_iterator,
         None)
 
     # If candidate primary email is found, then just return that

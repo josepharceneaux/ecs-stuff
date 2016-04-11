@@ -234,11 +234,11 @@ class EmailLabel(db.Model):
     description = db.Column('Description', db.String(50))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
-    PRIMARY_DESCRIPTION = "Primary"
-
     # Relationships
     candidate_emails = relationship('CandidateEmail', backref='email_label')
     reference_emails = relationship('ReferenceEmail', backref='email_label')
+
+    PRIMARY_DESCRIPTION = "Primary"
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description

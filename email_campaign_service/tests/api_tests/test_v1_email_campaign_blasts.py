@@ -64,8 +64,8 @@ class TestEmailCampaignBlasts(object):
                                                      sent_campaign_multiple_email):
         """
         The test sends email to two candidates each having two emails.
-        But email should be sent to only primary if primary email is not found, then email will be sent to
-        latest added. Then verifies that only two emails are sent.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
         """
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,
