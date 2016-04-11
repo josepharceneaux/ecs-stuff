@@ -856,5 +856,3 @@ def check_job_state(job_id, job_state_to_check):
 
     return job
 
-
-import test6
