@@ -43,7 +43,7 @@ class TestClientEmailCampaign(object):
 
         assert get_polled_result(assert_candidate_upload, [{'candidate_ids':  [candidate_id]},
                                                            access_token_first],
-                                 abort_after=10, default_result=False), 'Candidate not found on cloud.'
+                                 default_result=False), 'Candidate not found on cloud.'
 
         # Get Candidate via ID
         get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id,
