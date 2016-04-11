@@ -45,7 +45,8 @@ class TestSmartlistResource(object):
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                                DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
-            assert get_polled_result(assert_candidate_upload, [data, access_token_first],
+            assert get_polled_result(assert_candidate_upload, [{'candidate_ids': candidate_ids},
+                                                               access_token_first],
                                      abort_after=10, default_result=False), 'Candidates not found on cloud.'
             logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
             data = {'name': smartlist_name,

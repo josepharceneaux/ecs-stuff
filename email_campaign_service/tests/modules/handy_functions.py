@@ -95,8 +95,8 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
     if assert_candidates:
-        data = {'candidate_ids': candidate_ids}
-        assert get_polled_result(assert_candidate_upload, [data, access_token],
+        assert get_polled_result(assert_candidate_upload, [{'candidate_ids': candidate_ids},
+                                                           access_token],
                                  abort_after=10, default_result=False), 'Candidates not found on cloud.'
         logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
     smartlist_data = {'name': fake.word(),
