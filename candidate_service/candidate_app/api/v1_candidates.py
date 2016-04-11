@@ -1380,11 +1380,11 @@ class CandidateClientEmailCampaignResource(Resource):
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
         if get_polled_result(assert_smartlist_candidates, [created_smartlist_id, len(candidate_ids),
                                                            request.headers.get('authorization')],
-                             abort_after=25, default_result=False):
+                             default_result=False):
             logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                         % (len(candidate_ids), created_smartlist_id))
         else:
-            raise InternalServerError('Candidate(s) could not be found on for smartlist(id:%s)'
+            raise InternalServerError('Candidate(s) could not be found for smartlist(id:%s)'
                                       % created_smartlist_id)
 
         # create campaign
