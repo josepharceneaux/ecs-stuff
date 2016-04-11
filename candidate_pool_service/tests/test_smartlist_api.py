@@ -1,3 +1,4 @@
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
@@ -10,10 +11,7 @@ from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
-
-import json
-import random
-import requests
+from candidate_pool_service.common.utils.candidate_service_calls import assert_candidate_upload
 
 __author__ = 'jitesh'
 
@@ -47,7 +45,9 @@ class TestSmartlistResource(object):
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                                DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
-            time.sleep(10)  # TODO: remove this
+            assert get_polled_result(assert_candidate_upload, [data, access_token_first],
+                                     abort_after=10, default_result=False), 'Candidates not found on cloud.'
+            logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
             data = {'name': smartlist_name,
                     'candidate_ids': candidate_ids,
                     'talent_pipeline_id': talent_pipeline.id}
@@ -62,7 +62,8 @@ class TestSmartlistResource(object):
                                                                    access_token_first],
                                      abort_after=abort_after,
                                      default_result=False), 'Candidates not found for smartlist'
-            print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
+            logger.info('%s candidate(s) found for smartlist(id:%s)'
+                        % (len(candidate_ids), smartlist_id))
             return smartlist_id, candidate_ids
 
         def test_create_smartlist_with_search_params(self, access_token_first, talent_pipeline):

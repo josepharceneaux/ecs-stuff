@@ -1,4 +1,5 @@
 """Misc functions that have no logical grouping to a module."""
+
 __author__ = 'erikfarmer'
 
 # Standard Imports
@@ -21,9 +22,11 @@ from flask import current_app, request
 from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
+from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -432,12 +435,17 @@ def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_
     :param default_result: Result to be return if we don't get expected result.
     :param (bool) commit_session: True if we want to commit the db session
     """
+    raise_if_not_instance_of(params, list) if params else None
+    raise_if_not_instance_of(abort_after, (int, long))
+    raise_if_not_instance_of(retry_after, int)
+    raise_if_not_instance_of(commit_session, bool)
     start = time.time()
     delta = 0
     while delta < abort_after:
+        delta = time.time() - start
+
         if commit_session:
             db.session.commit()
-        delta = time.time() - start
         result = func(*params)
 
         if result:

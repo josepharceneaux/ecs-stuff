@@ -1,6 +1,5 @@
 # Standard Imports
 import json
-import time
 import uuid
 import imaplib
 import datetime
@@ -11,7 +10,7 @@ import requests
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
-from email_campaign_service.email_campaign_app import app
+from email_campaign_service.email_campaign_app import app, logger
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
@@ -34,7 +33,7 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     create_smartlist_from_api
 from email_campaign_service.common.utils.candidate_service_calls import \
-    create_candidates_from_candidate_api
+    create_candidates_from_candidate_api, assert_candidate_upload
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
@@ -96,19 +95,22 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
     if assert_candidates:
-        time.sleep(10)  # TODO: remove this
+        data = {'candidate_ids': candidate_ids}
+        assert get_polled_result(assert_candidate_upload, [data, access_token],
+                                 abort_after=10, default_result=False), 'Candidates not found on cloud.'
+        logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        if get_polled_result(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
-                                                        access_token],
-                             abort_after=abort_after, default_result=False):
-            print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
-        else:
-            raise InternalServerError('Candidates could not be found on cloud.')
+        assert get_polled_result(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
+                                                               access_token],
+                                 abort_after=abort_after, default_result=False), \
+            'Candidates not found for smartlist(id:%s)' % smartlist_id
+        logger.info('%s candidate(s) not found for smartlist(id:%s)'
+                    % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
 
 
