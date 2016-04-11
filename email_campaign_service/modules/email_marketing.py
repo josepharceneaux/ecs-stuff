@@ -412,7 +412,10 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         group_id_and_email_and_labels.append(list(group_id_email_label))
     filtered_email_rows = []
 
-    primary_email_label = EmailLabel.get_primary_label_description()
+    # Check if primary EmailLabel exist in db
+    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
+        raise InternalServerError(
+            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
 
     # We don't know email_label id of primary email. So, get that from db
     email_label_id_desc_tuples = [(email_label.id, email_label.description) for email_label in EmailLabel.query.all()]
@@ -451,7 +454,7 @@ def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
     # python next method will return the first object from email_labels where primary label matches
     primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
-                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION))
+                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION.lower()))
 
     # Find primary email address using email label id
     email_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in email_info_tuple
