@@ -45,12 +45,13 @@ def ses_bounces():
 
     # SNS first sends a confirmation request to this endpoint, we then confirm our subscription by sending a
     # GET request to given url in subscription request body.
-    if request.headers['X_AMZ_SNS_MESSAGE_TYPE'] == AWS_SNS_TERMS.SUBSCRIPTION:
+    if request.headers.get('X_AMZ_SNS_MESSAGE_TYPE') == AWS_SNS_TERMS.SUBSCRIPTION:
         response = requests.get(data['SubscribeURL'])
         if not data['TopicArn'] in response.text:
             logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s' % (data['TopicArn'],
                                                                                                 request.data))
-    elif request.headers[AWS_SNS_TERMS.HEADER_KEY] == AWS_SNS_TERMS.NOTIFICATION:
+    elif request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.NOTIFICATION:
+        # In case of notification, check its type (bounce or complaint) and process accordingly.
         data = json.loads(request.data)
         message = data['Message']
         message = json.loads(message)
