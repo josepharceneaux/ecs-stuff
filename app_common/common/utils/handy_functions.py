@@ -411,7 +411,8 @@ def define_and_send_request(access_token, request, url, data=None):
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
         return method(url=url,
-                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      headers={'Authorization': 'Bearer %s' % access_token,
+                               'content-type': 'application/json'},
                       data=json.dumps(data))
 
 
@@ -419,7 +420,7 @@ def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_
                       commit_session=True):
     """
     This is the function we use for polling. i.e. to avoid time.sleep() and poll the server
-    after some specific interval of time for specific interval of time to get the result.
+    after some specific interval of time for specific interval of time.
     This function calls the given function with given parameters for given number of seconds until
     we find the result.
     For default values, this will call the given function every 3s for 30s. If we get the result,
@@ -432,16 +433,15 @@ def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_
     :param (bool) commit_session: True if we want to commit the db session
     """
     start = time.time()
-    while True:
+    delta = 0
+    while delta < abort_after:
         if commit_session:
             db.session.commit()
         delta = time.time() - start
         result = func(*params)
+
         if result:
             return result
-
-        if delta >= abort_after:
-            break
 
         if retry_after:
             time.sleep(retry_after)
