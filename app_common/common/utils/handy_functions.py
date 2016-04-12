@@ -356,7 +356,7 @@ def create_oauth_headers(oauth_token=None):
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
     """
-    oauth_token = oauth_token if oauth_token else request.oauth_token
+    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, oauth_token) else None
     if not oauth_token:
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
