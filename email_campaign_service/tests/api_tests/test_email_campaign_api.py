@@ -14,7 +14,6 @@ In this module, we have tests for following endpoints
 
 # Packages
 import re
-import time
 import requests
 from datetime import datetime, timedelta
 
@@ -78,7 +77,8 @@ class TestGetCampaigns(object):
                                             access_token_first,
                                             talent_pipeline):
         """
-        This is the test to GET the campaign by providing campaign_id & filters. It should get OK response
+        This is the test to GET the campaign by providing campaign_id & filters.
+        It should get OK response
         """
         fields = ['id', 'subject', 'body_html', 'is_hidden']
 
@@ -190,8 +190,6 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
-        time.sleep(30)
-        assert_and_delete_email(subject)
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):

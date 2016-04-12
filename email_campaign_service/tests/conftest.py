@@ -98,6 +98,7 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
     return campaign
 
 
+@pytest.fixture()
 def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
                                             assign_roles_to_user_first,
                                             access_token_first, talent_pipeline):
@@ -107,15 +108,16 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
     """
 
     _emails = [
-               # Primary and work label
-               [{'label': 'work', 'address': 'work' + fake.safe_email()},
-               {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
-               # Work and home label
-               [{'label': 'work', 'address': 'work' + fake.safe_email()},
-               {'label': 'home', 'address': 'home' + fake.safe_email()}],
-               ]
+        # Primary and work label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
+        # Work and home label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'home', 'address': 'home' + fake.safe_email()}],
+    ]
 
-    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+    campaign = create_smartlist_with_given_email_candidate(access_token_first,
+                                                           campaign=email_campaign_of_user_first,
                                                            talent_pipeline=talent_pipeline,
                                                            emails=_emails,
                                                            count=2)
@@ -232,7 +234,8 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent, access_token_first):
+def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent,
+                                    access_token_first):
     """
     This fixture sends the given campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.

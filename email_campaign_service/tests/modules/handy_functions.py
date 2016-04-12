@@ -274,6 +274,7 @@ def assert_and_delete_email(subject):
         mail_connection.logout()
     return msg_ids
 
+
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
                          expected_status=200, abort_time_for_sends=20):
     """
@@ -294,8 +295,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     if not blasts:
         raise ResourceNotFound('Email campaign blasts not found')
     assert len(blasts) == 1
-    get_polled_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
     # assert on sends
+    assert_campaign_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == expected_count
     sends_url_conversions = []
@@ -320,21 +321,21 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         assert str(
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+
     # TODO: Commenting this for now. Need to discuss with osman
     # if not email_client:
     #     assert get_polled_result(assert_and_delete_email, [campaign.subject], abort_after=60), \
     #         "Email with subject %s was not found." % campaign.subject
 
 
-def get_polled_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+def assert_campaign_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
-    This function returns the polled number of sends for given email-campaign
+    This function asserts the particular blast of given campaign has expected number of sends
     """
     sends = get_polled_result(lambda email_campaign: email_campaign.blasts[blast_index].sends,
                               [campaign],
                               default_result=0, abort_after=abort_time_for_sends)
     assert sends >= expected_count
-    return sends
 
 
 def post_to_email_template_resource(access_token, data):

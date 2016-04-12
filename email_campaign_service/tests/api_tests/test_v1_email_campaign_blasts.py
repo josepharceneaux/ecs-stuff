@@ -12,7 +12,7 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import send_campaign, get_polled_sends
+from email_campaign_service.tests.modules.handy_functions import send_campaign, assert_campaign_sends
 
 
 class TestEmailCampaignBlasts(object):
@@ -49,7 +49,7 @@ class TestEmailCampaignBlasts(object):
         GET call on endpoint /v1/email-campaigns/:id/blasts
         """
         expected_count = 2
-        get_polled_sends(sent_campaign, expected_count)
+        assert_campaign_sends(sent_campaign, expected_count)
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
@@ -81,7 +81,7 @@ class TestEmailCampaignBlasts(object):
         """
         # Test GET blasts of email campaign with 1 result per_page
         expected_sends_count = 2
-        get_polled_sends(sent_campaign, expected_sends_count)
+        assert_campaign_sends(sent_campaign, expected_sends_count)
         url = self.URL % sent_campaign.id
         response = requests.get(url + '?per_page=1',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -98,7 +98,7 @@ class TestEmailCampaignBlasts(object):
         for _ in xrange(1, 10):
             send_campaign(sent_campaign, access_token_first)
 
-        get_polled_sends(sent_campaign, expected_sends_count, blast_index=3)
+        assert_campaign_sends(sent_campaign, expected_sends_count, blast_index=3)
         #  Test GET blasts of email campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -112,7 +112,7 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['sends'] == expected_sends_count
 
 
-        get_polled_sends(sent_campaign, expected_sends_count, blast_index=4)
+        assert_campaign_sends(sent_campaign, expected_sends_count, blast_index=4)
         #  Test GET blasts of email campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -126,7 +126,7 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == expected_sends_count
 
-        get_polled_sends(sent_campaign, expected_sends_count, blast_index=9)
+        assert_campaign_sends(sent_campaign, expected_sends_count, blast_index=9)
         #  Test GET blasts of email campaign with 4 results per_page using page = 3
         response = requests.get(url + '?per_page=4&page=3',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
