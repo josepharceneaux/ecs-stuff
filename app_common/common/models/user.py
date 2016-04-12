@@ -47,6 +47,7 @@ class User(db.Model):
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
+    locale = db.Column(db.String(10), default='en-US')
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
