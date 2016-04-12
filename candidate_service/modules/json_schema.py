@@ -1278,3 +1278,23 @@ ccf_schema = {
         }
     }
 }
+
+reference_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "required": ["candidate_references"],
+    "properties": {
+        "candidate_references": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["name", "comments"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "title": {"type": ["string", "null"]},
+                    "comments": {"type": "string"}
+                }
+            }
+        }
+    }
+}

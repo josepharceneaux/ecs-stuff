@@ -34,7 +34,8 @@ from candidate_service.modules.validators import (
 # JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema,
+    reference_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -2188,3 +2189,75 @@ class CandidateLanguageResource(Resource):
 
         db.session.commit()
         return '', 204
+
+
+class CandidateReferencesResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:  POST /v1/candidates/:candidate_id/references
+        """
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+             i. GET /v1/candidates/:candidate_id/references
+            ii. GET /v1/candidates/:candidate_id/references/:id
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    def patch(self, **kwargs):
+        """
+        Endpoint:  PATCH /v1/candidates/:candidate_id/references
+        """
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/references
+            ii. DELETE /v1/candidates/:candidate_id/references/:id
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
