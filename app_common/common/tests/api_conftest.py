@@ -2,14 +2,14 @@
 Author: Zohaib Ijaz <mzohaib.qc@gmail.com>
 
 This module contains fixtures to be used in tests.
-
-Some fixtures are created twice. First one with 'user_first' as owner and those that
 are postfix with  '_second' are owned by 'user_second'. 'user_first' belongs to domain 1 and
 'user_second' belongs to another domain say domain 2.
 
 A user can update or delete objects that are owned by a user that is from same domain. so there
 are some fixture that are postfixed with '_same_domain', actually belong to domain 1
 but user is different.
+
+Some fixtures are created twice. First one with 'user_first' as owner and those that
 
 """
 import pytest

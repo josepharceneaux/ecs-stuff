@@ -8,9 +8,12 @@ from datetime import timedelta
 
 # Application imports
 import requests
+
+from scheduler_service import db
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.auth_utilities import get_access_token
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture, first_group, domain_first
+    test_org, test_culture, first_group, domain_first, PASSWORD, sample_client
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -188,3 +191,68 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
         jobs_id.append(response.json()['id'])
 
     return jobs_id
+
+
+@pytest.fixture()
+def create_five_users(request, domain_first, first_group, sample_client):
+    """
+    Create five users and delete them in finalizer
+    :param request:
+    :param domain_first:
+    :param first_group:
+    :param sample_client:
+    :return:
+    """
+    users_list = []
+    for _ in range(5):
+        user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
+        db.session.commit()
+        access_token = get_access_token(user, PASSWORD, sample_client.client_id, sample_client.client_secret)
+        users_list.append((user, access_token))
+
+    def tear_down():
+        for _user, _ in users_list:
+            try:
+                db.session.delete(_user)
+                db.session.commit()
+            except:
+                db.session.rollback()
+    request.addfinalizer(tear_down)
+    return users_list
+
+
+@pytest.fixture()
+def schedule_ten_jobs_of_each_user(request, create_five_users):
+    """
+    Schedule 10 jobs of each users, So, there will be 50 jobs in total.
+    :param request:
+    :param create_five_users:
+    :return:
+    """
+    jobs_count = 10
+    user_job_ids_list = []
+    users_list = create_five_users
+    for user, token in users_list:
+        job_ids_list = []
+        header = {'Authorization': 'Bearer ' + token,
+                  'Content-Type': 'application/json'}
+        for _ in range(jobs_count):
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                     headers=header)
+            assert response.status_code == 201
+            job_ids_list.append(response.json()['id'])
+        user_job_ids_list.append(job_ids_list)
+
+    def tear_down():
+        for user_index, (_, _token) in enumerate(users_list):
+            _header = {'Authorization': 'Bearer ' + _token,
+                       'Content-Type': 'application/json'}
+            for index in range(jobs_count):
+                response_remove_job = requests.delete(SchedulerApiUrl.TASK % user_job_ids_list[user_index][index],
+                                                      headers=_header)
+
+                assert response_remove_job.status_code == 200
+                job_ids_list.append(response.json()['id'])
+            user_job_ids_list.append(job_ids_list)
+    request.addfinalizer(tear_down)
+    return user_job_ids_list

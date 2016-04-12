@@ -18,13 +18,13 @@ from werkzeug.exceptions import BadRequest
 
 from scheduler_service import TalentConfigKeys, flask_app, logger
 from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token, User
+from scheduler_service.common.models.user import Token, User, DomainRole
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
-from scheduler_service.common.utils.auth_utils import require_oauth
+from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
@@ -735,6 +735,122 @@ class PauseTaskById(Resource):
             scheduler.pause_job(job_id=_id)
             return dict(message="Task has been successfully paused")
         raise ResourceNotFound(error_message="Task not found")
+
+
+@api.route(SchedulerApi.SCHEDULER_ADMIN_TASKS)
+class AdminTasks(Resource):
+    decorators = [require_oauth()]
+    """
+        This resource returns a list of tasks owned by a user or service by using pagination and accessible to admin
+        user only
+    """
+    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
+    def get(self):
+        """
+        This action returns a list of tasks and their count
+        :return tasks_data: a dictionary containing list of tasks and their count
+        :rtype json
+
+
+        :Example (in case of pagination):
+            By default, it will return 10 jobs (max)
+
+            Case 1:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
+
+            # Returns 10 jobs ranging from 30-39
+
+            Case 2:
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
+
+            # Returns 12 jobs ranging from 48-59
+
+        :Example:
+        In case of authenticated user
+
+            headers = {'Authorization': 'Bearer <access_token>'}
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
+
+        In case of SECRET_KEY
+
+            headers = {'Authorization': 'Bearer <access_token>',
+                        'X-Talent-Server-Key-ID': '<secret_key>'}
+            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
+
+        .. Response::
+
+            {
+                "count": 1,
+                "tasks": [
+                    {
+                        "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                        "post_data": {
+                            "url": "http://getTalent.com/sms/send/",
+                            "phone_number": "09230862348",
+                            "smart_list_id": 123456,
+                            "content": "text to be sent as sms"
+                            "some_other_kwarg": "abc",
+                            "campaign_name": "SMS Campaign"
+                        },
+                        "frequency": 3601,      # in seconds
+                        "start_datetime": "2015-11-05T08:00:00",
+                        "end_datetime": "2015-12-05T08:00:00"
+                        "next_run_datetime": "2015-11-05T08:20:30",
+                        "task_type": "periodic"
+                    }
+               ]
+            }
+
+        .. Status:: 200 (OK)
+                    400 (Invalid Usage)
+                    500 (Internal Server Error)
+
+        """
+        # In case of higher number of scheduled task running for a particular user and user want to get only
+        # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
+
+        # Limit the jobs to 50 if user requests for more than 50
+        max_per_page = 50
+
+        # Default per_page size
+        default_per_page = 30
+
+        # If user didn't specify page or per_page, then it should be set to default 1 and 30 respectively.
+        page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
+
+        if not (str(page).isdigit() and int(page) > 0):
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+
+        if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
+            raise InvalidUsage(
+                error_message="'per_page' arg should be a digit and its value should be greater or equal to 30")
+
+        page, per_page = int(page), int(per_page)
+
+        # Limit the jobs if user requests jobs greater than 50
+        if per_page > max_per_page:
+            per_page = max_per_page
+
+        raise_if_scheduler_not_running()
+        tasks = scheduler.get_jobs()
+        tasks_count = len(tasks)
+        # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
+        task_indices = range((page-1) * per_page, page * per_page)
+
+        tasks = [serialize_task(tasks[index])
+                 for index in task_indices if index < tasks_count and tasks[index]]
+
+        tasks = [task for task in tasks if task]
+        header = {
+            'X-Total': tasks_count,
+            'X-Per-Page': per_page,
+            'X-Page': page
+        }
+        return ApiResponse(response=dict(tasks=tasks), headers=header)
 
 
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
