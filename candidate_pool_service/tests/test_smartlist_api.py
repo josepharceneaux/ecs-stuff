@@ -6,7 +6,7 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 get_polled_result)
+                                                                 poll)
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import \
@@ -30,7 +30,7 @@ class TestSmartlistResource(object):
         @classmethod
         def create_and_return_smartlist_with_candidates(cls, access_token_first, user_first,
                                                         talent_pool, talent_pipeline, count,
-                                                        abort_after=30, smartlist_name=fake.name()):
+                                                        timeout=30, smartlist_name=fake.name()):
             """
             Creates and returns the id of a smartlist with candidate ids (dumb list).
             :param access_token_first: Token for authorization.
@@ -54,11 +54,8 @@ class TestSmartlistResource(object):
             assert 'smartlist' in response
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
-            assert get_polled_result(assert_smartlist_candidates, [smartlist_id,
-                                                                   len(candidate_ids),
-                                                                   access_token_first],
-                                     abort_after=abort_after,
-                                     default_result=False), 'Candidates not found for smartlist'
+            assert poll(assert_smartlist_candidates, [smartlist_id, len(candidate_ids), access_token_first],
+                        timeout=timeout, default_result=False), 'Candidates not found for smartlist'
             logger.info('%s candidate(s) found for smartlist(id:%s)'
                         % (len(candidate_ids), smartlist_id))
             return smartlist_id, candidate_ids
@@ -81,7 +78,7 @@ class TestSmartlistResource(object):
             """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
                 access_token_first, user_first, talent_pool, talent_pipeline,
-                count=20, abort_after=60)
+                count=20, timeout=60)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api(smartlist_id,
@@ -105,7 +102,7 @@ class TestSmartlistResource(object):
             """
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
                 access_token_first, user_first, talent_pool, talent_pipeline, count=20,
-                abort_after=60)
+                timeout=60)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
@@ -301,7 +298,7 @@ class TestSmartlistResource(object):
             talent_pipeline.search_params = ''
             smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
                 access_token_first, user_first, talent_pool, talent_pipeline,
-                count=num_of_candidates, abort_after=60, smartlist_name=list_name)
+                count=num_of_candidates, timeout=60, smartlist_name=list_name)
             resp = self.call_get_api(access_token_first, smartlist_id)
             assert resp.status_code == 200
             response = json.loads(resp.content)
@@ -493,7 +490,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=50)
+            count=num_of_candidates, timeout=50)
         params = {'fields': 'id'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -509,7 +506,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=60)
+            count=num_of_candidates, timeout=60)
         params = {'fields': 'count_only'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -522,7 +519,7 @@ class TestSmartlistCandidatesApi(object):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
             access_token_first, user_first, talent_pool, talent_pipeline,
-            count=num_of_candidates, abort_after=60)
+            count=num_of_candidates, timeout=60)
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, {}, access_token_first)
         assert resp.status_code == 200
@@ -568,11 +565,12 @@ class TestSmartlistCandidatesApi(object):
         db.session.commit()
 
         search_params = json.dumps({"query": "%s" % first_name})
-        smartlist = save_smartlist(user_id=user_first.id, name=fake.name(), talent_pipeline_id=talent_pipeline.id,
+        smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
+                                   talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
-        assert get_polled_result(assert_smartlist_candidates, [smartlist.id, len(candidate_ids),
-                                                            access_token_first],
-                                 default_result=False), 'candidates not found for smartlist'
+        assert poll(assert_smartlist_candidates, [smartlist.id, len(candidate_ids),
+                                                  access_token_first], default_result=False), \
+            'candidates not found for smartlist'
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
 

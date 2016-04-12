@@ -77,7 +77,7 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
-from candidate_service.common.utils.handy_functions import get_polled_result
+from candidate_service.common.utils.handy_functions import poll
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
 
@@ -1378,9 +1378,9 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
-        if get_polled_result(assert_smartlist_candidates, [created_smartlist_id, len(candidate_ids),
-                                                           request.headers.get('authorization')],
-                             default_result=False):
+        if poll(assert_smartlist_candidates, [created_smartlist_id, len(candidate_ids),
+                                              request.headers.get('authorization')],
+                default_result=False):
             logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                         % (len(candidate_ids), created_smartlist_id))
         else:

@@ -59,7 +59,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False, acc
     response_body = response.json()
     candidates = response_body['candidates']
     no_of_pages = response_body['max_pages']
-    if int(no_of_pages) > DEFAULT_PAGE:
+    if no_of_pages > DEFAULT_PAGE:
         for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
             next_page = current_page + DEFAULT_PAGE
             response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
@@ -68,7 +68,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False, acc
             response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
-        return [long(candidate['id']) for candidate in candidates]
+        return [candidate['id'] for candidate in candidates]
     return candidates
 
 

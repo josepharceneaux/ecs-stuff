@@ -356,7 +356,7 @@ def create_oauth_headers(oauth_token=None):
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
     """
-    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, oauth_token) else None
+    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
     if not oauth_token:
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
@@ -419,8 +419,7 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_result=None,
-                      commit_session=True):
+def poll(func, params=None, timeout=30, retry_period=3, default_result=None, commit_session=True):
     """
     This is the function we use for polling. i.e. to avoid time.sleep() and poll the server
     after some specific interval of time for specific interval of time.
@@ -430,28 +429,30 @@ def get_polled_result(func, params=None, abort_after=30, retry_after=3, default_
     we return it otherwise default_result is returned.
     :param func: Function to be called
     :param (list) params: Parameters to be passed in given function
-    :param (int) abort_after: Number of seconds after which it should break the loop
-    :param (int) retry_after: Number of seconds after which it should retry
+    :param (int) timeout: Number of seconds after which it should break the loop
+    :param (int) retry_period: Number of seconds after which it should retry
     :param default_result: Result to be return if we don't get expected result.
     :param (bool) commit_session: True if we want to commit the db session
     """
     raise_if_not_instance_of(params, list) if params else None
-    raise_if_not_instance_of(abort_after, (int, long))
-    raise_if_not_instance_of(retry_after, int)
     raise_if_not_instance_of(commit_session, bool)
+    if not isinstance(timeout, (int, long)) or not timeout > 0:
+        raise InvalidUsage('`timeout` must be an integer greater than 0.')
+    if not isinstance(retry_period, (int, long)) or not retry_period > 0:
+        raise InvalidUsage('`retry_period` must be an integer greater than 0.')
+
     start = time.time()
-    delta = 0
-    while delta < abort_after:
-        delta = time.time() - start
+    while time.time() - start < timeout:
 
         if commit_session:
             db.session.commit()
+
         result = func(*params)
 
         if result:
             return result
 
-        if retry_after:
-            time.sleep(retry_after)
+        if retry_period:
+            time.sleep(retry_period)
 
     return default_result

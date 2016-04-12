@@ -10,7 +10,7 @@ import requests
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.utils.handy_functions import get_polled_result
+from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 
@@ -40,7 +40,7 @@ class TestEmailCampaignBlastsWithId(object):
         access token. It should get OK response and number of sends should be 2.
         """
         expected_count = 2
-        sends = get_polled_result(lambda email_campaign: email_campaign.blasts[0].sends,
+        sends = poll(lambda email_campaign: email_campaign.blasts[0].sends,
                                   [sent_campaign],
                                   default_result=0)
         assert sends == expected_count
