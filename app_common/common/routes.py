@@ -298,6 +298,7 @@ class CandidateApiWords(object):
     PHOTOS = "/photos"
     DEVICES = '/devices'
     NOTES = "/notes"
+    LANGUAGES = "/languages"
 
 
 class CandidateApi(object):
@@ -375,6 +376,9 @@ class CandidateApi(object):
     CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
     CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
 
+    LANGUAGES = _CANDIDATE_ID + CandidateApiWords.LANGUAGES
+    LANGUAGE = LANGUAGES + _INT_ID
+
 
 class CandidateApiUrl(object):
     """
@@ -446,6 +450,9 @@ class CandidateApiUrl(object):
     NOTES = CANDIDATE + CandidateApiWords.NOTES
 
     CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+
+    LANGUAGES = CANDIDATE + CandidateApiWords.LANGUAGES
+    LANGUAGE = LANGUAGES + "/%s"
 
 
 class WidgetApi(object):
@@ -620,16 +627,18 @@ class SchedulerApiUrl(object):
 
     VERSION = 'v1'
 
-    HOST_NAME %= _get_api_relative_version(VERSION)
+    RELATIVE_VERSION = HOST_NAME % _get_api_relative_version(VERSION)
+
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     # URLs, in case of test cases
-    TASKS = HOST_NAME % "tasks"
-    TASK = HOST_NAME % 'tasks/id/%s'
-    TASK_NAME = HOST_NAME % 'tasks/name/%s'
-    PAUSE_TASK = HOST_NAME % 'tasks/%s/pause'
-    RESUME_TASK = HOST_NAME % 'tasks/%s/resume'
-    PAUSE_TASKS = HOST_NAME % 'tasks/pause'
-    RESUME_TASKS = HOST_NAME % 'tasks/resume'
-    TEST_TASK = HOST_NAME % 'tasks/test'
+    TASKS = RELATIVE_VERSION % "tasks"
+    TASK = RELATIVE_VERSION % 'tasks/id/%s'
+    TASK_NAME = RELATIVE_VERSION % 'tasks/name/%s'
+    PAUSE_TASK = RELATIVE_VERSION % 'tasks/%s/pause'
+    RESUME_TASK = RELATIVE_VERSION % 'tasks/%s/resume'
+    PAUSE_TASKS = RELATIVE_VERSION % 'tasks/pause'
+    RESUME_TASKS = RELATIVE_VERSION % 'tasks/resume'
+    TEST_TASK = RELATIVE_VERSION % 'tasks/test'
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'

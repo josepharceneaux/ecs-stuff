@@ -58,12 +58,9 @@ def add_role_to_test_user(test_user, role_names):
 def camel_case_to_snake_case(name):
     """ Convert camel case to underscore case
         socialNetworkId --> social_network_id
-
             :Example:
-
                 result = camel_case_to_snake_case('socialNetworkId')
                 assert result == 'social_network_id'
-
     """
     # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
@@ -75,9 +72,7 @@ def camel_case_to_snake_case(name):
 def snake_case_to_pascal_case(name):
     """ Convert string or unicode from lower-case underscore to camel-case
         e.g. appt_type_id --> ApptTypeId
-
             :Example:
-
                 result = snake_case_to_camel_case('social_network_id')
                 assert result == 'SocialNetworkId'
     """
@@ -197,8 +192,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
-        log_error('http_request: Error: %s, user_id: %s'
-                  % (error_message, user_id), app=app)
+        log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
+                  % (error_message, user_id, url, headers, data), app=app)
         raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
@@ -237,28 +232,36 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
             else:
                 # raise any Server error
                 log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running." % (url, method_type))
+                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
+                                                                                                data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
             log_exception(
                             "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url), app=app)
+                            "Make sure requested server is running. Headers: %s, Data: %s" % (method_type, url, headers,
+                                                                                              data), app=app)
             raise
         except requests.Timeout as e:
-            log_exception('http_request: HTTP request timeout, %s' % e.message)
+            log_exception('http_request: HTTP request timeout, %s. URL: %s, Headers: %s, Data: %s' %
+                          (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s' % e.message)
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
+                                                                                                     url, headers,
+                                                                                                     data))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
-                          'user_id: %s' % (error_message, user_id), app=app)
+                          'user_id: %s, URL: %s, Headers: %s, Data: %s' % (error_message, user_id, url,
+                                                                           headers, data), app=app)
         return response
     else:
-        log_error('http_request: Unknown Method type %s ' % method_type, app=app)
-        raise InvalidUsage('Unknown method type(%s) provided' % method_type)
+        log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
+                                                                                           data), app=app)
+        raise InvalidUsage('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
+                                                                                                headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):
@@ -286,13 +289,10 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     This function is used to find the missing items (either key or its value)in given
     data_dict. If verify_all is true, this function checks all the keys present in data_dict
     if they are empty or not. Otherwise it verify only those fields as given in required_fields.
-
     :Example:
-
         >>> data_dict = {'name' : 'Name', 'title': 'myTitle'}
         >>> missing_items = find_missing_items(data_dict, required_fields =['name', 'title', 'type']
         >>> print missing_items
-
          Output will be ['type']
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
@@ -415,4 +415,3 @@ def define_and_send_request(access_token, request, url, data=None):
         return method(url=url,
                       headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
                       data=json.dumps(data))
-

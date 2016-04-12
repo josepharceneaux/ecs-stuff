@@ -2,7 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage
+from ..error_handling import InvalidUsage, InternalServerError
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
@@ -238,6 +238,8 @@ class EmailLabel(db.Model):
     candidate_emails = relationship('CandidateEmail', backref='email_label')
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
+    PRIMARY_DESCRIPTION = "Primary"
+
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
 
@@ -253,6 +255,13 @@ class EmailLabel(db.Model):
             if email_label_row:
                 return email_label_row.id
         return 4
+
+    @classmethod
+    def get_primary_label_description(cls):
+        email_label_row = cls.query.filter(EmailLabel.description == EmailLabel.PRIMARY_DESCRIPTION).first()
+        if email_label_row:
+            return "Primary"
+        raise InternalServerError(error_message="Primary email address description not present in db")
 
 
 class CandidateEmail(db.Model):
@@ -405,7 +414,7 @@ class CandidateTextComment(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
-    comment = db.Column('Comment', db.String(5000))
+    comment = db.Column('Comment', db.Text)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
@@ -585,13 +594,14 @@ class CandidatePreferredLocation(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
     address = db.Column('Address', db.String(255))
-    iso3166_country = db.Column(db.String(2))
     city = db.Column('City', db.String(255))
-    region = db.Column('Region', db.String(255))
+    iso3166_subdivision = db.Column(db.String(10))
+    iso3166_country = db.Column(db.String(2))
     zip_code = db.Column('ZipCode', db.String(10))
 
     # TODO: Below table(s) to be removed once all tables have been migrated (updated)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    region = db.Column('Region', db.String(255))
 
     def __repr__(self):
         return "<CandidatePreferredLocation (candidate_id=' %r')>" % self.candidate_id
@@ -604,8 +614,8 @@ class CandidatePreferredLocation(db.Model):
 class CandidateLanguage(db.Model):
     __tablename__ = 'candidate_language'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.Id'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
+    iso639_language = db.Column(db.String(2))
     can_read = db.Column('CanRead', db.Boolean)
     can_write = db.Column('CanWrite', db.Boolean)
     can_speak = db.Column('CanSpeak', db.Boolean)
@@ -614,10 +624,20 @@ class CandidateLanguage(db.Model):
     speak = db.Column('Speak', db.Boolean)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
+    # TODO: Below table(s) to be removed once all tables have been migrated (updated)
+    language_id = db.Column('LanguageId', db.Integer, db.ForeignKey('language.Id'))
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
 
     def __repr__(self):
         return "<CandidateLanguage (candidate_id=' %r')>" % self.candidate_id
+
+    @classmethod
+    def get_by_candidate_id(cls, candidate_id):
+        """
+        :type candidate_id:  int|long
+        :rtype:  list[CandidateLanguage]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class CandidateLicenseCertification(db.Model):
@@ -767,16 +787,18 @@ class CandidateAddress(db.Model):
     address_line_1 = db.Column('AddressLine1', db.String(255))
     address_line_2 = db.Column('AddressLine2', db.String(255))
     city = db.Column('City', db.String(100))
-    state = db.Column('State', db.String(100))
-    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    iso3166_subdivision = db.Column(db.String(10))
     iso3166_country = db.Column(db.String(2))
     zip_code = db.Column('ZipCode', db.String(10))
     po_box = db.Column('POBox', db.String(20))
     is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
+    country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    state = db.Column('State', db.String(100))
 
     def __repr__(self):
         return "<CandidateAddress (id = %r)>" % self.id
@@ -799,14 +821,16 @@ class CandidateEducation(db.Model):
     school_name = db.Column('SchoolName', db.String(200))
     school_type = db.Column('SchoolType', db.String(100))
     city = db.Column('City', db.String(50))
-    state = db.Column('State', db.String(50))
+    iso3166_subdivision = db.Column(db.String(10))
     iso3166_country = db.Column(db.String(2))
     is_current = db.Column('IsCurrent', db.Boolean)
     added_time = db.Column('AddedTime', db.DateTime)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    state = db.Column('State', db.String(50))
 
     # Relationships
     degrees = relationship('CandidateEducationDegree', cascade='all, delete-orphan', passive_deletes=True)
@@ -886,7 +910,7 @@ class CandidateExperience(db.Model):
     organization = db.Column('Organization', db.String(150))
     position = db.Column('Position', db.String(150))
     city = db.Column('City', db.String(50))
-    state = db.Column('State', db.String(50))
+    iso3166_subdivision = db.Column(db.String(10))
     end_month = db.Column('EndMonth', db.SmallInteger)
     start_year = db.Column('StartYear', YEAR)
     iso3166_country = db.Column(db.String(2))
@@ -899,6 +923,7 @@ class CandidateExperience(db.Model):
     # TODO: Below are necessary for now, but should remove once all tables have been defined
     resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
     country_id = db.Column('CountryId', db.Integer, db.ForeignKey('country.id'))
+    state = db.Column('State', db.String(50))
 
     # Relationships
     candidate = relationship('Candidate', backref=backref(

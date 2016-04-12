@@ -49,12 +49,12 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
                         'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country_code(),
-                        'is_default': True, 'po_box': None
+                        'is_default': True, 'po_box': None, 'subdivision_code': 'US-CA'
                     },
                     {
                         'address_line_1': fake.street_address(), 'city': fake.city(),
                         'state': fake.state(), 'zip_code': fake.postcode(), 'country': fake.country_code(),
-                        'is_default': False, 'po_box': ''
+                        'is_default': False, 'po_box': '', 'subdivision_code': 'US-CA'
                     }
                 ],
                 'work_preference': {
@@ -69,6 +69,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'work_experiences': [
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
+                        'subdivision_code': 'US-CA',
                         'state': fake.state(), 'start_month': 11, 'start_year': 2005, 'is_current': True,
                         'end_month': 10, 'end_year': 2007, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
@@ -76,6 +77,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     },
                     {
                         'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
+                        'subdivision_code': 'US-CA',
                         'state': fake.state(), 'start_month': 1, 'start_year': 2008, 'is_current': None,
                         'end_month': 5, 'end_year': 2012, 'country': fake.country_code(), 'bullets': [
                         {'description': fake.bs()}, {'description': fake.bs()}
@@ -85,6 +87,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'educations': [
                     {
                         'school_name': 'SJSU', 'city': 'San Jose', 'state': 'CA', 'country': 'USA',
+                        'subdivision_code': 'US-CA',
                         'school_type': 'university', 'is_current': False, 'degrees': [
                         {
                             'type': 'BS', 'title': 'Bachelors', 'start_year': 2008, 'start_month': 9,
@@ -95,6 +98,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     },
                     {
                         'school_name': 'De Anza', 'school_type': 'college', 'city': 'cupertino', 'state': 'california',
+                        'subdivision_code': 'US-CA',
                         'country': 'america', 'is_current': True, 'degrees': [
                         {
                             'type': 'AA', 'title': 'Associate', 'start_year': 2006, 'start_month': 9,
@@ -117,8 +121,14 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     }
                 ],
                 'preferred_locations': [
-                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country_code()},
-                    {'city': fake.city(), 'state': fake.state(), 'country': fake.country_code()}
+                    {
+                        'city': fake.city(), 'state': fake.state(), 'country': fake.country_code(),
+                        'subdivision_code': 'US-CA'
+                    },
+                    {
+                        'city': fake.city(), 'state': fake.state(), 'country': fake.country_code(),
+                        'subdivision_code': 'US-CA'
+                    }
                 ],
                 'skills': [
                     {'name': 'payroll', 'months_used': 15, 'last_used_date': fake.date()},
@@ -155,8 +165,8 @@ class GenerateCandidateDate(object):
                 [
                     {
                         'id': address_id, 'address_line_1': fake.street_address(), 'city': fake.city(),
-                        'state': fake.state(), 'zip_code': fake.zipcode(), 'country_code': fake.country_code(),
-                        'is_default': is_default
+                        'subdivision_code': 'US-CA', 'zip_code': fake.zipcode(),
+                        'country_code': fake.country_code(), 'is_default': is_default
                     }
                 ]
             }
@@ -229,7 +239,8 @@ class GenerateCandidateDate(object):
                 {
                     'id': education_id,
                     'school_name': 'westvalley', 'school_type': 'college', 'city': fake.city(),
-                    'state': fake.state(), 'country_code': fake.country_code(), 'is_current': fake.boolean(),
+                    'subdivision_code': 'US-CA', 'state': fake.state(),
+                    'country_code': fake.country_code(), 'is_current': fake.boolean(),
                     'degrees': [
                         {
                             'id': degree_id, 'type': 'bs', 'title': 'engineer', 'start_year': 2002, 'start_month': 11,
@@ -280,7 +291,7 @@ class GenerateCandidateDate(object):
                     'id': experience_id, 'organization': fake.company(), 'position': fake.job(),
                     'city': fake.city(), 'state': fake.state(), 'country_code': fake.country_code(),
                     'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
-                    'is_current': True, 'bullets':
+                    'is_current': True, 'subdivision_code': 'US-CA', 'bullets':
                     [
                         {'id': bullet_id, 'description': fake.bs()}
                     ]
@@ -302,7 +313,7 @@ class GenerateCandidateDate(object):
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids}, 'preferred_locations': [
                 {
                     'id': preferred_location_id, 'city': fake.city(), 'state': fake.state(),
-                    'country_code': fake.country_code()
+                    'country_code': fake.country_code(), 'subdivision_code': 'US-CA'
                 }
             ]}
         ]}
@@ -364,127 +375,6 @@ def candidate_custom_fields(domain_custom_fields, candidate_id=None):
         data = {'candidates': [{'emails': [{'address': fake.email()}], 'custom_fields': [
             {'custom_field_id': custom_field.id, 'value': fake.word()}
             for custom_field in domain_custom_fields]}]}
-    return data
-
-
-def candidate_educations(candidate_id=None, education_id=None):
-    """
-    Sample data for creating Candidate with CandidateEducation, CandidateEducationDegree,
-     and CandidateEducationBullets
-    :rtype  dict
-    """
-    assert candidate_id is not None or education_id is not None
-    # Data for adding CandidateEducation to an existing Candidate
-    if candidate_id and not education_id:
-        data = {'candidates': [{'id': candidate_id, 'educations': [
-            {'school_name': 'stanford', 'school_type': 'university', 'city': 'palo alto',
-             'state': 'ca', 'country': None, 'is_current': False, 'degrees': [
-                {'type': 'bs', 'title': 'engineer', 'start_year': 2002, 'start_month': 11,
-                 'end_year': 2006, 'end_month': 12, 'gpa': 1.5, 'bullets': [
-                    {'major': 'mathematics', 'comments': 'once a mathematician, always a mathematician'}
-                ]}
-            ]}
-        ]}]}
-
-    # Data for updating an existing CandidateEducation
-    elif candidate_id and education_id:
-        data = {'candidates': [{'id': candidate_id, 'educations': [
-            {'id': education_id, 'school_name': 'westvalley', 'school_type': 'college', 'city': 'saratoga',
-             'state': 'ca', 'country': None, 'is_current': True, 'degrees': None}
-        ]}]}
-
-    return data
-
-
-def candidate_experience(candidate_id=None, experience_id=None, experience_bullet_id=None):
-    """
-    Sample data for creating Candidate + CandidateExperience and CandidateExperienceBullet.
-    :rtype  dict
-    """
-    # Data for adding CandidateExperience to an existing Candidate
-    if candidate_id and not experience_id:
-        data = {'candidates': [{'id': candidate_id, 'work_experiences': [
-            {'organization': fake.company(), 'position': fake.job(), 'city': fake.city(),
-             'state': fake.state(), 'start_year': 2008, 'end_year': 2012, 'start_month': 10, 'end_month': 2,
-             'is_current': True, 'bullets': [{'description': fake.sentence()}]}]}]}
-
-    # Data for updating an existing CandidateExperience
-    elif candidate_id and experience_id and not experience_bullet_id:
-        data = {'candidates': [{'id': candidate_id, 'work_experiences': [
-            {'id': experience_id, 'organization': fake.company(), 'position': fake.job(),
-             'city': fake.city(), 'state': fake.state(), 'start_year': 2008, 'end_year': 2012,
-             'start_month': 10, 'end_month': 2, 'is_current': True,
-             'bullets': [{'description': fake.bs()}]
-             }]}]}
-
-    # Data for updating an existing CandidateExperienceBullet
-    elif candidate_id and experience_id and experience_bullet_id:
-        data = {'candidates': [{'id': candidate_id, 'work_experiences': [
-            {'id': experience_id, 'bullets': [
-                {'id': experience_bullet_id, 'description': fake.bs()}
-            ]}]}]}
-
-    # Data for creating Candidate + CandidateExperience
-    else:
-        data = reset_all_data_except_param(generate_single_candidate_data(), 'work_experiences')
-
-    return data
-
-
-def candidate_work_preference(candidate_id=None, work_preference_id=None):
-    """
-    Sample data for creating Candidate + CandidateWorkPreference
-    :rtype  dict
-    """
-    # Data for adding CandidateWorkPreference to an existing Candidate
-    if candidate_id and not work_preference_id:
-        data = {'candidates': [{'id': candidate_id, 'work_preference': {
-            "relocate": True, "authorization": "us citizen", "telecommute": False,
-            "travel_percentage": randrange(0, 100), "hourly_rate": '%.2f' % random.uniform(20, 90),
-            "salary": randrange(50000, 300000), "employment_type": "full-time employment", "third_party": False
-        }}]}
-
-    # Data for updating an existing CandidateWorkPreference
-    elif candidate_id and work_preference_id:
-        data = {'candidates': [
-            {'id': candidate_id, 'work_preference': {
-                'id': work_preference_id,
-                "relocate": True, "authorization": "us citizen",
-                "telecommute": False,
-                "travel_percentage": randrange(0, 100),
-                "hourly_rate": '%.2f' % random.uniform(20, 90),
-                "salary": randrange(50000, 300000),
-                "employment_type": "full-time employment",
-                "third_party": False
-            }}
-        ]}
-
-    # Data for creating Candidate + CandidateWorkPreference
-    else:
-        data = reset_all_data_except_param(generate_single_candidate_data(), 'work_preference')
-
-    return data
-
-
-def candidate_emails(candidate_id=None, email_id=None):
-    """
-    Sample data for creating Candidate + CandidateEmail
-    :rtype  dict
-    """
-    # Data for adding CandidateEmail to an existing Candidate
-    if candidate_id and not email_id:
-        data = {'candidates': [{'id': candidate_id, 'emails': [{'label': 'work', 'address': fake.email(),
-                                                                'is_default': True}]}]}
-
-    # Data for updating an existing CandidateEmail
-    elif candidate_id and email_id:
-        data = {'candidates': [{'id': candidate_id, 'emails': [{'id': email_id, 'label': 'primary',
-                                                                'address': fake.email()}]}]}
-
-    # Data for creating Candidate + CandidateEmail
-    else:
-        data = {'candidates': [{'emails': [{'label': 'primary', 'address': fake.email()}]}]}
-
     return data
 
 
@@ -563,50 +453,3 @@ def candidate_social_network(talent_pool):
          'talent_pool_ids': {'add': [talent_pool.id]}}
     ]}
     return data
-
-
-def reset_all_data_except_param(data, field):
-    """All required properties of the candidate data will be set to None or []
-    except the specified field.
-    Please see json_schema.py/candidates_resource_schema_post
-    :param data:  comprehensive candidate data
-    :param field: name of field that must not be resetted
-    :return:      candidate data
-    """
-    for _field in data['candidates'][0]:
-        if _field == field:
-            continue
-
-        if _field in ['first_name', 'middle_name', 'last_name', 'work_preference']:
-            data['candidates'][0][_field] = None
-
-        if _field in ['addresses', 'phones', 'areas_of_interest', 'custom_fields',
-                      'work_experiences', 'preferred_locations', 'military_services', 'skills',
-                      'social_networks', 'educations']:
-            data['candidates'][0][_field] = []
-
-    return data
-
-
-def complete_candidate_data_for_posting(data):
-    """Helps complete required fields for candidate's data to comply with
-    json_schema/candidates_resource_schema_post
-    :param data: incomplete candidate data, e.g. {'candidates': [{'first_name': 'joe'}]}
-    :return: comprehensive candidate data structure
-    """
-    template = {'candidates': [
-        {
-            'emails': [{'label': None, 'address': fake.safe_email(), 'is_default': None}],
-            'first_name': None, 'middle_name': None, 'last_name': None, 'addresses': [],
-            'social_networks': [], 'skills': [], 'work_experiences': [], 'work_preference': None,
-            'educations': [], 'custom_fields': [], 'preferred_locations': [], 'military_services': [],
-            'areas_of_interest': [], 'phones': []
-        }
-    ]}
-
-    data_field = data['candidates'][0].keys()[0]
-    for _field in template['candidates'][0]:
-        if _field == data_field:
-            template['candidates'][0][_field] = data['candidates'][0][data_field]
-
-    return template

@@ -35,13 +35,15 @@ class TestClientEmailCampaign(object):
 
         # Create a Candidate
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
-        create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES,
+                                                 access_token_first, data)
         time.sleep(10)
         print response_info(create_candidate_response)
 
         # Get Candidate via ID
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
-        get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id,
+                                              access_token_first)
         print response_info(get_candidate_response)
 
         # create POST request body
@@ -63,7 +65,7 @@ class TestClientEmailCampaign(object):
             headers={'Authorization': 'Bearer %s' % access_token_first,
                      'content-type': 'application/json'}
         )
-
+        print response_info(email_campaign)
         # assert it is created and contains email campaign sends objects
         assert email_campaign.status_code == 201
 

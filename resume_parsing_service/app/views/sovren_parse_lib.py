@@ -57,33 +57,35 @@ def fetch_sovren_response(resume):
 
 
 def parse_sovren_xml(raw_xml):
+    """
+    :rtype:  dict
+    """
     resume_soup = bs4(raw_xml, 'lxml')
     contact_soup = resume_soup.find('contactinfo')
-    names = name_tags_to_name(contact_soup.find('personname'))
-    addresses = contact_tag_to_addresses(contact_soup)
-    emails = contact_tag_to_emails(contact_soup)
-    phones = contact_tag_to_phones(contact_soup)
-    work_experiences = employment_tags_to_experiences(resume_soup.findAll('employmenthistory'))
-    educations = education_tags_to_educations(resume_soup.findAll('schoolorinstitution'))
-    skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
-
-    candidate = dict(
-        first_name=names.first,
-        last_name=names.last,
-        middle_name=names.middle,
-        emails=emails,
-        phones=phones,
-        work_experiences=work_experiences,
-        educations=educations,
-        skills=skills,
-        addresses=addresses,
-        talent_pool_ids={'add': None}
-    )
-    return candidate
+    candidate_dict = {'talent_pool_ids': {'add': None}}
+    if contact_soup:
+        names = name_tags_to_name(contact_soup.find('personname'))
+        addresses = contact_tag_to_addresses(contact_soup)
+        emails = contact_tag_to_emails(contact_soup)
+        phones = contact_tag_to_phones(contact_soup)
+        candidate_dict.update(first_name=names.first, last_name=names.last, middle_name=names.middle,
+                              addresses=addresses, emails=emails, phones=phones)
+    if resume_soup:
+        work_experiences = employment_tags_to_experiences(resume_soup.findAll('employmenthistory'))
+        educations = education_tags_to_educations(resume_soup.findAll('schoolorinstitution'))
+        skills = soup_qualifications_to_skills(resume_soup.find('qualifications'))
+        candidate_dict.update(work_experiences=work_experiences, educations=educations,
+                              skills=skills)
+    return candidate_dict
 
 
 def name_tags_to_name(tag):
-    if not tag or not tag.findAll(): return None, None, None, None
+    """
+    :rtype: NameCollection
+    """
+    if not tag or not tag.findAll():
+        return NameCollection(None, None, None)
+
     middle_name = tag_text(tag, 'middlename', capwords=True)
     first_name = tag_text(tag, 'givenname', capwords=True)
     last_name = tag_text(tag, 'familyname', capwords=True)
@@ -94,7 +96,10 @@ def name_tags_to_name(tag):
         # all the middle names joined together
         middle_name = ' '.join(split_name[1:-1]) if len(split_name) > 2 else None
         last_name = split_name[-1]
-    return NameCollection(first_name, last_name, middle_name)
+    first_name = first_name.strip()
+    middle_name = middle_name.strip()
+    last_name = last_name.strip()
+    return NameCollection(first_name, middle_name, last_name)
 
 
 def contact_tag_to_emails(contact_tag):

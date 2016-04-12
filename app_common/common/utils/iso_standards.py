@@ -33,3 +33,18 @@ def get_language(language_code=None):
         return {'error': 'Language code not recognized: {}'.format(language_code)}
 
     return language_name
+
+
+def get_subdivision_name(subdivision_code):
+    """
+    :param subdivision_code:  ISO 3166, e.g. 'US-CA'
+    :return: Subdivision name, e.g. "California"
+    :rtype:  str
+    """
+    try:
+        subdivision = pc.subdivisions.get(code=subdivision_code.upper())
+        subdivision_name = subdivision.name
+    except KeyError:
+        return None
+
+    return subdivision_name

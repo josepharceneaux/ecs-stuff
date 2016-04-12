@@ -112,7 +112,7 @@ candidates_resource_schema_post = {
                                     "maxLength": 50
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 20
                                 },
                                 "is_default": {
@@ -129,7 +129,7 @@ candidates_resource_schema_post = {
                             "additionalProperties": False,
                             "properties": {
                                 "area_of_interest_id": {
-                                    "type": ["integer", "null"]
+                                    "type": ["integer"]
                                 }
                             }
                         }
@@ -231,6 +231,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -292,6 +296,10 @@ candidates_resource_schema_post = {
                                 "state": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
                                 },
                                 "country": {
                                     "type": ["string", "null"],
@@ -382,6 +390,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "region": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -422,6 +434,10 @@ candidates_resource_schema_post = {
                                 "state": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
                                 },
                                 "country": {
                                     "type": ["string", "null"],
@@ -768,6 +784,10 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -933,6 +953,10 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -971,6 +995,10 @@ candidates_resource_schema_patch = {
                                 "state": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
                                 },
                                 "country": {
                                     "type": ["string", "null"],
@@ -1195,6 +1223,30 @@ notes_schema = {
                 "required": ["comment"],
                 "properties": {
                     "comment": {"type": "string"}
+                }
+            }
+        }
+    }
+}
+
+
+language_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    # "additionalProperties": False,
+    "required": ["candidate_languages"],
+    "properties": {
+        "notes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "object",
+                "properties": {
+                    "id": {"type": ["integer", "null"]},
+                    "language_code": {"type": ["string", "null"]},
+                    "read": {"type": ["boolean", "null"]},
+                    "write": {"type": ["boolean", "null"]},
+                    "speak": {"type": ["boolean", "null"]}
                 }
             }
         }

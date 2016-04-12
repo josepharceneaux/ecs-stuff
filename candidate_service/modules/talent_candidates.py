@@ -2,10 +2,12 @@
 Helper functions for candidate CRUD operations and tracking edits made to the Candidate
 """
 # Standard libraries
+import re
 import datetime
 import urlparse
 import dateutil.parser
 import simplejson as json
+import pycountry
 from flask import request
 from datetime import date
 
@@ -30,17 +32,11 @@ from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.user import User
 
 # Modules
-from track_changes import (
-    _track_candidate_photo_edits, _track_candidate_address_edits, _track_custom_field_edits,
-    _track_candidate_edits, _track_education_degree_bullet_edits, _track_education_degree_edits,
-    _track_education_edits, _track_email_edits, _track_work_experience_bullet_edits,
-    _track_work_experience_edits, _track_military_service_edits, _track_phone_edits,
-    _track_preferred_location_edits, _track_skill_edits, _track_social_network_edits,
-    _track_work_preference_edits, _track_areas_of_interest_edits
-)
+from track_changes import track_edits, track_areas_of_interest_edits
 
 # Error handling
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
@@ -57,8 +53,8 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from candidate_service.common.utils.talent_s3 import get_s3_url
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
-from candidate_service.common.utils.iso_standards import get_country_name
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
 
@@ -192,15 +188,7 @@ def format_candidate_full_name(candidate):
     """
     assert isinstance(candidate, Candidate)
     first_name, middle_name, last_name = candidate.first_name, candidate.middle_name, candidate.last_name
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
-
-    return full_name
+    return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
 
 
 def candidate_emails(candidate):
@@ -239,13 +227,13 @@ def candidate_addresses(candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     # Default CandidateAddress must be returned first
-    addresses = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).\
-        order_by(CandidateAddress.is_default.desc())
+    addresses = CandidateAddress.query.filter_by(candidate_id=candidate_id).order_by(CandidateAddress.is_default.desc())
     return [{'id': address.id,
              'address_line_1': address.address_line_1,
              'address_line_2': address.address_line_2,
              'city': address.city,
              'state': address.state,
+             'subdivision': get_subdivision_name(address.iso3166_subdivision) if address.iso3166_subdivision else None,
              'zip_code': address.zip_code,
              'po_box': address.po_box,
              'country': get_country_name(address.iso3166_country),
@@ -273,6 +261,7 @@ def candidate_experiences(candidate_id):
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
              'city': experience.city,
              'state': experience.state,
+             'subdivision': get_subdivision_name(experience.iso3166_subdivision) if experience.iso3166_subdivision else None,
              'country': get_country_name(experience.iso3166_country),
              'is_current': experience.is_current,
              'bullets': _candidate_experience_bullets(experience=experience),
@@ -288,7 +277,7 @@ def _candidate_experience_bullets(experience):
     experience_bullets = experience.bullets
     return [{'id': experience_bullet.id,
              'description': experience_bullet.description,
-             'added_time': str(experience_bullet.added_time)
+             'added_time': DatetimeUtils.to_utc_str(experience_bullet.added_time) if experience_bullet.added_time else None
              } for experience_bullet in experience_bullets]
 
 
@@ -309,7 +298,7 @@ def candidate_work_preference(candidate):
             'salary': work_preference[0].salary,
             'travel_percentage': work_preference[0].travel_percentage,
             'third_party': work_preference[0].bool_third_party
-            } if work_preference else dict()
+            } if work_preference else {}
 
 
 def candidate_preferred_locations(candidate):
@@ -318,13 +307,14 @@ def candidate_preferred_locations(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    preferred_locations = candidate.preferred_locations
     return [{'id': preferred_location.id,
              'address': preferred_location.address,
              'city': preferred_location.city,
              'state': preferred_location.region,
+             'subdivision': get_subdivision_name(preferred_location.iso3166_subdivision)
+             if preferred_location.iso3166_subdivision else None,
              'country': get_country_name(preferred_location.iso3166_country)
-             } for preferred_location in preferred_locations]
+             } for preferred_location in candidate.preferred_locations]
 
 
 def candidate_educations(candidate):
@@ -341,6 +331,7 @@ def candidate_educations(candidate):
              'degrees': _candidate_degrees(education=education),
              'city': education.city,
              'state': education.state,
+             'subdivision': get_subdivision_name(education.iso3166_subdivision) if education.iso3166_subdivision else None,
              'country': get_country_name(education.iso3166_country),
              'added_time': str(education.added_time)
              } for education in educations]
@@ -436,11 +427,10 @@ def candidate_custom_fields(candidate):
     :rtype              [dict]
     """
     assert isinstance(candidate, Candidate)
-    custom_fields = db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()
     return [{'id': custom_field.id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in custom_fields]
+             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
@@ -547,7 +537,7 @@ def fetch_candidate_views(candidate_id):
              'candidate_id': view.candidate_id,
              'user_id': view.user_id,
              'view_type': view.view_type,
-             'view_datetime': str(view.view_datetime)
+             'view_datetime': DatetimeUtils.to_utc_str(view.view_datetime)
              } for view in candidate_views]
 
 
@@ -571,7 +561,7 @@ def fetch_aggregated_candidate_views(domain_id, candidate_id):
             return_obj.append(
                 {
                     'user_id': user.id,
-                    'last_view_datetime': str(views[-1].view_datetime),
+                    'last_view_datetime': DatetimeUtils.to_utc_str(views[-1].view_datetime),
                     'view_count': len(views)
                 }
             )
@@ -622,16 +612,14 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
     if is_update:  # Update
         can_subs_pref_query.update(dict(frequency_id=frequency_id))
     else:  # Add
-        db.session.add(CandidateSubscriptionPreference(
-            candidate_id=candidate_id, frequency_id=frequency_id
-        ))
+        db.session.add(CandidateSubscriptionPreference(candidate_id=candidate_id, frequency_id=frequency_id))
     db.session.commit()
 
 
 #######################################
 # Helper Functions For Candidate Photos
 #######################################
-def add_photos(candidate_id, photos, added_time=None):
+def add_photos(candidate_id, photos):
     """
     Function will add a new entry into CandidatePhoto
     :type candidate_id: int|long
@@ -685,12 +673,13 @@ def update_photo(candidate_id, user_id, update_dict):
     photo_update_dict = dict((k, v) for k, v in photo_update_dict.iteritems() if v is not None)
 
     # Track all changes
-    _track_candidate_photo_edits(photo_update_dict, photo_object, candidate_id, user_id,
-                                 datetime.datetime.utcnow())
+    track_edits(update_dict=photo_update_dict, query_obj=photo_object, table_name='candidate_photo',
+                candidate_id=candidate_id, user_id=user_id)
 
     # Update candidate's photo
     photo_query.update(photo_update_dict)
     return
+
 
 ######################################
 # Helper Functions For Candidate Notes
@@ -710,6 +699,90 @@ def add_notes(candidate_id, data):
         )
         notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
         db.session.add(CandidateTextComment(**notes_dict))
+
+
+##########################################
+# Helper Functions For Candidate Languages
+##########################################
+def add_languages(candidate_id, data):
+    """
+    Function will insert candidate languages into the db
+    :type candidate_id:  int|long
+    :type data:  list
+    :rtype:  list[dict]
+    """
+    for language in data:
+        language_dict = dict(
+            candidate_id=candidate_id,
+            resume_id=candidate_id,
+            iso639_language=language['language_code'].lower() if language.get('language_code') else None,
+            read=language.get('read'),
+            write=language.get('write'),
+            speak=language.get('speak')
+        )
+        language_dict = dict((k, v) for k, v in language_dict.iteritems() if v is not None)
+        db.session.add(CandidateLanguage(**language_dict))
+
+
+def fetch_candidate_languages(candidate_id, language=None):
+    """
+    :type candidate_id:  int|long
+    :type language:  CandidateLanguage | None
+    """
+    if language:
+        return [{'language_code': language.iso639_language,
+                 'language_name': pycountry.languages.get(iso639_1_code=language.iso639_language).name,
+                 'read': language.read, 'write': language.write, 'speak': language.speak}]
+    else:
+        return [
+            {'id': language.id, 'candidate_id': candidate_id,
+             'language_code': language.iso639_language, 'read': language.read,
+             'write': language.write, 'speak': language.speak,
+             'language_name': pycountry.languages.get(iso639_1_code=language.iso639_language).name
+             if language.iso639_language else None}
+            for language in CandidateLanguage.get_by_candidate_id(candidate_id)]
+
+
+def update_candidate_languages(candidate_id, update_data, user_id):
+    """
+    :type candidate_id:  int|long
+    :type update_data:  list[dict]
+    :type user_id:  int|long
+    """
+    current_time = datetime.datetime.utcnow()
+    for update_dict in update_data:
+
+        language_id = update_dict.get('id')
+        language_query = CandidateLanguage.query.filter_by(id=language_id)
+        language_obj = language_query.first()
+
+        # CandidateLanguage must be recognized
+        if not language_obj:
+            raise NotFoundError('Candidate language not recognized: {}'.format(language_id),
+                                error_code=custom_error.PHOTO_NOT_FOUND)
+
+        # Photo must belong to candidate
+        if language_obj.candidate_id != candidate_id:
+            raise ForbiddenError('Unauthorized candidate language', custom_error.PHOTO_FORBIDDEN)
+
+        # Format inputs
+        language_update_dict = dict(
+            candidate_id=candidate_id,
+            read=update_dict.get('read'),
+            write=update_dict.get('write'),
+            speak=update_dict.get('speak'),
+            iso639_language=update_dict.get('language_code'),
+            updated_time=current_time
+        )
+        language_update_dict = dict((k, v) for k, v in language_update_dict.iteritems() if v is not None)
+
+        # Track all changes
+        track_edits(update_dict=language_update_dict, table_name='candidate_language',
+                    candidate_id=candidate_id, user_id=user_id, query_obj=language_obj)
+
+        # Update candidate's photo
+        language_query.update(language_update_dict)
+        return
 
 
 ######################################################
@@ -804,7 +877,7 @@ def create_or_update_candidate_from_params(
     if first_name or last_name or middle_name or formatted_name:
         if (first_name or last_name) and not formatted_name:
             # If first_name and last_name given but not formatted_name, guess it
-            formatted_name = get_fullname_from_name_fields(first_name, middle_name, last_name)
+            formatted_name = get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
         elif formatted_name and (not first_name or not last_name):
             # Otherwise, guess formatted_name from the other fields
             first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
@@ -825,13 +898,12 @@ def create_or_update_candidate_from_params(
 
     # Update is not possible without candidate ID
     elif not candidate_id and is_updating:
-        raise InvalidUsage(error_message='Candidate ID is required for updating',
-                           error_code=custom_error.MISSING_INPUT)
+        raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name,
                                          formatted_name, objective, summary,
-                                         candidate_id, user_id, edit_datetime, resume_url)
+                                         candidate_id, user_id, resume_url)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
@@ -849,7 +921,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's address(es)
     if addresses:
-        _add_or_update_candidate_addresses(candidate, addresses, user_id, edit_datetime, is_updating)
+        _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating)
 
     # Add or update Candidate's areas_of_interest
     if areas_of_interest:
@@ -858,45 +930,43 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's custom_field(s)
     if custom_fields:
-        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id,
-                                                  edit_datetime, is_updating)
+        _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's education(s)
     if educations:
-        _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_datetime, is_updating)
+        _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's work experience(s)
     if work_experiences:
-        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id,
-                                        edit_datetime, is_updating)
+        _add_or_update_work_experiences(candidate, work_experiences, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's work preference(s)
     if work_preference:
-        _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_datetime)
+        _add_or_update_work_preference(candidate_id, work_preference, user_id)
 
     # Add or update Candidate's email(s)
     if emails:
-        _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updating)
+        _add_or_update_emails(candidate_id, emails, user_id, is_updating)
 
     # Add or update Candidate's phone(s)
     if phones:
-        _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating)
+        _add_or_update_phones(candidate, phones, user_id, is_updating)
 
     # Add or update Candidate's military service(s)
     if military_services:
-        _add_or_update_military_services(candidate, military_services, user_id, edit_datetime, is_updating)
+        _add_or_update_military_services(candidate, military_services, user_id, is_updating)
 
     # Add or update Candidate's preferred location(s)
     if preferred_locations:
-        _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_datetime, is_updating)
+        _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating)
 
     # Add or update Candidate's skill(s)
     if skills:
-        _add_or_update_skills(candidate, skills, added_datetime, user_id, edit_datetime, is_updating)
+        _add_or_update_skills(candidate, skills, added_datetime, user_id, is_updating)
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate, social_networks, user_id, edit_datetime, is_updating)
+        _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -908,15 +978,8 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     Function will concatenate names if any, otherwise will return empty string
     :rtype: str
     """
-    full_name = ''
-    if first_name:
-        full_name = '%s ' % first_name
-    if middle_name:
-        full_name = '%s%s ' % (full_name, middle_name)
-    if last_name:
-        full_name = '%s%s' % (full_name, last_name)
+    return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
 
-    return full_name
 
 
 def get_name_fields_from_name(formatted_name):
@@ -1023,7 +1086,7 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, edited_time, resume_url):
+                      summary, candidate_id, user_id, resume_url):
     """
     Function will update Candidate
     :return:    Candidate ID
@@ -1040,16 +1103,16 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         return candidate_id
 
     # Candidate ID must be recognized
-    candidate_query = db.session.query(Candidate).filter_by(id=candidate_id)
-    candidate_object = candidate_query.first()
+    candidate_object = Candidate.get_by_id(candidate_id)
     if not candidate_object:
         raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
-    _track_candidate_edits(update_dict, candidate_object, user_id, edited_time)
+    track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
+                user_id=user_id, query_obj=candidate_object)
 
     # Update
-    candidate_query.update(update_dict)
+    candidate_object.update(**update_dict)
 
     return candidate_id
 
@@ -1074,7 +1137,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     return candidate.id
 
 
-def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_time, is_updating):
+def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updating):
     """
     Function will update CandidateAddress or create a new one.
     :type addresses: list[dict[str, T]]
@@ -1083,39 +1146,38 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
     candidate_id = candidate.id
     address_has_default = any([address.get('is_default') for address in addresses])
     if address_has_default:
-        CandidateAddress.set_is_default_to_false(candidate_id=candidate_id)
+        CandidateAddress.set_is_default_to_false(candidate_id)
 
     for i, address in enumerate(addresses):
 
-        zip_code = sanitize_zip_code(address.get('zip_code'))
-        city, state = address.get('city'), address.get('state')
+        zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
+        city = address['city'].strip() if address.get('city') else None
+        country_code = address['country_code'].upper() if address.get('country_code') else None
+        subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
         address_dict = dict(
-            address_line_1=address.get('address_line_1'),
-            address_line_2=address.get('address_line_2'),
+            address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
+            address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
             city=city,
-            state=state,
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
             zip_code=zip_code,
-            iso3166_country=address.get('country_code'),
-            po_box=address.get('po_box'),
+            po_box=address['po_box'].strip() if address.get('po_box') else None,
             is_default=i == 0 if address_has_default else address.get('is_default'),
-            coordinates=get_coordinates(zipcode=zip_code, city=city, state=state),
-            candidate_id=candidate_id,
-            resume_id=candidate_id   # TODO: remove once all tables have been added & migrated
+            coordinates=get_coordinates(zipcode=zip_code, city=city, state=subdivision_code)
         )
 
-        # No fields in particular are required for address, i.e. if dict is empty; just continue
+        # Remove keys that have None values
+        address_dict = {k: v for k, v in address_dict.items() if v}
+
+        # Prevent adding empty records to db
         if not address_dict:
             continue
-
-        # Remove keys that have None values
-        address_dict = dict((k, v) for k, v in address_dict.iteritems() if v is not None)
 
         address_id = address.get('id')
         if address_id:  # Update
 
             # CandidateAddress must be recognized before updating
-            candidate_address_query = db.session.query(CandidateAddress).filter_by(id=address_id)
-            candidate_address_obj = candidate_address_query.first()
+            candidate_address_obj = CandidateAddress.get_by_id(address_id)
             if not candidate_address_obj:
                 raise InvalidUsage('Candidate address not found', custom_error.ADDRESS_NOT_FOUND)
 
@@ -1124,18 +1186,21 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, edited_tim
                 raise ForbiddenError("Unauthorized candidate address", custom_error.ADDRESS_FORBIDDEN)
 
             # Track all updates
-            _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time, candidate_address_obj)
+            track_edits(update_dict=address_dict, table_name='candidate_address', candidate_id=candidate_id,
+                        user_id=user_id, query_obj=candidate_address_obj)
 
             # Update
-            candidate_address_query.update(address_dict)
+            candidate_address_obj.update(**address_dict)
 
         else:  # Create if not an update
+            address_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
             # Prevent duplicate insertions
             if not does_address_exist(candidate=candidate, address_dict=address_dict):
                 db.session.add(CandidateAddress(**address_dict))
 
                 if is_updating:  # Track all updates
-                    _track_candidate_address_edits(address_dict, candidate_id, user_id, edited_time)
+                    track_edits(update_dict=address_dict, table_name='candidate_address',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, user_id, edit_datetime, is_updating):
@@ -1153,18 +1218,17 @@ def _add_or_update_candidate_areas_of_interest(candidate_id, areas_of_interest, 
         db.session.add(CandidateAreaOfInterest(candidate_id=candidate_id, area_of_interest_id=aoi_id))
 
         if is_updating:  # Track all updates
-            _track_areas_of_interest_edits(aoi_id, candidate_id, user_id, edit_datetime)
+            track_areas_of_interest_edits(aoi_id, candidate_id, user_id, edit_datetime)
 
 
-def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time,
-                                              user_id, edit_datetime, is_updating):
+def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_time, user_id, is_updating):
     """
     Function will update CandidateCustomField or create a new one.
     """
     candidate_id = candidate.id
     for custom_field in custom_fields:
         custom_field_dict = dict(
-            value=custom_field.get('value'),
+            value=custom_field['value'].strip() if custom_field.get('value') else None,
             custom_field_id=custom_field.get('custom_field_id')
         )
 
@@ -1175,8 +1239,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
             custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
 
             # CandidateCustomField must be recognized
-            can_custom_field_query = db.session.query(CandidateCustomField).filter_by(id=candidate_custom_field_id)
-            can_custom_field_obj = can_custom_field_query.first()
+            can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
             if not can_custom_field_obj:
                 error_message = 'Candidate custom field you are requesting to update does not exist'
                 raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
@@ -1187,11 +1250,11 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                                      error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             # Track all updates
-            _track_custom_field_edits(custom_field_dict, candidate_id, user_id,
-                                      edit_datetime, can_custom_field_obj)
+            track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_custom_field_obj)
 
             # Update CandidateCustomField
-            can_custom_field_query.update(custom_field_dict)
+            can_custom_field_obj.update(**custom_field_dict)
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
@@ -1200,10 +1263,11 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 db.session.add(CandidateCustomField(**custom_field_dict))
 
                 if is_updating:  # Track all updates
-                    _track_custom_field_edits(custom_field_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_educations(candidate, educations, added_datetime, user_id, edit_datetime, is_updating):
+def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):
     """
     Function will update CandidateEducation, CandidateEducationDegree, and
     CandidateEducationDegreeBullet or create new ones.
@@ -1215,26 +1279,30 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
 
     for education in educations:
         # CandidateEducation
+        country_code = education['country_code'].upper() if education.get('country_code') else None
+        subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
         education_dict = dict(
-            list_order=education.get('list_order') or 1,
-            school_name=education.get('school_name'),
-            school_type=education.get('school_type'),
-            city=education.get('city'),
-            state=education.get('state'),
-            iso3166_country=education.get('country_code'),
-            is_current=education.get('is_current'),
-            added_time=added_datetime
+            school_name=education['school_name'].strip() if education.get('school_name') else None,
+            school_type=education['school_type'].strip() if education.get('school_type') else None,
+            city=education['city'].strip() if education.get('city') else None,
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
+            is_current=education.get('is_current')
         )
+
+        # Remove keys with empty values
+        education_dict = {k: v for k, v in education_dict.items() if v}
+
+        # Prevent empty records from being added to the db
+        education_degrees = education.get('degrees') or []
+        if not education_dict and not education_degrees:
+            continue
 
         education_id = education.get('id')
         if education_id:  # Update
 
-            # Remove keys with None values
-            education_dict = dict((k, v) for k, v in education_dict.iteritems() if v is not None)
-
             # CandidateEducation must be recognized
-            can_education_query = db.session.query(CandidateEducation).filter_by(id=education_id)
-            can_education_obj = can_education_query.first()
+            can_education_obj = CandidateEducation.get(education_id)
             if not can_education_obj:
                 raise NotFoundError('Candidate education you are requesting does not exist',
                                     error_code=custom_error.EDUCATION_NOT_FOUND)
@@ -1244,18 +1312,19 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                 raise ForbiddenError('Unauthorized candidate education', custom_error.EDUCATION_FORBIDDEN)
 
             # Track all changes made to CandidateEducation
-            _track_education_edits(education_dict, candidate_id, user_id, edit_datetime, can_education_obj)
+            track_edits(update_dict=education_dict, table_name='candidate_education',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_education_obj)
 
             # Update CandidateEducation
-            db.session.query(CandidateEducation).filter_by(id=education_id).update(education_dict)
+            if education_dict:
+                can_education_obj.update(**education_dict)
 
             # CandidateEducationDegree
-            education_degrees = education.get('degrees') or []
             for education_degree in education_degrees:
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
-                    degree_type=education_degree.get('type'),
-                    degree_title=education_degree.get('title'),
+                    degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
+                    degree_title=education_degree['title'].strip() if education_degree.get('title') else None,
                     start_year=education_degree.get('start_year'),
                     start_month=education_degree.get('start_month'),
                     end_year=education_degree.get('end_year'),
@@ -1266,17 +1335,19 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                     start_time=education_degree.get('start_time'),
                     end_time=education_degree.get('end_time')
                 )
-
                 # Remove keys with None values
-                education_degree_dict = dict((k, v) for k, v in education_degree_dict.iteritems() if v is not None)
+                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+
+                # Prevent empty records from being inserted into db
+                education_degree_bullets = education_degree.get('bullets') or []
+                if not education_degree_dict and not education_degree_bullets:
+                    continue
 
                 education_degree_id = education_degree.get('id')
                 if education_degree_id:  # Update CandidateEducationDegree
 
                     # CandidateEducationDegree must be recognized
-                    can_edu_degree_query = db.session.query(CandidateEducationDegree).\
-                        filter_by(id=education_degree_id)
-                    can_edu_degree_obj = can_edu_degree_query.first()
+                    can_edu_degree_obj = CandidateEducationDegree.get(education_degree_id)
                     if not can_edu_degree_obj:
                         raise NotFoundError('Candidate education degree not found', custom_error.DEGREE_NOT_FOUND)
 
@@ -1285,46 +1356,51 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                         raise ForbiddenError('Unauthorized candidate degree', custom_error.DEGREE_FORBIDDEN)
 
                     # Track all changes made to CandidateEducationDegree
-                    _track_education_degree_edits(education_degree_dict, candidate_id, user_id,
-                                                  edit_datetime, can_edu_degree_obj)
+                    track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
+                                candidate_id=candidate_id, user_id=user_id, query_obj=can_edu_degree_obj)
 
-                    can_edu_degree_query.update(education_degree_dict)
+                    # Update CandidateEducationDegree
+                    if education_degree_dict:
+                        can_edu_degree_obj.update(**education_degree_dict)
 
                     # CandidateEducationDegreeBullet
-                    education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
                         education_degree_bullet_dict = dict(
-                            concentration_type=education_degree_bullet.get('major'),
-                            comments=education_degree_bullet.get('comments')
+                            concentration_type=education_degree_bullet['major'].strip()
+                            if education_degree_bullet.get('major') else None,
+                            comments=education_degree_bullet['comments'].strip()
+                            if education_degree_bullet.get('comments') else None
                         )
 
                         # Remove keys with None values
-                        education_degree_bullet_dict = dict(
-                                (k, v) for k, v in education_degree_bullet_dict.iteritems() if v is not None)
+                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+
+                        # Prevent empty records from being inserted into db
+                        if not education_degree_bullet_dict:
+                            continue
 
                         education_degree_bullet_id = education_degree_bullet.get('id')
                         if education_degree_bullet_id:  # Update CandidateEducationDegreeBullet
 
                             # CandidateEducationDegreeBullet must be recognized
-                            can_edu_degree_bullet_query = db.session.query(CandidateEducationDegreeBullet).\
-                                filter_by(id=education_degree_bullet_id)
-                            can_edu_degree_bullet_obj = can_edu_degree_bullet_query.first()
+                            can_edu_degree_bullet_obj = CandidateEducationDegreeBullet.get(education_degree_bullet_id)
                             if not can_edu_degree_bullet_obj:
                                 raise NotFoundError('Candidate education degree bullet not found',
                                                     error_code=custom_error.DEGREE_BULLET_NOT_FOUND)
 
                             # CandidateEducationDegreeBullet must belong to Candidate
-                            if can_edu_degree_bullet_obj.candidate_education_degree.\
+                            if can_edu_degree_bullet_obj.candidate_education_degree. \
                                     candidate_education.candidate_id != candidate_id:
                                 raise ForbiddenError('Unauthorized candidate degree bullet',
                                                      error_code=custom_error.DEGREE_BULLET_FORBIDDEN)
 
                             # Track all changes made to CandidateEducationDegreeBullet
-                            _track_education_degree_bullet_edits(education_degree_bullet_dict,
-                                                                 candidate_id, user_id, edit_datetime,
-                                                                 can_edu_degree_bullet_obj)
+                            track_edits(update_dict=education_degree_bullet_dict,
+                                        table_name='candidate_education_degree_bullet',
+                                        candidate_id=candidate_id, user_id=user_id,
+                                        query_obj=can_edu_degree_bullet_obj)
 
-                            can_edu_degree_bullet_query.update(education_degree_bullet_dict) # Update
+                            can_edu_degree_bullet_obj.update(**education_degree_bullet_dict) # Update
                         else:   # Add CandidateEducationDegreeBullet
                             education_degree_bullet_dict.update(dict(added_time=added_datetime))
                             # Prevent duplicate entries
@@ -1333,8 +1409,9 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                                 db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
                                 if is_updating:  # Track all updates
-                                    _track_education_degree_bullet_edits(education_degree_bullet_dict,
-                                                                         candidate_id, user_id, edit_datetime)
+                                    track_edits(update_dict=education_degree_bullet_dict,
+                                                table_name='candidate_education_degree_bullet',
+                                                candidate_id=candidate_id, user_id=user_id)
 
                 else:   # Add CandidateEducationDegree
                     education_degree_dict.update(dict(candidate_education_id=education_id))
@@ -1347,24 +1424,35 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                         candidate_education_degree_id = candidate_education_degree.id
 
                         if is_updating:  # Track all updates
-                            _track_education_degree_edits(education_degree_dict, candidate_id, user_id, edit_datetime)
+                            track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
+                                        candidate_id=candidate_id, user_id=user_id)
 
                     # Add CandidateEducationDegreeBullets
                     education_degree_bullets = education_degree.get('bullets') or []
                     for education_degree_bullet in education_degree_bullets:
-                        db.session.add(CandidateEducationDegreeBullet(
-                            candidate_education_degree_id=candidate_education_degree_id,
-                            concentration_type=education_degree_bullet.get('major'),
-                            comments=education_degree_bullet.get('comments'),
-                            added_time=added_datetime
-                        ))
+                        education_degree_bullet_dict = dict(
+                            concentration_type=education_degree_bullet['major'].strip()
+                            if education_degree_bullet.get('major') else None,
+                            comments=education_degree_bullet['comments'].strip()
+                            if education_degree_bullet.get('comments') else None
+                        )
+                        # Remove keys with None values
+                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+
+                        # Prevent empty records from being inserted into db
+                        if not education_degree_bullet_dict:
+                            continue
+
+                        education_degree_bullet_dict.update(dict(
+                            added_time=added_datetime, candidate_education_degree_id=candidate_education_degree_id))
+                        db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
         else:  # Add
             # CandidateEducation
             # TODO: resume_id to be removed once all tables have been added & migrated
-            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
+            education_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_datetime,
+                                       list_order=education.get('list_order') or 1))
             # Prevent duplicate entries
-            education_degrees = education.get('degrees') or []
             education_id = get_education_if_exists(candidate_educations, education_dict, education_degrees)
             if not education_id:
                 candidate_education = CandidateEducation(**education_dict)
@@ -1373,58 +1461,78 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, ed
                 education_id = candidate_education.id
 
                 if is_updating:  # Track all updates
-                    _track_education_edits(education_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=education_dict, table_name='candidate_education',
+                                candidate_id=candidate_id, user_id=user_id)
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
-
+                degree_type=education_degree['type'].strip() if education_degree.get('type') else None
+                degree_title=education_degree['title'].strip() if education_degree.get('title') else None
                 education_degree_dict = dict(
-                    candidate_education_id=education_id,
                     list_order=education_degree.get('list_order'),
-                    degree_type=education_degree.get('type'),
-                    degree_title=education_degree.get('title'),
-                    start_year=education_degree.get('start_year'),
-                    start_month=education_degree.get('start_month'),
-                    end_year=education_degree.get('end_year'),
-                    end_month=education_degree.get('end_month'),
-                    gpa_num=education_degree.get('gpa'),
-                    added_time=added_datetime,
+                    degree_type=degree_type,
+                    degree_title=degree_title,
+                    start_year=education_degree.get('start_year') if degree_title or degree_type else None,
+                    start_month=education_degree.get('start_month') if degree_title or degree_type else None,
+                    end_year=education_degree.get('end_year') if degree_title or degree_type else None,
+                    end_month=education_degree.get('end_month') if degree_title or degree_type else None,
+                    gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
-                    start_time=education_degree.get('start_time'),
-                    end_time=education_degree.get('end_time')
+                    start_time=education_degree.get('start_time') if degree_title or degree_type else None,
+                    end_time=education_degree.get('end_time') if degree_title or degree_type else None
                 )
+                # Remove keys with None values
+                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+
+                # Prevent empty records from being inserted into db
+                education_degree_bullets = education_degree.get('bullets') or []
+                if not education_degree_dict and not education_degree_bullets:
+                    continue
+
+                # Update education_degree_dict with added_time
+                education_degree_dict['added_time'] = added_datetime
+
                 # Prevent duplicate entries
                 candidate_education_degree_id = get_education_degree_if_exists(candidate_educations,
                                                                                education_degree_dict)
                 if not candidate_education_degree_id:
+                    # Update dict with candidate education ID
+                    education_degree_dict['candidate_education_id'] = education_id
                     candidate_education_degree = CandidateEducationDegree(**education_degree_dict)
                     db.session.add(candidate_education_degree)  # Add CandidateEducationDegree
                     db.session.flush()
                     candidate_education_degree_id = candidate_education_degree.id
 
                     if is_updating:  # Track all updates
-                        _track_education_degree_edits(education_degree_dict, candidate_id, user_id, edit_datetime)
+                        track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
+                                    candidate_id=candidate_id, user_id=user_id)
 
                 # CandidateEducationDegreeBullet
                 degree_bullets = education_degree.get('bullets') or []
                 for degree_bullet in degree_bullets:
                     education_degree_bullet_dict = dict(
-                        candidate_education_degree_id=candidate_education_degree_id,
-                        concentration_type=degree_bullet.get('major'),
-                        comments=degree_bullet.get('comments'),
-                        added_time=added_datetime
+                        concentration_type=degree_bullet['major'].strip()
+                        if degree_bullet.get('major') else None,
+                        comments=degree_bullet['comments'].strip()
+                        if degree_bullet.get('comments') else None
                     )
+
+                    # Update education_degree_bullet_dict with candidate_education_degree_id & added_time
+                    education_degree_bullet_dict['candidate_education_degree_id'] = candidate_education_degree_id
+                    education_degree_bullet_dict['added_time'] = added_datetime
+
                     # Prevent duplicate entries
                     if not does_education_degree_bullet_exist(candidate_educations, education_degree_bullet_dict):
                         # Add CandidateEducationDegreeBullet
                         db.session.add(CandidateEducationDegreeBullet(**education_degree_bullet_dict))
 
                         if is_updating:  # Track all updates
-                            _track_education_degree_bullet_edits(education_degree_bullet_dict, candidate_id,
-                                                                 user_id, edit_datetime)
+                            track_edits(update_dict=education_degree_bullet_dict,
+                                        table_name='candidate_education_degree_bullet',
+                                        candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, edit_datetime, is_updating):
+def _add_or_update_work_experiences(candidate, work_experiences, added_time, user_id, is_updating):
     """
     Function will update CandidateExperience and CandidateExperienceBullet
     or create new ones.
@@ -1454,15 +1562,18 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             elif not end_year and (start_year != latest_start_date):
                 end_year = start_year + 1
 
+        country_code = work_experience['country_code'].upper().strip() if work_experience.get('country_code') else None
+        subdivision_code = work_experience['subdivision_code'].upper().strip() \
+            if work_experience.get('subdivision_code') else None
         experience_dict = dict(
             list_order=work_experience.get('list_order') or 1,
-            organization=work_experience.get('organization'),
-            position=work_experience.get('position'),
-            city=work_experience.get('city'),
-            state=work_experience.get('state'),
+            organization=work_experience['organization'].strip() if work_experience.get('organization') else None,
+            position=work_experience['position'].strip() if work_experience.get('position') else None,
+            city=work_experience['city'].strip() if work_experience.get('city') else None,
+            iso3166_subdivision=subdivision_code,
+            iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
-            iso3166_country=work_experience.get('country_code'),
             start_month=work_experience.get('start_month') or 1,
             end_year=end_year,
             is_current=is_current
@@ -1471,12 +1582,11 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
         experience_id = work_experience.get('id')
         if experience_id:  # Update
 
-            # Remove keys with None values
-            experience_dict = dict((k, v) for k, v in experience_dict.iteritems() if v is not None)
+            # Remove keys with empty values
+            experience_dict = {k: v for k, v in experience_dict.items() if v}
 
             # CandidateExperience must be recognized
-            can_exp_query = db.session.query(CandidateExperience).filter_by(id=experience_id)
-            can_exp_obj = can_exp_query.first()
+            can_exp_obj = CandidateExperience.get(experience_id)
             if not can_exp_obj:
                 raise InvalidUsage('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
@@ -1488,30 +1598,33 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             update_total_months_experience(candidate, experience_dict, can_exp_obj)
 
             # Track all changes made to CandidateExperience
-            _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime, can_exp_obj)
+            track_edits(update_dict=experience_dict, table_name='candidate_experience',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_exp_obj)
 
             # Update CandidateExperience
-            can_exp_query.update(experience_dict)
+            can_exp_obj.update(**experience_dict)
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
                 experience_bullet_dict = dict(
                     list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet.get('description'),
-                    added_time=added_time
+                    description=experience_bullet['description'].strip() if experience_bullet.get(
+                        'description') else None
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = dict((k, v) for k, v in experience_bullet_dict.iteritems() if v is not None)
+                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+
+                # Prevent empty data from being inserted into db
+                if not experience_bullet_dict:
+                    continue
 
                 experience_bullet_id = experience_bullet.get('id')
                 if experience_bullet_id:  # Update
 
                     # CandidateExperienceBullet must be recognized
-                    can_exp_bullet_query = db.session.query(CandidateExperienceBullet).\
-                        filter_by(id=experience_bullet_id)
-                    can_exp_bullet_obj = can_exp_bullet_query.first()
+                    can_exp_bullet_obj = CandidateExperienceBullet.get(experience_bullet_id)
                     if not can_exp_bullet_obj:
                         raise InvalidUsage('Candidate experience bullet not found',
                                            error_code=custom_error.EXPERIENCE_BULLET_NOT_FOUND)
@@ -1522,17 +1635,19 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                                              error_code=custom_error.EXPERIENCE_BULLET_FORBIDDEN)
 
                     # Track all changes made to CandidateExperienceBullet
-                    _track_work_experience_bullet_edits(experience_bullet_dict, candidate_id, user_id,
-                                                        edit_datetime, can_exp_bullet_obj)
+                    track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
+                                candidate_id=candidate_id, user_id=user_id, query_obj=can_exp_bullet_obj)
 
-                    can_exp_bullet_query.update(experience_bullet_dict)
+                    can_exp_bullet_obj.update(**experience_bullet_dict)
                 else:  # Add
+                    # Update experience_bullet_dict with added_time
+                    experience_bullet_dict['added_time'] = added_time
                     experience_bullet_dict.update(dict(candidate_experience_id=experience_id))
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
                     if is_updating:  # Track all updates
-                        _track_work_experience_bullet_edits(experience_bullet_dict, candidate_id, user_id,
-                                                            edit_datetime)
+                        track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
+                                    candidate_id=candidate_id, user_id=user_id)
 
         else:  # Add
             experience_dict.update(dict(candidate_id=candidate_id, added_time=added_time, resume_id=candidate_id))
@@ -1548,50 +1663,60 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 update_total_months_experience(candidate, experience_dict)
 
                 if is_updating:  # Track all updates
-                    _track_work_experience_edits(experience_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=experience_dict, table_name='candidate_experience',
+                                candidate_id=candidate_id, user_id=user_id)
 
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                experience_bullet_dict = {
-                    'candidate_experience_id': experience_id,
-                    'description': experience_bullet.get('description'),
-                    'added_time': added_time
-                }
+                experience_bullet_dict = dict(
+                    list_order=experience_bullet.get('list_order'),
+                    description=experience_bullet['description'].strip() if experience_bullet.get(
+                        'description') else None
+                )
+                # Remove keys with None values
+                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+
+                # Prevent empty data from being inserted into db
+                if not experience_bullet_dict:
+                    continue
+
                 # Prevent duplicate entries
                 if not does_experience_bullet_exist(candidate_experiences, experience_bullet_dict):
+                    # Update experience_bullet_dict with experience_id and added_time
+                    experience_bullet_dict['candidate_experience_id'] = experience_id
+                    experience_bullet_dict['added_time'] = added_time
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
                     if is_updating:  # Track all updates
-                        _track_work_experience_bullet_edits(experience_bullet_dict, candidate_id,
-                                                            user_id, edit_datetime)
+                        track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
+                                    candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_datetime):
+def _add_or_update_work_preference(candidate_id, work_preference, user_id):
     """
     Function will update CandidateWorkPreference or create a new one.
     """
     work_preference_dict = dict(
-        relocate=work_preference.get('relocate', False),
-        authorization=work_preference.get('authorization'),
-        telecommute=work_preference.get('telecommute', False),
+        relocate=work_preference.get('relocate') or False,
+        authorization=work_preference['authorization'].strip() if work_preference.get('authorization') else None,
+        telecommute=work_preference.get('telecommute') or False,
         travel_percentage=work_preference.get('travel_percentage'),
         hourly_rate=work_preference.get('hourly_rate'),
         salary=work_preference.get('salary'),
-        tax_terms=work_preference.get('employment_type'),
-        security_clearance=work_preference.get('security_clearance', False),
-        third_party=work_preference.get('third_party', False)
+        tax_terms=work_preference['employment_type'].strip() if work_preference.get('employment_type') else None,
+        security_clearance=work_preference.get('security_clearance') or False,
+        third_party=work_preference.get('third_party') or False
     )
 
-    # Remove None values from update_dict
-    work_preference_dict = dict((k, v) for k, v in work_preference_dict.iteritems() if v is not None)
+    # Remove empty values from update_dict
+    work_preference_dict = {k: v for k, v in work_preference_dict.items() if v}
 
     work_preference_id = work_preference.get('id')
     if work_preference_id:  # Update
 
         # CandidateWorkPreference must be recognized
-        can_work_pref_query = db.session.query(CandidateWorkPreference).filter_by(id=work_preference_id)
-        can_work_pref_obj = can_work_pref_query.first()
+        can_work_pref_obj = CandidateWorkPreference.get(work_preference_id)
         if not can_work_pref_obj:
             raise NotFoundError('Candidate work preference not found', custom_error.WORK_PREF_NOT_FOUND)
 
@@ -1600,11 +1725,11 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
             raise ForbiddenError('Unauthorized candidate work preference', custom_error.WORK_PREF_FORBIDDEN)
 
         # Track all updates
-        _track_work_preference_edits(work_preference_dict, candidate_id, user_id, edit_datetime,
-                                     can_work_pref_obj)
+        track_edits(update_dict=work_preference_dict, table_name='candidate_work_preference',
+                    candidate_id=candidate_id, user_id=user_id, query_obj=can_work_pref_obj)
 
         # Update
-        can_work_pref_query.update(work_preference_dict)
+        can_work_pref_obj.update(**work_preference_dict)
 
     else:  # Add
         # Only 1 CandidateWorkPreference is permitted for each Candidate
@@ -1615,7 +1740,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id, edit_
         db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
-def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updating):
+def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
     """
     Function will update CandidateEmail or create new one(s).
     """
@@ -1630,22 +1755,22 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
         # If there's no is_default, the first email should be default
         is_default = i == 0 if not emails_has_default else email.get('is_default')
         # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
-        email_label = 'Primary' if (not emails_has_label and i == 0) else email.get('label')
+        email_label = 'Primary' if (not emails_has_label and i == 0) else (email.get('label') or '').title()
         email_address = email.get('address')
 
         email_dict = dict(
             address=email_address,
-            email_label_id=EmailLabel.email_label_id_from_email_label(email_label=email_label),
+            email_label_id=EmailLabel.email_label_id_from_email_label(email_label),
             is_default=is_default
         )
 
+        # Remove empty values from email_dict
+        email_dict = {k: v for k, v in email_dict.items() if v}
+
         email_id = email.get('id')
         if email_id:  # Update
-            email_dict = dict((k, v) for k, v in email_dict.iteritems() if v is not None)
-
             # CandidateEmail must be recognized
-            candidate_email_query = db.session.query(CandidateEmail).filter_by(id=email_id)
-            candidate_email_obj = candidate_email_query.first()
+            candidate_email_obj = CandidateEmail.get(email_id)
             if not candidate_email_obj:
                 raise NotFoundError('Candidate email not found', custom_error.EMAIL_NOT_FOUND)
 
@@ -1654,10 +1779,11 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
                 raise ForbiddenError('Unauthorized candidate email', custom_error.EMAIL_FORBIDDEN)
 
             # Track all changes
-            _track_email_edits(email_dict, candidate_id, user_id, edit_datetime, candidate_email_obj)
+            track_edits(update_dict=email_dict, table_name='candidate_email',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=candidate_email_obj)
 
             # Update CandidateEmail
-            candidate_email_query.update(email_dict)
+            candidate_email_obj.update(**email_dict)
 
         else:  # Add
             email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
@@ -1668,17 +1794,18 @@ def _add_or_update_emails(candidate_id, emails, user_id, edit_datetime, is_updat
                 db.session.add(CandidateEmail(**email_dict))
 
                 if is_updating:  # Track all updates
-                    _track_email_edits(email_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=email_dict, table_name='candidate_email',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating):
+def _add_or_update_phones(candidate, phones, user_id, is_updating):
     """
     Function will update CandidatePhone or create new one(s).
     """
     # If any of phones' is_default is True, set all of candidate's phones' is_default to False
     candidate_id, candidate_phones = candidate.id, candidate.phones
     if any([phone.get('is_default') for phone in phones]):
-        CandidatePhone.set_is_default_to_false(candidate_id=candidate_id)
+        CandidatePhone.set_is_default_to_false(candidate_id)
 
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([phone.get('is_default') for phone in phones])
@@ -1687,52 +1814,58 @@ def _add_or_update_phones(candidate, phones, user_id, edit_datetime, is_updating
         # If there's no is_default, the first phone should be default
         is_default = i == 0 if not phones_has_default else phone.get('is_default')
         # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
-        phone_label = 'Home' if (not phones_has_label and i == 0) else phone.get('label')
+        phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
-        value = phone.get('value')
-        if value:
-            phone_number_dict = format_phone_number(value) if value else None
+        value = phone['value'].strip() if phone.get('value') else None
+        phone_number_dict = format_phone_number(value) if value else None
 
-            phone_dict = dict(
-                value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
-                extension=phone_number_dict.get('extension') if phone_number_dict else None,
-                phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
-                is_default=is_default
-            )
+        # if value:
+        phone_dict = dict(
+            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
+            extension=phone_number_dict.get('extension') if phone_number_dict else None,
+            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
+            is_default=is_default
+        )
 
-            candidate_phone_id = phone.get('id')
-            if candidate_phone_id:  # Update
+        # Remove empty values
+        phone_dict = {k: v for k, v in phone_dict.items() if v}
 
-                # Remove keys with None values
-                phone_dict = dict((k, v) for k, v in phone_dict.iteritems() if v is not None)
+        # Prevent adding empty records to db
+        if not phone_dict:
+            continue
 
-                # CandidatePhone must be recognized
-                can_phone_query = db.session.query(CandidatePhone).filter_by(id=candidate_phone_id)
-                can_phone_obj = can_phone_query.first()
-                if not can_phone_obj:
-                    raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
+        candidate_phone_id = phone.get('id')
+        if candidate_phone_id:  # Update
 
-                # CandidatePhone must belong to Candidate
-                if can_phone_obj.candidate_id != candidate_id:
-                    raise ForbiddenError('Unauthorized candidate phone', custom_error.PHONE_FORBIDDEN)
+            # CandidatePhone must be recognized
+            can_phone_obj = CandidatePhone.get(candidate_phone_id)
+            if not can_phone_obj:
+                raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
 
-                # Track all changes
-                _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime, can_phone_obj)
+            # CandidatePhone must belong to Candidate
+            if can_phone_obj.candidate_id != candidate_id:
+                raise ForbiddenError('Unauthorized candidate phone', custom_error.PHONE_FORBIDDEN)
 
-                # Update CandidatePhone
-                can_phone_query.update(phone_dict)
+            # Track all changes
+            track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_phone_obj)
 
-            else:  # Add
+            # Update CandidatePhone
+            can_phone_obj.update(**phone_dict)
+
+        else:  # Add
+            if value:  # Value is required for creating phone
                 phone_dict.update(dict(candidate_id=candidate_id))
                 # Prevent duplicate entries
                 if not does_phone_exist(candidate_phones, phone_dict):
                     db.session.add(CandidatePhone(**phone_dict))
 
                     if is_updating:  # Track all updates
-                        _track_phone_edits(phone_dict, candidate_id, user_id, edit_datetime)
+                        track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                                    candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_military_services(candidate, military_services, user_id, edit_datetime, is_updating):
+def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
     """
     Function will update CandidateMilitaryService or create new one(s).
     """
@@ -1749,25 +1882,28 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 to_date = dateutil.parser.parse(to_date)
 
         military_service_dict = dict(
-            iso3166_country=military_service.get('country_code'),
-            service_status=military_service.get('status'),
-            highest_rank=military_service.get('highest_rank'),
-            highest_grade=military_service.get('highest_grade'),
-            branch=military_service.get('branch'),
-            comments=military_service.get('comments'),
+            iso3166_country=military_service['country_code'].upper() if military_service.get('country_code') else None,
+            service_status=military_service['status'].strip() if military_service.get('status') else None,
+            highest_rank=military_service['highest_rank'] if military_service.get('highest_rank') else None,
+            highest_grade=military_service['highest_grade'].strip() if military_service.get('highest_grade') else None,
+            branch=military_service['branch'].strip() if military_service.get('branch') else None,
+            comments=military_service['comments'].strip() if military_service.get('comments') else None,
             from_date=from_date,
             to_date=to_date
         )
 
+        # Remove keys with empty values
+        military_service_dict = {k: v for k, v in military_service_dict.items() if v}
+
+        # Prevent adding empty data to db
+        if not military_service_dict:
+            continue
+
         military_service_id = military_service.get('id')
         if military_service_id:  # Update
 
-            # Remove keys with None values
-            military_service_dict = dict((k, v) for k, v in military_service_dict.iteritems() if v is not None)
-
             # CandidateMilitaryService must be recognized
-            can_military_service_query = db.session.query(CandidateMilitaryService).filter_by(id=military_service_id)
-            can_military_service_obj = can_military_service_query.first()
+            can_military_service_obj = CandidateMilitaryService.get(military_service_id)
             if not can_military_service_obj:
                 raise NotFoundError('Candidate military service not found', custom_error.MILITARY_NOT_FOUND)
 
@@ -1776,11 +1912,11 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 raise ForbiddenError('Unauthorized candidate military service', custom_error.MILITARY_FORBIDDEN)
 
             # Track all changes
-            _track_military_service_edits(military_service_dict, candidate_id, user_id,
-                                          edit_datetime, can_military_service_obj)
+            track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_military_service_obj)
 
             # Update CandidateMilitaryService
-            can_military_service_query.update(military_service_dict)
+            can_military_service_obj.update(**military_service_dict)
 
         else:  # Add
             military_service_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id))
@@ -1788,35 +1924,41 @@ def _add_or_update_military_services(candidate, military_services, user_id, edit
                 db.session.add(CandidateMilitaryService(**military_service_dict))
 
                 if is_updating:  # Track all updates
-                    _track_military_service_edits(military_service_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=military_service_dict, table_name='candidate_military_service',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, edit_datetime, is_updating):
+def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, is_updating):
     """
     Function will update CandidatePreferredLocation or create a new one.
     """
     candidate_id, candidate_preferred_locations = candidate.id, candidate.preferred_locations
     for preferred_location in preferred_locations:
 
+        country_code = preferred_location['country_code'].strip().upper() \
+            if preferred_location.get('country_code') else None
+        subdivision_code = preferred_location['subdivision_code'].strip().upper() \
+            if preferred_location.get('subdivision_code') else None
         preferred_location_dict = dict(
-            address=preferred_location.get('address'),
-            # country_id=Country.country_id_from_name_or_code(preferred_location.get('country')),
-            iso3166_country=preferred_location.get('country_code'),
-            city=preferred_location.get('city'),
-            region=preferred_location.get('state'),
+            address=preferred_location['address'].strip() if preferred_location.get('address') else None,
+            iso3166_country=country_code,
+            iso3166_subdivision=subdivision_code,
+            city=preferred_location['city'].strip() if preferred_location.get('city') else None,
+            region=preferred_location['state'].strip() if preferred_location.get('state') else None,
             zip_code=sanitize_zip_code(preferred_location.get('zip_code'))
         )
 
+        # Remove keys with empty values
+        preferred_location_dict = {k: v for k, v in preferred_location_dict.items() if v}
+
+        # Prevent inserting empty records into db
+        if not preferred_location_dict:
+            continue
+
         preferred_location_id = preferred_location.get('id')
         if preferred_location_id:  # Update
-
-            # Remove keys with None values
-            preferred_location_dict = dict((k, v) for k, v in preferred_location_dict.iteritems() if v is not None)
-
             # CandidatePreferredLocation must be recognized
-            can_preferred_location_query = db.session.query(CandidatePreferredLocation).\
-                filter_by(id=preferred_location_id)
-            can_preferred_location_obj = can_preferred_location_query.first()
+            can_preferred_location_obj = CandidatePreferredLocation.get(preferred_location_id)
             if not can_preferred_location_obj:
                 raise NotFoundError('Candidate preferred location not found', custom_error.PREFERRED_LOCATION_NOT_FOUND)
 
@@ -1826,11 +1968,11 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
                                      error_code=custom_error.PREFERRED_LOCATION_FORBIDDEN)
 
             # Track all changes
-            _track_preferred_location_edits(preferred_location_dict, candidate_id, user_id,
-                                            edit_datetime, can_preferred_location_obj)
+            track_edits(update_dict=preferred_location_dict, table_name='candidate_preferred_location',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_preferred_location_obj)
 
             # Update CandidatePreferredLocation
-            can_preferred_location_query.update(preferred_location_dict)
+            can_preferred_location_obj.update(**preferred_location_dict)
 
         else:  # Add
             preferred_location_dict.update(dict(candidate_id=candidate_id))
@@ -1839,14 +1981,15 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
                 db.session.add(CandidatePreferredLocation(**preferred_location_dict))
 
                 if is_updating:  # Track all updates
-                    _track_preferred_location_edits(preferred_location_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=preferred_location_dict, table_name='candidate_preferred_location',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime, is_updating):
+def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
     """
     Function will update CandidateSkill or create new one(s).
     """
-    candidate_id, candidate_skills = candidate.id, candidate.skills
+    candidate_id = candidate.id
     for skill in skills:
 
         # Convert ISO 8601 date format to datetime object
@@ -1854,22 +1997,27 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime,
         if last_used_date:
             last_used_date = dateutil.parser.parse(skill.get('last_used_date'))
 
+        skill_id = skill.get('id')
+        description = skill['name'].strip() if skill.get('name') else None
+
+        # total_months & last_used will only be retrieved if skill-name (description) or skill_id is provided
         skill_dict = dict(
             list_order=skill.get('list_order'),
-            description=skill.get('name'),
-            total_months=skill.get('months_used'),
-            last_used=last_used_date
+            description=description,
+            total_months=skill.get('months_used') if (description or skill_id) else None,
+            last_used=last_used_date if (description or skill_id) else None
         )
 
-        skill_id = skill.get('id')
+        # Remove keys with empty values
+        skill_dict = {k: v for k, v in skill_dict.items() if v}
+
+        # Prevent adding records if empty dict
+        if not skill_dict:
+            continue
+
         if skill_id:  # Update
-
-            # Remove keys with None values
-            skill_dict = dict((k, v) for k, v in skill_dict.iteritems() if v is not None)
-
             # CandidateSkill must be recognized
-            can_skill_query = db.session.query(CandidateSkill).filter_by(id=skill_id)
-            can_skill_obj = can_skill_query.first()
+            can_skill_obj = CandidateSkill.get(skill_id)
             if not can_skill_obj:
                 raise NotFoundError('Candidate skill not found', custom_error.SKILL_NOT_FOUND)
 
@@ -1878,43 +2026,40 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, edit_datetime,
                 raise ForbiddenError('Unauthorized candidate skill', custom_error.SKILL_FORBIDDEN)
 
             # Track all changes
-            _track_skill_edits(skill_dict, candidate_id, user_id, edit_datetime, can_skill_obj)
+            track_edits(update_dict=skill_dict, table_name='candidate_skill',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_skill_obj)
 
             # Update CandidateSkill
-            can_skill_query.update(skill_dict)
+            can_skill_obj.update(**skill_dict)
 
         else:  # Add
             skill_dict.update(dict(candidate_id=candidate_id, resume_id=candidate_id, added_time=added_time))
             # Prevent duplicate entries
-            if not does_skill_exist(candidate_skills, skill_dict):
+            if not does_skill_exist(candidate.skills, skill_dict):
                 db.session.add(CandidateSkill(**skill_dict))
 
                 if is_updating:  # Track all updates
-                    _track_skill_edits(skill_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=skill_dict, table_name='candidate_skill',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
-def _add_or_update_social_networks(candidate, social_networks, user_id, edit_datetime, is_updating):
+def _add_or_update_social_networks(candidate, social_networks, user_id, is_updating):
     """
     Function will update CandidateSocialNetwork or create new one(s).
     """
     candidate_id, candidate_sns = candidate.id, candidate.social_networks
     for social_network in social_networks:
 
-        if not social_network.get('name'):
-            social_network['name'] = social_network_name_from_url(social_network.get('profile_url'))
-
         social_network_dict = dict(
-            social_network_id=social_network_id_from_name(name=social_network.get('name')),
-            social_profile_url=social_network.get('profile_url')
+            social_network_id=social_network_id_from_name(social_network['name'].strip()),
+            social_profile_url=social_network['profile_url'].strip()
         )
 
-        # Todo: what if url and/or name is not provided?
         social_network_id = social_network.get('id')
         if social_network_id:  # Update
 
             # CandidateSocialNetwork must be recognized
-            can_sn_query = db.session.query(CandidateSocialNetwork).filter_by(id=social_network_id)
-            can_sn_obj = can_sn_query.first()
+            can_sn_obj = CandidateSocialNetwork.get(social_network_id)
             if not can_sn_obj:
                 raise NotFoundError(error_message='Candidate social network not found',
                                     error_code=custom_error.SOCIAL_NETWORK_NOT_FOUND)
@@ -1925,9 +2070,10 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, edit_dat
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
-            _track_social_network_edits(social_network_dict, candidate_id, user_id, edit_datetime, can_sn_obj)
+            track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=can_sn_obj)
 
-            can_sn_query.update(social_network_dict)
+            can_sn_obj.update(**social_network_dict)
 
         else:  # Add
             social_network_dict.update(dict(candidate_id=candidate_id))
@@ -1936,7 +2082,8 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, edit_dat
                 db.session.add(CandidateSocialNetwork(**social_network_dict))
 
                 if is_updating:  # Track all updates
-                    _track_social_network_edits(social_network_dict, candidate_id, user_id, edit_datetime)
+                    track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
+                                candidate_id=candidate_id, user_id=user_id)
 
 
 def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):

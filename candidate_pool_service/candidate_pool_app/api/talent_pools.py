@@ -14,6 +14,7 @@ from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.talent_pools_pipelines import *
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_stats_generic_function, get_talent_pipeline_stat_for_given_day, update_smartlist_stats,
@@ -612,8 +613,8 @@ class TalentPipelinesOfTalentPools(Resource):
             raise ForbiddenError(error_message="User %s doesn't have appropriate permissions to get "
                                                "candidates" % request.user.id)
 
-        page = request.args.get('page', 1)
-        per_page = request.args.get('per_page', 10)
+        page = request.args.get('page', DEFAULT_PAGE)
+        per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
         if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
             raise InvalidUsage("page and per_page should be positive integers")
@@ -642,10 +643,7 @@ def get_talent_pool_stats(talent_pool_id):
     from_date_string = request.args.get('from_date', '')
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
-    offset = request.args.get('offset', '')
-
-    if not offset:
-        raise InvalidUsage("Valid value of time `offset should be provided`")
+    offset = request.args.get('offset', 0)
 
     response = get_stats_generic_function(talent_pool, 'TalentPool', request.user, from_date_string,
                                           to_date_string, interval, False, offset)

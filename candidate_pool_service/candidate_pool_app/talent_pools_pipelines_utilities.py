@@ -1,4 +1,5 @@
 __author__ = 'ufarooqi'
+import math
 import json
 import decimal
 import requests
@@ -97,7 +98,8 @@ def get_candidates_from_search_api(query_string, headers):
     :return:
     """
 
-    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI, headers=headers, params=query_string)
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
+                            headers=headers, params=query_string)
     if response.ok:
         return True, response.json()
     else:
@@ -111,9 +113,13 @@ def get_pipeline_growth(talent_pipeline, interval):
     :param interval: Interval in days
     :return:
     """
-    from_date = datetime.utcnow() - timedelta(days=interval)
-    return get_talent_pipeline_stat_for_given_day(talent_pipeline, datetime.utcnow()) - \
-           get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date)
+    if talent_pipeline.added_time.date() == datetime.utcnow().date():
+        return 0
+    else:
+        to_date = datetime.utcnow() - timedelta(days=1)
+        from_date = to_date - timedelta(days=interval)
+        return get_talent_pipeline_stat_for_given_day(talent_pipeline, to_date) - \
+               get_talent_pipeline_stat_for_given_day(talent_pipeline, from_date)
 
 
 def get_smartlist_stat_for_a_given_day(smartlist, date_object):
@@ -416,10 +422,10 @@ def get_stats_generic_function(container_object, container_name, user=None, from
         raise ForbiddenError("Logged-in user %s is unauthorized to get stats of %s: %s" % (user.id, container_name,
                                                                                            container_object.id))
 
-    if not is_number(offset) or abs(int(offset)) > 12:
+    if not is_number(offset) or math.ceil(abs(float(offset))) > 12:
         raise InvalidUsage("Value of offset should be an integer and less than or equal to 12")
 
-    offset = int(offset)
+    offset = int(math.ceil(float(offset)))
 
     current_date_time = datetime.utcnow()
 
@@ -427,8 +433,10 @@ def get_stats_generic_function(container_object, container_name, user=None, from
 
     try:
         # To convert UTC time to any other time zone we can use `offset_date_time` with inverted value of offset
-        from_date = parse(from_date_string) if from_date_string else offset_date_time(ninety_days_old_date_time, -1 * offset)
-        to_date = parse(to_date_string) if to_date_string else offset_date_time(current_date_time, -1 * offset)
+        from_date = parse(from_date_string).replace(tzinfo=None) if from_date_string \
+            else offset_date_time(ninety_days_old_date_time, -1 * offset)
+        to_date = parse(to_date_string).replace(tzinfo=None) if to_date_string else \
+            offset_date_time(current_date_time, -1 * offset)
     except Exception as e:
         raise InvalidUsage("Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
 
