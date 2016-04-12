@@ -11,7 +11,7 @@ class Smartlist(db.Model):
     search_params = db.Column('SearchParams', db.String(1023))
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     talent_pipeline_id = db.Column('talentPipelineId', db.Integer, db.ForeignKey('talent_pipeline.id'))
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow())
     is_hidden = db.Column('isHidden', db.Boolean, default=False)
 
     # Relationships
@@ -38,10 +38,10 @@ class Smartlist(db.Model):
             'added_time': str(self.added_time)
         }
         if include_stats and get_stats_function:
-            to_date = datetime.datetime.utcnow()
+            to_date = datetime.datetime.utcnow() - datetime.timedelta(days=1)
             from_date = to_date - datetime.timedelta(days=29)
-            smart_list['stats'] = get_stats_function(self, 'SmartList', None, from_date.isoformat(),
-                                                     to_date.isoformat(), offset=1)
+            smart_list['stats'] = [] if self.added_time.date() == datetime.datetime.utcnow().date() else \
+                get_stats_function(self, 'SmartList', None, from_date.isoformat(), to_date.isoformat(), offset=1)
 
         return smart_list
 
