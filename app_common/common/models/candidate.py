@@ -2,7 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage
+from ..error_handling import InvalidUsage, InternalServerError
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
@@ -238,6 +238,8 @@ class EmailLabel(db.Model):
     candidate_emails = relationship('CandidateEmail', backref='email_label')
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
+    PRIMARY_DESCRIPTION = "Primary"
+
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
 
@@ -253,6 +255,13 @@ class EmailLabel(db.Model):
             if email_label_row:
                 return email_label_row.id
         return 4
+
+    @classmethod
+    def get_primary_label_description(cls):
+        email_label_row = cls.query.filter(EmailLabel.description == EmailLabel.PRIMARY_DESCRIPTION).first()
+        if email_label_row:
+            return "Primary"
+        raise InternalServerError(error_message="Primary email address description not present in db")
 
 
 class CandidateEmail(db.Model):

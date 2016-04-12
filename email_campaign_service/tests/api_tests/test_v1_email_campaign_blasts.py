@@ -60,6 +60,22 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == 2
 
+    def test_get_blasts_for_primary_candidate_emails(self, access_token_first,
+                                                     sent_campaign_multiple_email):
+        """
+        The test sends email to two candidates each having two emails.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
+        """
+        response = requests.get(
+            self.URL % sent_campaign_multiple_email.id,
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
+                                                            check_count=False)
+        json_resp = response.json()[self.ENTITY]
+        assert json_resp[0]['campaign_id'] == int(sent_campaign_multiple_email.id)
+        assert json_resp[0]['sends'] == 2
+
     def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/blasts
