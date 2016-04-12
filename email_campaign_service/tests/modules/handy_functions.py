@@ -296,7 +296,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         raise ResourceNotFound('Email campaign blasts not found')
     assert len(blasts) == 1
     # assert on sends
-    assert_campaign_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
+    assert_blast_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == expected_count
     sends_url_conversions = []
@@ -328,7 +328,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     #         "Email with subject %s was not found." % campaign.subject
 
 
-def assert_campaign_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
