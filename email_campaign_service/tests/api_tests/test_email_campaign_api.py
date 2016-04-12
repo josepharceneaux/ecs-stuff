@@ -21,20 +21,19 @@ from datetime import datetime, timedelta
 # Application Specific
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
+from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
-from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
                                                                   create_email_campaign_smartlists)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
-from email_campaign_service.tests.modules.handy_functions import (delete_campaign,
-                                                                  assert_valid_campaign_get,
+from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
                                                                   assert_campaign_send,
@@ -191,6 +190,8 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
+        time.sleep(30)
+        assert_and_delete_email(subject)
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):

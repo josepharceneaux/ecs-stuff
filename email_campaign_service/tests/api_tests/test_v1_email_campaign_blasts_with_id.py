@@ -35,7 +35,7 @@ class TestEmailCampaignBlastsWithId(object):
 
     def test_get_with_valid_token(self, access_token_first, sent_campaign):
         """
-        Here we user `sent_campaign` fixture to send campaign with and without email-client-id
+        Here we use `sent_campaign` fixture to send campaign with and without email-client-id
         to 2 candidates. This is the test where we get campaign's blast with valid
         access token. It should get OK response and number of sends should be 2.
         """

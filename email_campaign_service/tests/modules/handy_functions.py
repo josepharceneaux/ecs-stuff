@@ -48,7 +48,7 @@ def create_email_campaign(user):
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + '-test-e-campaign',
+                                   subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
                                    _from=fake.safe_email(),
                                    reply_to=fake.email(),
                                    body_html="<html><body>Email campaign test</body></html>",
@@ -84,14 +84,16 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
 
 
 def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
-                                    assert_candidates=True, abort_after=40):
+                                    assert_candidates=True, abort_after=40, data=None):
     """
     This creates candidate(s) as specified by the count and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
     """
-    # create candidate
-    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                     emails_list=emails_list, count=count)
+    if not data:
+        # create candidate
+        data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                         emails_list=emails_list, count=count)
+
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
     if assert_candidates:
@@ -99,6 +101,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
+
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
@@ -109,6 +112,29 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
         logger.info('%s candidate(s) not found for smartlist(id:%s)'
                     % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
+
+
+def create_smartlist_with_given_email_candidate(access_token, campaign,
+                                                talent_pipeline, emails_list=True,
+                                                count=1, emails=None):
+    """
+    This creates candidate(s) as specified by the count, using the email list provided by the user
+    and assign it to a smartlist.
+    Finally it returns campaign object
+    """
+    # create candidates data
+    data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                     emails_list=emails_list, count=count)
+
+    if emails and emails_list:
+        for index, candidate in enumerate(data['candidates']):
+            candidate['emails'] = emails[index]
+
+    smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline, data=data)
+    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
+                                     email_campaign_id=campaign.id)
+
+    return campaign
 
 
 def delete_campaign(campaign):
@@ -248,7 +274,6 @@ def assert_and_delete_email(subject):
         mail_connection.logout()
     return msg_ids
 
-
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
                          expected_status=200, abort_time_for_sends=20):
     """
@@ -317,11 +342,11 @@ def post_to_email_template_resource(access_token, data):
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
     """
-    response = requests.post(
-            url=EmailCampaignUrl.TEMPLATES, data=json.dumps(data),
-            headers={'Authorization': 'Bearer %s' % access_token,
-                     'Content-type': 'application/json'}
-    )
+    response = requests.post(url=EmailCampaignUrl.TEMPLATES,
+                             data=json.dumps(data),
+                             headers={'Authorization': 'Bearer %s' % access_token,
+                                      'Content-type': 'application/json'}
+                             )
     return response
 
 

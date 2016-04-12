@@ -10,7 +10,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
-                                                                  send_campaign_helper)
+                                                                  send_campaign_helper,
+                                                                  create_smartlist_with_given_email_candidate)
 
 
 @pytest.fixture()
@@ -89,6 +90,35 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=2)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
+                                            assign_roles_to_user_first,
+                                            access_token_first, talent_pipeline):
+    """
+    This returns a campaign which has 2 candidates associated and have 2 email address.
+    Email should be send to only one address of both candidates
+    """
+
+    _emails = [
+               # Primary and work label
+               [{'label': 'work', 'address': 'work' + fake.safe_email()},
+               {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
+               # Work and home label
+               [{'label': 'work', 'address': 'work' + fake.safe_email()},
+               {'label': 'home', 'address': 'home' + fake.safe_email()}],
+               ]
+
+    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+                                                           talent_pipeline=talent_pipeline,
+                                                           emails=_emails,
+                                                           count=2)
 
     def fin():
         delete_campaign(campaign)
