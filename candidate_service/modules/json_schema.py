@@ -1291,7 +1291,7 @@ reference_schema = {
                 "required": ["name", "comments"],
                 "properties": {
                     "name": {"type": "string"},
-                    "title": {"type": ["string", "null"]},
+                    "position_title": {"type": ["string", "null"]},
                     "comments": {"type": "string"}
                 }
             }

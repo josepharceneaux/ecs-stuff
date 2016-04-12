@@ -56,7 +56,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateReference
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -2209,40 +2209,45 @@ class CandidateReferencesResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
+        body_dict = get_json_if_exist(request)
+        try:
+            validate(instance=body_dict, schema=reference_schema)
+        except ValidationError as e:
+            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+
+        created_reference_ids = []
+        for reference in body_dict['candidate_references']:
+            position_title = reference['position_title'].strip() if reference.get('position_title') else None
+            candidate_reference = CandidateReference(resume_id=candidate_id, candidate_id=candidate_id,
+                                                     person_name=reference['name'].strip(),
+                                                     position_title=position_title,
+                                                     comments=reference['comments'].strip())
+            db.session.flush()
+            created_reference_ids.append(candidate_reference.id)
+
+        db.session.commit()
+        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
-        Endpoints:
-             i. GET /v1/candidates/:candidate_id/references
-            ii. GET /v1/candidates/:candidate_id/references/:id
+        Endpoints: GET /v1/candidates/:candidate_id/references
         """
         # Get authenticated user, candidate ID, and reference ID
-        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
-
-
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
-    def patch(self, **kwargs):
-        """
-        Endpoint:  PATCH /v1/candidates/:candidate_id/references
-        """
-        # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
+        return {'candidate_references': [{'id': reference.id,
+                                          'name': reference.person_name,
+                                          'position_title': reference.postion_title,
+                                          'comments': reference.comments
+                                          } for reference in candidate.references]}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
@@ -2255,9 +2260,28 @@ class CandidateReferencesResource(Resource):
         authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
+        if reference_id:  # Delete specified reference
+            candidate_reference = CandidateReference.get(reference_id)
+            """
+            :type candidate_reference: CandidateReference
+            """
+            if not candidate_reference:  # Reference must be recognized
+                raise NotFoundError("Candidate reference ({}) not found.".format(reference_id),
+                                    custom_error.REFERENCE_NOT_FOUND)
+
+            if candidate_reference.candidate_id != candidate_id:  # reference must belong to candidate
+                raise ForbiddenError("Not authorized", custom_error.REFERENCE_FORBIDDEN)
+
+            db.session.delete(candidate_reference)  # delete
+
+        else:  # Delete all of candidate's references
+            map(db.session.delete, candidate.references)
+
+        db.session.commit()
+        return '', 204
