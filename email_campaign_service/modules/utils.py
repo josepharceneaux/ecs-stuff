@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.email_campaign_app import (logger, celery_app)
 
 # Common Utils
 from email_campaign_service.common.models.user import User
@@ -22,7 +22,7 @@ from email_campaign_service.common.campaign_services.campaign_base import Campai
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
+from email_campaign_service.common.utils.handy_functions import (generate_jwt_headers, JSON_CONTENT_TYPE_HEADER,
                                                                  http_request)
 from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
                                                   EmailCampaignUrl)
@@ -38,7 +38,8 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
-def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
+@celery_app.task(name='get_candidates_of_smartlist')
+def get_candidates_of_smartlist(user_id, list_id, campaign, candidate_ids_only=False):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
@@ -48,7 +49,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     """
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
+    response = get_candidates_from_smartlist_with_page_params(user_id, list_id, per_page, DEFAULT_PAGE,
                                                               params, campaign)
     response_body = response.json()
     candidates = response_body['candidates']
@@ -56,7 +57,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     if int(no_of_pages) > DEFAULT_PAGE:
         for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
             next_page = current_page + DEFAULT_PAGE
-            response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
+            response = get_candidates_from_smartlist_with_page_params(user_id, list_id, per_page,
                                                                       next_page, params, campaign)
             response_body = response.json()
             candidates.extend(response_body['candidates'])
@@ -65,7 +66,7 @@ def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
     return candidates
 
 
-def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign):
+def get_candidates_from_smartlist_with_page_params(user_id, list_id, per_page, page, params, campaign):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
     :param list_id: Id of smartlist.
@@ -86,7 +87,8 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     params.update({'page': page}) if page else None
     params.update({'limit': per_page}) if per_page else None
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
-                            params=params, headers=create_oauth_headers())
+                            params=params, headers=generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'],
+                                                                        user_id))
     return response
 
 

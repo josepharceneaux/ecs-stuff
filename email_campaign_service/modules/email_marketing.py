@@ -155,7 +155,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
     return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(user_id, campaign, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -167,7 +167,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
     :return:            number of emails sent
     """
     user = campaign.user
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
+    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(user_id, campaign=campaign,
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
@@ -284,6 +284,12 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
     _update_blast_sends(email_campaign_blast, sends, campaign, user, new_candidates_only)
 
 
+@celery_app.task(name='pre_processing_campaign_sent')
+def pre_processing_campaign_sent(celery_result, campaign):
+    logger.info('celery_result: %s' % celery_result)
+    return celery_result
+
+
 # This will be used in later version
 # def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
 #     """
@@ -311,7 +317,7 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
 #         raise InvalidUsage(error_message)
 
 
-def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
+def get_email_campaign_candidate_ids_and_emails(user_id, campaign, list_ids=None, new_candidates_only=False):
     """
     :param campaign:    email campaign row
     :return:            Returns array of candidate IDs in the campaign's smartlists.
@@ -326,17 +332,28 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     if not list_ids:
         raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
                            error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-    for list_id in list_ids:
-        # Get candidates present in smartlist
-        try:
-            smartlist_candidate_ids = get_candidates_of_smartlist(list_id, campaign,
-                                                                  candidate_ids_only=True)
-            all_candidate_ids.extend(smartlist_candidate_ids)
-        except Exception as error:
-            logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
-                             ' User(id:%s). Reason: %s'
-                             % (list_id, campaign.user.id, error.message))
-            # gather all candidates from various smartlists
+    campaign_type = campaign.__tablename__
+    callback = pre_processing_campaign_sent.subtask((campaign,),
+                                                      queue=campaign_type)
+
+    # Get candidates present in smartlist
+    try:
+        # Here we create list of all tasks and assign a self.celery_error_handler() as a
+        # callback function in case any of the tasks in the list encounter some error.
+        tasks = [get_candidates_of_smartlist.subtask(
+            (user_id, list_id, campaign, True),
+            queue=campaign_type) for list_id in list_ids]
+        # This runs all tasks asynchronously and sets callback function to be hit once all
+        # tasks in list finish running without raising any error. Otherwise callback
+        # results in failure status.
+        result = chord(tasks)(callback)
+        all_candidate_ids = result.get()
+        logger.info(all_candidate_ids)
+    except Exception as error:
+        logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
+                         ' User(id:%s). Reason: %s'
+                         % (list_id, campaign.user.id, error.message))
+        # gather all candidates from various smartlists
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     if not all_candidate_ids:
         raise InvalidUsage('No candidates found for smartlist_ids %s.' % list_ids,

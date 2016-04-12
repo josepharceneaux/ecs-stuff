@@ -94,13 +94,13 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
-    'resume_text':                   dict(IndexFieldType='text',            TextArrayOptions={'ReturnEnabled': False}),
+    'resume_text':                   dict(IndexFieldType='text',            TextOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'custom_field_id_and_value':     dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'candidate_rating_id_and_value': dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'area_of_interest_id':           dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'added_time':                    dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False}),
-    'added_time_hour':               dict(IndexFieldType='int',             DateOptions={'FacetEnabled': True}),
+    'added_time_hour':               dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True}),
 
     # Location
     'city':                          dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -112,7 +112,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Experience
     'total_months_experience':       dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
-    'organization':                  dict(IndexFieldType='literal-array', LiteralArrayOptions={'FacetEnabled': True}),
+    'organization':                  dict(IndexFieldType='literal-array', LiteralArrayOptions={'ReturnEnabled': True}),
     'position':                      dict(IndexFieldType='literal-array'),
     'experience_description':        dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'skill_description':             dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
@@ -715,7 +715,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     if not count_only:
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
-                          "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
+                          "position:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
                           "military_branch:{size:50},military_highest_grade:{size:50}," \
                           "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
@@ -807,7 +807,6 @@ def get_faceting_information(facets):
     facet_status = facets.get('status_id').get('buckets')  # db candidate_status
     facet_skills = facets.get('skill_description').get('buckets')  # skills
     facet_position = facets.get('position').get('buckets')  # position = job_title
-    facet_organization = facets.get('organization').get('buckets')
     facet_university = facets.get('school_name').get('buckets')  # university = school_name
     facet_degree_type = facets.get('degree_type').get('buckets')  # degree = degree_type
     facet_major = facets.get('concentration_type').get('buckets')  # major = concentration_type
@@ -835,9 +834,6 @@ def get_faceting_information(facets):
 
     if facet_position:
         search_facets_values['position'] = get_bucket_facet_value_count(facet_position)
-
-    if facet_organization:
-        search_facets_values['organization'] = get_bucket_facet_value_count(facet_organization)
 
     if facet_candidate_engagement_score:
         search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(
