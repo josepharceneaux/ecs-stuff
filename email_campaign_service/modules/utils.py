@@ -38,7 +38,10 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
-class AWS_SNS_TERMS():
+class AWS_SNS_TERMS(object):
+    """
+    This class contains constants related to Amazon Simple Notification Service (SNS) terminologies.
+    """
     HEADER_KEY = 'X_AMZ_SNS_MESSAGE_TYPE'
     SUBSCRIPTION = 'SubscriptionConfirmation'
     NOTIFICATION = 'Notification'

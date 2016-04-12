@@ -311,6 +311,7 @@ class CandidateEmail(db.Model):
         """
         This method takes an email address and returns True if email is bounced (invalid email address).
         :param email_address: email address
+        :type email_address: str
         :return: True | False
         """
         assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
@@ -326,7 +327,7 @@ class CandidateEmail(db.Model):
         assert isinstance(emails, list) and emails, 'emails should be a non-empty list of email addresses'
         assert all([email for email in emails]), 'all email addresses should have non-empty value.'
         query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
-        query.update(dict(is_bounced=1), synchronize_session=False)
+        query.update(dict(is_bounced=True), synchronize_session=False)
         db.session.commit()
 
 

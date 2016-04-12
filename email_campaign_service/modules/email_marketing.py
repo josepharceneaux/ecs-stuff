@@ -533,8 +533,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                     email_format='html' if campaign.body_html else 'text')
     except Exception as e:
         # Mark email as bounced
-        _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
-                            email_campaign_blast_id, e)
+        _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+                                    email_campaign_blast_id, e)
         return False
     # Save SES message ID & request ID
     logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
@@ -674,22 +674,15 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
-def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
-                        email_campaign_blast_id, exception):
+def _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+                                email_campaign_blast_id, exception):
     """ If failed to send email; Mark email bounced.
     """
     # If failed to send email, still try to get request id from XML response.
     # Unfortunately XML response is malformed so must manually parse out request id
     request_id_search = re.search('<RequestId>(.*)</RequestId>', exception.__str__(), re.IGNORECASE)
     request_id = request_id_search.group(1) if request_id_search else None
-    # email_campaign_send = EmailCampaignSend.query.get(email_campaign_send_id)
-    email_campaign_send.is_ses_bounce = 1
     email_campaign_send.ses_request_id = request_id
-    db.session.commit()
-    # Update blast
-    blast_params['bounces'] += 1
-    email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
-    email_campaign_blast.bounces = blast_params['bounces']
     db.session.commit()
     # Send failure message to email marketing admin, just to notify for verification
     logger.exception("Failed to send marketing email to candidate_id=%s, to_addresses=%s"
@@ -830,15 +823,19 @@ def handle_email_bounce(request, message):
     no further emails will be sent to this email address.
     It also updates email campaign bounces in respective blast.
     :param request: http request
+    :type request: flask.request
     :param message: JSON bounce message body
+    :type message: dict
     """
+    assert request, 'first param should be request object'
+    assert isinstance(message, dict) and message, "message param should be a valid dict"
     logger.info('Bounce Detected: %s' % message)
     message_id = message['mail']['messageId']
     bounce = message['bounce']
     emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
     send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
     if not send_obj:
-        logger.error('Unable to find email campaign for this email bounce: %s' % request.data)
+        logger.error('Unable to find email campaign send for this email bounce: %s' % request.data)
         return None
     send_obj.update(is_ses_bounce=True)
     blast = send_obj.blast

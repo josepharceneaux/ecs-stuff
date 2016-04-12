@@ -192,6 +192,7 @@ class EmailCampaignSend(db.Model):
         """
         Get send email object from given SES message id.
         :param message_id: Simple Email Service (SES) unique message id
+        :type message_id: str
         :return: EmailCampaignSend object
         """
         assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'

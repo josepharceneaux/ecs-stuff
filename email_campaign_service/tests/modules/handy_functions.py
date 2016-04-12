@@ -18,7 +18,8 @@ from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion, Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend
+from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
                                                                  define_and_send_request)
@@ -475,3 +476,31 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject, ca
             'frequency_id': Frequency.ONCE,
             'list_ids': [smartlist_id]
             }
+
+
+def send_email_using_amazon_ses(campaign, email, candidate_id, blast_id):
+    """
+    This function will create a campaign send object and then it will send the email to given email address.
+    :param campaign: EmailCampaign object
+    :param email: CandidateEmail object
+    :param candidate_id: candidate unique id
+    :param blast_id: campaign blast id
+    """
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
+                                            candidate_id=candidate_id,
+                                            sent_datetime=datetime.datetime.now(),
+                                            blast_id=blast_id)
+    EmailCampaignSend.save(email_campaign_send)
+    email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
+                                # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
+                                subject=fake.sentence(),
+                                html_body="<html><body>Email campaign test</body></html>",
+                                text_body=fake.paragraph(),
+                                to_addresses=email.address,
+                                reply_address=campaign.reply_to.strip(),
+                                body=None,
+                                email_format='html' if campaign.body_html else 'text')
+    request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
+    message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
+    email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
+    db.session.commit()

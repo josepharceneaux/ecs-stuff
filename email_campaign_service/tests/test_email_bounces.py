@@ -9,13 +9,12 @@ import time
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.utils.amazon_ses import send_email
 
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate
+from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate, send_email_using_amazon_ses
 
 
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
@@ -40,7 +39,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         email.update(address=invalid_email)
         db.session.commit()
-        send_email_campaign(campaign, email, candidate_ids[0], email_campaign_blast.id)
+        send_email_using_amazon_ses(campaign, email, candidate_ids[0], email_campaign_blast.id)
         # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
         time.sleep(30)
         db.session.commit()
@@ -90,7 +89,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
 
         for index in range(count):
             email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
-            send_email_campaign(campaign, email, candidate_ids[index], email_campaign_blast.id)
+            send_email_using_amazon_ses(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
         # TODO: Add polling when Basit's  code for polling is in develop
         time.sleep(30)
@@ -137,30 +136,6 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         blast_sends = campaign_blast.blast_sends.all()
         assert len(blast_sends) == 1
         assert blast_sends[0].is_ses_bounce is False
-
-
-def send_email_campaign(campaign, email, candidate_id, blast_id):
-    """
-    This function will create a campaign send object and then it will send the email to given email address.
-    """
-    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
-                                            candidate_id=candidate_id,
-                                            sent_datetime=datetime.now(),
-                                            blast_id=blast_id)
-    EmailCampaignSend.save(email_campaign_send)
-    email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
-                                # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
-                                subject=fake.sentence(),
-                                html_body="<html><body>Email campaign test</body></html>",
-                                text_body=fake.paragraph(),
-                                to_addresses=email.address,
-                                reply_address=campaign.reply_to.strip(),
-                                body=None,
-                                email_format='html' if campaign.body_html else 'text')
-    request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
-    message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
-    email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
-    db.session.commit()
 
 
 def create_campaign_data(access_token, campaign_id, talent_pipeline, candidate_count=1):

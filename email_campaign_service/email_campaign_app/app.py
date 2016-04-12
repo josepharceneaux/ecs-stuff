@@ -25,12 +25,12 @@ app.register_blueprint(template_blueprint)
 
 
 @app.route('/amazon_sns_endpoint', methods=['POST'])
-def ses_bounces():
+def amazon_sns_endpoint():
     """
     This endpoint handles email bounces and complaints using Amazon Simple Email Service (SES)
      and Simple Notification Service (SNS).
 
-     To get email bounces and complaints callback hits, we have to setup two SNS topics ,
+     To get email bounces and complaints callback hits, we have to setup two SNS topics,
      one for email bounces `email_bounces` and other one for email complains `email_complaints`.
      We have subscribed this HTTP endpoint (/amazon_sns_endpoint) for any notifications on `email_bounces` topic.
      When an email is bounced or someone complains about email, SES sends a JSON message with email
