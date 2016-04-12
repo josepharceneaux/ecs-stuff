@@ -39,8 +39,10 @@ def ses_bounces():
 
      When a bounce occurs, we mark that email address as bounced and no further emails will be sent to this
      email address.
+
+     Here is a wiki article explaining how to setup this.
+     https://github.com/gettalent/talent-flask-services/wiki/Email-Bounces
     """
-    # TODO--Make a wiki article and point that here in the comment
     data = json.loads(request.data)
 
     # SNS first sends a confirmation request to this endpoint, we then confirm our subscription by sending a
