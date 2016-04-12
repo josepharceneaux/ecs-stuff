@@ -20,7 +20,6 @@ from email_campaign_service.common.models.misc import (Activity,
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.error_handling import (ResourceNotFound,
-                                                          InternalServerError,
                                                           UnprocessableEntity)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient)
@@ -33,8 +32,8 @@ from email_campaign_service.modules.email_marketing import create_email_campaign
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     create_smartlist_from_api
-from email_campaign_service.common.utils.candidate_service_calls import \
-    create_candidates_from_candidate_api, assert_candidate_upload
+from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
+    create_candidates_from_candidate_api
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
@@ -97,10 +96,6 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
                                                          return_candidate_ids_only=True)
     if assert_candidates:
         time.sleep(10)
-        # assert get_polled_result(assert_candidate_upload, [{'candidate_ids': candidate_ids},
-        #                                                    access_token],
-        #                          abort_after=abort_after, default_result=False), 'Candidates not found on cloud.'
-        # logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids))
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}

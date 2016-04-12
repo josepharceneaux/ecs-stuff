@@ -11,7 +11,6 @@ from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
-from candidate_pool_service.common.utils.candidate_service_calls import assert_candidate_upload
 
 __author__ = 'jitesh'
 
@@ -45,11 +44,6 @@ class TestSmartlistResource(object):
             add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                                DomainRole.Roles.CAN_GET_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
-            # assert get_polled_result(assert_candidate_upload, [{'candidate_ids': candidate_ids},
-            #                                                    access_token_first],
-            #                          abort_after=abort_after, default_result=False),\
-            #     'Candidates not found on cloud.'
-            # logger.info('%s candidate(s) uploaded on cloud.' % len(candidate_ids)
             time.sleep(10)
             data = {'name': smartlist_name,
                     'candidate_ids': candidate_ids,

@@ -15,8 +15,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from candidate_service.common.utils.candidate_service_calls import assert_candidate_upload
-from candidate_service.common.utils.handy_functions import get_polled_result
 from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
@@ -42,9 +40,6 @@ class TestClientEmailCampaign(object):
         print response_info(create_candidate_response)
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
         time.sleep(10)
-        # assert get_polled_result(assert_candidate_upload, [{'candidate_ids':  [candidate_id]},
-        #                                                    access_token_first],
-        #                          default_result=False), 'Candidate not found on cloud.'
 
         # Get Candidate via ID
         get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id,

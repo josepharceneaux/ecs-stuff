@@ -4,8 +4,8 @@ from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.models.candidate import Candidate
 from candidate_pool_service.common.error_handling import InternalServerError
 from candidate_pool_service.common.models.smartlist import SmartlistCandidate, Smartlist
-from candidate_pool_service.common.utils.candidate_service_calls import update_candidates_on_cloudsearch
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
+from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
 __author__ = 'jitesh'
 

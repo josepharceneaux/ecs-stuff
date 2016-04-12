@@ -37,12 +37,12 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.handy_functions import (http_request,
-                                                                 JSON_CONTENT_TYPE_HEADER, get_polled_result)
+                                                                 JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
-from email_campaign_service.common.utils.candidate_service_calls import \
+from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
