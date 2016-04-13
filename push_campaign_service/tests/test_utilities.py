@@ -97,7 +97,7 @@ def generate_campaign_data():
     return data
 
 
-def generate_campaign_schedule_data():
+def generate_campaign_schedule_data(frequency_id=1):
     """
     This method generates data (dict) for scheduling a campaign.
     This data contains start_date, end_datetime and frequency id
@@ -107,7 +107,7 @@ def generate_campaign_schedule_data():
     start = datetime.utcnow() + timedelta(seconds=20)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
-        "frequency_id": 2,
+        "frequency_id": frequency_id,
         "start_datetime": DatetimeUtils.to_utc_str(start),
         "end_datetime": DatetimeUtils.to_utc_str(end)
     }

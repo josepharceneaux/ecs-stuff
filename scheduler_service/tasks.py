@@ -18,9 +18,14 @@ For Scheduler Service, celery flower is =>
 # Std imports
 import json
 
+from werkzeug.contrib.cache import SimpleCache
+from hashlib import md5
 # Application imports
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service import celery_app as celery, flask_app as app, TalentConfigKeys, SchedulerUtils
+
+cache = SimpleCache()
+LOCK_EXPIRE = 30  # Lock expires in 30 seconds
 
 
 @celery.task(name="send_request", queue=SchedulerUtils.QUEUE)
@@ -54,10 +59,29 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
 
         # Send request to URL with job post data
         logger.info("Sending post request to %s" % url)
-        response = http_request(method_type=request_method, url=url, data=post_data, headers=headers)
+        lock_id = md5(access_token + url).hexdigest()
+        # cache.add fails if the key already exists
+        # acquire_lock = lambda: cache.set(lock_id, 'true', LOCK_EXPIRE)
 
-        try:
-            return response.text
-        except Exception as e:
-            # This exception will be caught by flower
-            return {'message': e.message, 'status_code': response.status_code}
+        def acquire_lock(id_):
+            value = cache.get(id_)
+            if value:
+                return False
+            return cache.set(lock_id, 'true', LOCK_EXPIRE)
+
+        def release_lock(id_):
+            cache.delete(id_)
+
+        if acquire_lock(lock_id):
+            try:
+                response = http_request(method_type=request_method, url=url, data=post_data, headers=headers)
+            except Exception as e:
+                release_lock(lock_id)
+                raise
+            else:
+                release_lock(lock_id)
+                try:
+                    return response.text
+                except Exception as e:
+                    # This exception will be caught by flower
+                    return {'message': e.message, 'status_code': response.status_code}

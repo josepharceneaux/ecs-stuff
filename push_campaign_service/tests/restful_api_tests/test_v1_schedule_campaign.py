@@ -49,6 +49,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
 from push_campaign_service.common.utils.test_utils import delete_scheduler_task
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
+from push_campaign_service.common.models.misc import Frequency
 
 URL = PushCampaignApiUrl.SCHEDULE
 
@@ -87,12 +88,12 @@ class TestScheduleCampaignUsingPOST(object):
     def test_schedule_campaign_with_missing_fields_in_schedule_data(self, token_first, campaign_in_db,
                                                            smartlist_first):
         # Test missing start_datetime field which is mandatory to schedule a campaign
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
         schedule_campaign(campaign_in_db['id'], data, token_first,
                           expected_status=(HttpStatus.BAD_REQUEST,))
 
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['end_datetime']
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
                                      expected_status=(HttpStatus.BAD_REQUEST,))
@@ -101,13 +102,13 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_compaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                            smartlist_first):
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         schedule_campaign(campaign_in_db['id'], data, token_first,
                           expected_status=(HttpStatus.BAD_REQUEST,))
 
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         schedule_campaign(campaign_in_db['id'], data, token_first,
@@ -131,13 +132,11 @@ class TestScheduleCampaignUsingPOST(object):
         # One send expected since only one candidate is associated with campaign
         assert blast['sends'] == 1
 
-        # Now remove the task from scheduler
-        delete_scheduler_task(task_id, token_first, expected_status=(HttpStatus.OK,))
-
     def test_schedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
 
         data = generate_campaign_schedule_data()
+        time.sleep(30)
         response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
                                      expected_status=(HttpStatus.OK,))
         assert 'task_id' in response
@@ -152,9 +151,6 @@ class TestScheduleCampaignUsingPOST(object):
         blast = blasts[0]
         # One send expected since only one candidate is associated with campaign
         assert blast['sends'] == 1
-
-        # Now remove the task from scheduler
-        delete_scheduler_task(task_id, token_same_domain, expected_status=(HttpStatus.OK,))
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
@@ -220,14 +216,14 @@ class TestRescheduleCampaignUsingPUT(object):
                                                            smartlist_first, schedule_a_campaign):
 
         # Test missing start_datetime field which is mandatory to schedule a campaign
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
                                        expected_status=(HttpStatus.BAD_REQUEST,))
         error = response['error']
         assert 'start_datetime' in error['message']
 
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['end_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
                                        expected_status=(HttpStatus.BAD_REQUEST,))
@@ -236,13 +232,13 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_campaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                             smartlist_first, schedule_a_campaign):
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         reschedule_campaign(campaign_in_db['id'], data, token_first,
                             expected_status=(HttpStatus.BAD_REQUEST,))
 
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         reschedule_campaign(campaign_in_db['id'], data, token_first,
@@ -250,7 +246,7 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, schedule_a_campaign, candidate_device_first):
 
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
                                        expected_status=(HttpStatus.OK,))
         assert 'task_id' in response
@@ -258,15 +254,12 @@ class TestRescheduleCampaignUsingPUT(object):
         task_id = response['task_id']
         assert task_id
         time.sleep(3 * SLEEP_TIME)
-        response = get_blasts(campaign_in_db['id'], token_first,expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
         blasts = response['blasts']
         assert len(blasts) > 0
         blast = blasts[0]
         # One send expected since only one candidate is associated with campaign
         assert blast['sends'] > 0
-
-        # Now remove the task from scheduler
-        delete_scheduler_task(task_id, token_first, expected_status=(HttpStatus.OK,))
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):
