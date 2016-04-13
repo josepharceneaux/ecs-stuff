@@ -15,10 +15,10 @@ from celery import chord
 from sqlalchemy import and_, desc
 
 # Service Specific
+from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   do_mergetag_replacements,
-                                                  get_candidates_of_smartlist,
                                                   create_email_campaign_url_conversions)
 
 # Common Utils
@@ -28,6 +28,7 @@ from email_campaign_service.common.models.user import Domain
 from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -43,9 +44,9 @@ from email_campaign_service.common.models.candidate import (Candidate, Candidate
                                                             CandidateSubscriptionPreference, EmailLabel)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
-from email_campaign_service.common.utils.candidate_service_calls import \
+from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
-from email_campaign_service.modules.validations import get_or_set_valid_value
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -101,7 +102,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
                                      dict(id=email_campaign.id,
                                           name=name))
     except Exception:
-        logger.exception('Error occurred while creating activity for'
+        logger.exception('Error occurred while creating activity for '
                          'email-campaign creation. User(id:%s)' % user_id)
     # create email_campaign_smartlist record
     create_email_campaign_smartlists(smartlist_ids=list_ids,
@@ -330,17 +331,16 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     for list_id in list_ids:
         # Get candidates present in smartlist
         try:
-            smartlist_candidate_ids = get_candidates_of_smartlist(list_id, campaign,
-                                                                  candidate_ids_only=True)
+            smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)
+            # gather all candidates from various smartlists
             all_candidate_ids.extend(smartlist_candidate_ids)
         except Exception as error:
             logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
-                             ' User(id:%s). Reason: %s'
-                             % (list_id, campaign.user.id, error.message))
-            # gather all candidates from various smartlists
+                             'EmailCampaign(id:%s) User(id:%s). Reason: %s'
+                             % (list_id, campaign.id, campaign.user.id, error.message))
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     if not all_candidate_ids:
-        raise InvalidUsage('No candidates found for smartlist_ids %s.' % list_ids,
+        raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
                            error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
     if campaign.is_subscription:
         # If the campaign is a subscription campaign,
@@ -518,7 +518,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
             to_addresses = user.email
         else:
-            to_addresses = ['gettalentmailtest@gmail.com']
+            to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
     try:
         email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
                                     # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)

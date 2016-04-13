@@ -15,16 +15,12 @@ from email_campaign_service.email_campaign_app import logger
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.utils.api_utils import DEFAULT_PAGE
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
-                                                                 http_request)
-from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
+from email_campaign_service.common.routes import (CandidateApiUrl,
                                                   EmailCampaignUrl)
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
@@ -47,58 +43,6 @@ class AWS_SNS_TERMS(object):
     NOTIFICATION = 'Notification'
     BOUNCE = 'Bounce'
     COMPLAINT = 'Complaint'
-
-
-def get_candidates_of_smartlist(list_id, campaign, candidate_ids_only=False):
-    """
-    Calls smartlist API and retrieves the candidates of a smart or dumb list.
-    :param list_id: smartlist id.
-    :param campaign: email campaign object
-    :param candidate_ids_only: Whether or not to get only ids of candidates
-    :return:
-    """
-    per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
-    params = {'fields': 'id'} if candidate_ids_only else {}
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
-                                                              params, campaign)
-    response_body = response.json()
-    candidates = response_body['candidates']
-    no_of_pages = response_body['max_pages']
-    if int(no_of_pages) > DEFAULT_PAGE:
-        for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
-            next_page = current_page + DEFAULT_PAGE
-            response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
-                                                                      next_page, params, campaign)
-            response_body = response.json()
-            candidates.extend(response_body['candidates'])
-    if candidate_ids_only:
-        return [long(candidate['id']) for candidate in candidates]
-    return candidates
-
-
-def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, campaign):
-    """
-    Method to get candidates from smartlist based on smartlist id and pagination params.
-    :param list_id: Id of smartlist.
-    :param per_page: Number of results per page
-    :param page: Number of page to fetch in response
-    :param params: Specific params to include in request. e.g. candidates_ids_only etc
-    :param campaign: Email Campaign object
-    :return:
-    """
-    if not list_id:
-        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Smartlist id not provided"
-                                  "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
-    if not per_page or not page:
-        raise InternalServerError("get_candidates_from_smartlist_with_page_params: Pagination params not provided"
-                                  "for email-campaign (id:%d) & user(id:%d)" % (campaign.id, campaign.user_id))
-    if not params:
-        params = {}
-    params.update({'page': page}) if page else None
-    params.update({'limit': per_page}) if per_page else None
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
-                            params=params, headers=create_oauth_headers())
-    return response
 
 
 def do_mergetag_replacements(texts, candidate=None):

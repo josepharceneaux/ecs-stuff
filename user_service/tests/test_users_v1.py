@@ -23,6 +23,7 @@ def test_user_service_get(access_token_first, user_first, user_second):
     response, status_code = user_api(access_token_first, user_first.id)
     assert status_code == 200
     assert response['user'].get('id') == user_first.id
+    assert response['user'].get('locale') == 'en-US'
 
     # Logged-in user trying to get all users of a domain
     response, status_code = user_api(access_token_first)
@@ -128,6 +129,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
         'last_name': gen_salt(6),
         'phone': '+1 226-581-1027',
         'domain_id': user_first.domain_id,
+        'locale': 'es-PS'
     }
     second_user = {
         'first_name': gen_salt(6),
@@ -170,6 +172,12 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
 
     data['users'][1]['email'] = '%s.sample@example.com' % gen_salt(15)
 
+    # Logged-in user trying to add  new users but with an invalid Locale value
+    response, status_code = user_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
+
+    data['users'][0]['locale'] = 'en-GB'
+
     # Logged-in user trying to add new users into different domain
     add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_second, data=data, action='POST')
@@ -185,6 +193,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     assert first_user_object.email == data['users'][0]['email']
     assert first_user_object.first_name == data['users'][0]['first_name']
     assert first_user_object.last_name == data['users'][0]['last_name']
+    assert first_user_object.locale == data['users'][0]['locale']
 
     assert second_user_object.email == data['users'][1]['email']
     assert second_user_object.first_name == data['users'][1]['first_name']

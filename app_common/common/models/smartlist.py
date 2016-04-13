@@ -11,7 +11,7 @@ class Smartlist(db.Model):
     search_params = db.Column('SearchParams', db.String(1023))
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     talent_pipeline_id = db.Column('talentPipelineId', db.Integer, db.ForeignKey('talent_pipeline.id'))
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow())
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     is_hidden = db.Column('isHidden', db.Boolean, default=False)
 
     # Relationships

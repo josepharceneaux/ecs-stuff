@@ -4,9 +4,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This module contains pyTests for endpoint /v1/email-campaigns/:id/blasts of
     email campaign API.
 """
-# Standard Imports
-import time
-
 # Third Party
 import requests
 
@@ -15,7 +12,7 @@ from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import send_campaign
+from email_campaign_service.tests.modules.handy_functions import send_campaign, assert_blast_sends
 
 
 class TestEmailCampaignBlasts(object):
@@ -51,6 +48,8 @@ class TestEmailCampaignBlasts(object):
         We then assert that blast has been created by making HTTP
         GET call on endpoint /v1/email-campaigns/:id/blasts
         """
+        expected_count = 2
+        assert_blast_sends(sent_campaign, expected_count)
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
@@ -58,7 +57,7 @@ class TestEmailCampaignBlasts(object):
         db.session.commit()
         assert json_resp['id'] == sent_campaign.blasts[0].id
         assert json_resp['campaign_id'] == sent_campaign.id
-        assert json_resp['sends'] == 2
+        assert json_resp['sends'] == expected_count
 
     def test_get_blasts_for_primary_candidate_emails(self, access_token_first,
                                                      sent_campaign_multiple_email):
@@ -67,6 +66,8 @@ class TestEmailCampaignBlasts(object):
         But email-campaign should be sent to only primary-email-addresses of candidates.
         If primary email is not found then email-campaign will be sent to latest emails added for candidates.
         """
+        expected_count = 2
+        assert_blast_sends(sent_campaign_multiple_email, expected_count)
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -74,13 +75,15 @@ class TestEmailCampaignBlasts(object):
                                                             check_count=False)
         json_resp = response.json()[self.ENTITY]
         assert json_resp[0]['campaign_id'] == int(sent_campaign_multiple_email.id)
-        assert json_resp[0]['sends'] == 2
+        assert json_resp[0]['sends'] == expected_count
 
     def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/blasts
         """
         # Test GET blasts of email campaign with 1 result per_page
+        expected_sends_count = 2
+        assert_blast_sends(sent_campaign, expected_sends_count)
         url = self.URL % sent_campaign.id
         response = requests.get(url + '?per_page=1',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -91,12 +94,13 @@ class TestEmailCampaignBlasts(object):
         db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[0].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
-        assert received_blast_obj['sends'] == 2
+        assert received_blast_obj['sends'] == expected_sends_count
 
         # sending campaign 10 times to create 10 blast objects
         for _ in xrange(1, 10):
             send_campaign(sent_campaign, access_token_first)
 
+        assert_blast_sends(sent_campaign, expected_sends_count, blast_index=3)
         #  Test GET blasts of email campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -107,8 +111,10 @@ class TestEmailCampaignBlasts(object):
         db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[3].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
-        assert received_blast_obj['sends'] == 2
+        assert received_blast_obj['sends'] == expected_sends_count
 
+
+        assert_blast_sends(sent_campaign, expected_sends_count, blast_index=4)
         #  Test GET blasts of email campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -120,8 +126,9 @@ class TestEmailCampaignBlasts(object):
         db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[4].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
-        assert received_blast_obj['sends'] == 2
+        assert received_blast_obj['sends'] == expected_sends_count
 
+        assert_blast_sends(sent_campaign, expected_sends_count, blast_index=9)
         #  Test GET blasts of email campaign with 4 results per_page using page = 3
         response = requests.get(url + '?per_page=4&page=3',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -132,7 +139,7 @@ class TestEmailCampaignBlasts(object):
         db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[9].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
-        assert received_blast_obj['sends'] == 2
+        assert received_blast_obj['sends'] == expected_sends_count
 
         # Test GET blasts of email campaign with page = 4. No blast object should be received
         # in response as we have sent campaign only 10 times so far and we are using

@@ -10,6 +10,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   assign_roles,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign, send_campaign,
+                                                                  send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate)
 
 
@@ -107,15 +108,16 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
     """
 
     _emails = [
-               # Primary and work label
-               [{'label': 'work', 'address': 'work' + fake.safe_email()},
-               {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
-               # Work and home label
-               [{'label': 'work', 'address': 'work' + fake.safe_email()},
-               {'label': 'home', 'address': 'home' + fake.safe_email()}],
-               ]
+        # Primary and work label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
+        # Work and home label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'home', 'address': 'home' + fake.safe_email()}],
+    ]
 
-    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+    campaign = create_smartlist_with_given_email_candidate(access_token_first,
+                                                           campaign=email_campaign_of_user_first,
                                                            talent_pipeline=talent_pipeline,
                                                            emails=_emails,
                                                            count=2)
@@ -128,9 +130,9 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
 
 
 @pytest.fixture()
-def campaign_with_ten_candidates(request, email_campaign_of_user_first,
-                                 assign_roles_to_user_first,
-                                 access_token_first, talent_pipeline):
+def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
+                                        assign_roles_to_user_first,
+                                        access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
@@ -208,44 +210,37 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     This fixture sends the campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    if request.param == 'with_client':
-        campaign_with_valid_candidate.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 15
-    else:
-        sleep_time = 30
-
-    # send campaign
-    send_campaign(campaign_with_valid_candidate, access_token_first, sleep_time=sleep_time)
-
-    return campaign_with_valid_candidate
+    return send_campaign_helper(request, campaign_with_valid_candidate, access_token_first)
 
 
-@pytest.fixture()
-def sent_campaign_multiple_email(campaign_with_multiple_candidates_email,
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, access_token_other):
+    """
+    This fixture sends the campaign_in_other_domain 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    return send_campaign_helper(request, email_campaign_in_other_domain, access_token_other)
+
+
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
                                  access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
     email-campaign obj.
     """
-    # send campaign
-    send_campaign(campaign_with_multiple_candidates_email, access_token_first, sleep_time=30)
-    return campaign_with_multiple_candidates_email
+    return send_campaign_helper(request, campaign_with_multiple_candidates_email,
+                                access_token_first)
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_bulk(request, campaign_with_ten_candidates, access_token_first):
+def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent,
+                                    access_token_first):
     """
-    This fixture sends the campaign 1) with client_id and 2) without client id
+    This fixture sends the given campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    if request.param == 'with_client':
-        campaign_with_ten_candidates.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 5
-    else:
-        sleep_time = 15
-    # send campaign
-    send_campaign(campaign_with_ten_candidates, access_token_first, sleep_time=sleep_time)
-    return campaign_with_ten_candidates
+    return send_campaign_helper(request, campaign_to_ten_candidates_not_sent, access_token_first)
 
 
 @pytest.fixture()

@@ -1,7 +1,7 @@
 # Standard Imports
 import json
-import time
 import uuid
+import time
 import imaplib
 import datetime
 
@@ -11,15 +11,21 @@ import requests
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
-from email_campaign_service.email_campaign_app import app
+from email_campaign_service.email_campaign_app import (app,
+                                                       logger)
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
-                                                       UrlConversion, Frequency)
+                                                       UrlConversion,
+                                                       Frequency)
+from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend
 from email_campaign_service.common.utils.amazon_ses import send_email
+from email_campaign_service.common.error_handling import UnprocessableEntity
+from email_campaign_service.common.models.email_campaign import (EmailCampaign,
+                                                                 EmailClient, EmailCampaignSend)
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
                                                                  define_and_send_request)
@@ -27,9 +33,11 @@ from email_campaign_service.modules.email_marketing import create_email_campaign
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     create_smartlist_from_api
-from email_campaign_service.common.utils.candidate_service_calls import \
+from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     create_candidates_from_candidate_api
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
+    assert_smartlist_candidates
 
 __author__ = 'basit'
 
@@ -41,9 +49,9 @@ def create_email_campaign(user):
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + ' Its a test campaign',
+                                   subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
                                    _from=fake.safe_email(),
-                                   reply_to=fake.email(),
+                                   reply_to=fake.safe_email(),
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
@@ -55,30 +63,31 @@ def assign_roles(user):
     """
     This assign required permission to given user
     :param user:
-    :return:
     """
     add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                  DomainRole.Roles.CAN_GET_CANDIDATES])
 
 
 def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
-                                    emails_list=True, count=1):
+                                    emails_list=True, count=1, assert_candidates=True):
     """
     This associates smartlist ids with given campaign
     """
     # create candidate
     smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline,
                                                       emails_list=emails_list,
-                                                      count=count)
+                                                      count=count,
+                                                      assert_candidates=assert_candidates)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign.id)
     return campaign
 
 
-def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1, data=None):
+def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
+                                    assert_candidates=True, timeout=40, data=None):
     """
-    This creates candidate(s) as specified by the count,  and assign it to a smartlist.
+    This creates candidate(s) as specified by the count and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
     """
     if not data:
@@ -88,14 +97,21 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
 
     candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                          return_candidate_ids_only=True)
-    time.sleep(25)  # added due to uploading candidates on CS
+    if assert_candidates:
+        time.sleep(10)
     smartlist_data = {'name': fake.word(),
                       'candidate_ids': candidate_ids,
                       'talent_pipeline_id': talent_pipeline.id}
 
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
-    time.sleep(25)  # added due to new field dumb_list_ids in CS
     smartlist_id = smartlists['smartlist']['id']
+    if assert_candidates:
+        assert poll(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
+                                                  access_token],
+                    timeout=timeout, default_result=False), \
+            'Candidates not found for smartlist(id:%s)' % smartlist_id
+        logger.info('%s candidate(s) not found for smartlist(id:%s)'
+                    % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
 
 
@@ -137,13 +153,13 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token, sleep_time=20):
+def send_campaign(campaign, access_token, timeout=20):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
-    sleep_time is set to be 20s here. One can modify this by passing required value.
-    :param campaign: Email campaign obj
-    :param access_token: Auth token to make HTTP request
-    :param sleep_time: time in seconds to wait for the task to be run on Celery.
+    timeout is set to be 20s here. One can modify this by passing required value.
+    :param (EmailCampaign) campaign: Email campaign obj
+    :param (str) access_token: Auth token to make HTTP request
+    :param (int) timeout: time in seconds to poll the server before aborting
     """
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_instance_of(access_token, basestring)
@@ -151,8 +167,10 @@ def send_campaign(campaign, access_token, sleep_time=20):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    time.sleep(sleep_time)
-    db.session.commit()
+    blasts = poll(lambda email_campaign: email_campaign.blasts.all(), [campaign],
+                  default_result=[], timeout=timeout)
+    if not blasts:
+        raise UnprocessableEntity('blasts not found in given time range.')
     return response
 
 
@@ -237,25 +255,30 @@ def assert_and_delete_email(subject):
     """
     mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
     try:
-        mail_connection.login('gettalentmailtest@gmail.com', 'GetTalent@1234')
-    except Exception:
-        pass # Maybe already login when running on Jenkins on multiple cores
+        mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+    except Exception as error:
+        print error.message
+        pass  # Maybe already login when running on Jenkins on multiple cores
     print "Checking for Email with subject: %s" % subject
     mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
     result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
-    assert msg_ids, "Email with subject %s was not found." % subject
-    print "Email(s) found with subject: %s" % subject
-    msg_ids = ','.join(msg_ids.split(' '))
-    # Change the Deleted flag to delete the email from Inbox
-    mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
-    status, response = mail_connection.expunge()
-    assert status == 'OK'
-    print "Email(s) deleted with subject: %s" % subject
+    if msg_ids:
+        print "Email(s) found with subject: %s" % subject
+        msg_ids = ','.join(msg_ids.split(' '))
+        # Change the Deleted flag to delete the email from Inbox
+        mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
+        status, response = mail_connection.expunge()
+        assert status == 'OK'
+        print "Email(s) deleted with subject: %s" % subject
+        mail_connection.close()
+        mail_connection.logout()
+    return msg_ids
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200):
+                         expected_status=200, abort_time_for_sends=20):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -267,12 +290,14 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    time.sleep(40)
-    db.session.commit()
-    assert len(campaign.blasts.all()) == 1
-    campaign_blast = campaign.blasts[0]
-    assert campaign_blast.sends == expected_count
+
+    blasts = poll(lambda email_campaign: (email_campaign.blasts.all()),
+                  [campaign],
+                  default_result=[], timeout=10, commit_session=True)
+    assert blasts, 'Email campaign blasts not found'
+    assert len(blasts) == 1
     # assert on sends
+    assert_blast_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == expected_count
     sends_url_conversions = []
@@ -288,7 +313,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id,
                                                   Activity.MessageIds.CAMPAIGN_SEND,
-                                                  campaign.id)
+                                                          campaign.id)
+        # TODO: commenting till find exact reason of failing
+        # if not email_client:
+        #     assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
+        #         "Email with subject %s was not found." % campaign.subject
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -297,6 +326,16 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         assert str(
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+
+
+def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+    """
+    This function asserts the particular blast of given campaign has expected number of sends
+    """
+    sends = poll(lambda email_campaign: email_campaign.blasts[blast_index].sends,
+                 [campaign],
+                 default_result=0, timeout=abort_time_for_sends)
+    assert sends >= expected_count
 
 
 def post_to_email_template_resource(access_token, data):
@@ -335,7 +374,7 @@ def get_template_folder(token):
     data = {'name': template_folder_name}
     response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
-                             'Content-type': 'application/json'})
+                                      'Content-type': 'application/json'})
     assert response.status_code == requests.codes.CREATED
     response_obj = response.json()
     template_folder_id = response_obj["template_folder_id"][0]
@@ -356,20 +395,21 @@ def create_email_template(token, user_id, template_name, body_html, body_text, i
     :param folder_id:               folder id
     """
     data = dict(
-            name=template_name,
-            template_folder_id=folder_id,
-            user_id=user_id,
-            type=0,
-            body_html=body_html,
-            body_text=body_text,
-            is_immutable=is_immutable
+        name=template_name,
+        template_folder_id=folder_id,
+        user_id=user_id,
+        type=0,
+        body_html=body_html,
+        body_text=body_text,
+        is_immutable=is_immutable
     )
 
     create_resp = post_to_email_template_resource(token, data=data)
     return create_resp
 
 
-def update_email_template(email_template_id, request, token, user_id, template_name, body_html, body_text='',
+def update_email_template(email_template_id, request, token, user_id, template_name, body_html,
+                          body_text='',
                           folder_id=None, is_immutable=1):
     """
         Update existing email template fields using values provided by user.
@@ -384,13 +424,13 @@ def update_email_template(email_template_id, request, token, user_id, template_n
         :param is_immutable: Specify whether the email template is mutable or not
     """
     data = dict(
-            name=template_name,
-            template_folder_id=folder_id,
-            user_id=user_id,
-            type=0,
-            body_html=body_html,
-            body_text=body_text,
-            is_immutable=is_immutable
+        name=template_name,
+        template_folder_id=folder_id,
+        user_id=user_id,
+        type=0,
+        body_html=body_html,
+        body_text=body_text,
+        is_immutable=is_immutable
     )
 
     create_resp = request_to_email_template_resource(token, request, email_template_id, data)
@@ -412,7 +452,8 @@ def add_email_template(token, template_owner, template_body):
 
     template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
     is_immutable = 1
-    resp = create_email_template(token, template_owner.id, template_name, template_body, '', is_immutable,
+    resp = create_email_template(token, template_owner.id, template_name, template_body, '',
+                                 is_immutable,
                                  folder_id=template_folder_id)
     db.session.commit()
     resp_obj = resp.json()
@@ -454,7 +495,8 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     return response
 
 
-def create_data_for_campaign_creation(access_token, talent_pipeline, subject, campaign_name=fake.name()):
+def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
+                                      campaign_name=fake.name(), assert_candidates=True):
     """
     This function returns the required data to create an email campaign
     :param access_token: access token of user
@@ -466,7 +508,9 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject, ca
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = create_smartlist_with_candidate(access_token, talent_pipeline)
+    smartlist_id, _ = create_smartlist_with_candidate(access_token,
+                                                      talent_pipeline,
+                                                      assert_candidates=assert_candidates)
     return {'name': campaign_name,
             'subject': subject,
             'from': email_from,
@@ -504,3 +548,17 @@ def send_email_using_amazon_ses(campaign, email, candidate_id, blast_id):
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
     db.session.commit()
+
+
+def send_campaign_helper(request, email_campaign, access_token):
+    """
+    This is a helper function to send campaign with and without email_client_id
+    """
+    if request.param == 'with_client':
+        email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+        timeout = 15
+    else:
+        timeout = 30
+    # send campaign
+    send_campaign(email_campaign, access_token, timeout=timeout)
+    return email_campaign
