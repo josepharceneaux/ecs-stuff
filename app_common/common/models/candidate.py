@@ -151,6 +151,14 @@ class PhoneLabel(db.Model):
                 return phone_label_row.id
         return 6
 
+    @classmethod
+    def get_description_from_id(cls, _id):
+        """
+        :type _id:  int|long
+        """
+        phone_label = cls.query.get(_id)
+        return phone_label.description if phone_label else None
+
 
 class CandidateSource(db.Model):
     __tablename__ = 'candidate_source'
@@ -255,6 +263,14 @@ class EmailLabel(db.Model):
             if email_label_row:
                 return email_label_row.id
         return 4
+
+    @classmethod
+    def get_description_from_id(cls, _id):
+        """
+        :type _id:  int|long
+        """
+        email_label = cls.query.get(_id)
+        return email_label.description if email_label else None
 
     @classmethod
     def get_primary_label_description(cls):
@@ -669,9 +685,12 @@ class CandidateReference(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     # Relationships
-    reference_emails = relationship('ReferenceEmail', backref='candidate_reference')
-    reference_phones = relationship('ReferencePhone', backref='candidate_reference')
-    reference_web_addresses = relationship('ReferenceWebAddress', backref='candidate_reference')
+    reference_email = relationship('ReferenceEmail', cascade='all, delete-orphan', passive_deletes=True)
+    reference_phone = relationship('ReferencePhone', cascade='all, delete-orphan', passive_deletes=True)
+    reference_web_addresses = relationship('ReferenceWebAddress', cascade='all, delete-orphan', passive_deletes=True)
+
+    # TODO: Below tables should be removed once all models codes & databases are synched
+    resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
 
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
@@ -680,7 +699,7 @@ class CandidateReference(db.Model):
 class ReferenceWebAddress(db.Model):
     __tablename__ = 'reference_web_address'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    candidate_reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.Id'))
+    reference_id = db.Column('ReferenceId', db.BigInteger, db.ForeignKey('candidate_reference.Id'))
     url = db.Column('Url', db.String(200))
     description = db.Column('Description', db.String(1000))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())

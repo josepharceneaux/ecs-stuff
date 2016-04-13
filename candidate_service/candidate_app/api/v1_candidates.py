@@ -71,7 +71,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages
+    add_languages, update_candidate_languages, ReferenceOperations
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -2215,17 +2215,7 @@ class CandidateReferencesResource(Resource):
         except ValidationError as e:
             raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
 
-        created_reference_ids = []
-        for reference in body_dict['candidate_references']:
-            position_title = reference['position_title'].strip() if reference.get('position_title') else None
-            candidate_reference = CandidateReference(resume_id=candidate_id, candidate_id=candidate_id,
-                                                     person_name=reference['name'].strip(),
-                                                     position_title=position_title,
-                                                     comments=reference['comments'].strip())
-            db.session.flush()
-            created_reference_ids.append(candidate_reference.id)
-
-        db.session.commit()
+        created_reference_ids = ReferenceOperations.create(candidate_id, body_dict['candidate_references'])
         return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
@@ -2243,11 +2233,7 @@ class CandidateReferencesResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        return {'candidate_references': [{'id': reference.id,
-                                          'name': reference.person_name,
-                                          'position_title': reference.postion_title,
-                                          'comments': reference.comments
-                                          } for reference in candidate.references]}
+        return {'candidate_references': ReferenceOperations.get(candidate)}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
@@ -2267,7 +2253,7 @@ class CandidateReferencesResource(Resource):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         if reference_id:  # Delete specified reference
-            candidate_reference = CandidateReference.get(reference_id)
+            candidate_reference = CandidateReference.get_by_id(reference_id)
             """
             :type candidate_reference: CandidateReference
             """
