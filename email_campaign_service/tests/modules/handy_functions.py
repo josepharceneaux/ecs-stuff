@@ -50,7 +50,7 @@ def create_email_campaign(user):
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
                                    _from=fake.safe_email(),
-                                   reply_to=fake.email(),
+                                   reply_to=fake.safe_email(),
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )

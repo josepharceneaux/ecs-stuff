@@ -528,6 +528,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                     email_format='html' if campaign.body_html else 'text')
     except Exception as e:
         # Mark email as bounced
+        logger.exception('Error occurred while sending email via Amazon SES. Details:%s' % e.message)
         _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
                             email_campaign_blast_id, e)
         return False
