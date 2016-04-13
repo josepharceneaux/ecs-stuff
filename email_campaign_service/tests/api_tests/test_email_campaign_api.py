@@ -30,8 +30,7 @@ from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaig
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  create_email_campaign_smartlists,
-                                                                  assert_and_delete_email)
+                                                                  create_email_campaign_smartlists)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
