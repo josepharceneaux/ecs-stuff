@@ -40,8 +40,8 @@ class User(db.Model):
     # name = db.Column(db.String(127))
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now)
+    updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.now)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -259,7 +259,7 @@ class JobOpening(db.Model):
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time)
 
     def __repr__(self):
         return "<JobOpening (title=' %r')>" % self.title
