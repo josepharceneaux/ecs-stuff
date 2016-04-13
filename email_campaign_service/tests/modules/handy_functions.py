@@ -21,8 +21,7 @@ from email_campaign_service.common.models.misc import (Activity,
 from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.error_handling import (ResourceNotFound,
-                                                          UnprocessableEntity)
+from email_campaign_service.common.error_handling import UnprocessableEntity
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -257,7 +256,8 @@ def assert_and_delete_email(subject):
     try:
         mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
                               app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    except Exception:
+    except Exception as error:
+        print error.message
         pass  # Maybe already login when running on Jenkins on multiple cores
     print "Checking for Email with subject: %s" % subject
     mail_connection.select("inbox")  # connect to inbox.
@@ -293,8 +293,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     blasts = poll(lambda email_campaign: (email_campaign.blasts.all()),
                   [campaign],
                   default_result=[], timeout=10, commit_session=True)
-    if not blasts:
-        raise ResourceNotFound('Email campaign blasts not found')
+    assert blasts, 'Email campaign blasts not found'
     assert len(blasts) == 1
     # assert on sends
     assert_blast_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
@@ -314,6 +313,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         CampaignsTestsHelpers.assert_for_activity(user.id,
                                                   Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
+        if not email_client:
+            assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
+                "Email with subject %s was not found." % campaign.subject
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -322,10 +324,6 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         assert str(
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
-
-    if not email_client:
-        assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
-            "Email with subject %s was not found." % campaign.subject
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
