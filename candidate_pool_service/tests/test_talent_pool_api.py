@@ -1,5 +1,4 @@
 from time import sleep
-from datetime import timedelta
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import *

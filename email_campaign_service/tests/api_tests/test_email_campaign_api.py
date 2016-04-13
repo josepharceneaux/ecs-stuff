@@ -14,7 +14,6 @@ In this module, we have tests for following endpoints
 
 # Packages
 import re
-import time
 import requests
 from datetime import datetime, timedelta
 
@@ -22,6 +21,7 @@ from datetime import datetime, timedelta
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
+from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
@@ -30,13 +30,14 @@ from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaig
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  create_email_campaign_smartlists)
+                                                                  create_email_campaign_smartlists,
+                                                                  assert_and_delete_email)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
-                                                                  assert_and_delete_email, assert_campaign_send,
+                                                                  assert_campaign_send,
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation)
 
@@ -78,7 +79,8 @@ class TestGetCampaigns(object):
                                             access_token_first,
                                             talent_pipeline):
         """
-        This is the test to GET the campaign by providing campaign_id & filters. It should get OK response
+        This is the test to GET the campaign by providing campaign_id & filters.
+        It should get OK response
         """
         fields = ['id', 'subject', 'body_html', 'is_hidden']
 
@@ -190,8 +192,8 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
-        time.sleep(30)
-        assert_and_delete_email(subject)
+        assert poll(assert_and_delete_email, [subject], timeout=60), \
+            "Email with subject %s was not found." % subject
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):
@@ -201,7 +203,7 @@ class TestCreateCampaign(object):
         """
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_with_client_id'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['email_client_id'] = EmailClient.get_id_by_name('Browser')
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
@@ -228,7 +230,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject, name)
+                                                          subject, name, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         resp_object = response.json()
         assert response.status_code == InvalidUsage.http_status_code()
@@ -258,7 +260,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_with_non_list_smartlist_ids'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
@@ -275,7 +277,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_with_invalid_smartlist_ids'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['list_ids'].extend(
             [fake.name(), None, {}])  # 'list_ids' can only have values of type int|long
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -294,7 +296,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_with_no_start_datetime'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['frequency_id'] = Frequency.DAILY
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == UnprocessableEntity.http_status_code()
@@ -309,7 +311,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_with_invalid_start_and_end_datetime'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow())
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(
@@ -327,7 +329,7 @@ class TestCreateCampaign(object):
         subject = \
             uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         campaign_data['email_client_id'] = CampaignsTestsHelpers.get_last_id(EmailClient) + 100
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
@@ -345,7 +347,7 @@ class TestCreateCampaign(object):
         """
         subject = uuid.uuid4().__str__()[0:8] + '-test_email_campaign_with_list_id_of_other_domain'
         campaign_data = create_data_for_campaign_creation(access_token_other, talent_pipeline_other,
-                                                          subject)
+                                                          subject, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
 
@@ -430,7 +432,6 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_and_delete_email(campaign.subject)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -459,7 +460,6 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 2)
-        assert_and_delete_email(campaign.subject)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -541,20 +541,17 @@ class TestSendCampaign(object):
         smartlist_id1, _ = create_smartlist_with_candidate(access_token_first,
                                                            talent_pipeline,
                                                            emails_list=True,
-                                                           count=20)
+                                                           count=20, timeout=60)
         smartlist_id2, _ = create_smartlist_with_candidate(access_token_first,
                                                            talent_pipeline,
                                                            emails_list=True,
-                                                           count=20)
+                                                           count=20, timeout=60)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)
-        time.sleep(25)  # for creating smartlist
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        time.sleep(40)  # for sending campaign
-        assert_campaign_send(response, campaign, user_first, 40)
-        assert_and_delete_email(campaign.subject)
+        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=40)
 
 
 # Test for healthcheck
