@@ -222,7 +222,7 @@ def create_five_users(request, domain_first, first_group, sample_client):
 
 
 @pytest.fixture()
-def schedule_ten_jobs_of_each_user(request, create_five_users):
+def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task):
     """
     Schedule 10 jobs of each users, So, there will be 50 jobs in total.
     :param request:

@@ -13,7 +13,6 @@ import requests
 # Application imports
 from auth_service.common.models.user import DomainRole
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.common.tests.api_conftest import user_first, token_first
 from scheduler_service.common.utils.handy_functions import random_word, add_role_to_test_user
 
 __author__ = 'saad'
@@ -357,18 +356,42 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    def test_retrieve_jobs_as_admin(self, user_first, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
+    def test_retrieve_jobs_as_admin(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
         """
         Create 5 users, assign admin role to one of them. Then
         Schedule 50 jobs of 5 different users, 10 each. Then get the jobs using admin user.
         :param create_five_users:
         """
-        user_token_tuple_list = create_five_users
-        job_ids_list = schedule_ten_jobs_of_each_user
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
                                 headers=auth_header)
+
+        assert response.status_code == 401
+
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+
+        response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
+                                headers=auth_header)
+
+        assert response.status_code == 200
+
+    def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
+        """
+        In this test, use filters to get filtered tasks from admin API
+        :param sample_user:
+        :param auth_header:
+        :param create_five_users:
+        :param schedule_ten_jobs_of_each_user:
+        :return:
+        """
+        users_list = create_five_users
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+
+        # Get jobs of only first user
+        response = requests.get('{0}?per_page=50&user_id={1}'.format(SchedulerApiUrl.ADMIN_TASKS, users_list[0].id),
+                                headers=auth_header)
+
+
 
         assert response.status_code == 200
 

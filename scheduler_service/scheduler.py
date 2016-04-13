@@ -30,6 +30,7 @@ from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.common.utils.test_utils import get_user
 from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
 from scheduler_service.modules.json_schema import periodic_task_job_schema
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
@@ -293,11 +294,12 @@ def remove_tasks(ids, user_id):
     return removed
 
 
-def serialize_task(task):
+def serialize_task(task, is_admin_api=False):
     """
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
                  task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
+    :param is_admin_api: In case of admin we want to assert user_email and
     :return: JSON converted dict object
     """
     task_dict = None
@@ -341,5 +343,11 @@ def serialize_task(task):
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
+
+    # For scheduler admin API
+    if is_admin_api and task_dict:
+        if task.args[0]:
+            task_dict['user_id'] = task.args[0]
+            task_dict['user_email'] = User.get_by_id(task.args[0])
 
     return task_dict

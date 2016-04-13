@@ -628,7 +628,7 @@ class SchedulerApiUrl(object):
 
     VERSION = 'v1'
 
-    ADMIN_TASKS = HOST_NAME % ('admin/%s/tasks' % VERSION)
+    ADMIN_TASKS = HOST_NAME % ('/admin/%s/tasks' % VERSION)
     HOST_NAME %= _get_api_relative_version(VERSION)
     # URLs, in case of test cases
     TASKS = HOST_NAME % "tasks"

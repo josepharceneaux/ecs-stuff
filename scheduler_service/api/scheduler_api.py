@@ -753,21 +753,21 @@ class AdminTasks(Resource):
 
 
         :Example (in case of pagination):
-            By default, it will return 10 jobs (max)
+            By default, it will return 30 jobs (max)
 
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
 
-            # Returns 10 jobs ranging from 30-39
+            # Returns 10 jobs ranging from 30-59
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
+            response = requests.get(API_URL + '/v1/tasks?page=2&per_page=35', headers=headers)
 
-            # Returns 12 jobs ranging from 48-59
+            # Returns 12 jobs ranging from 35-69
 
         :Example:
         In case of authenticated user
@@ -788,6 +788,8 @@ class AdminTasks(Resource):
                 "tasks": [
                     {
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                        "user_email": "saad_lhr@hotmail.com",
+                        "task_type": "user",
                         "post_data": {
                             "url": "http://getTalent.com/sms/send/",
                             "phone_number": "09230862348",
@@ -838,13 +840,23 @@ class AdminTasks(Resource):
         raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
         tasks_count = len(tasks)
+
+        # Get all param filters
+        user_id, is_paused, task_type, task_category = request.args.get('user_id'), request.args.get('is_paused'), \
+                                                       request.args.get('task_type'), \
+                                                       request.args.get('task_category')
+
+        if user_id:
+            tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
+
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)
 
-        tasks = [serialize_task(tasks[index])
+        tasks = [serialize_task(tasks[index], is_admin_api=True)
                  for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
+
         header = {
             'X-Total': tasks_count,
             'X-Per-Page': per_page,
