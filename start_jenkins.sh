@@ -57,3 +57,4 @@ done
 sleep 10
 
 py.test -n 20 push_campaign_service/tests/restful_api_tests/test_v1_schedule_campaign.py
+

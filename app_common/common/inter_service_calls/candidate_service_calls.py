@@ -5,8 +5,8 @@ import json
 import requests
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.handy_functions import create_oauth_headers, http_request
+from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 
 __author__ = 'jitesh'
 

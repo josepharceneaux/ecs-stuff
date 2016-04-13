@@ -56,7 +56,7 @@ def check_if_user_exists(email):
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None, thumbnail_url='', user_group_id=None):
+                            dice_user_id=None, thumbnail_url='', user_group_id=None, locale=None):
 
     from dateutil import parser
     expiration = None
@@ -69,7 +69,7 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
                        expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                       user_group_id=user_group_id)
+                       user_group_id=user_group_id, locale=locale)
 
     return user.id
 
@@ -110,7 +110,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
 
 
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
-                thumbnail_url='', user_group_id=None):
+                thumbnail_url='', user_group_id=None, locale=None):
 
     temp_password = gen_salt(20)
     hashed_password = gettalent_generate_password_hash(temp_password)
@@ -134,7 +134,7 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
                 dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-                user_group_id=user_group.id)
+                user_group_id=user_group.id, locale=locale)
     db.session.add(user)
     db.session.commit()
 

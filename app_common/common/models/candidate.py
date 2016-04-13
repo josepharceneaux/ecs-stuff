@@ -2,7 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage
+from ..error_handling import InvalidUsage, InternalServerError
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
@@ -22,7 +22,7 @@ class Candidate(db.Model):
     is_web_hidden = db.Column('IsWebHidden', TINYINT, default=False)
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
@@ -238,6 +238,8 @@ class EmailLabel(db.Model):
     candidate_emails = relationship('CandidateEmail', backref='email_label')
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
+    PRIMARY_DESCRIPTION = "Primary"
+
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
 
@@ -253,6 +255,13 @@ class EmailLabel(db.Model):
             if email_label_row:
                 return email_label_row.id
         return 4
+
+    @classmethod
+    def get_primary_label_description(cls):
+        email_label_row = cls.query.filter(EmailLabel.description == EmailLabel.PRIMARY_DESCRIPTION).first()
+        if email_label_row:
+            return "Primary"
+        raise InternalServerError(error_message="Primary email address description not present in db")
 
 
 class CandidateEmail(db.Model):
@@ -381,9 +390,9 @@ class CandidateTextComment(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
-    comment = db.Column('Comment', db.String(5000))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    comment = db.Column('Comment', db.Text)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
 
     def __repr__(self):
         return "<CandidateTextComment (id = {})>".format(self.id)
@@ -403,8 +412,8 @@ class VoiceComment(db.Model):
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
 
     def __repr__(self):
         return "<VoiceComment (id = {})>".format(self.id)
@@ -415,8 +424,8 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
 
     def __repr__(self):
         return "<CandidateDocument (id = {})>".format(self.id)
