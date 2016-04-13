@@ -337,24 +337,23 @@ def get_email_campaign_candidate_ids_and_emails(user_id, campaign, list_ids=None
                                                       queue=campaign_type)
 
     # Get candidates present in smartlist
-    try:
-        # Here we create list of all tasks and assign a self.celery_error_handler() as a
-        # callback function in case any of the tasks in the list encounter some error.
-        tasks = [get_candidates_of_smartlist.subtask(
-            (user_id, list_id, campaign, True),
-            queue=campaign_type) for list_id in list_ids]
-        # This runs all tasks asynchronously and sets callback function to be hit once all
-        # tasks in list finish running without raising any error. Otherwise callback
-        # results in failure status.
-        result = chord(tasks)(callback)
-        all_candidate_ids = result.get()
-        logger.info(all_candidate_ids)
-    except Exception as error:
-        logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
-                         ' User(id:%s). Reason: %s'
-                         % (list_id, campaign.user.id, error.message))
-        # gather all candidates from various smartlists
-    all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    # Here we create list of all tasks and assign a self.celery_error_handler() as a
+    # callback function in case any of the tasks in the list encounter some error.
+    tasks = [get_candidates_of_smartlist.subtask(
+        (user_id, list_id, campaign, True),
+        queue=campaign_type) for list_id in list_ids]
+    # This runs all tasks asynchronously and sets callback function to be hit once all
+    # tasks in list finish running without raising any error. Otherwise callback
+    # results in failure status.
+    result = chord(tasks)(callback)
+
+    logger.info('Candidates are being retrieved using Celery.')
+    candidates_from_all_smartlists_of_campaign = result.get()
+    logger.info(candidates_from_all_smartlists_of_campaign)
+
+    # gather all candidates from various smartlists
+    for candidate_list in candidates_from_all_smartlists_of_campaign:
+        all_candidate_ids.extend(list(set(candidate_list)))  # Unique candidates
     if not all_candidate_ids:
         raise InvalidUsage('No candidates found for smartlist_ids %s.' % list_ids,
                            error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
