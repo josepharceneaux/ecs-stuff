@@ -323,9 +323,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
             send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
-        if not email_client:
-            assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
-                "Email with subject %s was not found." % campaign.subject
+    if not email_client:
+        assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
+            "Email with subject %s was not found." % campaign.subject
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
