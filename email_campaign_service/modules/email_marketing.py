@@ -28,6 +28,7 @@ from email_campaign_service.common.models.user import Domain
 from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -513,7 +514,7 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
             to_addresses = user.email
         else:
-            to_addresses = ['gettalentmailtest@gmail.com']
+            to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
     try:
         email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
                                     # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
