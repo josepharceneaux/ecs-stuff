@@ -192,8 +192,6 @@ class TestCreateCampaign(object):
         resp_object = response.json()
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
-        assert poll(assert_and_delete_email, [subject], timeout=60), \
-            "Email with subject %s was not found." % subject
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
                                                   assign_roles_to_user_first):
