@@ -48,7 +48,7 @@ class TestSmartlistResource(object):
             data = {'name': smartlist_name,
                     'candidate_ids': candidate_ids,
                     'talent_pipeline_id': talent_pipeline.id}
-            resp = cls.call_post_api(data, access_token_first)
+            resp = cls.call_post_api(data, access_token)
             assert resp.status_code == 201  # Successfully created
             response = json.loads(resp.content)
             assert 'smartlist' in response

@@ -40,9 +40,7 @@ class TestEmailCampaignBlastsWithId(object):
         access token. It should get OK response and number of sends should be 2.
         """
         expected_count = 2
-        sends = assert_blast_sends(sent_campaign, expected_count)
-        assert sends == expected_count
-
+        assert_blast_sends(sent_campaign, expected_count)
         blast_id = sent_campaign.blasts[0].id
         response = requests.get(
             self.URL % (sent_campaign.id, blast_id),
@@ -52,7 +50,7 @@ class TestEmailCampaignBlastsWithId(object):
         json_resp = response.json()[self.ENTITY]
         assert json_resp['id'] == blast_id
         assert json_resp['campaign_id'] == sent_campaign.id
-        assert json_resp['sends'] == 2
+        assert json_resp['sends'] == expected_count
 
     def test_get_campaign_of_some_other_domain(self, access_token_first,
                                                email_campaign_in_other_domain):
