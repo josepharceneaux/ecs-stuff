@@ -1,4 +1,4 @@
-import polling
+from polling import poll
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
@@ -54,8 +54,8 @@ class TestSmartlistResource(object):
             assert 'smartlist' in response
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
-            assert polling.poll(assert_smartlist_candidates, step=3,
-                                args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
+            assert poll(assert_smartlist_candidates, step=3,
+                        args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
                 'Candidates not found for smartlist(id:%s)' % smartlist_id
             logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
 
@@ -568,9 +568,8 @@ class TestSmartlistCandidatesApi(object):
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
-        assert polling.poll(assert_smartlist_candidates, step=3,
-                            args=(smartlist.id, len(candidate_ids), access_token_first),
-                            timeout=30), \
+        assert poll(assert_smartlist_candidates, step=3,
+                    args=(smartlist.id, len(candidate_ids), access_token_first), timeout=30), \
             'Candidates not found for smartlist(id:%s)' % smartlist.id
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
