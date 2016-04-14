@@ -21,7 +21,6 @@ from datetime import datetime, timedelta
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
-from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,

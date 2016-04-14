@@ -108,8 +108,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
         assert polling.poll(assert_smartlist_candidates, step=3,
                             args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
             'Candidates not found for smartlist(id:%s)' % smartlist_id
-        logger.info('%s candidate(s) not found for smartlist(id:%s)'
-                    % (len(candidate_ids), smartlist_id))
+        logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
 
 
@@ -165,9 +164,7 @@ def send_campaign(campaign, access_token, timeout=20):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    blasts = polling.poll(lambda email_campaign: email_campaign.blasts.all(), step=3,
-                          args=campaign, timeout=timeout,
-                          check_success=lambda campaign_blasts: len(campaign_blasts) > 1)
+    blasts = get_campaign_blasts(campaign)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -333,6 +330,14 @@ def get_blasts(campaign):
     return campaign.blasts.all()
 
 
+def get_sends(campaign, blast_index):
+    """
+    This returns all number of sends associated with given blast index of a campaign
+    """
+    db.session.commit()
+    return campaign.blasts[blast_index].sends
+
+
 def get_campaign_blasts(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
@@ -344,8 +349,8 @@ def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_s
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = polling.poll(lambda email_campaign, blast_index: email_campaign.blasts[blast_index].sends,
-                         step=3, args=(campaign, blast_index), timeout=abort_time_for_sends)
+    sends = polling.poll(get_sends, step=3, args=(campaign, blast_index),
+                         timeout=abort_time_for_sends)
     assert sends >= expected_count
 
 

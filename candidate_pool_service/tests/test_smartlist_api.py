@@ -57,7 +57,7 @@ class TestSmartlistResource(object):
             assert polling.poll(assert_smartlist_candidates, step=3,
                                 args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
                 'Candidates not found for smartlist(id:%s)' % smartlist_id
-            logger.info('%s candidate(s) not found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
+            logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
 
             return smartlist_id, candidate_ids
 
