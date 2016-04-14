@@ -221,7 +221,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
-    time.sleep(25)
+    time.sleep(60)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
@@ -245,7 +245,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
-    time.sleep(25)
+    time.sleep(60)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
@@ -269,7 +269,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
-    time.sleep(25)
+    time.sleep(60)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_same_domain,

@@ -136,7 +136,6 @@ class TestScheduleCampaignUsingPOST(object):
                                                             campaign_in_db, smartlist_first, candidate_device_first):
 
         data = generate_campaign_schedule_data()
-        time.sleep(30)
         response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
                                      expected_status=(HttpStatus.OK,))
         assert 'task_id' in response
