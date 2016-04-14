@@ -88,3 +88,4 @@ redis-collections==0.1.7
 
 # Misc
 boltons==16.1.1
+polling

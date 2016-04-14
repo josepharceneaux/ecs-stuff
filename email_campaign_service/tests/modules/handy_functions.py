@@ -6,6 +6,7 @@ import imaplib
 import datetime
 
 # Third Party
+import polling
 import requests
 
 # Application Specific
@@ -18,7 +19,6 @@ from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
-from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.error_handling import UnprocessableEntity
@@ -105,9 +105,8 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        assert poll(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
-                                                  access_token],
-                    timeout=timeout, default_result=False), \
+        assert polling.poll(assert_smartlist_candidates, step=3,
+                            args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
             'Candidates not found for smartlist(id:%s)' % smartlist_id
         logger.info('%s candidate(s) not found for smartlist(id:%s)'
                     % (len(candidate_ids), smartlist_id))
@@ -166,8 +165,9 @@ def send_campaign(campaign, access_token, timeout=20):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    blasts = poll(lambda email_campaign: email_campaign.blasts.all(), [campaign],
-                  default_result=[], timeout=timeout)
+    blasts = polling.poll(lambda email_campaign: email_campaign.blasts.all(), step=3,
+                          args=campaign, timeout=timeout,
+                          check_success=lambda campaign_blasts: len(campaign_blasts) > 1)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -289,10 +289,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
+    blasts = get_campaign_blasts(campaign)
 
-    blasts = poll(lambda email_campaign: (email_campaign.blasts.all()),
-                  [campaign],
-                  default_result=[], timeout=10, commit_session=True)
     assert blasts, 'Email campaign blasts not found'
     assert len(blasts) == 1
     # assert on sends
@@ -315,7 +313,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                           campaign.id)
         # TODO: commenting till find exact reason of failing
         # if not email_client:
-        #     assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
+        #     assert polling.poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
         #         "Email with subject %s was not found." % campaign.subject
 
     # For each url_conversion record we assert that source_url is saved correctly
@@ -327,13 +325,27 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
+def get_blasts(campaign):
+    """
+    This returns all the blasts associated with given campaign
+    """
+    db.session.commit()
+    return campaign.blasts.all()
+
+
+def get_campaign_blasts(campaign):
+    """
+    This polls the result of blasts of a campaign for 10s.
+    """
+    return polling.poll(get_blasts, step=3, args=(campaign,), timeout=10)
+
+
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = poll(lambda email_campaign: email_campaign.blasts[blast_index].sends,
-                 [campaign],
-                 default_result=0, timeout=abort_time_for_sends)
+    sends = polling.poll(lambda email_campaign, blast_index: email_campaign.blasts[blast_index].sends,
+                         step=3, args=(campaign, blast_index), timeout=abort_time_for_sends)
     assert sends >= expected_count
 
 
