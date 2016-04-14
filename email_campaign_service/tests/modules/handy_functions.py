@@ -150,7 +150,7 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token, timeout=20):
+def send_campaign(campaign, access_token):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
     timeout is set to be 20s here. One can modify this by passing required value.
@@ -544,9 +544,6 @@ def send_campaign_helper(request, email_campaign, access_token):
     """
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        timeout = 15
-    else:
-        timeout = 30
     # send campaign
-    send_campaign(email_campaign, access_token, timeout=timeout)
+    send_campaign(email_campaign, access_token)
     return email_campaign
