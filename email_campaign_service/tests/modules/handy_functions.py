@@ -164,7 +164,7 @@ def send_campaign(campaign, access_token):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    blasts = get_campaign_blasts(campaign)
+    blasts = get_blasts_with_polling(campaign)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -286,7 +286,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    blasts = get_campaign_blasts(campaign)
+    blasts = get_blasts_with_polling(campaign)
 
     assert blasts, 'Email campaign blasts not found'
     assert len(blasts) == 1
@@ -338,7 +338,7 @@ def get_sends(campaign, blast_index):
     return campaign.blasts[blast_index].sends
 
 
-def get_campaign_blasts(campaign):
+def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
