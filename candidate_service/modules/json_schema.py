@@ -112,7 +112,7 @@ candidates_resource_schema_post = {
                                     "maxLength": 50
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 20
                                 },
                                 "is_default": {
@@ -129,7 +129,7 @@ candidates_resource_schema_post = {
                             "additionalProperties": False,
                             "properties": {
                                 "area_of_interest_id": {
-                                    "type": ["integer", "null"]
+                                    "type": ["integer"]
                                 }
                             }
                         }

@@ -4,6 +4,7 @@ __author__ = 'erikfarmer'
 
 # Standard Imports
 import re
+import time
 import json
 import random
 import string
@@ -19,11 +20,13 @@ from flask import current_app, request
 
 # Application Specific
 from ..models.db import db
-from ..talent_config_manager import TalentConfigKeys
 from werkzeug.exceptions import BadRequest
+from ..talent_config_manager import TalentConfigKeys
+from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -348,15 +351,14 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers():
+def create_oauth_headers(oauth_token=None, user_id=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
-    :return:
     """
-    oauth_token = request.oauth_token
+    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
     if not oauth_token:
-        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'], user_id)
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
@@ -405,7 +407,6 @@ def define_and_send_request(access_token, request, url, data=None):
     :param access_token: token for authentication
     :param data: data in form of dictionary
     """
-
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
@@ -413,5 +414,45 @@ def define_and_send_request(access_token, request, url, data=None):
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
         return method(url=url,
-                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      headers={'Authorization': 'Bearer %s' % access_token,
+                               'content-type': 'application/json'},
                       data=json.dumps(data))
+
+
+def poll(func, params=None, timeout=30, retry_period=3, default_result=None, commit_session=True):
+    """
+    This is the function we use for polling. i.e. to avoid time.sleep() and poll the server
+    after some specific interval of time for specific interval of time.
+    This function calls the given function with given parameters for given number of seconds until
+    we find the result.
+    For default values, this will call the given function every 3s for 30s. If we get the result,
+    we return it otherwise default_result is returned.
+    :param func: Function to be called
+    :param (list) params: Parameters to be passed in given function
+    :param (int) timeout: Number of seconds after which it should break the loop
+    :param (int) retry_period: Number of seconds after which it should retry
+    :param default_result: Result to be return if we don't get expected result.
+    :param (bool) commit_session: True if we want to commit the db session
+    """
+    raise_if_not_instance_of(params, list) if params else None
+    raise_if_not_instance_of(commit_session, bool)
+    if not isinstance(timeout, (int, long)) or not timeout > 0:
+        raise InvalidUsage('`timeout` must be an integer greater than 0.')
+    if not isinstance(retry_period, (int, long)) or not retry_period > 0:
+        raise InvalidUsage('`retry_period` must be an integer greater than 0.')
+
+    start = time.time()
+    while time.time() - start < timeout:
+
+        if commit_session:
+            db.session.commit()
+
+        result = func(*params)
+
+        if result:
+            return result
+
+        if retry_period:
+            time.sleep(retry_period)
+
+    return default_result
