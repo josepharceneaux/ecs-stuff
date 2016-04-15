@@ -4,9 +4,13 @@ Test cases for scheduling service
 # Standard imports
 import json
 import os
+import random
+import string
 from datetime import timedelta
 
 # Application imports
+from uuid import uuid4
+
 import requests
 
 from scheduler_service import db
@@ -222,9 +226,47 @@ def create_five_users(request, domain_first, first_group, sample_client):
 
 
 @pytest.fixture()
-def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task):
+def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
-    Schedule 10 jobs of each users, So, there will be 50 jobs in total.
+    Scheduler 10 general jobs.
+    :param request:
+    :param job_config_one_time_task:
+    :return:
+    """
+    general_job_ids_list = []
+    for _ in range(10):
+        secret_key_id, access_token = User.generate_jw_token()
+        header = {'Authorization': 'Bearer ' + access_token,
+                  'X-Talent-Secret-Key-ID': secret_key_id,
+                  'Content-Type': 'application/json'}
+        job_config_one_time_task['task_name'] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=header)
+        assert response.status_code == 201, response.text
+        general_job_ids_list.append(response.json()['id'])
+
+    def teardown():
+        secret_key_id, access_token = User.generate_jw_token()
+        # Delete general jobs
+        _header = {'Authorization': 'Bearer ' + access_token,
+                   'X-Talent-Secret-Key-ID': secret_key_id,
+                       'Content-Type': 'application/json'}
+        for index in range(len(general_job_ids_list)):
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % general_job_ids_list[index],
+                                                  headers=_header)
+
+            assert response_remove_job.status_code == 200
+            general_job_ids_list.append(response.json()['id'])
+
+    request.addfinalizer(teardown)
+
+    return general_job_ids_list
+
+
+@pytest.fixture()
+def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task, job_config):
+    """
+    Schedule 10 jobs of each users. So, there will be 50 jobs in total.
     :param request:
     :param create_five_users:
     :return:
@@ -232,27 +274,39 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
     jobs_count = 10
     user_job_ids_list = []
     users_list = create_five_users
-    for user, token in users_list:
+    for index, (user, token) in enumerate(users_list):
         job_ids_list = []
         header = {'Authorization': 'Bearer ' + token,
                   'Content-Type': 'application/json'}
         for _ in range(jobs_count):
-            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+            if index == 0:
+                data = json.dumps(job_config.copy())
+            else:
+                data = json.dumps(job_config_one_time_task.copy())
+            response = requests.post(SchedulerApiUrl.TASKS, data=data,
                                      headers=header)
-            assert response.status_code == 201
+            assert response.status_code == 201, response.text
             job_ids_list.append(response.json()['id'])
+
+            # Pause all jobs of first user, we need to check if admin can get paused jobs(in test)
+            if index == 0:
+                response = requests.post(SchedulerApiUrl.PAUSE_TASK % response.json()['id'],
+                                         headers=header)
+                assert response.status_code == 200
+
         user_job_ids_list.append(job_ids_list)
 
     def tear_down():
+        # Delete user based jobs
         for user_index, (_, _token) in enumerate(users_list):
             _header = {'Authorization': 'Bearer ' + _token,
                        'Content-Type': 'application/json'}
-            for index in range(jobs_count):
-                response_remove_job = requests.delete(SchedulerApiUrl.TASK % user_job_ids_list[user_index][index],
+            for _index in range(jobs_count):
+                response_remove_job = requests.delete(SchedulerApiUrl.TASK % user_job_ids_list[user_index][_index],
                                                       headers=_header)
 
                 assert response_remove_job.status_code == 200
                 job_ids_list.append(response.json()['id'])
-            user_job_ids_list.append(job_ids_list)
+
     request.addfinalizer(tear_down)
     return user_job_ids_list

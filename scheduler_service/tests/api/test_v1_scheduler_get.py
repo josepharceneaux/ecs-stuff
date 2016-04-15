@@ -363,11 +363,13 @@ class TestSchedulerGet(object):
         :param create_five_users:
         """
 
+        # Test without admin access, should get 401 response
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
                                 headers=auth_header)
 
         assert response.status_code == 401
 
+        # Assign admin role to user
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
@@ -375,7 +377,8 @@ class TestSchedulerGet(object):
 
         assert response.status_code == 200
 
-    def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
+    def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user,
+                                                  schedule_ten_general_jobs):
         """
         In this test, use filters to get filtered tasks from admin API
         :param sample_user:
@@ -388,10 +391,35 @@ class TestSchedulerGet(object):
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
         # Get jobs of only first user
-        response = requests.get('{0}?per_page=50&user_id={1}'.format(SchedulerApiUrl.ADMIN_TASKS, users_list[0].id),
+        response = requests.get('{0}?per_page=50&user_id={1}'.format(SchedulerApiUrl.ADMIN_TASKS, users_list[0][0].id),
                                 headers=auth_header)
 
-
-
         assert response.status_code == 200
+
+        # There should be 10 jobs of first user
+        assert len(response.json()['tasks']) >= 10
+
+        # Try to get jobs using wrong is_paused value
+        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
+                                headers=auth_header)
+        assert response.status_code == 400
+
+        # Get paused jobs only
+        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'true'),
+                                headers=auth_header)
+        # There should be 10 jobs which we paused in the fixture
+        assert response.status_code == 200 and len(response.json()['tasks']) >= 10
+
+        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
+                                headers=auth_header)
+        # There should be 10 jobs which we paused in the fixture and 40 were not in paused state
+        assert response.status_code == 200 and len(response.json()['tasks']) >= 50
+
+        # Get only user jobs
+        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
+                                headers=auth_header)
+        assert response.status_code == 200
+
+        # There should be 10 jobs which we paused in the fixture and 40 were not in paused state
+        assert len(response.json()['tasks']) >= 10
 

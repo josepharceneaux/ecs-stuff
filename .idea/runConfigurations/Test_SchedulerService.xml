@@ -19,7 +19,7 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/scheduler_service/tests/api/" />
     <option name="keywords" value="" />
-    <option name="params" value="-k test_retrieve_jobs_as_admin" />
+    <option name="params" value="-k test_retrieve_jobs_as_admin_using_filters" />
     <option name="USE_PARAM" value="true" />
     <option name="USE_KEYWORD" value="false" />
     <RunnerSettings RunnerId="PythonRunner" />

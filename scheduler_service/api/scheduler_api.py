@@ -10,13 +10,16 @@ import types
 
 # Third party imports
 from datetime import timedelta, datetime
+
+from apscheduler.triggers.date import DateTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app, logger
+from scheduler_service import TalentConfigKeys, flask_app, logger, SchedulerUtils
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User, DomainRole
 from scheduler_service.common.routes import SchedulerApi
@@ -758,14 +761,14 @@ class AdminTasks(Resource):
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
+            response = requests.get(API_URL + '/admin/v1/tasks?page=3', headers=headers)
 
             # Returns 10 jobs ranging from 30-59
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks?page=2&per_page=35', headers=headers)
+            response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
 
             # Returns 12 jobs ranging from 35-69
 
@@ -773,13 +776,13 @@ class AdminTasks(Resource):
         In case of authenticated user
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
+            response = requests.get(API_URL + '/admin/v1/tasks/', headers=headers)
 
         In case of SECRET_KEY
 
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
-            response = requests.get(API_URL + '/v1/tasks/', headers=headers)
+            response = requests.get(API_URL + '/admin/v1/tasks/', headers=headers)
 
         .. Response::
 
@@ -839,15 +842,51 @@ class AdminTasks(Resource):
 
         raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
-        tasks_count = len(tasks)
 
         # Get all param filters
         user_id, is_paused, task_type, task_category = request.args.get('user_id'), request.args.get('is_paused'), \
                                                        request.args.get('task_type'), \
                                                        request.args.get('task_category')
 
+        # If user_id is given then only return jobs of that particular user
         if user_id:
+            if not (str(user_id).isdigit() and int(user_id) >= 0):
+                raise InvalidUsage("user_id should be of type int")
             tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
+
+        # If is_paused is given then only return paused jobs
+        if is_paused:
+            if not str(is_paused).lower() in ['true', 'false']:
+                raise InvalidUsage("is_paused should be of type bool. If true will return paused jobs and if false, "
+                                   "then returns running jobs")
+            if str(is_paused).lower() == "true":
+                tasks = filter(lambda _task: isinstance(_task.trigger, IntervalTrigger) and _task.next_run_time is None,
+                               tasks)
+            else:
+                tasks = filter(lambda _task: isinstance(_task.trigger, IntervalTrigger) and _task.next_run_time, tasks)
+
+        # If task_type is specified then return only specified `one_time` or `periodic` jobs
+        if task_type:
+            if not isinstance(task_type, str) or task_type.lower() not in [SchedulerUtils.ONE_TIME.lower(), SchedulerUtils.PERIODIC.lower()]:
+                raise InvalidUsage("task_type should be of type string with value of {0} or {1}".format(SchedulerUtils.ONE_TIME,
+                                                                                                     SchedulerUtils.PERIODIC))
+            if task_type.lower() == SchedulerUtils.PERIODIC.lower():
+                tasks = filter(lambda _task: isinstance(_task.trigger, IntervalTrigger), tasks)
+            else:
+                tasks = filter(lambda _task: isinstance(_task.trigger, DateTrigger), tasks)
+
+        # If task_category is given then return only specified `user` or `general` job
+        if task_category:
+            if not isinstance(task_category, str) or task_category.lower() not in [SchedulerUtils.CATEGORY_USER.lower(), SchedulerUtils.CATEGORY_GENERAL.lower()]:
+                raise InvalidUsage("task_category should be of type string with value of {0} or {1}".format(SchedulerUtils.CATEGORY_USER,
+                                                                                                     SchedulerUtils.CATEGORY_GENERAL))
+
+            if task_type.lower() == SchedulerUtils.CATEGORY_GENERAL.lower():
+                tasks = filter(lambda _task: task.name, tasks)
+            else:
+                tasks = filter(lambda _task: task.name is None, tasks)
+
+        tasks_count = len(tasks)
 
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)

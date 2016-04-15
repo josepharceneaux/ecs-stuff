@@ -348,6 +348,6 @@ def serialize_task(task, is_admin_api=False):
     if is_admin_api and task_dict:
         if task.args[0]:
             task_dict['user_id'] = task.args[0]
-            task_dict['user_email'] = User.get_by_id(task.args[0])
+            task_dict['user_email'] = User.get_by_id(task.args[0]).email
 
     return task_dict
