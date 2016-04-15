@@ -40,7 +40,7 @@ def validate_and_format_request_data(data, user_id):
     email_client_id = data.get('email_client_id')
     start_datetime = data.get('start_datetime')
     end_datetime = data.get('end_datetime')
-    frequency_id = data.get('frequency_id')
+    frequency_id = data.get('frequency_id')         # required
     template_id = data.get('template_id')
 
     # Raise errors if invalid input
@@ -57,7 +57,7 @@ def validate_and_format_request_data(data, user_id):
     if filter(lambda list_id: not isinstance(list_id, (int, long)), list_ids):
         raise InvalidUsage("`list_ids` should be a list of integers")
     if not frequency_id:
-        frequency_id = Frequency.ONCE  # Set default to Once
+        raise InvalidUsage("`frequency_id` is required")
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not start_datetime:

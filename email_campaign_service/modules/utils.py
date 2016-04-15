@@ -15,15 +15,12 @@ from email_campaign_service.email_campaign_app import logger
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
-                                                                 http_request)
-from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
+from email_campaign_service.common.routes import (CandidateApiUrl,
                                                   EmailCampaignUrl)
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
@@ -35,25 +32,6 @@ TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
-
-
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
-    """
-    Calls smartlist API and retrieves the candidates of a smart or dumb list.
-
-    :param list_id: smartlist id.
-    :return:
-    """
-    params = {'fields': 'id'} if candidate_ids_only else {}
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
-                            params=params, headers=create_oauth_headers())
-    if response.status_code == InvalidUsage.http_status_code():
-        raise InvalidUsage(response.content)
-    response_body = json.loads(response.content)
-    candidates = response_body['candidates']
-    if candidate_ids_only:
-        return [long(candidate['id']) for candidate in candidates]
-    return candidates
 
 
 def do_mergetag_replacements(texts, candidate=None):

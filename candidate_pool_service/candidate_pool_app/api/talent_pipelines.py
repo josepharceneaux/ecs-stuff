@@ -15,8 +15,9 @@ from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (get_pipeline_growth,
-    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function,
-                                                                                         get_smartlist_stat_for_a_given_day)
+                                                                                        TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function,
+                                                                                        get_smartlist_stat_for_a_given_day)
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -61,8 +62,8 @@ class TalentPipelineApi(Resource):
             talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(User.domain_id ==
                                                                               request.user.domain_id).all()
             sort_by = request.args.get('sort_by', 'added_time')
-            page = request.args.get('page', 1)
-            per_page = request.args.get('per_page', 10)
+            page = request.args.get('page', DEFAULT_PAGE)
+            per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
             if talent_pipelines and sort_by not in ('growth', 'added_time'):
                 raise InvalidUsage('Value of sort parameter is not valid')
@@ -79,7 +80,9 @@ class TalentPipelineApi(Resource):
             ]
             talent_pipelines_data = sorted(talent_pipelines_data,
                                            key=lambda talent_pipeline_data: talent_pipeline_data[sort_by], reverse=True)
-            return dict(talent_pipelines=talent_pipelines_data[(page - 1) * 10:page * 10], page_number=page,
+            return dict(talent_pipelines=talent_pipelines_data[(page - DEFAULT_PAGE) *
+                                                               DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE],
+                        page_number=page,
                         talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
@@ -323,8 +326,8 @@ class TalentPipelineSmartListApi(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        page = request.args.get('page', 1)
-        per_page = request.args.get('per_page', 10)
+        page = request.args.get('page', DEFAULT_PAGE)
+        per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
         if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
             raise InvalidUsage("page and per_page should be positive integers")
@@ -538,10 +541,7 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-    offset = request.args.get('offset', '')
-
-    if not offset:
-        raise InvalidUsage("Valid value of time `offset should be provided`")
+    offset = request.args.get('offset', 0)
 
     response = get_stats_generic_function(talent_pipeline, 'TalentPipeline', request.user, from_date_string,
                                           to_date_string, interval, False, offset)

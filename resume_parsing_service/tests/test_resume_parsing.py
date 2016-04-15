@@ -284,6 +284,30 @@ def test_985_from_fp_key(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
+def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'no_email_resume.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Updating
 ####################################################################################################

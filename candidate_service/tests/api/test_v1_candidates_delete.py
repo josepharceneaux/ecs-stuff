@@ -210,6 +210,7 @@ class TestDeleteCandidateAddress(object):
         AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']

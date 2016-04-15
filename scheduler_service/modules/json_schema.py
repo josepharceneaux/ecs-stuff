@@ -45,7 +45,8 @@ one_time_task_job_schema = {
             "type": "string"
         },
         "post_data": {
-            "type": "object"
+            "type": "object",
+            "default": {}
         },
         "is_jwt_request": {
             "type": "boolean",
@@ -64,7 +65,7 @@ periodic_task_job_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
-    "required": ["url", "task_type", "start_datetime", "end_datetime", "frequency", "post_data"],
+    "required": ["url", "task_type", "start_datetime", "end_datetime", "frequency"],
     "properties": {
         "start_datetime": {
             "type": "string",
@@ -90,7 +91,8 @@ periodic_task_job_schema = {
             "type": "string"
         },
         "post_data": {
-            "type": "object"
+            "type": "object",
+            "default": {}
         },
         "is_jwt_request": {
             "type": "boolean",

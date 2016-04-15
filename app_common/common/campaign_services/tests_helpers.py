@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 # Third Party
 import requests
+from polling import poll
 
 # Application Specific
 from ..models.db import db
@@ -25,9 +26,10 @@ from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                      add_role_to_test_user)
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage,
-                              UnauthorizedError, ResourceNotFound)
-from ..utils.candidate_service_calls import create_candidates_from_candidate_api
-from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api
+                              UnauthorizedError, ResourceNotFound, UnprocessableEntity)
+from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
+    assert_smartlist_candidates
+from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
 
 
 class CampaignsTestsHelpers(object):
@@ -254,7 +256,7 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    def send_campaign(url, access_token, sleep_time=20, campaign=None):
+    def send_campaign(url, access_token, campaign=None):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
@@ -262,7 +264,6 @@ class CampaignsTestsHelpers(object):
         :param url: URL to hit for sending given campaign
         :param campaign: Email or SMS campaign obj | None
         :param access_token: Auth token to make HTTP request
-        :param sleep_time: time in seconds to wait for the task to be run on Celery.
         """
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(url, basestring)
@@ -271,32 +272,70 @@ class CampaignsTestsHelpers(object):
             url = url % campaign.id
         response = send_request('post', url, access_token)
         assert response.ok
-        time.sleep(sleep_time)
-        db.session.commit()
+        blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign)
+        if not blasts:
+            raise UnprocessableEntity('blasts not found in given time range.')
         return response
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True,
-                                        create_phone=True, count=1, assign_role=True):
+    def get_blasts(campaign):
+        """
+        This returns all the blasts associated with given campaign
+        """
+        db.session.commit()
+        return campaign.blasts.all()
+
+    @staticmethod
+    def get_blasts_with_polling(campaign):
+        """
+        This polls the result of blasts of a campaign for 10s.
+        """
+        return poll(CampaignsTestsHelpers.get_blasts, step=3, args=(campaign,), timeout=10)
+
+    @staticmethod
+    def get_sends(campaign, blast_index):
+        """
+        This returns all number of sends associated with given blast index of a campaign
+        """
+        db.session.commit()
+        return campaign.blasts[blast_index].sends
+
+    @staticmethod
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+        """
+        This function asserts the particular blast of given campaign has expected number of sends
+        """
+        sends = poll(CampaignsTestsHelpers.get_sends, step=3,
+                     args=(campaign, blast_index), timeout=abort_time_for_sends)
+        assert sends >= expected_count
+
+    @staticmethod
+    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
+                                        assert_candidates=True, timeout=40, data=None):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         """
-        if assign_role:
-            CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
-        # create candidate
-        data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                         emails_list=emails_list, create_phone=create_phone,
-                                         count=count)
+        if not data:
+            # create candidate
+            data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                             emails_list=emails_list, count=count)
+
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
-        time.sleep(5)  # added due to uploading candidates on CS
+        if assert_candidates:
+            time.sleep(10)
         smartlist_data = {'name': fake.word(),
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
+
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
-        time.sleep(5)  # added due to new field dumb_list_ids in
         smartlist_id = smartlists['smartlist']['id']
+        if assert_candidates:
+            assert poll(assert_smartlist_candidates, step=3,
+                        args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
+                'Candidates not found for smartlist(id:%s)' % smartlist_id
+            print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
     @staticmethod

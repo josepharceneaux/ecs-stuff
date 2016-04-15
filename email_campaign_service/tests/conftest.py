@@ -1,17 +1,17 @@
-
 __author__ = 'basit'
 
 import re
-
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
-
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign)
+                                                                  delete_campaign,
+                                                                  send_campaign_helper,
+                                                                  create_smartlist_with_given_email_candidate)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -55,8 +55,7 @@ def email_campaign_in_other_domain(request,
     """
 
     campaign = create_email_campaign(user_from_diff_domain)
-    create_email_campaign_smartlist(access_token_other, talent_pipeline_other,
-                                    campaign)
+    create_email_campaign_smartlist(access_token_other, talent_pipeline_other, campaign)
 
     def fin():
         delete_campaign(campaign)
@@ -101,9 +100,40 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
 
 
 @pytest.fixture()
-def campaign_with_ten_candidates(request, email_campaign_of_user_first,
-                                 assign_roles_to_user_first,
-                                 access_token_first, talent_pipeline):
+def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
+                                            assign_roles_to_user_first,
+                                            access_token_first, talent_pipeline):
+    """
+    This returns a campaign which has 2 candidates associated and have 2 email address.
+    Email should be send to only one address of both candidates
+    """
+
+    _emails = [
+        # Primary and work label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'primary', 'address': 'primary' + fake.safe_email()}],
+        # Work and home label
+        [{'label': 'work', 'address': 'work' + fake.safe_email()},
+         {'label': 'home', 'address': 'home' + fake.safe_email()}],
+    ]
+
+    campaign = create_smartlist_with_given_email_candidate(access_token_first,
+                                                           campaign=email_campaign_of_user_first,
+                                                           talent_pipeline=talent_pipeline,
+                                                           emails=_emails,
+                                                           count=2)
+
+    def fin():
+        delete_campaign(campaign)
+
+    request.addfinalizer(fin)
+    return campaign
+
+
+@pytest.fixture()
+def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
+                                        assign_roles_to_user_first,
+                                        access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
@@ -181,34 +211,37 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     This fixture sends the campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    if request.param == 'with_client':
-        campaign_with_valid_candidate.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 15
-    else:
-        sleep_time = 30
-    # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
-                                        campaign_with_valid_candidate,
-                                        access_token_first, sleep_time=sleep_time)
-    return campaign_with_valid_candidate
+    return send_campaign_helper(request, campaign_with_valid_candidate, access_token_first)
 
 
 @pytest.fixture(params=['with_client', 'without_client'])
-def sent_campaign_bulk(request, campaign_with_ten_candidates,
-                       access_token_first):
+def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, access_token_other):
     """
-    This fixture sends the campaign 1) with client_id and 2) without client id
+    This fixture sends the campaign_in_other_domain 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    if request.param == 'with_client':
-        campaign_with_ten_candidates.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        sleep_time = 5
-    else:
-        sleep_time = 15
-    # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND, campaign_with_ten_candidates,
-                                        access_token_first, sleep_time=sleep_time)
-    return campaign_with_ten_candidates
+    return send_campaign_helper(request, email_campaign_in_other_domain, access_token_other)
+
+
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
+                                 access_token_first):
+    """
+    This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
+    email-campaign obj.
+    """
+    return send_campaign_helper(request, campaign_with_multiple_candidates_email,
+                                access_token_first)
+
+
+@pytest.fixture(params=['with_client', 'without_client'])
+def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent,
+                                    access_token_first):
+    """
+    This fixture sends the given campaign 1) with client_id and 2) without client id
+    via /v1/email-campaigns/:id/send and returns the email-campaign obj.
+    """
+    return send_campaign_helper(request, campaign_to_ten_candidates_not_sent, access_token_first)
 
 
 @pytest.fixture()
@@ -238,6 +271,7 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     return_value = dict()
     return_value['response'] = response
     return_value['campaign'] = campaign
+
     return return_value
 
 
@@ -253,3 +287,27 @@ def template_id(domain_id):
     template = db.session.query(UserEmailTemplate).filter_by(template_folder_id=template_folder_id)
 
     return template['id']
+
+
+@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
+def invalid_data_for_campaign_creation(request):
+    """
+    This function returns the data to create an email campaign. It also removes a required
+    field from data to make it invalid.
+    Required fields are 'name', 'subject', 'body_html', 'frequency_id', 'list_ids'
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    campaign_data = {'name': fake.name(),
+                     'subject': fake.sentence(),
+                     'from': email_from,
+                     'reply_to': reply_to,
+                     'body_html': body_html,
+                     'body_text': body_text,
+                     'frequency_id': Frequency.ONCE,
+                     'list_ids': [fake.random_number()]
+                     }
+    del campaign_data[request.param]
+    return campaign_data, request.param

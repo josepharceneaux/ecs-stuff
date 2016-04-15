@@ -1,6 +1,6 @@
 __author__ = 'ufarooqi'
+
 from time import sleep
-from datetime import timedelta
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
@@ -78,4 +78,4 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
             url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % test_smart_list.id,
             params={'fields': 'id'}, headers={'Authorization': 'Bearer %s' % access_token_first})
     assert response.status_code == 200
-    assert_results(cs_sw_engineers_candidate_ids,  response.json())
+    assert_results(cs_sw_engineers_candidate_ids, response.json())
