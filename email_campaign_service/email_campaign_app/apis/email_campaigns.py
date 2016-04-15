@@ -170,7 +170,7 @@ class EmailCampaignSendApi(Resource):
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-        results_send = send_emails_to_campaign(request.user.id, campaign, new_candidates_only=False)
+        results_send = send_emails_to_campaign(request.user, campaign, new_candidates_only=False)
         if campaign.email_client_id:
             if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")

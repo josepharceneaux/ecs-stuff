@@ -158,7 +158,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
     return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(user_id, campaign, list_ids=None, new_candidates_only=False):
+def send_emails_to_campaign(user, campaign, list_ids=None, new_candidates_only=False):
     """
     new_candidates_only sends the emails only to candidates who haven't yet
     received any as part of this campaign.
@@ -210,7 +210,7 @@ def send_emails_to_campaign(user_id, campaign, list_ids=None, new_candidates_onl
                            error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
     else:
             logger.info('Emails are being sent using Celery.')
-            send_campaign_through_celery()
+            send_campaign_through_celery(user, campaign, list_ids, new_candidates_only)
             # For each candidate, create URL conversions and send the email via Celery task
 
 
@@ -284,9 +284,6 @@ def pre_processing_campaign_sent(celery_result, campaign, list_ids, user, new_ca
         send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
                                     blast_datetime, campaign,
                                     user, new_candidates_only)
-
-
-
 
 # This will be used in later version
 # def update_candidate_document_on_cloud(user, candidate_ids_and_emails):
