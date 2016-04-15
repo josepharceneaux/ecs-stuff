@@ -91,7 +91,6 @@ class TestSmartlistResource(object):
             total_found = response.json()['total_found']
             assert total_found == 20
 
-<<<<<<< 5b3d9dae2e7f471cbe26da66026ac0af671630ff
         def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first,
                                                                              user_first, talent_pool, talent_pipeline):
             """
@@ -127,46 +126,6 @@ class TestSmartlistResource(object):
             assert len(candidates) == 20
             smartlist_candidate_ids = [candidate['id'] for candidate in candidates]
             assert sorted(candidate_ids) == sorted(map(int, smartlist_candidate_ids))
-=======
-        # TODO: commented this out since it's a flaky test. Please uncomment once fixed - Amir
-        # def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first,
-        #                                                                      user_first, talent_pool, talent_pipeline):
-        #     """
-        #     Test to create smartlist with candidate ids (dumb list) and get candidates from that
-        #     smartlist using pagination params.
-        #     :param user_first: User from first domain
-        #     :param access_token_first: Token for authentication.
-        #     :param talent_pool: valid talent pool object.
-        #     :param talent_pipeline: valid talent pipeline
-        #     """
-        #     smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(access_token_first,
-        #                                                                                    user_first, talent_pool,
-        #                                                                                    talent_pipeline, count=20)
-        #     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
-        #     # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
-        #     smartlist_candidates_api = TestSmartlistCandidatesApi()
-        #     response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
-        #         smartlist_id, {'fields': 'id'}, access_token_first, page=DEFAULT_PAGE, per_page=2)
-        #     response_body = response.json()
-        #     no_of_pages = int(response_body['max_pages'])
-        #     assert no_of_pages == 10
-        #     total = int(response_body['total_found'])
-        #     assert total == 20
-        #     candidates = response_body['candidates']
-        #     assert len(candidates) == 2
-        #
-        #     if no_of_pages > 1:
-        #         for current_page in range(1, int(no_of_pages)):
-        #             next_page = current_page + 1
-        #             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
-        #                        smartlist_id, {'fields': 'id'}, access_token_first, page=next_page,
-        #                        per_page=2)
-        #             response_body = json.loads(response.content)
-        #             candidates.extend(response_body['candidates'])
-        #     assert len(candidates) == 20
-        #     smartlist_candidate_ids = [row['id'] for row in candidates]
-        #     assert sorted(candidate_ids) == sorted(map(int, smartlist_candidate_ids))
->>>>>>> comment out flaky tests
 
             # Checking by sending pagination param "page" as total number of pages plus 1, it should return total_found
             # and an empty candidates list.
