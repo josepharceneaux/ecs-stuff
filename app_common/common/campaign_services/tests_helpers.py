@@ -317,9 +317,10 @@ class CampaignsTestsHelpers(object):
         assert sends >= expected_count
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=False, count=1,
-                                        assert_candidates=True, timeout=40, data=None,
-                                        create_phone=False, assign_role=False):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
+                                        data=None, emails_list=False, create_phone=False,
+                                        assign_role=False, assert_candidates=True,
+                                        smartlist_name=fake.word(), timeout=40):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -336,7 +337,7 @@ class CampaignsTestsHelpers(object):
                                                              return_candidate_ids_only=True)
         if assert_candidates:
             time.sleep(10)
-        smartlist_data = {'name': fake.word(),
+        smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
 

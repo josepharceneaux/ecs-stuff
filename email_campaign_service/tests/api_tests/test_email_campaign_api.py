@@ -535,12 +535,14 @@ class TestSendCampaign(object):
         """
         smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                                  talent_pipeline,
+                                                                                 count=20,
                                                                                  emails_list=True,
-                                                                                 count=20, timeout=60)
+                                                                                 timeout=60)
         smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                                  talent_pipeline,
+                                                                                 count=20,
                                                                                  emails_list=True,
-                                                                                 count=20, timeout=60)
+                                                                                 timeout=60)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)

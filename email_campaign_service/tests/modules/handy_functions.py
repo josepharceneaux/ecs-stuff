@@ -6,7 +6,6 @@ import datetime
 
 # Third Party
 import requests
-from polling import poll
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -55,7 +54,7 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
     """
     # create candidate
     smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token, talent_pipeline, emails_list=emails_list, count=count,
+        access_token, talent_pipeline, count=count, emails_list=emails_list,
         assert_candidates=assert_candidates)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
@@ -427,8 +426,9 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
                                                                             talent_pipeline,
+                                                                            emails_list=True,
                                                                             assert_candidates=assert_candidates,
-                                                                            emails_list=True)
+                                                                            )
     return {'name': campaign_name,
             'subject': subject,
             'from': email_from,
