@@ -255,7 +255,8 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     """
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-    response = CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND, campaign_with_valid_candidate,
+    response = CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+                                                   campaign_with_valid_candidate,
                                                    access_token_first)
     json_response = response.json()
     assert 'email_campaign_sends' in json_response

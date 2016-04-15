@@ -256,13 +256,13 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    def send_campaign(url, access_token, campaign=None):
+    def send_campaign(url, campaign, access_token):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
         sleep_time is set to be 20s here. One can modify this by passing required value.
         :param url: URL to hit for sending given campaign
-        :param campaign: Email or SMS campaign obj | None
+        :param campaign: Email or SMS campaign obj
         :param access_token: Auth token to make HTTP request
         """
         raise_if_not_instance_of(access_token, basestring)

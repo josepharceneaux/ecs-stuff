@@ -223,7 +223,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     assert blasts, 'Email campaign blasts not found'
     assert len(blasts) == 1
     # assert on sends
-    assert_blast_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
+    CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count,
+                                             abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
     assert len(campaign_sends) == expected_count
     sends_url_conversions = []
@@ -237,10 +238,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                       campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
-        CampaignsTestsHelpers.assert_for_activity(user.id,
-                                                  Activity.MessageIds.CAMPAIGN_SEND,
-                                                          campaign.id)
-        # TODO: commenting till find exact reason of failing
+        CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
+                                                  campaign.id)
+        # TODO: commented after discussing with osman -- basit
         # if not email_client:
         #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
         #         "Email with subject %s was not found." % campaign.subject
@@ -445,5 +445,6 @@ def send_campaign_helper(request, email_campaign, access_token):
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(email_campaign, access_token)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+                                        email_campaign, access_token)
     return email_campaign
