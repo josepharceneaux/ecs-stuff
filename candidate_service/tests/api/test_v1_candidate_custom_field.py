@@ -162,6 +162,7 @@ class TestGetCandidateCustomField(object):
         Test:  Attempt to retrieve ccf that do not belong to user's domain
         Expect: 403
         """
+        db.session.commit()
         AddUserRoles.add_and_get(user_second)
         AddUserRoles.add_and_get(user_first)
 
@@ -220,6 +221,7 @@ class TestDeleteCandidateCustomField(object):
         Test:  Attempt to delete ccf that do not belong to user's domain
         Expect: 403
         """
+        db.session.commit()
         AddUserRoles.all_roles(user_second)
         url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
         del_resp = send_request('delete', url, access_token_second)
