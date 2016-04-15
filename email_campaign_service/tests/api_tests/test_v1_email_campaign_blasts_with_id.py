@@ -10,9 +10,9 @@ import requests
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
+from email_campaign_service.tests.modules.handy_functions import assert_blast_sends
 
 
 class TestEmailCampaignBlastsWithId(object):
@@ -40,11 +40,7 @@ class TestEmailCampaignBlastsWithId(object):
         access token. It should get OK response and number of sends should be 2.
         """
         expected_count = 2
-        sends = poll(lambda email_campaign: email_campaign.blasts[0].sends,
-                                  [sent_campaign],
-                                  default_result=0)
-        assert sends == expected_count
-
+        assert_blast_sends(sent_campaign, expected_count)
         blast_id = sent_campaign.blasts[0].id
         response = requests.get(
             self.URL % (sent_campaign.id, blast_id),
@@ -54,7 +50,7 @@ class TestEmailCampaignBlastsWithId(object):
         json_resp = response.json()[self.ENTITY]
         assert json_resp['id'] == blast_id
         assert json_resp['campaign_id'] == sent_campaign.id
-        assert json_resp['sends'] == 2
+        assert json_resp['sends'] == expected_count
 
     def test_get_campaign_of_some_other_domain(self, access_token_first,
                                                email_campaign_in_other_domain):
