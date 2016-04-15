@@ -271,7 +271,6 @@ class CandidateEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
-    is_bounced = db.Column('IsBounced', db.Boolean, default=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -305,16 +304,6 @@ class CandidateEmail(db.Model):
     @classmethod
     def get_by_address(cls, email_address):
         return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
-
-    @classmethod
-    def is_bounced_email(cls, email_address):
-        """
-        This method takes an email address and returns True if email is bounced (invalid email address).
-        :param email_address: email address
-        :return: True | False
-        """
-        bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
-        return True if bounced_email else False
 
 
 class CandidatePhoto(db.Model):

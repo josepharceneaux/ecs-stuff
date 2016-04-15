@@ -118,10 +118,6 @@ class EmailCampaignBlast(db.Model):
     sent_datetime = db.Column('SentTime', db.DateTime)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
 
-    # Relationships
-    blast_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
-                               passive_deletes=True, backref='blast', lazy='dynamic')
-
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.get(_id)
@@ -146,7 +142,6 @@ class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
     campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    blast_id = db.Column('EmailCampaignBlastId', db.Integer, db.ForeignKey('email_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
@@ -186,15 +181,6 @@ class EmailCampaignSend(db.Model):
             raise ForbiddenError("Send object(id:%s) is not associated with email-campaign(id:%s)."
                                  % (send_id, requested_campaign_id))
         return send_obj
-
-    @classmethod
-    def get_by_ses_message_id(cls, message_id):
-        """
-        Get send email object from given SES message id.
-        :param message_id: SES unique message id
-        :return: EmailCampaignSend object
-        """
-        return cls.query.filter_by(ses_message_id=message_id).first()
 
 
 class EmailClient(db.Model):
