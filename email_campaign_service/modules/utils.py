@@ -39,7 +39,8 @@ class AWS_SNS_TERMS(object):
     This class contains constants related to Amazon Simple Notification Service (SNS) terminologies.
     """
     HEADER_KEY = 'X_AMZ_SNS_MESSAGE_TYPE'
-    SUBSCRIPTION = 'SubscriptionConfirmation'
+    SUBSCRIBE = 'SubscriptionConfirmation'
+    UNSUBSCRIBE = 'UnsubscribeConfirmation'
     NOTIFICATION = 'Notification'
     BOUNCE = 'Bounce'
     COMPLAINT = 'Complaint'

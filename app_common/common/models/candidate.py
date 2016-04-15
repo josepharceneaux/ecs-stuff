@@ -326,6 +326,8 @@ class CandidateEmail(db.Model):
         """
         assert isinstance(emails, list) and emails, 'emails should be a non-empty list of email addresses'
         assert all([email for email in emails]), 'all email addresses should have non-empty value.'
+
+        # search emails in all domains because an invalid email in one domain will be invalid in other domain as well.
         query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
         query.update(dict(is_bounced=True), synchronize_session=False)
         db.session.commit()

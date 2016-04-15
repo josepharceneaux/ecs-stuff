@@ -522,7 +522,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
-def send_email_using_amazon_ses(campaign, email, candidate_id, blast_id):
+def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param campaign: EmailCampaign object
@@ -530,11 +530,14 @@ def send_email_using_amazon_ses(campaign, email, candidate_id, blast_id):
     :param candidate_id: candidate unique id
     :param blast_id: campaign blast id
     """
+    # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
                                             sent_datetime=datetime.datetime.now(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
+
+    # Send email to given email address with some random text as body.
     email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
                                 # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
                                 subject=fake.sentence(),
@@ -544,6 +547,8 @@ def send_email_using_amazon_ses(campaign, email, candidate_id, blast_id):
                                 reply_address=campaign.reply_to.strip(),
                                 body=None,
                                 email_format='html' if campaign.body_html else 'text')
+
+    # Get unique request id and message id from response and update campaign send object.
     request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)

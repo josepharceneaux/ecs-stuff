@@ -44,22 +44,36 @@ def amazon_sns_endpoint():
      https://github.com/gettalent/talent-flask-services/wiki/Email-Bounces
     """
     data = json.loads(request.data)
+    headers = request.headers
+
+    logger.info('SNS Callback: Headers: %s\nRequest Data: %s', headers, data)
 
     # SNS first sends a confirmation request to this endpoint, we then confirm our subscription by sending a
     # GET request to given url in subscription request body.
-    if request.headers.get('X_AMZ_SNS_MESSAGE_TYPE') == AWS_SNS_TERMS.SUBSCRIPTION:
+    if request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.SUBSCRIBE:
         response = requests.get(data['SubscribeURL'])
         if not data['TopicArn'] in response.text:
-            logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s' % (data['TopicArn'],
-                                                                                                request.data))
+            logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s', data['TopicArn'],
+                        request.data)
+            return 'Not verified', 500
+
     elif request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.NOTIFICATION:
         # In case of notification, check its type (bounce or complaint) and process accordingly.
         data = json.loads(request.data)
         message = data['Message']
         message = json.loads(message)
+        message_id = message['mail']['messageId']
         if message['notificationType'] == AWS_SNS_TERMS.BOUNCE:
-            handle_email_bounce(request, message)
+            bounce = message['bounce']
+            emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
+            handle_email_bounce(message_id, bounce, emails)
+
         elif message['notificationType'] == AWS_SNS_TERMS.COMPLAINT:
             pass   # TODO: Add implementation for complaints
+
+    elif request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.UNSUBSCRIBE:
+        logger.info('SNS notifications for email campaign has been unsubscribed.')
+    else:
+        logger.info('Invalid request. Request data %s', request.data)
 
     return 'Thanks SNS for notification'

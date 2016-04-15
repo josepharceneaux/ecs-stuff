@@ -817,28 +817,35 @@ def _update_blast_sends(blast_obj, new_sends, campaign, user, new_candidates_onl
                 new_sends, campaign.name, user.email, new_candidates_only)
 
 
-def handle_email_bounce(request, message):
+def handle_email_bounce(message_id, bounce, emails):
     """
     This function handles email bounces. When an email is bounced, email address is marked as bounced so
     no further emails will be sent to this email address.
     It also updates email campaign bounces in respective blast.
-    :param request: http request
-    :type request: flask.request
-    :param message: JSON bounce message body
-    :type message: dict
+    :param str message_id: message id associated with email send
+    :param dict bounce: JSON bounce message body
+    :param list[str] emails: list of bounced emails
     """
-    assert request, 'first param should be request object'
-    assert isinstance(message, dict) and message, "message param should be a valid dict"
-    logger.info('Bounce Detected: %s' % message)
-    message_id = message['mail']['messageId']
-    bounce = message['bounce']
-    emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
+    assert isinstance(message_id, basestring) and message_id, "message_id should not be empty"
+    assert isinstance(bounce, dict) and bounce, "bounce param should be a valid dict"
+    assert isinstance(emails, list) and all(emails), "emails param should be a non empty list of email addresses"
+    logger.info('Bounce Detected: %s', bounce)
+
+    # get the corresponding EmailCampaignSend object that is associated with given AWS message id
     send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+
     if not send_obj:
-        logger.error('Unable to find email campaign send for this email bounce: %s' % request.data)
+        logger.error('Unable to find email campaign send for this email bounce: %s', bounce)
         return None
+
+    # Mark the send object as bounced.
     send_obj.update(is_ses_bounce=True)
     blast = send_obj.blast
+
+    # increase number of bounces by one for associated campaign blast.
     blast.update(bounces=(blast.bounces + 1))
+
+    # Mark the matching emails as bounced in all domains because an email that is invalid
+    # would be invalid in all domains.
     CandidateEmail.mark_emails_bounced(emails)
     logger.info('Marked %s email addresses as bounced' % emails)

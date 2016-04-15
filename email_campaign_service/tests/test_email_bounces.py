@@ -14,7 +14,7 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate, send_email_using_amazon_ses
+from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate, send_campaign_email_to_candidate
 
 
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
@@ -39,7 +39,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         email.update(address=invalid_email)
         db.session.commit()
-        send_email_using_amazon_ses(campaign, email, candidate_ids[0], email_campaign_blast.id)
+        send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
         # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
         time.sleep(30)
         db.session.commit()
@@ -60,8 +60,8 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
 
 
 def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
-                                                                        email_campaign_of_user_first,candidate_first,
-                                                                        user_first, talent_pipeline):
+                                                          email_campaign_of_user_first,candidate_first,
+                                                          user_first, talent_pipeline):
     """
     In this test we are sending emails to two candidate, one with valid email and one with invalid email.
     After sending emails, we will confirm that invalid email has been marked `bounced` and will assert
@@ -74,13 +74,16 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
     with app.app_context():
         count = 2
         campaign = email_campaign_of_user_first
-        # create candidate
+
+        # create candidate, smartlist and campaign blast
         email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,
                                                                                  talent_pipeline, candidate_count=count)
+
         # Update first candidate's email to a valid email, i.e. testing email.
         valid_email = 'gettalentmailtest@gmail.com'
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         email.update(address=valid_email)
+
         # Update second candidate's email to an invalid email, so we can test email bounce
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[1]).first()
@@ -89,7 +92,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
 
         for index in range(count):
             email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
-            send_email_using_amazon_ses(campaign, email, candidate_ids[index], email_campaign_blast.id)
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
         # TODO: Add polling when Basit's  code for polling is in develop
         time.sleep(30)
