@@ -47,6 +47,7 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Internal
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 
 def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
@@ -169,44 +170,18 @@ def send_emails_to_campaign(user_id, campaign, list_ids=None, new_candidates_onl
     :return:            number of emails sent
     """
     user = campaign.user
-    candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(user_id, campaign=campaign,
+    if campaign.email_client_id:
+        candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails_sans_celery(user_id, campaign=campaign,
                                                                            list_ids=list_ids,
                                                                            new_candidates_only=new_candidates_only)
 
     # Check if the smart list has more than 0 candidates
-    if candidate_ids_and_emails:
-        email_notification_to_admins(
-            subject='Marketing batch about to send',
-            body="Marketing email batch about to send, campaign.name=%s, user=%s, "
-                 "new_candidates_only=%s, address list size=%s"
-                 % (campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails))
-        )
-        logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
-                    "new_candidates_only=%s, address list size=%s"
-                    % (campaign.name, user.email, new_candidates_only,
-                       len(candidate_ids_and_emails)))
-        # Add activity
-        try:
-            CampaignBase.create_activity(user.id,
-                                         Activity.MessageIds.CAMPAIGN_SEND,
-                                         campaign,
-                                         dict(id=campaign.id, name=campaign.name,
-                                              num_candidates=len(candidate_ids_and_emails)))
-        except Exception as error:
-            logger.error('Error occurred while creating activity for '
-                         'email-campaign(id:%s) batch send. Error is %s'
-                         % (campaign.id, error.message))
-        # Create the email_campaign_blast for this blast
-        blast_datetime = datetime.datetime.now()
-        email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,
-                                                  sent_datetime=blast_datetime)
-        EmailCampaignBlast.save(email_campaign_blast)
-        blast_params = dict(sends=0, bounces=0)
-        logger.info('Email campaign record is %s. blast record is %s. User(id:%s).'
-                    % (campaign.to_json(), email_campaign_blast.to_json(), user.id))
-        list_of_new_email_html_or_text = []
-        # Do not send mail if email_client_id is provided
-        if campaign.email_client_id:
+        if candidate_ids_and_emails:
+            email_campaign_blast, blast_params, blast_datetime = notify_and_get_blast_params(campaign, user,
+                                                                                             new_candidates_only,
+                                                                                             candidate_ids_and_emails)
+            list_of_new_email_html_or_text = []
+            # Do not send mail if email_client_id is provided
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
@@ -229,15 +204,16 @@ def send_emails_to_campaign(user_id, campaign, list_ids=None, new_candidates_onl
             _update_blast_sends(email_campaign_blast, len(candidate_ids_and_emails),
                                 campaign, user, new_candidates_only)
             return list_of_new_email_html_or_text
-        logger.info('Emails are being sent using Celery.')
-        # For each candidate, create URL conversions and send the email via Celery task
-        send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
-                                    blast_datetime, campaign,
-                                    user, new_candidates_only)
-    else:
-        raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
+        else:
+            raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
                            % campaign.id,
                            error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+    else:
+            logger.info('Emails are being sent using Celery.')
+            send_campaign_through_celery()
+            # For each candidate, create URL conversions and send the email via Celery task
+
+
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
@@ -287,9 +263,29 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
 
 
 @celery_app.task(name='pre_processing_campaign_sent')
-def pre_processing_campaign_sent(celery_result, campaign):
+def pre_processing_campaign_sent(celery_result, campaign, list_ids, user, new_candidates_only):
+    all_candidate_ids = []
     logger.info('celery_result: %s' % celery_result)
-    return celery_result
+    candidates_from_all_smartlists_of_campaign = celery_result.get()
+    logger.info(candidates_from_all_smartlists_of_campaign)
+
+    # gather all candidates from various smartlists
+    for candidate_list in candidates_from_all_smartlists_of_campaign:
+        all_candidate_ids.extend(list(set(candidate_list)))  # Unique candidates
+    if not all_candidate_ids:
+        raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
+                           error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+    subscribed_candidate_ids = handle_subscription(campaign, all_candidate_ids, new_candidates_only)
+    candidate_ids_and_emails = get_filtered_email_rows(campaign, subscribed_candidate_ids)
+    if candidate_ids_and_emails:
+        email_campaign_blast, blast_params, blast_datetime = notify_and_get_blast_params(campaign, user,
+                                                                                             new_candidates_only,
+                                                                                             candidate_ids_and_emails)
+        send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast,
+                                    blast_datetime, campaign,
+                                    user, new_candidates_only)
+
+
 
 
 # This will be used in later version
@@ -319,7 +315,7 @@ def pre_processing_campaign_sent(celery_result, campaign):
 #         raise InvalidUsage(error_message)
 
 
-def get_email_campaign_candidate_ids_and_emails(user_id, campaign, list_ids=None, new_candidates_only=False):
+def get_email_campaign_candidate_ids_and_emails_sans_celery(user_id, campaign, list_ids=None, new_candidates_only=False):
     """
     :param campaign:    email campaign row
     :return:            Returns array of candidate IDs in the campaign's smartlists.
@@ -329,131 +325,26 @@ def get_email_campaign_candidate_ids_and_emails(user_id, campaign, list_ids=None
         # Get smartlists of this campaign
         list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                      smartlist_ids_only=True)
-    # Get candidate ids
-    all_candidate_ids = []
-    if not list_ids:
-        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
-                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-    campaign_type = campaign.__tablename__
-    callback = pre_processing_campaign_sent.subtask((campaign,),
-                                                    queue=campaign_type)
+    all_candidate_ids = get_candidates_from_smartlist_for_email_client_id(campaign, list_ids)
 
-    # Get candidates present in smartlist
-    # Here we create list of all tasks and assign a self.celery_error_handler() as a
-    # callback function in case any of the tasks in the list encounter some error.
-    tasks = [get_candidates_from_smartlist.subtask(
-        (list_id, campaign, True, user_id),
-        queue=campaign_type) for list_id in list_ids]
-    # This runs all tasks asynchronously and sets callback function to be hit once all
-    # tasks in list finish running without raising any error. Otherwise callback
-    # results in failure status.
-    result = chord(tasks)(callback)
+    subscribed_candidate_ids = handle_subscription(campaign, all_candidate_ids, new_candidates_only)
+    return get_filtered_email_rows(campaign, subscribed_candidate_ids)
 
-    logger.info('Candidates are being retrieved using Celery.')
-    candidates_from_all_smartlists_of_campaign = result.get()
-    logger.info(candidates_from_all_smartlists_of_campaign)
 
-    # gather all candidates from various smartlists
-    for candidate_list in candidates_from_all_smartlists_of_campaign:
-        all_candidate_ids.extend(list(set(candidate_list)))  # Unique candidates
-    if not all_candidate_ids:
-        raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
-                           error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-    if campaign.is_subscription:
-        # If the campaign is a subscription campaign,
-        # only get candidates subscribed to the campaign's frequency
-        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
-            CandidateSubscriptionPreference.candidate_id).filter(
-            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
-                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
-        subscribed_candidate_ids = [row.candidate_id for row in
-                                    subscribed_candidates_rows]  # Subscribed candidate ids
-        if not subscribed_candidate_ids:
-            logger.error("No candidates in subscription campaign %s", campaign)
-
-    else:
-        # Otherwise, just filter out unsubscribed candidates:
-        # their subscription preference's frequencyId is NULL, which means 'Never'
-        unsubscribed_candidate_ids = []
-        for candidate_id in all_candidate_ids:
-            # Call candidate API to get candidate's subscription preference.
-            subscription_preference = get_candidate_subscription_preference(candidate_id)
-            # campaign_subscription_preference = get_subscription_preference(candidate_id)
-            logger.debug("subscription_preference: %s" % subscription_preference)
-            if subscription_preference and not subscription_preference.get('frequency_id'):
-                unsubscribed_candidate_ids.append(candidate_id)
-
-        # Remove un-subscribed candidates
-        subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
-
-    # If only getting candidates that haven't been emailed before...
-    if new_candidates_only:
-        already_emailed_candidates = EmailCampaignSend.query.with_entities(
-            EmailCampaignSend.candidate_id).filter_by(campaign_id=campaign.id).all()
-        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
-
-        # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
-        new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
-        # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
-        subscribed_candidate_ids = new_candidate_ids
-
-    # Get candidate emails sorted by updated time and then by candidate_id
-    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
-                                                              CandidateEmail.address,
-                                                              CandidateEmail.updated_time,
-                                                              CandidateEmail.email_label_id) \
-        .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
-        .order_by(desc(CandidateEmail.updated_time), CandidateEmail.candidate_id)
+def get_email_campaign_candidate_ids_and_emails_with_celery(user, campaign, list_ids=None, new_candidates_only=False):
     """
-        candidate_email_rows data will be
-        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
-        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
-        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
-        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+    :param campaign:    email campaign row
+    :return:            Returns array of candidate IDs in the campaign's smartlists.
+                        Is unique.
     """
+    if list_ids is None:
+        # Get smartlists of this campaign
+        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
+                                                                     smartlist_ids_only=True)
 
-    # list of tuples (candidate id, email address)
-    group_id_and_email_and_labels = []
+    get_smartlist_candidates_via_celery(campaign, list_ids, user, new_candidates_only)
 
-    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
-    # id_email_label: (id, email, label)
-    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
 
-    """
-    After running groupby clause, the data will look like
-    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
-        (candidate_id2, email_address2, email_label2)],... ]
-    """
-
-    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
-        group_id_and_email_and_labels.append(list(group_id_email_label))
-    filtered_email_rows = []
-
-    # Check if primary EmailLabel exist in db
-    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
-        raise InternalServerError(
-            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
-
-    # We don't know email_label id of primary email. So, get that from db
-    email_label_id_desc_tuples = [(email_label.id, email_label.description) for email_label in EmailLabel.query.all()]
-
-    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
-    # other email
-    for id_and_email_and_label in group_id_and_email_and_labels:
-        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
-        search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
-        # If there is only one candidate for an email-address in user's domain, we are good to go,
-        # otherwise log and raise the invalid error.
-        if len(search_result) == 1:
-            filtered_email_rows.append((_id, email))
-        else:
-            logger.warn('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
-                        'Candidate ids are: %s'
-                        % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
-                           [candidate_email.candidate_id for candidate_email in search_result]))
-            raise InvalidUsage('There exist multiple candidates with same email address '
-                               'in user`s domain')
-    return filtered_email_rows
 
 
 def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
@@ -834,3 +725,179 @@ def _update_blast_sends(blast_obj, new_sends, campaign, user, new_candidates_onl
     logger.info("Marketing email batch completed, emails sent=%s, "
                 "campaign=%s, user=%s, new_candidates_only=%s",
                 new_sends, campaign.name, user.email, new_candidates_only)
+
+
+def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
+    all_candidate_ids = []
+    for list_id in list_ids:
+        # Get candidates present in smartlist
+        try:
+            smartlist_candidate_ids = get_candidates_of_smartlist(list_id, candidate_ids_only=True)
+            # gather all candidates from various smartlists
+            all_candidate_ids.extend(smartlist_candidate_ids)
+        except Exception as error:
+            logger.exception('Error occurred while getting candidates of smartlist(id:%s).'
+                             'EmailCampaign(id:%s) User(id:%s). Reason: %s'
+                             % (list_id, campaign.id, campaign.user.id, error.message))
+    all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+    return all_candidate_ids
+
+
+def handle_subscription(campaign, all_candidate_ids, new_candidates_only):
+    if campaign.is_subscription:
+        # If the campaign is a subscription campaign,
+        # only get candidates subscribed to the campaign's frequency
+        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
+            CandidateSubscriptionPreference.candidate_id).filter(
+            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
+                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
+        subscribed_candidate_ids = [row.candidate_id for row in
+                                    subscribed_candidates_rows]  # Subscribed candidate ids
+        if not subscribed_candidate_ids:
+            logger.error("No candidates in subscription campaign %s", campaign)
+
+    else:
+        # Otherwise, just filter out unsubscribed candidates:
+        # their subscription preference's frequencyId is NULL, which means 'Never'
+        unsubscribed_candidate_ids = []
+        for candidate_id in all_candidate_ids:
+            # Call candidate API to get candidate's subscription preference.
+            subscription_preference = get_candidate_subscription_preference(candidate_id)
+            # campaign_subscription_preference = get_subscription_preference(candidate_id)
+            logger.debug("subscription_preference: %s" % subscription_preference)
+            if subscription_preference and not subscription_preference.get('frequency_id'):
+                unsubscribed_candidate_ids.append(candidate_id)
+
+        # Remove un-subscribed candidates
+        subscribed_candidate_ids = list(set(all_candidate_ids) - set(unsubscribed_candidate_ids))
+
+    # If only getting candidates that haven't been emailed before...
+    if new_candidates_only:
+        already_emailed_candidates = EmailCampaignSend.query.with_entities(
+            EmailCampaignSend.candidate_id).filter_by(campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+
+        # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
+        new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
+        # assign it to subscribed_candidate_ids (doing it explicit just to make it clear)
+        subscribed_candidate_ids = new_candidate_ids
+        return subscribed_candidate_ids
+
+
+def get_smartlist_candidates_via_celery(campaign, list_ids, user, new_candidates_only):
+    all_candidate_ids = []
+    if not list_ids:
+        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
+                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+    campaign_type = campaign.__tablename__
+    callback = pre_processing_campaign_sent.subtask((campaign, list_ids, user, new_candidates_only, ),
+                                                    queue=campaign_type)
+
+    # Get candidates present in smartlist
+    # Here we create list of all tasks and assign a self.celery_error_handler() as a
+    # callback function in case any of the tasks in the list encounter some error.
+    tasks = [get_candidates_from_smartlist.subtask(
+        (list_id, campaign, True, user.id),
+        queue=campaign_type) for list_id in list_ids]
+    # This runs all tasks asynchronously and sets callback function to be hit once all
+    # tasks in list finish running without raising any error. Otherwise callback
+    # results in failure status.
+    result = chord(tasks)(callback)
+
+
+def get_filtered_email_rows(campaign, subscribed_candidate_ids):
+    # Get candidate emails sorted by updated time and then by candidate_id
+    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
+                                                              CandidateEmail.address,
+                                                              CandidateEmail.updated_time,
+                                                              CandidateEmail.email_label_id) \
+        .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
+        .order_by(desc(CandidateEmail.updated_time), CandidateEmail.candidate_id)
+    """
+        candidate_email_rows data will be
+        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+    """
+
+    # list of tuples (candidate id, email address)
+    group_id_and_email_and_labels = []
+
+    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
+    # id_email_label: (id, email, label)
+    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
+
+    """
+    After running groupby clause, the data will look like
+    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
+        (candidate_id2, email_address2, email_label2)],... ]
+    """
+
+    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
+        group_id_and_email_and_labels.append(list(group_id_email_label))
+    filtered_email_rows = []
+
+    # Check if primary EmailLabel exist in db
+    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
+        raise InternalServerError(
+            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
+
+    # We don't know email_label id of primary email. So, get that from db
+    email_label_id_desc_tuples = [(email_label.id, email_label.description) for email_label in EmailLabel.query.all()]
+
+    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
+    # other email
+    for id_and_email_and_label in group_id_and_email_and_labels:
+        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
+        search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
+        # If there is only one candidate for an email-address in user's domain, we are good to go,
+        # otherwise log and raise the invalid error.
+        if len(search_result) == 1:
+            filtered_email_rows.append((_id, email))
+        else:
+            logger.warn('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
+                        'Candidate ids are: %s'
+                        % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
+                           [candidate_email.candidate_id for candidate_email in search_result]))
+            raise InvalidUsage('There exist multiple candidates with same email address '
+                               'in user`s domain')
+    return filtered_email_rows
+
+
+def notify_and_get_blast_params(campaign, user, new_candidates_only, candidate_ids_and_emails):
+    email_notification_to_admins(
+        subject='Marketing batch about to send',
+        body="Marketing email batch about to send, campaign.name=%s, user=%s, "
+             "new_candidates_only=%s, address list size=%s"
+             % (campaign.name, user.email, new_candidates_only, len(candidate_ids_and_emails))
+            )
+    logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
+                "new_candidates_only=%s, address list size=%s"
+                 % (campaign.name, user.email, new_candidates_only,
+                    len(candidate_ids_and_emails)))
+    # Add activity
+    try:
+        CampaignBase.create_activity(user.id,
+                                     Activity.MessageIds.CAMPAIGN_SEND,
+                                     campaign,
+                                     dict(id=campaign.id, name=campaign.name,
+                                          num_candidates=len(candidate_ids_and_emails)))
+    except Exception as error:
+        logger.error('Error occurred while creating activity for '
+                     'email-campaign(id:%s) batch send. Error is %s'
+                     % (campaign.id, error.message))
+    # Create the email_campaign_blast for this blast
+    blast_datetime = datetime.datetime.now()
+    email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,
+                                              sent_datetime=blast_datetime)
+    EmailCampaignBlast.save(email_campaign_blast)
+    blast_params = dict(sends=0, bounces=0)
+    logger.info('Email campaign record is %s. blast record is %s. User(id:%s).'
+                % (campaign.to_json(), email_campaign_blast.to_json(), user.id))
+    return email_campaign_blast, blast_params, blast_datetime
+
+
+def send_campaign_through_celery(user, campaign, list_ids, new_candidates_only):
+
+    get_email_campaign_candidate_ids_and_emails_with_celery(user, campaign, list_ids, new_candidates_only)
