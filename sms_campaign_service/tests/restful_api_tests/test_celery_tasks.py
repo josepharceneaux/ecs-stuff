@@ -68,9 +68,9 @@ class TestCeleryTasks(object):
         campaign = SmsCampaign.get_by_id(str(campaign_id))
         campaign.update(body_text='Hi all, please visit http://www.abc.com or '
                                   'http://www.123.com or http://www.xyz.com')
-        response_send = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND % campaign_id,
+        response_send = CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND, campaign,
                                                             access_token_first,
-                                                            sleep_time=0)
+                                                            blast_url=SmsCampaignApiUrl.BLASTS)
         assert_api_send_response(campaign, response_send, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id)
 
@@ -80,9 +80,9 @@ class TestCeleryTasks(object):
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. One candidate has no phone number associated. So, total sends should be 1.
         """
+        campaign = SmsCampaign.get_by_id(str(sms_campaign_with_one_valid_candidate['id']))
         response_send = CampaignsTestsHelpers.send_campaign(
-            SmsCampaignApiUrl.SEND % sms_campaign_with_one_valid_candidate['id'],
-            access_token_first, sleep_time=0)
+            SmsCampaignApiUrl.SEND, campaign, access_token_first)
         assert_api_send_response(sms_campaign_with_one_valid_candidate,
                                  response_send, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(

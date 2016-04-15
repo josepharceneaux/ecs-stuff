@@ -256,7 +256,7 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    def send_campaign(url, campaign, access_token):
+    def send_campaign(url, campaign, access_token, blasts_url=None):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
@@ -264,33 +264,40 @@ class CampaignsTestsHelpers(object):
         :param url: URL to hit for sending given campaign
         :param campaign: Email or SMS campaign obj
         :param access_token: Auth token to make HTTP request
+        :param blasts_url: URL to get blasts of given campaign
         """
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(url, basestring)
         # send campaign
         if campaign:
-            url = url % campaign.id
+            url = url % (campaign.id if hasattr(campaign, 'id') else campaign['id'])
         response = send_request('post', url, access_token)
         assert response.ok
-        blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign)
+        blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
+                                                               blasts_url=blasts_url)
         if not blasts:
             raise UnprocessableEntity('blasts not found in given time range.')
         return response
 
     @staticmethod
-    def get_blasts(campaign):
+    def get_blasts(campaign, access_token=None, blasts_url=None):
         """
         This returns all the blasts associated with given campaign
         """
         db.session.commit()
-        return campaign.blasts.all()
+        if not blasts_url:
+            return campaign.blasts.all()
+        blasts_get_response = send_request('get', blasts_url, access_token)
+        if blasts_get_response.ok:
+            return blasts_get_response.json()['blasts']
 
     @staticmethod
-    def get_blasts_with_polling(campaign):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None):
         """
         This polls the result of blasts of a campaign for 10s.
         """
-        return poll(CampaignsTestsHelpers.get_blasts, step=3, args=(campaign,), timeout=10)
+        return poll(CampaignsTestsHelpers.get_blasts, step=3,
+                    args=(campaign, access_token, blasts_url), timeout=10)
 
     @staticmethod
     def get_sends(campaign, blast_index):
@@ -310,16 +317,20 @@ class CampaignsTestsHelpers(object):
         assert sends >= expected_count
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
-                                        assert_candidates=True, timeout=40, data=None):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=False, count=1,
+                                        assert_candidates=True, timeout=40, data=None,
+                                        create_phone=False, assign_role=False):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         """
+        if assign_role:
+            CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
         if not data:
             # create candidate
             data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                             emails_list=emails_list, count=count)
+                                             emails_list=emails_list, create_phone=create_phone,
+                                             count=count)
 
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)

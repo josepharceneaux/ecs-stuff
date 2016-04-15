@@ -102,8 +102,6 @@ def assert_api_send_response(campaign, response, expected_status_code):
         assert str(campaign.id) in json_resp['message']
     else:
         assert str(campaign['id']) in json_resp['message']
-    # Need to add this as processing of POST request runs on Celery
-    time.sleep(2*SLEEP_TIME)
 
 
 def assert_campaign_schedule(response, user_id, campaign_id):

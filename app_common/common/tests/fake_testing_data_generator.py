@@ -1,5 +1,7 @@
 import uuid
 from faker import Faker
+from ..utils.handy_functions import sample_phone_number
+
 fake = Faker()
 
 __author__ = 'jitesh'
@@ -8,8 +10,7 @@ __author__ = 'jitesh'
 class FakeCandidatesData(object):
     @classmethod
     def create(cls, talent_pool, count=1, first_name=True, middle_name=False, last_name=True,
-               added_time=True, emails_list=True, address_list=None, create_phone= True):
-
+               added_time=True, emails_list=True, address_list=None, create_phone=True):
         """
         Generates candidate data dictionary as required by candidate_service API.
         Creates candidate data dictionary with given data or random data
@@ -41,7 +42,7 @@ class FakeCandidatesData(object):
                 # 'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
                 'emails': {True: cls.create_emails_list(), False: None}.get(emails_list, emails_list),
                 'addresses': cls.create_address_list() if address_list is True else address_list,
-                'phones': [{"label": "mobile", "value": fake.phone_number(), "is_default": True}] if create_phone else []}
+                'phones': [{"label": "mobile", "value": sample_phone_number(), "is_default": True}] if create_phone else []}
             candidates.append(candidate)
         return {'candidates': candidates}
 
