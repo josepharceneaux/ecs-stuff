@@ -658,6 +658,11 @@ class CandidateCustomFieldResource(Resource):
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
 
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
             return {
                 'candidate_custom_field': {
                     'custom_field_id': custom_field_id,
@@ -688,7 +693,7 @@ class CandidateCustomFieldResource(Resource):
         authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -704,6 +709,11 @@ class CandidateCustomFieldResource(Resource):
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             db.session.delete(candidate_custom_field)
 

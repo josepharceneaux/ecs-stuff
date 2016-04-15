@@ -120,3 +120,101 @@ class TestCreateCandidateCustomField(object):
         assert create_resp.status_code == 404
         assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
+
+class TestGetCandidateCustomField(object):
+    def test_get_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
+                                            candidate_first, candidate_second):
+        """
+        Test:  Attempt to retrieve the ccf of a different candidate
+        Expect: 403
+        """
+        AddUserRoles.add_and_get(user_first)
+        data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id}]}
+
+        # Add candidate custom fields for candidate
+        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve ccf using a different candidate ID
+        ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
+        url = CandidateApiUrl.CUSTOM_FIELD % (candidate_second.id, ccf_id)
+        get_resp = send_request('get', url, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 403
+        assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
+
+    def test_get_non_existing_ccf(self, access_token_first, user_first, candidate_first):
+        """
+        Test:  Attempt to retrieve a ccf that isn't yet created
+        Expect: 404
+        """
+        AddUserRoles.add_and_get(user_first)
+
+        # Retrieve ccf
+        get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT), access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 404
+        assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
+
+    def test_get_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
+                                             user_second_candidate):
+        """
+        Test:  Attempt to retrieve ccf that do not belong to user's domain
+        Expect: 403
+        """
+        AddUserRoles.add_and_get(user_second)
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
+        get_resp = send_request('get', url, access_token_second)
+        print response_info(get_resp)
+        assert get_resp.status_code == 403
+        assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
+
+
+class TestDeleteCandidateCustomField(object):
+    def test_delete_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
+                                               candidate_first, candidate_second):
+        """
+        Test:  Attempt to delete the ccf of a different candidate
+        Expect: 403
+        """
+        AddUserRoles.all_roles(user_first)
+        data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id}]}
+
+        # Add candidate custom fields for candidate
+        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve ccf using a different candidate ID
+        ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
+        url = CandidateApiUrl.CUSTOM_FIELD % (candidate_second.id, ccf_id)
+        del_resp = send_request('delete', url, access_token_first)
+        print response_info(del_resp)
+        assert del_resp.status_code == 403
+        assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
+
+    def test_delete_non_existing_ccf(self, access_token_first, user_first, candidate_first):
+        """
+        Test:  Attempt to delete a ccf that isn't yet created
+        Expect: 404
+        """
+        AddUserRoles.all_roles(user_first)
+
+        # Retrieve ccf
+        url = CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT)
+        del_resp = send_request('delete', url, access_token_first)
+        print response_info(del_resp)
+        assert del_resp.status_code == 404
+        assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
+
+    def test_delete_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
+                                                user_second_candidate):
+        """
+        Test:  Attempt to delete ccf that do not belong to user's domain
+        Expect: 403
+        """
+        AddUserRoles.all_roles(user_second)
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
+        del_resp = send_request('delete', url, access_token_second)
+        print response_info(del_resp)
+        assert del_resp.status_code == 403
+        assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
