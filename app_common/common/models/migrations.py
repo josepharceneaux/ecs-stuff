@@ -48,6 +48,7 @@ def run_migrations(logger, db):
     if not os.path.isdir(migrations_directory):
         # raise NotFoundError(error_message="No migrations directory found")
         logger.info("No migrations to process (non-existant directory {})".format(migrations_directory))
+        return
 
     # Ensure that all migration files appear valid before using them
     files = []
