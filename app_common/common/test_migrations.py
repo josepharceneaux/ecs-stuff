@@ -2,13 +2,31 @@
 Tests for models/migrations.py
 '''
 
+import os
+import pytest
+
+from app_common.common.models.migrations import run_migrations
+from app_common.common.utils.models_utils import init_talent_app
+from app_common.common.models.db import db
+
 class TestMigrations():
 
-    def test_no_migrations_directory_is_ok(self):
-        assert True
+    app, logger = init_talent_app(__name__)
 
-    def test_empty_migrations_directory_is_ok(self):
-        assert True
+    def test_no_migrations_directory_is_ok(self, tmpdir, mocker):
+        tmpdir.chdir()
+        mocker.patch.object(self.logger, 'info')
+        run_migrations(self.logger, db)
+        message = "No migrations to process (non-existant directory ./migrations)"
+        self.logger.info.assert_called_with(message)
+
+    def test_empty_migrations_directory_is_ok(self, tmpdir, mocker):
+        tmpdir.chdir()
+        tmpdir.mkdir("migrations")
+        mocker.patch.object(self.logger, 'info')
+        run_migrations(self.logger, db)
+        message = "No migrations to process."
+        self.logger.info.assert_called_with(message)
 
     def test_bad_migration_filename(self):
         assert True
