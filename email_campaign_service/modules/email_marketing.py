@@ -845,7 +845,11 @@ def handle_email_bounce(message_id, bounce, emails):
     # increase number of bounces by one for associated campaign blast.
     blast.update(bounces=(blast.bounces + 1))
 
-    # Mark the matching emails as bounced in all domains because an email that is invalid
-    # would be invalid in all domains.
-    CandidateEmail.mark_emails_bounced(emails)
-    logger.info('Marked %s email addresses as bounced' % emails)
+    if bounce['bounceType'] == 'Permanent':
+        # Mark the matching emails as bounced in all domains because an email that is invalid
+        # would be invalid in all domains.
+        CandidateEmail.mark_emails_bounced(emails)
+        logger.info('Marked %s email addresses as bounced' % emails)
+    elif bounce['bounceType'] == 'Transient':
+        logger.info('Email was bounced as Transient. '
+                    'We will not mark it bounced because it is a temporary problem')
