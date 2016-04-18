@@ -2197,7 +2197,9 @@ class CandidateReferencesResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
-        Endpoint:  POST /v1/candidates/:candidate_id/references
+        Endpoint:   POST /v1/candidates/:candidate_id/references
+        :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
+                    status code: 201
         """
         # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
@@ -2241,6 +2243,10 @@ class CandidateReferencesResource(Resource):
         Endpoints:
              i. DELETE /v1/candidates/:candidate_id/references
             ii. DELETE /v1/candidates/:candidate_id/references/:id
+        :return
+            {'candidate_reference': {'id': int}}                        If a single reference was deleted, OR
+            {'candidate_references': [{'id': int}, {'id': int}, ...]}   If all references were deleted
+            status code: 200
         """
         # Get authenticated user, candidate ID, and reference ID
         authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
@@ -2254,9 +2260,6 @@ class CandidateReferencesResource(Resource):
 
         if reference_id:  # Delete specified reference
             candidate_reference = CandidateReference.get_by_id(reference_id)
-            """
-            :type candidate_reference: CandidateReference
-            """
             if not candidate_reference:  # Reference must be recognized
                 raise NotFoundError("Candidate reference ({}) not found.".format(reference_id),
                                     custom_error.REFERENCE_NOT_FOUND)
@@ -2264,10 +2267,8 @@ class CandidateReferencesResource(Resource):
             if candidate_reference.candidate_id != candidate_id:  # reference must belong to candidate
                 raise ForbiddenError("Not authorized", custom_error.REFERENCE_FORBIDDEN)
 
-            db.session.delete(candidate_reference)  # delete
+            # Delete candidate reference and return its ID
+            return {'candidate_reference': ReferenceOperations.delete(candidate_reference)}
 
         else:  # Delete all of candidate's references
-            map(db.session.delete, candidate.references)
-
-        db.session.commit()
-        return '', 204
+            return {'candidate_references': ReferenceOperations.delete_all(candidate.references)}

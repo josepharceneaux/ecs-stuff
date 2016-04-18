@@ -1292,7 +1292,30 @@ reference_schema = {
                 "properties": {
                     "name": {"type": "string"},
                     "position_title": {"type": ["string", "null"]},
-                    "comments": {"type": "string"}
+                    "comments": {"type": "string"},
+                    "reference_email": {
+                        "type": "object",
+                        "properties": {
+                            "is_default": {"type": ["boolean", "null"]},
+                            "address": {"type": ["string", "null"]},
+                            "label": {"type": ["string", "null"]}
+                        }
+                    },
+                    "reference_phone": {
+                        "type": "object",
+                        "properties": {
+                            "is_default": {"type": ["boolean", "null"]},
+                            "value": {"type": ["string", "null"]},
+                            "label": {"type": ["string", "null"]}
+                        }
+                    },
+                    "reference_web_address": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": ["string", "null"]},
+                            "description": {"type": ["string", "null"]}
+                        }
+                    }
                 }
             }
         }

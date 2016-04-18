@@ -812,7 +812,6 @@ class ReferenceOperations(object):
                 id=web.id,
                 url=web.url,
                 description=web.description,
-                extension=web.extension,
             ) for web in reference.reference_web_addresses]
 
         return_list = []
@@ -860,51 +859,78 @@ class ReferenceOperations(object):
             reference_web_address = reference.get('reference_web_address')
             if reference_email:
                 email_label = 'Primary' if not reference_email.get('label') else reference_email['label'].strip().title()
+                value = reference_email['address'].strip() if reference_email.get('address') else None
                 reference_email_dict = dict(
-                    reference_id=reference_id,
-                    email_label_id=EmailLabel.email_label_id_from_email_label(email_label),
-                    is_default=reference_email.get('is_default') or True,
-                    value=reference_email['address'].strip() if reference_email.get('address') else None
+                    email_label_id=EmailLabel.email_label_id_from_email_label(email_label) if value else None,
+                    is_default=reference_email.get('is_default') or True if value else None,
+                    value=value
                 )
                 # Remove keys with empty values
                 reference_email_dict = purge_dict(reference_email_dict)
-                # Add Reference Email
-                db.session.add(ReferenceEmail(**reference_email_dict))
+
+                # Prevent adding empty records to db
+                if reference_email_dict:
+                    reference_email_dict.update(reference_id=reference_id)
+                    db.session.add(ReferenceEmail(**reference_email_dict))
 
             if reference_phone:
                 phone_label = 'Home' if not reference_phone.get('label') else reference_phone['label'].strip().title()
-                value = reference_phone['value'].strip() if reference_phone.get('value') else None,
+                value = reference_phone['value'].strip() if reference_phone.get('value') else None
                 phone_number_dict = format_phone_number(value) if value else None
                 reference_phone_dict = dict(
-                    reference_id=reference_id,
-                    phone_label_id=PhoneLabel.phone_label_id_from_phone_label(phone_label),
-                    is_default=reference_phone.get('is_default') or True,
+                    phone_label_id=PhoneLabel.phone_label_id_from_phone_label(phone_label) if phone_number_dict else None,
+                    is_default=reference_phone.get('is_default') or True if phone_number_dict else None,
                     value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
                     extension=phone_number_dict.get('extension') if phone_number_dict else None
                 )
                 # Remove keys with empty values
                 reference_phone_dict = purge_dict(reference_phone_dict)
-                # Add Reference Phone
-                db.session.add(ReferencePhone(**reference_phone_dict))
+
+                # Prevent adding empty records to db
+                if reference_phone_dict:
+                    reference_phone_dict.update(reference_id=reference_id)
+                    db.session.add(ReferencePhone(**reference_phone_dict))
 
             if reference_web_address:
                 reference_web_address_dict = dict(
-                    reference_id=reference_id,
                     url=reference_web_address['url'].strip() if reference_web_address.get('url') else None,
                     description=reference_web_address['description'].strip()
                         if reference_web_address.get('description') else None,
                 )
                 # Remove keys with empty values
                 reference_web_address_dict = purge_dict(reference_web_address_dict)
-                db.session.add(ReferenceWebAddress(**reference_web_address_dict))
+
+                # Prevent inserting empty records into db
+                if reference_web_address_dict:
+                    reference_web_address_dict.update(reference_id=reference_id)
+                    db.session.add(ReferenceWebAddress(**reference_web_address_dict))
 
             db.session.commit()  # Commit transactions to db
             created_reference_ids.append(reference_id)
 
         return created_reference_ids
 
-    def delete(self, candidate_id, references):
-        pass
+    @staticmethod
+    def delete(candidate_reference):
+        """
+        :type candidate_reference:  CandidateReference
+        :rtype:  dict
+        """
+        db.session.delete(candidate_reference)
+        db.session.commit()
+        return {'id': candidate_reference.id}
+
+    @staticmethod
+    def delete_all(candidate_references):
+        """
+        :type candidate_references:  list[CandidateReference]
+        :rtype:  list[dict]
+        """
+        deleted_candidate_references = []
+        for reference in candidate_references:
+            deleted_candidate_references.append(ReferenceOperations.delete(reference))
+        return deleted_candidate_references
+
 
 ######################################################
 # Helper Functions For Creating and Updating Candidate
