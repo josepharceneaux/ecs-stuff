@@ -8,11 +8,11 @@ import random
 import string
 from datetime import timedelta
 
-# Application imports
-from uuid import uuid4
-
+# Third-party imports
 import requests
 
+
+# Application imports
 from scheduler_service import db
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.auth_utilities import get_access_token
