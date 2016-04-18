@@ -428,6 +428,10 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
         # If there is only one candidate for an email-address in user's domain, we are good to go,
         # otherwise log and raise the invalid error.
         if len(search_result) == 1:
+            if CandidateEmail.is_bounced_email(email):
+                logger.info('Skipping this email because this email address is marked as bounced.'
+                            'CandidateId : %s, Email: %s, EmailCampaignId: %s' % (_id, email, campaign.id))
+                continue
             filtered_email_rows.append((_id, email))
         else:
             logger.warn('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
@@ -529,9 +533,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
                                     email_format='html' if campaign.body_html else 'text')
     except Exception as e:
         # Mark email as bounced
-        logger.exception('Error occurred while sending email via Amazon SES. Details:%s' % e.message)
-        _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
-                            email_campaign_blast_id, e)
+        _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+                                    email_campaign_blast_id, e)
         return False
     # Save SES message ID & request ID
     logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
@@ -630,9 +633,11 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
+    EmailCampaign.session.commit()
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate.id,
-                                            sent_datetime=blast_datetime)
+                                            sent_datetime=blast_datetime,
+                                            blast_id=email_campaign_blast_id)
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here
@@ -669,22 +674,15 @@ def get_new_text_html_subject_and_campaign_send(campaign, candidate_id,
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
-def _mark_email_bounced(email_campaign_send, candidate, to_addresses, blast_params,
-                        email_campaign_blast_id, exception):
+def _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+                                email_campaign_blast_id, exception):
     """ If failed to send email; Mark email bounced.
     """
     # If failed to send email, still try to get request id from XML response.
     # Unfortunately XML response is malformed so must manually parse out request id
     request_id_search = re.search('<RequestId>(.*)</RequestId>', exception.__str__(), re.IGNORECASE)
     request_id = request_id_search.group(1) if request_id_search else None
-    # email_campaign_send = EmailCampaignSend.query.get(email_campaign_send_id)
-    email_campaign_send.is_ses_bounce = 1
     email_campaign_send.ses_request_id = request_id
-    db.session.commit()
-    # Update blast
-    blast_params['bounces'] += 1
-    email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
-    email_campaign_blast.bounces = blast_params['bounces']
     db.session.commit()
     # Send failure message to email marketing admin, just to notify for verification
     logger.exception("Failed to send marketing email to candidate_id=%s, to_addresses=%s"
@@ -817,3 +815,41 @@ def _update_blast_sends(blast_obj, new_sends, campaign, user, new_candidates_onl
     logger.info("Marketing email batch completed, emails sent=%s, "
                 "campaign=%s, user=%s, new_candidates_only=%s",
                 new_sends, campaign.name, user.email, new_candidates_only)
+
+
+def handle_email_bounce(message_id, bounce, emails):
+    """
+    This function handles email bounces. When an email is bounced, email address is marked as bounced so
+    no further emails will be sent to this email address.
+    It also updates email campaign bounces in respective blast.
+    :param str message_id: message id associated with email send
+    :param dict bounce: JSON bounce message body
+    :param list[str] emails: list of bounced emails
+    """
+    assert isinstance(message_id, basestring) and message_id, "message_id should not be empty"
+    assert isinstance(bounce, dict) and bounce, "bounce param should be a valid dict"
+    assert isinstance(emails, list) and all(emails), "emails param should be a non empty list of email addresses"
+    logger.info('Bounce Detected: %s', bounce)
+
+    # get the corresponding EmailCampaignSend object that is associated with given AWS message id
+    send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+
+    if not send_obj:
+        logger.error('Unable to find email campaign send for this email bounce: %s', bounce)
+        return None
+
+    # Mark the send object as bounced.
+    send_obj.update(is_ses_bounce=True)
+    blast = send_obj.blast
+
+    # increase number of bounces by one for associated campaign blast.
+    blast.update(bounces=(blast.bounces + 1))
+
+    if bounce['bounceType'] == 'Permanent':
+        # Mark the matching emails as bounced in all domains because an email that is invalid
+        # would be invalid in all domains.
+        CandidateEmail.mark_emails_bounced(emails)
+        logger.info('Marked %s email addresses as bounced' % emails)
+    elif bounce['bounceType'] == 'Transient':
+        logger.info('Email was bounced as Transient. '
+                    'We will not mark it bounced because it is a temporary problem')
