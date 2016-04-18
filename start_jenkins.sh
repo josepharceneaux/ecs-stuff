@@ -28,7 +28,7 @@ cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campai
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
-# python setup_environment/reset_database_and_cloud_search.py
+python setup_environment/reset_database_and_cloud_search.py
 # Running Docker Containers for all apps before testing them
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
