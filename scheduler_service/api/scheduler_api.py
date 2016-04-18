@@ -10,15 +10,13 @@ import types
 
 # Third party imports
 from datetime import timedelta, datetime
-
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-
-# Application imports
 from werkzeug.exceptions import BadRequest
 
+# Application imports
 from scheduler_service import TalentConfigKeys, flask_app, logger, SchedulerUtils
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User, DomainRole

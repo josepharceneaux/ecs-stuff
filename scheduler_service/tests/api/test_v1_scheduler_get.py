@@ -382,6 +382,7 @@ class TestSchedulerGet(object):
                                                   schedule_ten_general_jobs):
         """
         In this test, use filters to get filtered tasks from admin API
+        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
         :param sample_user:
         :param auth_header:
         :param create_five_users:
@@ -437,20 +438,20 @@ class TestSchedulerGet(object):
         # There should be 10 scheduled jobs which are general
         assert len(response.json()['tasks']) >= 10
 
-        # Specify invalid task_category and try to get jobs. Should get 400 in response.
+        # Specify invalid task_type and try to get jobs. Should get 400 in response.
         response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'invalid'),
                                 headers=auth_header)
         assert response.status_code == 400
 
-        # Get only user jobs by specifying task_category
+        # Get only periodic jobs by specifying task_type
         response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.PERIODIC),
                                 headers=auth_header)
         assert response.status_code == 200
 
-        # There were 10 scheduled jobs which are periodic
+        # There are 10 periodic scheduled jobs
         assert len(response.json()['tasks']) >= 10
 
-        # Get only general jobs by specifying task_category
+        # Get only one_time jobs by specifying task_type
         response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.ONE_TIME),
                                 headers=auth_header)
         assert response.status_code == 200
