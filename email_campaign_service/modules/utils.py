@@ -44,6 +44,8 @@ class AWS_SNS_TERMS(object):
     NOTIFICATION = 'Notification'
     BOUNCE = 'Bounce'
     COMPLAINT = 'Complaint'
+    PERMANENT_BOUNCE = 'Permanent'
+    TEMPORARY_BOUNCE = 'Transient'
 
 
 def do_mergetag_replacements(texts, candidate=None):
