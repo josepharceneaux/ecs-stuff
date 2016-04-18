@@ -330,26 +330,29 @@ def get_blasts(campaign):
     return campaign.blasts.all()
 
 
-def get_sends(campaign, blast_index):
+def get_sends(campaign, blast_index, expected_count):
     """
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
-    return campaign.blasts[blast_index].sends
+    if campaign.blasts[blast_index].sends == expected_count:
+        return campaign.blasts[blast_index].sends
+    else:
+        return False
 
 
 def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
-    return poll(get_blasts, step=3, args=(campaign,), timeout=10)
+    return poll(get_blasts, step=3, args=(campaign,), timeout=40)
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = poll(get_sends, step=3, args=(campaign, blast_index), timeout=abort_time_for_sends)
+    sends = poll(get_sends, step=3, args=(campaign, blast_index, expected_count), timeout=abort_time_for_sends)
     assert sends >= expected_count
 
 
@@ -546,3 +549,20 @@ def send_campaign_helper(request, email_campaign, access_token):
     # send campaign
     send_campaign(email_campaign, access_token)
     return email_campaign
+
+
+def assert_campaign_failure(response, campaign, email_client=False,
+                         expected_status=200):
+    """
+    This asserts that if some data was invalid while sending the campaign,
+    campaign sending fails and no blasts are created.
+    """
+    assert response.status_code == expected_status
+    assert response.json()
+    if not email_client:
+        json_resp = response.json()
+        assert str(campaign.id) in json_resp['message']
+    # Need to add this as processing of POST request runs on Celery
+    blasts = get_blasts(campaign)
+    assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
+    assert len(blasts) == 0

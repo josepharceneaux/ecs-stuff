@@ -33,6 +33,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_smartli
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
+                                                                  assert_campaign_failure,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
                                                                   assert_campaign_send,
@@ -380,13 +381,15 @@ class TestSendCampaign(object):
                                               assign_roles_to_user_first, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist .
+        no candidate associated with it. Campaign sending should fail and no blasts should be
+        created.
         """
         with app.app_context():
-            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
+            response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
                 email_campaign_of_user_first, talent_pipeline.id)
+            assert_campaign_failure(response, email_campaign_of_user_first, email_client=False,
+                         expected_status=requests.codes.OK)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
@@ -411,11 +414,12 @@ class TestSendCampaign(object):
             self, access_token_first, campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
-        candidate having no email associated. So, Custom error should be raised.
+        candidate having no email associated. So, sending email campaign should fail.
         """
-        CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
+        response = requests.post(
             self.URL % campaign_with_candidate_having_no_email.id,
-            access_token_first, campaign_with_candidate_having_no_email.id)
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert_campaign_failure(response, campaign_with_candidate_having_no_email, False, requests.codes.OK)
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -434,7 +438,7 @@ class TestSendCampaign(object):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should not be sent to
-        any candidate. Response should get Invalid usage.
+        any candidate.
         """
         same_email = fake.email()
         for candidate in user_first.candidates:
@@ -442,7 +446,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == InvalidUsage.http_status_code()
+        assert_campaign_failure(response, campaign_with_valid_candidate, False, requests.codes.OK)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,
