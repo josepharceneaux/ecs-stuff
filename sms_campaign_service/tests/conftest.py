@@ -265,7 +265,7 @@ def sms_campaign_of_current_user(request, campaign_valid_data,
     This creates the SMS campaign for user_first using valid data.
     """
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=2, create_phone=True)
+        access_token_first, talent_pipeline, count=2, create_phone=True, assign_role=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -285,9 +285,9 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
     This creates the SMS campaign for user_first using valid data and two smartlists.
     """
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=1, create_phone=True)
+        access_token_first, talent_pipeline, create_phone=True, assign_role=True)
     smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=1, assign_role=False, create_phone=True)
+        access_token_first, talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -307,22 +307,15 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
     This fixture creates an SMS campaign with two candidates. Only one candidates has phone number
     associated with it.
     """
-    CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
     # create candidate
     candidates_data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool)
     candidate_2_data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
                                                  create_phone=False)
     candidates_data['candidates'].append(candidate_2_data['candidates'][0])
-
-    candidate_ids = create_candidates_from_candidate_api(access_token_first, candidates_data,
-                                                         return_candidate_ids_only=True)
-    time.sleep(5)  # added due to uploading candidates on CS
-    smartlist_data = {'name': fake.word(),
-                      'candidate_ids': candidate_ids,
-                      'talent_pipeline_id': talent_pipeline.id}
-    smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token_first)
-    time.sleep(5)  # added due to new field dumb_list_ids in
-    smartlist_id = smartlists['smartlist']['id']
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                            talent_pipeline,
+                                                                            data=candidates_data,
+                                                                            assign_role=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -675,8 +668,8 @@ def sent_campaign(access_token_first, sms_campaign_of_current_user):
     This sends campaign to two candidates.
     """
     response_post = CampaignsTestsHelpers.send_campaign(
-        SmsCampaignApiUrl.SEND % sms_campaign_of_current_user['id'],
-        access_token_first, sleep_time=0)
+        SmsCampaignApiUrl.SEND, sms_campaign_of_current_user,
+        access_token_first, SmsCampaignApiUrl.BLASTS)
     assert_api_send_response(sms_campaign_of_current_user, response_post, requests.codes.OK)
     # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     return sms_campaign_of_current_user
@@ -725,6 +718,7 @@ def url_conversion_by_send_test_sms_campaign(request, sent_campaign):
     campaign_in_db = SmsCampaign.get_by_id(sent_campaign['id'])
     # get campaign blast
     sms_campaign_blast = campaign_in_db.blasts[0]
+    CampaignsTestsHelpers.assert_blast_sends(campaign_in_db, 2, abort_time_for_sends=20)
     # get URL conversion record from relationship
     url_conversion = \
         sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion
@@ -832,11 +826,9 @@ def _get_scheduled_campaign(user, campaign, auth_header):
 def _unschedule_campaign(campaign, headers):
     """
     This un schedules the given campaign from scheduler_service
-    :param headers:
-    :return:
     """
     try:
-        delete_test_scheduled_task(campaign.scheduler_task_id, headers)
+        delete_test_scheduled_task(campaign['scheduler_task_id'], headers)
     except ObjectDeletedError:  # campaign may have been deleted in case of DELETE request
         pass
 
@@ -845,7 +837,6 @@ def _delete_campaign(campaign_obj):
     """
     This deletes the given campaign from database
     :param campaign_obj:
-    :return:
     """
     try:
         SmsCampaign.delete(campaign_obj)

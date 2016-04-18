@@ -6,8 +6,12 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Standard Import
 import time
 
+# Third Party
+from polling import poll
+
 # Common Utils
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
@@ -43,7 +47,10 @@ def assert_url_conversion(sms_campaign_sends):
 
 
 def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign_id,
-                                                       blast_index=0):
+                                                       access_token,
+                                                       expected_blasts=1,
+                                                       blast_index=0, blast_timeout=10,
+                                                       sends_timeout=20):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
@@ -54,7 +61,16 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    sms_campaign_blast = campaign.blasts[blast_index]
+    # GET blasts of given campaign
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, access_token,
+                                                 blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
+                                                 expected_count=expected_blasts,
+                                                 timeout=blast_timeout)
+    # Poll blast sends
+    sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
+    CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count, blast_index=blast_index,
+                                             abort_time_for_sends=sends_timeout)
+
     assert sms_campaign_blast.sends == expected_count
     # assert on sends
     sms_campaign_sends = sms_campaign_blast.blast_sends.all()
@@ -98,10 +114,8 @@ def assert_api_send_response(campaign, response, expected_status_code):
         'Response should be ' + str(expected_status_code)
     assert response.json()
     json_resp = response.json()
-    if hasattr(campaign, 'id'):
-        assert str(campaign.id) in json_resp['message']
-    else:
-        assert str(campaign['id']) in json_resp['message']
+    campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
+    assert str(campaign_id) in json_resp['message']
 
 
 def assert_campaign_schedule(response, user_id, campaign_id):

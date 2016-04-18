@@ -26,7 +26,7 @@ class SmsCampaign(db.Model):
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, lazy='dynamic', backref='campaign')
-    smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+    campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
                               passive_deletes=True, backref='campaign')
 
     def __repr__(self):
@@ -45,7 +45,7 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [smartlist.id for smartlist in self.smartlists]}
+                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.campaign_smartlists]}
         return return_dict
 
     @classmethod

@@ -269,10 +269,12 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(url, basestring)
         # send campaign
-        if campaign:
-            url = url % (campaign.id if hasattr(campaign, 'id') else campaign['id'])
-        response = send_request('post', url, access_token)
+        campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
+        send_url = url % campaign_id
+        response = send_request('post', send_url, access_token)
         assert response.ok
+        if blasts_url:
+            blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
                                                                blasts_url=blasts_url)
         if not blasts:
@@ -292,12 +294,36 @@ class CampaignsTestsHelpers(object):
             return blasts_get_response.json()['blasts']
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=10):
         """
-        This polls the result of blasts of a campaign for 10s.
+        This polls the result of blasts of a campaign for given timeout (default 10s).
         """
         return poll(CampaignsTestsHelpers.get_blasts, step=3,
-                    args=(campaign, access_token, blasts_url), timeout=10)
+                    args=(campaign, access_token, blasts_url), timeout=timeout)
+
+    @staticmethod
+    def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
+                                        blasts_url=None, timeout=10):
+        """
+        This polls the result of get_blasts_with_index() for given timeout (default 10s).
+        """
+        return poll(CampaignsTestsHelpers.get_blast_with_index, step=3,
+                    args=(campaign, blast_index, access_token, blasts_url), timeout=timeout)
+
+    @staticmethod
+    def get_blast_with_index(campaign, blast_index=0, access_token=None, blasts_url=None):
+        """
+        This returns one particular blast associated with given campaign as specified by index.
+        """
+        db.session.commit()
+        if not blasts_url:
+            try:
+                return campaign.blasts[blast_index]
+            except IndexError:
+                return []
+        blasts_get_response = send_request('get', blasts_url, access_token)
+        if blasts_get_response.ok:
+            return blasts_get_response.json()['blast']
 
     @staticmethod
     def get_sends(campaign, blast_index):
@@ -315,6 +341,17 @@ class CampaignsTestsHelpers(object):
         sends = poll(CampaignsTestsHelpers.get_sends, step=3,
                      args=(campaign, blast_index), timeout=abort_time_for_sends)
         assert sends >= expected_count
+
+    @staticmethod
+    def assert_campaign_blasts(campaign, access_token, blasts_url, expected_count, timeout=10):
+        """
+        This function asserts the particular blast of given campaign has expected number of sends
+        """
+        blasts = poll(CampaignsTestsHelpers.get_blasts, step=3,
+                      args=(campaign, access_token, blasts_url), timeout=timeout)
+        if len(blasts) == expected_count:
+            return True
+        return False
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,

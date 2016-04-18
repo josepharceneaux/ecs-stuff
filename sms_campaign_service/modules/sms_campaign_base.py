@@ -944,16 +944,16 @@ def _get_valid_user_phone(user_phone_value):
     user_phones_obj = UserPhone.get_by_phone_value(user_phone_value)
     if len(user_phones_obj) == 1:
         user_phone = user_phones_obj[0]
+        return user_phone
     elif len(user_phones_obj) > 1:
-        raise MultipleUsersFound(
-            '%s phone number is associated with %s users. User ids are %s'
-            % (user_phone_value,
-               len(user_phones_obj),
-               [user_phone.user_id for user_phone in user_phones_obj]))
+        if not user_phone_value == TWILIO_TEST_NUMBER:
+            raise MultipleUsersFound('%s phone number is associated with %s users. '
+                                     'User ids are %s'
+                                     % (user_phone_value, len(user_phones_obj),
+                                        [user_phone.user_id for user_phone in user_phones_obj]))
     else:
         raise NoUserFoundForPhoneNumber('No User is associated with '
                                         '%s phone number' % user_phone_value)
-    return user_phone
 
 
 def _get_valid_candidate_phone(candidate_phone_value, current_user):
