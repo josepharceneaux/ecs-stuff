@@ -121,7 +121,7 @@ class Tasks(Resource):
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater than or equal to 1")
 
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
@@ -827,11 +827,11 @@ class AdminTasks(Resource):
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+            raise InvalidUsage(error_message="'page' arg should be a digit. Greater than or equal to 1")
 
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater or equal to 30")
+                error_message="'per_page' arg should be a digit and its value should be greater than or equal to 30")
 
         page, per_page = int(page), int(per_page)
 
@@ -856,8 +856,8 @@ class AdminTasks(Resource):
         # If is_paused is given then only return paused jobs
         if is_paused:
             if not str(is_paused).lower() in ['true', 'false']:
-                raise InvalidUsage("is_paused should be of type bool. If true will return paused jobs and if false, "
-                                   "then returns running jobs")
+                raise InvalidUsage("is_paused should be of type bool. If true, paused jobs will be returned and if false, "
+                                   "then endpoint returns running jobs")
             if str(is_paused).lower() == "true":
                 tasks = filter(lambda _task: _task.next_run_time is None,
                                tasks)

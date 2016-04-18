@@ -299,7 +299,7 @@ def serialize_task(task, is_admin_api=False):
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
                  task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
-    :param is_admin_api: In case of admin we want to assert user_email
+    :param is_admin_api: If true, then request is made to admin API, so add user_email to task_dict.
     :return: JSON converted dict object
     """
     task_dict = None
