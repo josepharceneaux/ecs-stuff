@@ -44,6 +44,7 @@ def get_candidate_if_exists(candidate_id):
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
     otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
+    :return  Candidate-object or raises NotFoundError
     """
     assert isinstance(candidate_id, (int, long))
     candidate = Candidate.get_by_id(candidate_id=candidate_id)
