@@ -4,6 +4,7 @@ __author__ = 'erikfarmer'
 
 # Standard Imports
 import re
+import time
 import json
 import random
 import string
@@ -19,11 +20,13 @@ from flask import current_app, request
 
 # Application Specific
 from ..models.db import db
-from ..talent_config_manager import TalentConfigKeys
 from werkzeug.exceptions import BadRequest
+from ..talent_config_manager import TalentConfigKeys
+from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
@@ -348,13 +351,12 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers():
+def create_oauth_headers(oauth_token=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
-    :return:
     """
-    oauth_token = request.oauth_token
+    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
     if not oauth_token:
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
     else:
@@ -405,7 +407,6 @@ def define_and_send_request(access_token, request, url, data=None):
     :param access_token: token for authentication
     :param data: data in form of dictionary
     """
-
     request = request.lower()
     assert request in ['get', 'post', 'put', 'patch', 'delete']
     method = getattr(requests, request)
@@ -413,5 +414,6 @@ def define_and_send_request(access_token, request, url, data=None):
         return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
     else:
         return method(url=url,
-                      headers={'Authorization': 'Bearer %s' % access_token, 'content-type': 'application/json'},
+                      headers={'Authorization': 'Bearer %s' % access_token,
+                               'content-type': 'application/json'},
                       data=json.dumps(data))

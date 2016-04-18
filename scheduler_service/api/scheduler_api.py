@@ -1022,3 +1022,4 @@ def check_job_state(job_id, job_state_to_check):
         raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
 
     return job
+

@@ -37,11 +37,11 @@ class TestClientEmailCampaign(object):
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])
         create_candidate_response = send_request('post', CandidateApiUrl.CANDIDATES,
                                                  access_token_first, data)
-        time.sleep(10)
         print response_info(create_candidate_response)
+        candidate_id = create_candidate_response.json()['candidates'][0]['id']
+        time.sleep(20)
 
         # Get Candidate via ID
-        candidate_id = create_candidate_response.json()['candidates'][0]['id']
         get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id,
                                               access_token_first)
         print response_info(get_candidate_response)

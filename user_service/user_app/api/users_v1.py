@@ -1,4 +1,5 @@
 from dateutil import parser
+from babel import Locale
 from flask_restful import Resource
 from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
@@ -49,7 +50,8 @@ class UserApi(Resource):
                         'registration_id': requested_user.registration_id,
                         'dice_user_id': requested_user.dice_user_id,
                         'last_read_datetime': requested_user.last_read_datetime.isoformat() if requested_user.last_read_datetime else None,
-                        'thumbnail_url': requested_user.thumbnail_url
+                        'thumbnail_url': requested_user.thumbnail_url,
+                        'locale': requested_user.locale
                         }}
 
         # User id is not provided so logged-in user wants to get all users of its domain
@@ -113,14 +115,20 @@ class UserApi(Resource):
             dice_user_id = user_dict.get('dice_user_id')
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
             user_group_id = user_dict.get('user_group_id')
+            locale = user_dict.get('locale', 'en-US')
             if request.user_can_edit_other_domains:
                 domain_id = user_dict.get('domain_id', request.user.domain_id)
             else:
                 domain_id = request.user.domain_id
 
+            try:
+                Locale.parse(locale, sep='-')
+            except:
+                raise InvalidUsage('A valid Locale value should be provided')
+
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
                                               domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                                              user_group_id=user_group_id)
+                                              user_group_id=user_group_id, locale=locale)
             user_ids.append(user_id)
 
         return {'users': user_ids}
@@ -161,6 +169,7 @@ class UserApi(Resource):
         thumbnail_url = posted_data.get('thumbnail_url', '').strip()
         last_read_datetime = posted_data.get('last_read_datetime', '').strip()
         is_disabled = posted_data.get('is_disabled', 0)
+        locale = posted_data.get('locale', '')
 
         try:
             last_read_datetime = parser.parse(last_read_datetime)
@@ -177,6 +186,12 @@ class UserApi(Resource):
             raise InvalidUsage("Possible vaues of `is_disabled` are 0 and 1")
 
         is_disabled = int(is_disabled)
+
+        if locale:
+            try:
+                Locale.parse(locale, sep='-')
+            except:
+                raise InvalidUsage('A valid Locale value should be provided')
         
         # Update user
         update_user_dict = {
@@ -186,7 +201,8 @@ class UserApi(Resource):
             'phone': phone,
             'thumbnail_url': thumbnail_url,
             'last_read_datetime': last_read_datetime,
-            'is_disabled': is_disabled
+            'is_disabled': is_disabled,
+            'locale': locale
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
         User.query.filter(User.id == requested_user_id).update(update_user_dict)

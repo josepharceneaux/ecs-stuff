@@ -7,9 +7,11 @@ Notes:
 # Standard libraries
 import logging
 import datetime
-import time as std_time
 from datetime import date
 from time import time
+
+# Third Party
+from polling import poll
 
 # Flask specific
 from flask import request
@@ -77,6 +79,9 @@ from candidate_service.modules.talent_openweb import (
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
+
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import \
+    assert_smartlist_candidates
 
 
 class CandidatesResource(Resource):
@@ -1367,7 +1372,6 @@ class CandidateClientEmailCampaignResource(Resource):
         }
 
         create_smartlist_resp = create_smartlist(smartlist_object, request.headers.get('authorization'))
-        std_time.sleep(20)  # added due to new field dumb_list_ids in CS
         if create_smartlist_resp.status_code != 201:
             return create_smartlist_resp.json(), create_smartlist_resp.status_code
 
@@ -1376,6 +1380,15 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
+        # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
+        if poll(assert_smartlist_candidates, step=3,
+                args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
+                timeout=30):
+            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                        % (len(candidate_ids), created_smartlist_id))
+        else:
+            raise InternalServerError('Candidate(s) could not be found for smartlist(id:%s)'
+                                      % created_smartlist_id)
 
         # create campaign
         email_campaign_object = {
