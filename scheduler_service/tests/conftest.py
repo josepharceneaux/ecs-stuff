@@ -197,7 +197,7 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
     return jobs_id
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def create_five_users(request, domain_first, first_group, sample_client):
     """
     Create five users and delete them in finalizer
@@ -225,7 +225,7 @@ def create_five_users(request, domain_first, first_group, sample_client):
     return users_list
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
     Scheduler 10 general jobs.
@@ -263,7 +263,7 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
     return general_job_ids_list
 
 
-@pytest.fixture()
+@pytest.fixture(scope='function')
 def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task, job_config):
     """
     Schedule 10 jobs of each users. So, there will be 50 jobs in total.
@@ -282,6 +282,9 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
             if index == 0:
                 data = json.dumps(job_config.copy())
             else:
+                run_datetime = datetime.utcnow() + timedelta(hours=10)
+                job_config_one_time_task['url'] = SchedulerApiUrl.RESUME_TASK
+                job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
                 data = json.dumps(job_config_one_time_task.copy())
             response = requests.post(SchedulerApiUrl.TASKS, data=data,
                                      headers=header)

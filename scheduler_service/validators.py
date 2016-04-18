@@ -8,6 +8,7 @@ from pytz import timezone
 from dateutil.parser import parse
 
 # App specific imports
+from scheduler_service import SchedulerUtils
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.utils.validators import is_valid_url_format
 
@@ -35,7 +36,8 @@ def get_valid_task_name_from_dict(data, key):
     """
     assert isinstance(data, dict)
     value = str(get_valid_data_from_dict(data, key))
-    general_msg = "Invalid value of %s %s. %s should be unique and alphanumeric and allowed characters are [-, _ ]" % (key, value, key)
+    general_msg = "Invalid value of %s %s. %s should be unique, alphanumeric and allowed characters are [-, _ ]. " \
+                  "Note: `%s` is not allowed as a task name." % (key, value, key, SchedulerUtils.RUN_JOB_METHOD_NAME)
     try:
         allowed_characters = ['-', '_']
         if any(c for c in value if not(c.isalnum() or c in allowed_characters)):

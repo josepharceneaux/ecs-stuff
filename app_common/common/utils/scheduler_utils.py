@@ -20,3 +20,4 @@ class SchedulerUtils(object):
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds
     CATEGORY_USER = 'user'
     CATEGORY_GENERAL = 'general'
+    RUN_JOB_METHOD_NAME = 'run_job'

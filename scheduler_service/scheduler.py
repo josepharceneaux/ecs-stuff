@@ -25,7 +25,7 @@ from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
-from scheduler_service.common.error_handling import InvalidUsage
+from scheduler_service.common.error_handling import InvalidUsage, InternalServerError
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
@@ -348,6 +348,11 @@ def serialize_task(task, is_admin_api=False):
     if is_admin_api and task_dict:
         if task.args[0]:
             task_dict['user_id'] = task.args[0]
-            task_dict['user_email'] = User.get_by_id(task.args[0]).email
+            user = User.get_by_id(task.args[0])
+            if not user:
+                logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
+                task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
+            else:
+                task_dict['user_email'] = user.email
 
     return task_dict

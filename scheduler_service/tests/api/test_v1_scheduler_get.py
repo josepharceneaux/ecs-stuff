@@ -12,6 +12,7 @@ import requests
 
 # Application imports
 from auth_service.common.models.user import DomainRole
+from scheduler_service import SchedulerUtils
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.utils.handy_functions import random_word, add_role_to_test_user
 
@@ -415,11 +416,45 @@ class TestSchedulerGet(object):
         # There should be 10 jobs which we paused in the fixture and 40 were not in paused state
         assert response.status_code == 200 and len(response.json()['tasks']) >= 50
 
-        # Get only user jobs
-        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
+        # Specify invalid task_category and try to get jobs. Should get 400 in response.
+        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'invalid'),
+                                headers=auth_header)
+        assert response.status_code == 400
+
+        # Get only user jobs by specifying task_category
+        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'user'),
                                 headers=auth_header)
         assert response.status_code == 200
 
-        # There should be 10 jobs which we paused in the fixture and 40 were not in paused state
+        # There were 50 scheduled jobs which are user based
+        assert len(response.json()['tasks']) >= 50
+
+        # Get only general jobs by specifying task_category
+        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'general'),
+                                headers=auth_header)
+        assert response.status_code == 200
+
+        # There should be 10 scheduled jobs which are general
         assert len(response.json()['tasks']) >= 10
+
+        # Specify invalid task_category and try to get jobs. Should get 400 in response.
+        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'invalid'),
+                                headers=auth_header)
+        assert response.status_code == 400
+
+        # Get only user jobs by specifying task_category
+        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.PERIODIC),
+                                headers=auth_header)
+        assert response.status_code == 200
+
+        # There were 10 scheduled jobs which are periodic
+        assert len(response.json()['tasks']) >= 10
+
+        # Get only general jobs by specifying task_category
+        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.ONE_TIME),
+                                headers=auth_header)
+        assert response.status_code == 200
+
+        # There should be 40 scheduled jobs which are one_time
+        assert len(response.json()['tasks']) >= 40
 
