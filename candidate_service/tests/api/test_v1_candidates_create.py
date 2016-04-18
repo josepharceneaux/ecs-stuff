@@ -16,7 +16,7 @@ from candidate_service.common.utils.test_utils import send_request, response_inf
 
 # Sample data
 from candidate_sample_data import (
-    GenerateCandidateDate, generate_single_candidate_data, candidate_phones, candidate_military_service,
+    GenerateCandidateData, generate_single_candidate_data, candidate_phones, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 
@@ -443,7 +443,7 @@ class TestCreateCandidateAddress(object):
         """
         # Create Candidate with address
         AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateDate.addresses([talent_pool.id])
+        data = GenerateCandidateData.addresses([talent_pool.id])
         country_code = data['candidates'][0]['addresses'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -584,7 +584,7 @@ class TestCreateCandidateEducation(object):
         """
         # Create candidate + education
         AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateDate.educations([talent_pool.id])
+        data = GenerateCandidateData.educations([talent_pool.id])
         country_code = data['candidates'][0]['educations'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -755,7 +755,7 @@ class TestCreateWorkExperience(object):
         """
         # Create candidate +  work experience
         AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateDate.work_experiences([talent_pool.id])
+        data = GenerateCandidateData.work_experiences([talent_pool.id])
         country_code = data['candidates'][0]['work_experiences'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -1094,7 +1094,7 @@ class TestCreateMilitaryService(object):
         """
         # Create candidate +  military service
         AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateDate.military_services([talent_pool.id])
+        data = GenerateCandidateData.military_services([talent_pool.id])
         country_code = data['candidates'][0]['military_services'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -1182,7 +1182,7 @@ class TestCreatePreferredLocation(object):
         """
         # Create candidate +  preferred locations
         AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateDate.preferred_locations([talent_pool.id])
+        data = GenerateCandidateData.preferred_locations([talent_pool.id])
         country_code = data['candidates'][0]['preferred_locations'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)

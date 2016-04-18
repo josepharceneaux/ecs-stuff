@@ -27,11 +27,14 @@ from candidate_service.common.utils.validators import is_valid_email, is_country
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
+    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
+    does_candidate_cf_exist
 )
+
+# JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -56,7 +59,7 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
-from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate, TalentPool
+from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -579,6 +582,104 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
+        :return  {'candidate_custom_fields': [{'id': int}, {'id': int}, ...]}
+        """
+        # Get authenticated user and candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Validate request body
+        body_dict = get_json_if_exist(request)
+        try:
+            validate(instance=body_dict, schema=ccf_schema)
+        except ValidationError as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
+        candidate_custom_fields = body_dict.get('candidate_custom_fields')
+        for ccf_dict in candidate_custom_fields:
+            # Custom Field must be recognized
+            custom_field_id = ccf_dict['custom_field_id']
+            custom_field = CustomField.get_by_id(custom_field_id)
+            if not custom_field:
+                raise NotFoundError("Custom field ID ({}) not recognized".format(custom_field_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom Field must belong to user's domain
+            if custom_field.domain_id != authed_user.domain_id:
+                raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
+                    custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Prevent duplicate entries
+            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=ccf_dict):
+                # Add candidate_id, added_time to ccf_dict; and strip value
+                ccf_dict.update(candidate_id=candidate_id, added_time=datetime.datetime.utcnow(),
+                                value=ccf_dict['value'].strip() if ccf_dict.get('value') else None)
+                candidate_custom_field = CandidateCustomField(**ccf_dict)
+                db.session.add(candidate_custom_field)
+                db.session.commit()
+                created_ccf_ids.append(candidate_custom_field.id)
+
+        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+             i. GET /v1/candidates/:candidate_id/custom_fields
+            ii. GET /v1/candidates/:candidate_id/custom_fields/:id
+        Depending on the endpoint requested, function will return all of Candidate's
+        custom fields or just a single one.
+        """
+        # Get authenticated user, candidate_id, and can_cf_id
+        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if can_cf_id:  # Retrieve specified custom field
+            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
+            if not candidate_custom_field:
+                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom field must belong to user's domain
+            custom_field_id = candidate_custom_field.custom_field_id
+            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            return {
+                'candidate_custom_field': {
+                    'custom_field_id': custom_field_id,
+                    'value': candidate_custom_field.value,
+                    'created_at_datetime': candidate_custom_field.added_time.isoformat()
+                }
+            }
+
+        else:
+            # Custom fields must belong user's domain
+            return {'candidate_custom_fields': [
+                {
+                    'id': ccf.id,
+                    'custom_field_id': ccf.custom_field_id,
+                    'value': ccf.value, 'created_at_datetime': ccf.added_time.isoformat()
+                } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
+
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
@@ -592,7 +693,7 @@ class CandidateCustomFieldResource(Resource):
         authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -608,6 +709,11 @@ class CandidateCustomFieldResource(Resource):
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             db.session.delete(candidate_custom_field)
 
