@@ -150,7 +150,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     return data
 
 
-class GenerateCandidateDate(object):
+class GenerateCandidateData(object):
     @staticmethod
     def addresses(talent_pool_ids=None, candidate_id=None, address_id=None, is_default=False):
         """
