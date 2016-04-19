@@ -15,7 +15,7 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 # Application Specific
 # common conftest
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    create_smartlist_from_api
+    create_smartlist_from_api, get_candidates_of_smartlist
 from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
@@ -27,8 +27,6 @@ from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
-from sms_campaign_service.common.inter_service_calls.candidate_service_calls import \
-    create_candidates_from_candidate_api
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
                                                                  delete_test_scheduled_task,
@@ -45,6 +43,7 @@ from sms_campaign_service.common.models.smartlist import (Smartlist, SmartlistCa
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignSmartlist,
                                                              SmsCampaignBlast, SmsCampaignSend)
 # Common Utils
+from sms_campaign_service.common.routes import CandidateApiUrl
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -466,13 +465,20 @@ def create_campaign_sends(user_first, candidate_first, candidate_second,
 
 
 @pytest.fixture()
-def create_campaign_replies(candidate_phone_1, create_sms_campaign_blast):
+def create_campaign_replies(user_first, candidate_phone_1):
     """
-    This creates a record in database table "sms_campaign_reply"
+    This hits the endpoint /v1/receive where we add an entry in database
+    table "sms_campaign_reply" for first candidate associated with campaign.
     """
-    SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast.id,
-                                         candidate_phone_1.id, 'Got it')
-    SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, replies=True)
+    reply_response = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                   data={'To': user_first.user_phones[0].value,
+                                         'From': candidate_phone_1['value'],
+                                         'Body': "Got it"})
+    assert reply_response.status_code == requests.codes.OK
+
+    # SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast.id,
+    #                                      candidate_phone_1.id, 'Got it')
+    # SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, replies=True)
 
 
 @pytest.fixture()
@@ -528,19 +534,25 @@ def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_curre
 
 
 @pytest.fixture()
-def candidate_phone_1(request, candidate_first):
+def candidate_phone_1(request, sent_campaign, access_token_first, valid_header):
     """
-    This associates sample_smartlist with the sms_campaign_of_current_user
-    :param candidate_first:
-    :return:
+    This returns the candidate phone for first candidate associated with the sms-campaign.
     """
-    candidate_phone = _create_candidate_mobile_phone(candidate_first, fake.phone_number())
+    CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
+                                             sends_url=SmsCampaignApiUrl.SENDS % sent_campaign['id'],
+                                             access_token=access_token_first)
+    candidate_ids = get_candidates_of_smartlist(sent_campaign['list_ids'][0],
+                                                True, access_token_first)
+    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[0],
+                                          headers=valid_header)
+    json_response = candidate_get_response.json()
+    candidate_1_phone = json_response['candidate']['phones'][0]
 
     def tear_down():
-        _delete_candidate_phone(candidate_phone)
+        _delete_candidate_phone(candidate_1_phone['id'])
 
     request.addfinalizer(tear_down)
-    return candidate_phone
+    return candidate_1_phone
 
 
 @pytest.fixture()
@@ -671,8 +683,19 @@ def sent_campaign(access_token_first, sms_campaign_of_current_user):
         SmsCampaignApiUrl.SEND, sms_campaign_of_current_user,
         access_token_first, SmsCampaignApiUrl.BLASTS)
     assert_api_send_response(sms_campaign_of_current_user, response_post, requests.codes.OK)
-    # time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     return sms_campaign_of_current_user
+
+
+@pytest.fixture()
+def sent_campaign_and_blast_ids(access_token_first, sent_campaign):
+    """
+    This fixture returns the campaign object which has been sent.
+    It also gets it's blasts and return a tuple containing campaign object and blast_ids.
+    """
+    blasts = CampaignsTestsHelpers.get_blasts(sent_campaign, access_token_first,
+                                              SmsCampaignApiUrl.BLASTS % sent_campaign['id'])
+    blasts_ids = [blast['id'] for blast in blasts]
+    return sent_campaign, blasts_ids
 
 
 @pytest.fixture()

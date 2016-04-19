@@ -19,8 +19,11 @@ from campaign_utils import get_model
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.user import (DomainRole, User)
+from ..models.sms_campaign import SmsCampaign
 from ..models.misc import (Frequency, Activity)
+from ..models.push_campaign import PushCampaign
 from ..utils.datetime_utils import DatetimeUtils
+from ..models.email_campaign import EmailCampaign
 from ..utils.validators import raise_if_not_instance_of
 from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                      add_role_to_test_user)
@@ -56,13 +59,21 @@ class CampaignsTestsHelpers(object):
     @classmethod
     def request_after_deleting_campaign(cls, campaign, url_to_delete_campaign, url_after_delete,
                                         method_after_delete, token):
-        campaign_id = campaign.id
+        """
+        This is a helper function to request the given URL after deleting the given resource.
+        It should result in ResourceNotFound error.
+        :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
+        :param (str) url_to_delete_campaign: URL to delete given campaign
+        :param (str) url_after_delete: URL to be requested after deleting the campaign
+        :param (str) method_after_delete: Name of method to be requested after deleting campaign
+        :param (str) token: access token of logged-in user
+        """
+        campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
         CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
-                                                     token, None)
-        CampaignsTestsHelpers.request_for_resource_not_found_error(method_after_delete,
-                                                                  url_after_delete % campaign_id,
-                                                                  token)
+                                                      token, None)
+        CampaignsTestsHelpers.request_for_resource_not_found_error(
+            method_after_delete, url_after_delete % campaign_id, token)
 
     @classmethod
     def request_for_ok_response(cls, method, url, token, data):
@@ -326,20 +337,27 @@ class CampaignsTestsHelpers(object):
             return blasts_get_response.json()['blast']
 
     @staticmethod
-    def get_sends(campaign, blast_index):
+    def get_sends(campaign, blast_index, sends_url=None, access_token=None):
         """
         This returns all number of sends associated with given blast index of a campaign
         """
         db.session.commit()
-        return campaign.blasts[blast_index].sends
+        if not sends_url:
+            return campaign.blasts[blast_index].sends
+        response = send_request('get', sends_url, access_token)
+        if response.ok:
+            return len(response.json()['sends'])
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20,
+                           sends_url=None,
+                           access_token=None):
         """
         This function asserts the particular blast of given campaign has expected number of sends
         """
         sends = poll(CampaignsTestsHelpers.get_sends, step=3,
-                     args=(campaign, blast_index), timeout=abort_time_for_sends)
+                     args=(campaign, blast_index, sends_url, access_token),
+                     timeout=abort_time_for_sends)
         assert sends >= expected_count
 
     @staticmethod
