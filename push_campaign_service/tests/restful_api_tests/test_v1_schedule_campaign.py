@@ -142,14 +142,14 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        time.sleep(3 * SLEEP_TIME)
-
-        response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
-        blasts = response['blasts']
-        assert len(blasts) == 1
-        blast = blasts[0]
-        # One send expected since only one candidate is associated with campaign
-        assert blast['sends'] == 1
+        # time.sleep(3 * SLEEP_TIME)
+        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+        # response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+        # blasts = response['blasts']
+        # assert len(blasts) == 1
+        # blast = blasts[0]
+        # # One send expected since only one candidate is associated with campaign
+        # assert blast['sends'] == 1
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
