@@ -616,7 +616,7 @@ class SchedulerApi(object):
     SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
     SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
     SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
-    SCHEDULER_ADMIN_TASKS = ('/%s%s' % ('admin', RELATIVE_VERSION)) % "tasks"
+    SCHEDULER_ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
 
 
 class SchedulerApiUrl(object):
@@ -628,7 +628,6 @@ class SchedulerApiUrl(object):
 
     VERSION = 'v1'
 
-    ADMIN_TASKS = HOST_NAME % ('/admin/%s/tasks' % VERSION)
     RELATIVE_VERSION = HOST_NAME % _get_api_relative_version(VERSION)
 
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
@@ -641,6 +640,9 @@ class SchedulerApiUrl(object):
     PAUSE_TASKS = RELATIVE_VERSION % 'tasks/pause'
     RESUME_TASKS = RELATIVE_VERSION % 'tasks/resume'
     TEST_TASK = RELATIVE_VERSION % 'tasks/test'
+
+    # Scheduler Admin API
+    ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'

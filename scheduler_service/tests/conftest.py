@@ -201,11 +201,6 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
 def create_five_users(request, domain_first, first_group, sample_client):
     """
     Create five users and delete them in finalizer
-    :param request:
-    :param domain_first:
-    :param first_group:
-    :param sample_client:
-    :return:
     """
     users_list = []
     for _ in range(5):
@@ -229,9 +224,6 @@ def create_five_users(request, domain_first, first_group, sample_client):
 def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
     Scheduler 10 general jobs.
-    :param request:
-    :param job_config_one_time_task:
-    :return:
     """
     general_job_ids_list = []
     for _ in range(10):
@@ -267,9 +259,6 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
 def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task, job_config):
     """
     Schedule 10 jobs of each users. So, there will be 50 jobs in total.
-    :param request:
-    :param create_five_users:
-    :return:
     """
     jobs_count = 10
     user_job_ids_list = []

@@ -759,16 +759,16 @@ class AdminTasks(Resource):
             Case 1:
 
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/admin/v1/tasks?page=3', headers=headers)
+            response = requests.get(API_URL + '/admin/v1/tasks?page=2', headers=headers)
 
-            # Returns 10 jobs ranging from 30-59
+            # Returns 30 jobs ranging from 30-59
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
 
-            # Returns 12 jobs ranging from 35-69
+            # Returns 35 jobs ranging from 35-69
 
         :Example:
         In case of task_category filter
@@ -849,16 +849,16 @@ class AdminTasks(Resource):
 
         # If user_id is given then only return jobs of that particular user
         if user_id:
-            if not (str(user_id).isdigit() and int(user_id) >= 0):
+            if not (str(user_id).isdigit() and int(user_id) > 0):
                 raise InvalidUsage("user_id should be of type int")
             tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
 
-        # If is_paused is given then only return paused jobs
+        # If is_paused is given then only return paused jobs.
         if is_paused:
-            if not str(is_paused).lower() in ['true', 'false']:
-                raise InvalidUsage("is_paused should be of type bool. If true, paused jobs will be returned and if false, "
-                                   "then endpoint returns running jobs")
-            if str(is_paused).lower() == "true":
+            if not str(is_paused).lower() in ['true', 'false', '1', '0']:
+                raise InvalidUsage("is_paused should be of type bool or int. If `true` or `1`, paused jobs will be "
+                                   "returned and if `false` or `0`, then endpoint returns running jobs")
+            if str(is_paused).lower() in ["true", "1"]:
                 tasks = filter(lambda _task: _task.next_run_time is None,
                                tasks)
             else:
@@ -877,7 +877,8 @@ class AdminTasks(Resource):
 
         # If task_category is given then return only specified `user` or `general` job
         if task_category:
-            if not (isinstance(task_category, basestring) and task_category.lower() in [SchedulerUtils.CATEGORY_USER.lower(), SchedulerUtils.CATEGORY_GENERAL.lower()]):
+            if not (isinstance(task_category, basestring) and task_category.lower() in
+               [SchedulerUtils.CATEGORY_USER.lower(), SchedulerUtils.CATEGORY_GENERAL.lower()]):
                 raise InvalidUsage("task_category should be of type string with value of "
                                    "`{0}` or `{1}`".format(SchedulerUtils.CATEGORY_USER, SchedulerUtils.CATEGORY_GENERAL))
 
@@ -885,6 +886,11 @@ class AdminTasks(Resource):
                 tasks = filter(lambda _task: _task.name, tasks)
             else:
                 tasks = filter(lambda _task: _task.name == SchedulerUtils.RUN_JOB_METHOD_NAME, tasks)
+
+        # The following case will never occur. As the general jobs are independent of user. So, if user use such
+        # a filter then raise Invalid usage api exception.
+        if user_id and task_category == "general":
+            raise InvalidUsage(error_message="user and task_category cannot be used at one. General jobs are independent of users.")
 
         tasks_count = len(tasks)
 

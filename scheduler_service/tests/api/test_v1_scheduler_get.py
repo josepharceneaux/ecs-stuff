@@ -361,7 +361,6 @@ class TestSchedulerGet(object):
         """
         Create 5 users, assign admin role to one of them. Then
         Schedule 50 jobs of 5 different users, 10 each. Then get the jobs using admin user.
-        :param create_five_users:
         """
 
         # Test without admin access, should get 401 response
@@ -383,11 +382,6 @@ class TestSchedulerGet(object):
         """
         In this test, use filters to get filtered tasks from admin API
         Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
-        :param sample_user:
-        :param auth_header:
-        :param create_five_users:
-        :param schedule_ten_jobs_of_each_user:
-        :return:
         """
         users_list = create_five_users
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
@@ -423,7 +417,7 @@ class TestSchedulerGet(object):
         assert response.status_code == 400
 
         # Get only user jobs by specifying task_category
-        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'user'),
+        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.CATEGORY_USER),
                                 headers=auth_header)
         assert response.status_code == 200
 
@@ -431,7 +425,7 @@ class TestSchedulerGet(object):
         assert len(response.json()['tasks']) >= 50
 
         # Get only general jobs by specifying task_category
-        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'general'),
+        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.CATEGORY_GENERAL),
                                 headers=auth_header)
         assert response.status_code == 200
 
@@ -458,4 +452,21 @@ class TestSchedulerGet(object):
 
         # There should be 40 scheduled jobs which are one_time
         assert len(response.json()['tasks']) >= 40
+
+        # Get jobs by specifying task_category as general and user_id. This case is invalid as the general jobs
+        # are independent of user
+        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}'.format(SchedulerApiUrl.ADMIN_TASKS,
+                                                                                      users_list[0][0].id,
+                                                                                      SchedulerUtils.CATEGORY_GENERAL),
+                                headers=auth_header)
+        assert response.status_code == 400
+
+        # Get jobs by specifying task_category as user and user_id. This will return all jobs of first user.
+        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}'.format(SchedulerApiUrl.ADMIN_TASKS,
+                                                                                      users_list[0][0].id,
+                                                                                      SchedulerUtils.CATEGORY_USER),
+                                headers=auth_header)
+        assert response.status_code == 200
+
+        assert len(response.json()['tasks']) >= 10
 

@@ -74,7 +74,7 @@ def apscheduler_listener(event):
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
-            elif isinstance(job.trigger, DateTrigger) and not job.run_date:
+            elif isinstance(job.trigger, DateTrigger) and not job.next_run_time:
                 scheduler.remove_job(job_id=job.id)
                 logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
 
