@@ -1,6 +1,8 @@
-from ..email_process import validate_email_file
+import email
 
-EMAIL_FILES_ROOT = '/emailFiles/'
+from resume_parsing_service.emailReceiver.email_process import validate_email_file
+
+EMAIL_FILES_ROOT = 'emailFiles/'
 EMAIL_FILE_PATHS = [
     EMAIL_FILES_ROOT + 'email2',
     EMAIL_FILES_ROOT + 'email3',
@@ -9,5 +11,8 @@ EMAIL_FILE_PATHS = [
     EMAIL_FILES_ROOT + 'emailNoAttachment',
 ]
 
-def validate_email_files():
-    sender, hash = validate_email_file(EMAIL_FILE_PATHS[0], EMAIL_FILE_PATHS[0])
+def test_validate_email_files():
+    with open(EMAIL_FILE_PATHS[0], 'r') as infile:
+        email_file = email.message_from_file(infile)
+    sender, hash = validate_email_file(email_file, EMAIL_FILE_PATHS[0])
+    pass

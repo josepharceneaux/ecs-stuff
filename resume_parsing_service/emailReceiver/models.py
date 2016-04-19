@@ -10,7 +10,7 @@ session = Session()
 Base = declarative_base()
 
 class Client(Base):
-    __tablename__ = 'token'
+    __tablename__ = 'client'
     id = Column(INT, primary_key=True)
     client_id = Column(VARCHAR)
     client_secret = Column(VARCHAR)
