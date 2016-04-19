@@ -121,6 +121,3 @@ target/
 # Ignore redis binary dump (dump.rdb) files
 
 *.rdb
-
-# Lambda deployments
-resume_parsing_service/deployments/*

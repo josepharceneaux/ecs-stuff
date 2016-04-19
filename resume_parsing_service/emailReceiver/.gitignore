@@ -1,0 +1,5 @@
+# Lambda deployments
+resume_parsing_service/deployments/*
+
+# Local venv
+venv
