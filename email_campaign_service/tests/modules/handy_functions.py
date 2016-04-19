@@ -85,7 +85,7 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
 
 
 def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=True, count=1,
-                                    assert_candidates=True, timeout=40, data=None):
+                                    assert_candidates=True, timeout=120, data=None):
     """
     This creates candidate(s) as specified by the count and assign it to a smartlist.
     Finally it returns smartlist_id and candidate_ids.
@@ -157,7 +157,6 @@ def send_campaign(campaign, access_token):
     timeout is set to be 20s here. One can modify this by passing required value.
     :param (EmailCampaign) campaign: Email campaign obj
     :param (str) access_token: Auth token to make HTTP request
-    :param (int) timeout: time in seconds to poll the server before aborting
     """
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_instance_of(access_token, basestring)
@@ -275,7 +274,7 @@ def assert_and_delete_email(subject):
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=20):
+                         expected_status=200, abort_time_for_sends=120):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -346,10 +345,10 @@ def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
-    return poll(get_blasts, step=3, args=(campaign,), timeout=40)
+    return poll(get_blasts, step=3, args=(campaign,), timeout=60)
 
 
-def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
+def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=120):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """

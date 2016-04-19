@@ -542,9 +542,11 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
+    EmailCampaign.session.commit()
     email_campaign_send = EmailCampaignSend(campaign_id=campaign_id,
                                             candidate_id=candidate.id,
-                                            sent_datetime=blast_datetime)
+                                            sent_datetime=blast_datetime,
+                                            blast_id=email_campaign_blast_id)
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here
@@ -921,6 +923,10 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
         # If there is only one candidate for an email-address in user's domain, we are good to go,
         # otherwise log and raise the invalid error.
         if len(search_result) == 1:
+            if CandidateEmail.is_bounced_email(email):
+                logger.info('Skipping this email because this email address is marked as bounced.'
+                            'CandidateId : %s, Email: %s, EmailCampaignId: %s' % (_id, email, campaign.id))
+                continue
             filtered_email_rows.append((_id, email))
         else:
             logger.warn('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '

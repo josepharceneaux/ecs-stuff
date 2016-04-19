@@ -40,7 +40,7 @@ class TestEmailCampaignBlastsWithId(object):
         access token. It should get OK response and number of sends should be 2.
         """
         expected_count = 2
-        assert_blast_sends(sent_campaign, expected_count)
+        assert_blast_sends(sent_campaign, expected_count, abort_time_for_sends=120)
         blast_id = sent_campaign.blasts[0].id
         response = requests.get(
             self.URL % (sent_campaign.id, blast_id),
