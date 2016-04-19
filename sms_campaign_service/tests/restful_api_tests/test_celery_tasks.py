@@ -188,7 +188,7 @@ class TestCampaignSchedule(object):
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first,
-                                                           blast_timeout=30)
+                                                           blast_timeout=60)
 
         # assert that scheduler has sent the campaign for the second time
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
