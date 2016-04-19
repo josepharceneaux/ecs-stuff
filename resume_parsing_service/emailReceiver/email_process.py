@@ -45,31 +45,9 @@ def lambda_handler(event, unused_context):
     validated_sender, talent_pool_hash = validate_email_file(email_file, key)
     access_token = get_user_access_token(validated_sender)
     raw_attachment = get_email_attachement(email_file, key)
-    attachment_filename = raw_attachment.get_filename()
     talent_pool_id = get_desired_talent_pool(talent_pool_hash)
-    headers = {
-        'Authorization': 'Bearer {}'.format(access_token),
-        'Content-Type': 'application/json'
-    }
-    with open('/tmp/' + attachment_filename, 'w') as outfile:
-        outfile.write(raw_attachment)
-        payload = {
-            'resume_file_name': attachment_filename,
-            'resume_file': outfile,
-            'create_candidate': True,
-            'talent_pool_id': talent_pool_id
-        }
-        try:
-            resume_response_response = requests.post(RESUMES_URL, headers=headers, data=payload)
-            response_content = json.loads(resume_response_response.content)
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-            raise e('Error during POST to resumeParsingService')
-        finally:
-            if resume_response_response.status_code is not requests.codes.ok:
-                raise AssertionError('Candidate was not created from email {}. Content {}'.format(
-                    key, response_content))
-            else:
-                print 'Candidate created from {}, with id {}'.format(key, response_content['candidate']['id'])
+    send_resume_to_service(access_token, raw_attachment, talent_pool_id, key)
+    print 'Finished lambda event.'
 
 
 def validate_email_file(email_file, key):
@@ -157,7 +135,8 @@ def refresh_token(token_obj):
     client_id = token_obj.client_id
     token_client = session.query(Client).filter(Client.client_id == client_id)
     if not token_client:
-        raise SQLAlchemyError('Unable to get a client for User\'s token.id: {}'.format(token_obj.id))
+        raise SQLAlchemyError('Unable to get a client for User\'s token.id: {}'.format(
+            token_obj.id))
     CLIENT_SECRET = token_client.client_secret
 
     payload = {
@@ -172,3 +151,40 @@ def refresh_token(token_obj):
         raise Exception('Error during token refresh! {}'.format(e.message))
     token_json = json.loads(refresh_response.content)
     return token_json.access_token
+
+
+def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
+    """
+    Formats and sends request to resumeParsingService
+    :param str access_token:
+    :param str raw_attachment:
+    :param int talent_pool_id:
+    :param str key:
+    :return None:
+    """
+    attachment_filename = raw_attachment.get_filename()
+    headers = {
+        'Authorization': 'Bearer {}'.format(access_token),
+        'Content-Type': 'application/json'
+    }
+    with open('/tmp/' + attachment_filename, 'w') as outfile:
+        outfile.write(raw_attachment)
+        payload = {
+            'resume_file_name': attachment_filename,
+            'resume_file': outfile,
+            'create_candidate': True,
+            'talent_pool_id': talent_pool_id
+        }
+        try:
+            resume_response_response = requests.post(RESUMES_URL, headers=headers, data=payload)
+            response_content = json.loads(resume_response_response.content)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            raise e('Error during POST to resumeParsingService')
+        finally:
+            if resume_response_response.status_code is not requests.codes.ok:
+                raise AssertionError('Candidate was not created from email {}. Content {}'.format(
+                    key, response_content))
+            else:
+                print 'Candidate created from {}, with id {}'.format(
+                    key, response_content['candidate']['id'])
+    return None
