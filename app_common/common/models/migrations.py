@@ -75,12 +75,11 @@ def run_migrations(logger, db):
         # Check manually for the table - some exceptions are not caught
         if Migration.__tablename__ in db.engine.table_names():
             try:
-                migrations_found = db.session.query(Migration).filter_by(name=name).one_or_none()
+                migrations_found = db.session.query(Migration).filter(Migration.name == name).all()
             except Exception as e:
-                logger.info("DB Query Exception: {}".format(e.message))
-
-        if len(migrations_found) > 1:
-            raise UnprocessableEntity(error_message="Multiple records of migration: {}".format(name))
+                logger.error("DB Query Exception: {}".format(e.message))
+        else:
+            Migration.__table__.create(db.engine)
 
         if len(migrations_found) == 0:
             # Load and run file
@@ -97,6 +96,8 @@ def run_migrations(logger, db):
             db.session.commit()
             migrated_count += 1
         else:
+            if len(migrations_found) > 1:
+                logger.error("Multiple records for migration: ".format(migrations_found[0]))
             logger.info("Skipping recorded migration".format(migrations_found[0]))
 
     logger.info("{} migrations performed".format(migrated_count))
