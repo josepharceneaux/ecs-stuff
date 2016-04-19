@@ -1,8 +1,9 @@
+
 __author__ = 'basit'
 
 
 import os
-from ..talent_config_manager import TalentConfigKeys
+from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 
 
 class SchedulerUtils(object):
@@ -16,5 +17,5 @@ class SchedulerUtils(object):
     # Set the minimum frequency in seconds
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
     # For qa and production minimum frequency would be one hour
-    MIN_ALLOWED_FREQUENCY = 4 if env in ['dev', 'circle'] else 3600
+    MIN_ALLOWED_FREQUENCY = 3600 if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.PROD else 4
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds
