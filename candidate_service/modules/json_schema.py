@@ -566,7 +566,6 @@ candidates_resource_schema_patch = {
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["id"],
                 "additionalProperties": False,
                 "properties": {
                     "id": {

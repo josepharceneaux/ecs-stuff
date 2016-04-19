@@ -43,6 +43,7 @@ try:
     api.add_resource(
         CandidatesResource,
         CandidateApi.CANDIDATES,
+        CandidateApi.CANDIDATE_ID,
         endpoint='candidates_resource'
     )
 
