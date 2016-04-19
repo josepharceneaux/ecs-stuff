@@ -6,12 +6,14 @@ import re
 
 import boto3
 import pytz
+import requests
 from sqlalchemy.exc import SQLAlchemyError
 
 from models import session, Token, User
 
 RESUMES_BUCKET = 'resume-emails'
 EMAIL_HASH_PATTERN = re.compile(r'\+(.+?)\@')
+AUTH_API_URL = 'http://localhost:8001/v1/oauth2/token'
 
 s3_client = boto3.client(
     's3',
@@ -73,7 +75,7 @@ def utcnow():
 def refreshToken(tokenObj):
     """
     Refreshes an expired token.
-    :param models.Token tokenObj:
-    :return models.Token:
+    :param Token tokenObj:
+    :return Token:
     """
     return tokenObj
