@@ -24,6 +24,7 @@ class TestMigrations():
         Create empty file.
         :param pathname: Path to file.
         '''
+
         f = open(pathname, 'a')
         f.close()
 
@@ -33,6 +34,7 @@ class TestMigrations():
         :param pathname: Path to file.
         :param contents: Text to put in file.
         '''
+
         f = open(pathname, 'a')
         f.write(contents)
         f.close()
@@ -46,7 +48,7 @@ class TestMigrations():
 
     def ensure_migrations_directory(self, temp):
         '''
-        Create the migrations directory for testing.
+        Ensure that the migrations directory for testing exists.
         :param dir: A tmpdir object.
         '''
 
@@ -54,10 +56,30 @@ class TestMigrations():
         temp.chdir()
         migrations_path = temp.join(MIGRATIONS_DIRECTORY)
         if os.path.isdir(migrations_path.__str__()):
-            print "ISDIR"
             return migrations_path
 
         return temp.mkdir(MIGRATIONS_DIRECTORY)
+
+    def create_migration_file(self, dir, filename, contents=None):
+        '''
+        Create a migrations file.
+        :param dir: LocalPath object of directory in which to create 'migrations' directory.
+        :param filename: Name to give migration file in 'migrations' directory.
+        :param contents: Optional contents to insert into file. Use self.faux_migration_code otherwise.
+        :return: The name to be entered in the DB migrations table.
+        '''
+
+        migrations_dir = self.ensure_migrations_directory(dir)
+        migration_name = "{}/migrations/{}".format(os.path.basename(dir.__str__()), filename)
+        pathname = "{}/{}".format(migrations_dir.__str__(), filename)
+        if contents:
+            self.create_file(pathname, contents)
+            print "THERE ARE CONTENTS"
+        else:
+            self.create_file(pathname, self.faux_migration_code)
+            print "NO CONTENTS"
+        
+        return migration_name
 
     def test_no_migrations_directory_is_ok(self, tmpdir, mocker):
         '''
@@ -101,20 +123,6 @@ class TestMigrations():
         self.create_empty_filename(bad_migration_pathname)
         with pytest.raises(UnprocessableEntity):
             run_migrations(self.logger, db)
-
-    def create_migration_file(self, dir, filename):
-        '''
-        Create a migrations file.
-        :param dir: LocalPath object of directory in which to create 'migrations' directory.
-        :param filename: Name to give migration file in 'migrations' directory.
-        :return: The name to be entered in the DB migrations table.
-        '''
-        
-        migrations_dir = self.ensure_migrations_directory(dir)
-        migration_name = "{}/migrations/{}".format(os.path.basename(dir.__str__()), filename)
-        pathname = "{}/{}".format(migrations_dir.__str__(), filename)
-        self.create_file(pathname, self.faux_migration_code)
-        return migration_name
 
     def test_missing_migrations_table_is_created(self, tmpdir):
         '''
@@ -165,22 +173,45 @@ class TestMigrations():
         current_count = db.session.query(Migration).count()
         assert current_count == preexisting_count + 2
 
-    def test_migrations_are_run_in_correct_order(self):
+    def test_migrations_are_run_in_correct_order(self, tmpdir):
         '''
         :param tmpdir: Temporary directory provided by fixture.
         '''
-        assert True
 
-    def test_detection_of_redundant_migrations_in_database(self):
-        '''
-        :param tmpdir: Temporary directory provided by fixture.
-        :param mocker: Mock object provided by fixture
-        '''
-        assert True
+        db.session.execute("truncate {}".format(Migration.__tablename__))
 
-    def test_handling_failed_migration_file(self):
+        m0 = '2014-04-19-14-13-00'
+        m1 = '2014-04-19-14-13-10'
+        m2 = '2014-04-19-14-13-20'
+        m3 = '2014-04-19-14-13-30'
+        name0 = self.create_migration_file(tmpdir, m0)
+        name1 = self.create_migration_file(tmpdir, m1)
+        name2 = self.create_migration_file(tmpdir, m2)
+        name3 = self.create_migration_file(tmpdir, m3)
+        run_migrations(self.logger, db)        
+
+        migrations0 = db.session.query(Migration).filter(Migration.name == name0).all()
+        if len(migrations0) != 1:
+            raise UnprocessableEntity
+        migrations1 = db.session.query(Migration).filter(Migration.name == name1).all()
+        if len(migrations1) != 1:
+            raise UnprocessableEntity
+        migrations2 = db.session.query(Migration).filter(Migration.name == name2).all()
+        if len(migrations2) != 1:
+            raise UnprocessableEntity
+        migrations3 = db.session.query(Migration).filter(Migration.name == name3).all()
+        if len(migrations3) != 1:
+            raise UnprocessableEntity
+
+        assert migrations0[0].run_at_timestamp >= migrations1[0].run_at_timestamp
+        assert migrations1[0].run_at_timestamp >= migrations2[0].run_at_timestamp
+        assert migrations2[0].run_at_timestamp >= migrations3[0].run_at_timestamp
+
+    def test_handling_failed_migration_file(self, tmpdir):
         '''
         :param tmpdir: Temporary directory provided by fixture.
-        :param mocker: Mock object provided by fixture
         '''
-        assert True
+
+        self.create_migration_file(tmpdir, time.strftime(DATETIME_FORMAT, time.gmtime()), 'break me')
+        with pytest.raises(UnprocessableEntity):
+            run_migrations(self.logger, db)

@@ -1,12 +1,16 @@
 '''
 Package for performing database migrations.
+
+Files located in the 'migrations' directory under each micro service may contain database migration code. The files must be named in
+the format: YYYY-MM-DD-HH-MM-SS  So, for example, 2016-04-19-14-13-00
+
+Files are run in order, according to the timestamp represented by the file name, and then recorded in the database so that the same
+file is not run again.
 '''
 
 import importlib
 import os
 from datetime import datetime
-
-# from sqlalchemy import exc
 
 from migration import Migration
 from ..error_handling import *
