@@ -253,7 +253,9 @@ class CandidatesResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
-        Endpoint:  PATCH /v1/candidates
+        Endpoints:
+             i. PATCH /v1/candidates
+            ii. PATCH /v1/candidates/:id
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
         Function can update any of candidate(s)'s information.
@@ -268,17 +270,19 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Get authenticated user and request body
-        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
-        # Validate json data
-        try:
-            validate(instance=body_dict, schema=candidates_resource_schema_patch,
-                     format_checker=FormatChecker())
-        except ValidationError as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_it_passed_validation(request, candidates_resource_schema_patch)
 
-        candidates = body_dict.get('candidates')
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id_from_url = request.user, kwargs.get('id')
+
+        # If candidate ID is provided via url, only one candidate update is permitted
+        candidates = body_dict['candidates']
+        if candidate_id_from_url and len(candidates) > 1:
+            raise InvalidUsage(
+                "Error: You requested an update for one candidate but provided data for multiple candidates.",
+                custom_error.INVALID_INPUT)
 
         # Input validations
         skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
@@ -286,8 +290,12 @@ class CandidatesResource(Resource):
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
+            # Candidate ID must be provided in json dict or in the url
+            candidate_id = candidate_id_from_url or _candidate_dict.get('id')
+            if not candidate_id:
+                raise InvalidUsage("Candidate ID is required", custom_error.INVALID_INPUT)
+
             # Check for candidate's existence
-            candidate_id = _candidate_dict.get('id')
             candidate = Candidate.get_by_id(candidate_id)
             if not candidate:
                 raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
@@ -349,7 +357,7 @@ class CandidatesResource(Resource):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Candidates must belong to user's domain
-        list_of_candidate_ids = [_candidate_dict['id'] for _candidate_dict in candidates]
+        list_of_candidate_ids = [_candidate_dict.get('id') for _candidate_dict in candidates]
         if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
@@ -369,7 +377,7 @@ class CandidatesResource(Resource):
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
-                candidate_id=candidate_dict.get('id'),
+                candidate_id=candidate_dict.get('id') or candidate_id_from_url,
                 first_name=candidate_dict.get('first_name'),
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
