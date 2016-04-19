@@ -28,13 +28,14 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    does_candidate_cf_exist
+    does_candidate_cf_exist, get_json_data_if_it_passed_validation
 )
 
 # JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema,
+    reference_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -55,7 +56,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateReference
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -71,6 +72,9 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages
+)
+from candidate_service.modules.references import (
+    get_references, create_references, delete_reference, delete_all_references
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -2188,3 +2192,83 @@ class CandidateLanguageResource(Resource):
 
         db.session.commit()
         return '', 204
+
+
+class CandidateReferencesResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:   POST /v1/candidates/:candidate_id/references
+        :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
+                    status code: 201
+        """
+        # Get json data if exists and validate its schema
+        body_dict = get_json_data_if_it_passed_validation(request, reference_schema)
+
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        created_reference_ids = create_references(candidate_id, body_dict['candidate_references'])
+        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints: GET /v1/candidates/:candidate_id/references
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        return {'candidate_references': get_references(candidate)}
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/references
+            ii. DELETE /v1/candidates/:candidate_id/references/:id
+        :return
+            {'candidate_reference': {'id': int}}                        If a single reference was deleted, OR
+            {'candidate_references': [{'id': int}, {'id': int}, ...]}   If all references were deleted
+            status code: 200
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        if reference_id:  # Delete specified reference
+            candidate_reference = CandidateReference.get_by_id(reference_id)
+            if not candidate_reference:  # Reference must be recognized
+                raise NotFoundError("Candidate reference ({}) not found.".format(reference_id),
+                                    custom_error.REFERENCE_NOT_FOUND)
+
+            if candidate_reference.candidate_id != candidate_id:  # reference must belong to candidate
+                raise ForbiddenError("Not authorized", custom_error.REFERENCE_FORBIDDEN)
+
+            # Delete candidate reference and return its ID
+            return {'candidate_reference': delete_reference(candidate_reference)}
+
+        else:  # Delete all of candidate's references
+            return {'candidate_references': delete_all_references(candidate.references)}
