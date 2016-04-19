@@ -34,7 +34,7 @@ class ReferenceEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id'))
     is_default = db.Column('IsDefault', db.Boolean, nullable=True)
     value = db.Column('Value', db.String(100))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<ReferenceEmail (reference_id=' %r')>" % self.reference_id

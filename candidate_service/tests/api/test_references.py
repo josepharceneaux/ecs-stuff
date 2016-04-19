@@ -85,7 +85,7 @@ class TestDeleteCandidateReference(object):
     def test_delete_reference(self, access_token_first, user_first, candidate_first):
         """
         Test:  Create references, delete one, assert on the result, then delete all of candidate's references
-        Expect: 204
+        Expect: 200
         """
         # Create references for candidate
         AddUserRoles.all_roles(user_first)
