@@ -40,7 +40,7 @@ import time
 from datetime import datetime
 # 3rd party imports
 from requests import codes as HttpStatus
-
+from polling import poll
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
@@ -123,14 +123,14 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        time.sleep(3 * SLEEP_TIME)
-
-        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
-        blasts = response['blasts']
-        assert len(blasts) == 1
-        blast = blasts[0]
-        # One send expected since only one candidate is associated with campaign
-        assert blast['sends'] == 1
+        # time.sleep(6 * SLEEP_TIME)
+        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+        # response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        # blasts = response['blasts']
+        # assert len(blasts) == 1
+        # blast = blasts[0]
+        # # One send expected since only one candidate is associated with campaign
+        # assert blast['sends'] == 1
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
@@ -311,3 +311,9 @@ class TestUnscheduleCamapignUsingDELETE(object):
         :param schedule_a_campaign: a fixture to schedule a campaign
         """
         unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+
+
+def assert_campaign_blasts(campaign_id, token, expected_count=1):
+    response = get_blasts(campaign_id, token, expected_status=(HttpStatus.OK,))
+    blasts = response['blasts']
+    return len(blasts) == expected_count
