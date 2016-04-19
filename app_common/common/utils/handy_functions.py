@@ -251,9 +251,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                           (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
-                                                                                                     url, headers,
-                                                                                                     data))
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s,'
+                          'Response: %s' % (e.message, url, headers, data, e.response))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
