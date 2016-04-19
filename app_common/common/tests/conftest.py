@@ -547,5 +547,21 @@ def candidate_second(request, user_first):
     return candidate
 
 
+@pytest.fixture()
+def user_second_candidate(request, user_second):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_second.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return candidate
+
+
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))

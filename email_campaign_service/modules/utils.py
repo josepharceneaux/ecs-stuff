@@ -34,6 +34,20 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
+class AWS_SNS_TERMS(object):
+    """
+    This class contains constants related to Amazon Simple Notification Service (SNS) terminologies.
+    """
+    HEADER_KEY = 'X_AMZ_SNS_MESSAGE_TYPE'
+    SUBSCRIBE = 'SubscriptionConfirmation'
+    UNSUBSCRIBE = 'UnsubscribeConfirmation'
+    NOTIFICATION = 'Notification'
+    BOUNCE = 'Bounce'
+    COMPLAINT = 'Complaint'
+    PERMANENT_BOUNCE = 'Permanent'
+    TEMPORARY_BOUNCE = 'Transient'
+
+
 def do_mergetag_replacements(texts, candidate=None):
     """
     If no candidate, name is "John Doe"

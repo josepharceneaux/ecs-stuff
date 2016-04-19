@@ -6,6 +6,7 @@ import imaplib
 import datetime
 
 # Third Party
+from polling import poll
 import requests
 
 # Application Specific
@@ -18,12 +19,12 @@ from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
-from email_campaign_service.common.utils.handy_functions import poll
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
+from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.error_handling import UnprocessableEntity
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
-                                                                 EmailClient)
+                                                                 EmailClient, EmailCampaignSend)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
@@ -105,12 +106,10 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        assert poll(assert_smartlist_candidates, [smartlist_id, len(candidate_ids),
-                                                  access_token],
-                    timeout=timeout, default_result=False), \
+        assert poll(assert_smartlist_candidates, step=3,
+                    args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
             'Candidates not found for smartlist(id:%s)' % smartlist_id
-        logger.info('%s candidate(s) not found for smartlist(id:%s)'
-                    % (len(candidate_ids), smartlist_id))
+        logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
 
 
@@ -152,7 +151,7 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token, timeout=20):
+def send_campaign(campaign, access_token):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
     timeout is set to be 20s here. One can modify this by passing required value.
@@ -166,8 +165,7 @@ def send_campaign(campaign, access_token, timeout=20):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    blasts = poll(lambda email_campaign: email_campaign.blasts.all(), [campaign],
-                  default_result=[], timeout=timeout)
+    blasts = get_blasts_with_polling(campaign)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -289,10 +287,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
+    blasts = get_blasts_with_polling(campaign)
 
-    blasts = poll(lambda email_campaign: (email_campaign.blasts.all()),
-                  [campaign],
-                  default_result=[], timeout=10, commit_session=True)
     assert blasts, 'Email campaign blasts not found'
     assert len(blasts) == 1
     # assert on sends
@@ -315,7 +311,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                           campaign.id)
         # TODO: commenting till find exact reason of failing
         # if not email_client:
-        #     assert poll(assert_and_delete_email, [campaign.subject], timeout=60), \
+        #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
         #         "Email with subject %s was not found." % campaign.subject
 
     # For each url_conversion record we assert that source_url is saved correctly
@@ -327,13 +323,34 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
+def get_blasts(campaign):
+    """
+    This returns all the blasts associated with given campaign
+    """
+    db.session.commit()
+    return campaign.blasts.all()
+
+
+def get_sends(campaign, blast_index):
+    """
+    This returns all number of sends associated with given blast index of a campaign
+    """
+    db.session.commit()
+    return campaign.blasts[blast_index].sends
+
+
+def get_blasts_with_polling(campaign):
+    """
+    This polls the result of blasts of a campaign for 10s.
+    """
+    return poll(get_blasts, step=3, args=(campaign,), timeout=10)
+
+
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = poll(lambda email_campaign: email_campaign.blasts[blast_index].sends,
-                 [campaign],
-                 default_result=0, timeout=abort_time_for_sends)
+    sends = poll(get_sends, step=3, args=(campaign, blast_index), timeout=abort_time_for_sends)
     assert sends >= expected_count
 
 
@@ -521,15 +538,45 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
+def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
+    """
+    This function will create a campaign send object and then it will send the email to given email address.
+    :param campaign: EmailCampaign object
+    :param email: CandidateEmail object
+    :param candidate_id: candidate unique id
+    :param blast_id: campaign blast id
+    """
+    # Create an campaign send object
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
+                                            candidate_id=candidate_id,
+                                            sent_datetime=datetime.datetime.now(),
+                                            blast_id=blast_id)
+    EmailCampaignSend.save(email_campaign_send)
+
+    # Send email to given email address with some random text as body.
+    email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
+                                # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
+                                subject=fake.sentence(),
+                                html_body="<html><body>Email campaign test</body></html>",
+                                text_body=fake.paragraph(),
+                                to_addresses=email.address,
+                                reply_address=campaign.reply_to.strip(),
+                                body=None,
+                                email_format='html' if campaign.body_html else 'text')
+
+    # Get unique request id and message id from response and update campaign send object.
+    request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
+    message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
+    email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
+    db.session.commit()
+
+
 def send_campaign_helper(request, email_campaign, access_token):
     """
     This is a helper function to send campaign with and without email_client_id
     """
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-        timeout = 15
-    else:
-        timeout = 30
     # send campaign
-    send_campaign(email_campaign, access_token, timeout=timeout)
+    send_campaign(email_campaign, access_token)
     return email_campaign

@@ -271,6 +271,7 @@ class CandidateEmail(db.Model):
     email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id')) # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
+    is_bounced = db.Column('IsBounced', db.Boolean, default=False)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
 
     def __repr__(self):
@@ -304,6 +305,32 @@ class CandidateEmail(db.Model):
     @classmethod
     def get_by_address(cls, email_address):
         return cls.query.filter_by(address=email_address).group_by(CandidateEmail.candidate_id).all()
+
+    @classmethod
+    def is_bounced_email(cls, email_address):
+        """
+        This method takes an email address and returns True if email is bounced (invalid email address).
+        :param email_address: email address
+        :type email_address: str
+        :return: True | False
+        """
+        assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
+        bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
+        return True if bounced_email else False
+
+    @classmethod
+    def mark_emails_bounced(cls, emails):
+        """
+        This method takes list of email addresses and then mark them bounced by setting is_bounced property as True.
+        :param list[str]  emails: list of email addresses
+        """
+        assert isinstance(emails, list) and emails, 'emails should be a non-empty list of email addresses'
+        assert all([email for email in emails]), 'all email addresses should have non-empty value.'
+
+        # search emails in all domains because an invalid email in one domain will be invalid in other domain as well.
+        query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
+        query.update(dict(is_bounced=True), synchronize_session=False)
+        db.session.commit()
 
 
 class CandidatePhoto(db.Model):
