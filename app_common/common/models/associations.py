@@ -13,7 +13,7 @@ class CandidateAreaOfInterest(db.Model):
     area_of_interest_id = db.Column('AreaOfInterestId', db.Integer, db.ForeignKey('area_of_interest.Id'),
                                     primary_key=True)
     additional_notes = db.Column('AdditionalNotes', db.Text)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateAreaOfInterest (area_of_interest_id = %r)" % self.area_of_interest_id
@@ -47,7 +47,7 @@ class ReferencePhone(db.Model):
     is_default = db.Column('IsDefault', db.Boolean)
     value = db.Column('Value', db.String(50))
     extension = db.Column('Extension', db.String(10))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.reference_id
