@@ -306,6 +306,8 @@ class CandidatesResource(Resource):
                 candidate.is_web_hidden = 1
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
+            else:  # json-schema will only allow True or False
+                candidate.is_web_hidden = 0
 
             # No need to validate anything since candidate is set to hidden
             if not skip:
