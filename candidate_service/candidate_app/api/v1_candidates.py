@@ -1489,7 +1489,7 @@ class CandidateClientEmailCampaignResource(Resource):
         # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
         if poll(assert_smartlist_candidates, step=3,
                 args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
-                timeout=30):
+                timeout=60):
             logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                         % (len(candidate_ids), created_smartlist_id))
         else:
