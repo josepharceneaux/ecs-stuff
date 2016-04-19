@@ -274,7 +274,7 @@ def assert_and_delete_email(subject):
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=120):
+                         expected_status=200, abort_time_for_sends=300):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -345,10 +345,10 @@ def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
-    return poll(get_blasts, step=3, args=(campaign,), timeout=60)
+    return poll(get_blasts, step=3, args=(campaign,), timeout=300)
 
 
-def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=120):
+def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """

@@ -41,7 +41,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
         # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
-        time.sleep(30)
+        time.sleep(60)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         assert email.is_bounced is True
@@ -49,14 +49,6 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         assert len(campaign_blasts) == 1
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
-
-        # Since there is no candidate associated with campaign with valid email, so we will get 400 status while
-        # sending this campaign
-        response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 400
-        response = response.json()
-        assert response['error']['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
 
 
 def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
@@ -95,7 +87,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
             send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
         # TODO: Add polling when Basit's  code for polling is in develop
-        time.sleep(30)
+        time.sleep(60)
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         # first candidate has a valid email. So it is not bounced
