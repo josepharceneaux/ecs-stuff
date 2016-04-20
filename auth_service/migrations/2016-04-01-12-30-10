@@ -1,4 +1,0 @@
-file = open("/var/tmp/migrations-test", "w")
-file.write("Migration!\n")
-file.close()
-
