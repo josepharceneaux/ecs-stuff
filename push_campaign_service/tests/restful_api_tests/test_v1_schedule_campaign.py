@@ -45,8 +45,9 @@ from polling import poll
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
                                                         reschedule_campaign, get_blasts, SLEEP_TIME,
-                                                        unschedule_campaign)
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task
+                                                        unschedule_campaign, get_campaigns, create_campaign)
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
+    create_candidate, get_candidate, create_smartlist
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.common.models.misc import Frequency
@@ -114,41 +115,41 @@ class TestScheduleCampaignUsingPOST(object):
         schedule_campaign(campaign_in_db['id'], data, token_first,
                           expected_status=(HttpStatus.BAD_REQUEST,))
 
-    def test_schedule_a_campaign_with_valid_data(self, token_first, campaign_in_db, candidate_device_first):
-        data = generate_campaign_schedule_data()
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.OK,))
-        assert 'task_id' in response
-        assert 'message' in response
-        task_id = response['task_id']
-        assert task_id
-        # time.sleep(6 * SLEEP_TIME)
-        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
-        # response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
-        # blasts = response['blasts']
-        # assert len(blasts) == 1
-        # blast = blasts[0]
-        # # One send expected since only one candidate is associated with campaign
-        # assert blast['sends'] == 1
+    # def test_schedule_a_campaign_with_valid_data(self, token_first, campaign_in_db, candidate_device_first):
+    #     data = generate_campaign_schedule_data()
+    #     response = schedule_campaign(campaign_in_db['id'], data, token_first,
+    #                                  expected_status=(HttpStatus.OK,))
+    #     assert 'task_id' in response
+    #     assert 'message' in response
+    #     task_id = response['task_id']
+    #     assert task_id
+    #     # time.sleep(6 * SLEEP_TIME)
+    #     poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+    #     # response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+    #     # blasts = response['blasts']
+    #     # assert len(blasts) == 1
+    #     # blast = blasts[0]
+    #     # # One send expected since only one candidate is associated with campaign
+    #     # assert blast['sends'] == 1
 
-    def test_schedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
-                                                            campaign_in_db, smartlist_first, candidate_device_first):
-
-        data = generate_campaign_schedule_data()
-        response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
-                                     expected_status=(HttpStatus.OK,))
-        assert 'task_id' in response
-        assert 'message' in response
-        task_id = response['task_id']
-        assert task_id
-        # time.sleep(3 * SLEEP_TIME)
-        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
-        # response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
-        # blasts = response['blasts']
-        # assert len(blasts) == 1
-        # blast = blasts[0]
-        # # One send expected since only one candidate is associated with campaign
-        # assert blast['sends'] == 1
+    # def test_schedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
+    #                                                         campaign_in_db, smartlist_first, candidate_device_first):
+    #
+    #     data = generate_campaign_schedule_data()
+    #     response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
+    #                                  expected_status=(HttpStatus.OK,))
+    #     assert 'task_id' in response
+    #     assert 'message' in response
+    #     task_id = response['task_id']
+    #     assert task_id
+    #     # time.sleep(3 * SLEEP_TIME)
+    #     poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+    #     # response = get_blasts(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+    #     # blasts = response['blasts']
+    #     # assert len(blasts) == 1
+    #     # blast = blasts[0]
+    #     # # One send expected since only one candidate is associated with campaign
+    #     # assert blast['sends'] == 1
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
@@ -316,3 +317,68 @@ def assert_campaign_blasts(campaign_id, token, expected_count=1):
     response = get_blasts(campaign_id, token, expected_status=(HttpStatus.OK,))
     blasts = response['blasts']
     return len(blasts) == expected_count
+
+
+def test_schedule_a_campaign_with_valid_data_new(campaign_data, campaign_in_db, talent_pool, token_first, candidate_device_first):
+
+        # Create candidate
+        response = create_candidate(talent_pool['id'], token_first)
+        candidate_id = response['candidates'][0]['id']
+        time.sleep(25)
+        candidate = get_candidate(candidate_id, token_first)['candidate']
+
+        # create_smartlist
+        talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+        talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+        # talent_pipeline = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
+        candidate_ids = [candidate_id]
+        smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
+        smartlist_id = smartlist['id']
+        time.sleep(60)
+
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_id]
+        campaign_id = create_campaign(data, token_first)['id']
+        data['id'] = campaign_id
+        data = generate_campaign_schedule_data()
+        response = schedule_campaign(campaign_in_db['id'], data, token_first,
+                                     expected_status=(HttpStatus.OK,))
+        assert 'task_id' in response
+        assert 'message' in response
+        task_id = response['task_id']
+        assert task_id
+        # time.sleep(6 * SLEEP_TIME)
+        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+
+
+def test_schedule_a_campaign_with_user_from_same_domain(token_first, token_same_domain,
+                                                        campaign_data, talent_pool, candidate_device_first):
+
+        # Create candidate
+        response = create_candidate(talent_pool['id'], token_first)
+        candidate_id = response['candidates'][0]['id']
+        time.sleep(25)
+        candidate = get_candidate(candidate_id, token_first)['candidate']
+
+        # create_smartlist
+        talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+        talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+        # talent_pipeline = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
+        candidate_ids = [candidate_id]
+        smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
+        smartlist_id = smartlist['id']
+        time.sleep(60)
+
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_id]
+        campaign_id = create_campaign(data, token_first)['id']
+        data['id'] = campaign_id
+        data = generate_campaign_schedule_data()
+        response = schedule_campaign(campaign_id, data, token_same_domain,
+                                     expected_status=(HttpStatus.OK,))
+        assert 'task_id' in response
+        assert 'message' in response
+        task_id = response['task_id']
+        assert task_id
+        # time.sleep(6 * SLEEP_TIME)
+        poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_id, token_same_domain))
