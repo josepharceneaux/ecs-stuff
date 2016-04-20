@@ -34,6 +34,8 @@ def get_valid_task_name_from_dict(data, key):
     """
     Check if datetime is valid, if no, then raise invalid value exception
     """
+    # TODO: Wrong docString
+    # TODO: Describe params here and everywhere else where missing
     assert isinstance(data, dict)
     value = str(get_valid_data_from_dict(data, key))
     general_msg = "Invalid value of %s %s. %s should be unique, alphanumeric and allowed characters are [-, _ ]. " \
@@ -41,10 +43,10 @@ def get_valid_task_name_from_dict(data, key):
     try:
         allowed_characters = ['-', '_']
         if any(c for c in value if not(c.isalnum() or c in allowed_characters)):
+            # TODO: Is it required here? As we are raising same in except block.
             raise InvalidUsage(error_message=general_msg)
     except Exception:
-        raise InvalidUsage(
-            error_message=general_msg)
+        raise InvalidUsage(error_message=general_msg)
     return value
 
 

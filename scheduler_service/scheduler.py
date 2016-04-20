@@ -11,6 +11,7 @@ import datetime
 
 # Third-party imports
 from urllib import urlencode
+# TODO: unused import
 from dateutil.tz import tzutc
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
@@ -25,6 +26,7 @@ from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
+# TODO: unused import
 from scheduler_service.common.error_handling import InvalidUsage, InternalServerError
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
@@ -349,7 +351,7 @@ def serialize_task(task, is_admin_api=False):
         if task.args[0]:
             task_dict['user_id'] = task.args[0]
             user = User.get_by_id(task.args[0])
-            if not user:
+            if not user: # TODO: if not isinstance(user, User) will be better here
                 logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
                 task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
             else:

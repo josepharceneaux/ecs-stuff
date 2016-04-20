@@ -9,6 +9,7 @@ import json
 import types
 
 # Third party imports
+# TODO: IMO re-ordering will beautify these
 from datetime import timedelta, datetime
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -17,6 +18,7 @@ from flask.ext.restful import Resource
 from werkzeug.exceptions import BadRequest
 
 # Application imports
+# TODO: same as above
 from scheduler_service import TalentConfigKeys, flask_app, logger, SchedulerUtils
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User, DomainRole
@@ -740,6 +742,7 @@ class PauseTaskById(Resource):
 
 @api.route(SchedulerApi.SCHEDULER_ADMIN_TASKS)
 class AdminTasks(Resource):
+    # TODO: IMO description should come before decorator
     decorators = [require_oauth()]
     """
         This resource returns a list of tasks owned by a user or service by using pagination and it's accessible to
@@ -751,10 +754,13 @@ class AdminTasks(Resource):
 
     @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
     def get(self):
+        # TODO: do we need to return count? As we (I and Zohaib) had to remove that after osman's feedback
+        # TODO: We can give more detail about 'tasks' below - as you have explained many examples below
+        # TODO: Code examples below will be more prominant if you use >>> before each line
         """
         This action returns a list of tasks and their count
         :return tasks_data: a dictionary containing list of tasks and their count
-        :rtype json
+        :rtype: json
 
 
         :Example (in case of pagination):
@@ -765,12 +771,17 @@ class AdminTasks(Resource):
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/admin/v1/tasks?page=2', headers=headers)
 
+            >>> "TODO: Shouldn't it be 31- 60? Like job 1-30, 31-60 and so on? Cause I think there will be"
+            no 0th job or task
+
             # Returns 30 jobs ranging from 30-59
 
             Case 2:
 
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
+
+            >>> "TODO: Same as above"
 
             # Returns 35 jobs ranging from 35-69
             # TODO--is the above correct, I was thinking it would return from 30--65
@@ -816,12 +827,14 @@ class AdminTasks(Resource):
                ]
             }
 
+        >>> "TODO: There will also 403, 404(maybe) etc"
+
         .. Status:: 200 (OK)
                     400 (Invalid Usage)
                     500 (Internal Server Error)
 
         """
-        # In case of higher number of scheduled task running for a particular user and user want to get only
+        # In case of higher number of scheduled task running for a particular user and user wants to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
         # Limit the jobs to 50 if user requests for more than 50
@@ -831,8 +844,11 @@ class AdminTasks(Resource):
         default_per_page = 30
 
         # If user didn't specify page or per_page, then it should default to 1 and 30 respectively.
+        # TODO: 1 should be imported from api_utils.py
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
+
+        # TODO: Maybe you can use get_pagination_params() defined in api_utils.py rather than validating yourself.
         if not (str(page).isdigit() and int(page) > 0):
             raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
 
@@ -858,12 +874,14 @@ class AdminTasks(Resource):
 
         # If user_id is given then only return jobs of that particular user
         if user_id:
+            # TODO: As you have implemented JSON schema validation for scheduler service, maybe this can be handled there
             if not (str(user_id).isdigit() and int(user_id) > 0):
                 raise InvalidUsage("user_id should be of type int")
             tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
 
         # If is_paused is given then only return paused jobs.
         if is_paused:
+            # TODO: Schema validation - also shouldn't we stick to true-flase or 0-1?
             if not str(is_paused).lower() in ['true', 'false', '1', '0']:
                 raise InvalidUsage("is_paused should be of type bool or int. If `true` or `1`, paused jobs will be "
                                    "returned and if `false` or `0`, then endpoint returns running jobs")
@@ -898,6 +916,7 @@ class AdminTasks(Resource):
 
         # The following case should never occur. As the general jobs are independent of user. So, if user use such
         # a filter then raise Invalid usage api exception.
+        # TODO: Remove hardcoded 'general'? I saw somewhere you added in common
         if user_id and task_category == "general":
             raise InvalidUsage(error_message="user and task_category cannot be used together. General jobs are independent of users.")
 
@@ -920,7 +939,7 @@ class AdminTasks(Resource):
         }
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
-
+# TODO: IMO this should be in a separate file. It shouldn't be mixed with actual endpoints
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """

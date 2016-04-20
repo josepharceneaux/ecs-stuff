@@ -11,6 +11,7 @@ import uuid
 import requests
 
 # Application imports
+# TODO: Correct this import
 from auth_service.common.models.user import DomainRole
 from scheduler_service import SchedulerUtils
 from scheduler_service.common.routes import SchedulerApiUrl
@@ -357,6 +358,7 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
+    # TODO: We can add a test with no auth-token to get 403 error
     def test_retrieve_jobs_as_admin(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
         """
         Create 5 users, assign admin role to one of them. Then
@@ -379,6 +381,7 @@ class TestSchedulerGet(object):
         # TODO--I don't see where jobs are being scheduled? Or it's not apparent due to lack of useful comments
         # TODO--We should assert on jobs of users as well. Do as many asserts as possible
         assert response.status_code == 200
+        # TODO: IMO we can assert number of retrieved Jobs as you mentioned in docString.
 
     def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user,
                                                   schedule_ten_general_jobs):
@@ -396,7 +399,7 @@ class TestSchedulerGet(object):
         assert response.status_code == 200
 
         # There should be 10 jobs of first user
-        assert len(response.json()['tasks']) >= 10
+        assert len(response.json()['tasks']) >= 10  # TODO: why > ? Here and every where else
 
         # Try to get jobs using wrong is_paused value
         response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
