@@ -1,10 +1,11 @@
 from flask import request, Blueprint, jsonify
 from flask_restful import Resource
 
+from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidatePoolApi
-from candidate_pool_service.common.models.smartlist import Smartlist
+from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.utils.auth_utils import require_oauth
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
@@ -13,6 +14,7 @@ from candidate_pool_service.common.error_handling import ForbiddenError, NotFoun
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
 from candidate_pool_service.modules.smartlists import create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
+from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
 __author__ = 'jitesh'
 
@@ -141,7 +143,14 @@ class SmartlistResource(Resource):
         # check whether smartlist belongs to user's domain
         if smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("List does not belong to user's domain")
+        smartlist_candidate_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter(
+                SmartlistCandidate.smartlist_id == list_id).all()
+        smartlist_candidate_ids = [smartlist_candidate_id[0] for smartlist_candidate_id in smartlist_candidate_ids]
         smartlist.delete()
+        if smartlist_candidate_ids:
+            logger.info("Candidates %s of SmartList %s are going to be updated in Amazon Cloud "
+                        "Search" % (smartlist_candidate_ids, list_id))
+            update_candidates_on_cloudsearch(request.oauth_token, smartlist_candidate_ids)
         return {'smartlist': {'id': smartlist.id}}
 
 
