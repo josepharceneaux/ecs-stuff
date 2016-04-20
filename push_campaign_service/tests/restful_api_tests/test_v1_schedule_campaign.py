@@ -319,27 +319,10 @@ def assert_campaign_blasts(campaign_id, token, expected_count=1):
     return len(blasts) == expected_count
 
 
-def test_schedule_a_campaign_with_valid_data_new(campaign_data, campaign_in_db, talent_pool, token_first, candidate_device_first):
+def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_first, campaign_in_db, talent_pool, token_first, candidate_device_first):
 
         # Create candidate
-        response = create_candidate(talent_pool['id'], token_first)
-        candidate_id = response['candidates'][0]['id']
-        time.sleep(25)
-        candidate = get_candidate(candidate_id, token_first)['candidate']
-
-        # create_smartlist
-        talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-        talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
-        # talent_pipeline = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
-        candidate_ids = [candidate_id]
-        smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
-        smartlist_id = smartlist['id']
         time.sleep(60)
-
-        data = campaign_data.copy()
-        data['smartlist_ids'] = [smartlist_id]
-        campaign_id = create_campaign(data, token_first)['id']
-        data['id'] = campaign_id
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
                                      expected_status=(HttpStatus.OK,))
