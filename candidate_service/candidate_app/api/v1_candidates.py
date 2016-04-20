@@ -7,11 +7,11 @@ Notes:
 # Standard libraries
 import logging
 import datetime
-from datetime import date
 from time import time
+from datetime import date
 
 # Third Party
-from polling import poll
+from polling import poll, TimeoutException
 
 # Flask specific
 from flask import request
@@ -1498,16 +1498,21 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
-        # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
-        if poll(assert_smartlist_candidates, step=3,
-                args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
-                timeout=30):
-            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
-                        % (len(candidate_ids), created_smartlist_id))
-        else:
-            raise InternalServerError('Candidate(s) could not be found for smartlist(id:%s)'
-                                      % created_smartlist_id)
 
+        # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
+        try:
+            if poll(assert_smartlist_candidates, step=3,
+                    args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
+                    timeout=30):
+                logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                            % (len(candidate_ids), created_smartlist_id))
+            else:
+                raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
+                                          % (candidate_ids, created_smartlist_id))
+        except TimeoutException:
+            raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
+                                      % (candidate_ids, created_smartlist_id))
+            
         # create campaign
         email_campaign_object = {
             "name": campaign_name,
