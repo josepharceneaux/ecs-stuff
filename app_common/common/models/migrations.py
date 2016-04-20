@@ -5,7 +5,7 @@ Files located in the 'migrations' directory under each micro service may contain
 the format: YYYY-MM-DD-HH-MM-SS  So, for example, 2016-04-19-14-13-00
 
 Files are run in order, according to the timestamp represented by the file name, and then recorded in the database so that the same
-file is not run again.
+file is not run again. The name format recorded is: <service-name>/<filename> so migrations are scoped by service name.
 '''
 
 import importlib
@@ -95,14 +95,15 @@ def run_migrations(logger, db):
 
             # Record migration processed
             logger.info("Recording {}".format(name))
-            m = Migration(name=name, run_at_timestamp=datetime.now())
+            m = Migration(name=name)
             db.session.add(m)
             db.session.commit()
             migrated_count += 1
         else:
+            # Since we expect our timestamp-inspired naming convention to be unique, we should never find more than one
             if len(migrations_found) > 1:
-                logger.error("Multiple records for migration: ".format(migrations_found[0]))
-            logger.info("Skipping recorded migration".format(migrations_found[0]))
+                logger.error("Multiple records for migration: ".format(migrations_found[0].name))
+            logger.info("Skipping recorded migration".format(migrations_found[0].name))
 
     logger.info("{} migrations performed".format(migrated_count))
 
