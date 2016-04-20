@@ -121,7 +121,7 @@ class Tasks(Resource):
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater than or equal to 1")
+            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
 
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
@@ -742,9 +742,13 @@ class PauseTaskById(Resource):
 class AdminTasks(Resource):
     decorators = [require_oauth()]
     """
-        This resource returns a list of tasks owned by a user or service by using pagination and accessible to admin
-        user only
+        This resource returns a list of tasks owned by a user or service by using pagination and it's accessible to
+        admin users only.
     """
+
+    # TODO--I think we are using pagination like below in multiple places. We can further abstract it e.g. I can create
+    # a parent class and put all the core pagination functionality in its get() and then we can later override that
+
     @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
     def get(self):
         """
@@ -769,8 +773,11 @@ class AdminTasks(Resource):
             response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
 
             # Returns 35 jobs ranging from 35-69
+            # TODO--is the above correct, I was thinking it would return from 30--65
 
         :Example:
+        # TODO--please explaining the following a bit more. Give eaxample each filter one by one. That would add more clarity
+
         In case of task_category filter
 
             headers = {'Authorization': 'Bearer <access_token>'}
@@ -823,12 +830,13 @@ class AdminTasks(Resource):
         # Default per_page size
         default_per_page = 30
 
-        # If user didn't specify page or per_page, then it should be set to default 1 and 30 respectively.
+        # If user didn't specify page or per_page, then it should default to 1 and 30 respectively.
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater than or equal to 1")
+            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
 
+        # TODO--kindly double check the error message below and compare it against the if condition
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
                 error_message="'per_page' arg should be a digit and its value should be greater than or equal to 30")
@@ -842,6 +850,7 @@ class AdminTasks(Resource):
         raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
 
+        # TODO--instead of 'is_paused', we can just say 'paused'
         # Get all param filters
         user_id, is_paused, task_type, task_category = request.args.get('user_id'), request.args.get('is_paused'), \
                                                        request.args.get('task_type'), \
@@ -887,12 +896,14 @@ class AdminTasks(Resource):
             else:
                 tasks = filter(lambda _task: _task.name == SchedulerUtils.RUN_JOB_METHOD_NAME, tasks)
 
-        # The following case will never occur. As the general jobs are independent of user. So, if user use such
+        # The following case should never occur. As the general jobs are independent of user. So, if user use such
         # a filter then raise Invalid usage api exception.
         if user_id and task_category == "general":
-            raise InvalidUsage(error_message="user and task_category cannot be used at one. General jobs are independent of users.")
+            raise InvalidUsage(error_message="user and task_category cannot be used together. General jobs are independent of users.")
 
         tasks_count = len(tasks)
+
+        # TODO--what happens if user provide all filters at once?
 
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)

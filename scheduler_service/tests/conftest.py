@@ -197,6 +197,7 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
     return jobs_id
 
 
+#TODO--cannot we use some existing fixture for creating users?
 @pytest.fixture(scope='function')
 def create_five_users(request, domain_first, first_group, sample_client):
     """
@@ -214,6 +215,7 @@ def create_five_users(request, domain_first, first_group, sample_client):
             try:
                 db.session.delete(_user)
                 db.session.commit()
+            # TODO--should never use an except block without catching a specific exception
             except:
                 db.session.rollback()
     request.addfinalizer(tear_down)
@@ -225,12 +227,16 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
     Scheduler 10 general jobs.
     """
+    # TODO--explain what's a general job in comment
     general_job_ids_list = []
     for _ in range(10):
         secret_key_id, access_token = User.generate_jw_token()
         header = {'Authorization': 'Bearer ' + access_token,
                   'X-Talent-Secret-Key-ID': secret_key_id,
                   'Content-Type': 'application/json'}
+        # TODO--use the above two lines at the top of the method, that way you will be able to use them both in the loop
+        # TODO--and inside teardown() without repetitively defining them. Less and simple code the better.
+        # TODO--break the line, violating pep-8
         job_config_one_time_task['task_name'] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
                                  headers=header)
@@ -258,7 +264,7 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
 @pytest.fixture(scope='function')
 def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task, job_config):
     """
-    Schedule 10 jobs of each users. So, there will be 50 jobs in total.
+    Schedule 10 jobs of each users (we created 5 users). So, there will be 50 jobs in total.
     """
     jobs_count = 10
     user_job_ids_list = []
@@ -267,7 +273,10 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
         job_ids_list = []
         header = {'Authorization': 'Bearer ' + token,
                   'Content-Type': 'application/json'}
+        # TODO--take out the header and reuse it here and in the teardodwn
+        # TODO--please add comments within the for loop in multiple places so the reader know what's going on
         for _ in range(jobs_count):
+            # TODO--followiong could be if not index:
             if index == 0:
                 data = json.dumps(job_config.copy())
             else:
@@ -281,6 +290,7 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
             job_ids_list.append(response.json()['id'])
 
             # Pause all jobs of first user, we need to check if admin can get paused jobs(in test)
+            # TODO--if not index
             if index == 0:
                 response = requests.post(SchedulerApiUrl.PAUSE_TASK % response.json()['id'],
                                          headers=header)
@@ -301,4 +311,6 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
                 job_ids_list.append(response.json()['id'])
 
     request.addfinalizer(tear_down)
+
+    # TODO--this method needs more comments, need to be further cleaned
     return user_job_ids_list

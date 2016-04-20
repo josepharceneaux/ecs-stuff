@@ -360,9 +360,10 @@ class TestSchedulerGet(object):
     def test_retrieve_jobs_as_admin(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
         """
         Create 5 users, assign admin role to one of them. Then
-        Schedule 50 jobs of 5 different users, 10 each. Then get the jobs using admin user.
+        schedule 50 jobs of 5 different users, 10 each. Then get the jobs using admin user.
         """
-
+        # TODO--kindly improve above comment
+        # TODO--fixture 'schedule_ten_jobs_of_each_user' can be 'schedule_ten_jobs_for_each_user'
         # Test without admin access, should get 401 response
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
                                 headers=auth_header)
@@ -375,6 +376,8 @@ class TestSchedulerGet(object):
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
                                 headers=auth_header)
 
+        # TODO--I don't see where jobs are being scheduled? Or it's not apparent due to lack of useful comments
+        # TODO--We should assert on jobs of users as well. Do as many asserts as possible
         assert response.status_code == 200
 
     def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user,
@@ -404,6 +407,7 @@ class TestSchedulerGet(object):
         response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'true'),
                                 headers=auth_header)
         # There should be 10 jobs which we paused in the fixture
+        # TODO--which fixture?
         assert response.status_code == 200 and len(response.json()['tasks']) >= 10
 
         response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
@@ -468,5 +472,7 @@ class TestSchedulerGet(object):
                                 headers=auth_header)
         assert response.status_code == 200
 
+        # TODO--nice try. But this test needs refactoring. We need to break it down into more tests. I think one test
+        # TODO--should test one functionality. It will be more clear and meaningful.
         assert len(response.json()['tasks']) >= 10
 
