@@ -1504,6 +1504,8 @@ class CandidateClientEmailCampaignResource(Resource):
             if poll(assert_smartlist_candidates, step=3,
                     args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
                     timeout=60):
+                # timeout=60 is just an upper limit to poll the Smartlist API
+                # (needed this for some tests, it shouldn't affect normal API flow)
                 logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                             % (len(candidate_ids), created_smartlist_id))
             else:
