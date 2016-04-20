@@ -18,6 +18,7 @@ RESUMES_BUCKET = 'resume-emails'
 EMAIL_HASH_PATTERN = re.compile(r'\+(.+?)@')
 AUTH_URL = 'http://localhost:8001/v1/oauth2/token'
 RESUMES_URL = 'http://localhost:8003/v1/parse_resume'
+PAYLOAD_QTY = 2
 
 S3_CLIENT = boto3.client(
     's3',
@@ -44,7 +45,7 @@ def lambda_handler(event, unused_context):
 
     validated_sender, talent_pool_hash = validate_email_file(email_file, key)
     access_token = get_user_access_token(validated_sender)
-    raw_attachment = get_email_attachement(email_file, key)
+    raw_attachment = get_email_attachment(email_file, key)
     talent_pool_id = get_desired_talent_pool(talent_pool_hash)
     send_resume_to_service(access_token, raw_attachment, talent_pool_id, key)
     print 'Finished lambda event.'
@@ -90,17 +91,25 @@ def get_user_access_token(email_address):
     return access_token
 
 
-def get_email_attachement(email_file, key):
+def get_email_attachment(email_file, key):
     """
     For an email with an attachment the first item in payloads should be an email.message.Message
     with content-type of `multipart/alternative`. This then should produce another list of two items
-    if you run .get_payloads() on that (one for plain text and another for HTML). The second item in
-    the first list should be the file attachment.
+    if you run .get_payloads() on that (one for plain text and another for HTML). In the event that
+    there is no file attachment this 'nested email.message.Message' will be at the root. We test for
+    this by validating the presence of a filename. The second item in the first list SHOULD be the
+    file attachment. If multiple files are attached the payload count will increase for each file
+    and raise a UserWarning.
     """
     payloads = email_file.get_payload()
-    if len(payloads) < 2:
-        raise UserWarning('User email {} does not have sufficient payload.'.format(key))
+    payload_count = len(payloads)
+    if payload_count != PAYLOAD_QTY:
+        raise UserWarning("User supplied incorrect payload count of {} from file {}".format(
+            payload_count, key
+        ))
     raw_attachment = payloads[1]
+    if not raw_attachment.get_filename():
+        raise UserWarning("User supplied no file from s3 file {}".format(key))
     return raw_attachment
 
 
