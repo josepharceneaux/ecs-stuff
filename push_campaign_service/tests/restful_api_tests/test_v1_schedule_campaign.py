@@ -47,7 +47,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
                                                         reschedule_campaign, get_blasts, SLEEP_TIME,
                                                         unschedule_campaign, get_campaigns, create_campaign)
 from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
-    create_candidate, get_candidate, create_smartlist
+    create_candidate, get_candidate, create_smartlist, send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.common.models.misc import Frequency
@@ -346,11 +346,15 @@ def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_firs
 #     poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_same_domain))
 
 
-def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent_pool, candidate_first, smartlist_first, schedule_a_campaign):
+def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent_pool, candidate_first, smartlist_first):
 
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-    response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                   expected_status=(HttpStatus.OK,))
+    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
+    assert response.status_code == 200
+    data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+    response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
+    assert response.status_code == 200
+    response = response.json()
     assert 'task_id' in response
     assert 'message' in response
     task_id = response['task_id']
