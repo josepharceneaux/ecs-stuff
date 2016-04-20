@@ -42,6 +42,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
         # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
         time.sleep(60)
+        # TODO: Above should use polling as already mentioned in TODO
         db.session.commit()
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         assert email.is_bounced is True

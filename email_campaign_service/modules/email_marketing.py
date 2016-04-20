@@ -175,8 +175,13 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                                                                                list_ids=list_ids,
                                                                                new_candidates_only=new_candidates_only)
 
-    # Check if the smart list has more than 0 candidates
+        # Check if the smart list has more than 0 candidates
         if candidate_ids_and_emails:
+            # TODO: IMO (osman also suggested this) Fail Fast
+            # TODO:                                 >>> if not:
+            # TODO:                                 >>>     raise()
+            # TODO:                                 >>> 'rest of the code goes here'
+            # TODO: Indentation becomes better
             email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign, user,
                                                                                                 new_candidates_only,
                                                                                                 candidate_ids_and_emails
@@ -210,6 +215,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                                % campaign.id,
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
     else:
+        # TODO: Wrong indentation below
             send_campaign_through_celery(user, campaign, list_ids, new_candidates_only)
             # For each candidate, create URL conversions and send the email via Celery task
 
@@ -255,6 +261,7 @@ def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_ca
 def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campaign,
                                   user, new_candidates_only,
                                   email_campaign_blast_id):
+    # TODO: Un-used param here. I know this isn't part of your PR. but IMO we can remove this
     logger.info('celery_result: %s' % celery_result)
     sends = celery_result.count(True)
     _update_blast_sends(email_campaign_blast_id, sends, campaign, user, new_candidates_only)
@@ -263,13 +270,16 @@ def post_processing_campaign_sent(celery_result, candidate_ids_and_emails, campa
 @celery_app.task(name='process_campaign_send')
 def process_campaign_send(celery_result, campaign, list_ids, user, new_candidates_only):
     all_candidate_ids = []
+    # TODO: We are logging same info twice? here and below at 276
     logger.info('celery_result: %s' % celery_result)
+    # TODO: Why are we assigning to new var here?
     candidates_from_all_smartlists_of_campaign = celery_result
     logger.info(candidates_from_all_smartlists_of_campaign)
 
     # gather all candidates from various smartlists
     for candidate_list in candidates_from_all_smartlists_of_campaign:
         all_candidate_ids.extend(list(set(candidate_list)))  # Unique candidates
+    # TODO: Shouldn't this be at top? like if not celery_result? Maybe I am wrong
     if not all_candidate_ids:
         raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
                            error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
@@ -280,6 +290,7 @@ def process_campaign_send(celery_result, campaign, list_ids, user, new_candidate
                                                                                              new_candidates_only,
                                                                                              candidate_ids_and_emails)
         with app.app_context():
+            # TODO: We can add more information in this log
             logger.info('Emails are being sent using Celery.')
         send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast_id,
                                     blast_datetime, campaign,
@@ -322,12 +333,15 @@ def get_email_campaign_candidate_ids_and_emails(user, campaign, list_ids=None, n
     :return: Returns array of candidate IDs in the campaign's smartlists.
              Is unique.
     """
+    # TODO: IMO we can get `user` from `campaign` object
     if list_ids is None:
         # Get smartlists of this campaign
         list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                      smartlist_ids_only=True)
     all_candidate_ids = get_candidates_from_smartlist_for_email_client_id(campaign, list_ids)
 
+    # TODO: What id all_candidate_ids is empty here? as we may have in email-campaign-with-celery?
+    # TODO: IMO, this code should be common for both parts
     subscribed_candidate_ids = handle_subscription(user.id, campaign, all_candidate_ids, new_candidates_only)
     return get_filtered_email_rows(campaign, subscribed_candidate_ids)
 
@@ -343,9 +357,10 @@ def get_email_campaign_candidate_ids_and_emails_with_celery(user, campaign, list
     """
     if list_ids is None:
         # Get smartlists of this campaign
+        # TODO: Can't we get this from relationship? campaign.smartlists?
         list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                      smartlist_ids_only=True)
-
+    # TODO: I think if no list_id is found, we should raise here (which we are doing in next function)
     get_smartlist_candidates_via_celery(campaign, list_ids, user, new_candidates_only)
 
 
@@ -523,6 +538,8 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     :type blast_datetime: datetime.datetime | None
     :return:
     """
+    # TODO: I think we should solve that detached instance issue more gracefully.
+    # TODO: There must be some (you can see sms-svc code. I am passing objects in celery task and it is working fine)
     candidate = Candidate.get_by_id(candidate_id)
     campaign = EmailCampaign.get_by_id(campaign_id)
     # Set the email campaign blast fields if they're not defined, like if this just a test
@@ -977,6 +994,7 @@ def notify_and_get_blast_params(campaign, user, new_candidates_only, candidate_i
                                               sent_datetime=blast_datetime)
     EmailCampaignBlast.save(email_campaign_blast)
     blast_params = dict(sends=0, bounces=0)
+    # TODO: Why commented? Maybe need to remove
     # with app.app_context():
     #     logger.info('Email campaign id is %s. blast id is %s. User(id:%s).'
     #                 % (campaign.id, email_campaign_blast.id, user.id))
