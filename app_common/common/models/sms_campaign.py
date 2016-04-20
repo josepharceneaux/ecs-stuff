@@ -19,8 +19,8 @@ class SmsCampaign(db.Model):
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id', ondelete='CASCADE'))
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     scheduler_task_id = db.Column(db.String(255))
 
     # Relationships
@@ -62,8 +62,8 @@ class SmsCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     replies = db.Column(db.Integer, default=0)
-    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
@@ -81,7 +81,7 @@ class SmsCampaignSend(db.Model):
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     sent_datetime = db.Column(db.DateTime)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     url_conversions = relationship('SmsCampaignSendUrlConversion',
@@ -109,7 +109,7 @@ class SmsCampaignReply(db.Model):
     body_text = db.Column(db.Text)
     candidate_phone_id = db.Column(db.BIGINT,
                                    db.ForeignKey('candidate_phone.Id', ondelete='CASCADE'))
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
+    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<SmsCampaignReply(id = %r)>" % self.id
@@ -128,7 +128,7 @@ class SmsCampaignSmartlist(db.Model):
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
                             nullable=False)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return '<SmsCampaignSmartlist(id = %r)>' % self.id

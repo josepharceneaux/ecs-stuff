@@ -416,3 +416,12 @@ def define_and_send_request(access_token, request, url, data=None):
                       headers={'Authorization': 'Bearer %s' % access_token,
                                'content-type': 'application/json'},
                       data=json.dumps(data))
+
+
+def purge_dict(_dict):
+    """
+    Function will "remove" dict's keys with empty values
+    :type _dict:  dict
+    :rtype:  dict
+    """
+    return {k: v for k, v in _dict.items() if v}
