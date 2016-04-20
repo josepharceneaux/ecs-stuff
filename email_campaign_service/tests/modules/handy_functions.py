@@ -164,6 +164,7 @@ def send_campaign(campaign, access_token):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
+    time.sleep(20)
     blasts = get_blasts_with_polling(campaign)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
@@ -335,9 +336,12 @@ def get_sends(campaign, blast_index, expected_count):
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
-    if campaign.blasts[blast_index].sends == expected_count:
-        return campaign.blasts[blast_index].sends
-    else:
+    try:
+        if campaign.blasts[blast_index].sends == expected_count:
+            return campaign.blasts[blast_index].sends
+        else:
+            return False
+    except Exception:
         return False
 
 
