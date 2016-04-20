@@ -15,7 +15,7 @@ class TalentPool(db.Model):
     name = db.Column(db.String(50), nullable=False)
     description = db.Column(db.TEXT)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     domain = db.relationship('Domain', backref=db.backref('talent_pool', cascade="all, delete-orphan"))
@@ -38,7 +38,7 @@ class TalentPoolCandidate(db.Model):
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'), nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_time = db.Column(db.DateTime, default=datetime.utcnow(), onupdate=datetime.utcnow(), nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
