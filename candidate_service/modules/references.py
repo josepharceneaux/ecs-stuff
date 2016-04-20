@@ -67,8 +67,8 @@ def get_references(candidate):
             reference_phone=_get_reference_phones(reference_phone[0]) if reference_phone else None,
             reference_web_address=_get_reference_web_addresses(reference)
         )
-        # Remove keys with empty values
-        return_dict = purge_dict(return_dict)
+        # Remove keys with empty values and strip each value
+        return_dict = purge_dict(_dict=return_dict, strip=False)
         return_list.append(return_dict)
 
     return return_list
@@ -86,14 +86,14 @@ def create_references(candidate_id, references):
     """
     created_reference_ids = []
     for reference in references:
-        position_title = reference['position_title'].strip() if reference.get('position_title') else None
         candidate_reference_dict = dict(
-            resume_id=candidate_id, candidate_id=candidate_id,
-            person_name=reference['name'].strip(),
-            position_title=position_title,
-            comments=reference['comments'].strip()
+            resume_id=candidate_id,
+            candidate_id=candidate_id,
+            person_name=reference['name'],
+            position_title=reference.get('position_title'),
+            comments=reference['comments']
         )
-        # Remove keys with empty values
+        # Remove keys with empty values & strip each value
         candidate_reference_dict = purge_dict(candidate_reference_dict)
         candidate_reference = CandidateReference(**candidate_reference_dict)
         db.session.add(candidate_reference)
@@ -111,7 +111,7 @@ def create_references(candidate_id, references):
                 value=value
             )
             # Remove keys with empty values
-            reference_email_dict = purge_dict(reference_email_dict)
+            reference_email_dict = purge_dict(reference_email_dict, strip=False)
 
             # Prevent adding empty records to db
             if reference_email_dict:
@@ -129,7 +129,7 @@ def create_references(candidate_id, references):
                 extension=phone_number_dict.get('extension') if phone_number_dict else None
             )
             # Remove keys with empty values
-            reference_phone_dict = purge_dict(reference_phone_dict)
+            reference_phone_dict = purge_dict(reference_phone_dict, strip=False)
 
             # Prevent adding empty records to db
             if reference_phone_dict:
@@ -138,10 +138,10 @@ def create_references(candidate_id, references):
 
         if reference_web_address:
             reference_web_address_dict = dict(
-                url=(reference_web_address.get('url') or '').strip(),
-                description=(reference_web_address.get('description') or '').strip(),
+                url=reference_web_address.get('url'),
+                description=reference_web_address.get('description'),
             )
-            # Remove keys with empty values
+            # Remove keys with empty values & strip each value
             reference_web_address_dict = purge_dict(reference_web_address_dict)
 
             # Prevent inserting empty records into db
