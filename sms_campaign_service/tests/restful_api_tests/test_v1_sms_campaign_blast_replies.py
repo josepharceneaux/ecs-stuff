@@ -9,8 +9,8 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignBlastReplies(object):
@@ -52,15 +52,13 @@ class TestSmsCampaignBlastReplies(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN, self.URL % ('%s', blast_id),
             self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_one_blast_reply(self, access_token_first, candidate_phone_1,
+    def test_get_with_one_blast_reply(self, access_token_first, candidate_and_phone_1,
                                       sent_campaign_and_blast_ids,
                                       create_campaign_replies):
         """
-        This is the case where we assume we have blast saved with one reply.
-        We are using fixtures to create campaign blast and blast replies..
-        This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
-        "create_campaign_replies" to create an entry in database table "sms_campaign_replies".
-        Replies count should be 1.
+        This is the case where one candidate has replied to the sms-campaign.
+        This uses fixture "create_campaign_replies" to create an entry in database table
+        "sms_campaign_replies". Replies count should be 1.
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         response = requests.get(
@@ -69,7 +67,7 @@ class TestSmsCampaignBlastReplies(object):
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['blast_id'] == blast_ids[0]
-        assert json_resp['candidate_phone_id'] == candidate_phone_1['id']
+        assert json_resp['candidate_phone_id'] == candidate_and_phone_1[1]['id']
 
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain,
                                          sent_campaign_and_blast_ids):
@@ -80,20 +78,20 @@ class TestSmsCampaignBlastReplies(object):
         _, blast_ids = sent_campaign_and_blast_ids
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD,
-            self.URL % (sms_campaign_in_other_domain.id, blast_ids[0]),
+            self.URL % (sms_campaign_in_other_domain['id'], blast_ids[0]),
             access_token_first)
 
     def test_get_with_blast_id_associated_with_not_owned_campaign(
             self, access_token_first, sms_campaign_of_current_user,
-            create_blast_for_not_owned_campaign):
+            sent_campaign_and_blast_ids_in_other_domain):
         """
         Here we assume that requested blast_id is associated with such a campaign which does not
         belong to domain of logged-in user. It should result in Forbidden error.
         """
+        _, blast_ids = sent_campaign_and_blast_ids_in_other_domain
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD,
-            self.URL % (sms_campaign_of_current_user['id'],
-                        create_blast_for_not_owned_campaign.id),
+            self.URL % (sms_campaign_of_current_user['id'], blast_ids[0]),
             access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign_and_blast_ids):
@@ -109,7 +107,6 @@ class TestSmsCampaignBlastReplies(object):
     def test_get_with_invalid_blast_id(self, access_token_first, sms_campaign_of_current_user):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user['id'], '%s'),

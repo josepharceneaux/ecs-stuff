@@ -6,18 +6,17 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Standard Import
 import time
 
-# Third Party
-from polling import poll
-
 # Common Utils
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
                                                              SmsCampaign)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
+    get_candidates_of_smartlist
 
 SLEEP_TIME = 30
 
@@ -151,10 +150,20 @@ def assert_campaign_creation(response, user_id, expected_status_code):
     It returns id of created SMS campaign.
     """
     assert response.status_code == expected_status_code, \
-        'It should get status code' + str(expected_status_code)
+        'It should get status code ' + str(expected_status_code)
     assert response.json()
     json_response = response.json()
     assert 'location' in response.headers
     assert 'id' in json_response
     assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
     return json_response['id']
+
+
+def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_index=0):
+    """
+    This returns candidate_ids associated with the smartlists of given campaign object.
+    :param campaign: SMS campaign object
+    :param access_token: access token of user
+    :return:
+    """
+    return get_candidates_of_smartlist(campaign['list_ids'][smartlist_index], True, access_token)

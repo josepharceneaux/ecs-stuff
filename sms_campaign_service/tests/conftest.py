@@ -4,7 +4,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
 # Standard Import
-import time
 import json
 from datetime import (datetime, timedelta)
 
@@ -14,13 +13,12 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 # common conftest
-from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    create_smartlist_from_api, get_candidates_of_smartlist
 from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
-     test_domain_2, second_group, domain_second, candidate_second, user_from_diff_domain,
-     user_same_domain, user_second, access_token_second, talent_pipeline, talent_pool)
+     test_domain_2, second_group, domain_second, candidate_second,
+     user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
+     access_token_other, talent_pool_other, talent_pipeline_other)
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import app
@@ -30,7 +28,8 @@ from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCa
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  assert_campaign_schedule,
                                                                  delete_test_scheduled_task,
-                                                                 assert_campaign_creation)
+                                                                 assert_campaign_creation,
+                                                                 candidate_ids_associated_with_campaign)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER)
@@ -90,11 +89,12 @@ def valid_header(access_token_first):
 
 
 @pytest.fixture()
-def valid_header_2(access_token_second):
+def valid_header_2(access_token_other):
     """
-    Returns the header containing access token and content-type to make POST/DELETE requests.
+    Returns the header (for user of some other domain) containing access token and content-type
+    to make POST/DELETE requests.
     """
-    return _get_auth_header(access_token_second)
+    return _get_auth_header(access_token_other)
 
 
 @pytest.fixture()
@@ -132,12 +132,11 @@ def user_phone_2(request, user_first):
 
 
 @pytest.fixture()
-def user_phone_3(request, user_second):
+def user_phone_3(request, user_from_diff_domain):
     """
     This creates user_phone record for user_from_diff_domain
-    :return:
     """
-    user_phone = _create_user_twilio_phone(user_second, fake.phone_number())
+    user_phone = _create_user_twilio_phone(user_from_diff_domain, fake.phone_number())
 
     def tear_down():
         _delete_user_phone(user_phone)
@@ -342,20 +341,23 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user
 
 
 @pytest.fixture()
-def sms_campaign_in_other_domain(request, campaign_valid_data, user_phone_3):
+def sms_campaign_in_other_domain(request, campaign_valid_data, valid_header_2,
+                                 access_token_other, talent_pipeline_other):
     """
     This creates SMS campaign for some other user in different domain.
-    :param campaign_valid_data:
-    :param user_phone_3:
-    :return:
     """
-    test_sms_campaign_of_other_user = _create_sms_campaign(campaign_valid_data, user_phone_3)
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_other, talent_pipeline_other, count=2, create_phone=True, assign_role=True)
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
+                                                    valid_header_2,
+                                                    talent_pipeline_other.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign_of_other_user)
+        _delete_campaign(test_sms_campaign)
 
     request.addfinalizer(fin)
-    return test_sms_campaign_of_other_user
+    return test_sms_campaign
 
 
 @pytest.fixture(params=[Frequency.ONCE, Frequency.DAILY])
@@ -436,7 +438,7 @@ def create_blast_for_not_owned_campaign(request, sms_campaign_in_other_domain):
     :param sms_campaign_in_other_domain:
     :return:
     """
-    blast_obj = _create_blast(sms_campaign_in_other_domain.id)
+    blast_obj = _create_blast(sms_campaign_in_other_domain['id'])
 
     def fin():
         _delete_blast(blast_obj)
@@ -465,20 +467,16 @@ def create_campaign_sends(user_first, candidate_first, candidate_second,
 
 
 @pytest.fixture()
-def create_campaign_replies(user_first, candidate_phone_1):
+def create_campaign_replies(user_first, candidate_and_phone_1):
     """
     This hits the endpoint /v1/receive where we add an entry in database
     table "sms_campaign_reply" for first candidate associated with campaign.
     """
     reply_response = requests.post(SmsCampaignApiUrl.RECEIVE,
                                    data={'To': user_first.user_phones[0].value,
-                                         'From': candidate_phone_1['value'],
+                                         'From': candidate_and_phone_1[1]['value'],
                                          'Body': "Got it"})
     assert reply_response.status_code == requests.codes.OK
-
-    # SmsCampaignBase.save_candidate_reply(create_sms_campaign_blast.id,
-    #                                      candidate_phone_1.id, 'Got it')
-    # SmsCampaignBase.update_campaign_blast(create_sms_campaign_blast, replies=True)
 
 
 @pytest.fixture()
@@ -534,15 +532,15 @@ def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_curre
 
 
 @pytest.fixture()
-def candidate_phone_1(request, sent_campaign, access_token_first, valid_header):
+def candidate_and_phone_1(request, sent_campaign, access_token_first, valid_header):
     """
-    This returns the candidate phone for first candidate associated with the sms-campaign.
+    This returns the candidate object and candidate_phone for first candidate associated with
+    the sms-campaign in a tuple.
     """
     CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
                                              sends_url=SmsCampaignApiUrl.SENDS % sent_campaign['id'],
                                              access_token=access_token_first)
-    candidate_ids = get_candidates_of_smartlist(sent_campaign['list_ids'][0],
-                                                True, access_token_first)
+    candidate_ids = candidate_ids_associated_with_campaign(sent_campaign, access_token_first)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[0],
                                           headers=valid_header)
     json_response = candidate_get_response.json()
@@ -552,7 +550,7 @@ def candidate_phone_1(request, sent_campaign, access_token_first, valid_header):
         _delete_candidate_phone(candidate_1_phone['id'])
 
     request.addfinalizer(tear_down)
-    return candidate_1_phone
+    return json_response['candidate'], candidate_1_phone
 
 
 @pytest.fixture()
@@ -696,6 +694,30 @@ def sent_campaign_and_blast_ids(access_token_first, sent_campaign):
                                               SmsCampaignApiUrl.BLASTS % sent_campaign['id'])
     blasts_ids = [blast['id'] for blast in blasts]
     return sent_campaign, blasts_ids
+
+
+@pytest.fixture()
+def sent_campaign_in_other_domain(access_token_other, sms_campaign_in_other_domain):
+    """
+    This sends the campaign in some other domain. It returns sent campaign object.
+    """
+    response_post = CampaignsTestsHelpers.send_campaign(
+        SmsCampaignApiUrl.SEND, sms_campaign_in_other_domain,
+        access_token_other, SmsCampaignApiUrl.BLASTS)
+    assert_api_send_response(sms_campaign_in_other_domain, response_post, requests.codes.OK)
+    return sms_campaign_in_other_domain
+
+
+@pytest.fixture()
+def sent_campaign_and_blast_ids_in_other_domain(access_token_other, sent_campaign_in_other_domain):
+    """
+    This gets the blasts of sent the campaign in some other domain.
+    It returns sent campaign object and blast_ids.
+    """
+    blasts = CampaignsTestsHelpers.get_blasts(sent_campaign_in_other_domain, access_token_other,
+                                              SmsCampaignApiUrl.BLASTS % sent_campaign_in_other_domain['id'])
+    blasts_ids = [blast['id'] for blast in blasts]
+    return sent_campaign_in_other_domain, blasts_ids
 
 
 @pytest.fixture()

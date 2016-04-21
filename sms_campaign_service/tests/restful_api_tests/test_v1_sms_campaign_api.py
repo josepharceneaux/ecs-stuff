@@ -42,7 +42,6 @@ class TestSmsCampaignHTTPGet(object):
     def test_campaigns_get_with_invalid_token(self):
         """
         User auth token is invalid. It should get Unauthorized error.
-        :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % 'invalid_token'))
@@ -53,8 +52,6 @@ class TestSmsCampaignHTTPGet(object):
         """
         User has no Twilio phone number. It should get OK response as we will buy a number for
         user silently.
-        :param access_token_first: access token of user
-        :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -66,9 +63,6 @@ class TestSmsCampaignHTTPGet(object):
         """
         User has one Twilio phone number, User already has a Twilio phone number.
         it should get OK response.
-        :param access_token_first: access token of user
-        :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -101,7 +95,6 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_invalid_token(self):
         """
         User auth token is invalid, it should get Unauthorized.
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % 'invalid_token'))
@@ -113,7 +106,6 @@ class TestSmsCampaignHTTPPost(object):
         User auth token is valid, but content-type is not set.
         it should get bad request error.
         :param access_token_first: access token of current user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -128,7 +120,6 @@ class TestSmsCampaignHTTPPost(object):
         number for user silently.
         :param campaign_valid_data: valid data to create campaign
         :param valid_header: valid header to POST data
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -143,7 +134,6 @@ class TestSmsCampaignHTTPPost(object):
         User has one phone value, but no data was sent. It should get bad request error.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header)
@@ -158,7 +148,6 @@ class TestSmsCampaignHTTPPost(object):
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -174,7 +163,6 @@ class TestSmsCampaignHTTPPost(object):
         :param campaign_data_unknown_key_text: Invalid data to create SMS campaign.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -189,7 +177,6 @@ class TestSmsCampaignHTTPPost(object):
         It should get Invalid usage error.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         campaign_data = CREATE_CAMPAIGN_DATA.copy()
         del campaign_data['smartlist_ids']
@@ -206,7 +193,6 @@ class TestSmsCampaignHTTPPost(object):
         It should get InvalidUsage error,
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         campaign_valid_data['smartlist_ids'] = [gen_salt(2)]
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
@@ -221,7 +207,6 @@ class TestSmsCampaignHTTPPost(object):
         It should get Invalid url error, Custom error should be INVALID_URL_FORMAT.
         :param valid_header: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         campaign_valid_data['body_text'] += 'http://' + fake.word()
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
@@ -240,7 +225,6 @@ class TestSmsCampaignHTTPPost(object):
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         campaign_valid_data['smartlist_ids'].append(gen_salt(2))
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
@@ -259,7 +243,6 @@ class TestSmsCampaignHTTPPost(object):
         :param valid_header: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -278,7 +261,6 @@ class TestSmsCampaignHTTPPost(object):
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         :param user_phone_2: user_phone fixture to assign another test phone number to user
-        :return:
         """
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
@@ -292,7 +274,6 @@ class TestSmsCampaignHTTPPost(object):
         """
         This is a test to create SMS campaign with valid and invalid smartlist_ids.
         Status code should be 207 and campaign should be created.
-        :return:
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
@@ -308,7 +289,6 @@ class TestSmsCampaignHTTPPost(object):
         """
         This is a test to create SMS campaign with invalid smartlist_ids.
         Status code should be 400 and campaign should not be created.
-        :return:
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
@@ -327,7 +307,6 @@ class TestSmsCampaignHTTPDelete(object):
     def test_campaigns_delete_with_invalid_token(self):
         """
         User auth token is invalid, it should get Unauthorized.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=dict(Authorization='Bearer %s' % 'invalid_token'))
@@ -338,7 +317,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         User auth token is valid, but no content-type provided in header.
         It should get bad request error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers={'Authorization': 'Bearer %s' % access_token_first})
@@ -348,7 +326,6 @@ class TestSmsCampaignHTTPDelete(object):
     def test_campaigns_delete_with_no_data(self, valid_header):
         """
         User auth token is valid, but no data provided. It should get bad request error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS, headers=valid_header)
         assert response.status_code == InvalidUsage.http_status_code(), \
@@ -357,7 +334,6 @@ class TestSmsCampaignHTTPDelete(object):
     def test_campaigns_delete_with_non_json_data(self, valid_header):
         """
         User auth token is valid, but non JSON data provided. It should get bad request error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
@@ -371,7 +347,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         User auth token is valid, but invalid data provided(other than list).
         It should get bad request error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
@@ -387,12 +362,11 @@ class TestSmsCampaignHTTPDelete(object):
         User auth token is valid, but invalid data provided
         (ids other than int, not owned campaign and Non-exisiting),
         It should get bad request error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [0, 'a', 'b', sms_campaign_in_other_domain.id]
+                                       'ids': [0, 'a', 'b', sms_campaign_in_other_domain['id']]
                                    }))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
@@ -402,7 +376,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         User auth token is valid, data type is valid and ids are valid
         (campaign corresponds to user). Response should be OK.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
@@ -416,12 +389,11 @@ class TestSmsCampaignHTTPDelete(object):
         """
         User auth token is valid, data type is valid and ids are of those SMS campaigns that
         belong to some other user. It should get unauthorized error.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_in_other_domain.id]
+                                       'ids': [sms_campaign_in_other_domain['id']]
                                    }))
         assert response.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
@@ -432,7 +404,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         Test with one authorized and one unauthorized SMS campaign. It should get 207
         status code.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
@@ -448,12 +419,11 @@ class TestSmsCampaignHTTPDelete(object):
         """
         Test with one authorized and one unauthorized SMS campaign. It should get 207
         status code.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_in_other_domain.id,
+                                       'ids': [sms_campaign_in_other_domain['id'],
                                                sms_campaign_of_current_user['id']]
                                    }))
         assert response.status_code == 207
@@ -483,7 +453,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         Test with one valid, and one invalid id of SMS campaign.
         It should get 207 status code.
-        :return:
         """
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
                                    headers=valid_header,
@@ -500,7 +469,6 @@ class TestSmsCampaignHTTPDelete(object):
         """
         We first delete an SMS campaign, and again try to delete it. It should get
         ResourceNotFound error.
-        :return:
         """
         campaign_id = sms_campaign_of_current_user['id']
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGNS,
@@ -520,10 +488,6 @@ class TestSmsCampaignHTTPDelete(object):
 def _assert_counts_and_campaigns(response, count=0, campaigns=list()):
     """
     This function is used to assert the count of SMS campaigns and list of campaigns
-    :param response:
-    :param count:
-    :param campaigns:
-    :return:
     """
     assert response.status_code == 200, 'Status should be Ok (200)'
     assert response.json()

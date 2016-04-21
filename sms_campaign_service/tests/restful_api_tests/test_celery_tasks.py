@@ -36,7 +36,7 @@ from sms_campaign_service.common.campaign_services.tests_helpers import Campaign
 
 # Database Models
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast
 from sms_campaign_service.common.models.misc import (UrlConversion, Frequency, Activity)
 
 # Service Specific
@@ -333,7 +333,7 @@ class TestURLRedirectionMethods(object):
             url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the campaign which internally deletes campaign send record,
-        and then test functionality of url_redirect. It should give ResourceNotFound Error.
+        and then test functionality of url_redirect. it should result in ResourceNotFound Error.
         """
         _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
         _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
@@ -367,14 +367,15 @@ class TestURLRedirectionMethods(object):
         _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
 
     def test_validate_blast_candidate_url_conversion_in_db_with_no_candidate(
-            self, create_blast_for_not_owned_campaign,
+            self, sent_campaign_and_blast_ids,
             url_conversion_by_send_test_sms_campaign):
         """
         Here we pass None candidate, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
-        It should give ResourceNotFound Error.
+        it should result in ResourceNotFound Error.
         """
-        blast_obj = create_blast_for_not_owned_campaign
+        _, blast_ids = sent_campaign_and_blast_ids
+        blast_obj = SmsCampaignBlast.get(blast_ids[0])
         _test_validate_blast_candidate_url_conversion_in_db(
             blast_obj, None, url_conversion_by_send_test_sms_campaign)
 
@@ -383,26 +384,27 @@ class TestURLRedirectionMethods(object):
         """
         Here we pass blast as None, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
-        It should give ResourceNotFound Error.
+        it should result in ResourceNotFound Error.
         """
         _test_validate_blast_candidate_url_conversion_in_db(
             None, candidate_first, url_conversion_by_send_test_sms_campaign)
 
     def test_validate_blast_candidate_url_conversion_in_db_with_no_url_conversion(
-            self, candidate_first, create_blast_for_not_owned_campaign):
+            self, candidate_first, sent_campaign_and_blast_ids):
         """
         Here we pass url_conversion obj  as None, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
-        It should give ResourceNotFound Error.
+        It should result in ResourceNotFound Error.
         """
-        blast_obj = create_blast_for_not_owned_campaign
+        _, blast_ids = sent_campaign_and_blast_ids
+        blast_obj = SmsCampaignBlast.get(blast_ids[0])
         _test_validate_blast_candidate_url_conversion_in_db(
             blast_obj, candidate_first, None)
 
     def test_pre_process_url_redirect_with_empty_data(self):
         """
         This tests the functionality of pre_process_url_redirect() class method of CampaignBase.
-        All parameters passed are None, So, it should raise Invalid Usage Error.
+        All parameters passed are None, So, it should result in Invalid Usage Error.
         """
         try:
             CampaignBase.pre_process_url_redirect({}, None)
