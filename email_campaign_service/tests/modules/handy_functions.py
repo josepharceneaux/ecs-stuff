@@ -275,7 +275,7 @@ def assert_and_delete_email(subject):
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=300):
+                         expected_status=200, abort_time_for_sends=40):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or

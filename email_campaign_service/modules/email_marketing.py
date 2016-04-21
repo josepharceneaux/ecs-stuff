@@ -482,7 +482,6 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
     :type email_campaign_blast_id: int|long
     :type blast_datetime: datetime.datetime
     """
-    email_campaign_blast = EmailCampaignBlast.get_by_id(email_campaign_blast_id)
     with app.app_context():
         logger.info('sending campaign to candidate(id:%s).' % candidate.id)
         try:
@@ -493,7 +492,7 @@ def send_campaign_to_candidate(user, campaign, candidate, candidate_address,
                 # candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
                 blast_params=blast_params,
-                email_campaign_blast_id=email_campaign_blast.id,
+                email_campaign_blast_id=email_campaign_blast_id,
                 blast_datetime=blast_datetime
             )
             return result_sent
