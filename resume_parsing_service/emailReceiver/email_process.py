@@ -1,5 +1,10 @@
 """Python logic for dealing with sent emails stored in s3. All exceptions and print statements
    get sent to AWS CloudWatch when the lambda functions are deployed.
+
+    Emails are sent to resumes+<talent_pool_hash>@imports.gettalent.com
+    Amazon SES uploads that email as a text file to S3.
+    That s3 bucket triggers a lambda function on file upload.
+    lamda_handler() is called from AWS lambda and attempts to create a candidate from the resume.
 """
 import urllib
 import datetime
@@ -39,9 +44,9 @@ def lambda_handler(event, unused_context):
     try:
         email_obj = S3_CLIENT.get_object(Bucket=RESUMES_BUCKET, Key=key)
         email_file = email.message_from_string(email_obj['Body'].read())
-    except Exception as e:
-        print 'Error getting object {} from bucket {}. {}.'.format(key, bucket, e)
-        raise e
+    except Exception as exception:
+        print 'Error getting object {} from bucket {}. {}.'.format(key, bucket, exception)
+        raise exception
 
     validated_sender, talent_pool_hash = validate_email_file(email_file, key)
     access_token = get_user_access_token(validated_sender)
@@ -86,7 +91,7 @@ def get_user_access_token(email_address):
     if not token:
         raise SQLAlchemyError('Unable to retrieve a token with the user_id {}'.format(user.Id))
     access_token = token.access_token
-    if token.expires.replace(tzinfo = pytz.UTC) < utcnow():
+    if token.expires.replace(tzinfo=pytz.UTC) < utcnow():
         access_token = refresh_token(token)
     return access_token
 
@@ -141,25 +146,25 @@ def refresh_token(token_obj):
     :param Token token_obj:
     :return Token:
     """
-    GRANT_TYPE = 'refresh_token'
+    grant_type = 'refresh_token'
     client_id = token_obj.client_id
     session.commit() # Hacky fix for multiple sessions when testing =/
     token_client = session.query(Client).filter(Client.client_id == client_id).first()
     if not token_client:
         raise SQLAlchemyError('Unable to get a client for User\'s token.id: {}'.format(
             token_obj.id))
-    CLIENT_SECRET = token_client.client_secret
+    client_secret = token_client.client_secret
 
     payload = {
-        'grant_type': GRANT_TYPE,
+        'grant_type': grant_type,
         'client_id': client_id,
-        'client_secret': CLIENT_SECRET,
+        'client_secret': client_secret,
         'refresh_token': token_obj.refresh_token
     }
     try:
         refresh_response = requests.post(AUTH_URL, data=payload)
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-        raise Exception('Error during token refresh! {}'.format(e.message))
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exception:
+        raise Exception('Error during token refresh! {}'.format(exception.message))
     token_json = json.loads(refresh_response.content)
     return token_json['access_token']
 
@@ -178,7 +183,7 @@ def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
         'Authorization': 'Bearer {}'.format(access_token),
     }
     with open('/tmp/' + attachment_filename, 'w') as outfile:
-        outfile.write(raw_attachment._payload.decode('base64'))
+        outfile.write(raw_attachment.get_payload().decode('base64'))
     payload = {
         'resume_file_name': attachment_filename,
         'create_candidate': True,
@@ -189,8 +194,8 @@ def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
             resume_response_response = requests.post(RESUMES_URL, headers=headers, data=payload,
                                                      files=dict(resume_file=infile))
             response_content = json.loads(resume_response_response.content)
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
-                raise e('Error during POST to resumeParsingService')
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exception:
+            raise exception('Error during POST to resumeParsingService')
     if resume_response_response.status_code is not requests.codes.ok:
         raise AssertionError('Candidate was not created from email {}. Content {}'.format(
             key, response_content))

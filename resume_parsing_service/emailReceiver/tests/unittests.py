@@ -1,4 +1,6 @@
-from dateutil.relativedelta import relativedelta
+"""
+Unittests for all lambda email receiver functions.
+"""
 import email
 import os
 import pytest
@@ -27,8 +29,8 @@ from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
 
 
-current_dir = os.path.dirname(__file__)
-EMAIL_FILES_ROOT = os.path.join(current_dir, 'emailFiles/')
+CURRENT_DIR = os.path.dirname(__file__)
+EMAIL_FILES_ROOT = os.path.join(CURRENT_DIR, 'emailFiles/')
 VALID_EMAILS = [
     EMAIL_FILES_ROOT + 'valid1',
     EMAIL_FILES_ROOT + 'valid2',
@@ -45,8 +47,8 @@ def test_validate_email_files():
     for electronic_mail in VALID_EMAILS:
         with open(electronic_mail, 'r') as infile:
             email_file = email.message_from_file(infile)
-        sender, hash = validate_email_file(email_file, electronic_mail)
-        assert hash
+        sender, simple_hash = validate_email_file(email_file, electronic_mail)
+        assert simple_hash
         assert sender
 
 
@@ -111,7 +113,7 @@ def test_get_attachment_no_file():
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'noAttachment', 'r') as infile:
             email_file = email.message_from_file(infile)
-        raw_attachment = get_email_attachment(email_file, 'unused Key')
+        unused_attachemnt = get_email_attachment(email_file, 'unused Key')
 
 
 def test_emails_with_forwarding():
@@ -120,8 +122,8 @@ def test_emails_with_forwarding():
     messages. The following emails have been directly forwarded or forwarded twice.
     :return:
     """
-    for forwardedEmail in ['forwarded', 'secondForward']:
-        with open(EMAIL_FILES_ROOT + forwardedEmail, 'r') as infile:
+    for forwarded_email in ['forwarded', 'secondForward']:
+        with open(EMAIL_FILES_ROOT + forwarded_email, 'r') as infile:
             email_file = email.message_from_file(infile)
         raw_attachment = get_email_attachment(email_file, 'unused Key')
         assert raw_attachment
@@ -149,7 +151,7 @@ def test_get_token_with_bad_email(token_fixture):
     :return:
     """
     with pytest.raises(UserWarning):
-        token = get_user_access_token('invalid@nevervalid.com')
+        unused_token = get_user_access_token('invalid@nevervalid.com')
 
 
 def test_get_valid_hash(talent_pool_fixture):
@@ -172,8 +174,7 @@ def test_raise_invalid_hash(talent_pool_fixture):
     """
     with pytest.raises(SQLAlchemyError):
         simple_hash = 'potato'
-        desired_id = talent_pool_fixture.id
-        retrieved_id = get_desired_talent_pool(simple_hash)
+        unused_id = get_desired_talent_pool(simple_hash)
 
 
 ####################################
@@ -207,4 +208,5 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
     with open(EMAIL_FILES_ROOT + 'valid1', 'r') as infile:
         email_file = email.message_from_file(infile)
     raw_attachment = get_email_attachment(email_file, 'unused Key')
-    assert send_resume_to_service(token_fixture.access_token, raw_attachment, talent_pool_fixture.id, 'test')
+    assert send_resume_to_service(token_fixture.access_token, raw_attachment,
+                                  talent_pool_fixture.id, 'test')
