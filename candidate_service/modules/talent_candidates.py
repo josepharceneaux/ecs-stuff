@@ -18,17 +18,14 @@ from candidate_service.candidate_app import logger
 
 # Models
 from candidate_service.common.models.candidate import (
-    Candidate, CandidateEmail, CandidatePhone,
-    CandidateWorkPreference, CandidatePreferredLocation, CandidateAddress,
-    CandidateExperience, CandidateEducation, CandidateEducationDegree,
-    CandidateSkill, CandidateMilitaryService, CandidateCustomField,
-    CandidateSocialNetwork, SocialNetwork, CandidateEducationDegreeBullet,
-    CandidateExperienceBullet, ClassificationType, CandidatePhoto, CandidateTextComment
+    Candidate, CandidateEmail, CandidatePhone, CandidateWorkPreference, CandidatePreferredLocation,
+    CandidateAddress, CandidateExperience, CandidateEducation, CandidateEducationDegree,
+    CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSocialNetwork,
+    SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
+    CandidatePhoto, CandidateTextComment, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
-from candidate_service.common.models.candidate import EmailLabel, CandidateSubscriptionPreference
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
-from candidate_service.common.models.candidate import PhoneLabel
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.common.models.misc import AreaOfInterest
