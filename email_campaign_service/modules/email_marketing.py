@@ -520,8 +520,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         else:
             to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
     try:
-        email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
-                                    # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
+        email_response = send_email(source='"%s" <%s>' % (campaign._from, app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER]),
+                                    # Emails will be sent from verified email by Amazon SES for respective environment.
                                     subject=subject,
                                     html_body=new_html or None,
                                     # Can't be '', otherwise, text_body will not show in email
@@ -835,15 +835,20 @@ def handle_email_bounce(message_id, bounce, emails):
     send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
 
     if not send_obj:
-        logger.error('Unable to find email campaign send for this email bounce: %s', bounce)
-        return None
+        logger.error('Unable to find email campaign send for this email bounce.'
+                     '\nMessageId: %s\nEmails: %s\nBounce: %s', message_id, emails, bounce)
 
     # Mark the send object as bounced.
-    send_obj.update(is_ses_bounce=True)
-    blast = send_obj.blast
+    else:
+        send_obj.update(is_ses_bounce=True)
+        blast = send_obj.blast
 
-    # increase number of bounces by one for associated campaign blast.
-    blast.update(bounces=(blast.bounces + 1))
+        if not blast:
+            logger.error('Unable to find email campaign blast associated with email campaign send (id:%s).'
+                         '\nBounce Message: %s', send_obj.id, bounce)
+        # increase number of bounces by one for associated campaign blast.
+        else:
+            blast.update(bounces=(blast.bounces + 1))
 
     """
     There are two types of Bounces:

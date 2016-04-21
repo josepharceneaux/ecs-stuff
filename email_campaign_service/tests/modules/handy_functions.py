@@ -554,8 +554,8 @@ def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
     EmailCampaignSend.save(email_campaign_send)
 
     # Send email to given email address with some random text as body.
-    email_response = send_email(source='"%s" <no-reply@gettalent.com>' % campaign._from,
-                                # Emails will be sent from <no-reply@gettalent.com> (verified by Amazon SES)
+    email_response = send_email(source='"%s" <%s>' % (campaign._from, app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER]),
+                                # Emails will be sent from verified email by Amazon SES for respective environment.
                                 subject=fake.sentence(),
                                 html_body="<html><body>Email campaign test</body></html>",
                                 text_body=fake.paragraph(),

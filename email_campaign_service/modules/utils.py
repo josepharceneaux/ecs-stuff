@@ -42,10 +42,19 @@ class AWS_SNS_TERMS(object):
     SUBSCRIBE = 'SubscriptionConfirmation'
     UNSUBSCRIBE = 'UnsubscribeConfirmation'
     NOTIFICATION = 'Notification'
-    BOUNCE = 'Bounce'
-    COMPLAINT = 'Complaint'
+    MESSAGE = 'Message'
+    MESSAGE_ID = 'messageId'
+    MAIL = 'mail'
+    BOUNCE = 'bounce'
+    BOUNCE_NOTIFICATION = 'Bounce'
+    NOTIFICATION_TYPE = 'notificationType'
+    COMPLAINT_NOTIFICATION = 'Complaint'
     PERMANENT_BOUNCE = 'Permanent'
     TEMPORARY_BOUNCE = 'Transient'
+    TOPIC_ARN = 'TopicArn'
+    SUBSCRIBE_URL = 'SubscribeURL'
+    BOUNCE_RECIPIENTS = 'bouncedRecipients'
+    EMAIL_ADDRESSES = 'emailAddress'
 
 
 def do_mergetag_replacements(texts, candidate=None):

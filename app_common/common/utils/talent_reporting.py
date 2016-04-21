@@ -27,5 +27,5 @@ def email_admins(body, prefix, subject):
     server_type = "Stage" if env == 'qa' else "Production"
     body = "%s\n\n\n\nRequest:\n%s" % (body, request)
 
-    send_email(source=DEFAULT_MAIL_SENDER, subject="Talent Web %s %s: %s" % (server_type, prefix, subject), body=body,
+    send_email(source=DEFAULT_MAIL_SENDER % app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER], subject="Talent Web %s %s: %s" % (server_type, prefix, subject), body=body,
                to_addresses=ADMINS)

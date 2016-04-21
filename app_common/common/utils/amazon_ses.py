@@ -6,7 +6,7 @@ import re
 from flask import current_app as app
 from ..talent_config_manager import TalentConfigKeys
 
-DEFAULT_MAIL_SENDER = '"getTalent Web" <no-reply@gettalent.com>'
+DEFAULT_MAIL_SENDER = '"getTalent Web" <%s>'
 
 
 def get_boto_ses_connection():
