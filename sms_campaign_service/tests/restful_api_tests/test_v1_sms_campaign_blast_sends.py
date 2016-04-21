@@ -53,7 +53,7 @@ class TestSmsCampaignBlastSends(object):
         candidate_ids = candidate_ids_associated_with_campaign(campaign, access_token_first)
         expected_count = 2
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,
-                                                 sends_url=SmsCampaignApiUrl.SENDS % campaign['id'],
+                                                 blast_url=SmsCampaignApiUrl.SENDS % campaign['id'],
                                                  access_token=access_token_first)
         response = requests.get(
             self.URL % (campaign['id'], blast_ids[0]),

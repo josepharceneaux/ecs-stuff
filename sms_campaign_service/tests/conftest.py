@@ -532,13 +532,14 @@ def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_curre
 
 
 @pytest.fixture()
-def candidate_and_phone_1(request, sent_campaign, access_token_first, valid_header):
+def candidate_and_phone_1(request, sent_campaign_and_blast_ids, access_token_first, valid_header):
     """
     This returns the candidate object and candidate_phone for first candidate associated with
     the sms-campaign in a tuple.
     """
+    sent_campaign, blast_ids = sent_campaign_and_blast_ids
     CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
-                                             sends_url=SmsCampaignApiUrl.SENDS % sent_campaign['id'],
+                                             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
                                              access_token=access_token_first)
     candidate_ids = candidate_ids_associated_with_campaign(sent_campaign, access_token_first)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[0],

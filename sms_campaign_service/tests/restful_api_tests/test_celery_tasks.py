@@ -167,7 +167,7 @@ class TestCampaignSchedule(object):
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first,
-                                                           blast_timeout=30)
+                                                           blast_timeout=60)
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_periodic_campaign_schedule_and_validate_run(self, valid_header, user_first, access_token_first,

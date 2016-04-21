@@ -337,28 +337,27 @@ class CampaignsTestsHelpers(object):
             return blasts_get_response.json()['blast']
 
     @staticmethod
-    def get_sends(campaign, blast_index, sends_url=None, access_token=None):
+    def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This returns all number of sends associated with given blast index of a campaign
         """
         db.session.commit()
-        if not sends_url:
+        if not blast_url:
             return campaign.blasts[blast_index].sends
-        response = send_request('get', sends_url, access_token)
+        response = send_request('get', blast_url, access_token)
         if response.ok:
-            return len(response.json()['sends'])
+            return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20,
-                           sends_url=None,
-                           access_token=None):
+                           blast_url=None, access_token=None):
         """
         This function asserts the particular blast of given campaign has expected number of sends
         """
-        sends = poll(CampaignsTestsHelpers.get_sends, step=3,
-                     args=(campaign, blast_index, sends_url, access_token),
-                     timeout=abort_time_for_sends)
-        assert sends >= expected_count
+        sends_verified = poll(CampaignsTestsHelpers.verify_sends, step=3,
+                              args=(campaign, expected_count, blast_index, blast_url, access_token),
+                              timeout=abort_time_for_sends)
+        assert sends_verified
 
     @staticmethod
     def assert_campaign_blasts(campaign, access_token, blasts_url, expected_count, timeout=10):
@@ -367,9 +366,7 @@ class CampaignsTestsHelpers(object):
         """
         blasts = poll(CampaignsTestsHelpers.get_blasts, step=3,
                       args=(campaign, access_token, blasts_url), timeout=timeout)
-        if len(blasts) == expected_count:
-            return True
-        return False
+        return len(blasts) == expected_count
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
