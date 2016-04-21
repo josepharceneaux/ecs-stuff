@@ -427,7 +427,7 @@ class TestSmsCampaignHTTPDelete(object):
                                                sms_campaign_of_current_user['id']]
                                    }))
         assert response.status_code == 207
-        assert sms_campaign_in_other_domain.id in response.json()['not_owned_ids']
+        assert sms_campaign_in_other_domain['id'] in response.json()['not_owned_ids']
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
                             sms_campaign_of_current_user['id'])
 
