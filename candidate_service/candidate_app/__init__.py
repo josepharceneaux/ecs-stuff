@@ -22,7 +22,8 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
         CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource,
+        CandidateReferencesResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
 
@@ -42,6 +43,7 @@ try:
     api.add_resource(
         CandidatesResource,
         CandidateApi.CANDIDATES,
+        CandidateApi.CANDIDATE_ID,
         endpoint='candidates_resource'
     )
 
@@ -245,9 +247,7 @@ try:
     # ****** OPENWEB Request *******
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
-    # ************************************************************************************** #
-    #                           Client email campaign                                        #
-    # ************************************************************************************** #
+    # ****** Client email campaign *******
     api.add_resource(CandidateClientEmailCampaignResource, CandidateApi.CANDIDATE_CLIENT_CAMPAIGN)
 
     # ****** CandidatePreferenceResource *******
@@ -259,6 +259,10 @@ try:
     # ****** CandidateLanguageResource *******
     api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGES, endpoint='candidate_languages')
     api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGE, endpoint='candidate_language')
+
+    # ****** CandidateReferencesResource *******
+    api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCES, endpoint='candidate_references')
+    api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCE, endpoint='candidate_reference')
 
     db.create_all()
     db.session.commit()

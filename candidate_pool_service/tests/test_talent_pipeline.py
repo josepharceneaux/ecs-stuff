@@ -154,7 +154,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
     assert status_code == 400
 
     # Logged-in user trying to edit a non-existing talent-pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 10,
+    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000,
                                                 data=data, action='PUT')
     assert status_code == 404
 

@@ -4,8 +4,11 @@ Functions related to candidate_service/candidate_app/api validations
 # Flask Specific
 from flask import request
 from dateutil.parser import parse
+# Standard library
 import json
 import re
+from datetime import datetime
+# Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
@@ -13,7 +16,7 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
-from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
+from candidate_service.common.models.misc import AreaOfInterest, CustomField
 
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
@@ -22,7 +25,9 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.utils.validators import format_phone_number
-from datetime import datetime
+# Json schema validation
+from jsonschema import validate, ValidationError, FormatChecker
+
 
 SPECIAL_CHARS = r'+-!(){}[]^"~*?\:'
 
@@ -44,6 +49,7 @@ def get_candidate_if_exists(candidate_id):
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
     otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
+    :return  Candidate-object or raises NotFoundError
     """
     assert isinstance(candidate_id, (int, long))
     candidate = Candidate.get_by_id(candidate_id=candidate_id)
@@ -612,3 +618,21 @@ def does_military_service_exist(military_services, military_service_dict):
             return True
     return False
 
+
+def get_json_data_if_it_passed_validation(request_body, json_schema, format_checker=True):
+    """
+    Function will compare requested json data with provided json schema
+    :type request_body:  request
+    :type json_schema:  dict
+    :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
+    :return:  JSON data if validation passes
+    """
+    try:
+        body_dict = get_json_if_exist(request_body)
+        if format_checker:
+            validate(instance=body_dict, schema=json_schema, format_checker=FormatChecker())
+        else:
+            validate(instance=body_dict, schema=json_schema)
+    except ValidationError as e:
+        raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+    return body_dict

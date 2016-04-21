@@ -532,8 +532,40 @@ def candidate_first(request, user_first):
 
 
 @pytest.fixture()
+def candidate_first_2(request, user_first):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture()
 def candidate_second(request, user_first):
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture()
+def user_second_candidate(request, user_second):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_second.id)
     db.session.add(candidate)
     db.session.commit()
 

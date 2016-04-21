@@ -566,7 +566,6 @@ candidates_resource_schema_patch = {
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["id"],
                 "additionalProperties": False,
                 "properties": {
                     "id": {
@@ -1247,6 +1246,75 @@ language_schema = {
                     "read": {"type": ["boolean", "null"]},
                     "write": {"type": ["boolean", "null"]},
                     "speak": {"type": ["boolean", "null"]}
+                }
+            }
+        }
+    }
+}
+
+ccf_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["candidate_custom_fields"],
+    "properties": {
+        "candidate_custom_fields": {
+            "type": ["array"],
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "properties": {
+                    "custom_field_id": {
+                        "type": ["integer"],
+                        "minimum": 1
+                    },
+                    "value": {
+                        "type": ["string", "null"],
+                        "maxLength": 255
+                    }
+                }
+            }
+        }
+    }
+}
+
+reference_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "required": ["candidate_references"],
+    "properties": {
+        "candidate_references": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["name", "comments"],
+                "properties": {
+                    "name": {"type": "string"},
+                    "position_title": {"type": ["string", "null"]},
+                    "comments": {"type": "string"},
+                    "reference_email": {
+                        "type": "object",
+                        "properties": {
+                            "is_default": {"type": ["boolean", "null"]},
+                            "address": {"type": ["string", "null"]},
+                            "label": {"type": ["string", "null"]}
+                        }
+                    },
+                    "reference_phone": {
+                        "type": "object",
+                        "properties": {
+                            "is_default": {"type": ["boolean", "null"]},
+                            "value": {"type": ["string", "null"]},
+                            "label": {"type": ["string", "null"]}
+                        }
+                    },
+                    "reference_web_address": {
+                        "type": "object",
+                        "properties": {
+                            "url": {"type": ["string", "null"]},
+                            "description": {"type": ["string", "null"]}
+                        }
+                    }
                 }
             }
         }

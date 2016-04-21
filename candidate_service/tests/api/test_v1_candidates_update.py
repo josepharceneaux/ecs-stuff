@@ -18,7 +18,7 @@ from candidate_service.common.utils.test_utils import send_request, response_inf
 from candidate_service.common.routes import CandidateApiUrl
 
 # Candidate sample data
-from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateDate)
+from candidate_sample_data import (fake, generate_single_candidate_data, GenerateCandidateData)
 
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
@@ -90,7 +90,6 @@ class TestUpdateCandidate(object):
         print response_info(get_resp)
         assert get_resp.status_code == 200
 
-
     def test_update_candidate_outside_of_domain(self, access_token_first, user_first, talent_pool,
                                                 access_token_second, user_second):
         """
@@ -112,7 +111,6 @@ class TestUpdateCandidate(object):
         assert update_resp.status_code == 403
         assert update_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-
     def test_update_candidate_without_id(self, access_token_first, user_first):
         """
         Test:   Attempt to update a Candidate without providing the ID
@@ -126,7 +124,6 @@ class TestUpdateCandidate(object):
         print response_info(resp)
         assert resp.status_code == 400
         assert resp.json()['error']['code'] == custom_error.INVALID_INPUT
-
 
     def test_update_candidate_names(self, access_token_first, user_first, talent_pool):
         """
@@ -158,6 +155,34 @@ class TestUpdateCandidate(object):
         full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
         assert candidate_dict['full_name'] == full_name_from_data
 
+    def test_update_candidate_names_with_candidate_id_in_url(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Update candidate's first, middle, and last names with candidate ID sent thru the url
+        Expect: 200
+        """
+        # Create Candidate
+        AddUserRoles.add_get_edit(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Update Candidate's first_name
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        data = {'candidates': [
+            {'first_name': fake.first_name(), 'middle_name': fake.first_name(), 'last_name': fake.last_name()}
+        ]}
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, data)
+        print response_info(update_resp)
+        assert candidate_id == update_resp.json()['candidates'][0]['id']
+
+        # Retrieve Candidate
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        candidate_dict = get_resp.json()['candidate']
+
+        # Assert on updated field
+        f_name, l_name = data['candidates'][0]['first_name'], data['candidates'][0]['last_name']
+        m_name = data['candidates'][0]['middle_name']
+        full_name_from_data = str(f_name) + ' ' + str(m_name) + ' ' + str(l_name)
+        assert candidate_dict['full_name'] == full_name_from_data
 
     def test_update_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
         """
@@ -200,34 +225,31 @@ class TestUpdateCandidate(object):
 
 class TestUpdateCandidateAddress(object):
     # TODO Commenting out randomly failing test case so build passes. -OM
-    # def test_add_new_candidate_address(self, access_token_first, user_first, talent_pool):
-    #     """
-    #     Test:   Add a new CandidateAddress to an existing Candidate
-    #     Expect: 200
-    #     """
-    #     # Create Candidate
-    #     AddUserRoles.add_get_edit(user_first)
-    #     data = generate_single_candidate_data([talent_pool.id])
-    #     create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-    #
-    #     # Add a new address to the existing Candidate
-    #     candidate_id = create_resp.json()['candidates'][0]['id']
-    #     data = GenerateCandidateDate.addresses(talent_pool_ids=[talent_pool.id], candidate_id=candidate_id)
-    #     update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-    #     print response_info(update_resp)
-    #
-    #     # Retrieve Candidate after update
-    #     get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-    #     updated_candidate_dict = get_resp.json()['candidate']
-    #     candidate_address = updated_candidate_dict['addresses'][-1]
-    #     print "\ncandidate_address = {}".format(candidate_address)
-    #     assert updated_candidate_dict['id'] == candidate_id
-    #     assert isinstance(candidate_address, dict)
-    #     assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][-1]['address_line_1']
-    #     assert candidate_address['city'] == data['candidates'][0]['addresses'][-1]['city']
-    #     assert candidate_address['subdivision'] == \
-    #            pycountry.subdivisions.get(code=data['candidates'][0]['addresses'][-1]['subdivision_code']).name
-    #     assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][-1]['zip_code']
+    def test_add_new_candidate_address(self, access_token_first, user_first, talent_pool):
+        """
+        Test:   Add a new CandidateAddress to an existing Candidate
+        Expect: 200
+        """
+        # Create Candidate
+        AddUserRoles.add_get_edit(user_first)
+        data = generate_single_candidate_data([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Add a new address to the existing Candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        data = GenerateCandidateData.addresses(talent_pool_ids=[talent_pool.id], candidate_id=candidate_id)
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+
+        # Retrieve Candidate after update
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        updated_candidate_dict = get_resp.json()['candidate']
+        candidate_address = updated_candidate_dict['addresses'][-1]
+        assert updated_candidate_dict['id'] == candidate_id
+        assert isinstance(candidate_address, dict)
+        assert candidate_address['address_line_1'] == data['candidates'][0]['addresses'][-1]['address_line_1']
+        assert candidate_address['city'] == data['candidates'][0]['addresses'][-1]['city']
+        assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][-1]['zip_code']
 
     def test_multiple_is_default_addresses(self, access_token_first, user_first, talent_pool):
         """
@@ -241,7 +263,7 @@ class TestUpdateCandidateAddress(object):
 
         # Add a new address to the existing Candidate with is_default set to True
         candidate_id = create_resp.json()['candidates'][0]['id']
-        data = GenerateCandidateDate.addresses(candidate_id=candidate_id, is_default=True)
+        data = GenerateCandidateData.addresses(candidate_id=candidate_id, is_default=True)
         send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate after update
@@ -268,7 +290,7 @@ class TestUpdateCandidateAddress(object):
         candidate_address = candidate_dict['addresses'][0]
 
         # Update one of Candidate's addresses
-        data = GenerateCandidateDate.addresses(candidate_id=candidate_id, address_id=candidate_address['id'])
+        data = GenerateCandidateData.addresses(candidate_id=candidate_id, address_id=candidate_address['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -297,7 +319,7 @@ class TestUpdateCandidateAddress(object):
 
         # Add another address
         candidate_id = create_resp.json()['candidates'][0]['id']
-        data = GenerateCandidateDate.addresses(candidate_id=candidate_id, is_default=True)
+        data = GenerateCandidateData.addresses(candidate_id=candidate_id, is_default=True)
         send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate
@@ -306,7 +328,8 @@ class TestUpdateCandidateAddress(object):
         can_addresses = candidate_dict['addresses']
 
         # Update: Set the last CandidateAddress in can_addresses as the default candidate-address
-        data = {'candidates': [{'id': candidate_id, 'addresses': [{'id': can_addresses[-1]['id'], 'is_default': True}]}]}
+        data = {
+            'candidates': [{'id': candidate_id, 'addresses': [{'id': can_addresses[-1]['id'], 'is_default': True}]}]}
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
         assert updated_resp.status_code == 200
@@ -340,7 +363,7 @@ class TestUpdateCandidateAOI(object):
         candidate_area_of_interest_count = len(candidate_dict['areas_of_interest'])
 
         # Add new CandidateAreaOfInterest
-        data = GenerateCandidateDate.areas_of_interest(domain_aoi, [talent_pool.id], candidate_id)
+        data = GenerateCandidateData.areas_of_interest(domain_aoi, [talent_pool.id], candidate_id)
         resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(resp)
 
@@ -374,7 +397,7 @@ class TestUpdateCandidateEducation(object):
         can_educations_count = len(candidate_dict['educations'])
 
         # Add new CandidateEducation
-        data = GenerateCandidateDate.educations(candidate_id=candidate_id)
+        data = GenerateCandidateData.educations(candidate_id=candidate_id)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -394,7 +417,8 @@ class TestUpdateCandidateEducation(object):
         assert updated_educations[-1]['degrees'][-1]['type'] == can_ed_degrees['type']
         assert updated_educations[-1]['degrees'][-1]['title'] == can_ed_degrees['title']
         assert updated_educations[-1]['degrees'][-1]['bullets'][-1]['major'] == can_ed_degree_bullets['major']
-        assert updated_educations[-1]['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
+        assert updated_educations[-1]['country'] == pycountry.countries.get(
+            alpha2=can_ed_from_data['country_code']).name
         assert len(updated_educations) == can_educations_count + 1
 
     def test_update_education_of_a_diff_candidate(self, access_token_first, user_first, talent_pool):
@@ -417,7 +441,7 @@ class TestUpdateCandidateEducation(object):
         candidate_dict = get_resp.json()['candidate']
 
         # Update existing CandidateEducation of a different Candidate
-        data = GenerateCandidateDate.educations(candidate_id=candidate_2_id,
+        data = GenerateCandidateData.educations(candidate_id=candidate_2_id,
                                                 education_id=candidate_dict['educations'][0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
@@ -444,7 +468,7 @@ class TestUpdateCandidateEducation(object):
         candidate_education_count = len(candidate_dict['educations'])
 
         # Update existing CandidateEducation
-        data = GenerateCandidateDate.educations(candidate_id=candidate_id,
+        data = GenerateCandidateData.educations(candidate_id=candidate_id,
                                                 education_id=candidate_dict['educations'][0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
@@ -455,7 +479,8 @@ class TestUpdateCandidateEducation(object):
 
         can_ed_from_data = data['candidates'][0]['educations'][0]
         assert education_dict['city'] == can_ed_from_data['city']
-        assert education_dict['subdivision'] == pycountry.subdivisions.get(code=can_ed_from_data['subdivision_code']).name
+        assert education_dict['subdivision'] == pycountry.subdivisions.get(
+            code=can_ed_from_data['subdivision_code']).name
         assert education_dict['school_name'] == can_ed_from_data['school_name']
         assert education_dict['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
         assert len(updated_resp.json()['candidate']['educations']) == candidate_education_count
@@ -513,7 +538,7 @@ class TestUpdateWorkExperience(object):
                 'talent_pool_ids': {'add': [talent_pool.id]},
                 'work_experiences': [
                     {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
-                    {'start_year': 2011, 'end_year': None}   # 12*5 = 60 months of experience
+                    {'start_year': 2011, 'end_year': None}  # 12*5 = 60 months of experience
                 ]
             }
         ]}
@@ -534,8 +559,8 @@ class TestUpdateWorkExperience(object):
         experience_id = get_resp.json()['candidate']['work_experiences'][0]['id']
         update_data = {'candidates': [
             {'id': candidate_id, 'work_experiences': [
-                {'id': experience_id, 'start_year': 2003, 'end_year': 2007}]   # 12*4 = 48 months of experience
-            }]}
+                {'id': experience_id, 'start_year': 2003, 'end_year': 2007}]  # 12*4 = 48 months of experience
+             }]}
         update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
         print response_info(update_resp)
         db.session.commit()
@@ -560,7 +585,7 @@ class TestUpdateWorkExperience(object):
         candidate_experience_count = len(candidate_dict['work_experiences'])
 
         # Add CandidateExperience
-        data = GenerateCandidateDate.work_experiences(candidate_id=candidate_id)
+        data = GenerateCandidateData.work_experiences(candidate_id=candidate_id)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -574,7 +599,8 @@ class TestUpdateWorkExperience(object):
         assert can_experiences[0]['organization'] == can_experiences_from_data[0]['organization']
         assert can_experiences[0]['position'] == can_experiences_from_data[0]['position']
         assert can_experiences[0]['city'] == can_experiences_from_data[0]['city']
-        assert can_experiences[0]['subdivision'] == pycountry.subdivisions.get(code=can_experiences_from_data[0]['subdivision_code']).name
+        assert can_experiences[0]['subdivision'] == pycountry.subdivisions.get(
+            code=can_experiences_from_data[0]['subdivision_code']).name
         assert len(can_experiences) == candidate_experience_count + 1
 
     def test_multiple_is_current_experiences(self, access_token_first, user_first, talent_pool):
@@ -619,7 +645,7 @@ class TestUpdateWorkExperience(object):
         bullet_count = len(candidate_dict['work_experiences'][0]['bullets'])
 
         # Add CandidateExperienceBullet to existing CandidateExperience
-        data = GenerateCandidateDate.work_experiences(
+        data = GenerateCandidateData.work_experiences(
             candidate_id=candidate_id, experience_id=candidate_dict['work_experiences'][0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
@@ -657,7 +683,7 @@ class TestUpdateWorkExperience(object):
         candidate_experience_bullet_count = len(experience_dict['bullets'])
 
         # Update CandidateExperienceBullet
-        data = GenerateCandidateDate.work_experiences(candidate_id=candidate_id,
+        data = GenerateCandidateData.work_experiences(candidate_id=candidate_id,
                                                       experience_id=experience_dict['id'],
                                                       bullet_id=experience_dict['bullets'][0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -687,7 +713,7 @@ class TestUpdateWorkPreference(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
 
         # Add CandidateWorkPreference
-        data = GenerateCandidateDate.work_preference(candidate_id=candidate_id)
+        data = GenerateCandidateData.work_preference(candidate_id=candidate_id)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
         assert updated_resp.status_code == 400
@@ -710,7 +736,7 @@ class TestUpdateWorkPreference(object):
         candidate_dict = get_resp.json()['candidate']
 
         # Update CandidateWorkPreference
-        data = GenerateCandidateDate.work_preference(candidate_id=candidate_id,
+        data = GenerateCandidateData.work_preference(candidate_id=candidate_id,
                                                      preference_id=candidate_dict['work_preference']['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
@@ -747,7 +773,7 @@ class TestUpdateCandidateEmails(object):
         emails_count = len(emails)
 
         # Add new email
-        data = GenerateCandidateDate.emails(candidate_id=candidate_id)
+        data = GenerateCandidateData.emails(candidate_id=candidate_id)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -802,7 +828,7 @@ class TestUpdateCandidateEmails(object):
         emails_count_before_update = len(emails_before_update)
 
         # Update first email
-        data = GenerateCandidateDate.emails(candidate_id=candidate_id, email_id=emails_before_update[0]['id'])
+        data = GenerateCandidateData.emails(candidate_id=candidate_id, email_id=emails_before_update[0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -870,7 +896,7 @@ class TestUpdateCandidatePhones(object):
         phones_count_before_update = len(phones_before_update)
 
         # Add new email
-        data = GenerateCandidateDate.phones([talent_pool.id], candidate_id)
+        data = GenerateCandidateData.phones([talent_pool.id], candidate_id)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
@@ -924,7 +950,7 @@ class TestUpdateCandidatePhones(object):
         phones_count_before_update = len(phones_before_update)
 
         # Update first phone
-        data = GenerateCandidateDate.phones([talent_pool.id], candidate_id, phones_before_update[0]['id'])
+        data = GenerateCandidateData.phones([talent_pool.id], candidate_id, phones_before_update[0]['id'])
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 

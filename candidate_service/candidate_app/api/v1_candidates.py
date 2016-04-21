@@ -7,11 +7,11 @@ Notes:
 # Standard libraries
 import logging
 import datetime
-from datetime import date
 from time import time
+from datetime import date
 
 # Third Party
-from polling import poll
+from polling import poll, TimeoutException
 
 # Flask specific
 from flask import request
@@ -27,11 +27,15 @@ from candidate_service.common.utils.validators import is_valid_email, is_country
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid
+    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
+    does_candidate_cf_exist, get_json_data_if_it_passed_validation
 )
+
+# JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema
+    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema,
+    reference_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -52,11 +56,11 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateReference
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
-from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPoolCandidate, TalentPool
+from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, DomainRole
 
@@ -68,6 +72,9 @@ from candidate_service.modules.talent_candidates import (
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages
+)
+from candidate_service.modules.references import (
+    get_references, create_references, delete_reference, delete_all_references
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -246,7 +253,9 @@ class CandidatesResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
-        Endpoint:  PATCH /v1/candidates
+        Endpoints:
+             i. PATCH /v1/candidates
+            ii. PATCH /v1/candidates/:id
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
         Function can update any of candidate(s)'s information.
@@ -261,17 +270,19 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Get authenticated user and request body
-        authed_user, body_dict = request.user, get_json_if_exist(_request=request)
 
-        # Validate json data
-        try:
-            validate(instance=body_dict, schema=candidates_resource_schema_patch,
-                     format_checker=FormatChecker())
-        except ValidationError as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_it_passed_validation(request, candidates_resource_schema_patch)
 
-        candidates = body_dict.get('candidates')
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id_from_url = request.user, kwargs.get('id')
+
+        # If candidate ID is provided via url, only one candidate update is permitted
+        candidates = body_dict['candidates']
+        if candidate_id_from_url and len(candidates) > 1:
+            raise InvalidUsage(
+                "Error: You requested an update for one candidate but provided data for multiple candidates.",
+                custom_error.INVALID_INPUT)
 
         # Input validations
         skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
@@ -279,8 +290,12 @@ class CandidatesResource(Resource):
         hidden_candidate_ids = []  # Aggregate candidate IDs that will be hidden
         for _candidate_dict in candidates:
 
+            # Candidate ID must be provided in json dict or in the url
+            candidate_id = candidate_id_from_url or _candidate_dict.get('id')
+            if not candidate_id:
+                raise InvalidUsage("Candidate ID is required", custom_error.INVALID_INPUT)
+
             # Check for candidate's existence
-            candidate_id = _candidate_dict.get('id')
             candidate = Candidate.get_by_id(candidate_id)
             if not candidate:
                 raise NotFoundError('Candidate not found: {}'.format(candidate_id), custom_error.CANDIDATE_NOT_FOUND)
@@ -342,7 +357,7 @@ class CandidatesResource(Resource):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Candidates must belong to user's domain
-        list_of_candidate_ids = [_candidate_dict['id'] for _candidate_dict in candidates]
+        list_of_candidate_ids = [_candidate_dict.get('id') for _candidate_dict in candidates]
         if not do_candidates_belong_to_users_domain(authed_user, list_of_candidate_ids):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
@@ -362,7 +377,7 @@ class CandidatesResource(Resource):
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
-                candidate_id=candidate_dict.get('id'),
+                candidate_id=candidate_dict.get('id') or candidate_id_from_url,
                 first_name=candidate_dict.get('first_name'),
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
@@ -579,6 +594,104 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
+        :return  {'candidate_custom_fields': [{'id': int}, {'id': int}, ...]}
+        """
+        # Get authenticated user and candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check for candidate's existence and web-hidden status
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Validate request body
+        body_dict = get_json_if_exist(request)
+        try:
+            validate(instance=body_dict, schema=ccf_schema)
+        except ValidationError as e:
+            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
+
+        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
+        candidate_custom_fields = body_dict.get('candidate_custom_fields')
+        for ccf_dict in candidate_custom_fields:
+            # Custom Field must be recognized
+            custom_field_id = ccf_dict['custom_field_id']
+            custom_field = CustomField.get_by_id(custom_field_id)
+            if not custom_field:
+                raise NotFoundError("Custom field ID ({}) not recognized".format(custom_field_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom Field must belong to user's domain
+            if custom_field.domain_id != authed_user.domain_id:
+                raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
+                    custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Prevent duplicate entries
+            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=ccf_dict):
+                # Add candidate_id, added_time to ccf_dict; and strip value
+                ccf_dict.update(candidate_id=candidate_id, added_time=datetime.datetime.utcnow(),
+                                value=ccf_dict['value'].strip() if ccf_dict.get('value') else None)
+                candidate_custom_field = CandidateCustomField(**ccf_dict)
+                db.session.add(candidate_custom_field)
+                db.session.commit()
+                created_ccf_ids.append(candidate_custom_field.id)
+
+        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints:
+             i. GET /v1/candidates/:candidate_id/custom_fields
+            ii. GET /v1/candidates/:candidate_id/custom_fields/:id
+        Depending on the endpoint requested, function will return all of Candidate's
+        custom fields or just a single one.
+        """
+        # Get authenticated user, candidate_id, and can_cf_id
+        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check for candidate's existence and web-hidden status
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user and its domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+        if can_cf_id:  # Retrieve specified custom field
+            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
+            if not candidate_custom_field:
+                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
+                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
+
+            # Custom field must belong to user's domain
+            custom_field_id = candidate_custom_field.custom_field_id
+            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
+                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            return {
+                'candidate_custom_field': {
+                    'custom_field_id': custom_field_id,
+                    'value': candidate_custom_field.value,
+                    'created_at_datetime': candidate_custom_field.added_time.isoformat()
+                }
+            }
+
+        else:
+            # Custom fields must belong user's domain
+            return {'candidate_custom_fields': [
+                {
+                    'id': ccf.id,
+                    'custom_field_id': ccf.custom_field_id,
+                    'value': ccf.value, 'created_at_datetime': ccf.added_time.isoformat()
+                } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
+
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
@@ -592,7 +705,7 @@ class CandidateCustomFieldResource(Resource):
         authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
@@ -608,6 +721,11 @@ class CandidateCustomFieldResource(Resource):
             custom_field_id = candidate_custom_field.custom_field_id
             if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
                 raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+            # Custom Field must belong to candidate
+            if candidate_custom_field.candidate_id != candidate_id:
+                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
+                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             db.session.delete(candidate_custom_field)
 
@@ -1380,15 +1498,22 @@ class CandidateClientEmailCampaignResource(Resource):
             raise InternalServerError(error_message="Could not create smartlist")
         else:
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
+
         # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
-        if poll(assert_smartlist_candidates, step=3,
-                args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
-                timeout=30):
-            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
-                        % (len(candidate_ids), created_smartlist_id))
-        else:
-            raise InternalServerError('Candidate(s) could not be found for smartlist(id:%s)'
-                                      % created_smartlist_id)
+        try:
+            if poll(assert_smartlist_candidates, step=3,
+                    args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
+                    timeout=60):
+                # timeout=60 is just an upper limit to poll the Smartlist API
+                # (needed this for some tests, it shouldn't affect normal API flow)
+                logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                            % (len(candidate_ids), created_smartlist_id))
+            else:
+                raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
+                                          % (candidate_ids, created_smartlist_id))
+        except TimeoutException:
+            raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
+                                      % (candidate_ids, created_smartlist_id))
 
         # create campaign
         email_campaign_object = {
@@ -2082,3 +2207,83 @@ class CandidateLanguageResource(Resource):
 
         db.session.commit()
         return '', 204
+
+
+class CandidateReferencesResource(Resource):
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    def post(self, **kwargs):
+        """
+        Endpoint:   POST /v1/candidates/:candidate_id/references
+        :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
+                    status code: 201
+        """
+        # Get json data if exists and validate its schema
+        body_dict = get_json_data_if_it_passed_validation(request, reference_schema)
+
+        # Get authenticated user & candidate ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        created_reference_ids = create_references(candidate_id, body_dict['candidate_references'])
+        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        Endpoints: GET /v1/candidates/:candidate_id/references
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        return {'candidate_references': get_references(candidate)}
+
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        """
+        Endpoints:
+             i. DELETE /v1/candidates/:candidate_id/references
+            ii. DELETE /v1/candidates/:candidate_id/references/:id
+        :return
+            {'candidate_reference': {'id': int}}                        If a single reference was deleted, OR
+            {'candidate_references': [{'id': int}, {'id': int}, ...]}   If all references were deleted
+            status code: 200
+        """
+        # Get authenticated user, candidate ID, and reference ID
+        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+
+        # Check if candidate exists & is web-hidden
+        candidate = get_candidate_if_exists(candidate_id)
+
+        # Candidate must belong to user's domain
+        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+        if reference_id:  # Delete specified reference
+            candidate_reference = CandidateReference.get_by_id(reference_id)
+            if not candidate_reference:  # Reference must be recognized
+                raise NotFoundError("Candidate reference ({}) not found.".format(reference_id),
+                                    custom_error.REFERENCE_NOT_FOUND)
+
+            if candidate_reference.candidate_id != candidate_id:  # reference must belong to candidate
+                raise ForbiddenError("Not authorized", custom_error.REFERENCE_FORBIDDEN)
+
+            # Delete candidate reference and return its ID
+            return {'candidate_reference': delete_reference(candidate_reference)}
+
+        else:  # Delete all of candidate's references
+            return {'candidate_references': delete_all_references(candidate.references)}

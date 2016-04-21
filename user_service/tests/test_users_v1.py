@@ -115,8 +115,8 @@ def test_user_service_put(access_token_first, access_token_second, user_first, u
     # Adding 'CAN_EDIT_USERS' in user_first
     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_USERS])
 
-    # Logged-in user trying to update a different user
-    data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
+    # Logged-in user trying to update a different user without providing email address
+    del data['email']
     response, status_code = user_api(access_token_first, user_second.id, data=data, action='PUT')
     assert status_code == 200
 
