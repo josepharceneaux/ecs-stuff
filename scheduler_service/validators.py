@@ -32,21 +32,24 @@ def get_valid_data_from_dict(data, key):
 
 def get_valid_task_name_from_dict(data, key):
     """
-    Check if datetime is valid, if no, then raise invalid value exception
+    Check if the task_name value has alphanumeric, unique and allowed characters.
+    Also `run_job` shouldn't be the task_name as its a default callback for every user based task
+    :param data: dictionary consisting of acpscheduler tasks
+    :type data: dict
+    :param key: key to get from data dictionary
+    :type key: str
     """
-    # TODO: Wrong docString
-    # TODO: Describe params here and everywhere else where missing
     assert isinstance(data, dict)
     value = str(get_valid_data_from_dict(data, key))
     general_msg = "Invalid value of %s %s. %s should be unique, alphanumeric and allowed characters are [-, _ ]. " \
                   "Note: `%s` is not allowed as a task name." % (key, value, key, SchedulerUtils.RUN_JOB_METHOD_NAME)
-    try:
-        allowed_characters = ['-', '_']
-        if any(c for c in value if not(c.isalnum() or c in allowed_characters)):
-            # TODO: Is it required here? As we are raising same in except block.
-            raise InvalidUsage(error_message=general_msg)
-    except Exception:
+    if value.lower() == SchedulerUtils.RUN_JOB_METHOD_NAME.lower():
         raise InvalidUsage(error_message=general_msg)
+
+    allowed_characters = ['-', '_']
+    if any(c for c in value if not(c.isalnum() or c in allowed_characters)):
+        raise InvalidUsage(error_message=general_msg)
+
     return value
 
 

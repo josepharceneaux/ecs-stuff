@@ -11,11 +11,8 @@ import uuid
 import requests
 
 # Application imports
-# TODO: Correct this import
-from auth_service.common.models.user import DomainRole
-from scheduler_service import SchedulerUtils
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.common.utils.handy_functions import random_word, add_role_to_test_user
+from scheduler_service.common.utils.handy_functions import random_word
 
 __author__ = 'saad'
 
@@ -357,125 +354,4 @@ class TestSchedulerGet(object):
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
-
-    # TODO: We can add a test with no auth-token to get 403 error
-    def test_retrieve_jobs_as_admin(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user):
-        """
-        Create 5 users, assign admin role to one of them. Then
-        schedule 50 jobs of 5 different users, 10 each. Then get the jobs using admin user.
-        """
-        # TODO--kindly improve above comment
-        # TODO--fixture 'schedule_ten_jobs_of_each_user' can be 'schedule_ten_jobs_for_each_user'
-        # Test without admin access, should get 401 response
-        response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
-                                headers=auth_header)
-
-        assert response.status_code == 401
-
-        # Assign admin role to user
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
-
-        response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
-                                headers=auth_header)
-
-        # TODO--I don't see where jobs are being scheduled? Or it's not apparent due to lack of useful comments
-        # TODO--We should assert on jobs of users as well. Do as many asserts as possible
-        assert response.status_code == 200
-        # TODO: IMO we can assert number of retrieved Jobs as you mentioned in docString.
-
-    def test_retrieve_jobs_as_admin_using_filters(self, sample_user, auth_header, create_five_users, schedule_ten_jobs_of_each_user,
-                                                  schedule_ten_general_jobs):
-        """
-        In this test, use filters to get filtered tasks from admin API
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
-        """
-        users_list = create_five_users
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
-
-        # Get jobs of only first user
-        response = requests.get('{0}?per_page=50&user_id={1}'.format(SchedulerApiUrl.ADMIN_TASKS, users_list[0][0].id),
-                                headers=auth_header)
-
-        assert response.status_code == 200
-
-        # There should be 10 jobs of first user
-        assert len(response.json()['tasks']) >= 10  # TODO: why > ? Here and every where else
-
-        # Try to get jobs using wrong is_paused value
-        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
-                                headers=auth_header)
-        assert response.status_code == 400
-
-        # Get paused jobs only
-        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'true'),
-                                headers=auth_header)
-        # There should be 10 jobs which we paused in the fixture
-        # TODO--which fixture?
-        assert response.status_code == 200 and len(response.json()['tasks']) >= 10
-
-        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
-                                headers=auth_header)
-        # There should be 10 jobs which we paused in the fixture and 40 were not in paused state
-        assert response.status_code == 200 and len(response.json()['tasks']) >= 50
-
-        # Specify invalid task_category and try to get jobs. Should get 400 in response.
-        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'invalid'),
-                                headers=auth_header)
-        assert response.status_code == 400
-
-        # Get only user jobs by specifying task_category
-        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.CATEGORY_USER),
-                                headers=auth_header)
-        assert response.status_code == 200
-
-        # There were 50 scheduled jobs which are user based
-        assert len(response.json()['tasks']) >= 50
-
-        # Get only general jobs by specifying task_category
-        response = requests.get('{0}?per_page=50&task_category={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.CATEGORY_GENERAL),
-                                headers=auth_header)
-        assert response.status_code == 200
-
-        # There should be 10 scheduled jobs which are general
-        assert len(response.json()['tasks']) >= 10
-
-        # Specify invalid task_type and try to get jobs. Should get 400 in response.
-        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'invalid'),
-                                headers=auth_header)
-        assert response.status_code == 400
-
-        # Get only periodic jobs by specifying task_type
-        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.PERIODIC),
-                                headers=auth_header)
-        assert response.status_code == 200
-
-        # There are 10 periodic scheduled jobs
-        assert len(response.json()['tasks']) >= 10
-
-        # Get only one_time jobs by specifying task_type
-        response = requests.get('{0}?per_page=50&task_type={1}'.format(SchedulerApiUrl.ADMIN_TASKS, SchedulerUtils.ONE_TIME),
-                                headers=auth_header)
-        assert response.status_code == 200
-
-        # There should be 40 scheduled jobs which are one_time
-        assert len(response.json()['tasks']) >= 40
-
-        # Get jobs by specifying task_category as general and user_id. This case is invalid as the general jobs
-        # are independent of user
-        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}'.format(SchedulerApiUrl.ADMIN_TASKS,
-                                                                                      users_list[0][0].id,
-                                                                                      SchedulerUtils.CATEGORY_GENERAL),
-                                headers=auth_header)
-        assert response.status_code == 400
-
-        # Get jobs by specifying task_category as user and user_id. This will return all jobs of first user.
-        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}'.format(SchedulerApiUrl.ADMIN_TASKS,
-                                                                                      users_list[0][0].id,
-                                                                                      SchedulerUtils.CATEGORY_USER),
-                                headers=auth_header)
-        assert response.status_code == 200
-
-        # TODO--nice try. But this test needs refactoring. We need to break it down into more tests. I think one test
-        # TODO--should test one functionality. It will be more clear and meaningful.
-        assert len(response.json()['tasks']) >= 10
 

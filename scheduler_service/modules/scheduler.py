@@ -11,8 +11,6 @@ import datetime
 
 # Third-party imports
 from urllib import urlencode
-# TODO: unused import
-from dateutil.tz import tzutc
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.date import DateTrigger
@@ -26,8 +24,7 @@ from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
-# TODO: unused import
-from scheduler_service.common.error_handling import InvalidUsage, InternalServerError
+from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
@@ -237,11 +234,13 @@ def schedule_job(data, user_id=None, access_token=None):
 
     trigger = str(job_config['task_type']).lower().strip()
 
+    callback_method = 'scheduler_service.modules.scheduler:run_job'
+
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
         try:
-            job = scheduler.add_job('scheduler:run_job',
+            job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='interval',
                                     seconds=valid_data['frequency'],
@@ -257,13 +256,13 @@ def schedule_job(data, user_id=None, access_token=None):
             if not job_start_time_obj.is_in_future():
                 run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
-        except Exception:
-            raise JobNotCreatedError("Unable to create the job.")
+        except Exception as e:
+            raise JobNotCreatedError("Unable to create the job. Error: %s" % e.message)
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
         try:
-            job = scheduler.add_job('scheduler:run_job',
+            job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
@@ -351,7 +350,7 @@ def serialize_task(task, is_admin_api=False):
         if task.args[0]:
             task_dict['user_id'] = task.args[0]
             user = User.get_by_id(task.args[0])
-            if not user: # TODO: if not isinstance(user, User) will be better here
+            if not user:
                 logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
                 task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
             else:

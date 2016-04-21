@@ -9,28 +9,23 @@ import json
 import types
 
 # Third party imports
-# TODO: IMO re-ordering will beautify these
-from datetime import timedelta, datetime
-from apscheduler.triggers.date import DateTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 from flask import Blueprint, request
 from flask.ext.restful import Resource
-from werkzeug.exceptions import BadRequest
 
 # Application imports
-# TODO: same as above
-from scheduler_service import TalentConfigKeys, flask_app, logger, SchedulerUtils
-from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token, User, DomainRole
+from scheduler_service import logger, SchedulerUtils
+from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
+    dummy_request_method
+from scheduler_service.common.models.user import DomainRole
 from scheduler_service.common.routes import SchedulerApi
-from scheduler_service.common.talent_config_manager import TalentEnvs
-from scheduler_service.common.utils.api_utils import api_route, ApiResponse
+from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
 from scheduler_service.common.talent_api import TalentApi
-from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
+from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
-from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
-    SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.custom_exceptions import SchedulerServiceApiException
+from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
+from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
+    filter_jobs_using_task_category, filter_paused_jobs
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -742,24 +737,18 @@ class PauseTaskById(Resource):
 
 @api.route(SchedulerApi.SCHEDULER_ADMIN_TASKS)
 class AdminTasks(Resource):
-    # TODO: IMO description should come before decorator
-    decorators = [require_oauth()]
     """
         This resource returns a list of tasks owned by a user or service by using pagination and it's accessible to
         admin users only.
     """
-
-    # TODO--I think we are using pagination like below in multiple places. We can further abstract it e.g. I can create
+    decorators = [require_oauth()]
     # a parent class and put all the core pagination functionality in its get() and then we can later override that
 
     @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
     def get(self):
-        # TODO: do we need to return count? As we (I and Zohaib) had to remove that after osman's feedback
-        # TODO: We can give more detail about 'tasks' below - as you have explained many examples below
-        # TODO: Code examples below will be more prominant if you use >>> before each line
         """
-        This action returns a list of tasks and their count
-        :return tasks_data: a dictionary containing list of tasks and their count
+        This action returns a list of apscheduler scheduled tasks.
+        :return tasks_data: a dictionary containing list of tasks
         :rtype: json
 
 
@@ -768,43 +757,38 @@ class AdminTasks(Resource):
 
             Case 1:
 
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/admin/v1/tasks?page=2', headers=headers)
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?page=2', headers=headers)
 
-            >>> "TODO: Shouldn't it be 31- 60? Like job 1-30, 31-60 and so on? Cause I think there will be"
-            no 0th job or task
-
-            # Returns 30 jobs ranging from 30-59
+            # Returns 30 jobs ranging from 30-59 ( zero-based index )
 
             Case 2:
 
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
 
-            >>> "TODO: Same as above"
 
-            # Returns 35 jobs ranging from 35-69
-            # TODO--is the above correct, I was thinking it would return from 30--65
+            # Returns 35 jobs ranging from 35-69 ( zero-based index )
+            # TODO--is the above correct, I was thinking it would return from 30--65 ( zero-based index )
 
         :Example:
         # TODO--please explaining the following a bit more. Give eaxample each filter one by one. That would add more clarity
 
         In case of task_category filter
 
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/admin/v1/tasks?task_category=general', headers=headers)
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?task_category=general', headers=headers)
 
         In case of task_type filter
 
-            headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.get(API_URL + '/admin/v1/tasks?task_type=periodic', headers=headers)
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?task_type=periodic', headers=headers)
 
         Response will be similar to get all tasks endpoint with few additional fields
 
         .. Response::
 
             {
-                "count": 1,
                 "tasks": [
                     {
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
@@ -827,102 +811,55 @@ class AdminTasks(Resource):
                ]
             }
 
-        >>> "TODO: There will also 403, 404(maybe) etc"
 
         .. Status:: 200 (OK)
                     400 (Invalid Usage)
+                    401 (Unauthorized Error)
                     500 (Internal Server Error)
 
         """
         # In case of higher number of scheduled task running for a particular user and user wants to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
-        # Limit the jobs to 50 if user requests for more than 50
-        max_per_page = 50
-
         # Default per_page size
         default_per_page = 30
 
         # If user didn't specify page or per_page, then it should default to 1 and 30 respectively.
-        # TODO: 1 should be imported from api_utils.py
-        page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
-
-
-        # TODO: Maybe you can use get_pagination_params() defined in api_utils.py rather than validating yourself.
-        if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
-
-        # TODO--kindly double check the error message below and compare it against the if condition
-        if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
-            raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater than or equal to 30")
-
-        page, per_page = int(page), int(per_page)
-
-        # Limit the jobs if user requests jobs greater than 50
-        if per_page > max_per_page:
-            per_page = max_per_page
+        page, per_page = get_pagination_params(request, default_per_page=default_per_page)
 
         raise_if_scheduler_not_running()
         tasks = scheduler.get_jobs()
 
-        # TODO--instead of 'is_paused', we can just say 'paused'
         # Get all param filters
-        user_id, is_paused, task_type, task_category = request.args.get('user_id'), request.args.get('is_paused'), \
+        user_id, paused, task_type, task_category = request.args.get('user_id'), request.args.get('paused'), \
                                                        request.args.get('task_type'), \
                                                        request.args.get('task_category')
 
         # If user_id is given then only return jobs of that particular user
         if user_id:
-            # TODO: As you have implemented JSON schema validation for scheduler service, maybe this can be handled there
             if not (str(user_id).isdigit() and int(user_id) > 0):
                 raise InvalidUsage("user_id should be of type int")
             tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
 
-        # If is_paused is given then only return paused jobs.
-        if is_paused:
-            # TODO: Schema validation - also shouldn't we stick to true-flase or 0-1?
-            if not str(is_paused).lower() in ['true', 'false', '1', '0']:
-                raise InvalidUsage("is_paused should be of type bool or int. If `true` or `1`, paused jobs will be "
-                                   "returned and if `false` or `0`, then endpoint returns running jobs")
-            if str(is_paused).lower() in ["true", "1"]:
-                tasks = filter(lambda _task: _task.next_run_time is None,
-                               tasks)
-            else:
-                tasks = filter(lambda _task: _task.next_run_time, tasks)
+        # If paused is given then only return paused jobs.
+        if paused:
+            tasks = filter_paused_jobs(tasks, is_paused=paused)
 
         # If task_type is specified then return only specified `one_time` or `periodic` jobs
         if task_type:
-            if not (isinstance(task_type, basestring) and task_type.lower() in [SchedulerUtils.ONE_TIME.lower(),
-                                                                                SchedulerUtils.PERIODIC.lower()]):
-                raise InvalidUsage("task_type should be of type string with value of `{0}` or `{1}`"
-                                   .format(SchedulerUtils.ONE_TIME, SchedulerUtils.PERIODIC))
-            if task_type.lower() == SchedulerUtils.PERIODIC.lower():
-                tasks = filter(lambda _task: isinstance(_task.trigger, IntervalTrigger), tasks)
-            else:
-                tasks = filter(lambda _task: isinstance(_task.trigger, DateTrigger), tasks)
+            tasks = filter_jobs_using_task_type(tasks, task_type=task_type)
 
         # If task_category is given then return only specified `user` or `general` job
         if task_category:
-            if not (isinstance(task_category, basestring) and task_category.lower() in
-               [SchedulerUtils.CATEGORY_USER.lower(), SchedulerUtils.CATEGORY_GENERAL.lower()]):
-                raise InvalidUsage("task_category should be of type string with value of "
-                                   "`{0}` or `{1}`".format(SchedulerUtils.CATEGORY_USER, SchedulerUtils.CATEGORY_GENERAL))
-
-            if task_category.lower() == SchedulerUtils.CATEGORY_GENERAL.lower():
-                tasks = filter(lambda _task: _task.name, tasks)
-            else:
-                tasks = filter(lambda _task: _task.name == SchedulerUtils.RUN_JOB_METHOD_NAME, tasks)
+            filter_jobs_using_task_category(tasks, task_category=task_category)
 
         # The following case should never occur. As the general jobs are independent of user. So, if user use such
         # a filter then raise Invalid usage api exception.
-        # TODO: Remove hardcoded 'general'? I saw somewhere you added in common
-        if user_id and task_category == "general":
-            raise InvalidUsage(error_message="user and task_category cannot be used together. General jobs are independent of users.")
+        if user_id and task_category == SchedulerUtils.CATEGORY_GENERAL:
+            raise InvalidUsage(error_message=
+                               "user and task_category cannot be used together. General jobs are independent of users.")
 
         tasks_count = len(tasks)
-
-        # TODO--what happens if user provide all filters at once?
 
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)
@@ -939,7 +876,7 @@ class AdminTasks(Resource):
         }
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
-# TODO: IMO this should be in a separate file. It shouldn't be mixed with actual endpoints
+
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
@@ -979,83 +916,3 @@ class SendRequestTest(Resource):
         dummy_request_method(_request=request)
 
         return dict(message='Dummy GET Endpoint called')
-
-
-def dummy_request_method(_request):
-    """
-    Dummy endpoint to test GET, POST, DELETE request using celery
-    :param _request:
-    :return:
-    """
-    env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-    if not (env_key == TalentEnvs.DEV or env_key == TalentEnvs.JENKINS):
-        raise ForbiddenError("You are not authorized to access this endpoint.")
-
-    user_id = _request.user.id
-    try:
-        task = _request.get_json()
-    except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable')
-
-    # Post data param expired. If yes, then expire the token
-    expired = task.get('expired', False)
-
-    url = task.get('url', '')
-
-    if expired:
-        # Set the date in past to expire request oauth token.
-        # This is to test that run_job method refresh token or not
-        expiry = datetime.utcnow() - timedelta(days=5)
-        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
-        db.db.session.commit()
-        token = Token.query.filter_by(user_id=_request.user.id).first()
-        token.update(expires=expiry)
-        run_job(user_id, _request.oauth_token, url, task.get('content-type', 'application/json'),
-                task.get('post_data', dict()))
-    else:
-        try:
-            # Try deleting the user if exist
-            db.db.session.commit()
-            test_user_id = task['test_user_id']
-            test_user = User.query.filter_by(id=test_user_id).first()
-            test_user.delete()
-        except Exception:
-            pass
-
-
-def raise_if_scheduler_not_running():
-    # if scheduler is not running
-    if not scheduler.running:
-        raise SchedulerNotRunningError("Scheduler is not running")
-
-
-def check_job_state(job_id, job_state_to_check):
-    """
-    We retrieve a job and if it's pending we raise an error. If job_state_to_check
-    is 'paused' and job's next_run_time is None then we raise an error indicating job
-    is already in paused state. Likewise, if job_state_to_check is 'running' and
-    next_run_time is not None then we raise an error indicating job is already running.
-    :param job_id: job_id of task which is in APScheduler
-    :param job_state_to_check: the state to check, if doesn't meet requirement then raise exception.
-            'func' can be 'running' or 'paused'.
-    :return:
-    """
-    # get job from scheduler by job_id
-    job = scheduler.get_job(job_id=job_id)
-
-    # if job is pending then throw pending state exception
-    if job.pending:
-        raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
-
-    # if job has next_run_datetime none, then job is in paused state
-    if not job.next_run_time and job_state_to_check == 'paused':
-        raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
-
-    # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time and job_state_to_check == 'running':
-        raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
-
-    return job
-

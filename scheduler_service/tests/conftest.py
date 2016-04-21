@@ -197,8 +197,7 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
     return jobs_id
 
 
-#TODO--cannot we use some existing fixture for creating users?
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def create_five_users(request, domain_first, first_group, sample_client):
     """
     Create five users and delete them in finalizer
@@ -215,40 +214,37 @@ def create_five_users(request, domain_first, first_group, sample_client):
             try:
                 db.session.delete(_user)
                 db.session.commit()
-            # TODO--should never use an except block without catching a specific exception
-            except:
+            except Exception:
                 db.session.rollback()
     request.addfinalizer(tear_down)
     return users_list
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture()
 def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
-    Scheduler 10 general jobs.
+    Schedule 10 general scheduler jobs by sending request to scheduler.
     """
-    # TODO--explain what's a general job in comment
     general_job_ids_list = []
+    header = {'Content-Type': 'application/json'}
     for _ in range(10):
         secret_key_id, access_token = User.generate_jw_token()
-        header = {'Authorization': 'Bearer ' + access_token,
-                  'X-Talent-Secret-Key-ID': secret_key_id,
-                  'Content-Type': 'application/json'}
-        # TODO--use the above two lines at the top of the method, that way you will be able to use them both in the loop
-        # TODO--and inside teardown() without repetitively defining them. Less and simple code the better.
-        # TODO--break the line, violating pep-8
-        job_config_one_time_task['task_name'] = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        header['Authorization'] = 'Bearer ' + access_token
+        header['X-Talent-Secret-Key-ID'] = secret_key_id
+        job_config_one_time_task['task_name'] = ''\
+            .join(random.SystemRandom()
+                  .choice(string.ascii_uppercase + string.digits) for _ in range(8))
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
                                  headers=header)
         assert response.status_code == 201, response.text
         general_job_ids_list.append(response.json()['id'])
 
     def teardown():
-        secret_key_id, access_token = User.generate_jw_token()
+        _secret_key_id, _access_token = User.generate_jw_token()
         # Delete general jobs
-        _header = {'Authorization': 'Bearer ' + access_token,
-                   'X-Talent-Secret-Key-ID': secret_key_id,
-                       'Content-Type': 'application/json'}
+        _header = {'Authorization': 'Bearer ' + _access_token,
+                   'X-Talent-Secret-Key-ID': _secret_key_id,
+                   'Content-Type': 'application/json'}
         for index in range(len(general_job_ids_list)):
             response_remove_job = requests.delete(SchedulerApiUrl.TASK % general_job_ids_list[index],
                                                   headers=_header)
@@ -261,23 +257,22 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
     return general_job_ids_list
 
 
-@pytest.fixture(scope='function')
-def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_time_task, job_config):
+@pytest.fixture()
+def schedule_ten_jobs_for_each_user(request, create_five_users, job_config_one_time_task, job_config):
     """
     Schedule 10 jobs of each users (we created 5 users). So, there will be 50 jobs in total.
     """
     jobs_count = 10
     user_job_ids_list = []
     users_list = create_five_users
+    header = {'Content-Type': 'application/json'}
     for index, (user, token) in enumerate(users_list):
         job_ids_list = []
-        header = {'Authorization': 'Bearer ' + token,
-                  'Content-Type': 'application/json'}
-        # TODO--take out the header and reuse it here and in the teardodwn
-        # TODO--please add comments within the for loop in multiple places so the reader know what's going on
+        header['Authorization'] = 'Bearer ' + token
+
+        # Schedule 10 of each user and paused the jobs of first user
         for _ in range(jobs_count):
-            # TODO--followiong could be if not index:
-            if index == 0:
+            if not index:
                 data = json.dumps(job_config.copy())
             else:
                 run_datetime = datetime.utcnow() + timedelta(hours=10)
@@ -290,8 +285,7 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
             job_ids_list.append(response.json()['id'])
 
             # Pause all jobs of first user, we need to check if admin can get paused jobs(in test)
-            # TODO--if not index
-            if index == 0:
+            if not index:
                 response = requests.post(SchedulerApiUrl.PAUSE_TASK % response.json()['id'],
                                          headers=header)
                 assert response.status_code == 200
@@ -301,16 +295,14 @@ def schedule_ten_jobs_of_each_user(request, create_five_users, job_config_one_ti
     def tear_down():
         # Delete user based jobs
         for user_index, (_, _token) in enumerate(users_list):
-            _header = {'Authorization': 'Bearer ' + _token,
-                       'Content-Type': 'application/json'}
+            header['Authorization'] = 'Bearer ' + token
             for _index in range(jobs_count):
                 response_remove_job = requests.delete(SchedulerApiUrl.TASK % user_job_ids_list[user_index][_index],
-                                                      headers=_header)
+                                                      headers=header)
 
                 assert response_remove_job.status_code == 200
                 job_ids_list.append(response.json()['id'])
 
     request.addfinalizer(tear_down)
 
-    # TODO--this method needs more comments, need to be further cleaned
     return user_job_ids_list
