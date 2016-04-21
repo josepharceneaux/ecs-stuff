@@ -193,6 +193,8 @@ class CampaignsTestsHelpers(object):
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
+        # TODO: Maybe rather than returning response, IMO we shoudl assert that no blast has been
+        # TODO: created for given campaign. As this is common code and assert should be in common as well
         return response_post
 
     @classmethod

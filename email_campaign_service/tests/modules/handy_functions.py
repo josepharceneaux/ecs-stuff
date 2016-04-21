@@ -336,6 +336,7 @@ def get_sends(campaign, blast_index, expected_count):
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
+    # TODO: Why did we add try catch here? Maybe we wanna catch here IndexError or something?
     try:
         if campaign.blasts[blast_index].sends == expected_count:
             return campaign.blasts[blast_index].sends

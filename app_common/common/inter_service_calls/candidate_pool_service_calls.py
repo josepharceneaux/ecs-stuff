@@ -47,6 +47,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param (int, long) list_id: smartlist id.
     :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
     """
+    # TODO: Can we stick to one? access_token or user_id? Just an observation.
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
