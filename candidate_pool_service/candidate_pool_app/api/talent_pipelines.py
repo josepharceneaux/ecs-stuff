@@ -532,7 +532,12 @@ class TalentPipelineCampaigns(Resource):
         # Get the email campaigns
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
         email_campaigns = talent_pipeline.get_email_campaigns(page=page, per_page=per_page)
-        return {'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]}
+
+        return {
+            'page_number': page, 'email_campaigns_per_page': per_page,
+            'total_number_of_email_campaigns': talent_pipeline.get_email_campaigns_count(),
+            'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]
+        }
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])
