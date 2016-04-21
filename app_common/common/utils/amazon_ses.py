@@ -6,13 +6,27 @@ import re
 from flask import current_app as app
 from ..talent_config_manager import TalentConfigKeys
 
-DEFAULT_MAIL_SENDER = '"getTalent Web" <%s>'
-
 
 def get_boto_ses_connection():
     conn = boto.connect_ses(aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
                             aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET])
     return conn
+
+
+def get_default_email_info():
+    """
+    This functions returns default email information which will be used while sending email (hopefully in
+    case of email campaigns).
+    It is different for different environments and it is taken from web.cfg either from file
+    system or from Amazon S3 bucket.
+    Possible values for default emails are:
+        Development : no-reply-local@gettalent.com
+        Jenkins     : no-reply-jenkins@gettalent.com
+        Production  : no-reply@gettalent.com
+    :rtype dict
+    """
+    return {'email': app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER],
+            'source': '"getTalent Web" <%s>' % app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER]}
 
 
 def safe_send_email(source, subject, body, to_addresses, html_body=None, text_body=None, reply_address=None,

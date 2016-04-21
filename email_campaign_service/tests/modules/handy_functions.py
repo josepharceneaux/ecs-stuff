@@ -21,7 +21,7 @@ from email_campaign_service.common.models.misc import (Activity,
                                                        Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.utils.amazon_ses import send_email
+from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
 from email_campaign_service.common.error_handling import UnprocessableEntity
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend)
@@ -552,9 +552,9 @@ def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
                                             sent_datetime=datetime.datetime.now(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
-
+    default_email = get_default_email_info()['email']
     # Send email to given email address with some random text as body.
-    email_response = send_email(source='"%s" <%s>' % (campaign._from, app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER]),
+    email_response = send_email(source='"%s" <%s>' % (campaign._from, default_email),
                                 # Emails will be sent from verified email by Amazon SES for respective environment.
                                 subject=fake.sentence(),
                                 html_body="<html><body>Email campaign test</body></html>",

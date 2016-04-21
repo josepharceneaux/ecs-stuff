@@ -25,7 +25,6 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.user import Domain
-from email_campaign_service.common.utils.amazon_ses import send_email
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -40,6 +39,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
+from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference, EmailLabel)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
@@ -520,7 +520,8 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         else:
             to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
     try:
-        email_response = send_email(source='"%s" <%s>' % (campaign._from, app.config[TalentConfigKeys.DEFAULT_MAIL_SENDER]),
+        default_email = get_default_email_info()['email']
+        email_response = send_email(source='"%s" <%s>' % (campaign._from, default_email),
                                     # Emails will be sent from verified email by Amazon SES for respective environment.
                                     subject=subject,
                                     html_body=new_html or None,

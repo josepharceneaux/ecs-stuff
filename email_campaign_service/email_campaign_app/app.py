@@ -55,7 +55,7 @@ def amazon_sns_endpoint():
         if not data[AWS_SNS_TERMS.TOPIC_ARN] in response.text:
             logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s',
                         data[AWS_SNS_TERMS.TOPIC_ARN], request.data)
-            return 'Not verified', 500
+            return 'Not verified', requests.codes.INTERNAL_SERVER_ERROR
 
         logger.info('Aws SNS topic subscription for email notifications was successful.'
                     '\nTopicArn: %s\nRequestData: %s', data[AWS_SNS_TERMS.TOPIC_ARN], request.data)
