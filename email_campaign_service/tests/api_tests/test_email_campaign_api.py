@@ -425,13 +425,13 @@ class TestSendCampaign(object):
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates associated (with distinct email addresses). Email Campaign should be sent to
+        candidates associat template_id=None):ed (with distinct email addresses). Email Campaign should be sent to
         both candidates.
         """
         campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=100)
+        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -459,7 +459,7 @@ class TestSendCampaign(object):
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=100)
+        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=150)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -551,7 +551,7 @@ class TestSendCampaign(object):
                                          email_campaign_id=campaign.id)
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=100)
+        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
 
 
 # Test for healthcheck

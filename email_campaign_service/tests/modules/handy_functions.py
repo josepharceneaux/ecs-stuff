@@ -353,10 +353,11 @@ def get_blasts_with_polling(campaign):
     return poll(get_blasts, step=3, args=(campaign,), timeout=300)
 
 
-def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300):
+def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
+    time.sleep(10)
     sends = poll(get_sends, step=3, args=(campaign, blast_index, expected_count), timeout=abort_time_for_sends)
     assert sends >= expected_count
 
