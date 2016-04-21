@@ -34,7 +34,7 @@ class EmailCampaign(db.Model):
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
-    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
 
     # Relationships
@@ -95,7 +95,7 @@ class EmailCampaignSmartlist(db.Model):
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
     campaign_id = db.Column('EmailCampaignId', db.Integer,
                             db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
@@ -116,7 +116,7 @@ class EmailCampaignBlast(db.Model):
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
     sent_datetime = db.Column('SentTime', db.DateTime)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -153,7 +153,7 @@ class EmailCampaignSend(db.Model):
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
     email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
     # Relationships

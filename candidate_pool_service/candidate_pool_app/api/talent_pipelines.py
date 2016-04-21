@@ -6,7 +6,6 @@ from flask import Blueprint
 from dateutil import parser
 from sqlalchemy import and_
 from flask_restful import Resource
-from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
@@ -14,9 +13,8 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (get_pipeline_growth,
-                                                                                        TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function,
-                                                                                        get_smartlist_stat_for_a_given_day)
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
+    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
@@ -522,11 +520,24 @@ class TalentPipelineCampaigns(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
+        page = request.args.get('page', DEFAULT_PAGE)
+        per_page = request.args.get('per_page', 20)
+
+        if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+            raise InvalidUsage("page and per_page should be positive integers")
+
+        page = int(page)
+        per_page = int(per_page)
+
         # Get the email campaigns
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        email_campaigns = talent_pipeline.get_email_campaigns(page=request.values.get('page', 1),
-                                                              per_page=request.values.get('per_page', 20))
-        return {'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]}
+        email_campaigns = talent_pipeline.get_email_campaigns(page=page, per_page=per_page)
+
+        return {
+            'page_number': page, 'email_campaigns_per_page': per_page,
+            'total_number_of_email_campaigns': talent_pipeline.get_email_campaigns_count(),
+            'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]
+        }
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])

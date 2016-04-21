@@ -15,7 +15,7 @@ from ..utils.scheduler_utils import SchedulerUtils
 class Activity(db.Model):
     __tablename__ = 'activity'
     id = db.Column('Id', db.Integer, primary_key=True)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now, index=True)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow, index=True)
     type = db.Column('Type', db.Integer)
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
@@ -150,7 +150,7 @@ class AreaOfInterest(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.Id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<AreaOfInterest (name='%r')>" % self.name
@@ -199,7 +199,7 @@ class Organization(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255), unique=True)
     notes = db.Column('Notes', db.String(255))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     # domains = db.relationship('Domain', backref='organization')
@@ -217,7 +217,7 @@ class Product(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
@@ -269,7 +269,7 @@ class Major(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def serialize(self):
         return {'id': self.id}
@@ -323,7 +323,7 @@ class Frequency(db.Model):
     __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
@@ -393,7 +393,7 @@ class CustomField(db.Model):
     type = db.Column('Type', db.String(127))
     category_id = db.Column('CategoryId', db.Integer)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationship
     candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field',
@@ -420,7 +420,7 @@ class CustomFieldCategory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
 
 # class PatentDetail(db.Model):
@@ -429,7 +429,7 @@ class CustomFieldCategory(db.Model):
 #     patent_id = db.Column('PatentId', db.BIGINT)
 #     issuing_authority = db.Column('IssuingAuthority', db.String(255))
 #     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.Id'))
-#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetim.utcnow)
 #
 #     def __repr__(self):
 #         return "<PatentDetail (id = {})>".format(self.id)
