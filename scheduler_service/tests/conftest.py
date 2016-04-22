@@ -224,6 +224,7 @@ def create_five_users(request, domain_first, first_group, sample_client):
 def schedule_ten_general_jobs(request, job_config_one_time_task):
     """
     Schedule 10 general scheduler jobs by sending request to scheduler.
+    Jobs which are independent of user and have task name are called general jobs
     """
     general_job_ids_list = []
     header = {'Content-Type': 'application/json'}
@@ -242,12 +243,11 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
     def teardown():
         _secret_key_id, _access_token = User.generate_jw_token()
         # Delete general jobs
-        _header = {'Authorization': 'Bearer ' + _access_token,
-                   'X-Talent-Secret-Key-ID': _secret_key_id,
-                   'Content-Type': 'application/json'}
+        header['Authorization'] = 'Bearer ' + _access_token
+        header['X-Talent-Secret-Key-ID'] = _secret_key_id
         for index in range(len(general_job_ids_list)):
             response_remove_job = requests.delete(SchedulerApiUrl.TASK % general_job_ids_list[index],
-                                                  headers=_header)
+                                                  headers=header)
 
             assert response_remove_job.status_code == 200
             general_job_ids_list.append(response.json()['id'])

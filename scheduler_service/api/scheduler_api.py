@@ -767,9 +767,7 @@ class AdminTasks(Resource):
              >>> headers = {'Authorization': 'Bearer <access_token>'}
              >>> response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
 
-
             # Returns 35 jobs ranging from 35-69 ( zero-based index )
-            # TODO--is the above correct, I was thinking it would return from 30--65 ( zero-based index )
 
         :Example:
         # TODO--please explaining the following a bit more. Give eaxample each filter one by one. That would add more clarity
@@ -783,6 +781,21 @@ class AdminTasks(Resource):
 
              >>> headers = {'Authorization': 'Bearer <access_token>'}
              >>> response = requests.get(API_URL + '/admin/v1/tasks?task_type=periodic', headers=headers)
+
+        In case of jobs of a specific user
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?user_id=2', headers=headers)
+
+
+        In case of paused or running jobs only
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             # returns paused jobs only
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?paused=true', headers=headers)
+             # returns running jobs only
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?paused=false', headers=headers)
+
 
         Response will be similar to get all tasks endpoint with few additional fields
 

@@ -257,7 +257,8 @@ def schedule_job(data, user_id=None, access_token=None):
                 run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception as e:
-            raise JobNotCreatedError("Unable to create the job. Error: %s" % e.message)
+            logger.error(e.message)
+            raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
@@ -272,7 +273,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     );
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
-        except Exception:
+        except Exception as e:
+            logger.error(e.message)
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
         raise TriggerTypeError("Task type not correct. Please use either %s or %s as task type."
