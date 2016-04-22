@@ -770,7 +770,6 @@ class AdminTasks(Resource):
             # Returns 35 jobs ranging from 35-69 ( zero-based index )
 
         :Example:
-        # TODO--please explaining the following a bit more. Give eaxample each filter one by one. That would add more clarity
 
         In case of task_category filter
 
