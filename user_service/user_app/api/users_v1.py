@@ -179,7 +179,7 @@ class UserApi(Resource):
         if email and not is_valid_email(email=email):
             raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
 
-        if check_if_user_exists(email):
+        if email and check_if_user_exists(email) and requested_user.email != email:
             raise InvalidUsage(error_message="Email Address %s already exists" % email)
 
         if not is_number(is_disabled) or (int(is_disabled) != 0 and int(is_disabled) != 1):

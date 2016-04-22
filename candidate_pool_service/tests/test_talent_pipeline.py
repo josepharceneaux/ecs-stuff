@@ -154,7 +154,7 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
     assert status_code == 400
 
     # Logged-in user trying to edit a non-existing talent-pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 10,
+    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000,
                                                 data=data, action='PUT')
     assert status_code == 404
 
@@ -495,6 +495,7 @@ def test_talent_pipeline_campaigns_api_get(access_token_first, user_first, talen
     response, status_code = talent_pipeline_campaigns_api(access_token_first, talent_pipeline.id)
     assert status_code == 200
     assert len(response['email_campaigns']) == 1
+    assert response['total_number_of_email_campaigns'] == 1
 
     db.session.delete(test_email_campaign_smart_list)
     db.session.delete(test_smart_list)

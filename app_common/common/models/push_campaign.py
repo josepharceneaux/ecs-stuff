@@ -39,7 +39,7 @@ class PushCampaign(db.Model):
     body_text = db.Column(db.String(1000))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
-    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow())
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
@@ -93,7 +93,7 @@ class PushCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     campaign_id = db.Column(db.Integer, db.ForeignKey('push_campaign.id', ondelete='CASCADE'))
-    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow())
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('PushCampaignSend', cascade='all, delete-orphan',
@@ -111,7 +111,7 @@ class PushCampaignSend(db.Model):
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.now())
+    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
                          nullable=False)
 
@@ -135,7 +135,7 @@ class PushCampaignSmartlist(db.Model):
     smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.Id", ondelete='CASCADE'),
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("push_campaign.id", ondelete='CASCADE'), nullable=False)
-    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return '<PushCampaignSmartlist (id = %s, smartlist_id: %s)>' % (self.id, self.smartlist_id)
