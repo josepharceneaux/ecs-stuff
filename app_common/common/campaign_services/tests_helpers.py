@@ -236,15 +236,15 @@ class CampaignsTestsHelpers(object):
     def assert_for_activity(cls, user_id, type_, source_id):
         """
         This verifies that activity has been created for given action
-        :param user_id:
-        :param type_:
-        :param source_id:
-        :return:
+        :param (int, long) user_id: Id of user
+        :param (int, long) type_: Type number of activity
+        :param (int, long) source_id: Id of activity source
         """
         # Need to commit the session because Celery has its own session, and our session does not
         # know about the changes that Celery session has made.
         db.session.commit()
-        assert Activity.get_by_user_id_type_source_id(user_id, type_, source_id)
+        activity = poll(_get_activity, args=(user_id, type_, source_id), step=3, timeout=30)
+        assert activity
 
     @classmethod
     def assert_ok_response_and_counts(cls, response, count=0, entity='sends', check_count=True):
@@ -601,3 +601,13 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     """
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]
+
+
+def _get_activity(user_id, _type, source_id):
+    """
+    This gets that activity from database table Activity for given params
+    :param (int, long) user_id: Id of user
+    :param (int, long) _type: Type number of activity
+    :param (int, long) source_id: Id of activity source
+    """
+    return Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
