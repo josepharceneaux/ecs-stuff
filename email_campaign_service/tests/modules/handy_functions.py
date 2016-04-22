@@ -35,7 +35,8 @@ from email_campaign_service.common.inter_service_calls.candidate_pool_service_ca
     create_smartlist_from_api
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     create_candidates_from_candidate_api
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers,
+                                                                           get_blasts)
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     assert_smartlist_candidates
 
@@ -323,26 +324,17 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def get_blasts(campaign):
-    """
-    This returns all the blasts associated with given campaign
-    """
-    db.session.commit()
-    return campaign.blasts.all()
-
-
 def get_sends(campaign, blast_index, expected_count):
     """
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
-    # TODO: Why did we add try catch here? Maybe we wanna catch here IndexError or something?
     try:
-        if campaign.blasts[blast_index].sends == expected_count:
+        if campaign.blasts[blast_index].sends >= expected_count:
             return campaign.blasts[blast_index].sends
         else:
             return False
-    except Exception:
+    except IndexError:
         return False
 
 
@@ -588,20 +580,3 @@ def send_campaign_helper(request, email_campaign, access_token):
     # send campaign
     send_campaign(email_campaign, access_token)
     return email_campaign
-
-
-def assert_campaign_failure(response, campaign, email_client=False,
-                         expected_status=200):
-    """
-    This asserts that if some data was invalid while sending the campaign,
-    campaign sending fails and no blasts are created.
-    """
-    assert response.status_code == expected_status
-    assert response.json()
-    if not email_client:
-        json_resp = response.json()
-        assert str(campaign.id) in json_resp['message']
-    # Need to add this as processing of POST request runs on Celery
-    blasts = get_blasts(campaign)
-    assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
-    assert len(blasts) == 0

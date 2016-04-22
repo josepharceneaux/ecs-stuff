@@ -67,7 +67,7 @@ def get_smartlist_candidates(smartlist, oauth_token=None, request_params=None):
     """
     if request_params is None:
         request_params = dict()
-    if smartlist.talent_pipeline_id:
+    if smartlist.talent_pipeline:
         if smartlist.talent_pipeline.search_params:
             try:
                 request_params.update(json.loads(smartlist.talent_pipeline.search_params))

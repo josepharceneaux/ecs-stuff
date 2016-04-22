@@ -175,12 +175,11 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
                                                                                new_candidates_only=new_candidates_only)
 
         # Check if the smart list has more than 0 candidates
-        if candidate_ids_and_emails:
-            # TODO: IMO (osman also suggested this) Fail Fast
-            # TODO:                                 >>> if not:
-            # TODO:                                 >>>     raise()
-            # TODO:                                 >>> 'rest of the code goes here'
-            # TODO: Indentation becomes better
+        if not candidate_ids_and_emails:
+            raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
+                               % campaign.id,
+                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+        else:
             email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign,
                                                                                                 new_candidates_only,
                                                                                                 candidate_ids_and_emails
@@ -209,10 +208,6 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
             _update_blast_sends(email_campaign_blast_id, len(candidate_ids_and_emails),
                                 campaign, new_candidates_only)
             return list_of_new_email_html_or_text
-        else:
-            raise InvalidUsage('No candidates with emails found for email_campaign(id:%s).'
-                               % campaign.id,
-                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
     else:
         # For each candidate, create URL conversions and send the email via Celery task
         send_campaign_through_celery(campaign, list_ids, new_candidates_only)
@@ -323,7 +318,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_can
     :return: Returns array of candidate IDs in the campaign's smartlists.
              Is unique.
     """
-    if list_ids is None:
+    if not list_ids:
         # Get smartlists of this campaign
         list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                      smartlist_ids_only=True)
@@ -350,9 +345,7 @@ def get_email_campaign_candidate_ids_and_emails_with_celery(campaign, list_ids=N
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        # TODO: Can't we get this from relationship? campaign.smartlists?
-        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
-                                                                     smartlist_ids_only=True)
+        list_ids = campaign.smartlists
     if not list_ids:
         raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
                            error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
@@ -527,8 +520,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     :type blast_datetime: datetime.datetime | None
     :return:
     """
-    # TODO: I think we should solve that detached instance issue more gracefully.
-    # TODO: There must be some (you can see sms-svc code. I am passing objects in celery task and it is working fine)
+    # TODO: We should solve that detached instance issue more gracefully.
     candidate = Candidate.get_by_id(candidate_id)
     campaign = EmailCampaign.get_by_id(campaign_id)
     # Set the email campaign blast fields if they're not defined, like if this just a test

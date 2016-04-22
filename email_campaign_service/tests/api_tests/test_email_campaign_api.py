@@ -33,7 +33,6 @@ from email_campaign_service.tests.modules.handy_functions import (create_smartli
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
-                                                                  assert_campaign_failure,
                                                                   get_campaign_or_campaigns,
                                                                   assert_talent_pipeline_response,
                                                                   assert_campaign_send,
@@ -385,11 +384,9 @@ class TestSendCampaign(object):
         created.
         """
         with app.app_context():
-            response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
+            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
                 email_campaign_of_user_first, talent_pipeline.id)
-            assert_campaign_failure(response, email_campaign_of_user_first, email_client=False,
-                         expected_status=requests.codes.OK)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):

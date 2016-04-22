@@ -193,9 +193,8 @@ class CampaignsTestsHelpers(object):
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
-        # TODO: Maybe rather than returning response, IMO we shoudl assert that no blast has been
-        # TODO: created for given campaign. As this is common code and assert should be in common as well
-        return response_post
+        assert_campaign_failure(response_post, campaign, email_client=False,
+                                expected_status=200)
 
     @classmethod
     def campaign_test_with_no_valid_candidate(cls, url, token, campaign_id):
@@ -433,3 +432,28 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     """
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]
+
+def assert_campaign_failure(response, campaign, email_client=False,
+                         expected_status=200):
+    """
+    This asserts that if some data was invalid while sending the campaign,
+    campaign sending fails and no blasts are created.
+    """
+    assert response.status_code == expected_status
+    assert response.json()
+    if not email_client:
+        json_resp = response.json()
+        assert str(campaign.id) in json_resp['message']
+    # Need to add this as processing of POST request runs on Celery
+    blasts = get_blasts(campaign)
+    assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
+    assert len(blasts) == 0
+
+
+def get_blasts(campaign):
+    """
+    This returns all the blasts associated with given campaign.
+    :param campaign: Valid campaign object.
+    """
+    db.session.commit()
+    return campaign.blasts.all()

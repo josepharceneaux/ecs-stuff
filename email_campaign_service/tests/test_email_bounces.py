@@ -6,7 +6,8 @@ Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
 """
 import time
 
-from email_campaign_service.common.campaign_services.custom_errors import CampaignException
+from polling import poll
+
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
@@ -40,16 +41,22 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email.update(address=invalid_email)
         db.session.commit()
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
-        # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
-        time.sleep(60)
-        # TODO: Above should use polling as already mentioned in TODO
-        db.session.commit()
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        assert email.is_bounced is True
+        poll(check_is_bounced, step=3, args=(candidate_ids[0],), timeout=100)
         campaign_blasts = campaign.blasts.all()
         assert len(campaign_blasts) == 1
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
+
+
+def check_is_bounced(candidate_id):
+    """
+    Returns email address of a specific candidate.
+    :param candidate_id: Candidate id.
+    :return: Email address.
+    """
+    db.session.commit()
+    email = CandidateEmail.query.filter_by(candidate_id=candidate_id).first()
+    return email.is_bounced
 
 
 def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
@@ -87,16 +94,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
             email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
             send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
-        # TODO: Add polling when Basit's  code for polling is in develop
-        time.sleep(60)
-        db.session.commit()
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        # first candidate has a valid email. So it is not bounced
-        assert email.is_bounced is False
-
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[1]).first()
-        # second candidate has an invalid email. So it is bounced
-        assert email.is_bounced is True
+        poll(check_is_bounced, step=3, args=(candidate_ids[1],), timeout=100)
 
         campaign_blasts = campaign.blasts.all()
         assert len(campaign_blasts) == 1
