@@ -333,24 +333,30 @@ def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_firs
     poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
 
 
-# def test_schedule_a_campaign_with_user_from_same_domain(candidate_first, smartlist_first, campaign_in_db, talent_pool, token_first, token_same_domain, candidate_device_first):
-#
-#     time.sleep(60)
-#     data = generate_campaign_schedule_data()
-#     response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
-#                                  expected_status=(HttpStatus.OK,))
-#     assert 'task_id' in response
-#     assert 'message' in response
-#     task_id = response['task_id']
-#     assert task_id
-#     poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_same_domain))
+def test_schedule_a_campaign_with_user_from_same_domain(candidate_first, smartlist_first, campaign_in_db,  talent_pool, token_first, token_same_domain,  candidate_device_first):
+
+    time.sleep(60)
+    data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+    response = schedule_campaign(campaign_in_db['id'], data, token_same_domain,
+                                 expected_status=(HttpStatus.OK,))
+    assert 'task_id' in response
+    assert 'message' in response
+    task_id = response['task_id']
+    assert task_id
+    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
 
 
 def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent_pool, candidate_first, smartlist_first):
-
+    time.sleep(60)
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-    response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
-    assert response.status_code == 200
+    response = schedule_campaign(campaign_in_db['id'], data, token_first,
+                                 expected_status=(HttpStatus.OK,))
+    assert 'task_id' in response
+    assert 'message' in response
+    task_id = response['task_id']
+    assert task_id
+    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
     response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
     assert response.status_code == 200
@@ -359,4 +365,4 @@ def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent
     assert 'message' in response
     task_id = response['task_id']
     assert task_id
-    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first), kwargs={'expected_count':2})
