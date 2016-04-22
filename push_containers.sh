@@ -15,8 +15,10 @@ fi
 
 # Consider error if branch is master and production was specified
 
-branch=`git branch | grep '*' | awk '{ print $NF }'`
 timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
+timestamp_tag="built-at-$timestamp"
+echo "Using tag ${timestamp_tag}"
+git --version
 
 for app_index in ${!FLASK_APPS[@]}
 
@@ -33,7 +35,6 @@ do
 	echo $tag_command
         eval $tag_command
 
-	timestamp_tag="$branch-$timestamp"
 	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:${timestamp_tag} ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
