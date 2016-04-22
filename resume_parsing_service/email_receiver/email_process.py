@@ -35,9 +35,9 @@ S3_CLIENT = boto3.client(
 def lambda_handler(event, unused_context):
     """
     Extracts a resume attachment from an email uploaded to S3 and sends it to resumeParsing.
-    :param event:
-    :param unused_context:
-    :return:
+    :param dict event: The Lambda event dictionary.
+    :param unused_context: A default  aws-lambda arg that is not used in this instance.
+    :return None:
     """
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).decode('utf8')
@@ -59,9 +59,9 @@ def lambda_handler(event, unused_context):
 def validate_email_file(email_file, key):
     """
     Consumes a email file, validates proper to/from, and extracts a supplied hash using '+'.
-    :param email_file:
-    :param key:
-    :return (str sender, str talent_pool_hash):
+    :param email.message.Message email_file: Python std type email message.
+    :param str key: The S3 key/"filename".
+    :return tuple (str sender, str talent_pool_hash):
     """
     sender = email_file.get('From')
     if not sender:
@@ -81,8 +81,8 @@ def validate_email_file(email_file, key):
 def get_user_access_token(email_address):
     """
     Retrieves a user's access token from the database and refreshes it if needed.
-    :param str email_address:
-    :return str access_token:
+    :param str email_address: The email address being used to retrieve an access token.
+    :return str: This is the Token.access_token we need to authenticate our getTalent API calls.
     """
     user = session.query(User).filter(User.email == email_address).first()
     if not user:
@@ -121,15 +121,15 @@ def get_email_attachment(email_file, key):
 def get_desired_talent_pool(simple_hash):
     """
     Queries the database for a talent_pool.id based on the simple_hash attr for it.
-    :param str simple_hash:
-    :return int talent_pool.id:
+    :param str simple_hash: A < 10 char string that uniquely identifies a talent pool without
+                            exposing the id.
+    :return int:
     """
     session.commit() # Hacky fix for multiple sessions when testing =/
     talent_pool = session.query(TalentPool).filter(TalentPool.simple_hash == simple_hash).first()
     if not talent_pool:
         raise SQLAlchemyError('Unable to get talent_pool from hash {}'.format(simple_hash))
     return talent_pool.id
-
 
 
 def utcnow():
@@ -143,8 +143,8 @@ def utcnow():
 def refresh_token(token_obj):
     """
     Refreshes an expired token.
-    :param Token token_obj:
-    :return Token:
+    :param Token token_obj: A getTalent auth token.
+    :return str: An updated access token after refreshing an expired access token.
     """
     grant_type = 'refresh_token'
     client_id = token_obj.client_id
@@ -172,15 +172,15 @@ def refresh_token(token_obj):
 def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
     """
     Formats and sends request to resumeParsingService
-    :param str access_token:
-    :param str raw_attachment:
-    :param int talent_pool_id:
-    :param str key:
+    :param str access_token: The access token used to authenticate API calls.
+    :param str raw_attachment: This is a b64 encoded file (resume).
+    :param int talent_pool_id: The talent pool that we wish to add this to (an arg in resume service)
+    :param str key: The S3 key which is used for documenting exceptions raised in this process.
     :return None:
     """
     attachment_filename = raw_attachment.get_filename()
     headers = {
-        'Authorization': 'Bearer {}'.format(access_token),
+        'Authorization': 'Bearer {}'.format(access_token)
     }
     with open('/tmp/' + attachment_filename, 'w') as outfile:
         outfile.write(raw_attachment.get_payload().decode('base64'))
@@ -202,4 +202,3 @@ def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
     else:
         print 'Candidate created from {}, with id {}'.format(
             key, response_content['candidate']['id'])
-    return True

@@ -32,21 +32,30 @@ def get_library_requirements():
 def get_immediate_subdirectories(a_dir):
     """
     :param str a_dir: The directory we want to get the subdirectories of.
-    :return:
+    :return list:
     """
     return [name for name in os.listdir(a_dir)
             if os.path.isdir(os.path.join(a_dir, name))]
 
 
 def make_deployment_dir():
-    """Creates a deployment directory"""
+    """Creates a deployment directory.
+    *** CAUTION ***
+    Deployments should be handled by a DevOps or the DRI for this service to avoid trying to make
+    the directories at the same time (rare).
+    The lines:
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    Does create a small race condition window
+    (http://stackoverflow.com/questions/273192/how-to-check-if-a-directory-exists-and-create-it-if-necessary).
+    :return tuple (str, str):
+    """
     all_deployment_directories = get_immediate_subdirectories(ROOT_DEPLOYMENTS_DIR)
     max_deployment_number = -1
     for deployment_dir in all_deployment_directories:
         dir_name_elements = deployment_dir.split("_")
-        if len(dir_name_elements) == 2:
-            if int(dir_name_elements[1]) > max_deployment_number:
-                max_deployment_number = int(dir_name_elements[1])
+        if int(dir_name_elements[1]) > max_deployment_number:
+            max_deployment_number = int(dir_name_elements[1])
 
     if max_deployment_number == -1:
         max_deployment_number = 0
@@ -79,8 +88,10 @@ def _copy_deployment_files(deployment_dir):
     :param str deployment_dir:
     :return:
     """
-    lib_cmd = "cp -r {0} {1}".format('usr', deployment_dir).split()
-    unused_lib_cmd_code = subprocess.call(lib_cmd, shell=False)
+    # Keeping this commented out, will likely reinclude this when/if we move resumeParsing to
+    # AWS Lambda. `usr` contains binaries built on an Amazon AMI.
+    # lib_cmd = "cp -r {0} {1}".format('usr', deployment_dir).split()
+    # unused_lib_cmd_code = subprocess.call(lib_cmd, shell=False)
     for deployment_file in DEPLOYMENT_FILES:
         if os.path.exists(deployment_file):
             cmd = "cp {0} {1}".format(deployment_file, deployment_dir).split()

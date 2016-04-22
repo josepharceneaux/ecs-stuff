@@ -42,7 +42,6 @@ VALID_EMAILS = [
 def test_validate_email_files():
     """
     Tests that all emails with valid hashes and senders are parsed out successfully.
-    :return None:
     """
     for electronic_mail in VALID_EMAILS:
         with open(electronic_mail, 'r') as infile:
@@ -56,7 +55,6 @@ def test_no_hash_fails():
     """
     Asserts that no supplied hash, ie a '+rndmstring' after the email but before the '@', will
     raise a UserWarning.
-    :return:
     """
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'noHash', 'r') as infile:
@@ -68,7 +66,6 @@ def test_get_email_attachment_with_content():
     """
     Asserts that with valid emails we are able to parse out a raw attachment of
     email.message.Message.
-    :return:
     """
     for electronic_mail in VALID_EMAILS:
         with open(electronic_mail, 'r') as infile:
@@ -82,7 +79,6 @@ def test_get_attachment_with_multiples():
     """
     Tests that multiple files raises a UserWarning. Emails can only be parsed when they have one
     attachment.
-    :return:
     """
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'multipleFiles', 'r') as infile:
@@ -90,12 +86,10 @@ def test_get_attachment_with_multiples():
         raw_attachment = get_email_attachment(email_file, 'unused Key')
 
 
-
 def test_get_attachment_no_content():
     """
     Tests emails that are sent without content. Includes signature and no signature.
     **Note** in testing a completely blank email has the content of `\r\n`.
-    :return:
     """
     for noContentEmail in ['noContent', 'noContent2']:
         with open(EMAIL_FILES_ROOT + noContentEmail, 'r') as infile:
@@ -108,7 +102,6 @@ def test_get_attachment_no_content():
 def test_get_attachment_no_file():
     """
     Test that an email with no file raises a UserWarning.
-    :return:
     """
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'noAttachment', 'r') as infile:
@@ -120,7 +113,6 @@ def test_emails_with_forwarding():
     """
     Tests emails that have been forwarded have identical payload structures to single recipient
     messages. The following emails have been directly forwarded or forwarded twice.
-    :return:
     """
     for forwarded_email in ['forwarded', 'secondForward']:
         with open(EMAIL_FILES_ROOT + forwarded_email, 'r') as infile:
@@ -138,7 +130,6 @@ def test_get_user_access_token(user_fixture, token_fixture):
     Test that we can retrieve tokens with our helper.
     :param user_fixture:
     :param token_fixture:
-    :return:
     """
     token = get_user_access_token(user_fixture.email)
     assert token
@@ -148,7 +139,6 @@ def test_get_token_with_bad_email(token_fixture):
     """
     Test that a not registered email raises an error (no spam/outsiders!).
     :param token_fixture:
-    :return:
     """
     with pytest.raises(UserWarning):
         unused_token = get_user_access_token('invalid@nevervalid.com')
@@ -158,7 +148,6 @@ def test_get_valid_hash(talent_pool_fixture):
     """
     Test that we can retrive an id based on a valid hash.
     :param talent_pool_fixture:
-    :return:
     """
     simple_hash = talent_pool_fixture.simple_hash
     desired_id = talent_pool_fixture.id
@@ -170,7 +159,6 @@ def test_raise_invalid_hash(talent_pool_fixture):
     """
     Test that a hash not in our database raises an error.
     :param talent_pool_fixture:
-    :return:
     """
     with pytest.raises(SQLAlchemyError):
         simple_hash = 'potato'
@@ -184,7 +172,6 @@ def test_refresh_token_refreshes(expired_token_fixture):
     """
     Test that we can refresh an expired token.
     :param expired_token_fixture:
-    :return:
     """
     old_access_token = expired_token_fixture.access_token
     new_access_token = refresh_token(expired_token_fixture)
@@ -200,7 +187,6 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
     :param token_fixture:
     :param talent_pool_fixture:
     :param user_fixture:
-    :return:
     """
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
