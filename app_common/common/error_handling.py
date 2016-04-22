@@ -1,4 +1,5 @@
 import inspect
+import json
 
 __author__ = 'oamasood'
 
@@ -102,6 +103,7 @@ def register_error_handlers(app, logger):
         response = jsonify(error.to_dict())
         logger.warn("Requested resource not found for the app %s as: %s", app.import_name,
                     request.url if has_request_context() else None)
+        logger.warn("NotFoundError: %s" % json.dumps(error.to_dict()))
         return response, error.http_status_code()
 
     @app.errorhandler(ForbiddenError)
@@ -121,6 +123,7 @@ def register_error_handlers(app, logger):
         logger.warn("Resource not found for app %s: %s", app.import_name,
                     request.url if has_request_context() else None)
         response = jsonify(error.to_dict())
+        logger.warn("NotFoundError: %s" % json.dumps(error.to_dict()))
         return response, error.http_status_code()
 
     @app.errorhandler(ForbiddenError)
