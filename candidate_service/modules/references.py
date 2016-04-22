@@ -68,7 +68,7 @@ def get_references(candidate):
             reference_web_address=_get_reference_web_addresses(reference)
         )
         # Remove keys with empty values and strip each value
-        return_dict = purge_dict(_dict=return_dict, strip=False)
+        return_dict = purge_dict(dictionary=return_dict, strip=False)
         return_list.append(return_dict)
 
     return return_list
