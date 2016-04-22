@@ -11,10 +11,9 @@ if [[ $1 && $1 == "prod" ]] ; then
     production="true"
 fi
 
-branch=`git branch | grep '*' | awk '{ print $NF }'`
-
 # Consider error if branch is master and production was specified
 
+branch=`git branch | grep '*' | awk '{ print $NF }'`
 timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
 
 for app_index in ${!FLASK_APPS[@]}
