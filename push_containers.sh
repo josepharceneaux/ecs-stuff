@@ -11,6 +11,12 @@ if [[ $1 && $1 == "prod" ]] ; then
     production="true"
 fi
 
+branch=`git branch | grep '*' | awk '{ print $NF }'`
+
+# Consider error if branch is master and production was specified
+
+timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
+
 for app_index in ${!FLASK_APPS[@]}
 
 do
@@ -25,6 +31,12 @@ do
 	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:latest"
 	echo $tag_command
         eval $tag_command
+
+	timestamp_tag="$branch-$timestamp"
+	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:${timestamp_tag} ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
+	echo $tag_command
+        eval $tag_command
+
 	push_command="docker push ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:latest"
 	echo $push_command
         eval $push_command
