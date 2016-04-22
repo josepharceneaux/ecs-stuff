@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Push containers built by Jenkins to either staging or production
+
 eval $(aws ecr get-login --region us-east-1)
 
 FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service")
