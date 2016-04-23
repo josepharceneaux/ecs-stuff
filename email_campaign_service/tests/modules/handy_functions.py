@@ -166,7 +166,7 @@ def send_campaign(campaign, access_token):
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
     time.sleep(20)
-    blasts = get_blasts_with_polling(campaign)
+    blasts = get_blasts_with_polling(campaign, 1, 100)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
     return response
@@ -287,11 +287,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     if not email_client:
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
+        time.sleep(10)
     # Need to add this as processing of POST request runs on Celery
-    blasts = get_blasts_with_polling(campaign)
+    blasts = get_blasts_with_polling(campaign, 1, 100)
 
     assert blasts, 'Email campaign blasts not found'
-    assert len(blasts) == 1
     # assert on sends
     assert_blast_sends(campaign, expected_count, abort_time_for_sends=abort_time_for_sends)
     campaign_sends = campaign.sends.all()
@@ -338,11 +338,11 @@ def get_sends(campaign, blast_index, expected_count):
         return False
 
 
-def get_blasts_with_polling(campaign):
+def get_blasts_with_polling(campaign, expected_count, timeout):
     """
-    This polls the result of blasts of a campaign for 10s.
+    This polls the result of blasts of a campaign for 150s.
     """
-    return poll(get_blasts, step=3, args=(campaign,), timeout=300)
+    return poll(get_blasts, step=3, args=(campaign, expected_count), timeout=timeout)
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100):

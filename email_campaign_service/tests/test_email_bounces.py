@@ -14,8 +14,10 @@ from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
+from email_campaign_service.tests.modules.handy_functions import get_blasts_with_polling
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate, send_campaign_email_to_candidate
+from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
+                                                                  send_campaign_email_to_candidate)
 
 
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
@@ -42,8 +44,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
         poll(check_is_bounced, step=3, args=(candidate_ids[0],), timeout=100)
-        campaign_blasts = campaign.blasts.all()
-        assert len(campaign_blasts) == 1
+        campaign_blasts = get_blasts_with_polling(campaign, 1, 20)
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
@@ -112,11 +113,8 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         response = requests.post(
             EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
-        time.sleep(30)
 
-        db.session.commit()
-        campaign_blasts = campaign.blasts.all()
-        assert len(campaign_blasts) == 2
+        campaign_blasts = get_blasts_with_polling(campaign, 2, 100)
 
         # Get second blast
         campaign_blast = campaign_blasts[1]

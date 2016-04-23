@@ -209,7 +209,7 @@ class CampaignsTestsHelpers(object):
             json_resp = response.json()
             assert str(campaign.id) in json_resp['message']
         # Need to add this as processing of POST request runs on Celery
-        blasts = get_blasts(campaign)
+        blasts = get_blasts(campaign, 0)
         assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
         assert len(blasts) == 0
 
@@ -451,10 +451,15 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
             (invalid_ids[1], ResourceNotFound.http_status_code())]
 
 
-def get_blasts(campaign):
+def get_blasts(campaign, expected_count):
     """
     This returns all the blasts associated with given campaign.
     :param campaign: Valid campaign object.
+    :param expected_count: How many blasts are expected.
     """
     db.session.commit()
-    return campaign.blasts.all()
+    blasts = campaign.blasts.all()
+    if len(blasts) >= expected_count:
+        return blasts
+    else:
+        return False
