@@ -2,7 +2,7 @@ import json
 import requests
 from ..utils.validators import raise_if_not_instance_of
 from ..routes import CandidatePoolApiUrl, EmailCampaignUrl
-from ..utils.api_utils import (DEFAULT_PAGE, MAX_NUMBER_OF_PAGES)
+from ..utils.api_utils import DEFAULT_PAGE
 from ..utils.handy_functions import http_request, create_oauth_headers
 
 
@@ -53,11 +53,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
                                                               params, access_token, user_id)
     response_body = response.json()
     candidates = response_body['candidates']
-    max_pages = response_body['max_pages']
-    if max_pages < MAX_NUMBER_OF_PAGES:
-        no_of_pages = max_pages
-    else:
-        no_of_pages = MAX_NUMBER_OF_PAGES
+    no_of_pages = response_body['max_pages']
     if no_of_pages > DEFAULT_PAGE:
         for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
             next_page = current_page + DEFAULT_PAGE

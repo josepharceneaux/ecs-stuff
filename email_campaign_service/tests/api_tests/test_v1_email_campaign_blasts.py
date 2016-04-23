@@ -113,7 +113,7 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == expected_sends_count
 
-        assert_blast_sends(sent_campaign, expected_sends_count, blast_index=4, abort_time_for_sends=100)
+        assert_blast_sends(sent_campaign, expected_sends_count, blast_index=4, abort_time_for_sends=300)
         #  Test GET blasts of email campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))

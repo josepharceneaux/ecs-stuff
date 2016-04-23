@@ -27,7 +27,6 @@ from ..utils.validators import raise_if_not_instance_of
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
 MAX_PAGE_SIZE = 50
-MAX_NUMBER_OF_PAGES = 10
 
 
 class ApiResponse(Response):
