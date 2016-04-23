@@ -548,7 +548,7 @@ class TestSendCampaign(object):
                                          email_campaign_id=campaign.id)
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=150)
+        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
 
 
 # Test for healthcheck
