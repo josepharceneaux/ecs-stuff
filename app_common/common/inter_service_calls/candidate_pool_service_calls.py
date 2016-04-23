@@ -1,8 +1,8 @@
 import json
 import requests
+from ..utils.api_utils import DEFAULT_PAGE
 from ..utils.validators import raise_if_not_instance_of
 from ..routes import CandidatePoolApiUrl, EmailCampaignUrl
-from ..utils.api_utils import DEFAULT_PAGE
 from ..utils.handy_functions import http_request, create_oauth_headers
 
 
