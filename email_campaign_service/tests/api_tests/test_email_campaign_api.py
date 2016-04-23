@@ -416,7 +416,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_candidate_having_no_email.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_failure(response, campaign_with_candidate_having_no_email, False, requests.codes.OK)
+        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email, False, requests.codes.OK)
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -443,7 +443,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_failure(response, campaign_with_valid_candidate, False, requests.codes.OK)
+        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_valid_candidate, False, requests.codes.OK)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,

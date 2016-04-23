@@ -345,7 +345,8 @@ def get_email_campaign_candidate_ids_and_emails_with_celery(campaign, list_ids=N
     """
     if list_ids is None:
         # Get smartlists of this campaign
-        list_ids = campaign.smartlists
+        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
+                                                                     smartlist_ids_only=True)
     if not list_ids:
         raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
                            error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
