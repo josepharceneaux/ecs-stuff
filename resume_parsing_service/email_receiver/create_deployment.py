@@ -12,7 +12,11 @@ import os
 import subprocess
 import zipfile
 
+import argparse
 
+parser = argparse.ArgumentParser(description='Create an AWS Lambda Deployment for resume emails')
+parser.add_argument('--env', required=True, help='Which environment would you like to create a build for?')
+args = parser.parse_args()
 ROOT_DEPLOYMENTS_DIR = "./deployments"
 
 """
@@ -21,6 +25,12 @@ Only the files listed here, and the libraries in the requirements.txt
 file will be included in the deployment.
 """
 DEPLOYMENT_FILES = ['email_process.py']
+
+if args.env == 'prod':
+    print 'Building a prod deployment'
+    DEPLOYMENT_FILES.append('settings/prod/settings.py')
+else:
+    print 'local'
 
 
 def get_library_requirements():

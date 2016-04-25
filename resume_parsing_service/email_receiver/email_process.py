@@ -10,23 +10,22 @@ lamda_handler() is called from AWS lambda and attempts to create a candidate fro
 import urllib
 import datetime
 import email
+import json
 import logging
 import logging.config
 import loggly.handlers
 import re
-import json
 
 import boto3
 import pytz
 import requests
 from sqlalchemy.exc import SQLAlchemyError
 
-from .models import session, Client, TalentPool, Token, User
+from models import session, Client, TalentPool, Token, User
+import settings as SETTINGS
 
-RESUMES_BUCKET = 'resume-emails'
+
 EMAIL_HASH_PATTERN = re.compile(r'\+(.+?)@')
-AUTH_URL = 'http://localhost:8001/v1/oauth2/token'
-RESUMES_URL = 'http://localhost:8003/v1/parse_resume'
 PAYLOAD_QTY = 2
 
 logging.config.fileConfig('python.conf')
@@ -49,7 +48,7 @@ def lambda_handler(event, unused_context):
     bucket = event['Records'][0]['s3']['bucket']['name']
     key = urllib.unquote_plus(event['Records'][0]['s3']['object']['key']).decode('utf8')
     try:
-        email_obj = S3_CLIENT.get_object(Bucket=RESUMES_BUCKET, Key=key)
+        email_obj = S3_CLIENT.get_object(Bucket=SETTINGS.RESUMES_BUCKET, Key=key)
         email_file = email.message_from_string(email_obj['Body'].read())
     except Exception as exception:
         logger.info('Error getting object {} from bucket {}. {}.'.format(key, bucket, exception))
@@ -188,7 +187,7 @@ def refresh_token(token_obj):
         'refresh_token': token_obj.refresh_token
     }
     try:
-        refresh_response = requests.post(AUTH_URL, data=payload)
+        refresh_response = requests.post(SETTINGS.AUTH_URL, data=payload)
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exception:
         error_msg = 'Error during token refresh! {}'.format(exception.message)
         logger.info(error_msg)
@@ -219,7 +218,7 @@ def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
     }
     with open('/tmp/' + attachment_filename, 'r') as infile:
         try:
-            resume_response_response = requests.post(RESUMES_URL, headers=headers, data=payload,
+            resume_response_response = requests.post(SETTINGS.RESUMES_URL, headers=headers, data=payload,
                                                      files=dict(resume_file=infile))
             response_content = json.loads(resume_response_response.content)
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
