@@ -54,6 +54,8 @@ from candidate_service.common.utils.iso_standards import get_country_name, get_s
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
+# Handy functions
+from candidate_service.common.utils.handy_functions import purge_dict
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -870,31 +872,36 @@ def create_or_update_candidate_from_params(
     status_id = status_id or 1
     edit_datetime = datetime.datetime.utcnow()  # Timestamp for tracking edits
 
-    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
-    if first_name or last_name or middle_name or formatted_name:
-        if (first_name or last_name) and not formatted_name:
-            # If first_name and last_name given but not formatted_name, guess it
-            formatted_name = get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
-        elif formatted_name and (not first_name or not last_name):
-            # Otherwise, guess formatted_name from the other fields
-            first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
-
     # Get user's domain ID
     domain_id = domain_id_from_user_id(user_id)
 
-    # If candidate_id is not provided, Check if candidate exists
-    candidate_id_from_dice_profile = None
+    # Prevent creating a candidate if candidate ID is provided or found; Parse our candidate's names
     if is_creating:
-        candidate_id_from_dice_profile = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id)
 
-    # Raise an error if creation is requested and candidate_id is provided/found
-    if is_creating and (candidate_id or candidate_id_from_dice_profile):
-        raise InvalidUsage(error_message='Candidate already exists, creation failed',
-                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                           additional_error_info={'id': candidate_id})
+        # Cannot request candidate creation when supplying candidate's ID
+        if candidate_id:
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': candidate_id})
+
+        # Raise an error if creation is requested and candidate_id is found
+        candidate_id_from_dice_profile = get_candidate_id_if_found(dice_social_profile_id, dice_profile_id, domain_id)
+        if candidate_id_from_dice_profile:
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': candidate_id})
+
+        # Figure out first_name, last_name, middle_name, and formatted_name from inputs
+        if first_name or last_name or middle_name or formatted_name:
+            if (first_name or last_name) and not formatted_name:
+                # If first_name and last_name given but not formatted_name, guess it
+                formatted_name = get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
+            elif formatted_name and (not first_name or not last_name):
+                # Otherwise, guess formatted_name from the other fields
+                first_name, middle_name, last_name = get_name_fields_from_name(formatted_name)
 
     # Update is not possible without candidate ID
-    elif not candidate_id and is_updating:
+    if not candidate_id and is_updating:
         raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
@@ -978,7 +985,6 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
 
 
-
 def get_name_fields_from_name(formatted_name):
     names = formatted_name.split(' ') if formatted_name else []
     first_name, middle_name, last_name = '', '', ''
@@ -993,7 +999,6 @@ def get_name_fields_from_name(formatted_name):
     return first_name, middle_name, last_name
 
 
-# Todo: move function to user_service/module
 def domain_id_from_user_id(user_id):
     """
     Function will return the domain ID of the user if found, else None
@@ -1092,11 +1097,11 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
                    'last_name': last_name, 'formatted_name': formatted_name,
                    'objective': objective, 'summary': summary, 'filename': resume_url}
 
-    # Remove keys with None values
-    update_dict = dict((k, v) for k, v in update_dict.iteritems() if v is not None)
+    # Remove keys with empty values and strip each value
+    update_dict = purge_dict(update_dict)
 
     # Candidate will not be updated if update_dict is empty
-    if not any(update_dict):
+    if not update_dict:
         return candidate_id
 
     # Candidate ID must be recognized
