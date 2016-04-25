@@ -1,10 +1,11 @@
-"""Python logic for dealing with sent emails stored in s3. All exceptions and print statements
-   get sent to AWS CloudWatch when the lambda functions are deployed.
+"""
+Python logic for dealing with sent emails stored in s3. All exceptions and print statements
+get sent to AWS CloudWatch when the lambda functions are deployed.
 
-    Emails are sent to resumes+<talent_pool_hash>@imports.gettalent.com
-    Amazon SES uploads that email as a text file to S3.
-    That s3 bucket triggers a lambda function on file upload.
-    lamda_handler() is called from AWS lambda and attempts to create a candidate from the resume.
+Emails are sent to resumes+<talent_pool_hash>@imports.gettalent.com
+Amazon SES uploads that email as a text file to S3.
+That s3 bucket triggers a lambda function on file upload.
+lamda_handler() is called from AWS lambda and attempts to create a candidate from the resume.
 """
 import urllib
 import datetime
@@ -27,8 +28,8 @@ PAYLOAD_QTY = 2
 
 S3_CLIENT = boto3.client(
     's3',
-    aws_access_key_id='AKIAJBUXGOYRGOGOMULA',
-    aws_secret_access_key='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'
+    # aws_access_key_id='AKIAJBUXGOYRGOGOMULA',
+    # aws_secret_access_key='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'
 )
 
 

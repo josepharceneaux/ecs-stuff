@@ -7,23 +7,15 @@ import pytest
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from resume_parsing_service.emailReceiver.email_process import get_desired_talent_pool
-from resume_parsing_service.emailReceiver.email_process import get_email_attachment
-from resume_parsing_service.emailReceiver.email_process import get_user_access_token
-from resume_parsing_service.emailReceiver.email_process import send_resume_to_service
-from resume_parsing_service.emailReceiver.email_process import refresh_token
-from resume_parsing_service.emailReceiver.email_process import validate_email_file
-from resume_parsing_service.tests.test_fixtures import client_fixture
-from resume_parsing_service.tests.test_fixtures import client_fixture2
-from resume_parsing_service.tests.test_fixtures import culture_fixture
-from resume_parsing_service.tests.test_fixtures import domain_fixture
-from resume_parsing_service.tests.test_fixtures import expired_token_fixture
-from resume_parsing_service.tests.test_fixtures import org_fixture
-from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
-from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.tests.test_fixtures import token_fixture
-from resume_parsing_service.tests.test_fixtures import user_fixture
-from resume_parsing_service.tests.test_fixtures import user_group_fixture
+from resume_parsing_service.email_receiver.email_process import (
+    get_desired_talent_pool, get_email_attachment, get_user_access_token, send_resume_to_service,
+    refresh_token, validate_email_file
+)
+from resume_parsing_service.tests.test_fixtures import (
+    client_fixture, client_fixture2, culture_fixture, domain_fixture, expired_token_fixture,
+    org_fixture, talent_pool_fixture, talent_pool_group_fixture, token_fixture, user_fixture,
+    user_group_fixture
+)
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
@@ -59,7 +51,7 @@ def test_no_hash_fails():
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'noHash', 'r') as infile:
             email_file = email.message_from_file(infile)
-        valid_sender, invalid_hash = validate_email_file(email_file, 'unused Key')
+        unused_sender, unused_invalid_hash = validate_email_file(email_file, 'unused Key')
 
 
 def test_get_email_attachment_with_content():
@@ -83,7 +75,7 @@ def test_get_attachment_with_multiples():
     with pytest.raises(UserWarning):
         with open(EMAIL_FILES_ROOT + 'multipleFiles', 'r') as infile:
             email_file = email.message_from_file(infile)
-        raw_attachment = get_email_attachment(email_file, 'unused Key')
+        unused_attachment = get_email_attachment(email_file, 'unused Key')
 
 
 def test_get_attachment_no_content():
@@ -91,8 +83,8 @@ def test_get_attachment_no_content():
     Tests emails that are sent without content. Includes signature and no signature.
     **Note** in testing a completely blank email has the content of `\r\n`.
     """
-    for noContentEmail in ['noContent', 'noContent2']:
-        with open(EMAIL_FILES_ROOT + noContentEmail, 'r') as infile:
+    for no_content_email in ['noContent', 'noContent2']:
+        with open(EMAIL_FILES_ROOT + no_content_email, 'r') as infile:
             email_file = email.message_from_file(infile)
         raw_attachment = get_email_attachment(email_file, 'unused Key')
         assert raw_attachment

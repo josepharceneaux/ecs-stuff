@@ -1,9 +1,11 @@
 """
 Script will create an AWS Lambda function deployment.
+
 It expects there to be a deployments directory and it will create a
 deployment of the form:
 deployment_n
 where n is incremented for each deployment based on the existing deployment directories.
+
 This has been modified and linted from https://github.com/youngsoul/AlexaDeploymentSample
 """
 import os
@@ -86,7 +88,6 @@ def _copy_deployment_files(deployment_dir):
     """
     Puts deployment files in a specified deployment directory.
     :param str deployment_dir:
-    :return:
     """
     # Keeping this commented out, will likely reinclude this when/if we move resumeParsing to
     # AWS Lambda. `usr` contains binaries built on an Amazon AMI.
@@ -104,6 +105,7 @@ def zipdir(dir_path=None, zip_file_path=None, include_dir_in_zip=False):
     """
     Attribution:  I wish I could remember where I found this on the
     web.  To the unknown sharer of knowledge - thank you.
+
     Create a zip archive from a directory.
     Note that this function is designed to put files in the zip archive with
     either no parent directory or just one parent directory, so it will trim any
@@ -111,6 +113,7 @@ def zipdir(dir_path=None, zip_file_path=None, include_dir_in_zip=False):
     zip archive paths. This is generally the case when you want to just take a
     directory and make it into a zip file that can be extracted in different
     locations.
+
     :param str dir_path: path to the directory to archive. This is the only
     required argument. It can be absolute or relative, but only one or zero
     leading directories will be included in the zip archive.
