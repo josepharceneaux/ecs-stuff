@@ -47,7 +47,7 @@ def lambda_handler(event, unused_context):
         email_file = email.message_from_string(email_obj['Body'].read())
     except Exception as exception:
         print 'Error getting object {} from bucket {}. {}.'.format(key, bucket, exception)
-        raise exception
+        raise Exception
 
     validated_sender, talent_pool_hash = validate_email_file(email_file, key)
     access_token = get_user_access_token(validated_sender)
@@ -195,8 +195,8 @@ def send_resume_to_service(access_token, raw_attachment, talent_pool_id, key):
             resume_response_response = requests.post(RESUMES_URL, headers=headers, data=payload,
                                                      files=dict(resume_file=infile))
             response_content = json.loads(resume_response_response.content)
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as exception:
-            raise exception('Error during POST to resumeParsingService')
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            raise Exception('Error during POST to resumeParsingService')
     if resume_response_response.status_code is not requests.codes.ok:
         raise AssertionError('Candidate was not created from email {}. Content {}'.format(
             key, response_content))
