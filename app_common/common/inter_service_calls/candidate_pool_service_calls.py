@@ -47,6 +47,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param (int, long) list_id: smartlist id.
     :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
     """
+    # TODO--update comments above and add user_id in params and also comment why we need it
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
@@ -76,6 +77,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
     :param (str | None) access_token: access token of user
     """
+    # TODO--update comments above and add user_id in params and also comment why we need it
     raise_if_not_instance_of(list_id, (int, long))
     raise_if_not_instance_of(page, int)
     raise_if_not_instance_of(per_page, int)

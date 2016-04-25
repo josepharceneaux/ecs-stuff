@@ -425,6 +425,8 @@ class TestSendCampaign(object):
         candidates associat template_id=None):ed (with distinct email addresses). Email Campaign should be sent to
         both candidates.
         """
+
+        # TODO--above comment needs review
         campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))

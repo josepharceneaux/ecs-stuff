@@ -43,6 +43,7 @@ def get_candidates_from_smartlist(list_id, campaign, candidate_ids_only=False, u
     :param candidate_ids_only: Whether or not to get only ids of candidates
     :return:
     """
+    # TODO--assert on params
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None,  user_id=user_id)
     return candidates

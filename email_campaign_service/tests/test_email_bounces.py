@@ -55,6 +55,7 @@ def check_is_bounced(candidate_id):
     :param candidate_id: Candidate id.
     :return: Email address.
     """
+    # TODO--assert on param and also can we not define this within a model?
     db.session.commit()
     email = CandidateEmail.query.filter_by(candidate_id=candidate_id).first()
     return email.is_bounced
