@@ -432,3 +432,15 @@ def purge_dict(dictionary, strip=True):
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
+
+
+def get_phone_number_extension(phone_number):
+    """
+    Function will extract & return phone number's extension if provided
+    :return: phone number extension, may be 2 or 3 characters long
+    :rtype:  str | None
+    """
+    matched = re.match(r'([^a-zA-Z]+)([a-zA-Z]+\D*)(\d+)', phone_number)
+    if matched:
+        return matched.groups()[-1]
+    return None

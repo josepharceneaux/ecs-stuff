@@ -4,6 +4,7 @@ import re
 
 # Third Party
 import phonenumbers
+from phonenumbers.phonenumber import PhoneNumber
 import pycountry
 
 # Application Specific
@@ -25,6 +26,39 @@ def is_valid_email(email):
     """
     regex = """^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
     return email and re.match(regex, email)
+
+
+def parse_phone_number(phone_number, iso3166_country_code=None):
+    """
+    Function will parse phone number. If phone number does not have country code, it will look for
+      provided iso3166_country_code. If iso3166_country_code is not provided, it will default to 'US'.
+    :type phone_number:  str
+    :param phone_number: +14084056677
+    :type iso3166_country_code:  str
+    :param iso3166_country_code:  Alpha-2 code per ISO 3166 standards
+    :rtype:  PhoneNumber
+    :return  PhoneNumber(country_code=1, national_number=4084056677, extension=None,
+                         italian_leading_zero=None, number_of_leading_zeros=None, country_code_source=None,
+                         preferred_domestic_carrier_code=None)
+    """
+    # Format country code
+    iso3166_country_code = iso3166_country_code.upper() if iso3166_country_code else 'US'
+    try:
+        # Maybe the number is already internationally formatted
+        try:
+            return phonenumbers.parse(str(phone_number))
+        except phonenumbers.NumberParseException:
+            pass
+
+        # Maybe the country_code is correct
+        try:
+            return phonenumbers.parse(number=str(phone_number), region=iso3166_country_code)
+        except phonenumbers.NumberParseException:
+            raise InvalidUsage(error_message="format_phone_number({}, {}): Couldn't parse phone number".
+                               format(phone_number, iso3166_country_code))
+    except:
+        raise InvalidUsage(error_message="format_phone_number({}, {}): Received other exception".
+                           format(phone_number, iso3166_country_code))
 
 
 def format_phone_number(phone_number, country_code='US'):

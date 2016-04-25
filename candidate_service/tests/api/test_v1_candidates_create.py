@@ -9,6 +9,9 @@ import pycountry
 # Conftest
 from candidate_service.common.tests.conftest import *
 
+# Common utils
+from candidate_service.common.utils.handy_functions import get_phone_number_extension
+
 # Helper functions
 from helpers import AddUserRoles, get_country_code_from_name
 from candidate_service.common.routes import CandidateApiUrl
@@ -1012,7 +1015,7 @@ class TestCreatePhones(object):
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, data)
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
 
         # Assert data sent in = data retrieved
@@ -1021,6 +1024,27 @@ class TestCreatePhones(object):
         assert isinstance(can_phones, list)
         assert can_phones_data[0]['value'] == data['candidates'][0]['phones'][0]['value']
         assert can_phones_data[0]['label'] == data['candidates'][0]['phones'][0]['label']
+
+    def test_create_international_phone_number(self, access_token_first, user_first, talent_pool):
+        """
+        Test:  Create CandidatePhone using international phone number
+        Expect: 201, phone number must be formatted before inserting into db
+        """
+        from candidate_sample_data import generate_international_phone_number
+        # Create candidate
+        AddUserRoles.add_and_get(user_first)
+        data = GenerateCandidateData.phones([talent_pool.id], internationalize=True)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        candidate_phones = get_resp.json()['candidate']['phones']
+        assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
+        assert get_phone_number_extension(data['candidates'][0]['phones'][0]['value']) == candidate_phones[0]['extension']
+
 
     def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
         """
@@ -1077,7 +1101,7 @@ class TestCreatePhones(object):
         """
         AddUserRoles.add(user_first)
         data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones':[
-                {'label': 'Work', 'is_default': False, 'value': None}]}]}
+            {'label': 'Work', 'is_default': False, 'value': None}]}]}
 
         # Create candidate phone without value
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
