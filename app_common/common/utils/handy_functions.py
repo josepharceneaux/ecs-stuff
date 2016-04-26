@@ -419,10 +419,16 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(_dict):
+def purge_dict(dictionary, strip=True):
     """
     Function will "remove" dict's keys with empty values
-    :type _dict:  dict
+    :param strip:  if True, it will strip each value
+    :type strip:  bool
+    :type dictionary:  dict
     :rtype:  dict
     """
-    return {k: v for k, v in _dict.items() if v}
+    def clean(value): return value.strip() if isinstance(value, basestring) else value
+    if strip:
+        return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
+    else:
+        return {k: v for k, v in dictionary.items() if (v or clean(v))}

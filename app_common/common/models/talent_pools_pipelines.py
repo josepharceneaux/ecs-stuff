@@ -101,6 +101,12 @@ class TalentPipeline(db.Model):
         return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
             filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
 
+    def get_email_campaigns_count(self):
+        from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
+        from candidate_pool_service.common.models.smartlist import Smartlist
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+            filter(TalentPipeline.id == self.id).count()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
