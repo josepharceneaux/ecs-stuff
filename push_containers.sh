@@ -38,5 +38,7 @@ do
 	push_command="docker push ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
 	echo $push_command
         eval $push_command
+
+	# Update task definition for this service
     fi
 done
