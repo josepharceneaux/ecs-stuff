@@ -1,6 +1,8 @@
 """
 Test cases for Talent Cloud Search functionality
 """
+from random import randint
+import time, datetime
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import (Candidate, CandidateAddress, CandidateStatus, CandidateSource)
 from candidate_service.candidate_app import db, logger
@@ -8,10 +10,12 @@ from candidate_service.common.models.misc import CustomField, CustomFieldCategor
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from candidate_service.cloudsearch_constants import SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
+from candidate_service.tests.api.candidate_sample_data import college_majors
 from faker import Faker
-from random import randint
-import datetime
-import time
+from nameparser import HumanName
+# Common utilities
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.routes import CandidateApiUrl
 
 fake = Faker()
 
@@ -24,175 +28,80 @@ VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Islan
                         ('Seattle', 'Washington', '98158'))
 
 
-def populate_candidates(owner_user_id, count=1, first_name=True, middle_name=False, last_name=True, added_time=True,
-                        objective=False,
-                        phone=False, current_company=False, current_title=False, candidate_text_comment=False,
-                        source_id=None, city=False, state=False, zip_code=False, area_of_interest_ids=None,
-                        university=False, major=False, degree=False, university_start_year=False,
+def populate_candidates(access_token, talent_pool, owner_user_id, count=1, first_name=None, middle_name=None,
+                        last_name=None, added_time=True, objective=None,
+                        phone=False, company_name=None, job_title=None, candidate_text_comment=False,
+                        source_id=None, city=False, state=False, zip_code=False, areas_of_interest=None,
+                        school_name=None, major=None, degree_type=None, degree_title=None, university_start_year=False,
                         university_start_month=False, graduation_year=False, graduation_month=False,
                         military_branch=False, military_status=False, military_grade=False, military_to_date=False,
-                        military_from_date=False, candidate_skill_dicts=None, custom_fields_dict=None,
-                        candidate_experience_dict=None, update_now=True):
-    """
-    :param count:
-    :param owner_user_id:
-    :param first_name:
-    :type first_name: bool | str
-    :param middle_name:
-    :type middle_name: bool | str
-    :param last_name:
-    :type last_name: bool | str
-    :param added_time:
-    :type added_time: bool | datetime.date
-    :param objective:
-    :type objective: bool | str
-    :param phone:
-    :param current_company:
-    :type current_company: bool | str
-    :param current_title:
-    :type current_title: bool | str
-    :param candidate_text_comment:
-    :type candidate_text_comment: bool | str
-    :param source_id:
-    :type source_id: None | int
-    :param city:
-    :type city: bool | str
-    :param state:
-    :type state: bool | str
-    :param zip_code:
-    :type zip_code: bool | str | long
-    :param area_of_interest_ids: List of areas of interest ids
-    :type area_of_interest_ids: None | list[int]
-    :param university:
-    :type university: bool | str
-    :param major:
-    :type major: bool | str
-    :param degree:
-    :type degree: bool | str
-    :param university_start_year:
-    :param university_start_month:
-    :param graduation_year:
-    :param graduation_month:
-    :param military_branch:
-    :type military_branch: bool | str
-    :param military_status:
-    :type military_status: bool | str
-    :param military_grade:
-    :type military_grade: bool | str
-    :param military_to_date:
-    :type military_to_date: datetime.date
-    :param military_from_date:
-    :type military_from_date: datetime.date
-    :param candidate_skill_dicts
-    :type candidate_skill_dicts: None | list[dict[basestring, basestring | integer | datetime.date]]
-    :param custom_fields_dict: custom_field_id -> value
-    :type custom_fields_dict: dict[int, str] | None
-    :param candidate_experience_dict: dicts of organization, position, startMonth, startYear, endMonth, endYear,
-    isCurrent
-    :type candidate_experience_dict: None | dict
-    :param update_now: Will update immediately after creating all candidates. Set it to False, if willing to create
-    different combination of candidates and update at last to save time.
-    :return:
-    """
+                        military_from_date=False, skills=None, custom_fields_dict=None,
+                        experiences=None, update_now=True):
+
     candidate_ids = []
-    work_experience = {}
-    work_experiences = [candidate_experience_dict] if candidate_experience_dict else []
-    addresses = {}
-    educations = {}
-    email_address = {}
-    military_services = {}
-    degree_dict = {}
-    degree_bullets_dict = {}
-    aoi_ids = list()
-    custom_fields_list = list()
-
     for i in range(count):
-        data = {
-            'id': 'Not yet assigned',
-            'first_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(first_name, first_name),
-            'middle_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(middle_name, middle_name),
-            'last_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(last_name, last_name),
-            'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
-            'email': '%s@candidate.example.com' % (uuid.uuid4().__str__()),
-            'objective': {True: uuid.uuid4().__str__()[0:8], False: None}.get(objective, objective),
-            'candidate_text_comment': {True: '\n'.join(fake.sentences()), False: None}.get(
-                candidate_text_comment, candidate_text_comment),
-            'city': {True: VARIOUS_US_LOCATIONS[0][0], False: None}.get(city, city),
-            'state': {True: VARIOUS_US_LOCATIONS[0][1], False: None}.get(state, state),
-            'zip_code': {True: VARIOUS_US_LOCATIONS[0][2], False: None}.get(zip_code, zip_code),
-            'current_company': {True: uuid.uuid4().__str__()[0:8], False: None}.get(current_company, current_company),
-            'current_title': {True: uuid.uuid4().__str__()[0:8], False: None}.get(current_title, current_title),
-            'university': {True: uuid.uuid4().__str__()[0:8], False: None}.get(university, university),
-            'major_name': {True: uuid.uuid4().__str__()[0:8], False: None}.get(major, major),
-            'degree': {True: uuid.uuid4().__str__()[0:8], False: None}.get(degree, degree),
-            'military_branch': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_branch, military_branch),
-            'military_status': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_status, military_status),
-            'military_grade': {True: uuid.uuid4().__str__()[0:8], False: None}.get(military_grade, military_grade),
-            'military_from_date': {True: datetime.datetime.strptime(fake.date(), "%Y-%m-%d"), False: None}.get(
-                military_from_date, military_from_date),
-            'military_to_date': {True: datetime.datetime.today(), False: None}.get(military_to_date, military_to_date),
-            'source_id': source_id,
-            'area_of_interest_ids': area_of_interest_ids,
-            'candidate_skill_dicts': candidate_skill_dicts,
-            'custom_fields_dict': custom_fields_dict,
-            'candidate_experience_dict': candidate_experience_dict,
-        }
+        full_name = fake.name()
+        parsed_full_name = HumanName(full_name)
+        discipline = random.choice(college_majors().keys())
+        data = dict(candidates=[dict(
+            talent_pool_ids=dict(
+                add=[talent_pool.id]
+            ),
+            first_name=first_name or parsed_full_name.first,
+            middle_name=middle_name or parsed_full_name.middle,
+            last_name=last_name or parsed_full_name.last,
+            objective=objective or fake.bs(),
+            emails=[dict(
+                address=fake.safe_email()
+            )],
+            addresses=[dict(
+                address_line_1=fake.street_address(),
+                city=city or fake.city(),
+                state=state or fake.state(),
+                country_code=fake.country_code(),
+                zip_code=zip_code or fake.zipcode()
+            )],
+            phones=[dict(  # TODO: use international phone number
+                value='+14058769932'
+            )],
+            educations=[dict(
+                school_name=school_name or fake.first_name() + ' University',
+                city=fake.city(),
+                state=fake.state(),
+                degrees=[dict(
+                    title=degree_title or random.choice(college_majors()[discipline]),
+                    type=degree_type or random.choice(["Associate", "Bachelors", "Masters", "Doctoral"]),
+                    start_year=random.choice([year for year in range(1980, 2010)]),
+                    gpa=round(random.randint(2, 3) + random.random(), 2),
+                    bullets=[dict(
+                        major=major or discipline,
+                    )]
+                )]
+            )],
+            work_experiences=experiences or [dict(
+                position=job_title or fake.job(),
+                organization=company_name or fake.company()
+            )],
+            military_services=[dict(
+                branch=military_branch or fake.word(),
+                status=military_status or 'Active',
+                highest_grade=military_grade or None,
+                from_date=military_from_date or None,
+                to_date=military_to_date or None,
+                comments=fake.bs()
+            )],
+            skills=skills or [dict(
+                name=random.choice(['SQL', 'Excel', 'UNIX', 'Testing', 'Payroll', 'Finance', 'Sales', 'Accounting']),
+                months_used=random.randint(10, 120)
+            )],
+            areas_of_interest=areas_of_interest
+        )])
 
-        if data['email']:
-            email_address['address'] = data['email']
-        if data['current_company'] or data['current_title']:
-            work_experience['organization'] = data['current_company']
-            work_experience['position'] = data['current_title']
-        if data['city'] or data['state'] or data['zip_code']:
-            addresses['city'] = data['city']
-            addresses['state'] = data['state']
-            addresses['zip_code'] = data['zip_code']
-        if data['university'] or data['degree'] or data['major_name']:
-            educations['school_name'] = data['university']
-            degree_dict['type'] = data['degree']
-            educations['degrees'] = [degree_dict]
-            degree_bullets_dict['major'] = data['major_name']
-            degree_dict['bullets'] = [degree_bullets_dict]
-        if data['military_branch'] or data['military_status'] or data['military_grade']:
-            military_services['status'] = data['military_status']
-            military_services['branch'] = data['military_branch']
-            military_services['highest_grade'] = data['military_grade']
-            military_services['from_date'] = data['military_from_date']
-            military_services['to_date'] = data['military_to_date']
-            military_services['highest_rank'] = randint(0, 3)
-        if data['area_of_interest_ids']:
-            aoi_ids = [{"area_of_interest_id": aoi_id} for aoi_id in data['area_of_interest_ids']]
-        if data['custom_fields_dict']:
-            custom_fields_list.append(data['custom_fields_dict'])
+        # Send POST request to /v1/candidates
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token, data)
+        print response_info(create_resp)
+        candidate_ids.append(create_resp.json()['candidates'][0]['id'])
 
-        if work_experience:
-            work_experiences.append(work_experience)
-
-        candidate = create_or_update_candidate_from_params(
-            owner_user_id,
-            is_creating=True,
-            first_name=data['first_name'],
-            middle_name=data['middle_name'],
-            last_name=data['last_name'],
-            added_datetime=data['added_time'],
-            objective=data['objective'],
-            emails=[email_address],
-            work_experiences=work_experiences,
-            source_id=data['source_id'],
-            addresses=[addresses] if addresses else None,
-            educations=[educations] if educations else None,
-            areas_of_interest=aoi_ids,
-            military_services=[military_services] if military_services else None,
-            skills=data['candidate_skill_dicts'],
-            custom_fields=custom_fields_list
-            # major=data['major_name'],
-            # candidate_experience_dicts=data['candidate_experience_dicts'],
-        )
-        candidate_ids.append(candidate['candidate_id'])
-
-    if update_now:
-        # Update cloud_search
-        upload_candidate_documents.delay(candidate_ids)
     return candidate_ids
 
 
@@ -207,90 +116,36 @@ def _update_now(candidate_ids):
     return
 
 
-def get_source_product_id(candidate_ids):
-    source_product_id = []
-    for candidate_id in candidate_ids:
-        candidate_row = Candidate.query.filter_by(id=candidate_id).one()
-        source_product_id.append(candidate_row.source_product_id)
-    return source_product_id
+# TODO: Unused code. Remove if not necessary - Amir
+# def get_source_product_id(candidate_ids):
+#     source_product_id = []
+#     for candidate_id in candidate_ids:
+#         candidate_row = Candidate.query.filter_by(id=candidate_id).one()
+#         source_product_id.append(candidate_row.source_product_id)
+#     return source_product_id
 
 
-def test_upload_candidate_documents_in_domain(sample_user):
-    no_of_candidates = randint(2, 15)
-    candidate_ids = populate_candidates(count=no_of_candidates, owner_user_id=sample_user.id, update_now=False)
-    domain_id = sample_user.domain_id
-    _assert_search_results(domain_id, {'query': ''}, [])  # Check no candidate is returned for this domain.
-    upload_candidate_documents_in_domain(domain_id)
-    _assert_search_results(domain_id, {'query': ''}, candidate_ids)
+# TODO: Since we are using the API to create candidate, this tests are not necessary
+# def test_upload_candidate_documents_in_domain(user_first, access_token_first, talent_pool):
+#     no_of_candidates = randint(2, 15)
+#     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+#                                         count=no_of_candidates, owner_user_id=user_first.id)
+#     domain_id = sample_user.domain_id
+#     _assert_search_results(domain_id, {'query': ''}, [])  # Check no candidate is returned for this domain.
+#     upload_candidate_documents_in_domain(domain_id)
+#     _assert_search_results(domain_id, {'query': ''}, candidate_ids)
 
+# TODO: Since we are using the API to create candidate, this tests are not necessary
+# def test_upload_candidate_documents_of_user(sample_user, sample_user_2):
+#     # User 1 creates candidates
+#     populate_candidates(count=3, owner_user_id=sample_user.id, update_now=False)
+#     # User 2 creates candidates
+#     user_2_candidate_ids = populate_candidates(count=5, owner_user_id=sample_user_2.id, update_now=False)
+#     # Only upload user 2 candidates
+#     upload_candidate_documents_of_user(sample_user_2.id)
+#     # Assert only user 2's candidates appear in search results
+#     _assert_search_results(sample_user_2.domain_id, {'query': ''}, user_2_candidate_ids)
 
-def test_upload_candidate_documents_of_user(sample_user, sample_user_2):
-    # User 1 creates candidates
-    populate_candidates(count=3, owner_user_id=sample_user.id, update_now=False)
-    # User 2 creates candidates
-    user_2_candidate_ids = populate_candidates(count=5, owner_user_id=sample_user_2.id, update_now=False)
-    # Only upload user 2 candidates
-    upload_candidate_documents_of_user(sample_user_2.id)
-    # Assert only user 2's candidates appear in search results
-    _assert_search_results(sample_user_2.domain_id, {'query': ''}, user_2_candidate_ids)
-
-
-def _test_search_all_candidates_in_domain(sample_user):
-    """
-    Test search functionality should return all inserted candidates for domain
-    :param sample_user:
-    :return:
-    """
-    candidate_ids = populate_candidates(count=2, owner_user_id=sample_user.id, first_name=True, last_name=True)
-    _assert_search_results(sample_user.domain_id, {'query': ''}, candidate_ids)
-
-
-def _test_search_by_first_name(sample_user):
-    """
-    Test search candidates by first name
-    :param sample_user:
-    :return:
-    """
-    # Create candidate with first name and last name
-    first_name = 'Marilyn'
-    candidate_ids = populate_candidates(owner_user_id=sample_user.id, first_name=first_name, last_name=True)
-    _assert_search_results(sample_user.domain_id, {'query': first_name}, candidate_ids)
-
-
-def _test_search_by_last_name(sample_user):
-    """
-    Test to search candidates by last name
-    :param sample_user:
-    :return:
-    """
-    last_name = 'Lynn'
-    # Create candidate with last name
-    candidate_ids = populate_candidates(owner_user_id=sample_user.id, last_name=last_name)
-    _assert_search_results(sample_user.domain_id, {'query': last_name}, candidate_ids)
-
-
-def _test_search_by_current_company(sample_user):
-    """
-    Test to search candidates by current company
-    :param sample_user:
-    :return:
-    """
-    company_name = "Google"
-    candidate_ids = populate_candidates(count=5, owner_user_id=sample_user.id, objective=True, phone=True,
-                                        current_company=company_name)
-    _assert_search_results(sample_user.domain_id, {'query': company_name}, candidate_ids, check_for_equality=True)
-
-
-def _test_search_by_position_facet(sample_user):
-    """
-    Test to search candidates by position
-    :param sample_user:
-    :return:
-    """
-    current_title = "Senior Developer"
-    candidate_ids = populate_candidates(count=12, owner_user_id=sample_user.id, objective=True, phone=True,
-                                        current_company=True, current_title=current_title)
-    _assert_search_results(sample_user.domain_id, {'positionFacet': current_title}, candidate_ids)
 
 
 def _test_position_and_company(sample_user):
@@ -302,9 +157,9 @@ def _test_position_and_company(sample_user):
     company = "Apple"
     position = "CEO"
     # 10 other candidates at apple
-    populate_candidates(count=10, owner_user_id=sample_user.id, current_company=company, current_title=True)
-    ceo_at_apple = populate_candidates(count=1, owner_user_id=sample_user.id, current_company=company,
-                                       current_title=position)
+    populate_candidates(count=10, owner_user_id=sample_user.id, company_name=company, job_title=True)
+    ceo_at_apple = populate_candidates(count=1, owner_user_id=sample_user.id, company_name=company,
+                                       job_title=position)
     # Query for company Apple and position CEO, it should only return 1 candidate although Apple has 10 other employees
     search_vars = {'query': company, 'job_title': position}
     _assert_search_results(sample_user.domain_id, search_vars, ceo_at_apple, check_for_equality=True)
@@ -320,11 +175,11 @@ def _test_owner_facet(test_domain, sample_user, sample_user_2):
     """
     domain_id = test_domain.id
     # Populate 8 candidates for user_manager
-    user1_candidates = populate_candidates(count=8, owner_user_id=sample_user.id, current_company=True,
-                                           current_title=True, update_now=False)
+    user1_candidates = populate_candidates(count=8, owner_user_id=sample_user.id, company_name=True,
+                                           job_title=True, update_now=False)
     # Populate 4 candidates for passive user
-    user2_candidates = populate_candidates(count=4, owner_user_id=sample_user_2.id, current_company=True,
-                                           current_title=True, update_now=False)
+    user2_candidates = populate_candidates(count=4, owner_user_id=sample_user_2.id, company_name=True,
+                                           job_title=True, update_now=False)
     total_candidates = user1_candidates + user2_candidates
     _update_now(total_candidates)
     # Search for user_manager_candidates
@@ -341,11 +196,11 @@ def OK_test_sort_by_match(sample_user):
     """
     TODO: Remove OK_ in name once comments in candidates creation is fixed.
     """
-    candidate1 = populate_candidates(owner_user_id=sample_user.id, current_company="Newvision", update_now=False)
-    candidate2 = populate_candidates(owner_user_id=sample_user.id, current_company="Newvision",
+    candidate1 = populate_candidates(owner_user_id=sample_user.id, company_name="Newvision", update_now=False)
+    candidate2 = populate_candidates(owner_user_id=sample_user.id, company_name="Newvision",
                                      objective="Willing to join Newvision",
                                      update_now=False)
-    candidate3 = populate_candidates(owner_user_id=sample_user.id, current_company="Newvision",
+    candidate3 = populate_candidates(owner_user_id=sample_user.id, company_name="Newvision",
                                      objective="Willing to join Newvision",
                                      candidate_text_comment="Eligible for joining Newvision", update_now=False)
     worst_match_order = candidate1 + candidate2 + candidate3
@@ -370,9 +225,9 @@ def _test_search_by_university(sample_user):
 
     university1 = 'University Of Washington'
     university2 = 'Oklahoma State University'
-    university1_candidates = populate_candidates(owner_user_id=sample_user.id, university=university1)
+    university1_candidates = populate_candidates(owner_user_id=sample_user.id, school_name=university1)
     # Create other candidates with other university, check
-    university2_candidates = populate_candidates(count=2, owner_user_id=sample_user.id, university=university2)
+    university2_candidates = populate_candidates(count=2, owner_user_id=sample_user.id, school_name=university2)
     _assert_search_results(sample_user.domain_id, {'school_name': university1}, university1_candidates)
     total_candidates = university1_candidates + university2_candidates
     _assert_search_results(sample_user.domain_id, {'school_name': [university1, university2]},
@@ -539,9 +394,9 @@ def _to_fix_test_search_by_major(sample_user):
     major1 = 'Electrical Engineering'
     major2 = 'Computer Science'
     major1_candidates = populate_candidates(count=2, owner_user_id=sample_user.id, major=major1,
-                                            university=True, update_now=False)
+                                            school_name=True, update_now=False)
     major2_candidates = populate_candidates(count=7, owner_user_id=sample_user.id, major=major2,
-                                            university=True, update_now=False)
+                                            school_name=True, update_now=False)
     _update_now(major1_candidates + major2_candidates)
     _assert_search_results(domain_id, {'major': major1}, major1_candidates)
     _assert_search_results(domain_id, {'major': major2}, major2_candidates, wait=False)
@@ -557,10 +412,10 @@ def _test_search_by_degree(sample_user):
     domain_id = sample_user.domain_id
     degree1 = 'Masters'
     degree2 = 'Bachelors'
-    master_candidates = populate_candidates(count=3, owner_user_id=sample_user.id, degree=degree1,
-                                            university=True, update_now=False)
-    bachelor_candidates = populate_candidates(count=4, owner_user_id=sample_user.id, degree=degree2,
-                                              university=True, update_now=False)
+    master_candidates = populate_candidates(count=3, owner_user_id=sample_user.id, degree_title=degree1,
+                                            school_name=True, update_now=False)
+    bachelor_candidates = populate_candidates(count=4, owner_user_id=sample_user.id, degree_title=degree2,
+                                              school_name=True, update_now=False)
     all_candidates = master_candidates + bachelor_candidates
     _update_now(all_candidates)
     _assert_search_results(domain_id, {'degree_type': degree1}, master_candidates)
@@ -654,9 +509,9 @@ def to_fix_test_area_of_interest_facet(sample_user):
     print "Total area of interest facets present: %s" % len(all_aoi_ids)
     aoi_ids_list_1 = all_aoi_ids[0:5]
     aoi_ids_list_2 = all_aoi_ids[-4:-1]
-    candidate1 = populate_candidates(owner_user_id=sample_user.id, area_of_interest_ids=aoi_ids_list_1,
+    candidate1 = populate_candidates(owner_user_id=sample_user.id, areas_of_interest=aoi_ids_list_1,
                                      update_now=False)
-    candidate2 = populate_candidates(owner_user_id=sample_user.id, area_of_interest_ids=aoi_ids_list_2,
+    candidate2 = populate_candidates(owner_user_id=sample_user.id, areas_of_interest=aoi_ids_list_2,
                                      update_now=False)
     _update_now(candidate1 + candidate2)
     _assert_search_results(domain_id, {"area_of_interest_ids": ','.join(aoi_ids_list_1[0:3])}, candidate1,
@@ -797,19 +652,19 @@ def _test_skill_description_facet(sample_user):
     """
     domain_id = sample_user.domain_id
     network_candidates = populate_candidates(owner_user_id=sample_user.id, count=2,
-                                             candidate_skill_dicts=[{'last_used': datetime.datetime.now(),
+                                             skills=[{'last_used': datetime.datetime.now(),
                                                                      'name': 'Network', 'months_used': 12}],
                                              update_now=True)
 
     excel_candidates = populate_candidates(owner_user_id=sample_user.id,
-                                           candidate_skill_dicts=[{'last_used': datetime.datetime.now(),
+                                           skills=[{'last_used': datetime.datetime.now(),
                                                                    'name': 'Excel', 'months_used': 26}],
                                            update_now=True)
     network_and_excel_candidates = populate_candidates(sample_user.id, count=3,
-                                                       candidate_skill_dicts=[{'last_used': datetime.datetime.now(),
+                                                       skills=[{'last_used': datetime.datetime.now(),
                                                                                'name': 'Excel',
                                                                                'months_used': 10},
-                                                                              {'last_used': datetime.datetime.now(),
+                                                               {'last_used': datetime.datetime.now(),
                                                                                'name': 'Network',
                                                                                'months_used': 5}], update_now=True)
     # Update db and cloudsearch
@@ -1031,9 +886,9 @@ def to_fix_test_paging(sample_user):
     domain_id = sample_user.domain_id
     candidate_ids = populate_candidates(owner_user_id=sample_user.id, count=50, objective=True, added_time=True,
                                         phone=True,
-                                        current_company=True, current_title=True, candidate_text_comment=True,
+                                        company_name=True, job_title=True, candidate_text_comment=True,
                                         city=True, state=True,
-                                        zip_code=True, university=True, major=True, degree=True,
+                                        zip_code=True, school_name=True, major=True, degree_title=True,
                                         university_start_year=True,
                                         university_start_month=True, graduation_year=True, graduation_month=True,
                                         military_branch=True,
@@ -1063,7 +918,7 @@ def to_fix_test_paging_with_facet_search(sample_user):
     domain_id = sample_user.domain_id
     current_title = "Sr. Manager"
     candidate_ids = populate_candidates(count=30, owner_user_id=sample_user.id, objective=True, phone=True,
-                                        added_time=True, current_company=True, current_title=current_title)
+                                        added_time=True, company_name=True, job_title=current_title)
     # Search by applying sorting so that candidates can be easily asserted
     least_recent = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['~recent']
     _assert_search_results(domain_id, {'position': current_title, 'sort_by': least_recent},
@@ -1082,9 +937,9 @@ def _test_id_in_request_vars(sample_user):
     domain_id = sample_user.domain_id
     # Insert 10 candidates
     candidate_ids = populate_candidates(owner_user_id=sample_user.id, count=10, objective=True, phone=True,
-                                        current_company=True,
-                                        current_title=True, candidate_text_comment=True, city=True, state=True,
-                                        zip_code=True, university=True, major=True, degree=True,
+                                        company_name=True,
+                                        job_title=True, candidate_text_comment=True, city=True, state=True,
+                                        zip_code=True, school_name=True, major=True, degree_title=True,
                                         university_start_year=True, university_start_month=True, graduation_year=True,
                                         graduation_month=True, military_branch=True, military_status=True,
                                         military_grade=True)
