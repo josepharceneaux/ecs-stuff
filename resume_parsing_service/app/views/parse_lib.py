@@ -9,7 +9,7 @@ from time import time
 import base64
 import json
 # Third Party/Framework Specific.
-from BeautifulSoup import BeautifulSoup
+from bs4 import BeautifulSoup
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
