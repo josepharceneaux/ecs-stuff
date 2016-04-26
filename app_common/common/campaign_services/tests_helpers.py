@@ -49,16 +49,16 @@ class CampaignsTestsHelpers(object):
         cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())
 
     @classmethod
-    def request_for_resource_not_found_error(cls, method, url, token):
+    def request_for_resource_not_found_error(cls, method, url, token, data):
         """
         This should get Resource not found error because requested resource has been deleted.
         """
-        response = send_request(method, url, token, None)
+        response = send_request(method, url, token, data=data)
         cls.assert_api_response(response, expected_status_code=ResourceNotFound.http_status_code())
 
     @classmethod
     def request_after_deleting_campaign(cls, campaign, url_to_delete_campaign, url_after_delete,
-                                        method_after_delete, token):
+                                        method_after_delete, token, data=None):
         """
         This is a helper function to request the given URL after deleting the given resource.
         It should result in ResourceNotFound error.
@@ -67,13 +67,14 @@ class CampaignsTestsHelpers(object):
         :param (str) url_after_delete: URL to be requested after deleting the campaign
         :param (str) method_after_delete: Name of method to be requested after deleting campaign
         :param (str) token: access token of logged-in user
+        :param data: Data to be sent in request after deleting campaign
         """
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
         CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
                                                       token, None)
         CampaignsTestsHelpers.request_for_resource_not_found_error(
-            method_after_delete, url_after_delete % campaign_id, token)
+            method_after_delete, url_after_delete % campaign_id, token, data)
 
     @classmethod
     def request_for_ok_response(cls, method, url, token, data):
