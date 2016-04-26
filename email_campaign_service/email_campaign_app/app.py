@@ -52,7 +52,7 @@ def amazon_sns_endpoint():
     # GET request to given url in subscription request body.
     if request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.SUBSCRIBE:
         response = requests.get(data[AWS_SNS_TERMS.SUBSCRIBE_URL])
-        if not data[AWS_SNS_TERMS.TOPIC_ARN] in response.text:
+        if data[AWS_SNS_TERMS.TOPIC_ARN] not in response.text:
             logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s',
                         data[AWS_SNS_TERMS.TOPIC_ARN], request.data)
             return 'Not verified', requests.codes.INTERNAL_SERVER_ERROR
