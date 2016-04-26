@@ -8,6 +8,7 @@ That s3 bucket triggers a lambda function on file upload.
 lamda_handler() is called from AWS lambda and attempts to create a candidate from the resume.
 """
 import urllib
+import os
 import datetime
 import email
 import json
@@ -25,10 +26,12 @@ from models import session, Client, TalentPool, Token, User
 import settings as SETTINGS
 
 
+CURRENT_DIR = os.path.dirname(__file__)
+CONF_FILE_LOCATION = os.path.join(CURRENT_DIR, 'python.conf')
 EMAIL_HASH_PATTERN = re.compile(r'\+(.+?)@')
 PAYLOAD_QTY = 2
 
-logging.config.fileConfig('python.conf')
+logging.config.fileConfig(CONF_FILE_LOCATION)
 logger = logging.getLogger('lambdaLogger')
 
 S3_CLIENT = boto3.client(

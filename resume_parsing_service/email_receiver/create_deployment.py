@@ -15,7 +15,8 @@ import zipfile
 import argparse
 
 parser = argparse.ArgumentParser(description='Create an AWS Lambda Deployment for resume emails')
-parser.add_argument('--env', required=True, help='Which environment would you like to create a build for?')
+parser.add_argument('--env', required=True, choices=['prod', 'staging'],
+                    help='Which environment would you like to create a build for?')
 args = parser.parse_args()
 ROOT_DEPLOYMENTS_DIR = "./deployments"
 
@@ -29,8 +30,9 @@ DEPLOYMENT_FILES = ['email_process.py']
 if args.env == 'prod':
     print 'Building a prod deployment'
     DEPLOYMENT_FILES.append('settings/prod/settings.py')
-else:
-    print 'local'
+elif args.env == 'staging':
+    print 'Building a staging deployment'
+    DEPLOYMENT_FILES.append('settings/staging/settings.py')
 
 
 def get_library_requirements():
@@ -167,5 +169,4 @@ if __name__ == "__main__":
     _copy_deployment_files(NEW_DEPLOYMENT_DIR)
     DEPLOYMENT_REQUIREMENTS = get_library_requirements()
     _install_requirements(DEPLOYMENT_REQUIREMENTS, NEW_DEPLOYMENT_DIR)
-
     zipdir(NEW_DEPLOYMENT_DIR, "{0}/{1}.zip".format(ROOT_DEPLOYMENTS_DIR, CURRENT_DEPLOYMENT_NAME))

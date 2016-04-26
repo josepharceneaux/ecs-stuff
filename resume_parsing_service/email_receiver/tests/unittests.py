@@ -22,7 +22,7 @@ from resume_parsing_service.common.utils.handy_functions import add_role_to_test
 
 
 CURRENT_DIR = os.path.dirname(__file__)
-EMAIL_FILES_ROOT = os.path.join(CURRENT_DIR, 'emailFiles/')
+EMAIL_FILES_ROOT = os.path.join(CURRENT_DIR, 'email_files/')
 VALID_EMAILS = [
     EMAIL_FILES_ROOT + 'valid1',
     EMAIL_FILES_ROOT + 'valid2',
@@ -186,5 +186,5 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
     with open(EMAIL_FILES_ROOT + 'valid1', 'r') as infile:
         email_file = email.message_from_file(infile)
     raw_attachment = get_email_attachment(email_file, 'unused Key')
-    assert send_resume_to_service(token_fixture.access_token, raw_attachment,
+    send_resume_to_service(token_fixture.access_token, raw_attachment,
                                   talent_pool_fixture.id, 'test')
