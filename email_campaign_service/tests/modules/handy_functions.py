@@ -165,7 +165,6 @@ def send_campaign(campaign, access_token):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    time.sleep(20)
     blasts = get_blasts_with_polling(campaign, 1, 100)
     if not blasts:
         raise UnprocessableEntity('blasts not found in given time range.')
@@ -287,7 +286,6 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     if not email_client:
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
-        time.sleep(10)
     # Need to add this as processing of POST request runs on Celery
     blasts = get_blasts_with_polling(campaign, 1, 100)
 
@@ -349,7 +347,6 @@ def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_s
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    time.sleep(10)
     sends = poll(get_sends, step=3, args=(campaign, blast_index, expected_count), timeout=abort_time_for_sends)
     assert sends >= expected_count
 
