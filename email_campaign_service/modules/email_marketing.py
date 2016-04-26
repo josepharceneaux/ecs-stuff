@@ -19,7 +19,8 @@ from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   do_mergetag_replacements,
-                                                  create_email_campaign_url_conversions, AWS_SNS_TERMS)
+                                                  create_email_campaign_url_conversions)
+from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
 from email_campaign_service.common.models.db import db
@@ -861,11 +862,11 @@ def handle_email_bounce(message_id, bounce, emails):
             - ContentRejected
             - AttachmentRejected
     """
-    if bounce['bounceType'] == AWS_SNS_TERMS.PERMANENT_BOUNCE:
+    if bounce['bounceType'] == aws.PERMANENT_BOUNCE:
         # Mark the matching emails as bounced in all domains because an email that is invalid
         # would be invalid in all domains.
         CandidateEmail.mark_emails_bounced(emails)
         logger.info('Marked %s email addresses as bounced' % emails)
-    elif bounce['bounceType'] == AWS_SNS_TERMS.TEMPORARY_BOUNCE:
+    elif bounce['bounceType'] == aws.TEMPORARY_BOUNCE:
         logger.info('Email was bounced as Transient. '
                     'We will not mark it bounced because it is a temporary problem')
