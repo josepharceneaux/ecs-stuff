@@ -736,19 +736,23 @@ def sent_campaign_and_blast_ids_in_other_domain(access_token_other, sent_campaig
 
 
 @pytest.fixture()
-def campaign_with_ten_candidates(user_first, sms_campaign_of_current_user,
-                                 access_token_first, talent_pipeline):
+def campaign_with_ten_candidates(request, access_token_first, talent_pipeline, campaign_valid_data,
+                                 valid_header):
     """
     This creates an SMS campaign with ten candidates
     """
     # create candidate
-    CampaignsTestsHelpers.assign_roles(user_first)
     smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=10, create_phone=True)
-    with app.app_context():
-        SmsCampaignBase.create_campaign_smartlist(sms_campaign_of_current_user, [smartlist_id])
-        print sms_campaign_of_current_user.id
-        return sms_campaign_of_current_user, candidate_ids
+        access_token_first, talent_pipeline, count=10, create_phone=True, assign_role=True)
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
+                                                    talent_pipeline.user.id)
+
+    def fin():
+        _delete_campaign(test_sms_campaign)
+
+    request.addfinalizer(fin)
+    return test_sms_campaign, candidate_ids
 
 
 @pytest.fixture()
@@ -758,12 +762,23 @@ def sent_campaign_bulk(campaign_with_ten_candidates, access_token_first):
     the campaign obj.
     """
     # send campaign
-    with app.app_context():
-        response_post = CampaignsTestsHelpers.send_campaign(
-            SmsCampaignApiUrl.SEND % campaign_with_ten_candidates[0]['id'],
-            access_token_first, sleep_time=40)
-        assert_api_send_response(campaign_with_ten_candidates[0], response_post, 200)
-        return campaign_with_ten_candidates
+    response_post = CampaignsTestsHelpers.send_campaign(
+        SmsCampaignApiUrl.SEND, campaign_with_ten_candidates[0],
+        access_token_first, SmsCampaignApiUrl.BLASTS)
+    assert_api_send_response(campaign_with_ten_candidates[0], response_post, 200)
+    return campaign_with_ten_candidates
+
+
+@pytest.fixture()
+def sent_campaign_bulk_and_blast_ids(access_token_first, sent_campaign_bulk):
+    """
+    This fixture returns the campaign object which has been sent.
+    It also gets it's blasts and return a tuple containing campaign object and blast_ids.
+    """
+    blasts = CampaignsTestsHelpers.get_blasts(sent_campaign_bulk[0], access_token_first,
+                                              SmsCampaignApiUrl.BLASTS % sent_campaign_bulk[0]['id'])
+    blasts_ids = [blast['id'] for blast in blasts]
+    return sent_campaign_bulk, blasts_ids
 
 
 @pytest.fixture()

@@ -127,7 +127,7 @@ class CampaignsTestsHelpers(object):
             _assert_invalid_datetime_format(method, url, token, data, 'end_datetime')
 
     @classmethod
-    def request_with_invalid_token(cls, method, url, data):
+    def request_with_invalid_token(cls, method, url, data=None):
         _assert_unauthorized(method, url, 'invalid_token', data)
 
     @classmethod
@@ -554,7 +554,8 @@ def _assert_unauthorized(method, url, access_token, data=None):
     :return:
     """
     response = send_request(method, url, access_token, data)
-    assert response.status_code == UnauthorizedError.http_status_code()
+    assert response.status_code == UnauthorizedError.http_status_code(), \
+        'It should not be authorized (401)'
 
 
 def _invalid_data_test(method, url, token):

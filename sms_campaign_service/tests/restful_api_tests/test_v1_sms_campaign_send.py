@@ -19,7 +19,7 @@ from sms_campaign_service.common.campaign_services.custom_errors import (Campaig
 
 class TestSendSmsCampaign(object):
     """
-    This class contains tests for endpoint /campaigns/:id/send
+    This class contains tests for endpoint /sms-campaigns/:id/send
     """
     URL = SmsCampaignApiUrl.SEND
     HTTP_METHOD = 'post'

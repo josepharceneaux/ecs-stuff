@@ -48,9 +48,11 @@ from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity,
-     assert_api_send_response, assert_campaign_schedule, SLEEP_TIME, delete_test_scheduled_task)
+     assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task)
 
 
+# TODO: Add a test where two smartlists have same candidate associated with them.
+# TODO: Sends should be 1 not 2.
 class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
