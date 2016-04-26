@@ -13,6 +13,7 @@ class TalentPool(db.Model):
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
+    simple_hash = db.Column(db.String(8))
     description = db.Column(db.TEXT)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

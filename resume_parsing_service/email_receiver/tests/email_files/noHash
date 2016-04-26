@@ -1,0 +1,30 @@
+Return-Path: <010001542b7c89d5-888cb9a9-e4b1-4201-a4e6-ee8ff67cc07d-000000@amazonses.com>
+Received: from a11-116.smtp-out.amazonses.com (a11-116.smtp-out.amazonses.com [54.240.11.116])
+ by inbound-smtp.us-east-1.amazonaws.com with SMTP id 3dr2klp22vu8t6evpa30jl9hm18jj79am4a8de01
+ for resumes@imports.gettalent.com;
+ Mon, 18 Apr 2016 22:27:43 +0000 (UTC)
+X-SES-Spam-Verdict: PASS
+X-SES-Virus-Verdict: PASS
+Received-SPF: pass (spfCheck: domain of amazonses.com designates 54.240.11.116 as permitted sender) client-ip=54.240.11.116; envelope-from=010001542b7c89d5-888cb9a9-e4b1-4201-a4e6-ee8ff67cc07d-000000@amazonses.com; helo=a11-116.smtp-out.amazonses.com;
+Authentication-Results: amazonses.com;
+ spf=pass (spfCheck: domain of amazonses.com designates 54.240.11.116 as permitted sender) client-ip=54.240.11.116; envelope-from=010001542b7c89d5-888cb9a9-e4b1-4201-a4e6-ee8ff67cc07d-000000@amazonses.com; helo=a11-116.smtp-out.amazonses.com;
+ dkim=pass header.i=@amazonses.com;
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=6gbrjpgwjskckoa6a5zn6fwqkn67xbtw; d=amazonses.com; t=1461018462;
+	h=From:To:Subject:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-ID:Date:Feedback-ID;
+	bh=rMEY3S+Z9+uaQOrzopi2veaq372NQ7Sbmj/qNf3MP6E=;
+	b=nd0M0JS20gi+o+OTQOdik1z2KZPUVg/qSZ2AWNCA2iAipDCLpX8EdaaogGWRplo3
+	xOny0f0tLlP6LrfBBtsNUW2r1+4o4onEsN9sgx8OopA6LicmGqOKRMwt++ExHN3sDp4
+	h3cSG5ykv9vh9WZcoVl6uiSjHcVzOlUVkr3DUJPA=
+From: no-reply@gettalent.com
+To: resumes@imports.gettalent.com
+Subject: Hi there
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Message-ID: <010001542b7c89d5-888cb9a9-e4b1-4201-a4e6-ee8ff67cc07d-000000@email.amazonses.com>
+Date: Mon, 18 Apr 2016 22:27:42 +0000
+X-SES-Outgoing: 2016.04.18-54.240.11.116
+Feedback-ID: 1.us-east-1.LrToo1x5hxhpAx68unhBNEWec03ag0pLOeRPeOVLcV0=:AmazonSES
+
+We have a resume with NO attachment.
