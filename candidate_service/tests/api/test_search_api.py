@@ -4,9 +4,9 @@ Test cases for candidate-search-service-API
 from candidate_service.tests.modules.test_talent_cloud_search import (
     populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
+from .. modules.test_talent_cloud_search import _assert_search_results
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import Candidate, CandidateSource
-from candidate_service.common.models.misc import CustomFieldCategory
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -53,64 +53,72 @@ class TestCandidateSearchGet(object):
         assert resp.json()['candidates'][0]['id'] == data['candidate_ids'][0]
 
 
-def test_search_all_candidates_in_domain(user_first, access_token_first):
+def test_search_all_candidates_in_domain(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates under the same domain
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id)
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                        owner_user_id=user_first.id, count=5)
     response = get_response_from_authorized_user(access_token_first, '')
     _assert_results(candidate_ids, response.json())
 
 
 # TODO: Test fails very often during Jenkins build -- commenting out for now.
-# def test_search_location(user_first, access_token_first):
-#     """
-#     Test to search candidates using location
-#     """
-#     AddUserRoles.add_and_get(user=user_first)
-#     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-#     candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, city=city, state=state,
-#                                         zip_code=zip_code)
-#     time.sleep(30)
-#     response = get_response_from_authorized_user(access_token_first, '?location=%s,%s' % (city, state))
-#     _assert_results(candidate_ids, response.json())
+def test_search_location(user_first, access_token_first, talent_pool):
+    """
+    Test to search candidates using location
+    """
+    AddUserRoles.add_and_get(user_first)
+    city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, city=city, state=state,
+                                        zip_code=zip_code)
+    response = get_response_from_authorized_user(access_token_first, '?location=%s,%s' % (city, state))
+    _assert_results(candidate_ids, response.json())
 
 
-def test_search_user_ids(user_first, access_token_first):
+def test_search_user_ids(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates under the user
     """
     AddUserRoles.add_and_get(user_first)
     user_id = user_first.id
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_id)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=5,
+                                        owner_user_id=user_id)
     response = get_response_from_authorized_user(access_token_first, '?user_ids=%d' % user_id)
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_skills(user_first, access_token_first):
+def test_search_skills(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates based on skills
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id,
-                                        candidate_skill_dicts=[{'last_used':datetime.datetime.now(),
-                                                                'name': 'hadoop', 'months_used': 36}],
-                                        update_now=True)
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, owner_user_id=user_first.id,
+                                        access_token=access_token_first,
+                                        skills=[{'name': 'hadoop', 'months_used': 36}])
+
     response = get_response_from_authorized_user(access_token_first, '?skills=hadoop')
+    print "candidate_ids = {}".format(candidate_ids)
+    print response_info(response)
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_aoi(user_first, access_token_first):
+def test_search_aoi(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates based on area_of_interest
     """
     AddUserRoles.add_and_get(user=user_first)
     all_aoi_ids = create_area_of_interest_facets(db, user_first.domain_id)
-    print "Total area of interest facets present: %s" % len(all_aoi_ids)
+    number_of_aois = len(all_aoi_ids)
+    print "\nTotal area of interest facets present: %s" % number_of_aois
     aoi_ids_list = all_aoi_ids[0:5]
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id, area_of_interest_ids=aoi_ids_list)
+    areas_of_interest = [dict(area_of_interest_id=aoi_id) for aoi_id in aoi_ids_list]
+    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                        owner_user_id=user_first.id, count=5, areas_of_interest=areas_of_interest)
     response = get_response_from_authorized_user(access_token_first, '?area_of_interest_ids=%d' % aoi_ids_list[1])
+    print response_info(response)
     _assert_results(candidate_ids, response.json())
 
 
@@ -149,23 +157,24 @@ def to_fix_test_search_source(user_first, access_token_first):
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_candidate_experience(user_first, access_token_first):
+def test_search_candidate_experience(user_first, access_token_first, talent_pool):
     """Test to search candidates with experience"""
     AddUserRoles.add_and_get(user_first)
-    user_id = user_first.id
-    experience_2_years = {'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013,
-                          'start_month': 06, 'end_year': 2015, 'end_month': 06}
-    experience_0_years = {'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015,
-                          'start_month': 01, 'end_year': 2015, 'end_month': 02, 'is_current': True}
+    experience_2_years = [{'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013,
+                          'start_month': 06, 'end_year': 2015, 'end_month': 06}]
+    experience_0_years = [{'organization': 'Audi', 'position': 'Mechanic', 'start_year': 2015,
+                          'start_month': 01, 'end_year': 2015, 'end_month': 02, 'is_current': True}]
     candidate_ids = []
-    candidate_with_0_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dict=experience_0_years)
+    candidate_with_0_years_exp = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                                     count=3, owner_user_id=user_first.id,
+                                                     experiences=experience_0_years)
     for candidate_id in candidate_with_0_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=2))
         db.session.flush()
         candidate_ids.append(candidate_id)
-    candidate_with_2_years_exp = populate_candidates(count=3, owner_user_id=user_id,
-                                                     candidate_experience_dict=experience_2_years)
+    candidate_with_2_years_exp = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                                     count=3, owner_user_id=user_first.id,
+                                                     experiences=experience_2_years)
     for candidate_id in candidate_with_2_years_exp:
         db.session.query(Candidate).filter_by(id=candidate_id).update(dict(total_months_experience=24))
         db.session.commit()
@@ -184,175 +193,225 @@ def test_search_candidate_experience(user_first, access_token_first):
     _assert_results(candidate_ids, response)
 
 
-def test_search_position(user_first, access_token_first):
+def test_search_position(user_first, access_token_first, talent_pool):
     """Test to search candidates by job_title/position"""
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=4, owner_user_id=user_first.id, current_title="Developer")
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=4,
+                                        owner_user_id=user_first.id, job_title="Developer")
     response = get_response_from_authorized_user(access_token_first, '?job_title=Developer')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_degree(user_first, access_token_first):
+def test_search_degree(user_first, access_token_first, talent_pool):
     """Test to search candidates by degree type"""
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id,
-                                        degree="Masters", university=True)
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, degree_type="Masters")
     response = get_response_from_authorized_user(access_token_first, '?degree_type=Masters')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_school_name(user_first, access_token_first):
+def test_search_school_name(user_first, access_token_first, talent_pool):
     """Test to search candidates by university/school_name"""
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id,
-                                        university='Oklahoma State University')
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, school_name='Oklahoma State University')
     response = get_response_from_authorized_user(access_token_first, '?school_name=Oklahoma State University')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_concentration(user_first, access_token_first):
+def test_search_concentration(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by higher education
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=4, owner_user_id=user_first.id,
-                                        major='Post Graduate', university=True)
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                        count=4, owner_user_id=user_first.id,
+                                        major='Post Graduate')
     response = get_response_from_authorized_user(access_token_first, '?major=Post Graduate')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_military_service_status(user_first, access_token_first):
+def test_search_military_service_status(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by military service status
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_status="Retired")
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, military_status="Retired")
     response = get_response_from_authorized_user(access_token_first, '?military_service_status=Retired')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_military_branch(user_first, access_token_first):
+def test_search_military_branch(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by military branch
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_branch="Army")
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, military_branch="Army")
     response = get_response_from_authorized_user(access_token_first, '?military_branch=Army')
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_military_highest_grade(user_first, access_token_first):
+def test_search_military_highest_grade(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by military highest grade
     """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=3, owner_user_id=user_first.id, military_grade="W-1")
+    AddUserRoles.add_and_get(user_first)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        owner_user_id=user_first.id, military_grade="W-1")
     response = get_response_from_authorized_user(access_token_first, '?military_highest_grade=W-1')
     _assert_results(candidate_ids, response.json())
 
 
-def to_fix_test_search_military_date_of_separation(user_first, access_token_first):
-    """
-    Test to search candidates by military date of separation
-    """
-    AddUserRoles.add_and_get(user=user_first)
-    user_id = user_first.id
-    candidates_today = populate_candidates(user_id, count=5, military_to_date=datetime.datetime.now(),
-                                           military_grade=True, military_status=True, military_branch=True)
-    candidates_2014 = populate_candidates(user_id, count=3, military_to_date=datetime.date(year=2014, month=03,
-                                                                                                    day=31))
-    candidates_2012 = populate_candidates(user_id, count=2, military_to_date=datetime.date(2012, 07, 15))
-
-    test1_candidate_ids = candidates_2014+candidates_today
-
-    response1 = get_response_from_authorized_user(access_token_first, '?military_end_date_from=2013')
-    _assert_results(test1_candidate_ids, response1.json())
-
-    test2_candidate_ids=candidates_2012+candidates_2014 + candidates_today
-    response2 = get_response_from_authorized_user(access_token_first, '?military_end_date_from=2010')
-    _assert_results(test2_candidate_ids, response2.json())
-
-    test3_candidate_ids = candidates_2012+candidates_2014
-    response3 = get_response_from_authorized_user(access_token_first,
-                                                  '?military_end_date_from=2010&military_end_date_to=2014')
-    _assert_results(test3_candidate_ids, response3.json())
-
-    test4_candidate_ids=candidates_2012
-    response4 = get_response_from_authorized_user(access_token_first, '?military_end_date_to=2012')
-    _assert_results(test4_candidate_ids, response4.json())
-
-    test5_candidate_ids=candidates_2012+candidates_2014
-    response5 = get_response_from_authorized_user(access_token_first, '?military_end_date_to=2014')
-    _assert_results(test5_candidate_ids, response5.json())
-
-
-def to_fix_test_search_query_with_name(user_first, access_token_first):
-    """
-    Test to search candidates by passing query argument
-    For example, search by querying first_name
-    """
-    AddUserRoles.add_and_get(user=user_first)
-    candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id,
-                                        first_name="Naveen", last_name=uuid.uuid4().__str__()[0:8])
-
-    response = get_response_from_authorized_user(access_token_first, '?q=Naveen')
-    _assert_results(candidate_ids, response.json())
+# TODO: Unused code. Remove if not necessary - Amir
+# def to_fix_test_search_military_date_of_separation(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search candidates by military date of separation
+#     """
+#     AddUserRoles.add_and_get(user_first)
+#     user_id = user_first.id
+#
+#     candidates_today = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+#                                            owner_user_id=user_id, count=5,
+#                                            military_to_date=str(datetime.datetime.utcnow().date()),
+#                                            military_grade=True, military_status=True, military_branch=True)
+#     candidates_2014 = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+#                                           owner_user_id=user_id, count=3,
+#                                           military_to_date='2014-04-26')
+#     candidates_2012 = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+#                                           owner_user_id=user_id, count=2,
+#                                           military_to_date='2012-07-15')
+#
+#     test1_candidate_ids = candidates_2014+candidates_today
+#
+#     response1 = get_response_from_authorized_user(access_token_first, '?military_end_date_from=2013')
+#     _assert_results(test1_candidate_ids, response1.json())
+#
+#     test2_candidate_ids=candidates_2012+candidates_2014 + candidates_today
+#     response2 = get_response_from_authorized_user(access_token_first, '?military_end_date_from=2010')
+#     _assert_results(test2_candidate_ids, response2.json())
+#
+#     test3_candidate_ids = candidates_2012+candidates_2014
+#     response3 = get_response_from_authorized_user(access_token_first,
+#                                                   '?military_end_date_from=2010&military_end_date_to=2014')
+#     _assert_results(test3_candidate_ids, response3.json())
+#
+#     test4_candidate_ids=candidates_2012
+#     response4 = get_response_from_authorized_user(access_token_first, '?military_end_date_to=2012')
+#     _assert_results(test4_candidate_ids, response4.json())
+#
+#     test5_candidate_ids=candidates_2012+candidates_2014
+#     response5 = get_response_from_authorized_user(access_token_first, '?military_end_date_to=2014')
+#     _assert_results(test5_candidate_ids, response5.json())
 
 
-def test_search_get_only_requested_fields(user_first, access_token_first):
+# TODO: Unused code. Remove if not necessary - Amir
+# def to_fix_test_search_query_with_name(user_first, access_token_first):
+#     """
+#     Test to search candidates by passing query argument
+#     For example, search by querying first_name
+#     """
+#     AddUserRoles.add_and_get(user=user_first)
+#     candidate_ids = populate_candidates(count=5, owner_user_id=user_first.id,
+#                                         first_name="Naveen", last_name=uuid.uuid4().__str__()[0:8])
+#
+#     response = get_response_from_authorized_user(access_token_first, '?q=Naveen')
+#     _assert_results(candidate_ids, response.json())
+
+
+def test_search_get_only_requested_fields(user_first, access_token_first, talent_pool):
     """
     Test to search candidates and get only requested fields like email,source_id,etc,..
     """
-    AddUserRoles.add_and_get(user=user_first)
-    populate_candidates(count=2, owner_user_id=user_first.id)
+    AddUserRoles.add_and_get(user_first)
+    populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=2, owner_user_id=user_first.id)
     response = get_response_from_authorized_user(access_token_first, '?fields=email')
     resultant_keys = response.json()['candidates'][0].keys()
     assert len(resultant_keys) == 1
     assert 'email' in resultant_keys
 
 
-def to_fix_test_search_paging(user_first, access_token_first):
-    candidate_ids = populate_candidates(count=50, owner_user_id=user_first.id, objective=True, added_time=True,
-                                        current_company=True, current_title=True, candidate_text_comment=True,
-                                        city=True, state=True, phone=True,
-                                        zip_code=True, university=True, major=True, degree=True,
-                                        university_start_year=True,
-                                        university_start_month=True, graduation_year=True, graduation_month=True,
-                                        military_branch=True,
-                                        military_status=True, military_grade=True,
-                                        military_to_date=datetime.datetime.now())
+# TODO: Unused code. Remove if not necessary - Amir
+# def to_fix_test_search_paging(user_first, access_token_first):
+#     candidate_ids = populate_candidates(count=50, owner_user_id=user_first.id, objective=True, added_time=True,
+#                                         current_company=True, current_title=True, candidate_text_comment=True,
+#                                         city=True, state=True, phone=True,
+#                                         zip_code=True, university=True, major=True, degree=True,
+#                                         university_start_year=True,
+#                                         university_start_month=True, graduation_year=True, graduation_month=True,
+#                                         military_branch=True,
+#                                         military_status=True, military_grade=True,
+#                                         military_to_date=datetime.datetime.now())
+#
+#     response1 = get_response_from_authorized_user(access_token_first, '?sort_by=added_time-asc')
+#     _assert_results(candidate_ids[0:15], response1.json())
 
-    response1 = get_response_from_authorized_user(access_token_first, '?sort_by=added_time-asc')
-    _assert_results(candidate_ids[0:15], response1.json())
+
+# TODO: Unused code. Remove if not necessary - Amir
+# def to_fix_test_search_custom_fields(user_first, access_token_first):
+#     # Create custom field category named as 'Certifications'
+#     domain_id = sample_user.domain_id
+#     custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
+#     db.session.add(custom_field_cat)
+#     custom_field_cat_id = custom_field_cat.id
+#     # Create custom fields under 'Certifications'
+#     custom_field1 = 'hadoop'
+#     custom_field2 = 'MongoDB'
+#     new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
+#                                     category_id=custom_field_cat_id, added_time=datetime.datetime.now())
+#     db.session.add(new_custom_field1)
+#
+#     new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
+#                                     category_id=custom_field_cat_id, added_time=datetime.datetime.now())
+#     db.session.add(new_custom_field2)
+#     db.session.commit()
+#     custom_field1_id = new_custom_field1.id
+#     custom_field2_id = new_custom_field2.id
+#     # refresh_custom_fields_cache
+#     candidates_cf1 = populate_candidates(user_first.id, count=3, custom_fields_dict={custom_field1_id: custom_field1})
+#     candidates_cf2 = populate_candidates(user_first.id, count=4, custom_fields_dict={custom_field2_id: custom_field2})
+#
+#     response1 = get_response_from_authorized_user(access_token_first, '?cf-%d=hadoop' % custom_field1_id)
+#     _assert_results(candidates_cf1, response1.json())
+#     response2 = get_response_from_authorized_user(access_token_first, '?cf-%d=MongoDB' % custom_field2_id)
+#     _assert_results(candidates_cf2, response2.json())
 
 
-def to_fix_test_search_custom_fields(user_first, access_token_first):
-    # Create custom field category named as 'Certifications'
-    domain_id = sample_user.domain_id
-    custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
-    db.session.add(custom_field_cat)
-    custom_field_cat_id = custom_field_cat.id
-    # Create custom fields under 'Certifications'
-    custom_field1 = 'hadoop'
-    custom_field2 = 'MongoDB'
-    new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
-                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
-    db.session.add(new_custom_field1)
+def test_search_by_first_name(user_first, access_token_first, talent_pool):
+    """
+    Test search candidates by first name
+    """
+    AddUserRoles.add(user_first)
+    # Create candidate with first name and last name
+    first_name = 'Marilyn'
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                        owner_user_id=user_first.id, first_name=first_name)
+    _assert_search_results(user_first.domain_id, {'query': first_name}, candidate_ids)
 
-    new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
-                                    category_id=custom_field_cat_id, added_time=datetime.datetime.now())
-    db.session.add(new_custom_field2)
-    db.session.commit()
-    custom_field1_id = new_custom_field1.id
-    custom_field2_id = new_custom_field2.id
-    # refresh_custom_fields_cache
-    candidates_cf1 = populate_candidates(user_first.id, count=3, custom_fields_dict={custom_field1_id: custom_field1})
-    candidates_cf2 = populate_candidates(user_first.id, count=4, custom_fields_dict={custom_field2_id: custom_field2})
 
-    response1 = get_response_from_authorized_user(access_token_first, '?cf-%d=hadoop' % custom_field1_id)
-    _assert_results(candidates_cf1, response1.json())
-    response2 = get_response_from_authorized_user(access_token_first, '?cf-%d=MongoDB' % custom_field2_id)
-    _assert_results(candidates_cf2, response2.json())
+def test_search_by_last_name(user_first, access_token_first, talent_pool):
+    """
+    Test to search candidates by last name
+    """
+    AddUserRoles.add(user_first)
+    last_name = 'Lynn'
+    # Create candidate with last name
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                        owner_user_id=user_first.id, last_name=last_name)
+    _assert_search_results(user_first.domain_id, {'query': last_name}, candidate_ids)
+
+
+def test_search_by_current_company(talent_pool, access_token_first, user_first):
+    """
+    Test to search candidates by current company
+    """
+    AddUserRoles.add(user_first)
+    company_name = "Google"
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                        count=5, owner_user_id=user_first.id, company_name=company_name)
+    _assert_search_results(user_first.domain_id, {'query': company_name}, candidate_ids, check_for_equality=True)
 
 
 def _assert_results(candidate_ids, response):
@@ -368,6 +427,17 @@ def _assert_results(candidate_ids, response):
     print 'resultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
+
+
+def test_search_by_position_facet(user_first, access_token_first, talent_pool):
+    """
+    Test to search candidates by position
+    """
+    AddUserRoles.add(user_first)
+    current_title = "Senior Developer"
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
+                                        count=12, owner_user_id=sample_user.id, job_title=current_title)
+    _assert_search_results(sample_user.domain_id, {'positionFacet': current_title}, candidate_ids)
 
 
 def get_response_from_authorized_user(access_token, arguments_to_url):
