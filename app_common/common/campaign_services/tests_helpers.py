@@ -201,7 +201,7 @@ class CampaignsTestsHelpers(object):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist .
+        Custom error should be NoCandidateAssociatedWithSmartlist.
         """
         smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token,
                                                                           talent_pipeline_id)

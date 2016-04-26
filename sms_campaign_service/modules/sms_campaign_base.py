@@ -450,9 +450,8 @@ class SmsCampaignBase(CampaignBase):
         """
         This overrides the CampaignBase class method and filter only those candidates who
         have one unique mobile number associated.
-        :param candidates:
-        :type candidates: list
-        :return:
+        :param candidates: list of candidates to whom we want to send campaign
+        :type candidates: list[Candidate]
         """
         not_owned_ids = []
         multiple_records_ids = []

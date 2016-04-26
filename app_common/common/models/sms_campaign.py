@@ -45,7 +45,8 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.campaign_smartlists]}
+                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.campaign_smartlists],
+                       "scheduler_task_id": self.scheduler_task_id}
         return return_dict
 
     @classmethod
