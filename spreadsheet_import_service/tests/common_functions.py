@@ -10,6 +10,9 @@ import os
 import json
 import StringIO
 import requests
+import random
+from nameparser import HumanName
+from candidate_service.tests.api.candidate_sample_data import fake, college_majors
 from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
@@ -68,12 +71,22 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
 
 
 def candidate_test_data(num_candidates=15):
-
     candidate_data = []
     for x in xrange(num_candidates):
-        random_str = str(uuid.uuid4())[0:6]
-        candidate_data.append(['John %s Smith' % random_str, 'johnsmith%s@example.com' % random_str, '408-555-1212',
-                               'NVIDIA', 'Embedded Software Developer', 'San Jose State University', 'MS', 'San Jose',
-                               'CA', 'Electrical Engineering', 'Production & Development', '24', 'Technology', 'Google',
-                               'Summer Software Intern'])
+        # TODO: Generate random international phone number
+
+        # Generate full name & parse full name to easily extract first, middle, and last name
+        full_name = fake.name()
+        parsed_full_name = HumanName(full_name)
+
+        # Randomly select a discipline, e.g. Engineering, Mathematics, Agriculture
+        discipline = random.choice(college_majors().keys())
+        candidate_data.append(
+            [
+                full_name, parsed_full_name.first, parsed_full_name.middle, parsed_full_name.last, fake.safe_email(),
+                '+14084059988', fake.street_address(), fake.street_address(), fake.city(), fake.state(), fake.zipcode(),
+                fake.country_code(), fake.bs(), fake.company(), fake.job(), fake.first_name() + ' University',
+                random.choice(college_majors()[discipline]), fake.year(), '', fake.job(), fake.bs(), '24'
+            ]
+        )
     return candidate_data
