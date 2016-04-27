@@ -319,9 +319,11 @@ def assert_campaign_blasts(campaign_id, token, expected_count=1):
     return len(blasts) == expected_count
 
 
-def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_first, campaign_in_db, talent_pool, token_first, candidate_device_first):
+def test_schedule_a_campaign_with_valid_data(candidate_first, smartlist_first, campaign_in_db, talent_pool, token_first, candidate_device_first):
 
-    time.sleep(60)
+    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_first['id'], token_first),
+          kwargs={'candidates_count': 1})
     data = generate_campaign_schedule_data()
     response = schedule_campaign(campaign_in_db['id'], data, token_first,
                                  expected_status=(HttpStatus.OK,))
@@ -335,7 +337,6 @@ def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_firs
 
 def test_schedule_a_campaign_with_user_from_same_domain(smartlist_same_domain, campaign_data,  talent_pool, token_first, token_same_domain,  candidate_device_first):
 
-    time.sleep(60)
     retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
           sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_same_domain['id'], token_same_domain),
           kwargs={'candidates_count': 1})
@@ -355,7 +356,10 @@ def test_schedule_a_campaign_with_user_from_same_domain(smartlist_same_domain, c
 
 
 def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent_pool, candidate_first, smartlist_first):
-    time.sleep(60)
+
+    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_first['id'], token_first),
+          kwargs={'candidates_count': 1})
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
     response = schedule_campaign(campaign_in_db['id'], data, token_first,
                                  expected_status=(HttpStatus.OK,))
