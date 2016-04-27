@@ -41,7 +41,6 @@ from datetime import datetime
 # 3rd party imports
 from redo import retry
 from requests import codes as HttpStatus
-from polling import poll
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
@@ -330,8 +329,8 @@ def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_firs
     assert 'message' in response
     task_id = response['task_id']
     assert task_id
-    # time.sleep(6 * SLEEP_TIME)
-    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+    retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first))
 
 
 def test_schedule_a_campaign_with_user_from_same_domain(smartlist_same_domain, campaign_data,  talent_pool, token_first, token_same_domain,  candidate_device_first):
@@ -351,7 +350,8 @@ def test_schedule_a_campaign_with_user_from_same_domain(smartlist_same_domain, c
     assert 'message' in response
     task_id = response['task_id']
     assert task_id
-    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_id, token_first))
+    retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_id, token_first))
 
 
 def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent_pool, candidate_first, smartlist_first):
@@ -363,7 +363,8 @@ def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent
     assert 'message' in response
     task_id = response['task_id']
     assert task_id
-    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first))
+    retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first))
 
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
     response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
@@ -373,4 +374,6 @@ def test_reschedule_campaign_with_valid_data(token_first, campaign_in_db, talent
     assert 'message' in response
     task_id = response['task_id']
     assert task_id
-    poll(assert_campaign_blasts, timeout=60, step=3, args=(campaign_in_db['id'], token_first), kwargs={'expected_count':2})
+    retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first),
+          kwargs={'expected_count': 2})
