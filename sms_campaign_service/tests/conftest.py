@@ -142,12 +142,12 @@ def user_phone_3(request, user_same_domain):
 
 
 @pytest.fixture()
-def campaign_valid_data(sample_smartlist):
+def campaign_valid_data(smartlist_with_two_candidates):
     """
     This returns the valid data to save an SMS campaign in database
     """
     campaign_data = CREATE_CAMPAIGN_DATA.copy()
-    campaign_data['smartlist_ids'] = [sample_smartlist.id]
+    campaign_data['smartlist_ids'] = [smartlist_with_two_candidates[0]]
     return campaign_data
 
 
@@ -174,12 +174,10 @@ def smartlist_with_two_candidates(access_token_first, talent_pipeline):
 
 @pytest.fixture()
 def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
-                                 valid_header, user_phone_1, smartlist_with_two_candidates):
+                                 valid_header, user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data.
     """
-    smartlist_id, _ = smartlist_with_two_candidates
-    campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
 
@@ -198,7 +196,7 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
     This creates the SMS campaign for user_first using valid data and two smartlists.
     """
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, create_phone=True, assign_role=True)
+        access_token_first, talent_pipeline, create_phone=True)
     smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
         access_token_first, talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
@@ -227,8 +225,7 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
     candidates_data['candidates'].append(candidate_2_data['candidates'][0])
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                             talent_pipeline,
-                                                                            data=candidates_data,
-                                                                            assign_role=True)
+                                                                            data=candidates_data)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -297,7 +294,7 @@ def sms_campaign_with_no_valid_candidate(request, campaign_valid_data,
     with this campaign have no phone number saved in database.
     """
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=2, assign_role=True)
+        access_token_first, talent_pipeline, count=2)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -316,7 +313,7 @@ def sms_campaign_in_other_domain(request, campaign_valid_data, valid_header_2,
     This creates SMS campaign for some other user in different domain.
     """
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_other, talent_pipeline_other, count=2, create_phone=True, assign_role=True)
+        access_token_other, talent_pipeline_other, count=2, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
                                                     valid_header_2,
@@ -567,7 +564,7 @@ def campaign_with_ten_candidates(request, access_token_first, talent_pipeline, c
     """
     # create candidate
     smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=10, create_phone=True, assign_role=True)
+        access_token_first, talent_pipeline, count=10, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
