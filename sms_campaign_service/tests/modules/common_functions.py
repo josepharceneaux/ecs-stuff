@@ -96,9 +96,9 @@ def get_reply_text(candidate_phone):
     """
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
-    time.sleep(2*SLEEP_TIME)
     db.session.commit()
-    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone.id)
+    candidate_phone_id = candidate_phone.id if hasattr(candidate_phone, 'id') else candidate_phone['id']
+    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone_id)
     return campaign_reply_record
 
 

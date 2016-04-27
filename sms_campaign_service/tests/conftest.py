@@ -257,14 +257,22 @@ def campaign_data_unknown_key_text():
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user(request, campaign_valid_data,
-                                 access_token_first, talent_pipeline,
-                                 valid_header, user_phone_1):
+def smartlist_with_two_candidates(access_token_first, talent_pipeline):
+    """
+    This creates a smartlist with two candidates
+    """
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, count=2, create_phone=True, assign_role=True)
+    return smartlist_id, candidate_ids
+
+
+@pytest.fixture()
+def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
+                                 valid_header, user_phone_1, smartlist_with_two_candidates):
     """
     This creates the SMS campaign for user_first using valid data.
     """
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=2, create_phone=True, assign_role=True)
+    smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
@@ -350,7 +358,6 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
 def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user_phone_4):
     """
     This creates the SMS campaign for sample_user using valid data.
-    :param campaign_valid_data:
     """
     test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_4)
 
@@ -551,7 +558,7 @@ def sms_campaign_smartlist_2(sample_smartlist_2, scheduled_sms_campaign_of_curre
 def candidate_and_phone_1(request, sent_campaign_and_blast_ids, access_token_first, valid_header):
     """
     This returns the candidate object and candidate_phone for first candidate associated with
-    the sms-campaign in a tuple.
+    the sms-campaign in a tuple. Here we assume campaign has been sent to candidate.
     """
     sent_campaign, blast_ids = sent_campaign_and_blast_ids
     CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
