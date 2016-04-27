@@ -24,7 +24,6 @@ git push --tags
 for app_index in ${!FLASK_APPS[@]}
 
 do
-    echo "SERVICE: ${FLASK_APPS[$app_index]}"
     if [ $production ] ; then
 	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
 	echo $tag_command
@@ -42,7 +41,6 @@ do
         eval $push_command
 
 	# Update task definition for this service
-	echo `which python`
-	python ecs_task_update.py ${FLASK_APPS[$app_index]} timestamp_tag
+	python ecs_task_update.py ${FLASK_APPS[$app_index]} ${timestamp_tag}
     fi
 done

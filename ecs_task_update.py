@@ -16,8 +16,13 @@ tag = vars(args)[TAG_NAME][0]
 service += '-td' # Adjust for our ECS naming convention
 
 client = boto3.client('ecs')
-# This returns the latest ACTIVE revision
-task_definition = client.describe_task_definition(taskDefinition=service)
+
+try:
+    # This returns the latest ACTIVE revision
+    task_definition = client.describe_task_definition(taskDefinition=service)
+except Exception as e:
+    print "Exception {} searching for task definition {}".format(e.message, service)
+
 # We are running single container tasks
 image = task_definition['taskDefinition']['containerDefinitions'][0]['image']
 
