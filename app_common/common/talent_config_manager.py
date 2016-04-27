@@ -51,6 +51,7 @@ class TalentConfigKeys(object):
     ONE_SIGNAL_REST_API_KEY = "ONE_SIGNAL_REST_API_KEY"
     GT_GMAIL_ID = "GT_GMAIL_ID"
     GT_GMAIL_PASSWORD = "GT_GMAIL_PASSWORD"
+    DEFAULT_MAIL_SENDER = "DEFAULT_MAIL_SENDER"
 
 
 class TalentEnvs(object):

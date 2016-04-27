@@ -282,7 +282,7 @@ class CandidatesResource(Resource):
         if candidate_id_from_url and len(candidates) > 1:
             raise InvalidUsage(
                 "Error: You requested an update for one candidate but provided data for multiple candidates.",
-                custom_error.INVALID_INPUT)
+                custom_error.INVALID_USAGE)
 
         # Input validations
         skip = False  # If True, skip all validations & unnecessary db communications for candidates that must be hidden
@@ -293,7 +293,7 @@ class CandidatesResource(Resource):
             # Candidate ID must be provided in json dict or in the url
             candidate_id = candidate_id_from_url or _candidate_dict.get('id')
             if not candidate_id:
-                raise InvalidUsage("Candidate ID is required", custom_error.INVALID_INPUT)
+                raise InvalidUsage("Candidate ID is required", custom_error.INVALID_USAGE)
 
             # Check for candidate's existence
             candidate = Candidate.get_by_id(candidate_id)

@@ -7,6 +7,7 @@ class CandidateCustomErrors(object):
     # General error codes
     INVALID_INPUT = 3000
     MISSING_INPUT = 3001
+    INVALID_USAGE = 3002
 
     # Error codes for Candidate(s)
     CANDIDATE_NOT_FOUND = 3010
