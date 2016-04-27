@@ -184,10 +184,12 @@ def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pip
 
 @pytest.fixture()
 def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
-                                 valid_header, user_phone_1):
+                                 valid_header, smartlist_with_two_candidates, user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data.
     """
+    smartlist_id, _ = smartlist_with_two_candidates
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, valid_header,
                                                     talent_pipeline.user.id)
 
@@ -409,7 +411,8 @@ def candidate_and_phone_1(request, sent_campaign_and_blast_ids, access_token_fir
     """
     sent_campaign, blast_ids = sent_campaign_and_blast_ids
     CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
-                                             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
+                                             blast_url=SmsCampaignApiUrl.BLAST % (
+                                             sent_campaign['id'], blast_ids[0]),
                                              access_token=access_token_first)
     candidate_ids = candidate_ids_associated_with_campaign(sent_campaign, access_token_first)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[0],
@@ -472,16 +475,15 @@ def candidate_phone_in_other_domain(request, candidate_in_other_domain):
 
 
 @pytest.fixture()
-def candidates_with_same_phone(user_first, candidate_in_other_domain,
-                               smartlist_with_two_candidates):
+def candidates_with_same_phone(user_first, smartlist_with_two_candidates):
     """
-    This assigns same phone number to both Candidates associated
-    with this campaign have no phone number saved in database.
+    This assigns same phone number to both Candidates associated with this campaign.
     It then returns both candidates of user_first.
     """
     common_phone = fake.phone_number()
+    db.session.commit()
     user_first.candidates[0].phones[0].update(value=common_phone)
-    candidate_in_other_domain.phones[0].update(value=common_phone)
+    user_first.candidates[1].phones[0].update(value=common_phone)
     return user_first.candidates[0], user_first.candidates[1]
 
 
@@ -562,7 +564,8 @@ def sent_campaign_and_blast_ids_in_other_domain(access_token_other, sent_campaig
     It returns sent campaign object and blast_ids.
     """
     blasts = CampaignsTestsHelpers.get_blasts(sent_campaign_in_other_domain, access_token_other,
-                                              SmsCampaignApiUrl.BLASTS % sent_campaign_in_other_domain['id'])
+                                              SmsCampaignApiUrl.BLASTS %
+                                              sent_campaign_in_other_domain['id'])
     blasts_ids = [blast['id'] for blast in blasts]
     return sent_campaign_in_other_domain, blasts_ids
 
@@ -608,7 +611,8 @@ def sent_campaign_bulk_and_blast_ids(access_token_first, sent_campaign_bulk):
     It also gets it's blasts and return a tuple containing campaign object and blast_ids.
     """
     blasts = CampaignsTestsHelpers.get_blasts(sent_campaign_bulk[0], access_token_first,
-                                              SmsCampaignApiUrl.BLASTS % sent_campaign_bulk[0]['id'])
+                                              SmsCampaignApiUrl.BLASTS % sent_campaign_bulk[0][
+                                                  'id'])
     blasts_ids = [blast['id'] for blast in blasts]
     return sent_campaign_bulk, blasts_ids
 

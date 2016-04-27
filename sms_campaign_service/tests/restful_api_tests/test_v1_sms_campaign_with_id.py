@@ -162,8 +162,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response_post.status_code == ForbiddenError.http_status_code(), \
             'It should get forbidden error (403)'
 
-    def test_updating_deleted_record(self, valid_header, user_first,
-                                     sms_campaign_of_current_user,
+    def test_updating_deleted_record(self, sms_campaign_of_current_user,
                                      campaign_valid_data, access_token_first):
         """
         User auth token is valid. It deletes the campaign from database and then tries
@@ -232,14 +231,14 @@ class TestSmsCampaignWithIdHTTPPUT(object):
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, valid_header,
                                                                   campaign_valid_data,
-                                                                  smartlist_of_other_domain,
+                                                                  smartlist_with_two_candidates_in_other_domain,
                                                                   sms_campaign_of_current_user):
         """
         This is a test to update a campaign which does not exists in database.
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
+        data['smartlist_ids'].extend([last_id, 0, smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'],
                                 headers=valid_header,
                                 data=json.dumps(data))
@@ -247,14 +246,14 @@ class TestSmsCampaignWithIdHTTPPUT(object):
 
     def test_campaign_update_with_invalid_smartlist_ids(self, valid_header,
                                                         campaign_valid_data,
-                                                        smartlist_of_other_domain,
+                                                        smartlist_with_two_candidates_in_other_domain,
                                                         sms_campaign_of_current_user):
         """
         This is a test to update a campaign which does not exists in database.
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
+        data['smartlist_ids'] = [last_id + 100, 0, smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'],
                                 headers=valid_header,
                                 data=json.dumps(data))
