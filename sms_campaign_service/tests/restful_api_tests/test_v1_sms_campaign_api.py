@@ -270,14 +270,15 @@ class TestSmsCampaignHTTPPost(object):
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
     def test_campaign_create_with_valid_and_non_existing_and_not_owned_smartlist_ids(
-            self, valid_header, user_first, campaign_valid_data, smartlist_of_other_domain):
+            self, valid_header, user_first, campaign_valid_data,
+            smartlist_with_two_candidates_in_other_domain):
         """
         This is a test to create SMS campaign with valid and invalid smartlist_ids.
         Status code should be 207 and campaign should be created.
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'].extend([last_id, 0, smartlist_of_other_domain.id])
+        data['smartlist_ids'].extend([last_id, 0, smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(data))
@@ -285,14 +286,14 @@ class TestSmsCampaignHTTPPost(object):
 
     def test_campaign_create_with_invalid_smartlist_ids(self, valid_header,
                                                         campaign_valid_data,
-                                                        smartlist_of_other_domain):
+                                                        smartlist_with_two_candidates_in_other_domain):
         """
         This is a test to create SMS campaign with invalid smartlist_ids.
         Status code should be 400 and campaign should not be created.
         """
         data = campaign_valid_data.copy()
         last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'] = [last_id + 100, 0, smartlist_of_other_domain.id]
+        data['smartlist_ids'] = [last_id + 100, 0, smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                                  headers=valid_header,
                                  data=json.dumps(data))

@@ -173,6 +173,16 @@ def smartlist_with_two_candidates(access_token_first, talent_pipeline):
 
 
 @pytest.fixture()
+def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pipeline_other):
+    """
+    This creates a smartlist with two candidates for user_from_diff_domain
+    """
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_other, talent_pipeline_other, count=2, create_phone=True, assign_role=True)
+    return smartlist_id, candidate_ids
+
+
+@pytest.fixture()
 def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
                                  valid_header, user_phone_1):
     """
@@ -308,12 +318,12 @@ def sms_campaign_with_no_valid_candidate(request, campaign_valid_data,
 
 @pytest.fixture()
 def sms_campaign_in_other_domain(request, campaign_valid_data, valid_header_2,
-                                 access_token_other, talent_pipeline_other):
+                                 talent_pipeline_other,
+                                 smartlist_with_two_candidates_in_other_domain):
     """
     This creates SMS campaign for some other user in different domain.
     """
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_other, talent_pipeline_other, count=2, create_phone=True)
+    smartlist_id, _ = smartlist_with_two_candidates_in_other_domain
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
                                                     valid_header_2,
@@ -462,7 +472,8 @@ def candidate_phone_in_other_domain(request, candidate_in_other_domain):
 
 
 @pytest.fixture()
-def candidates_with_same_phone(user_first):
+def candidates_with_same_phone(user_first, candidate_in_other_domain,
+                               smartlist_with_two_candidates):
     """
     This assigns same phone number to both Candidates associated
     with this campaign have no phone number saved in database.
@@ -648,7 +659,6 @@ def create_sms_campaign_via_api(campaign_data, headers, user_id):
     :param campaign_data: data to create campaign
     :param headers: auth headers to make HTTP request
     :param user_id: if of User object
-    :return:
     """
     response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                              headers=headers,
@@ -721,7 +731,7 @@ def _unschedule_campaign(campaign, headers):
 def _delete_campaign(campaign_obj):
     """
     This deletes the given campaign from database
-    :param campaign_obj:
+    :param campaign_obj: sms-campaign object
     """
     try:
         SmsCampaign.delete(campaign_obj)
