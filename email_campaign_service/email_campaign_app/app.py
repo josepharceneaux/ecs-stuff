@@ -16,7 +16,7 @@ from flask import request
 from apis.email_campaigns import email_campaign_blueprint
 from apis.email_templates import template_blueprint
 from email_campaign_service.email_campaign_app import app, logger
-from email_campaign_service.modules.utils import AWS_SNS_TERMS
+from email_campaign_service.modules import aws_constants as aws
 from email_campaign_service.modules.email_marketing import handle_email_bounce
 
 # Register API endpoints
@@ -50,29 +50,33 @@ def amazon_sns_endpoint():
 
     # SNS first sends a confirmation request to this endpoint, we then confirm our subscription by sending a
     # GET request to given url in subscription request body.
-    if request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.SUBSCRIBE:
-        response = requests.get(data['SubscribeURL'])
-        if not data['TopicArn'] in response.text:
-            logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s', data['TopicArn'],
-                        request.data)
-            return 'Not verified', 500
+    if request.headers.get(aws.HEADER_KEY) == aws.SUBSCRIBE:
+        response = requests.get(data[aws.SUBSCRIBE_URL])
+        if data[aws.TOPIC_ARN] not in response.text:
+            logger.info('Could not verify topic subscription. TopicArn: %s, RequestData: %s',
+                        data[aws.TOPIC_ARN], request.data)
+            return 'Not verified', requests.codes.INTERNAL_SERVER_ERROR
 
-    elif request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.NOTIFICATION:
+        logger.info('Aws SNS topic subscription for email notifications was successful.'
+                    '\nTopicArn: %s\nRequestData: %s', data[aws.TOPIC_ARN], request.data)
+
+    elif request.headers.get(aws.HEADER_KEY) == aws.NOTIFICATION:
         # In case of notification, check its type (bounce or complaint) and process accordingly.
         data = json.loads(request.data)
-        message = data['Message']
+        message = data[aws.MESSAGE]
         message = json.loads(message)
-        message_id = message['mail']['messageId']
-        if message['notificationType'] == AWS_SNS_TERMS.BOUNCE:
-            bounce = message['bounce']
-            emails = [recipient['emailAddress'] for recipient in bounce['bouncedRecipients']]
+        message_id = message[aws.MAIL][aws.MESSAGE_ID]
+        if message[aws.NOTIFICATION_TYPE] == aws.BOUNCE_NOTIFICATION:
+            bounce = message[aws.BOUNCE]
+            emails = [recipient[aws.EMAIL_ADDRESSES] for recipient in bounce[aws.BOUNCE_RECIPIENTS]]
             handle_email_bounce(message_id, bounce, emails)
 
-        elif message['notificationType'] == AWS_SNS_TERMS.COMPLAINT:
+        elif message[aws.NOTIFICATION_TYPE] == aws.COMPLAINT_NOTIFICATION:
             pass   # TODO: Add implementation for complaints
 
-    elif request.headers.get(AWS_SNS_TERMS.HEADER_KEY) == AWS_SNS_TERMS.UNSUBSCRIBE:
-        logger.info('SNS notifications for email campaign has been unsubscribed.')
+    elif request.headers.get(aws.HEADER_KEY) == aws.UNSUBSCRIBE:
+        logger.info('SNS notifications for email campaign has been unsubscribed.'
+                    '\nRequestData: %s', request.data)
     else:
         logger.info('Invalid request. Request data %s', request.data)
 

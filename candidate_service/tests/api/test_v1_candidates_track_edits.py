@@ -48,8 +48,8 @@ class TestTrackCandidateEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_candidate_dict['full_name']
-        assert candidate_edits[0]['new_value'] == new_candidate_dict['full_name']
+        assert candidate_edits[0]['old_value'] in old_candidate_dict['full_name']
+        assert candidate_edits[0]['new_value'] in new_candidate_dict['full_name']
 
 
 class TestTrackCandidateAddressEdits(object):
