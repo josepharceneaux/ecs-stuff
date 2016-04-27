@@ -15,8 +15,9 @@ but maybe some other user.
 import time
 import pytest
 from faker import Faker
+from redo import retry
 
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task, get_smartlist_candidates
 from push_campaign_service.common.utils.test_utils import HttpStatus
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
@@ -223,6 +224,9 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
+    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_first['id'], token_first),
+          kwargs={'candidates_count': 1})
     data = generate_campaign_schedule_data()
     task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
 
