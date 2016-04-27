@@ -17,12 +17,14 @@ fi
 
 timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
 timestamp_tag="built-at-$timestamp"
-echo "Using tag ${timestamp_tag}"
-git --version
+echo "Tagging branch with ${timestamp_tag}"
+git tag -a ${timestamp_tag} -m "Adding timestamp tag"
+git push --tags
 
 for app_index in ${!FLASK_APPS[@]}
 
 do
+    echo "SERVICE: ${FLASK_APPS[$app_index]}"
     if [ $production ] ; then
 	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
 	echo $tag_command
@@ -31,7 +33,7 @@ do
 	echo $push_command
         eval $push_command
     else
-	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:${timestamp_tag} ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
+	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]} ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
 
@@ -40,5 +42,7 @@ do
         eval $push_command
 
 	# Update task definition for this service
+	echo `which python`
+	python ecs_task_update.py ${FLASK_APPS[$app_index]} timestamp_tag
     fi
 done

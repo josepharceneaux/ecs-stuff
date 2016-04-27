@@ -1,6 +1,8 @@
 import boto3
 import argparse
+import json
 
+# Command line arguments
 SERVICE_NAME = 'service-name'
 TAG_NAME = 'tag-name'
 
@@ -11,9 +13,15 @@ args = parser.parse_args()
 
 service = vars(args)[SERVICE_NAME][0]
 tag = vars(args)[TAG_NAME][0]
-
-print "Service: %s" % service
-print "Tag: %s" % tag
+service += '-td' # Adjust for our ECS naming convention
 
 client = boto3.client('ecs')
-print "Client: %s" % client
+# This returns the latest ACTIVE revision
+task_definition = client.describe_task_definition(taskDefinition=service)
+# We are running single container tasks
+image = task_definition['taskDefinition']['containerDefinitions'][0]['image']
+
+# Get the image without the tag and create new image with our new tag
+new_image = image.split(':')[0] + ':' + tag
+
+print "Creating new task definition with image: %s" % new_image
