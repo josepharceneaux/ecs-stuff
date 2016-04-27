@@ -3,9 +3,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains the code which is common for different tests.
 """
-# Standard Import
-import time
-
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.sms_campaign_app import app
@@ -17,8 +14,6 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
-
-SLEEP_TIME = 30
 
 
 def assert_url_conversion(sms_campaign_sends):
@@ -164,6 +159,5 @@ def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_ind
     This returns candidate_ids associated with the smartlists of given campaign object.
     :param campaign: SMS campaign object
     :param access_token: access token of user
-    :return:
     """
     return get_candidates_of_smartlist(campaign['list_ids'][smartlist_index], True, access_token)
