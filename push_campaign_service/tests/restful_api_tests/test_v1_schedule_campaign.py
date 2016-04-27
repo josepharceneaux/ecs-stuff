@@ -39,6 +39,7 @@ import sys
 import time
 from datetime import datetime
 # 3rd party imports
+from redo import retry
 from requests import codes as HttpStatus
 from polling import poll
 # Application specific imports
@@ -47,7 +48,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
                                                         reschedule_campaign, get_blasts, SLEEP_TIME,
                                                         unschedule_campaign, get_campaigns, create_campaign)
 from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
-    create_candidate, get_candidate, create_smartlist, send_request
+    create_candidate, get_candidate, create_smartlist, send_request, get_smartlist_candidates
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.common.models.misc import Frequency
@@ -336,6 +337,10 @@ def test_schedule_a_campaign_with_valid_data_new(candidate_first, smartlist_firs
 def test_schedule_a_campaign_with_user_from_same_domain(smartlist_same_domain, campaign_data,  talent_pool, token_first, token_same_domain,  candidate_device_first):
 
     time.sleep(60)
+    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
+          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_same_domain['id'], token_same_domain),
+          kwargs={'candidates_count': 1})
+
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_same_domain['id']]
     campaign_id = create_campaign(data, token_first)['id']

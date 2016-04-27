@@ -137,7 +137,7 @@ def candidate_first(request, talent_pool, token_first, user_first):
         delete_candidate(candidate_id, token_first,
                          expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -159,7 +159,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
         delete_candidate(candidate_id, token_same_domain,
                          expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -181,7 +181,7 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
         delete_candidate(candidate_id, token_second,
                          expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return candidate
 
 

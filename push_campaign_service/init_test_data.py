@@ -38,7 +38,7 @@ for domain_name in domain_names:
     sql = text(q)
     result = db.engine.execute(sql)
     if result.rowcount == 0:
-        q = 'INSERT INTO domain (name,organizationId) VALUES ("%s",1);' % domain_name
+        q = 'INSERT INTO domain (name,organizationId, is_disabled) VALUES ("%s",1, 0);' % domain_name
         sql = text(q)
         result = db.engine.execute(sql)
         domain_ids.append(result.lastrowid)
@@ -76,8 +76,8 @@ for email, domain_id, group_id in user_data:
     sql = text(q)
     result = db.engine.execute(sql)
     if result.rowcount == 0:
-        q = '''INSERT INTO user (email, password, domainId, userGroupId)
-        VALUES ("%s", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", %s , %s);''' % (email, domain_id, group_id)
+        q = '''INSERT INTO user (email, password, domainId, userGroupId, is_disabled)
+        VALUES ("%s", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", %s , %s, 0);''' % (email, domain_id, group_id)
         sql = text(q)
         result = db.engine.execute(sql)
         user_ids.append(result.lastrowid)

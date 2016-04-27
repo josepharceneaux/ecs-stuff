@@ -3,9 +3,9 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs />
-    <option name="SDK_HOME" value="/usr/bin/python2.7" />
+    <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="" />
-    <option name="IS_MODULE_SDK" value="false" />
+    <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <module name="talent-flask-services" />
@@ -19,8 +19,8 @@
     <option name="USE_PATTERN" value="false" />
     <option name="testToRun" value="$PROJECT_DIR$/push_campaign_service/tests" />
     <option name="keywords" value="" />
-    <option name="params" value="" />
-    <option name="USE_PARAM" value="false" />
+    <option name="params" value="-k test_schedule_a_campaign_with_user_from_same_domain" />
+    <option name="USE_PARAM" value="true" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>

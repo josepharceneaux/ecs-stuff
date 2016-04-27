@@ -289,6 +289,16 @@ def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     return response.json()
 
 
+def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), candidates_count=None):
+    response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
+    print('common_tests : get_smartlist_candidates: ', response.content)
+    assert response.status_code in expected_status
+    response = response.json()
+    if candidates_count:
+        assert len(response['candidates']) == candidates_count
+    return response
+
+
 def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200,)):
     data = {
         "talent_pipelines": []
