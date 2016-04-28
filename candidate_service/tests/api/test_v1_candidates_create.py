@@ -9,13 +9,11 @@ import pycountry
 # Conftest
 from candidate_service.common.tests.conftest import *
 
-# Common utils
-from candidate_service.common.utils.handy_functions import get_phone_number_extension
-
 # Helper functions
 from helpers import AddUserRoles, get_country_code_from_name
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
 
 # Sample data
 from candidate_sample_data import (
@@ -1041,8 +1039,9 @@ class TestCreatePhones(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         candidate_phones = get_resp.json()['candidate']['phones']
+        phone_number_from_data = data['candidates'][0]['phones'][0]['value']
         assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
-        assert get_phone_number_extension(data['candidates'][0]['phones'][0]['value']) == candidate_phones[0]['extension']
+        assert get_phone_number_extension_if_exists(phone_number_from_data)[-1] == candidate_phones[0]['extension']
 
 
     def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
