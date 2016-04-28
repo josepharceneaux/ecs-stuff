@@ -172,7 +172,8 @@ class TestCampaignSchedule(object):
                                                            blast_timeout=60)
         delete_test_scheduled_task(task_id, valid_header)
 
-    def test_periodic_campaign_schedule_and_validate_run(self, valid_header, user_first, access_token_first,
+    def test_periodic_campaign_schedule_and_validate_run(self, valid_header, user_first,
+                                                         access_token_first,
                                                          sms_campaign_of_current_user):
         """
         This is test to schedule SMS campaign with all valid parameters. This should get OK
@@ -197,7 +198,7 @@ class TestCampaignSchedule(object):
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first,
                                                            expected_blasts=2,
-                                                           blast_index=1, blast_timeout=60)
+                                                           blast_index=1, blast_timeout=80)
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_campaign_daily_schedule_and_validate_task_run(
