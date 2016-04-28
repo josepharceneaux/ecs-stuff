@@ -28,6 +28,19 @@ def is_valid_email(email):
     return email and re.match(regex, email)
 
 
+def get_phone_number_extension_if_exists(phone_number):
+    """
+    Function will extract & return phone-number, extension prefix, and extension-number if an extension is provided
+    :return: phone number, extension-prefix & extension number; e.g. ('4084059934', 'ext', '45') | (None, None, None)
+    :rtype:  tuple
+    """
+    # TODO: compile regex at application startup
+    # Link from where regex was copied:
+    #   https://www.quora.com/What-is-the-best-way-to-parse-and-standardize-phone-numbers-in-Python?share=1
+    matched = re.match(r'([^a-zA-Z]+)([a-zA-Z]+\D*)(\d+)', phone_number)
+    return matched.groups() if matched else (None, None, None)
+
+
 def parse_phone_number(phone_number, iso3166_country_code=None):
     """
     Function will parse phone number. If phone number does not have country code, it will look for
@@ -55,7 +68,6 @@ def parse_phone_number(phone_number, iso3166_country_code=None):
                                format(phone_number, iso3166_country_code))
 
     # If phone number contains an extension, it must be parsed
-    from handy_functions import get_phone_number_extension_if_exists
     number, extension_prefix, extension_value = get_phone_number_extension_if_exists(phone_number)
 
     # Phone number is considered invalid if it's less than 7 digits; see:
