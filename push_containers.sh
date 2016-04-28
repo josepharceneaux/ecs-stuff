@@ -43,11 +43,12 @@ do
         eval $push_command
 
 	# Update task definition for this service
-	python ecs_task_update.py ${FLASK_APPS[$app_index]} ${timestamp_tag}
+	python ecs_task_update.py ${FLASK_APPS[$app_index]} ${timestamp_tag} stage
     fi
 done
 
 # If we've pushed and tagged all the images, tag the branch
 echo "Tagging branch with ${timestamp_tag}"
-git tag -a ${timestamp_tag} -m "Adding timestamp tag"
-git push --tags
+# Need to turn off triggering from tag push
+# git tag -a ${timestamp_tag} -m "Adding timestamp tag"
+# git push --tags
