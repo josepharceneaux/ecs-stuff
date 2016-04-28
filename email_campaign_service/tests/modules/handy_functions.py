@@ -55,7 +55,7 @@ def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
         access_token, talent_pipeline, count=count, emails_list=emails_list,
         assert_candidates=assert_candidates)
 

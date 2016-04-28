@@ -57,7 +57,7 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
 # This is data to schedule an SMS campaign
 def generate_campaign_schedule_data():
     """
-    This returns a dictionary to for sms-campaign creation
+    This returns a dictionary to schedule an sms-campaign
     """
     return {"frequency_id": Frequency.ONCE,
             "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
