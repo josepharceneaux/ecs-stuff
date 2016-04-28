@@ -1,8 +1,6 @@
 """
 This module contains tests code that is common across services. e.g SMS and Push campaign.
 """
-from app_common.common.inter_service_calls.candidate_service_calls import assert_candidate_upload
-
 __author__ = 'basit'
 
 # Standard Imports
@@ -392,13 +390,7 @@ class CampaignsTestsHelpers(object):
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
         if assert_candidates:
-            try:
-                poll(assert_candidate_upload, step=3,
-                     args=({'candidate_ids': candidate_ids}, access_token),
-                     timeout=timeout), 'Candidates not found on cloud.'
-            except TimeoutException:
-                print 'Candidates not found on CS within given time range'
-            print '%s candidates created on CS' % len(candidate_ids)
+            time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
