@@ -20,10 +20,10 @@ import magic
 import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
-# from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
-# from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.sovren_parse_lib import fetch_sovren_response
-from resume_parsing_service.app.views.sovren_parse_lib import parse_sovren_xml
+from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+# from resume_parsing_service.app.views.sovren_parse_lib import fetch_sovren_response
+# from resume_parsing_service.app.views.sovren_parse_lib import parse_sovren_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
@@ -151,13 +151,12 @@ def parse_resume(file_obj, filename_str):
     if is_resume_image:
         # If file is an image, OCR it
         start_time = time()
-        # TODO Temporarily commenting out GAPI, mobile app is sending images embedded in PDFs so still need to use Abby.
-        # doc_content = google_vision_ocr(file_obj)
-        # logger.info(
-        #     "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
-        #                                                                  time() - start_time)
-        # )
-        doc_content = ocr_image(file_obj)
+        doc_content = google_vision_ocr(file_obj)
+        logger.info(
+            "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
+                                                                         time() - start_time)
+        )
+        # doc_content = ocr_image(file_obj)
         logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         start_time = time()
@@ -174,13 +173,13 @@ def parse_resume(file_obj, filename_str):
 
     encoded_resume = base64.b64encode(doc_content)
     start_time = time()
-    optic_response = fetch_sovren_response(encoded_resume)
+    optic_response = fetch_optic_response(encoded_resume)
     logger.info(
         "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str + final_file_ext,
                                                               time() - start_time)
     )
     if optic_response:
-        candidate_data = parse_sovren_xml(optic_response)
+        candidate_data = parse_optic_xml(optic_response)
         # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
     else:
