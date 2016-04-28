@@ -7,12 +7,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Common Utils
-from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 # Service Specific
 from sms_campaign_service.tests.conftest import fake
@@ -22,8 +20,8 @@ from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiExcept
                                                             CandidateNotFoundInUserDomain,
                                                             NoUserFoundForPhoneNumber,
                                                             NoSMSCampaignSentToCandidate)
-from sms_campaign_service.tests.modules.common_functions import (get_reply_text,
-                                                                 assert_for_activity)
+from sms_campaign_service.tests.modules.common_functions import (get_campaign_reply,
+                                                                 reply_and_assert_response)
 
 
 class TestSmsReceive(object):
@@ -53,7 +51,7 @@ class TestSmsReceive(object):
                                            'Body': "What's the venue?"})
         assert response_get.status_code == 200, 'Response should be ok'
         assert 'xml' in str(response_get.text).strip()
-        campaign_reply_in_db = get_reply_text(candidate_phone_2)
+        campaign_reply_in_db = get_campaign_reply(candidate_phone_2)
         assert not campaign_reply_in_db
 
     def test_process_candidate_reply_with_no_data(self):
@@ -171,7 +169,7 @@ class TestSmsReceive(object):
         and replies count has been incremented by 1. Finally we assert that activity has been
         created in database table 'Activity'.
         """
-        _assert_valid_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)
+        reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)
 
     def test_sms_receive_with_candidate_having_same_phone_in_diff_domains(
             self, user_phone_1, candidates_with_same_phone_in_diff_domains,
@@ -183,37 +181,4 @@ class TestSmsReceive(object):
         It should not get any error.
         """
 
-        _assert_valid_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)
-
-
-def get_replies_count(campaign, access_token):
-    """
-    This returns the replies counts of SMS campaign from database table 'sms_campaign_blast'
-    :param campaign: SMS campaign obj
-    :param access_token: Access token of user
-    """
-    sms_campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign,
-                                                                        access_token,
-                                                                        blasts_url=SmsCampaignApiUrl.BLASTS % campaign['id'])
-    return sms_campaign_blasts[0]['replies']
-
-
-def _assert_valid_response(campaign_obj, user_phone, candidate_phone, access_token):
-    """
-    Here is the functionality to test valid response on given campaign
-    """
-    reply_text = "What's the venue?"
-    reply_count_before = get_replies_count(campaign_obj, access_token)
-    response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
-                                 data={'To': user_phone.value,
-                                       'From': candidate_phone['value'],
-                                       'Body': reply_text})
-    assert response_get.status_code == 200, 'Response should be ok'
-    assert 'xml' in str(response_get.text).strip()
-    campaign_reply_in_db = get_reply_text(candidate_phone)
-    assert len(campaign_reply_in_db) == 1
-    assert campaign_reply_in_db[0].body_text == reply_text
-    reply_count_after = get_replies_count(campaign_obj, access_token)
-    assert reply_count_after == reply_count_before + 1
-    assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
-                        campaign_reply_in_db[0].id)
+        reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)

@@ -28,7 +28,8 @@ from sms_campaign_service.tests.modules.common_functions import (assert_api_send
                                                                  assert_campaign_schedule,
                                                                  delete_test_scheduled_task,
                                                                  assert_campaign_creation,
-                                                                 candidate_ids_associated_with_campaign)
+                                                                 candidate_ids_associated_with_campaign,
+                                                                 reply_and_assert_response)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER)
@@ -391,16 +392,31 @@ def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain,
 
 
 @pytest.fixture()
-def create_campaign_replies(user_first, candidate_and_phone_1):
+def create_campaign_replies(candidate_and_phone_1, sent_campaign, access_token_first,
+                            user_phone_1):
     """
     This hits the endpoint /v1/receive where we add an entry in database
     table "sms_campaign_reply" for first candidate associated with campaign.
     """
-    reply_response = requests.post(SmsCampaignApiUrl.RECEIVE,
-                                   data={'To': user_first.user_phones[0].value,
-                                         'From': candidate_and_phone_1[1]['value'],
-                                         'Body': "Got it"})
-    assert reply_response.status_code == requests.codes.OK
+    reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)
+
+
+@pytest.fixture()
+def create_bulk_replies(candidate_and_phone_1, candidate_and_phone_2, sent_campaign,
+                        access_token_first, user_phone_1):
+    """
+    Here we create 10 replies to an sms-campaign.
+    This hits the endpoint /v1/receive where we add an entry in database
+    table "sms_campaign_reply" for first candidate associated with campaign.
+    We use 2 candidates and create 5 replies from each candidate
+    """
+    for count in xrange(1, 6):
+        reply_and_assert_response(sent_campaign, user_phone_1,
+                                  candidate_and_phone_1[1], access_token_first, count_of_replies=count)
+
+    for count in xrange(1, 6):
+        reply_and_assert_response(sent_campaign, user_phone_1,
+                                  candidate_and_phone_2[1], access_token_first, count_of_replies=count)
 
 
 @pytest.fixture()
@@ -409,22 +425,24 @@ def candidate_and_phone_1(request, sent_campaign_and_blast_ids, access_token_fir
     This returns the candidate object and candidate_phone for first candidate associated with
     the sms-campaign in a tuple. Here we assume campaign has been sent to candidate.
     """
-    sent_campaign, blast_ids = sent_campaign_and_blast_ids
-    CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2,
-                                             blast_url=SmsCampaignApiUrl.BLAST % (
-                                             sent_campaign['id'], blast_ids[0]),
-                                             access_token=access_token_first)
-    candidate_ids = candidate_ids_associated_with_campaign(sent_campaign, access_token_first)
-    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[0],
-                                          headers=valid_header)
-    json_response = candidate_get_response.json()
-    candidate_1_phone = json_response['candidate']['phones'][0]
+    candidate, candidate_phone = _get_candidate_and_phone_tuple(request,
+                                                                sent_campaign_and_blast_ids,
+                                                                access_token_first,
+                                                                valid_header, candidate_index=0)
+    return candidate, candidate_phone
 
-    def tear_down():
-        _delete_candidate_phone(candidate_1_phone['id'])
 
-    request.addfinalizer(tear_down)
-    return json_response['candidate'], candidate_1_phone
+@pytest.fixture()
+def candidate_and_phone_2(request, sent_campaign_and_blast_ids, access_token_first, valid_header):
+    """
+    This returns the candidate object and candidate_phone for first candidate associated with
+    the sms-campaign in a tuple. Here we assume campaign has been sent to candidate.
+    """
+    candidate, candidate_phone = _get_candidate_and_phone_tuple(request,
+                                                                sent_campaign_and_blast_ids,
+                                                                access_token_first,
+                                                                valid_header, candidate_index=1)
+    return candidate, candidate_phone
 
 
 @pytest.fixture()
@@ -783,3 +801,27 @@ def _get_auth_header(access_token):
     auth_header = {'Authorization': 'Bearer %s' % access_token}
     auth_header.update(JSON_CONTENT_TYPE_HEADER)
     return auth_header
+
+
+def _get_candidate_and_phone_tuple(request, sent_campaign_and_blast_ids, access_token_first,
+                                   valid_header, candidate_index):
+    """
+    This returns the candidate and candidate phone as specified by the candidate index
+    for given campaign.
+    """
+    sent_campaign_obj, blast_ids = sent_campaign_and_blast_ids
+    CampaignsTestsHelpers.assert_blast_sends(sent_campaign_obj, 2,
+                                             blast_url=SmsCampaignApiUrl.BLAST
+                                                       % (sent_campaign_obj['id'], blast_ids[0]),
+                                             access_token=access_token_first)
+    candidate_ids = candidate_ids_associated_with_campaign(sent_campaign_obj, access_token_first)
+    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[candidate_index],
+                                          headers=valid_header)
+    json_response = candidate_get_response.json()
+    candidate_phone = json_response['candidate']['phones'][0]
+
+    def tear_down():
+        _delete_candidate_phone(candidate_phone['id'])
+
+    request.addfinalizer(tear_down)
+    return json_response['candidate'], candidate_phone

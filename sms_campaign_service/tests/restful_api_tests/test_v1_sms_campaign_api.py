@@ -61,8 +61,8 @@ class TestSmsCampaignHTTPGet(object):
     def test_campaigns_get_with_one_user_twilio_number(self, access_token_first,
                                                        user_phone_1):
         """
-        User has one Twilio phone number, User already has a Twilio phone number.
-        it should get OK response.
+        User already has a Twilio phone number. it should get OK response. But no campaign
+        has been created yet.
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -78,13 +78,21 @@ class TestSmsCampaignHTTPGet(object):
         :param access_token_first: access token of user
         :param user_phone_1: fixture to assign one test phone number to user
         :param user_phone_2: fixture to assign another test phone number to user
-        :return:
         """
         response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
+
+    def test_get_with_one_campaign(self, access_token_first, sms_campaign_of_current_user):
+        """
+        We have created one campaign for user. It should get OK response and count of campaigns
+        should be 1,
+        """
+        response = requests.get(SmsCampaignApiUrl.CAMPAIGNS,
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        _assert_counts_and_campaigns(response, count=1)
 
 
 class TestSmsCampaignHTTPPost(object):
@@ -486,17 +494,15 @@ class TestSmsCampaignHTTPDelete(object):
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
 
 
-def _assert_counts_and_campaigns(response, count=0, campaigns=list()):
+def _assert_counts_and_campaigns(response, count=0):
     """
-    This function is used to assert the count of SMS campaigns and list of campaigns
+    This function is used to asserts that we ger expected number of SMS campaigns
     """
-    assert response.status_code == 200, 'Status should be Ok (200)'
+    assert response.status_code == requests.codes.OK, 'Status should be Ok (200)'
     assert response.json()
     resp = response.json()
-    assert 'count' in resp
     assert 'campaigns' in resp
-    assert resp['count'] == count
-    assert resp['campaigns'] == campaigns
+    assert len(resp['campaigns']) == count
 
 
 def _delete_created_number_of_user(user):

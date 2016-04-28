@@ -3,9 +3,13 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains the code which is common for different tests.
 """
+# Third Party
+import requests
+
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.sms_campaign_app import app
+from sms_campaign_service.common.tests.conftest import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
@@ -85,18 +89,6 @@ def assert_for_activity(user_id, type_, source_id):
     CampaignsTestsHelpers.assert_for_activity(user_id, type_, source_id)
 
 
-def get_reply_text(candidate_phone):
-    """
-    This asserts that exact reply of candidate has been saved in database table "sms_campaign_reply"
-    """
-    # Need to commit the session because Celery has its own session, and our session does not
-    # know about the changes that Celery session has made.
-    db.session.commit()
-    candidate_phone_id = candidate_phone.id if hasattr(candidate_phone, 'id') else candidate_phone['id']
-    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone_id)
-    return campaign_reply_record
-
-
 def assert_api_send_response(campaign, response, expected_status_code):
     """
     Here are asserts that make sure that campaign has been created successfully.
@@ -161,3 +153,64 @@ def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_ind
     :param access_token: access token of user
     """
     return get_candidates_of_smartlist(campaign['list_ids'][smartlist_index], True, access_token)
+
+
+def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_token,
+                              count_of_replies=1):
+    """
+    We reply to a campaign by hitting /v1/receive endpoint.
+    We then assert that all the expected entries have been created in database.
+    """
+    reply_text = fake.sentence()
+    reply_count_before = get_replies_count(campaign_obj, access_token)
+    response_get = requests.post(SmsCampaignApiUrl.RECEIVE,
+                                 data={'To': user_phone.value,
+                                       'From': candidate_phone['value'],
+                                       'Body': reply_text})
+    assert response_get.status_code == requests.codes.OK, 'Response should be ok'
+    assert 'xml' in str(response_get.text).strip()
+    campaign_reply_in_db = get_campaign_reply(candidate_phone)
+    assert len(campaign_reply_in_db) == count_of_replies
+    assert campaign_reply_in_db[count_of_replies-1].body_text == reply_text
+    reply_count_after = get_replies_count(campaign_obj, access_token)
+    assert reply_count_after == reply_count_before + 1
+    assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
+                        campaign_reply_in_db[count_of_replies-1].id)
+
+
+def get_campaign_reply(candidate_phone):
+    """
+    This asserts that exact reply of candidate has been saved in database table "sms_campaign_reply"
+    """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
+    candidate_phone_id = candidate_phone.id if hasattr(candidate_phone, 'id') else candidate_phone['id']
+    campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone_id)
+    return campaign_reply_record
+
+
+def get_replies_count(campaign, access_token):
+    """
+    This returns the replies counts of SMS campaign from database table 'sms_campaign_blast'
+    :param campaign: SMS campaign obj
+    :param access_token: Access token of user
+    """
+    sms_campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign,
+                                                                        access_token,
+                                                                        blasts_url=SmsCampaignApiUrl.BLASTS % campaign['id'])
+    return sms_campaign_blasts[0]['replies']
+
+
+def assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids):
+    """
+    Here we are asserting that response from API has all required fields in it.
+    :param (dict) received_reply_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/replies
+    :param (int, long) blast_id: Id of campaign blast
+    :param (list) candidate_phone_ids: list of candidate phone ids
+    """
+    assert received_reply_obj['id']
+    assert received_reply_obj['body_text']
+    assert received_reply_obj['added_datetime']
+    assert received_reply_obj['blast_id'] == blast_id
+    assert received_reply_obj['candidate_phone_id'] in candidate_phone_ids

@@ -10,6 +10,7 @@ import requests
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
+from sms_campaign_service.tests.modules.common_functions import assert_reply_object
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -68,8 +69,7 @@ class TestSmsCampaignReplies(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
-        assert json_resp['blast_id'] == blast_ids[0]
-        assert json_resp['candidate_phone_id'] == candidate_and_phone_1[1]['id']
+        assert_reply_object(json_resp, blast_ids[0], [candidate_and_phone_1[1]['id']])
 
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
@@ -89,3 +89,66 @@ class TestSmsCampaignReplies(object):
                                                                self.URL,
                                                                access_token_first,
                                                                None)
+
+    def test_get_replies_with_paginated_response(self, access_token_first,
+                                                 sent_campaign_and_blast_ids,
+                                                 create_bulk_replies, valid_header,
+                                                 candidate_and_phone_1, candidate_and_phone_2):
+        """
+        Here we test the paginated response of GET call on endpoint
+        /v1/sms-campaigns/:campaign_id/replies
+        """
+        # GET blasts of campaign
+        sent_campaign = sent_campaign_and_blast_ids[0]
+        candidate_phone_ids = [candidate_phone_tuple[1]['id'] for candidate_phone_tuple
+                               in [candidate_and_phone_1, candidate_and_phone_2]]
+
+        # GET blasts of campaign, replies should be 10
+        response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
+                                       headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts,
+                                                            count=1, entity='blasts')
+        json_resp = response_blasts.json()['blasts'][0]
+        assert json_resp['campaign_id'] == sent_campaign['id']
+        assert json_resp['replies'] == 10
+        blast_id = json_resp['id']
+
+        # URL to GET replies
+        url = self.URL % sent_campaign['id']
+
+        # GET all replies objects and assert there are 10 objects
+        response = requests.get(url, headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=10, entity=self.ENTITY)
+
+        # Moving to first page
+        # Test GET replies of SMS campaign with 4 results per_page. It should get 4 replies objects
+        response = requests.get(url + '?per_page=4', headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        # Pick first reply object
+        received_reply_obj = json_resp[0]
+        assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids)
+
+        # Moving to next page which is second page
+        # Test GET replies of SMS campaign with 4 results per_page using page=2. It should get 4
+        # records
+        response = requests.get(url + '?per_page=4&page=2', headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+
+        # pick second reply object from the response.
+        received_reply_obj = json_resp[1]
+        assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids)
+
+        # Moving to next page which is third page, it should get 2 records
+        response = requests.get(url + '?per_page=4&page=3', headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY]
+        # pick second reply object from the response. it will be 10th reply object
+        received_reply_obj = json_resp[1]
+        assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids)
+
+        # Test GET replies of SMS campaign with per_page=4 and page=4.
+        # No reply object should be received in response as we only have 10 replies created so far
+        response = requests.get(url + '?per_page=4&page=4', headers=valid_header)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=0, entity=self.ENTITY)
