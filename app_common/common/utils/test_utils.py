@@ -6,11 +6,10 @@ import json
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 import requests
-from requests import codes as HttpStatus
 from faker import Faker
+from requests import codes as HttpStatus
 
 from ..tests.conftest import randomword
-from ..error_codes import ErrorCodes
 from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePoolApiUrl, \
     SchedulerApiUrl
 

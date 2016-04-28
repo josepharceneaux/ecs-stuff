@@ -224,9 +224,9 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
-          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_first['id'], token_first),
-          kwargs={'candidates_count': 1})
+    # retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
+    #       sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_first['id'], token_first),
+    #       kwargs={'candidates_count': 1})
     data = generate_campaign_schedule_data()
     task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
 
