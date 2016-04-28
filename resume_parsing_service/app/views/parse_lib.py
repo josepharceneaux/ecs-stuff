@@ -156,7 +156,6 @@ def parse_resume(file_obj, filename_str):
             "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
                                                                          time() - start_time)
         )
-        # doc_content = ocr_image(file_obj)
         logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         start_time = time()
@@ -281,6 +280,11 @@ def google_vision_ocr(file_string_io):
             google_request.headers, google_request.content))
         raise InternalServerError('Error in response from candidate service during creation')
     ocr_results = json.loads(google_request.content)
+    # Check for errors since even a 'bad' request gives a 200 response. And use Abby in that event.
+    gapi_errors = ocr_results['responses'][0].get('error')
+    if gapi_errors:
+        logger.warn('Error parsing with Google Vision. Trying Abby parse. Param: {}'.format(file_string_io))
+        return ocr_image(file_string_io)
     logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
     return ocr_results['responses'][0]['textAnnotations'][0]['description']
 
