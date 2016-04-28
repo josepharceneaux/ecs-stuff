@@ -43,7 +43,8 @@ do
         eval $push_command
 
 	# Update task definition for this service
-	python ecs_task_update.py ${FLASK_APPS[$app_index]} ${timestamp_tag} stage
+	# python ecs_task_update.py ${FLASK_APPS[$app_index]} ${timestamp_tag} stage
+	python ecs_task_update.py ${FLASK_STAGE_APPS[$app_index]} ${timestamp_tag} stage
     fi
 done
 
