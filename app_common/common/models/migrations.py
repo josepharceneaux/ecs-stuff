@@ -91,7 +91,7 @@ def run_migrations(logger, db):
             try:
                 execfile(f)
             except Exception as e:
-                logger.exception("Can't execute migration file {} due to {}".format(f, e.message))
+                logger.exception("Can't execute migration file {}".format(f))
 
             # Record migration processed
             logger.info("Recording {}".format(name))
