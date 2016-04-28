@@ -1,6 +1,8 @@
 """
 This module contains tests code that is common across services. e.g SMS and Push campaign.
 """
+from app_common.common.inter_service_calls.candidate_service_calls import assert_candidate_upload
+
 __author__ = 'basit'
 
 # Standard Imports
@@ -10,7 +12,7 @@ from datetime import datetime, timedelta
 
 # Third Party
 import requests
-from polling import poll
+from polling import poll, TimeoutException
 
 # Application Specific
 from ..models.db import db
@@ -389,7 +391,14 @@ class CampaignsTestsHelpers(object):
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
         if assert_candidates:
-            time.sleep(10)
+            try:
+                poll(assert_candidate_upload, step=3,
+                     args=({'candidate_ids': candidate_ids}, access_token),
+                     timeout=timeout/2), 'Candidates not found on cloud.'
+            except TimeoutException:
+                print 'Candidates not found on CS within given time range'
+            print '%s candidates created on CS' % len(candidate_ids)
+            # time.sleep(10)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -397,9 +406,11 @@ class CampaignsTestsHelpers(object):
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
-            assert poll(assert_smartlist_candidates, step=3,
-                        args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
-                'Candidates not found for smartlist(id:%s)' % smartlist_id
+            try:
+                poll(assert_smartlist_candidates, step=3,
+                     args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout)
+            except TimeoutException:
+                print 'Candidates not found for smartlist(id:%s) within given time range' % smartlist_id
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 

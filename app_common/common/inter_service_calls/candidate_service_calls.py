@@ -107,3 +107,32 @@ def get_candidate_subscription_preference(candidate_id):
     response = resp.json()
     # return candidate's subscription_preference
     return response['candidate']['subscription_preference']
+
+
+def get_candidates_from_search_api(params, access_token):
+    """
+    This function will get candidates information based on query_string from Search API
+    :param (dict) params: Params to be passed to search_service
+    :param (str) access_token: Access Token
+    """
+    response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
+                            headers=create_oauth_headers(access_token), params=json.dumps(params))
+    if response.ok:
+        return True, response.json()
+    else:
+        return False, response
+
+
+def assert_candidate_upload(data, access_token):
+    """
+    This function asserts that candidates have been uploaded on cloud by hitting
+    candidate_search API.
+    :param (dict) data: Data to send in HTTP request
+    :param (str) access_token: access token of user
+    :return: True if expected number of candidates have been uploaded, False otherwise.
+    :rtype: bool
+    """
+    status, response = get_candidates_from_search_api(data, access_token)
+    if status and response['total_found'] == len(data['candidate_ids']):
+            return True
+    return False
