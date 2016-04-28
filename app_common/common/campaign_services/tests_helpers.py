@@ -31,7 +31,8 @@ from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
                                      add_role_to_test_user)
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage,
-                              UnauthorizedError, ResourceNotFound, UnprocessableEntity)
+                              UnauthorizedError, ResourceNotFound, UnprocessableEntity,
+                              InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
     assert_smartlist_candidates
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
@@ -396,9 +397,8 @@ class CampaignsTestsHelpers(object):
                      args=({'candidate_ids': candidate_ids}, access_token),
                      timeout=timeout/2), 'Candidates not found on cloud.'
             except TimeoutException:
-                print 'Candidates not found on CS within given time range'
+                raise InternalServerError('Candidates not found on CS within given time range')
             print '%s candidates created on CS' % len(candidate_ids)
-            # time.sleep(10)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -410,7 +410,8 @@ class CampaignsTestsHelpers(object):
                 poll(assert_smartlist_candidates, step=3,
                      args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout)
             except TimeoutException:
-                print 'Candidates not found for smartlist(id:%s) within given time range' % smartlist_id
+                raise InternalServerError('Candidates not found for smartlist(id:%s) '
+                                          'within given time range' % smartlist_id)
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
