@@ -198,7 +198,7 @@ class TestCampaignSchedule(object):
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first,
                                                            expected_blasts=2,
-                                                           blast_index=1, blast_timeout=80)
+                                                           blast_index=1, blast_timeout=60)
         delete_test_scheduled_task(task_id, valid_header)
 
     def test_campaign_daily_schedule_and_validate_task_run(

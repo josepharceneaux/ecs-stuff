@@ -244,7 +244,7 @@ class CampaignsTestsHelpers(object):
         # Need to commit the session because Celery has its own session, and our session does not
         # know about the changes that Celery session has made.
         db.session.commit()
-        activity = poll(_get_activity, args=(user_id, type_, source_id), step=3, timeout=30)
+        activity = poll(_get_activity, args=(user_id, type_, source_id), step=3, timeout=60)
         assert activity
 
     @classmethod
