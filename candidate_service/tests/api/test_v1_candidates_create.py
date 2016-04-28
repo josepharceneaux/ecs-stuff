@@ -1030,7 +1030,6 @@ class TestCreatePhones(object):
         Test:  Create CandidatePhone using international phone number
         Expect: 201, phone number must be formatted before inserting into db
         """
-        from candidate_sample_data import generate_international_phone_number
         # Create candidate
         AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.phones([talent_pool.id], internationalize=True)

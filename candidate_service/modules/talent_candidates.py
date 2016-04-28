@@ -1176,6 +1176,9 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         if not address_dict:
             continue
 
+        # Cache country code
+        CachedData.country_codes.append(address_dict.get('iso3166_country'))
+
         address_id = address.get('id')
         if address_id:  # Update
 
@@ -1820,13 +1823,23 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
         value = (phone.get('value') or '').strip()
-        phone_number_obj = parse_phone_number(value) if value else None
+        iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
+        phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None
         """
         :type phone_number_obj: PhoneNumber
         """
+
+        # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
+        if not phone_number_obj.country_code:
+            value = phone_number_obj.national_number
+        else:
+            value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+
+        # Clear CachedData's country_codes to prevent aggregating unnecessary data
+        CachedData.country_codes = []
         # if value:
         phone_dict = dict(
-            value=phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164),
+            value=value,
             extension=phone_number_obj.extension if phone_number_obj else None,
             phone_label_id=PhoneLabel.phone_label_id_from_phone_label(phone_label),
             is_default=is_default
@@ -2214,3 +2227,11 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     candidate.total_months_experience += total_months_experience
     return
+
+
+class CachedData(object):
+    """
+    This class will contain data that may be required by other functions but should be cleared
+      when its data is no longer needed
+    """
+    country_codes = []

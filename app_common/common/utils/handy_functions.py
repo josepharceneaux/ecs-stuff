@@ -4,7 +4,6 @@ __author__ = 'erikfarmer'
 
 # Standard Imports
 import re
-import time
 import json
 import random
 import string
@@ -434,13 +433,14 @@ def purge_dict(dictionary, strip=True):
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
 
 
-def get_phone_number_extension(phone_number):
+def get_phone_number_extension_if_exists(phone_number):
     """
-    Function will extract & return phone number's extension if provided
-    :return: phone number extension, may be 2 or 3 characters long
-    :rtype:  str | None
+    Function will extract & return phone-number, extension prefix, and extension-number if an extension is provided
+    :return: phone number, extension-prefix & extension number; e.g. ('4084059934', 'ext', '45') | (None, None, None)
+    :rtype:  tuple
     """
+    # TODO: compile regex at application startup
+    # Link from where regex was copied:
+    #   https://www.quora.com/What-is-the-best-way-to-parse-and-standardize-phone-numbers-in-Python?share=1
     matched = re.match(r'([^a-zA-Z]+)([a-zA-Z]+\D*)(\d+)', phone_number)
-    if matched:
-        return matched.groups()[-1]
-    return None
+    return matched.groups() if matched else (None, None, None)

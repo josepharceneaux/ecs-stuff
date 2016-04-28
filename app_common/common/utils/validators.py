@@ -31,9 +31,10 @@ def is_valid_email(email):
 def parse_phone_number(phone_number, iso3166_country_code=None):
     """
     Function will parse phone number. If phone number does not have country code, it will look for
-      provided iso3166_country_code. If iso3166_country_code is not provided, it will default to 'US'.
+      provided iso3166_country_code. If iso3166_country_code is not provided it will save phone number
+      as provided. InvalidUsage will be raised if phone number is not properly formatted or is invalid
     :type phone_number:  str
-    :param phone_number: +14084056677
+    :param phone_number: +14084056677 | 4084056677 | 4084056677ext456 (must be at least 7 digits long)
     :type iso3166_country_code:  str
     :param iso3166_country_code:  Alpha-2 code per ISO 3166 standards
     :rtype:  PhoneNumber
@@ -41,24 +42,39 @@ def parse_phone_number(phone_number, iso3166_country_code=None):
                          italian_leading_zero=None, number_of_leading_zeros=None, country_code_source=None,
                          preferred_domestic_carrier_code=None)
     """
-    # Format country code
-    iso3166_country_code = iso3166_country_code.upper() if iso3166_country_code else 'US'
-    try:
-        # Maybe the number is already internationally formatted
-        try:
-            return phonenumbers.parse(str(phone_number))
-        except phonenumbers.NumberParseException:
-            pass
+    try:  # Maybe the number is already internationally formatted
+        return phonenumbers.parse(str(phone_number))
+    except phonenumbers.NumberParseException:
+        pass
 
-        # Maybe the country_code is correct
-        try:
-            return phonenumbers.parse(number=str(phone_number), region=iso3166_country_code)
+    if iso3166_country_code:
+        try:  # Maybe the country_code is correct
+            return phonenumbers.parse(number=str(phone_number), region=iso3166_country_code.upper())
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number({}, {}): Couldn't parse phone number".
                                format(phone_number, iso3166_country_code))
-    except:
-        raise InvalidUsage(error_message="format_phone_number({}, {}): Received other exception".
-                           format(phone_number, iso3166_country_code))
+
+    # If phone number contains an extension, it must be parsed
+    from handy_functions import get_phone_number_extension_if_exists
+    number, extension_prefix, extension_value = get_phone_number_extension_if_exists(phone_number)
+
+    # Phone number is considered invalid if it's less than 7 digits; see:
+    #   http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
+    if number:
+        number = re.sub('\D', '', number)  # Number must contain only digits
+        if len(number) < 7:
+            raise InvalidUsage("Invalid phone number: {}".format(number))
+
+    phone_number = re.sub('\D', '', phone_number)  # Number must contain only digits
+    if len(phone_number) < 7:
+        raise InvalidUsage("Invalid phone number: {}".format(number))
+
+    # If phone number is not prefixed with international code and country_code is not provided
+    #    it will be saved as-is unless if phone number is invalid, e.g. "letter56"
+    try:
+        return PhoneNumber(national_number=number or phone_number, extension=extension_value)
+    except ValueError:
+        raise InvalidUsage("Invalid phone number: {}".format(phone_number))
 
 
 def format_phone_number(phone_number, country_code='US'):
