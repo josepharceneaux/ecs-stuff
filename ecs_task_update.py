@@ -4,7 +4,7 @@ import json
 
 
 # Command line arguments
-SERVICE_NAME = 'service-name'
+SERVICE_NAME = 'service-name' # Service means getTalent micro service, not ECS service.
 TAG_NAME = 'tag-name'
 CLUSTER_NAME = 'cluster-name'
 
@@ -36,8 +36,10 @@ for definition in task_definition['taskDefinition']['containerDefinitions']:
     image = definition['image']
     # Create a new image pointer with our new tag
     new_image = image.split(':')[0] + ':' + tag
-    print "Creating new task definition with image: %s" % new_image
     definition['image'] = new_image
+
+for definition in task_definition['taskDefinition']['containerDefinitions']:
+    print "Updated container image with: %s" % definition['image']
 
 # Now create a new revision of the task definition
 try:
@@ -46,8 +48,7 @@ except Exception as e:
     print "Exception {} registering task definition for {}".format(e.message, service)
     exit(1)
 
-for definition in task_definition['taskDefinition']['containerDefinitions']:
-    print "Updated: %s" % definition['image']
+print "Task definition %s updated." % service
 
 # Restart the tasks
 # We could specify the container instance, or let the ECS scheduler do it
