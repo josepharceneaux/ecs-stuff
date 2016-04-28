@@ -121,8 +121,7 @@ def register_error_handlers(app, logger):
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
-        # All our custom exceptions have `to_dict()` method.
-        if hasattr(exc, 'to_dict') and callable(exc.to_dict):
+        if isinstance(exc, InternalServerError):
             error = exc.to_dict()
             response = error
         else:
@@ -141,7 +140,7 @@ def register_error_handlers(app, logger):
         :return: response, status_code
         """
         message = message if message else 'Error occurred.'
-        assert isinstance(error, TalentError), 'error is not a getTalent custom exception.'
+        assert isinstance(error, TalentError), '"error" is not a getTalent custom exception.'
         error_dict = error.to_dict()
         response = jsonify(error_dict)
         logger.warn("%s App: %s,\n Url: %s\nError Details: %s", message,
