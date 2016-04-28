@@ -121,18 +121,15 @@ def register_error_handlers(app, logger):
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
-        if exc.__class__.__name__ == InternalServerError.__name__:  # Why doesn't instanceof() work here?
-            # If an InternalServerError is raised by the server code, return its to_dict
-            response = exc.to_dict()
-        elif isinstance(exc, InternalServerError):
-            response = exc.to_dict()
-        elif isinstance(exc, Exception):
-            # If any other Exception is thrown, return its message
-            response = {'error': {'message': "Internal server error: %s" % exc.message}}
+        # All our custom exceptions have `to_dict()` method.
+        if hasattr(exc, 'to_dict') and callable(exc.to_dict):
+            error = exc.to_dict()
+            response = error
         else:
-            # This really shouldn't happen -- exc should be an exception
+            error = exc.message
             response = {'error': {'message': "Internal server error"}}
-        logger.error("Internal server error for app %s: %s", app.import_name, exc.message)
+        logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
+                     request.url if has_request_context() else None, error)
         return jsonify(response), 500
 
     def handle_error(error, message):
@@ -143,6 +140,8 @@ def register_error_handlers(app, logger):
         :param str message: message to append while logging error details.
         :return: response, status_code
         """
+        message = message if message else 'Error occurred.'
+        assert isinstance(error, TalentError), 'error is not a getTalent custom exception.'
         error_dict = error.to_dict()
         response = jsonify(error_dict)
         logger.warn("%s App: %s,\n Url: %s\nError Details: %s", message,
