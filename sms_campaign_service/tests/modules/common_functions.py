@@ -44,7 +44,7 @@ def assert_url_conversion(sms_campaign_sends):
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, campaign_id,
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id,
                                                        access_token,
                                                        expected_blasts=1,
                                                        blast_index=0, blast_timeout=10,
@@ -66,13 +66,13 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_count, 
                                                  timeout=blast_timeout)
     # Poll blast sends
     sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
-    CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count, blast_index=blast_index,
+    CampaignsTestsHelpers.assert_blast_sends(campaign, expected_sends, blast_index=blast_index,
                                              abort_time_for_sends=sends_timeout)
 
-    assert sms_campaign_blast.sends == expected_count
+    assert sms_campaign_blast.sends == expected_sends
     # assert on sends
     sms_campaign_sends = sms_campaign_blast.blast_sends.all()
-    assert len(sms_campaign_sends) == expected_count
+    assert len(sms_campaign_sends) == expected_sends
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
         assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
