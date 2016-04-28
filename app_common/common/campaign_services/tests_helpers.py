@@ -395,7 +395,7 @@ class CampaignsTestsHelpers(object):
             try:
                 poll(assert_candidate_upload, step=3,
                      args=({'candidate_ids': candidate_ids}, access_token),
-                     timeout=timeout/2), 'Candidates not found on cloud.'
+                     timeout=timeout), 'Candidates not found on cloud.'
             except TimeoutException:
                 print 'Candidates not found on CS within given time range'
             print '%s candidates created on CS' % len(candidate_ids)
